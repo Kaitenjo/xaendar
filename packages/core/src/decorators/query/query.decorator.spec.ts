@@ -11,7 +11,7 @@ import { _Context } from '../../utils/context/context.util';
 import { _setElementRef } from '../../utils/element-refs/element-refs.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { WebComponent } from '../web-component/web-component.decorator';
-import { Query, query, queryAll, queryRef, queryRefAll, queryRefRequired, queryRequired, querySlot, querySlotAll, querySlotRequired } from './query.decorator';
+import { Query, query, queryAll, queryContent, queryContentAll, queryContentRequired, queryRef, queryRefAll, queryRefRequired, queryRequired } from './query.decorator';
 
 loadSignals();
 
@@ -553,39 +553,50 @@ describe('Query decorator', () => {
 });
 
 /**
- * Creates an element, not yet connected to the document, whose render adds a default slot and a slot named `a`
- * to its Shadow DOM, with the given children in its light DOM.
+ * Creates an element, not yet connected to the document, whose render does not touch its Shadow DOM, with the given
+ * children in its light DOM: the content queries look into the light DOM, whether a slot renders it or not.
  */
-function withSlots(...children: Element[]): CustomElement {
-  const klass = class extends CustomElement { };
-  _defineRender(klass, function (this: CustomElement) {
-    const named = document.createElement('slot');
-    named.name = 'a';
-    this.shadowRoot!.append(document.createElement('slot'), named);
-    return new _Context({} as never);
-  });
-  const name = `x-query-decorator-${counter++}`;
-  customElements.define(name, klass);
-  const element = document.createElement(name) as CustomElement;
+function withContent(...children: Element[]): CustomElement {
+  const element = create();
   element.append(...children);
   return element;
 }
 
-describe('querySlot', () => {
-  it('holds the first projected element matching the target', () => {
+/**
+ * Creates a `section` wrapping the given elements, so that they are descendants, and not children, of the element the
+ * section is passed to.
+ */
+function wrapping(...children: Element[]): HTMLElement {
+  const wrapper = document.createElement('section');
+  wrapper.append(...children);
+  return wrapper;
+}
+
+describe('queryContent', () => {
+  it('holds the first element of the content matching the target', () => {
     const { klass, selector } = defineComponent();
     const first = document.createElement(selector);
-    const element = withSlots(document.createElement('span'), first, document.createElement(selector));
-    const signal = querySlot(element, klass);
+    const element = withContent(document.createElement('span'), first, document.createElement(selector));
+    const signal = queryContent(element, klass);
 
     document.body.appendChild(element);
 
     expect(signal()).toBe(first);
   });
 
-  it('is null when no projected element matches the target', () => {
-    const element = withSlots(document.createElement('span'));
-    const signal = querySlot(element, '[item]');
+  it('looks into the descendants of the children by default', () => {
+    const nested = item();
+    const element = withContent(wrapping(nested), item());
+    const signal = queryContent(element, '[item]');
+
+    document.body.appendChild(element);
+
+    expect(signal()).toBe(nested);
+  });
+
+  it('is null when no element of the content matches the target', () => {
+    const element = withContent(document.createElement('span'));
+    const signal = queryContent(element, '[item]');
 
     document.body.appendChild(element);
 
@@ -593,23 +604,22 @@ describe('querySlot', () => {
   });
 
   it('applies the given options', () => {
-    const inA = item();
-    inA.slot = 'a';
-    const element = withSlots(item(), inA);
-    const signal = querySlot(element, '[item]', { slots: 'a' });
+    const child = item();
+    const element = withContent(wrapping(item()), child);
+    const signal = queryContent(element, '[item]', { descendants: false });
 
     document.body.appendChild(element);
 
-    expect(signal()).toBe(inA);
+    expect(signal()).toBe(child);
   });
 });
 
-describe('querySlotRequired', () => {
-  it('holds the first projected element matching the target', () => {
+describe('queryContentRequired', () => {
+  it('holds the first element of the content matching the target', () => {
     const { klass, selector } = defineComponent();
     const first = document.createElement(selector);
-    const element = withSlots(document.createElement('span'), first, document.createElement(selector));
-    const signal = querySlotRequired(element, klass);
+    const element = withContent(document.createElement('span'), first, document.createElement(selector));
+    const signal = queryContentRequired(element, klass);
 
     document.body.appendChild(element);
 
@@ -618,15 +628,15 @@ describe('querySlotRequired', () => {
   });
 
   it('throws when read before the element is connected', () => {
-    const element = withSlots(item());
-    const signal = querySlotRequired(element, '[item]');
+    const element = withContent(item());
+    const signal = queryContentRequired(element, '[item]');
 
     expect(() => signal()).toThrow(`No element matches the required content query '[item]' of <${element.localName}>`);
   });
 
-  it('throws when no projected element matches the target', () => {
-    const element = withSlots(document.createElement('span'));
-    const signal = querySlotRequired(element, '[item]');
+  it('throws when no element of the content matches the target', () => {
+    const element = withContent(document.createElement('span'));
+    const signal = queryContentRequired(element, '[item]');
 
     document.body.appendChild(element);
 
@@ -634,22 +644,21 @@ describe('querySlotRequired', () => {
   });
 
   it('applies the given options', () => {
-    const inA = item();
-    inA.slot = 'a';
-    const element = withSlots(item(), inA);
-    const signal = querySlotRequired(element, '[item]', { slots: 'a' });
+    const child = item();
+    const element = withContent(wrapping(item()), child);
+    const signal = queryContentRequired(element, '[item]', { descendants: false });
 
     document.body.appendChild(element);
 
-    expect(signal()).toBe(inA);
+    expect(signal()).toBe(child);
   });
 });
 
-describe('querySlotAll', () => {
-  it('holds all the projected elements matching the target', () => {
+describe('queryContentAll', () => {
+  it('holds the children of the element matching the target, not their descendants, by default', () => {
     const [first, second] = [item(), item()];
-    const element = withSlots(first, document.createElement('span'), second);
-    const signal = querySlotAll(element, '[item]');
+    const element = withContent(first, wrapping(item()), document.createElement('span'), second);
+    const signal = queryContentAll(element, '[item]');
 
     document.body.appendChild(element);
 
@@ -657,19 +666,18 @@ describe('querySlotAll', () => {
   });
 
   it('applies the given options', () => {
-    const unassigned = item();
-    unassigned.slot = 'b';
-    const element = withSlots(item(), unassigned);
-    const signal = querySlotAll(element, '[item]', { lightDom: true });
+    const [first, nested, second] = [item(), item(), item()];
+    const element = withContent(first, wrapping(nested), second);
+    const signal = queryContentAll(element, '[item]', { descendants: true });
 
     document.body.appendChild(element);
 
-    expect(signal()).toEqual([element.firstElementChild, unassigned]);
+    expect(signal()).toEqual([first, nested, second]);
   });
 
   it('does not notify when the elements did not change', async () => {
-    const element = withSlots(item());
-    const signal = querySlotAll(element, '[item]');
+    const element = withContent(item());
+    const signal = queryContentAll(element, '[item]');
     document.body.appendChild(element);
     const spy = vi.fn();
     const dispose = effect(() => spy(signal()));
@@ -772,46 +780,45 @@ describe('read option', () => {
     expect(required()).toBe(tooltip);
   });
 
-  it('holds the directive applied to the first projected element, among the options of the slots', () => {
-    const { element: projected, tooltip } = withTooltip();
-    projected.slot = 'a';
-    const element = withSlots(withTooltip().element, projected);
-    const signal = init(Query.content('span', { slots: 'a', read: Tooltip }), element);
-    const required = init(Query.content.required(Tooltip, { slots: 'a', read: 'element' }), element);
+  it('holds the directive applied to the first element of the content, among the options of the content', () => {
+    const { element: child, tooltip } = withTooltip();
+    const element = withContent(wrapping(withTooltip().element), child);
+    const signal = init(Query.content('span', { descendants: false, read: Tooltip }), element);
+    const required = init(Query.content.required(Tooltip, { descendants: false, read: 'element' }), element);
 
     document.body.appendChild(element);
 
     expect(signal()).toBe(tooltip);
-    expect(required()).toBe(projected);
+    expect(required()).toBe(child);
   });
 });
 
 describe('Query.content decorator', () => {
-  it('creates a signal holding the instances of a directive applied to the projected elements', () => {
+  it('creates a signal holding the instances of a directive applied to the elements of the content', () => {
     const [first, second] = [withTooltip(), withTooltip()];
-    const wrapper = document.createElement('div');
-    wrapper.append(second.element);
-    const element = withSlots(first.element, wrapper);
+    const element = withContent(first.element, wrapping(second.element));
     const firstSignal = init(Query.content(Tooltip), element);
-    const allSignal = init(Query.content.all(Tooltip), element);
+    const childrenSignal = init(Query.content.all(Tooltip), element);
+    const allSignal = init(Query.content.all(Tooltip, { descendants: true }), element);
 
     document.body.appendChild(element);
 
     expect(firstSignal()).toBe(first.tooltip);
+    expect(childrenSignal()).toEqual([first.tooltip]);
     expect(allSignal()).toEqual([first.tooltip, second.tooltip]);
   });
 
   it('names the class of the directive in the error of a required content query', () => {
-    const element = withSlots();
+    const element = withContent();
     const signal = init(Query.content.required(Tooltip), element);
     document.body.appendChild(element);
 
     expect(() => signal()).toThrow(`No element matches the required content query 'Tooltip' of <${element.localName}>`);
   });
 
-  it('creates a signal holding the first projected element matching the target', () => {
+  it('creates a signal holding the first element of the content matching the target', () => {
     const target = item();
-    const element = withSlots(target, item());
+    const element = withContent(target, item());
     const signal = init(Query.content('[item]'), element);
 
     document.body.appendChild(element);
@@ -820,20 +827,19 @@ describe('Query.content decorator', () => {
   });
 
   it('forwards the options', () => {
-    const inA = item();
-    inA.slot = 'a';
-    const element = withSlots(item(), inA);
-    const signal = init(Query.content('[item]', { slots: 'a' }), element);
+    const child = item();
+    const element = withContent(wrapping(item()), child);
+    const signal = init(Query.content('[item]', { descendants: false }), element);
 
     document.body.appendChild(element);
 
-    expect(signal()).toBe(inA);
+    expect(signal()).toBe(child);
   });
 
   describe('required', () => {
-    it('creates a signal holding the first projected element matching the target', () => {
+    it('creates a signal holding the first element of the content matching the target', () => {
       const target = item();
-      const element = withSlots(target, item());
+      const element = withContent(target, item());
       const signal = init(Query.content.required('[item]'), element);
 
       document.body.appendChild(element);
@@ -842,8 +848,8 @@ describe('Query.content decorator', () => {
     });
 
     it('forwards the options, throwing when no element matches', () => {
-      const element = withSlots(item());
-      const signal = init(Query.content.required('[item]', { slots: 'a' }), element);
+      const element = withContent(wrapping(item()));
+      const signal = init(Query.content.required('[item]', { descendants: false }), element);
 
       document.body.appendChild(element);
 
@@ -852,9 +858,9 @@ describe('Query.content decorator', () => {
   });
 
   describe('all', () => {
-    it('creates a signal holding all the projected elements matching the target', () => {
+    it('creates a signal holding all the children of the element matching the target', () => {
       const [first, second] = [item(), item()];
-      const element = withSlots(first, second);
+      const element = withContent(first, second);
       const signal = init(Query.content.all('[item]'), element);
 
       document.body.appendChild(element);
@@ -863,14 +869,13 @@ describe('Query.content decorator', () => {
     });
 
     it('forwards the options', () => {
-      const inA = item();
-      inA.slot = 'a';
-      const element = withSlots(item(), inA);
-      const signal = init(Query.content.all('[item]', { slots: 'a' }), element);
+      const nested = item();
+      const element = withContent(wrapping(nested));
+      const signal = init(Query.content.all('[item]', { descendants: true }), element);
 
       document.body.appendChild(element);
 
-      expect(signal()).toEqual([inA]);
+      expect(signal()).toEqual([nested]);
     });
   });
 });

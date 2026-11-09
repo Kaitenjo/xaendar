@@ -189,6 +189,39 @@ public increment(): void {
 };
 
 /**
+ * The snippet `query-content-descendants.ts`, shown by the API reference of core-signals.
+ */
+export const QUERY_CONTENT_DESCENDANTS: SourceFile = {
+  name: 'query-content-descendants.ts',
+  lang: 'ts',
+  code: `/**
+ * The first element marked as header, among the children of the element and their descendants.
+ */
+@Query.content('[header]')
+public accessor header!: QuerySignal<HTMLElement | null>;
+/**
+ * The first child marked as header: its descendants are not looked into.
+ */
+@Query.content('[header]', { descendants: false })
+public accessor topHeader!: QuerySignal<HTMLElement | null>;
+/**
+ * The children of the element with the item class, in document order.
+ */
+@Query.content.all('.item')
+public accessor items!: QuerySignal<HTMLElement[]>;
+/**
+ * Every element with the item class, at any depth, in document order.
+ */
+@Query.content.all('.item', { descendants: true })
+public accessor allItems!: QuerySignal<HTMLElement[]>;
+/**
+ * The children passed for the footer slot: slot is an attribute like any other, rendered or not.
+ */
+@Query.content.all('[slot="footer"]')
+public accessor footer!: QuerySignal<HTMLElement[]>;`
+};
+
+/**
  * The snippet `query-element.ts`, shown by the API reference of core-signals.
  */
 export const QUERY_ELEMENT: SourceFile = {
@@ -246,39 +279,6 @@ public afterRender(): void {
 private _computeCount(): number {
   return this.rows().length;
 }`
-};
-
-/**
- * The snippet `query-slot-options.ts`, shown by the API reference of core-signals.
- */
-export const QUERY_SLOT_OPTIONS: SourceFile = {
-  name: 'query-slot-options.ts',
-  lang: 'ts',
-  code: `/**
- * The first element marked as header, among the elements assigned to any slot and their descendants.
- */
-@Query.content('[header]')
-public accessor header!: QuerySignal<HTMLElement | null>;
-/**
- * The buttons assigned to the footer slot, and the ones inside them.
- */
-@Query.content.all('button', { slots: 'footer' })
-public accessor actions!: QuerySignal<HTMLElement[]>;
-/**
- * The items of the default slot and of the aside slot: '' is the default slot.
- */
-@Query.content.all('.item', { slots: ['', 'aside'] })
-public accessor items!: QuerySignal<HTMLElement[]>;
-/**
- * Every item among the descendants of the element, assigned to a slot or not, in document order.
- */
-@Query.content.all('.item', { lightDom: true })
-public accessor allItems!: QuerySignal<HTMLElement[]>;
-/**
- * ✗ slots and lightDom: true exclude each other: the options do not compile.
- */
-@Query.content.all('.item', { slots: 'aside', lightDom: true })
-public accessor mixed!: QuerySignal<HTMLElement[]>;`
 };
 
 /**

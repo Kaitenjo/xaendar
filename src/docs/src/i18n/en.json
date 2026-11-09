@@ -263,7 +263,7 @@
         "edgeCases": {
           "title": "Edge cases",
           "example1": "When the projected content arrives",
-          "p1": "The component is rendered before the parent creates its children, so in <code>afterRender</code> its slots are still empty. The children arrive right after, and every change is announced by <code>slotchange</code>, which a template can bind on the <code>&lt;slot&gt;</code> element. To read the projected elements reactively, use a <a href=\"#/en/components/content-queries\">content query</a>.",
+          "p1": "The component is rendered before the parent creates its children, so in <code>afterRender</code> its slots are still empty. The children arrive right after, and every change is announced by <code>slotchange</code>, which a template can bind on the <code>&lt;slot&gt;</code> element. To read the elements passed to it reactively, use a <a href=\"#/en/components/content-queries\">content query</a>.",
           "callout1": {
             "heading": "Whitespace does not hide the fallback",
             "body": "In plain HTML the spaces and line breaks between the tags of a component are text nodes, assigned to the default slot, so the fallback disappears. A Xaendar template creates no text node for whitespace, and the anchors of <code>@if</code> and <code>@for</code> are comments, which are never assigned: as long as nothing visible is projected, the fallback shows."
@@ -287,44 +287,45 @@
       "contentQueries": {
         "eyebrow": "Components",
         "title": "Content queries",
-        "lead": "A content query finds elements among the content projected into the component, instead of its own template. It is how a component works with children it does not render: a tab group with its panels, a list with its items, a form with its fields. Like view queries, the result is a signal that follows the changes of the content.",
+        "lead": "A content query finds elements among the content passed to the component by its parent, instead of its own template. It is how a component works with children it does not render: a tab group with its panels, a list with its items, a form with its fields. Like view queries, the result is a signal that follows the changes of the content.",
         "queryingTheProjectedContent": {
-          "title": "Querying the projected content",
-          "p1": "<code>@Query.content</code> and <code>@Query.content.all</code> take the same targets as view queries, a CSS selector, the class of a component or the class of a custom directive, and look into the elements assigned to the slots of the component, together with their descendants.",
+          "title": "Querying the content",
+          "p1": "<code>@Query.content</code> and <code>@Query.content.all</code> take the same targets as view queries, a CSS selector, the class of a component or the class of a custom directive, and look into the content passed to the component, its light DOM, as <code>contentChild</code> and <code>contentChildren</code> of Angular: an element counts whether a slot of the component renders it or not.",
           "example1": "A tab group built from its panels",
           "p2": "The group renders one tab for each panel it finds, with the label the panel received from the parent, and tells each panel whether it is active through a signal of the panel: the query is typed by the class, so the group can reach the public members of the instances. Add a panel: the parent renders it inside the group, the query finds it, and a new tab appears.",
-          "p3": "<code>@Query.content.required</code> drops <code>null</code> from the type, and reading it throws when no projected element matches. The projected content arrives after <code>afterRender</code> (see the edge cases below), so there it still throws: read it in event handlers, and keep <code>@Query.content</code> to follow the content as it arrives."
+          "p3": "<code>@Query.content.required</code> drops <code>null</code> from the type, and reading it throws when no element of the content matches. The content arrives after <code>afterRender</code> (see the edge cases below), so there it still throws: read it in event handlers, and keep <code>@Query.content</code> to follow the content as it arrives."
         },
         "whichSlotsWhichElements": {
-          "title": "Which slots, which elements",
-          "p1": "By default a content query looks into every slot. <code>slots</code> restricts it to one slot, or to a list, where the empty string is the default slot; <code>lightDom: true</code> looks instead at all the children of the element, assigned to a slot or not. The two options cannot be combined.",
-          "example1": "Five queries on the same content",
-          "li1": "the results follow the slots in the order of the template, then the order of assignment: <em>aside</em> comes first in the inspector, so B comes before A, even though A comes first in the parent;",
-          "li2": "descendants count: C is inside a <code>div</code> assigned to the default slot;",
-          "li3": "D is assigned to no slot: only <code>lightDom</code> finds it, in document order;",
+          "title": "Which elements",
+          "p1": "As in Angular, <code>@Query.content</code> looks into the children of the component and their descendants, while <code>@Query.content.all</code> looks only into the children: <code>descendants</code> changes it, <code>descendants: false</code> for the first, <code>descendants: true</code> for the second. Slots do not matter: the <code>slot</code> attribute is an attribute like any other, which a selector can match.",
+          "example1": "Four queries on the same content",
+          "li1": "the results follow the order of the document: <em>aside</em> comes first in the inspector, but B comes after A, as in the parent;",
+          "li2": "C is inside a <code>div</code>: <code>@Query.content</code> and <code>descendants: true</code> find it, <code>@Query.content.all</code> alone does not;",
+          "li3": "D has a <code>slot</code> attribute that no slot of the inspector matches: it is not rendered, yet it is content all the same, and the queries find it; <code>[slot=\"aside\"]</code> finds only B;",
           "li4": "E is the fallback of a slot: it belongs to the inspector, and no content query finds it."
         },
         "edgeCases": {
           "title": "Edge cases",
-          "example1": "Content forwarded through a slot",
-          "p1": "The wrapper projects its own slot into the counter. The query of the counter does not see that slot but what it carries: the items written in the outermost template, then the item of the wrapper. Nested slots are flattened.",
           "callout1": {
             "heading": "Empty until after afterRender",
-            "body": "The projected content is created by the parent after the component has rendered, so in <code>afterRender</code> a content query is still empty. Read it reactively, in a computed signal or in an effect, as the tab group does. See the edge cases of <a href=\"#/en/components/content-projection\">Content projection</a>."
+            "body": "The content is created by the parent after the component has rendered, so in <code>afterRender</code> a content query is still empty. Read it reactively, in a computed signal or in an effect, as the tab group does. See the edge cases of <a href=\"#/en/components/content-projection\">Content projection</a>."
           },
           "callout2": {
             "heading": "Attribute changes are not observed",
-            "body": "A content query is updated when elements are added or removed, when their <code>slot</code> attribute changes and when the slots of the component change. A change to any other attribute, such as a class, does not update it, as for <a href=\"#/en/components/queries\">view queries</a>."
+            "body": "A content query is updated when elements are added to the content or removed from it, at any depth, or among the children only with <code>descendants: false</code>. A change to an attribute, <code>slot</code> included, does not update it, as for <a href=\"#/en/components/queries\">view queries</a>."
+          },
+          "callout3": {
+            "heading": "Forwarded content is not seen",
+            "body": "When a component forwards its own content to a child through a <code>&lt;slot&gt;</code>, the content query of the child finds the <code>&lt;slot&gt;</code> element, not what it carries, as with content projected again by <code>&lt;ng-content&gt;</code> in Angular. To know what the template of a component renders, use a <a href=\"#/en/components/queries\">view query</a>."
           }
         },
         "summary": {
           "title": "Summary",
           "th1": "API",
           "th2": "Description",
-          "td1": "The first projected element matching <code>target</code>, or <code>null</code>.",
-          "td2": "All the projected elements matching <code>target</code>.",
-          "td3": "Only the given slots; <code>''</code> is the default slot.",
-          "td4": "All the children of the element, assigned to a slot or not.",
+          "td1": "The first element of the content matching <code>target</code>, among the children and their descendants, or <code>null</code>.",
+          "td2": "All the children matching <code>target</code>.",
+          "td3": "Includes the descendants of the children, or excludes them: by default <code>true</code> for <code>@Query.content</code> and <code>@Query.content.required</code>, <code>false</code> for <code>@Query.content.all</code>.",
           "td5": "Like <code>@Query.content</code>, without <code>null</code>: reading it throws when no element matches."
         }
       },
@@ -1293,7 +1294,7 @@
         "div3": "<span class=\"card__title\">Compiled, type-checked templates</span> <span class=\"card__text\">Templates are compiled at build time and type-checked against the component class: mistakes fail the build.</span>",
         "div4": "<span class=\"card__title\">No virtual DOM</span> <span class=\"card__text\">The generated code binds each DOM node to the signals it reads. Nothing is diffed, nothing is re-rendered.</span>",
         "div5": "<span class=\"card__title\">Directives</span> <span class=\"card__text\">Attach reusable behavior to any element with custom directives, or decide whether it exists with structural ones.</span>",
-        "div6": "<span class=\"card__title\">Reactive queries</span> <span class=\"card__text\">Query the shadow DOM or the projected content: results are signals that follow every DOM change.</span>"
+        "div6": "<span class=\"card__title\">Reactive queries</span> <span class=\"card__text\">Query the shadow DOM or the content passed to a component: results are signals that follow every DOM change.</span>"
       },
       "exploreTheDocumentation": {
         "title": "Explore the documentation",
@@ -1382,7 +1383,7 @@
         "td11": "Reusable behavior attached to an element (<code>@@name</code>), or a condition deciding whether the element exists at all (<code>*name</code>).",
         "td12": "<a href=\"#/en/directives/overview\">Directives</a>",
         "td13": "Query",
-        "td14": "A signal holding the elements that match a selector, in the shadow DOM or in the projected content.",
+        "td14": "A signal holding the elements that match a selector, in the shadow DOM or in the content passed to the component.",
         "td15": "<a href=\"#/en/components/queries\">Queries</a>"
       },
       "theLifeOfA": {
@@ -4164,7 +4165,7 @@
       "fix": "Read it from afterRender on, in event handlers or in a computed signal read from them. If the element is not always there, use @Query."
     },
     "Error: No element matches the required content query '[header]' of <x-card>": {
-      "cause": "A @Query.content.required was read while no projected element matched it: before the parent projected its content, afterRender included, or while the element was not projected.",
+      "cause": "A @Query.content.required was read while no element of the content matched it: before the parent passed its content, afterRender included, or while the element was not passed.",
       "fix": "Read it in event handlers. If the content is optional, or to follow it as it arrives, use @Query.content."
     },
     "Error: The required input \"name\" of ProfileComponent is not bound by a group without condition of createComponent": {

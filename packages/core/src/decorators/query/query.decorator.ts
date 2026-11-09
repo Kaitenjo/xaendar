@@ -1,11 +1,11 @@
 import type { AccessorDecorator } from '@xaendar/types';
 import type { CustomElement } from '../../models/custom-element/custom-element';
-import { createQuerySignal, createSlotQuerySignal, toMatcher, toRefMatcher } from '../../signals/query/query';
+import { createContentQuerySignal, createQuerySignal, toMatcher, toRefMatcher } from '../../signals/query/query';
+import type { QueryContentOptions } from '../../signals/types/query-content-options.type';
 import type { QueryElement } from '../../signals/types/query-element.type';
 import type { QueryMatcher } from '../../signals/types/query-matcher.type';
 import type { QueryOptions } from '../../signals/types/query-options.type';
 import type { QuerySignal } from '../../signals/types/query-signal.type';
-import type { QuerySlotOptions } from '../../signals/types/query-slot-options.type';
 import type { QueryTarget } from '../../signals/types/query-target.type';
 import type { RefQueryDecorator } from '../../types/query/ref-query-decorator.type';
 import type { SingleQueryDecorator } from '../../types/query/single-query-decorator.type';
@@ -146,36 +146,36 @@ export const Query = Object.assign(singleQuery(query) as unknown as SingleQueryD
     }
   }),
   /**
-   * Decorator that binds an accessor of a web component to the first element projected into its slots,
-   * or one of their descendants, that matches the given CSS selector or is an instance of the given web component.
-   * With the `lightDom` option the query is extended to the whole light DOM, including the elements not assigned to any slot.
-   * It takes the targets of `@Query`, and the `read` option among the options of the slots.
+   * Decorator that binds an accessor of a web component to the first element of the content passed to it, its light
+   * DOM, that matches the given CSS selector or is an instance of the given web component, as `contentChild` of
+   * Angular: the content counts whether the Shadow DOM renders it or not, and the `slot` attribute is an attribute like
+   * any other. The children of the component and their descendants are queried, only the children with
+   * `descendants: false`. It takes the targets of `@Query`, and the `read` option among the options of the content.
    *
    * Transforms the decorated accessor into a read-only {@link QuerySignal}
    * holding the matching element, or `null` if there is none. The signal is
-   * updated each time the projected content (or the light DOM) changes.
+   * updated each time a node is added to the content or removed from it.
    *
    * @example
    * ```ts
    * \@Query.content('[header]')
    * accessor header: QuerySignal<HTMLElement | null>;
    *
-   * \@Query.content(MyButtonComponent, { slots: 'footer' })
-   * accessor footerButton: QuerySignal<MyButtonComponent | null>;
+   * \@Query.content('[slot="footer"]')
+   * accessor footer: QuerySignal<HTMLElement | null>;
    *
-   * \@Query.content('[item]', { lightDom: true })
-   * accessor item: QuerySignal<HTMLElement | null>;
+   * \@Query.content(MyButtonComponent, { descendants: false })
+   * accessor button: QuerySignal<MyButtonComponent | null>;
    * ```
    */
-  content: Object.assign(singleQuery(querySlot) as unknown as SingleQueryDecorator<null, QuerySlotOptions>, {
+  content: Object.assign(singleQuery(queryContent) as unknown as SingleQueryDecorator<null, QueryContentOptions>, {
     /**
-     * Decorator that binds an accessor of a web component to the first element projected into its slots,
-     * or one of their descendants, that matches the given CSS selector or is an instance of the given web component,
-     * when there must be one. With the `lightDom` option the query is extended to the whole light DOM, including the elements
-     * not assigned to any slot. It takes the targets and the options of `@Query.content`.
+     * Decorator that binds an accessor of a web component to the first element of the content passed to it, its light
+     * DOM, that matches the given CSS selector or is an instance of the given web component, when there must be one.
+     * It takes the targets and the options of `@Query.content`.
      *
      * Transforms the decorated accessor into a read-only {@link QuerySignal}
-     * holding the matching element. The signal is updated each time the projected content (or the light DOM) changes,
+     * holding the matching element. The signal is updated each time a node is added to the content or removed from it,
      * and reading it throws when no element matches, also before the element is connected for the first time.
      *
      * @example
@@ -184,20 +184,22 @@ export const Query = Object.assign(singleQuery(query) as unknown as SingleQueryD
      * accessor header: QuerySignal<HTMLElement>;
      * ```
      */
-    required: singleQuery(querySlotRequired) as unknown as SingleQueryDecorator<never, QuerySlotOptions>,
+    required: singleQuery(queryContentRequired) as unknown as SingleQueryDecorator<never, QueryContentOptions>,
     /**
-     * Decorator that binds an accessor of a web component to all the elements projected into its slots,
-     * and their descendants, that match the given CSS selector or are instances of the given web component.
-     * With the `lightDom` option the query is extended to the whole light DOM, including the elements not assigned to any slot.
+     * Decorator that binds an accessor of a web component to all the elements of the content passed to it, its light
+     * DOM, that match the given CSS selector or are instances of the given web component, in document order, as
+     * `contentChildren` of Angular: the content counts whether the Shadow DOM renders it or not, and the `slot`
+     * attribute is an attribute like any other. Only the children of the component are queried, their descendants too
+     * with `descendants: true`.
      *
      * Transforms the decorated accessor into a read-only {@link QuerySignal}
      * holding the array of the matching elements (empty if there are none). The signal is
-     * updated each time the projected content (or the light DOM) changes.
+     * updated each time a node is added to the content or removed from it.
      *
      * @param target - A CSS selector (a tag name, `.class`, `[attribute]`...), or the class of a
      *   web component decorated with `@WebComponent`, whose selector is matched, or the class of a custom directive, whose
      *   instances applied to the elements are held instead.
-     * @param options - Restricts the query to some slots, or extends it to the whole light DOM.
+     * @param options - Extends the query to the descendants of the children.
      * @returns An accessor decorator that replaces the field with a `QuerySignal`.
      *
      * @example
@@ -205,14 +207,14 @@ export const Query = Object.assign(singleQuery(query) as unknown as SingleQueryD
      * \@Query.content.all('[item]')
      * accessor items: QuerySignal<HTMLElement[]>;
      *
-     * \@Query.content.all(MyButtonComponent, { slots: 'footer' })
-     * accessor footerButtons: QuerySignal<MyButtonComponent[]>;
+     * \@Query.content.all(MyButtonComponent, { descendants: true })
+     * accessor buttons: QuerySignal<MyButtonComponent[]>;
      * ```
      */
-    all: function all<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string, Class extends CustomElement = CustomElement>(target: Target, options?: QuerySlotOptions): AccessorDecorator<Class, QuerySignal<QueryElement<Target, ElementType>[]>> {
+    all: function all<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string, Class extends CustomElement = CustomElement>(target: Target, options?: QueryContentOptions): AccessorDecorator<Class, QuerySignal<QueryElement<Target, ElementType>[]>> {
       return () => ({
         init() {
-          return querySlotAll(this, target, options);
+          return queryContentAll(this, target, options);
         }
       });
     }
@@ -339,52 +341,49 @@ export function queryRefAll<ElementType extends Element>(element: CustomElement,
 }
 
 /**
- * Creates a signal holding the first element projected into the slots of `element`, or one of their descendants,
- * matching the target, or `null` if there is none.
+ * Creates a signal holding the first element of the content passed to `element`, its light DOM, matching the target,
+ * or `null` if there is none. The children of `element` and their descendants are queried, by default.
  *
  * @template Value - What the query holds: the element, or the instance of a directive.
- * @param element - The component whose projected content is queried.
+ * @param element - The component whose content is queried.
  * @param target - A CSS selector, the class of a web component or the class of a custom directive.
- * @param options - Restricts the query to some slots, or extends it to the whole light DOM, and tells what it reads
- *   from the element.
+ * @param options - Restricts the query to the children of `element`, and tells what it reads from the element.
  * @returns A {@link QuerySignal} of the matching element, or of the instance of the directive.
  * @throws When the target is a class neither decorated with `@WebComponent` nor extending `CustomDirective`.
  */
-export function querySlot<Value>(element: CustomElement, target: QueryTarget, options: QuerySlotOptions & QueryOptions = {}): QuerySignal<Value | null> {
-  return createSlotQuerySignal<Value, Value | null>(element, toMatcher(target, options.read), options, items => items[0] ?? null, null);
+export function queryContent<Value>(element: CustomElement, target: QueryTarget, options: QueryContentOptions & QueryOptions = {}): QuerySignal<Value | null> {
+  return createContentQuerySignal<Value, Value | null>(element, toMatcher(target, options.read), options.descendants ?? true, items => items[0] ?? null, null);
 }
 
 /**
- * Creates a signal holding the first element projected into the slots of `element`, or one of their descendants,
- * matching the target, whose reading throws when there is none.
+ * Creates a signal holding the first element of the content passed to `element`, its light DOM, matching the target,
+ * whose reading throws when there is none. The children of `element` and their descendants are queried, by default.
  *
  * @template Value - What the query holds: the element, or the instance of a directive.
- * @param element - The component whose projected content is queried.
+ * @param element - The component whose content is queried.
  * @param target - A CSS selector, the class of a web component or the class of a custom directive.
- * @param options - Restricts the query to some slots, or extends it to the whole light DOM, and tells what it reads
- *   from the element.
+ * @param options - Restricts the query to the children of `element`, and tells what it reads from the element.
  * @returns A {@link QuerySignal} of the matching element, or of the instance of the directive.
  * @throws When the target is a class neither decorated with `@WebComponent` nor extending `CustomDirective`.
  */
-export function querySlotRequired<Value>(element: CustomElement, target: QueryTarget, options?: QuerySlotOptions & QueryOptions): QuerySignal<Value> {
-  return requireMatch(querySlot<Value>(element, target, options), `No element matches the required content query '${toMatcher(target, options?.read).description}' of <${element.localName}>`);
+export function queryContentRequired<Value>(element: CustomElement, target: QueryTarget, options?: QueryContentOptions & QueryOptions): QuerySignal<Value> {
+  return requireMatch(queryContent<Value>(element, target, options), `No element matches the required content query '${toMatcher(target, options?.read).description}' of <${element.localName}>`);
 }
 
 /**
- * Creates a signal holding all the elements projected into the slots of `element`, and their descendants,
- * matching the target, in order: slots in tree order, then assigned elements in assignment order.
- * With the `lightDom` option they are in document order.
+ * Creates a signal holding all the elements of the content passed to `element`, its light DOM, matching the target,
+ * in document order. Only the children of `element` are queried, by default.
  * The signal notifies only when the set of matching elements changes.
  *
  * @template Target - The {@link QueryTarget} of the query.
- * @param element - The component whose projected content is queried.
+ * @param element - The component whose content is queried.
  * @param target - A CSS selector, the class of a web component or the class of a custom directive.
- * @param options - Restricts the query to some slots, or extends it to the whole light DOM.
+ * @param options - Extends the query to the descendants of the children of `element`.
  * @returns A {@link QuerySignal} of the matching elements, or of the instances of the directive.
  * @throws When the target is a class neither decorated with `@WebComponent` nor extending `CustomDirective`.
  */
-export function querySlotAll<Target extends QueryTarget, ElementType extends HTMLElement>(element: CustomElement, target: Target, options: QuerySlotOptions = {}): QuerySignal<QueryElement<Target, ElementType>[]> {
-  return createSlotQuerySignal<QueryElement<Target, ElementType>, QueryElement<Target, ElementType>[]>(element, toMatcher(target), options, items => items, [], sameElements);
+export function queryContentAll<Target extends QueryTarget, ElementType extends HTMLElement>(element: CustomElement, target: Target, options: QueryContentOptions = {}): QuerySignal<QueryElement<Target, ElementType>[]> {
+  return createContentQuerySignal<QueryElement<Target, ElementType>, QueryElement<Target, ElementType>[]>(element, toMatcher(target), options.descendants ?? false, items => items, [], sameElements);
 }
 
 /**

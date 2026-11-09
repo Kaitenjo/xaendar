@@ -155,7 +155,7 @@
   },
   "QuerySignal": {
     "summary": "The type of the queries declared with <code>@Query</code> and its variants: a read-only signal holding the elements found, kept up to date by the framework.",
-    "description": "<p>The <a href=\"#/en/reference/api/core/Query\"><code>@Query</code></a> decorators go on an <code>accessor</code> of a component typed <code>QuerySignal&lt;Value&gt;</code>, and replace it with a query signal. <code>Value</code> is the element found or <code>null</code> for <code>@Query</code> and <code>@Query.content</code>, the element for their <code>required</code> variants, and an array of elements for their <code>all</code> variants; the type of the elements is described by <a href=\"#/en/reference/api/core/signals/QueryElement\"><code>QueryElement</code></a>.</p><p>It holds <code>null</code>, or an empty array, until the component is connected for the first time. At every connection the query is run right after the render, before <code>afterRender</code>; then a <code>MutationObserver</code> runs it again each time elements are added to or removed from the template or, for content queries, the projected content, and also when a <code>slot</code> attribute or the slots change. Other attribute changes, such as a class, are not observed. When the component leaves the page the observation stops, and the signal keeps its last result. The <code>all</code> variants notify only when the list of elements changes.</p><p>Calling it, or its <code>get()</code>, returns the result and tracks it like any signal. It has no <code>set</code>.</p>",
+    "description": "<p>The <a href=\"#/en/reference/api/core/Query\"><code>@Query</code></a> decorators go on an <code>accessor</code> of a component typed <code>QuerySignal&lt;Value&gt;</code>, and replace it with a query signal. <code>Value</code> is the element found or <code>null</code> for <code>@Query</code> and <code>@Query.content</code>, the element for their <code>required</code> variants, and an array of elements for their <code>all</code> variants; the type of the elements is described by <a href=\"#/en/reference/api/core/signals/QueryElement\"><code>QueryElement</code></a>.</p><p>It holds <code>null</code>, or an empty array, until the component is connected for the first time. At every connection the query is run right after the render, before <code>afterRender</code>; then a <code>MutationObserver</code> runs it again each time elements are added to or removed from the template or, for content queries, the content passed to the component. Attribute changes, such as a class or a <code>slot</code> attribute, are not observed. When the component leaves the page the observation stops, and the signal keeps its last result. The <code>all</code> variants notify only when the list of elements changes.</p><p>Calling it, or its <code>get()</code>, returns the result and tracks it like any signal. It has no <code>set</code>.</p>",
     "members": {
       "get": "<p>Returns the current result, like calling the query, and registers it as a dependency of the computed signal, the effect or the template binding running. The <code>required</code> variants throw when no element matches, also before the first connection: <code>No element matches the required query '…' of &lt;…&gt;</code>, or <code>required content query</code> for content queries.</p>"
     },
@@ -166,7 +166,7 @@
       },
       "whenToRead": {
         "title": "When to read it",
-        "body": "<p>A query is empty in <code>onInit</code> and filled before <code>afterRender</code>, then follows the template a microtask behind its changes. Read it in <code>afterRender</code>, in event handlers, or reactively: the computed signals and the effects reading it follow it, and an effect created in <code>onInit</code> runs again when the query is filled. Content queries are still empty in <code>afterRender</code>, since the parent projects the content after the component has rendered.</p>"
+        "body": "<p>A query is empty in <code>onInit</code> and filled before <code>afterRender</code>, then follows the template a microtask behind its changes. Read it in <code>afterRender</code>, in event handlers, or reactively: the computed signals and the effects reading it follow it, and an effect created in <code>onInit</code> runs again when the query is filled. Content queries are still empty in <code>afterRender</code>, since the parent creates the content after the component has rendered.</p>"
       },
       "required": {
         "title": "Required queries",
@@ -201,7 +201,7 @@
   },
   "QueryTarget": {
     "summary": "What a query looks for: a CSS selector, the class of a component, or the class of a custom directive.",
-    "description": "<p>The first argument of every <a href=\"#/en/reference/api/core/Query\"><code>@Query</code></a> decorator. A view query looks only in the shadow root of its component, a content query only among the elements projected into it, or in its light DOM: neither finds the elements inside the shadow root of a child component.</p><p>The target also decides the type of the elements found: see <a href=\"#/en/reference/api/core/signals/QueryElement\"><code>QueryElement</code></a>.</p>",
+    "description": "<p>The first argument of every <a href=\"#/en/reference/api/core/Query\"><code>@Query</code></a> decorator. A view query looks only in the shadow root of its component, a content query only in the content passed to it, its light DOM: neither finds the elements inside the shadow root of a child component.</p><p>The target also decides the type of the elements found: see <a href=\"#/en/reference/api/core/signals/QueryElement\"><code>QueryElement</code></a>.</p>",
     "members": {
       "selector": "<p>Any CSS selector, as <code>querySelector</code> accepts it: a tag name (<code>input</code>, <code>ex-badge</code>), a class (<code>.row</code>), an attribute (<code>[item]</code>), or a combination of them. The elements found are typed <code>HTMLElement</code>, unless the decorator gets a narrower type as its first type argument, as in <code>@Query&lt;HTMLInputElement&gt;('input')</code>.</p>",
       "class": "<p>The class of a component decorated with <a href=\"#/en/reference/api/core/WebComponent\"><code>@WebComponent</code></a>: the query looks for the selector of the component, and the elements found are typed as instances of the class, with its public members.</p><p>Any class extending <code>HTMLElement</code> type-checks, but a class without a selector, such as a native class like <code>HTMLInputElement</code>, makes the query throw when the component declaring it is created.</p>",
@@ -224,30 +224,29 @@
       }
     }
   },
-  "QuerySlotOptions": {
-    "summary": "The options of the content queries: which slots to look into, or the whole light DOM instead.",
-    "description": "<p>The second argument of <code>@Query.content</code>, <code>@Query.content.required</code> and <code>@Query.content.all</code> (see <a href=\"#/en/reference/api/core/Query\"><code>@Query</code></a>). Without options, a content query looks among the elements assigned to any slot of the component, and their descendants. <code>slots</code> restricts it to some slots, <code>lightDom</code> extends it to the whole light DOM of the element: the type does not allow both.</p>",
+  "QueryContentOptions": {
+    "summary": "The options of the content queries: whether they look into the descendants of the children of the component, or only into its children.",
+    "description": "<p>The second argument of <code>@Query.content</code>, <code>@Query.content.required</code> and <code>@Query.content.all</code> (see <a href=\"#/en/reference/api/core/Query\"><code>@Query</code></a>). A content query looks into the content passed to the component, its light DOM, in document order, as <code>contentChild</code> and <code>contentChildren</code> of Angular: an element counts whether a slot of the component renders it or not, and the <code>slot</code> attribute is an attribute like any other, which a selector can match. The fallback content of the slots and the content forwarded through a <code>&lt;slot&gt;</code> are never found.</p>",
     "members": {
-      "slots": "<p>The name of the slot to look into, or a list of names, where the empty string is the default slot. When it is omitted, every slot is.</p><p>The results follow the slots in the order of the template, then the elements in the order they were assigned, each followed by its matching descendants. A slot forwarding the content of another slot is flattened, and the fallback content of the slots is never found. An empty list matches no slot.</p>",
-      "lightDom": "<p>When <code>true</code>, the query looks among all the descendants of the element in the light DOM, assigned to a slot or not, in document order, and runs again only when elements are added or removed. Defaults to <code>false</code>.</p>"
+      "descendants": "<p>With <code>true</code> the query looks into the children of the component and their descendants, and runs again when elements are added or removed at any depth; with <code>false</code> only into the children, and runs again only when they change. Defaults to <code>true</code> for <code>@Query.content</code> and <code>@Query.content.required</code>, <code>false</code> for <code>@Query.content.all</code>.</p>"
     },
     "usage": {
       "choosing": {
-        "title": "Choosing the slots",
-        "body": "<p>Content queries with each option, and a combination that does not compile.</p>"
+        "title": "Choosing the depth",
+        "body": "<p>The default depth of each variant, the option changing it, and a selector matching the <code>slot</code> attribute.</p>"
       }
     }
   },
   "QueryOptions": {
     "summary": "The options of the queries holding a single element: what they read from the element they find.",
-    "description": "<p>The second argument of <code>@Query</code>, <code>@Query.required</code>, <code>@Query.ref</code> and <code>@Query.ref.required</code>, and, together with <a href=\"#/en/reference/api/core/signals/QuerySlotOptions\"><code>QuerySlotOptions</code></a>, of <code>@Query.content</code> and <code>@Query.content.required</code> (see <a href=\"#/en/reference/api/core/Query\"><code>@Query</code></a>). The <code>.all</code> variants take no <code>read</code>.</p>",
+    "description": "<p>The second argument of <code>@Query</code>, <code>@Query.required</code>, <code>@Query.ref</code> and <code>@Query.ref.required</code>, and, together with <a href=\"#/en/reference/api/core/signals/QueryContentOptions\"><code>QueryContentOptions</code></a>, of <code>@Query.content</code> and <code>@Query.content.required</code> (see <a href=\"#/en/reference/api/core/Query\"><code>@Query</code></a>). The <code>.all</code> variants take no <code>read</code>.</p>",
     "members": {
       "read": "<p>What the query holds for the element it finds, see <a href=\"#/en/reference/api/core/signals/QueryRead\"><code>QueryRead</code></a>. By default the element, or the instance of the directive when the target is the class of a directive.</p>"
     },
     "usage": {
       "reading": {
         "title": "Reading a directive or an element",
-        "body": "<p>A directive read from the element a selector or a ref finds, the element a directive is applied to, the option among the options of the slots, and a variant that does not take it.</p>"
+        "body": "<p>A directive read from the element a selector or a ref finds, the element a directive is applied to, the option among the options of the content, and a variant that does not take it.</p>"
       }
     }
   },

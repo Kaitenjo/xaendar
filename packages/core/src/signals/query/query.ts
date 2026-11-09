@@ -8,7 +8,6 @@ import { getSelector } from '../../utils/get-selector/get-selector.util';
 import type { QueryMatcher } from '../types/query-matcher.type';
 import type { QueryRead } from '../types/query-read.type';
 import type { QuerySignal } from '../types/query-signal.type';
-import type { QuerySlotOptions } from '../types/query-slot-options.type';
 import type { QueryTarget } from '../types/query-target.type';
 
 /**
@@ -170,94 +169,63 @@ export function createQuerySignal<Value>(
 }
 
 /**
- * Creates a signal holding a value computed from what a matcher finds in the content projected into the element (or
- * in its whole light DOM, with the `lightDom` option), kept up to date while the element is connected.
+ * Creates a signal holding a value computed from what a matcher finds in the content passed to the element, its light
+ * DOM, kept up to date while the element is connected. The content counts whether the Shadow DOM renders it or not,
+ * and the `slot` attribute is an attribute like any other.
  *
  * @template Item - The type of what the matcher finds: the matching elements, or the instances of a directive.
  * @template Value - The type of the queried value.
- * @param element - The component whose projected content is queried.
+ * @param element - The component whose content is queried.
  * @param matcher - How the query finds what it looks for, see {@link toMatcher}.
- * @param options - Restricts the query to some slots, or extends it to the whole light DOM.
+ * @param descendants - Whether the descendants of the children of the element are queried too, or only its children.
  * @param map - Computes the value from what the matcher finds, in order.
  * @param initialValue - The value held until the element is connected for the first time.
  * @param equals - Tells whether two values are equal, to avoid notifying when the result didn't change.
  * @returns A {@link QuerySignal} instance.
  */
-export function createSlotQuerySignal<Item, Value>(
+export function createContentQuerySignal<Item, Value>(
   element: CustomElement,
   matcher: QueryMatcher,
-  options: QuerySlotOptions,
+  descendants: boolean,
   map: (items: Item[]) => Value,
   initialValue: Value,
   equals?: (a: Value, b: Value) => boolean
 ): QuerySignal<Value> {
-  const { selector } = matcher;
-  return options.lightDom
-    ? createQuerySignal(element, () => readMatches(Array.from(element.querySelectorAll(selector)), matcher, map), initialValue, equals, observeLightDom)
-    : createQuerySignal(element, shadowRoot => readMatches(getProjectedElements(shadowRoot, selector, options.slots), matcher, map), initialValue, equals, observeProjection);
+  return createQuerySignal(
+    element,
+    () => readMatches(getContentElements(element, matcher.selector, descendants), matcher, map),
+    initialValue,
+    equals,
+    (observed, update) => observeLightDom(observed, update, descendants)
+  );
 }
 
 /**
- * Starts observing the light DOM of the element, invoking `update` each time its tree changes.
+ * Starts observing the light DOM of the element, invoking `update` each time a node is added to it or removed from it.
  *
  * @param element - The component whose light DOM is observed.
  * @param update - Invoked on each change.
+ * @param descendants - Whether the changes at any depth are observed, or only the ones of the children of the element.
  * @returns A function that stops the observation.
  */
-function observeLightDom(element: CustomElement, update: NoArgsVoidFunction): NoArgsVoidFunction {
+function observeLightDom(element: CustomElement, update: NoArgsVoidFunction, descendants: boolean): NoArgsVoidFunction {
   const mutationObserver = new MutationObserver(update);
-  mutationObserver.observe(element, { childList: true, subtree: true });
+  mutationObserver.observe(element, { childList: true, subtree: descendants });
   return () => mutationObserver.disconnect();
 }
 
 /**
- * Starts observing the content projected into the slots of the element, invoking `update` each time it may change:
- * when the light DOM tree or the `slot` attribute of its elements change, when the slots of the Shadow DOM
- * are added, removed or renamed, and when their assigned nodes change.
+ * Finds the elements of the light DOM of an element matching a selector, in document order.
  *
- * @param element - The component whose projected content is observed.
- * @param update - Invoked on each change.
- * @returns A function that stops the observation.
- */
-function observeProjection(element: CustomElement, update: NoArgsVoidFunction): NoArgsVoidFunction {
-  const shadowRoot = element.shadowRoot!;
-  const mutationObserver = new MutationObserver(update);
-  mutationObserver.observe(element, { childList: true, subtree: true, attributeFilter: ['slot'] });
-  mutationObserver.observe(shadowRoot, { childList: true, subtree: true, attributeFilter: ['name'] });
-  shadowRoot.addEventListener('slotchange', update);
-
-  return () => {
-    mutationObserver.disconnect();
-    shadowRoot.removeEventListener('slotchange', update);
-  };
-}
-
-/**
- * Finds the elements projected into the slots of a Shadow DOM matching a selector, together with their
- * matching descendants, in order: slots in tree order, then assigned elements in assignment order.
- * Nested slots are flattened, and the fallback content of the slots is ignored.
- *
- * @param shadowRoot - The Shadow DOM whose slots are inspected.
+ * @param element - The element whose light DOM is inspected.
  * @param selector - The CSS selector the elements must match.
- * @param slots - The name of the slot to inspect, or the names of the slots, the empty string for the default slot. When omitted, all the slots are inspected.
+ * @param descendants - Whether the elements at any depth are inspected, or only the children of the element.
  * @returns The matching elements.
  */
-function getProjectedElements(shadowRoot: ShadowRoot, selector: string, slots?: string | string[]): Element[] {
-  const match = typeof slots === 'object' ? (item: HTMLSlotElement) => slots.includes(item.name) : (item: HTMLSlotElement) => item.name === slots;
-  let retVal = Array.from(shadowRoot.querySelectorAll('slot'))
-  if (slots !== undefined) {
-    retVal = retVal.filter(match);
-  }
-
-  return retVal.flatMap(item => item.assignedElements({ flatten: true }))
-    .filter(assigned => assigned.getRootNode() !== shadowRoot)
-    .flatMap(assigned => {
-      const retVal = [...assigned.querySelectorAll(selector)];
-      if (assigned.matches(selector)) {
-        retVal.unshift(assigned);
-      }
-      return retVal;
-    });
+function getContentElements(element: CustomElement, selector: string, descendants: boolean): Element[] {
+  return descendants
+    ? Array.from(element.querySelectorAll(selector))
+    : Array.from(element.children).filter(child => child.matches(selector));
 }
 
 /**

@@ -170,7 +170,7 @@ export const NAV: readonly NavSection[] = [
         page('components/lifecycle', 'onInit afterRender onDestroy connectedCallback'),
         page('components/content-projection', 'slot ng-content fallback named'),
         page('components/queries', 'Query viewChild querySelector'),
-        page('components/content-queries', 'Query.content contentChild slots lightDom'),
+        page('components/content-queries', 'Query.content contentChild contentChildren descendants'),
         page('components/dom-apis', 'afterRender canvas focus ResizeObserver'),
         page('components/dynamic-creation', 'createComponent imperative dynamic create destroy ComponentRef'),
         page('components/inheritance', 'extends base class subclass')

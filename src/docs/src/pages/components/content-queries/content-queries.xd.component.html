@@ -6,7 +6,6 @@
 @import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { TabsComponent } from '../../../examples/components/content-queries/tabs/tabs.xd.component.ts'
 @import { ContentInspectorComponent } from '../../../examples/components/content-queries/content-inspector/content-inspector.xd.component.ts'
-@import { ForwardedContentComponent } from '../../../examples/components/content-queries/forwarded-content/forwarded-content.xd.component.ts'
 @import { translate as t } from '../../../core/i18n/i18n.utils.ts'
 @import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
@@ -54,18 +53,13 @@
   <h2>
     { t(translations(), 'pages.components.contentQueries.edgeCases.title') }
   </h2>
-  <docs-example name="components/content-queries/forwarded-content"
-    heading="{translations().pages.components.contentQueries.edgeCases.example1}" kind="edge">
-    <ex-forwarded-content />
-  </docs-example>
-  <p>
-    { t(translations(), 'pages.components.contentQueries.edgeCases.p1') }
-  </p>
   <docs-callout kind="edge">
     <docs-callout-item @@htmlTranslation(key="pages.components.contentQueries.edgeCases.callout1.body")
       heading="{translations().pages.components.contentQueries.edgeCases.callout1.heading}" />
     <docs-callout-item @@htmlTranslation(key="pages.components.contentQueries.edgeCases.callout2.body")
       heading="{translations().pages.components.contentQueries.edgeCases.callout2.heading}" />
+    <docs-callout-item @@htmlTranslation(key="pages.components.contentQueries.edgeCases.callout3.body")
+      heading="{translations().pages.components.contentQueries.edgeCases.callout3.heading}" />
   </docs-callout>
 </section>
 
@@ -111,24 +105,11 @@
       </tr>
       <tr>
         <td>
-          <a href="{`#/${currentLang()}/reference/api/core/signals/QuerySlotOptions`}">
-            <code>{ "{ slots: 'name' }" }</code>
-          </a>,
-          <a href="{`#/${currentLang()}/reference/api/core/signals/QuerySlotOptions`}">
-            <code>{ "{ slots: ['', 'name'] }" }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/signals/QueryContentOptions`}">
+            <code>{ '{ descendants: boolean }' }</code>
           </a>
         </td>
         <td @@htmlTranslation(key="pages.components.contentQueries.summary.td3") />
-      </tr>
-      <tr>
-        <td>
-          <a href="{`#/${currentLang()}/reference/api/core/signals/QuerySlotOptions`}">
-            <code>{ '{ lightDom: true }' }</code>
-          </a>
-        </td>
-        <td>
-          { t(translations(), 'pages.components.contentQueries.summary.td4') }
-        </td>
       </tr>
     </tbody>
   </table>

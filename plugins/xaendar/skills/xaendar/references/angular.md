@@ -12,7 +12,7 @@
 | `host: {...}`, `@HostBinding`, `@HostListener` | `@HostProperty('attr' \| 'class.x')`, `@HostEvent('event')` |
 | `signal`, `computed`, `effect`, `untracked` | the same names from `@xaendar/core/signals`; `this.effect()` for effects bound to the component |
 | `viewChild`, `viewChild.required`, `viewChildren` | `@Query`, `@Query.required`, `@Query.all`, `@Query.ref('name')` on `accessor x!: QuerySignal<…>` |
-| `contentChild`, `contentChildren` | `@Query.content`, `@Query.content.required`, `@Query.content.all` |
+| `contentChild`, `contentChild.required`, `contentChildren` | `@Query.content`, `@Query.content.required`, `@Query.content.all`: the content passed to the component (its light DOM), whether a slot renders it or not; `{ descendants }` with the same defaults (`true` for the single ones, `false` for `.all`); `[slot="x"]` in the selector for the content of a slot |
 | `ngOnInit`, `ngAfterViewInit`, `ngOnDestroy` | `onInit`, `afterRender`, `onDestroy`: run at every connection and disconnection |
 | `ngOnChanges` | read the inputs reactively: `computed`, `this.effect` |
 | attribute directive | `@Directive({ selector: 'appX' })` on a class extending `CustomDirective<E>`, applied with `@@appX(...)` |

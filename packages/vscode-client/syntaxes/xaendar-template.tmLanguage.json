@@ -5,6 +5,7 @@
   "injectionSelector": "L:text.html -comment -meta.import.xaendar -meta.directive.xaendar -meta.embedded.expression.xaendar",
   "patterns": [
     { "include": "#import" },
+    { "include": "#foreign-element" },
     { "include": "#custom-tag-open" },
     { "include": "#custom-tag-close" },
     { "include": "#event" },
@@ -40,6 +41,63 @@
         { "match": ",", "name": "punctuation.separator.comma.xaendar" },
         { "match": "(['\"])[^'\"]*\\1", "name": "string.quoted.xaendar" },
         { "match": "[A-Za-z_$][\\w$]*", "name": "meta.import.specifier.xaendar" }
+      ]
+    },
+    "foreign-element": {
+      "begin": "(?i)(<)(svg|math)(?=\\s|/?>|$)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" }
+      },
+      "end": "(/>)|(</)(\\2)\\s*(>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.end.html" },
+        "2": { "name": "punctuation.definition.tag.begin.html" },
+        "3": { "name": "entity.name.tag.html" },
+        "4": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "name": "meta.element.structure.$2.html",
+      "patterns": [
+        {
+          "begin": ">",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.tag.end.html" }
+          },
+          "end": "(?i)(?=</(?:svg|math)\\s*>)",
+          "name": "meta.element.structure.content.html",
+          "patterns": [
+            { "include": "#foreign-element" },
+            { "include": "#custom-tag-open" },
+            { "include": "#custom-tag-close" },
+            { "include": "text.html.basic#comment" },
+            {
+              "begin": "(<)([A-Za-z][\\w:.-]*)(?=\\s|/?>|$)",
+              "beginCaptures": {
+                "1": { "name": "punctuation.definition.tag.begin.html" },
+                "2": { "name": "entity.name.tag.html" }
+              },
+              "end": "/?>",
+              "endCaptures": {
+                "0": { "name": "punctuation.definition.tag.end.html" }
+              },
+              "name": "meta.tag.foreign.start.html",
+              "patterns": [
+                { "include": "text.html.basic#attribute" }
+              ]
+            },
+            {
+              "match": "(</)([A-Za-z][\\w:.-]*)\\s*(>)",
+              "captures": {
+                "1": { "name": "punctuation.definition.tag.begin.html" },
+                "2": { "name": "entity.name.tag.html" },
+                "3": { "name": "punctuation.definition.tag.end.html" }
+              },
+              "name": "meta.tag.foreign.end.html"
+            },
+            { "include": "text.html.basic#entities" }
+          ]
+        },
+        { "include": "text.html.basic#attribute" }
       ]
     },
     "custom-tag-open": {

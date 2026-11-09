@@ -48,7 +48,7 @@ Declares an output. emit(detail?, options?) dispatches a CustomEvent named after
 
 The first element of the shadow root matching a selector or a component class, kept up to date as a signal. With the class of a custom directive it holds the instance of the directive applied to an element (with `@@selector` or as a host directive), not the element.
 
-With `{ read }` (single-element variants only, not `.all`): `@Query('.help', { read: TooltipDirective })` holds the directive applied to the first matching element that has it, `@Query<HTMLButtonElement>(TooltipDirective, { read: 'element' })` the element a directive is applied to. `Query.required`, `Query.ref`, `Query.ref.required`, `Query.content` and `Query.content.required` take the option too (the content ones next to `slots`/`lightDom`).
+With `{ read }` (single-element variants only, not `.all`): `@Query('.help', { read: TooltipDirective })` holds the directive applied to the first matching element that has it, `@Query<HTMLButtonElement>(TooltipDirective, { read: 'element' })` the element a directive is applied to. `Query.required`, `Query.ref`, `Query.ref.required`, `Query.content` and `Query.content.required` take the option too (the content ones next to `descendants`).
 
 ### Query.required (decorator)
 
@@ -74,31 +74,31 @@ Every element of the shadow root matching a selector or a component class, or ev
 @Query.ref.all<E>('name') accessor name!: QuerySignal<E[]>
 ```
 
-The element of the template named by the element ref `#name`, without the `#`; `.all` holds one per row of the `@for` declaring it, `.required` drops null and throws when no element has the ref. Only the template of the component: never the projected content.
+The element of the template named by the element ref `#name`, without the `#`; `.all` holds one per row of the `@for` declaring it, `.required` drops null and throws when no element has the ref. Only the template of the component: never the content passed to it.
 
 ### Query.content (decorator)
 
 ```ts
-@Query.content('.selector' | ComponentClass | DirectiveClass, { slots?, lightDom? }) accessor name!: QuerySignal<E | null>
+@Query.content('.selector' | ComponentClass | DirectiveClass, { descendants?, read? }) accessor name!: QuerySignal<E | null>
 ```
 
-The first element projected into the slots of the component that matches a selector or a component class.
+The first element of the content passed to the component (its light DOM) that matches a selector or a component class, as Angular's `contentChild`: among the children and their descendants (`descendants: false`: the children only), in document order. The content counts whether a slot renders it or not; `slot` is an attribute like any other (`'[slot="footer"]'`). Never finds the fallback of the slots, nor the content another component forwards through a `<slot>` (it finds the `<slot>` element). Updated when elements are added or removed, not on attribute changes.
 
 ### Query.content.required (decorator)
 
 ```ts
-@Query.content.required('.selector' | ComponentClass | DirectiveClass, { slots?, lightDom? }) accessor name!: QuerySignal<E>
+@Query.content.required('.selector' | ComponentClass | DirectiveClass, { descendants?, read? }) accessor name!: QuerySignal<E>
 ```
 
-Like Query.content, for projected content that is always there: no null in the type, and reading it throws when no element matches.
+Like Query.content, for content that is always there: no null in the type, and reading it throws when no element matches.
 
 ### Query.content.all (decorator)
 
 ```ts
-@Query.content.all('.selector' | ComponentClass | DirectiveClass, { slots?, lightDom? }) accessor name!: QuerySignal<E[]>
+@Query.content.all('.selector' | ComponentClass | DirectiveClass, { descendants? }) accessor name!: QuerySignal<E[]>
 ```
 
-Every projected element matching a selector or a component class, in the order of the slots.
+Every child of the component matching a selector or a component class, in document order, as Angular's `contentChildren`; with `descendants: true`, every matching element of the content at any depth.
 
 ### HostProperty (decorator)
 
@@ -311,10 +311,10 @@ SignalOptions<T> & { transform?: (value: In) => T }
 
 The options of @Property, together with alias.
 
-### QueryTarget, QueryElement, QuerySlotOptions (type)
+### QueryTarget, QueryElement, QueryContentOptions (type)
 
 ```ts
-QueryTarget = string | Constructor<HTMLElement> | Constructor<CustomDirective>; QueryOptions = { read?: QueryRead }; QueryRead = 'element' | Constructor<CustomDirective>; QuerySlotOptions = { slots?: string | string[]; lightDom?: false } | { lightDom: true }
+QueryTarget = string | Constructor<HTMLElement> | Constructor<CustomDirective>; QueryOptions = { read?: QueryRead }; QueryRead = 'element' | Constructor<CustomDirective>; QueryContentOptions = { descendants?: boolean }
 ```
 
 The target of a query, the element type it resolves to, and the options of the content queries.

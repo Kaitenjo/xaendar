@@ -1,7 +1,7 @@
 import type { ApiPackage } from '../api.data';
 import { PROPERTY_OPTIONS, PROPERTY_TYPE, READ_ONLY_INPUT, TRANSFORM_TYPE } from '../../../components/inputs/inputs.snippets';
 import { QUERY_DECORATORS, QUERY_REQUIRED } from '../../../components/queries/queries.snippets';
-import { COMPUTED_EQUALS, COMPUTED_MEMBER, EFFECT_BATCHING, EFFECT_CLEANUP, EFFECT_COMPONENT, INPUT_LOCAL_COPY, QUERY_ELEMENT, QUERY_SIGNAL_READ, QUERY_SLOT_OPTIONS, QUERY_TARGET_NATIVE, SIGNAL_COMPONENT, SIGNAL_EQUALS, SIGNAL_IDENTITY, SIGNAL_WATCHED, UNTRACKED_CALL, UNTRACKED_READ } from './core-signals.snippets';
+import { COMPUTED_EQUALS, COMPUTED_MEMBER, EFFECT_BATCHING, EFFECT_CLEANUP, EFFECT_COMPONENT, INPUT_LOCAL_COPY, QUERY_CONTENT_DESCENDANTS, QUERY_ELEMENT, QUERY_SIGNAL_READ, QUERY_TARGET_NATIVE, SIGNAL_COMPONENT, SIGNAL_EQUALS, SIGNAL_IDENTITY, SIGNAL_WATCHED, UNTRACKED_CALL, UNTRACKED_READ } from './core-signals.snippets';
 import { QUERY_READ } from './core.snippets';
 import { COMPUTED_THIS } from '../../../signals/computed/computed.snippets';
 import { INFINITE_LOOP } from '../../../signals/effects/effects.snippets';
@@ -324,29 +324,20 @@ export const CORE_SIGNALS_API: ApiPackage = {
       guides: ['components/queries', 'components/content-queries']
     },
     {
-      name: 'QuerySlotOptions',
+      name: 'QueryContentOptions',
       kind: 'type',
-      signature: `type QuerySlotOptions = {
-  slots?: string | string[];
-  lightDom?: false;
-} | {
-  lightDom: true;
-  slots?: never;
+      signature: `type QueryContentOptions = {
+  descendants?: boolean;
 }`,
       members: [
         {
-          name: 'slots',
+          name: 'descendants',
           group: 'properties',
-          signature: 'slots?: string | string[]'
-        },
-        {
-          name: 'lightDom',
-          group: 'properties',
-          signature: 'lightDom?: boolean'
+          signature: 'descendants?: boolean'
         }
       ],
       usage: [
-        { key: 'choosing', snippets: [QUERY_SLOT_OPTIONS] }
+        { key: 'choosing', snippets: [QUERY_CONTENT_DESCENDANTS] }
       ],
       guides: ['components/content-queries', 'components/content-projection']
     },

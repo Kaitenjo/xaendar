@@ -429,30 +429,25 @@ export const QUERY_CONTENT_OPTIONS: SourceFile = {
   name: 'query-content-options.ts',
   lang: 'ts',
   code: `/**
- * The first element with the header attribute, in any slot.
+ * The first element with the header attribute, among the children and their descendants.
  */
 @Query.content('[header]')
 public accessor header!: QuerySignal<HTMLElement | null>;
 /**
- * The buttons assigned to the footer slot, or inside the elements assigned to it.
+ * The buttons passed for the footer slot: slot is an attribute like any other.
  */
-@Query.content.all<HTMLButtonElement>('button', { slots: 'footer' })
+@Query.content.all<HTMLButtonElement>('button[slot="footer"]')
 public accessor actions!: QuerySignal<HTMLButtonElement[]>;
 /**
- * The items of the default slot and of the aside slot.
+ * The children with the item attribute: the default of the .all variant.
  */
-@Query.content.all('[item]', { slots: ['', 'aside'] })
+@Query.content.all('[item]')
 public accessor items!: QuerySignal<HTMLElement[]>;
 /**
- * Every item in the light DOM of the element, assigned to a slot or not.
+ * Every element with the item attribute, at any depth.
  */
-@Query.content.all('[item]', { lightDom: true })
-public accessor allItems!: QuerySignal<HTMLElement[]>;
-/**
- * ✗ slots and lightDom cannot be combined: TypeScript rejects the options.
- */
-@Query.content.all('[item]', { slots: 'aside', lightDom: true })
-public accessor mixed!: QuerySignal<HTMLElement[]>;`
+@Query.content.all('[item]', { descendants: true })
+public accessor allItems!: QuerySignal<HTMLElement[]>;`
 };
 
 /**
@@ -463,7 +458,7 @@ export const QUERY_CONTENT: SourceFile = {
   lang: 'ts',
   code: `// tab-group.xd.component.ts
 /**
- * Tabs built from the panels the parent projects into the group.
+ * Tabs built from the panels the parent passes to the group.
  */
 @WebComponent({
   selector: 'ex-tab-group',
@@ -471,7 +466,7 @@ export const QUERY_CONTENT: SourceFile = {
 })
 export class TabGroupComponent extends CustomElement {
   /**
-   * Every projected panel, typed as its class: empty until the parent creates the content.
+   * Every panel passed to the group, typed as its class: empty until the parent creates the content.
    */
   @Query.content.all(TabPanelComponent)
   public accessor panels!: QuerySignal<TabPanelComponent[]>;
@@ -513,9 +508,9 @@ public accessor withTooltip!: QuerySignal<HTMLButtonElement | null>;
 @Query.ref.required('field', { read: TooltipDirective })
 public accessor fieldTooltip!: QuerySignal<TooltipDirective>;
 /**
- * Together with the options of the slots.
+ * Together with the options of the content.
  */
-@Query.content('.tab', { slots: 'header', read: TooltipDirective })
+@Query.content('.tab', { descendants: false, read: TooltipDirective })
 public accessor tabTooltip!: QuerySignal<TooltipDirective | null>;
 /**
  * Not on the .all variants: TypeScript rejects the option.

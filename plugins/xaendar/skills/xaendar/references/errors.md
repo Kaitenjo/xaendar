@@ -749,7 +749,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `Error: No element matches the required content query '[header]' of <x-card>`
 
-- **Cause:** A @Query.content.required was read while no projected element matched it: before the parent projected its content, afterRender included, or while the element was not projected.
+- **Cause:** A @Query.content.required was read while no element of the content matched it: before the parent passed its content, afterRender included, or while the element was not passed.
 - **Fix:** Read it in event handlers. If the content is optional, or to follow it as it arrives, use @Query.content.
 
 ### `Error: @HostProperty('class.') names no class`

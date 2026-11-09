@@ -2,7 +2,7 @@ import type { QueryRead } from './query-read.type';
 
 /**
  * Options of the queries holding a single element: `@Query`, `@Query.required`, `@Query.ref`, `@Query.ref.required`,
- * and, together with the options of the slots, `@Query.content` and `@Query.content.required`.
+ * and, together with the options of the content, `@Query.content` and `@Query.content.required`.
  */
 export type QueryOptions = {
   /**

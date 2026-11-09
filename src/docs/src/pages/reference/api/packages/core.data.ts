@@ -193,17 +193,17 @@ export const CORE_API: ApiPackage = {
         {
           name: 'Query.content',
           group: 'variants',
-          signature: 'Query.content<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QuerySlotOptions & QueryOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType> | null>>'
+          signature: 'Query.content<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QueryContentOptions & QueryOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType> | null>>'
         },
         {
           name: 'Query.content.required',
           group: 'variants',
-          signature: 'Query.content.required<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QuerySlotOptions & QueryOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType>>>'
+          signature: 'Query.content.required<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QueryContentOptions & QueryOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType>>>'
         },
         {
           name: 'Query.content.all',
           group: 'variants',
-          signature: 'Query.content.all<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QuerySlotOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType>[]>>'
+          signature: 'Query.content.all<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QueryContentOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType>[]>>'
         },
         {
           name: 'target',
@@ -223,14 +223,9 @@ export const CORE_API: ApiPackage = {
           snippets: [QUERY_READ]
         },
         {
-          name: 'slots',
+          name: 'descendants',
           group: 'options',
-          signature: 'slots?: string | string[]'
-        },
-        {
-          name: 'lightDom',
-          group: 'options',
-          signature: 'lightDom?: boolean'
+          signature: 'descendants?: boolean'
         }
       ],
       usage: [

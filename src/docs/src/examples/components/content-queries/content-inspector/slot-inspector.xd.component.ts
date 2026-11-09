@@ -3,7 +3,7 @@ import { computed } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
 
 /**
- * Runs content queries with different options on its projected content, and lists what each one finds.
+ * Runs content queries with different options on the content passed to it, and lists what each one finds.
  */
 @WebComponent({
   selector: 'ex-slot-inspector',
@@ -12,30 +12,25 @@ import type { QuerySignal } from '@xaendar/core/signals';
 })
 export class SlotInspectorComponent extends CustomElement {
   /**
-   * The first match, in any slot.
+   * The first match, at any depth.
    */
   @Query.content('.item')
   public accessor first!: QuerySignal<HTMLElement | null>;
   /**
-   * Every match, in any slot.
+   * The matching children.
    */
   @Query.content.all('.item')
+  public accessor childItems!: QuerySignal<HTMLElement[]>;
+  /**
+   * The matches at any depth.
+   */
+  @Query.content.all('.item', { descendants: true })
   public accessor all!: QuerySignal<HTMLElement[]>;
   /**
-   * The matches in the default slot.
+   * The children whose `slot` attribute is `aside`.
    */
-  @Query.content.all('.item', { slots: '' })
-  public accessor inDefault!: QuerySignal<HTMLElement[]>;
-  /**
-   * The matches in the aside slot.
-   */
-  @Query.content.all('.item', { slots: 'aside' })
+  @Query.content.all('[slot="aside"]')
   public accessor inAside!: QuerySignal<HTMLElement[]>;
-  /**
-   * The matches in the whole light DOM, assigned to a slot or not.
-   */
-  @Query.content.all('.item', { lightDom: true })
-  public accessor inLightDom!: QuerySignal<HTMLElement[]>;
   /**
    * One row for each query, with the first letter of each element found.
    */
@@ -50,10 +45,9 @@ export class SlotInspectorComponent extends CustomElement {
     const first = this.first();
     return [
       { query: "Query.content('.item')", found: this._letters(first ? [first] : []) },
-      { query: "Query.content.all('.item')", found: this._letters(this.all()) },
-      { query: "… { slots: '' }", found: this._letters(this.inDefault()) },
-      { query: "… { slots: 'aside' }", found: this._letters(this.inAside()) },
-      { query: '… { lightDom: true }', found: this._letters(this.inLightDom()) }
+      { query: "Query.content.all('.item')", found: this._letters(this.childItems()) },
+      { query: '… { descendants: true }', found: this._letters(this.all()) },
+      { query: 'Query.content.all(\'[slot="aside"]\')', found: this._letters(this.inAside()) }
     ];
   }
 

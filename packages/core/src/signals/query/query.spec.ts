@@ -10,7 +10,7 @@ import { _Context } from '../../utils/context/context.util';
 import { _setElementRef } from '../../utils/element-refs/element-refs.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { effect } from '../effect/effect';
-import { createQuerySignal, createSlotQuerySignal, toMatcher, toRefMatcher } from './query';
+import { createContentQuerySignal, createQuerySignal, toMatcher, toRefMatcher } from './query';
 
 loadSignals();
 
@@ -53,7 +53,7 @@ function withSlots(...names: string[]): CustomElement {
 }
 
 /**
- * Creates an element having the `item` attribute, projected into the given slot.
+ * Creates an element having the `item` attribute, and the `slot` attribute when a slot is given.
  */
 function item(slot?: string): HTMLElement {
   const element = document.createElement('div');
@@ -261,14 +261,14 @@ describe('createQuerySignal', () => {
   });
 });
 
-describe('createSlotQuerySignal', () => {
+describe('createContentQuerySignal', () => {
   const all = (elements: Element[]) => elements;
 
   /**
-   * Creates a slot query signal on the given element, then connects the element to the document.
+   * Creates a content query signal looking for `[item]` on the given element, then connects the element to the document.
    */
-  function connectedSlot(element: CustomElement, options: Parameters<typeof createSlotQuerySignal>[2] = {}) {
-    const signal = createSlotQuerySignal(element, toMatcher('[item]'), options, all, []);
+  function connectedContent(element: CustomElement, descendants = true, map: (elements: Element[]) => Element[] = all) {
+    const signal = createContentQuerySignal(element, toMatcher('[item]'), descendants, map, []);
     document.body.appendChild(element);
     return signal;
   }
@@ -277,99 +277,132 @@ describe('createSlotQuerySignal', () => {
     const element = withSlots('');
     element.append(item());
 
-    expect(createSlotQuerySignal(element, toMatcher('[item]'), {}, all, [])()).toEqual([]);
+    expect(createContentQuerySignal(element, toMatcher('[item]'), true, all, [])()).toEqual([]);
   });
 
-  it('holds the projected elements and their descendants matching the selector, slots in tree order', () => {
-    const element = withSlots('a', '');
-    const inDefault = item();
-    const wrapper = document.createElement('section');
-    wrapper.slot = 'a';
-    const wrapped = item();
-    wrapper.append(wrapped);
-    const inA = item('a');
-    const nested = item();
-    inA.append(nested);
-    element.append(inDefault, wrapper, document.createElement('span'), inA);
-
-    expect(connectedSlot(element)()).toEqual([wrapped, inA, nested, inDefault]);
-    element.remove();
-  });
-
-  it('ignores the elements of the light DOM not assigned to any slot', () => {
+  it('holds the matching elements of the light DOM and their descendants in document order, whether a slot renders them or not', () => {
     const element = withSlots('a');
-    element.append(item(), item('b'));
+    const [unassigned, inA, nested, inMissing] = [item(), item('a'), item(), item('missing')];
+    const wrapper = document.createElement('section');
+    wrapper.append(nested);
+    element.append(unassigned, wrapper, inA, inMissing);
 
-    expect(connectedSlot(element)()).toEqual([]);
+    expect(connectedContent(element)()).toEqual([unassigned, nested, inA, inMissing]);
     element.remove();
   });
 
-  it('restricts the query to the slot with the given name, the empty string for the default slot', () => {
-    const first = withSlots('a', '');
-    const second = withSlots('a', '');
+  it('holds the content also when the Shadow DOM has no slot', () => {
+    const element = withSlots();
     const [inDefault, inA] = [item(), item('a')];
-    const [otherInDefault, otherInA] = [item(), item('a')];
-    first.append(inDefault, inA);
-    second.append(otherInDefault, otherInA);
+    element.append(inDefault, inA);
 
-    expect(connectedSlot(first, { slots: 'a' })()).toEqual([inA]);
-    expect(connectedSlot(second, { slots: '' })()).toEqual([otherInDefault]);
-    first.remove();
-    second.remove();
-  });
-
-  it('restricts the query to the slots with the given names', () => {
-    const element = withSlots('a', 'b', '');
-    const [inDefault, inA, inB] = [item(), item('a'), item('b')];
-    element.append(inDefault, inA, inB);
-
-    expect(connectedSlot(element, { slots: ['a', ''] })()).toEqual([inA, inDefault]);
+    expect(connectedContent(element)()).toEqual([inDefault, inA]);
     element.remove();
   });
 
-  it('is recomputed each time the light DOM changes', async () => {
+  it('matches the slot attribute as any other attribute', () => {
+    const element = withSlots('a');
+    const [inB, inA] = [item('b'), item('a')];
+    element.append(inB, inA);
+    const signal = createContentQuerySignal(element, toMatcher('[slot="a"]'), true, all, []);
+    document.body.appendChild(element);
+
+    expect(signal()).toEqual([inA]);
+    element.remove();
+  });
+
+  it('holds only the matching children of the element without descendants', () => {
     const element = withSlots('');
-    const signal = connectedSlot(element);
+    const [child, nested] = [item(), item()];
+    const wrapper = document.createElement('section');
+    wrapper.append(nested);
+    element.append(wrapper, child);
+
+    expect(connectedContent(element, false)()).toEqual([child]);
+    element.remove();
+  });
+
+  it('ignores the Shadow DOM and the fallback content of its slots', () => {
+    const element = create(host => {
+      const slot = document.createElement('slot');
+      slot.append(item());
+      host.shadowRoot!.append(slot, item());
+    });
+
+    expect(connectedContent(element)()).toEqual([]);
+    element.remove();
+  });
+
+  it('holds a slot forwarded by an ancestor as an element, not the content it carries', () => {
+    const outer = document.createElement('div');
+    const forwarded = document.createElement('slot');
+    const element = withSlots('');
+    element.append(forwarded);
+    outer.attachShadow({ mode: 'open' }).append(element);
+    outer.append(item());
+    const items = createContentQuerySignal(element, toMatcher('[item]'), true, all, []);
+    const slots = createContentQuerySignal(element, toMatcher('slot'), true, all, []);
+
+    document.body.appendChild(outer);
+
+    expect(items()).toEqual([]);
+    expect(slots()).toEqual([forwarded]);
+    outer.remove();
+  });
+
+  it('is recomputed each time the light DOM changes, at any depth', async () => {
+    const element = withSlots();
+    const wrapper = document.createElement('section');
+    element.append(wrapper);
+    const signal = connectedContent(element);
     const target = item();
 
-    element.append(target);
+    wrapper.append(target);
     await flush();
 
     expect(signal()).toEqual([target]);
     element.remove();
   });
 
-  it('is recomputed each time an element is moved to another slot', async () => {
-    const element = withSlots('a', 'b');
-    const target = item('b');
-    element.append(target);
-    const signal = connectedSlot(element, { slots: 'a' });
-
-    target.slot = 'a';
-    await flush();
-
-    expect(signal()).toEqual([target]);
-    element.remove();
-  });
-
-  it('is recomputed each time the slots of the Shadow DOM change', async () => {
+  it('is recomputed only when the children of the element change, without descendants', async () => {
     const element = withSlots();
-    const target = item('a');
+    const wrapper = document.createElement('section');
+    element.append(wrapper);
+    const reads = vi.fn(all);
+    const signal = connectedContent(element, false, reads);
+    reads.mockClear();
+
+    wrapper.append(item());
+    await flush();
+
+    expect(reads).not.toHaveBeenCalled();
+
+    const target = item();
     element.append(target);
-    const signal = connectedSlot(element);
+    await flush();
+
+    expect(signal()).toEqual([target]);
+    element.remove();
+  });
+
+  it('is not recomputed when the Shadow DOM changes', async () => {
+    const element = withSlots();
+    const reads = vi.fn(all);
+    connectedContent(element, true, reads);
+    reads.mockClear();
     const slot = document.createElement('slot');
-    slot.name = 'a';
+    slot.append(item());
 
     element.shadowRoot!.append(slot);
     await flush();
 
-    expect(signal()).toEqual([target]);
+    expect(reads).not.toHaveBeenCalled();
     element.remove();
   });
 
-  it('stops observing the projected content when the element is disconnected', async () => {
-    const element = withSlots('');
-    const signal = connectedSlot(element);
+  it('stops observing the light DOM when the element is disconnected', async () => {
+    const element = withSlots();
+    const signal = connectedContent(element);
     element.remove();
 
     element.append(item());
@@ -377,40 +410,5 @@ describe('createSlotQuerySignal', () => {
 
     expect(signal()).toEqual([]);
   });
-
-  describe('lightDom', () => {
-    it('holds all the matching elements of the light DOM in document order, even if not assigned to any slot', () => {
-      const element = withSlots('a');
-      const [unassigned, inA, nested] = [item(), item('a'), item()];
-      const wrapper = document.createElement('section');
-      wrapper.append(nested);
-      element.append(unassigned, wrapper, inA);
-
-      expect(connectedSlot(element, { lightDom: true })()).toEqual([unassigned, nested, inA]);
-      element.remove();
-    });
-
-    it('is recomputed each time the light DOM changes', async () => {
-      const element = withSlots();
-      const signal = connectedSlot(element, { lightDom: true });
-      const target = item();
-
-      element.append(target);
-      await flush();
-
-      expect(signal()).toEqual([target]);
-      element.remove();
-    });
-
-    it('stops observing the light DOM when the element is disconnected', async () => {
-      const element = withSlots();
-      const signal = connectedSlot(element, { lightDom: true });
-      element.remove();
-
-      element.append(item());
-      await flush();
-
-      expect(signal()).toEqual([]);
-    });
-  });
 });
+
