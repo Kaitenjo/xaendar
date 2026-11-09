@@ -1,6 +1,6 @@
 {
   "name": "@xaendar/ssr",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
@@ -9,10 +9,10 @@
     "target": "browser"
   },
   "dependencies": {
-    "@xaendar/common": "1.2.0",
-    "@xaendar/types": "1.2.0"
+    "@xaendar/common": "1.2.1",
+    "@xaendar/types": "1.2.1"
   },
   "peerDependencies": {
-    "@xaendar/core": "1.2.0"
+    "@xaendar/core": "1.2.1"
   }
 }
