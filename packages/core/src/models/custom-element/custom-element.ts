@@ -7,7 +7,7 @@ import type { CreateComponentOptions } from '../../types/create-component/create
 import type { HostDirectives } from '../../types/web-component/host-directives.type';
 import { claimShadowRoot, isClaimed } from '../../utils/claim-nodes/claim-nodes.util';
 import { _getComponentRuntime } from '../../utils/component-runtime/component-runtime.util';
-import { _Context } from '../../utils/context/context.util';
+import { _Context, EMPTY_CONTEXT } from '../../utils/context/context.util';
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import { deferElementHydration, replayContractEvents, replayElementEvents } from '../../utils/hydration-triggers/hydration-triggers.util';
@@ -29,12 +29,12 @@ export class CustomElement extends HTMLElement {
    * Internal callbacks invoked by the runtime each time the element is inserted into the DOM,
    * right after the render. They are never cleared, so they survive the reconnections.
    */
-  public readonly [CONNECTED_HOOKS] = new Array<NoArgsVoidFunction>();
+  public [CONNECTED_HOOKS]: Array<NoArgsVoidFunction> | null = null;
   /**
    * Internal callbacks invoked by the runtime each time the element is removed from the DOM,
    * after the context is cleared. They are never cleared, so they survive the reconnections.
    */
-  public readonly [DISCONNECTED_HOOKS] = new Array<NoArgsVoidFunction>();
+  public [DISCONNECTED_HOOKS]: Array<NoArgsVoidFunction> | null = null;
   /**
    * The custom directives declared by `hostDirectives` of `@WebComponent`, applied to this element, keyed by the class
    * of the directive: their properties and methods can be used by the component and by its template.
@@ -45,12 +45,12 @@ export class CustomElement extends HTMLElement {
    * The active template execution context for this component instance,
    * holding all identifier bindings and registered cleanup functions.
    */
-  private _context = new _Context({} as unknown as _Context);
+  private _context = new _Context(EMPTY_CONTEXT);
   /**
    * The context the host directives are connected to: it lives from the connection to the disconnection of the element,
    * disposing the effects of the directives.
    */
-  private readonly _hostDirectivesContext = new _Context({} as unknown as _Context);
+  private _hostDirectivesContext: _Context | null = null;
   /**
    * Whether the element was written by the server and not rendered in the browser yet, so it waits for its first render:
    * its declarative shadow root holds the HTML of the server, or the component renders only in the browser (see
@@ -76,6 +76,9 @@ export class CustomElement extends HTMLElement {
   constructor() {
     super();
     this.hostDirectives = _createHostDirectives(this);
+    if (this.hostDirectives.size) {
+      this._hostDirectivesContext = new _Context(EMPTY_CONTEXT);
+    }
   }
 
   /**
@@ -210,19 +213,25 @@ export class CustomElement extends HTMLElement {
   private disconnectedCallback(): void {
     if (this._hydrating) {
       this._context.clear();
-      this._hostDirectivesContext.clear();
+      this._hostDirectivesContext?.clear();
       return;
     }
 
     this.onDestroy?.();
     this._context.clear();
+
     // The host directives are stopped after the component, then their effects are disposed
     for (const directive of this.hostDirectives.values()) {
       directive[DIRECTIVE_DISCONNECT]();
     }
-    this._hostDirectivesContext.clear();
-    for (let i = 0; i < this[DISCONNECTED_HOOKS].length; i++) {
-      this[DISCONNECTED_HOOKS][i]();
+
+    this._hostDirectivesContext?.clear();
+
+    const disconnectedHooks = this[DISCONNECTED_HOOKS];
+    if (disconnectedHooks) {
+      for (let i = 0; i < disconnectedHooks.length; i++) {
+        disconnectedHooks[i]();
+      }
     }
   }
 
@@ -265,9 +274,12 @@ export class CustomElement extends HTMLElement {
     const nodeStrategy = hydrating && this._hasServerRoot ? claimShadowRoot(this._root, !!styleSheet) : CREATE_NODES;
     this._hydrating = false;
 
-    // The host directives are started before the component, so its `onInit` finds them ready
+    /*
+      The host directives are started before the component, so its `onInit` finds them ready
+      ! is a safe assertion because if hostDirective has at least 1 value the context has been initialized
+    */
     for (const directive of this.hostDirectives.values()) {
-      directive[DIRECTIVE_CONNECT](this._hostDirectivesContext);
+      directive[DIRECTIVE_CONNECT](this._hostDirectivesContext!);
     }
 
     /*
@@ -280,9 +292,14 @@ export class CustomElement extends HTMLElement {
     this._context = render.call(this, nodeStrategy);
     nodeStrategy.end(this._root, this._context);
     staging.moveTo(this._context);
-    for (let i = 0; i < this[CONNECTED_HOOKS].length; i++) {
-      this[CONNECTED_HOOKS][i]();
+
+    const connectedHooks = this[CONNECTED_HOOKS];
+    if (connectedHooks) {
+      for (let i = 0; i < connectedHooks.length; i++) {
+        connectedHooks[i]();
+      }
     }
+
     // Bound once the queries are up to date, so a `@HostProperty` can read them
     _bindHost(this, this, this._context);
     this.afterRender?.();
@@ -301,11 +318,9 @@ export class CustomElement extends HTMLElement {
    * @returns `true` when the element waits.
    */
   private _waitsForHydration(): boolean {
-    if (this.getRootNode() instanceof ShadowRoot && !this.hasAttribute(_SERVER_INPUTS_ATTRIBUTE)) {
-      return !isClaimed(this) || this.hasAttribute(_HYDRATE_ATTRIBUTE);
-    }
-
-    return deferElementHydration(this, () => this.connectedCallback());
+    return this.getRootNode() instanceof ShadowRoot && !this.hasAttribute(_SERVER_INPUTS_ATTRIBUTE)
+      ? !isClaimed(this) || this.hasAttribute(_HYDRATE_ATTRIBUTE)
+      : deferElementHydration(this, () => this.connectedCallback());
   }
 
   /**
@@ -321,7 +336,7 @@ export class CustomElement extends HTMLElement {
     }
 
     this.removeAttribute(_SERVER_INPUTS_ATTRIBUTE);
-    const inputs = _parseState(serialized) as object;
+    const inputs = _parseState<object>(serialized);
     const names = keys(inputs);
     for (let i = 0; i < names.length; i++) {
       this[names[i]] = inputs[names[i]];

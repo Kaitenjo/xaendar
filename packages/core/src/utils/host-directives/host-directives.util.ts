@@ -12,6 +12,38 @@ import { getWebComponentMetadata } from '../get-metadata/get-metadata.util';
 import type { Exposure } from '../../types/web-component/exposure.type';
 
 /**
+ * Shared empty array whose iterators the methods of `EMPTY_MAP` return.
+ */
+const NO_ENTRIES = new Array<unknown>();
+
+/**
+ * Shared fallback object to access hostDirectives property in Custom Element
+ * without creating an empty map for every single CustomElement instance
+ */
+const EMPTY_MAP = {
+  forEach(_: (value: unknown, key: unknown, map: ReadonlyMap<unknown, unknown>) => void, __?: unknown): void { },
+  get(_: unknown) {
+    return undefined;
+  },
+  has(_: unknown) {
+    return false;
+  },
+  keys() {
+    return NO_ENTRIES[Symbol.iterator]();
+  },
+  values() {
+    return NO_ENTRIES[Symbol.iterator]();
+  },
+  entries() {
+    return NO_ENTRIES[Symbol.iterator]();
+  },
+  [Symbol.iterator]() {
+    return this.entries();
+  },
+  size: 0
+};
+
+/**
  * Creates the host directives of a component, the ones its `@WebComponent` declares: each directive is instantiated
  * and applied to the component element, and its exposed inputs are made bindable on the element.
  *
@@ -21,7 +53,6 @@ import type { Exposure } from '../../types/web-component/exposure.type';
  *   when an exposed input has the name of an input of the component or of another host directive.
  */
 export function _createHostDirectives(element: CustomElement): HostDirectives {
-  const directives = new Map<Constructor<CustomDirective>, CustomDirective>();
   /*
     Like the other options of `@WebComponent`, the host directives belong to the class declaring them: the ones of the
     parent class, reachable through the prototype of the metadata, are not inherited, as the compiler does not see them
@@ -29,21 +60,24 @@ export function _createHostDirectives(element: CustomElement): HostDirectives {
   const metadata = getWebComponentMetadata(element.constructor);
   const declarations = metadata && Object.hasOwn(metadata, INTERNAL_HOST_DIRECTIVES) ? metadata[INTERNAL_HOST_DIRECTIVES] : undefined;
 
-  if (declarations?.length) {
-    const exposed = new Set<string>();
-    for (let i = 0; i < declarations.length; i++) {
-      const declaration = declarations[i];
-      const { directive: Directive, properties: inputs, events: outputs }: HostDirectiveOptions = typeof declaration === 'function' ? { directive: declaration } : declaration;
-      if (directives.has(Directive)) {
-        throw new Error(`${element.constructor.name} declares the host directive ${Directive.name} more than once`);
-      }
+  if (!declarations?.length) {
+    return EMPTY_MAP as HostDirectives;
+  }
 
-      const directive = new Directive();
-      directive[SET_DIRECTIVE_ELEMENT] = element;
-      directive[SET_DIRECTIVE_EVENTS] = getExposedEvents(directive, outputs);
-      exposeInputs(element, directive, inputs, exposed);
-      directives.set(Directive, directive);
+  const directives = new Map<Constructor<CustomDirective>, CustomDirective>();
+  const exposed = new Set<string>();
+  for (let i = 0; i < declarations.length; i++) {
+    const declaration = declarations[i];
+    const { directive: Directive, properties: inputs, events: outputs }: HostDirectiveOptions = typeof declaration === 'function' ? { directive: declaration } : declaration;
+    if (directives.has(Directive)) {
+      throw new Error(`${element.constructor.name} declares the host directive ${Directive.name} more than once`);
     }
+
+    const directive = new Directive();
+    directive[SET_DIRECTIVE_ELEMENT] = element;
+    directive[SET_DIRECTIVE_EVENTS] = getExposedEvents(directive, outputs);
+    exposeInputs(element, directive, inputs, exposed);
+    directives.set(Directive, directive);
   }
 
   return directives as unknown as HostDirectives;

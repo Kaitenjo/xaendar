@@ -256,7 +256,7 @@ describe('CustomElement', () => {
 
         constructor() {
           super();
-          this[DISCONNECTED_HOOKS].push(disconnected);
+          this[DISCONNECTED_HOOKS] = [disconnected];
         }
       };
       _defineRender(klass, () => new _Context({} as never));
@@ -397,7 +397,7 @@ describe('CustomElement', () => {
         calls.push('render');
         return createContext();
       });
-      (element as unknown as CustomElement)[CONNECTED_HOOKS].push(() => calls.push('hook'));
+      (element as unknown as CustomElement)[CONNECTED_HOOKS] = [() => calls.push('hook')];
 
       document.body.appendChild(element);
 
@@ -408,7 +408,7 @@ describe('CustomElement', () => {
     it('invokes the disconnected hooks after onDestroy and the clearing of the context', () => {
       const calls = new Array<string>();
       const { element } = createWithHooks({ onDestroy: () => calls.push('onDestroy'), onClear: () => calls.push('clear') });
-      (element as unknown as CustomElement)[DISCONNECTED_HOOKS].push(() => calls.push('hook'));
+      (element as unknown as CustomElement)[DISCONNECTED_HOOKS] = [() => calls.push('hook')];
 
       document.body.appendChild(element);
       element.remove();
@@ -425,7 +425,7 @@ describe('CustomElement', () => {
         calls.push('render');
         return createContext();
       });
-      (element as unknown as CustomElement)[CONNECTED_HOOKS].push(() => calls.push('hook'));
+      (element as unknown as CustomElement)[CONNECTED_HOOKS] = [() => calls.push('hook')];
       const metadata: DecoratorMetadataObject = {};
       const read = () => {
         calls.push('binding');

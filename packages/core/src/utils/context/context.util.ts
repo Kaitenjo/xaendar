@@ -13,6 +13,11 @@ import { captureContext } from '../try-scope/try-scope.util';
 const VARIABLES_LIMIT = 16;
 
 /**
+ * Shared object as a parent for the Context object
+ */
+export const EMPTY_CONTEXT = {} as unknown as _Context;
+
+/**
  * Tracks identifier scope during run time template function execution
  * Each `Context` instance represents one lexical scope (e.g. a `@for` loop body)
  * and can be chained to a parent context for outer-scope resolution.

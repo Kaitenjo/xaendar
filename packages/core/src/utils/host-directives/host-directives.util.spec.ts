@@ -67,6 +67,21 @@ describe('_createHostDirectives', () => {
     expect(create([]).hostDirectives.size).toBe(0);
   });
 
+  it('shares one empty map among the components declaring none, which reads as an empty Map', () => {
+    const hostDirectives = create().hostDirectives;
+    const forEach = vi.fn();
+    hostDirectives.forEach(forEach);
+
+    expect(create([]).hostDirectives).toBe(hostDirectives);
+    expect(forEach).not.toHaveBeenCalled();
+    expect(hostDirectives.get(TooltipDirective)).toBeUndefined();
+    expect(hostDirectives.has(TooltipDirective)).toBe(false);
+    expect(Array.from(hostDirectives.keys())).toEqual([]);
+    expect(Array.from(hostDirectives.values())).toEqual([]);
+    expect(Array.from(hostDirectives.entries())).toEqual([]);
+    expect(Array.from(hostDirectives)).toEqual([]);
+  });
+
   it('does not inherit the host directives of the parent class, as the compiler does not see them', () => {
     const parentMetadata = { hostDirectives: [TooltipDirective] };
     const Parent = class extends CustomElement { };

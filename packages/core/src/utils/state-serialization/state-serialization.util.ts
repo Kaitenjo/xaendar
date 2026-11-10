@@ -25,8 +25,8 @@ export function _stringifyState(value: unknown, path: string): string {
  * @param json - The JSON.
  * @returns The value.
  */
-export function _parseState(json: string): unknown {
-  return decode(JSON.parse(json));
+export function _parseState<T = unknown>(json: string): T {
+  return decode(JSON.parse(json)) as T;
 }
 
 /**

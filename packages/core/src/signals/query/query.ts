@@ -157,11 +157,19 @@ export function createQuerySignal<Value>(
   const update = () => signal.set(read(shadowRoot));
 
   let stop: NoArgsVoidFunction;
-  element[CONNECTED_HOOKS].push(() => {
+
+  /*
+     By default these array are empty to optimize memory
+     The amount of memory used is worth a ?? operation
+  */
+  const connectedHook = () => {
     stop = observe(element, update);
     update();
-  });
-  element[DISCONNECTED_HOOKS].push(() => stop());
+  };
+  const disconnectedHook = () => stop();
+
+  element[CONNECTED_HOOKS] ? element[CONNECTED_HOOKS].push(connectedHook) : element[CONNECTED_HOOKS] = [connectedHook];
+  element[DISCONNECTED_HOOKS] ? element[DISCONNECTED_HOOKS].push(disconnectedHook) : element[DISCONNECTED_HOOKS] = [disconnectedHook];
 
   return Object.assign(getter, {
     get: signal.get.bind(signal)

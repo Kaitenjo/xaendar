@@ -73,6 +73,23 @@ describe('Watcher', () => {
       watcher.watch(c);
       expect(watcher.getSources(PRIVATE)).toContain(c);
     });
+
+    it('keeps the signals of each Watcher apart, the empty set of the others staying empty', () => {
+      const watcher = new Watcher(vi.fn());
+      const other = new Watcher(vi.fn());
+      const state = new State(1);
+      watcher.watch(state);
+      expect(watcher.getSources(PRIVATE)).toEqual([state]);
+      expect(other.getSources(PRIVATE)).toEqual([]);
+    });
+
+    it('keeps the signals in watch order beyond the ones an array holds', () => {
+      const watcher = new Watcher(vi.fn());
+      const states = Array.from({ length: 40 }, (_, index) => new State(index));
+      watcher.watch(...states);
+      expect(watcher.getSources(PRIVATE)).toEqual(states);
+      expect(() => watcher.watch(states[35])).toThrow('already being watched');
+    });
   });
 
   describe('unwatch()', () => {
@@ -99,6 +116,30 @@ describe('Watcher', () => {
       watcher.watch(state1, state2);
       watcher.unwatch(state1);
       expect(watcher.getState(PRIVATE)).toBe('watching');
+      expect(watcher.getSources(PRIVATE)).toEqual([state2]);
+    });
+
+    it('watches signals again once every signal is unwatched', () => {
+      const watcher = new Watcher(vi.fn());
+      const state1 = new State(1);
+      const state2 = new State(2);
+      watcher.watch(state1);
+      watcher.unwatch(state1);
+      watcher.watch(state2);
+      expect(watcher.getSources(PRIVATE)).toEqual([state2]);
+      expect(watcher.getState(PRIVATE)).toBe('watching');
+    });
+
+    it('unwatches the signals beyond the ones an array holds, transitioning back to ~waiting~', () => {
+      const watcher = new Watcher(vi.fn());
+      const states = Array.from({ length: 40 }, (_, index) => new State(index));
+      watcher.watch(...states);
+      watcher.unwatch(states[0]);
+      expect(watcher.getSources(PRIVATE)).toEqual(states.slice(1));
+      watcher.unwatch(...states.slice(1));
+      expect(watcher.getSources(PRIVATE)).toEqual([]);
+      expect(watcher.getState(PRIVATE)).toBe('waiting');
+      expect(states[39].getSinks(PRIVATE)).not.toContain(watcher);
     });
 
     it('removes itself from the signal sinks', () => {

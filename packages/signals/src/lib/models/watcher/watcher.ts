@@ -5,6 +5,7 @@ import { State } from '../state/state';
 import { WatcherState } from '../../types/watcher-state.type';
 import { Computed } from '../computed/computed';
 import { isDevMode } from '../../utils/dev-mode/dev-mode';
+import { addToSmallSet, deleteFromSmallSet, emptySmallSet, SmallSet, smallSetHas, smallSetSize } from '@xaendar/common';
 
 /**
  * A `Watcher` observes a set of Signals and fires a `notify` callback
@@ -36,7 +37,7 @@ export class Watcher {
    * @internalSlot
    * @see Signal algorithms — 'Signal.subtle.Watcher internal slots'
    */
-  #signals: Set<State<unknown> | Computed<unknown>>;
+  #signals: SmallSet<State<unknown> | Computed<unknown>>;
   /**
    * Returns a snapshot of the current watched signals set for introspection.
    *
@@ -74,7 +75,7 @@ export class Watcher {
    */
   constructor(notifyCallback: NoArgsVoidFunction) {
     this.#state = 'waiting';
-    this.#signals = new Set;
+    this.#signals = emptySmallSet();
     this.#notifyCallback = notifyCallback;
   }
 
@@ -132,11 +133,11 @@ export class Watcher {
 
   for (let i = 0; i < signals.length; i++) {
     const signal = signals[i];
-    if (this.#signals.has(signal)) {
+    if (smallSetHas(this.#signals, signal)) {
       throw new Error('Cannot watch a signal that is already being watched');
     }
 
-    this.#signals.add(signal)
+    this.#signals = addToSmallSet(this.#signals, signal);
     signal.addSink(this, PRIVATE);
   }
 
@@ -170,15 +171,15 @@ export class Watcher {
 
   for (let i = 0; i < signals.length; i++) {
     const signal = signals[i];
-    if (!this.#signals.has(signal)) {
+    if (!smallSetHas(this.#signals, signal)) {
       throw new Error('Cannot unwatch a signal that is not being watched');
     }
 
-    this.#signals.delete(signal)
+    this.#signals = deleteFromSmallSet(this.#signals, signal);
     signal.removeSink(this, PRIVATE);
   }
 
-  if (!this.#signals.size) {
+  if (!smallSetSize(this.#signals)) {
     this.setState('waiting', PRIVATE)
   }
 }
