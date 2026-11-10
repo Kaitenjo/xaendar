@@ -25,7 +25,7 @@ import { SSR_MARKERS } from '../../costants/ssr-markers.constants';
  * The runtime helpers the code rendering on the server calls, imported by the module of every template.
  */
 const RUNTIME_IMPORTS: readonly string[] = [
-  'import { _Context, _iterationVariables, _let, _parameter, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
+  'import { _Context, _ROOT_PARENT_CONTEXT, _iterationVariables, _let, _parameter, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
   'import { _escapeAttribute, _escapeRawText, _escapeText, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTemplate, _ssrTry } from \'@xaendar/ssr\';'
 ];
 
@@ -148,10 +148,14 @@ export class ServerGenerator {
         generatorContext.addImportedIdentifier(symbol.local, getRuntimeAlias(symbol.local), symbol.reactive ? 'signal' : 'value');
       }
 
-      const root = this._writeBody(this._ast, { id: ROOT_NODE }, generatorContext, '{ get: () => undefined }');
+      const root = this._writeBody(this._ast, { id: ROOT_NODE }, generatorContext, '_ROOT_PARENT_CONTEXT');
       const code = ['function render(out) {', ...indent(root), '}'];
       for (const [key, { fn, args }] of this._functions) {
         const body = this._writeBody(fn.node.children, fn.parent, fn.context, 'parentContext', fn.precode);
+        if (fn.declaration) {
+          code.push('', fn.declaration);
+        }
+
         code.push('', `function ${key}(${args.join(', ')}) {`, ...indent(body), '}');
       }
 

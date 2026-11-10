@@ -1,4 +1,4 @@
-import { GeneratorContext, getBlockIdentifier, getReadForVariables, resolveExpression, toStringLiteral, type ForImplicitVariables, type ForNode } from '@xaendar/compiler';
+import { GeneratorContext, getBlockIdentifier, getReadForVariables, resolveExpression, toStringLiteral, writeIterationVariables, type ForImplicitVariables, type ForNode } from '@xaendar/compiler';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
 import type { ServerParent } from '../../types/server-parent.type';
 import type { ServerTransitionResult } from '../../types/server-transition-result.type';
@@ -8,7 +8,9 @@ import { SERVER_RESOLVE_OPTIONS } from '../../utils/server-code/server-code.util
 /**
  * Generates the code of a `@for`: a loop rendering the body once per item, through the function rendering it, named
  * like the one of the client. A numeric iterable `n` is iterated as `0, 1, …, n - 1`. The body declares the item and the
- * implicit variables it reads as signals, as the one of the client does, so that its expressions read them the same way.
+ * implicit variables it reads as signals, as the one of the client does, so that its expressions read them the same way:
+ * the variables are a constant of the module, `for0Variables`, written before the function, which a body reading none
+ * does without, creating none.
  *
  * The items are written between the markers of the browser, `<!--xd-for-->` and `<!--/xd-for-->`, the place of the
  * anchor of the client, each one opened by a marker holding its key (see `_ssrItemMarker`): the value of the `track`
@@ -53,17 +55,15 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
   }
 
   const names = Object.values(implicitNames);
-  const aliases = Object.entries(implicitNames).map(([implicit, name]) => `${implicit}: '${name}'`).join(', ');
   const key = getBlockIdentifier('for', parent.id, index);
-  const functionsToProcess = new Map<string, ServerFunctionToProcess>([[key, {
-    fn: {
-      node,
-      context,
-      parent: { id: key, tag: parent.tag },
-      precode: `_iterationVariables(context, items, index, ${itemAlias ? `'${itemAlias}'` : 'undefined'}, { ${aliases} }, [${read.map(variable => `'${variable}'`).join(', ')}]);`
-    },
-    args: ['out', 'parentContext', 'items', 'index']
-  }]]);
+  const fn: ServerFunctionToProcess['fn'] = { node, context, parent: { id: key, tag: parent.tag } };
+  // The variables, the same for every item, are a constant of the module, as the client declares them
+  if (read.length) {
+    fn.declaration = `const ${key}Variables = ${writeIterationVariables(node, read)};`;
+    fn.precode = `_iterationVariables(context, items, index, ${key}Variables);`;
+  }
+
+  const functionsToProcess = new Map<string, ServerFunctionToProcess>([[key, { fn, args: ['out', 'parentContext', 'items', 'index'] }]]);
 
   /*
     The track expression is written as the client writes it: a function outside of the context of the items, whose

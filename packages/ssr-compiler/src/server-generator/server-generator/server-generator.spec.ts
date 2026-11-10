@@ -25,10 +25,10 @@ const symbol = (local: string, reactive = false): SymbolImport => ({
 describe('ServerGenerator', () => {
   it('writes the imports of the runtime helpers, then render creating the root context and writing the template', () => {
     expect(generate('<p>{ title() }</p>', ['title'])).toBe([
-      'import { _Context, _iterationVariables, _let, _parameter, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
+      'import { _Context, _ROOT_PARENT_CONTEXT, _iterationVariables, _let, _parameter, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
       'import { _escapeAttribute, _escapeRawText, _escapeText, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTemplate, _ssrTry } from \'@xaendar/ssr\';',
       'function render(out) {',
-      '  const context = new _Context({ get: () => undefined });',
+      '  const context = new _Context(_ROOT_PARENT_CONTEXT);',
       '  out.push(\'<p><!---->\' + _escapeText(this.title()) + \'</p>\');',
       '}'
     ].join('\n'));
@@ -121,7 +121,7 @@ describe('ServerGenerator', () => {
 
     expect(code).toContain([
       'function render(out) {',
-      '  const context = new _Context({ get: () => undefined }, undefined, 2);',
+      '  const context = new _Context(_ROOT_PARENT_CONTEXT, undefined, 2);',
       '  context.declare(\'field\');',
       `  context.addIdentifier('row', _ssrTemplate(context, ${key}.bind(this)));`,
       '  context.set(\'field\', undefined);',
@@ -150,9 +150,11 @@ describe('ServerGenerator', () => {
       '  {'
     ].join('\n'));
     expect(code).toContain([
+      'const if2__for1Variables = { used: [\'item\'], names: [\'user\'] };',
+      '',
       'function if2__for1(out, parentContext, items, index) {',
       '  const context = new _Context(parentContext, undefined, 1);',
-      '  _iterationVariables(context, items, index, \'user\', { $index: \'$index\', $first: \'$first\', $last: \'$last\', $even: \'$even\', $odd: \'$odd\' }, [\'item\']);',
+      '  _iterationVariables(context, items, index, if2__for1Variables);',
       '  _ssrRenderTemplate(out, context, context.get(\'row\'), [() => context.get(\'user\')()]);',
       '}'
     ].join('\n'));

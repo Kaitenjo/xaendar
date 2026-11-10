@@ -1,9 +1,9 @@
 import { Function, NoArgsFunction } from '@xaendar/types';
 import { _SSR_MARKERS } from '../../costants';
-import { signal, untracked, type Signal as SignalType } from '../../signals';
+import { signal, untracked, type Signal } from '../../signals';
 import { _bindEffect } from '../../signals/effect/effect';
 import type { IterationVariable } from '../../types/iteration-variable.type';
-import { IterationVariablesHandle } from '../../types/iteration-variables.type';
+import type { IterationVariables } from '../../types/iteration-variables.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { _Context } from '../context/context.util';
 import type { TrackExpression } from '../../types/track-expression.type';
@@ -11,18 +11,13 @@ import type { ForEntry } from '../../types/for-entry.type';
 import type { ForRun } from '../../types/for-run.type';
 
 /**
- * Every variable a `@for` can declare in its body, created when the compiled code does not list the ones its body reads.
- */
-const ITERATION_VARIABLES: readonly IterationVariable[] = ['item', '$index', '$first', '$last', '$even', '$odd'];
-
-/**
  * Reactively iterates over a list of items. Items are matched across re-runs
  * by the key produced by `trackExpression`:
  * - key sopravvive → il Context e l'intero sottoalbero (stato, subscription,
  *   richieste pendenti) vengono riusati SEMPRE, indipendentemente da un
  *   eventuale cambio di indice: si spostano solo i nodi DOM, e se il body usa
- *   $index/$first/$last/$even/$odd questi vengono aggiornati in-place tramite
- *   `update`, senza ricreare nulla.
+ *   l'item o $index/$first/$last/$even/$odd, questi vengono aggiornati in-place
+ *   (see {@link updateIterationVariables}), senza ricreare nulla.
  * - key sparita → il Context viene distrutto.
  * - key nuova → il Context viene creato.
  *
@@ -38,22 +33,23 @@ const ITERATION_VARIABLES: readonly IterationVariable[] = ['item', '$index', '$f
  *   `n` iterato come `0, 1, ..., n - 1`.
  * @param trackExpression - Ritorna la key di un item, ricevendo l'item, il suo indice e $first/$last/$even/$odd
  *   come funzioni che li leggono, come i signal del body.
- * @param forFn - Callback invocata per creare un nuovo item. Deve ritornare
- *   sia il Context che possiede i nodi, sia (opzionalmente) una funzione
- *   `update` per aggiornare le variabili implicite in-place quando l'item
- *   viene riusato a un indice diverso.
+ * @param forFn - Callback invocata per creare un nuovo item: ritorna la sua entry, creata da {@link _iterationVariables}
+ *   con le stesse `variables`.
+ * @param variables - The variables the body reads, declared once by the compiled code, which the signals of each entry
+ *   hold by position: omitted when the body reads none.
  */
-export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, condition: NoArgsFunction<unknown[] | number>, trackExpression: TrackExpression, forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null, NodeStrategy], ForEntry>) {
+export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, condition: NoArgsFunction<unknown[] | number>, trackExpression: TrackExpression, forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null, NodeStrategy], ForEntry>, variables?: IterationVariables) {
   const nodeBlock = parentContext.nodeStrategy.block(parentContext, parentNode, referenceNode, 'for', _SSR_MARKERS.for);
-  const run: ForRun = { 
-    parentNode, parentContext, 
-    nodeBlock, 
-    condition, 
-    trackExpression, 
-    forFn, 
-    entries: null 
+  const run: ForRun = {
+    parentNode, parentContext,
+    nodeBlock,
+    condition,
+    trackExpression,
+    forFn,
+    variables,
+    entries: null
   };
-  
+
   _bindEffect(parentContext, runFor, run);
 }
 
@@ -110,7 +106,7 @@ function renderItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
  * @param occurrences - The occurrences of the keys.
  */
 function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | number>, occurrences: ReturnType<typeof countOccurrences>): void {
-  const { parentNode, parentContext, forFn } = run;
+  const { parentNode, parentContext, forFn, variables } = run;
   const entries = run.entries!;
   const newEntries = new Map<string | number, ForEntry[]>();
 
@@ -145,7 +141,10 @@ function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
           parentNode.moveBefore(nodes[j], nextReference);
         }
       }
-      existing.update?.(i, items);
+      if (variables) {
+        updateIterationVariables(existing.signals!, variables.used, items, i);
+      }
+
       entry = existing;
     } else {
       const created = forFn(parentNode, parentContext, items, i, nextReference, parentContext.nodeStrategy);
@@ -246,50 +245,55 @@ function collectNodes(parentNode: Node, context: _Context, nodes: Node[]): void 
 }
 
 /**
- * Builds a record of iteration context variables for a given index in the loop.
- * The item and `$index`/`$first`/`$last`/`$even`/`$odd` are signals: when a row is
- * reused, for an item moved to a different position in the array or for a new item
- * with the same key, `update()` writes the new values into these signals in place,
- * instead of recreating the item's template output. Anything bound to these variables
- * re-runs reactively; everything else in the item's subtree (state, subscriptions,
- * pending requests) is left completely untouched.
+ * Creates the entry of an item of a `@for`, declaring in the context of its body the variables the body reads. The item
+ * and `$index`/`$first`/`$last`/`$even`/`$odd` are signals: when a row is reused, for an item moved to a different
+ * position in the array or for a new item with the same key, `_for` writes the new values into these signals in place
+ * (see {@link updateIterationVariables}), instead of recreating the item's template output. Anything bound to these
+ * variables re-runs reactively; everything else in the item's subtree (state, subscriptions, pending requests) is left
+ * completely untouched.
  *
- * Only the variables in `used` are created, the ones the body of the `@for` reads: a signal per variable and per item
- * is what a large table pays for the variables its body never reads.
+ * Only the variables the body reads are created: a signal per variable and per item is what a large table pays for the
+ * variables its body never reads.
  *
  * @param context - The context of the body of the item, which the variables are declared in.
  * @param items - The full array being iterated.
  * @param index - The current iteration index.
- * @param itemName - The identifier to reference the i-th item during iteration, `undefined` when the `@for` declares none.
- * @param aliases - Aliases for implicit variables defined in the `@for` loop.
- * @param used - The variables to create, the ones the body reads: every one of them when omitted. The item is created
- *   only with an `itemName`.
- * @returns A handle exposing the resolved variables and an `update` function, which updates the variables created.
+ * @param variables - The variables to create, declared once for the `@for` by the compiled code, and given to `_for`
+ *   too: omitted when the body reads none.
+ * @returns The entry of the item: its context, and the signals of the variables, in the order of `variables.used`.
  */
-export function _iterationVariables(context: _Context, items: unknown[], index: number, itemName: string | undefined, aliases: Readonly<Record<Exclude<IterationVariable, 'item'>, string>>, used: readonly IterationVariable[] = ITERATION_VARIABLES): IterationVariablesHandle {
-  const vars: Record<string, SignalType<unknown>> = {};
-  for (let i = 0; i < used.length; i++) {
-    const variable = used[i];
-    const name = variable === 'item' ? itemName : aliases[variable];
-    if (name !== undefined) {
-      const state = signal(iterationValue(variable, items, index));
-      vars[name] = state;
-      context.addIdentifier(name, state);
-    }
+export function _iterationVariables(context: _Context, items: unknown[], index: number, variables?: IterationVariables): ForEntry {
+  if (!variables) {
+    return { context, signals: null };
   }
 
-  return {
-    vars,
-    update(newIndex: number, newItems: unknown[]) {
-      for (let i = 0; i < used.length; i++) {
-        const variable = used[i];
-        const name = variable === 'item' ? itemName : aliases[variable];
-        if (name !== undefined) {
-          vars[name].set(iterationValue(variable, newItems, newIndex));
-        }
-      }
-    }
-  };
+  const { used, names } = variables;
+  const signals = new Array<Signal<unknown>>(used.length);
+  for (let i = 0; i < used.length; i++) {
+    const state = signal(iterationValue(used[i], items, index));
+    signals[i] = state;
+    context.addIdentifier(names[i], state);
+  }
+
+  return { context, signals };
+}
+
+/**
+ * Writes into the signals of an item reused by a later run of a `@for` the values of its new position.
+ *
+ * N.B. Deliberate, to save memory: a single function of the module, given the signals of the entry and the variables of
+ * the `@for`, instead of an `update` closure created by {@link _iterationVariables} for each item, capturing its
+ * variables, which cost a function and its context per item. Do not move it back into a closure per item.
+ *
+ * @param signals - The signals of the item, in the order of `used`.
+ * @param used - The variables the body reads.
+ * @param items - The full array being iterated.
+ * @param index - The new index of the item.
+ */
+function updateIterationVariables(signals: Array<Signal<unknown>>, used: readonly IterationVariable[], items: unknown[], index: number): void {
+  for (let i = 0; i < used.length; i++) {
+    signals[i].set(iterationValue(used[i], items, index));
+  }
 }
 
 /**

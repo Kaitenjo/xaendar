@@ -27,7 +27,8 @@ describe('generateServerFor', () => {
       ].join('\n')
     }]);
     const { fn, args } = functionsToProcess!.get('ul0__for1')!;
-    expect(fn.precode).toBe('_iterationVariables(context, items, index, \'user\', { $index: \'i\', $first: \'$first\', $last: \'$last\', $even: \'$even\', $odd: \'$odd\' }, [\'item\', \'$index\']);');
+    expect(fn.declaration).toBe('const ul0__for1Variables = { used: [\'item\', \'$index\'], names: [\'user\', \'i\'] };');
+    expect(fn.precode).toBe('_iterationVariables(context, items, index, ul0__for1Variables);');
     expect(fn.parent).toEqual({ id: 'ul0__for1', tag: 'ul' });
     expect(args).toEqual(['out', 'parentContext', 'items', 'index']);
     expect(fn.context.getIdentifierKind('user')).toBe('signal');
@@ -40,16 +41,17 @@ describe('generateServerFor', () => {
 
     const { fn } = generateServerFor(node, { id: 'root' }, '0', new GeneratorContext(cache)).functionsToProcess!.get('for0')!;
 
-    expect(fn.precode).toMatch(/\}, \[\]\);$/);
+    expect(fn.precode).toBeUndefined();
+    expect(fn.declaration).toBeUndefined();
     expect(fn.context.getIdentifierKind('user')).toBeUndefined();
   });
 
   it('declares no item when the @for names none', () => {
-    const node = parseTemplate('@for (3; track $index()) { x }')[0] as ForNode;
+    const node = parseTemplate('@for (3; track $index()) { { $index() } }')[0] as ForNode;
 
     const { pieces, functionsToProcess } = generateServerFor(node, { id: 'root' }, '0', new GeneratorContext(cache));
 
     expect((pieces[0] as { statement: string }).statement).toContain('const track = (_, $index, $first, $last, $even, $odd) => $index();');
-    expect(functionsToProcess!.get('for0')!.fn.precode).toContain('_iterationVariables(context, items, index, undefined, {');
+    expect(functionsToProcess!.get('for0')!.fn.declaration).toBe('const for0Variables = { used: [\'$index\'], names: [\'$index\'] };');
   });
 });

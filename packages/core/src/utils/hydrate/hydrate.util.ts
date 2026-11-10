@@ -8,6 +8,7 @@ import type { NodeStrategy } from '../../types/node-strategy.type';
 import { ClaimNodes } from '../claim-nodes/claim-nodes.util';
 import type { _Context } from '../context/context.util';
 import { armTriggers, disarmAll, recordEvents, replayEvents, watchedTriggers } from '../hydration-triggers/hydration-triggers.util';
+import { trackNode } from '../track-node/track-node.util';
 
 /**
  * Renders a `@hydrate` block, whose content the server rendered waits for the first of its triggers to hydrate.
@@ -60,10 +61,10 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
     return;
   }
 
-  // The nodes the server rendered stay, owned by the context until the content adopts them
+  // The nodes the server rendered stay, owned by the context until the content adopts them: in an element, by the element
   const serverNodes = run.serverNodes = nodeStrategy.skip(parentNode, nodeBlock);
   for (let i = 0; i < serverNodes.length; i++) {
-    parentContext.addNode(serverNodes[i]);
+    trackNode(serverNodes[i], null, parentContext);
   }
 
   parentContext.addUnlistener(() => {

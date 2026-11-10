@@ -18,7 +18,7 @@ describe('Generator', () => {
     expect(code).toBe([
       'function render(nodeStrategy) {',
       '  const root = this._root;',
-      '  const context = new _Context({ createElement: _createElement, get: () => undefined }, nodeStrategy);',
+      '  const context = new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy);',
       '  _renderLiteralText(root, context, \'hello\', null);',
       '  return context;',
       '}'
@@ -30,7 +30,7 @@ describe('Generator', () => {
       const code = await generate('<button (click)="highlight(name)">Go</button><label>Name <input #name /></label>');
 
       expect(code).toContain([
-        '  const context = new _Context({ createElement: _createElement, get: () => undefined }, nodeStrategy, 1);',
+        '  const context = new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 1);',
         '  context.declare(\'name\');',
         '  _renderElement(root, context, null, \'button\', [],'
       ].join('\n'));
@@ -59,25 +59,54 @@ describe('Generator', () => {
     it('declares the variables of a @for body after its iteration variables', async () => {
       const code = await generate('@for (item of items; track item()) { <input #field [class.first]="{$first()}" />{ item() } }');
 
-      expect(code).toMatch(/const \{ item, \$first \} = vars;\n {2}context\.declare\('field'\);/);
+      expect(code).toContain('const entry = _iterationVariables(context, items0, i0, for0Variables);\n  context.declare(\'field\');');
+    });
+
+    it('declares the variables a @for body reads once, as a constant of the module before its function, which _for and the body read', async () => {
+      const code = await generate('@for (item of items; track item(); i = $index) { { i() } { item() } }');
+
+      expect(code).toContain('\nconst for0Variables = { used: [\'item\', \'$index\'], names: [\'item\', \'i\'] };\n\nfunction for0(for0, parentContext, items0, i0, anchor, nodeStrategy) {');
+      expect(code.match(/const for0Variables/g)).toHaveLength(1);
+      expect(code).toContain('for0.bind(this), for0Variables);');
+      expect(code).toMatch(/const entry = _iterationVariables\(context, items0, i0, for0Variables\);[\s\S]*return entry;\n\}/);
+      expect(code).not.toContain('$index: \'$index\'');
     });
 
     it('declares the variables of the content of an element a structural directive is applied to in the function rendering its children, as a scope of its own', async () => {
       const code = await generate('<div *visible><input #inner /></div><p>{ inner }</p>');
 
       expect(code).toContain([
-        'function div0Children(div0, parentContext, nodeStrategy) {',
-        '  const context = new _Context(parentContext, nodeStrategy, 1);',
+        'function div0Children(div0, parentContext) {',
+        '  const context = new _Context(parentContext, undefined, 1);',
         '  context.declare(\'inner\');'
       ].join('\n'));
+      expect(code).toContain('null, \'inner\');\n  return context;\n}');
       // Outside of its scope the name reads the component
       expect(code).toContain('() => this.inner');
     });
 
-    it('declares nothing in the children of an element without structural directives', async () => {
+    it('renders the children of an element without structural directives in the context of the element, declaring nothing', async () => {
       const code = await generate('<div><input #field /></div>');
 
-      expect(code).toContain('function div0Children(div0, parentContext, nodeStrategy) {\n  const context = new _Context(parentContext, nodeStrategy);\n  _renderElement(div0, context, null, \'input\'');
+      expect(code).toContain('function div0Children(div0, context) {\n  _renderElement(div0, context, null, \'input\', [], [], [], [], [], [], null, \'field\');\n}');
+    });
+
+    it('renders the children of an element a structural directive is applied to in the context of the element when they declare nothing', async () => {
+      const code = await generate('<div *visible><p>{ name }</p></div>');
+
+      expect(code).toContain('function div0Children(div0, context) {\n  _renderElement(div0, context, null, \'p\'');
+      expect(code).not.toContain('return context;\n}\n\nfunction div0__p0Children');
+    });
+
+    it('renders the children of an element changing the factory of the elements in a context of their own', async () => {
+      const code = await generate('<svg><g><circle /></g><foreignObject><p /></foreignObject></svg><math><mi>x</mi></math>');
+
+      expect(code).toContain('function svg0Children(svg0, parentContext) {\n  const context = new _Context(parentContext);\n  context.createElement = _createSVGElement;');
+      expect(code).toContain('function svg0__g0Children(svg0__g0, context) {');
+      expect(code).toContain('function svg0__foreignObject1Children(svg0__foreignObject1, parentContext) {\n  const context = new _Context(parentContext);\n  context.createElement = _createElement;');
+      expect(code).toContain('function math1Children(math1, parentContext) {\n  const context = new _Context(parentContext);\n  context.createElement = _createMATHMLElement;');
+      // render, and the three functions creating a context
+      expect(code.match(/return context;/g)).toHaveLength(4);
     });
   });
 
@@ -88,7 +117,7 @@ describe('Generator', () => {
       const start = template.indexOf('<template');
 
       expect(code).toContain([
-        '  const context = new _Context({ createElement: _createElement, get: () => undefined }, nodeStrategy, 1);',
+        '  const context = new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 1);',
         `  context.addIdentifier('row', _template(context, template_row_${start}.bind(this)));`,
         '  _renderTemplate(root, context, null, context.get(\'row\'), [() => this.name(), () => 1]);',
         '  return context;'
@@ -164,7 +193,7 @@ describe('Generator', () => {
     it('declares the @let of a block, of the content of a template and of a @for body in their own scope', async () => {
       const code = await generate('@for (item of items; track item()) { @let name = item().name; }<template row()>@let id = 1;</template>');
 
-      expect(code).toMatch(/= vars;\n {2}context\.declare\('name', 'let'\);\n {2}context\.set\('name', _let\(\(\) => context\.get\('item'\)\(\)\.name\)\);/);
+      expect(code).toMatch(/for0Variables\);\n {2}context\.declare\('name', 'let'\);\n {2}context\.set\('name', _let\(\(\) => context\.get\('item'\)\(\)\.name\)\);/);
       expect(code).toMatch(/context\.createElement = _createElement;\n {2}context\.declare\('id', 'let'\);\n {2}context\.set\('id', 1\);/);
     });
 
@@ -182,18 +211,19 @@ describe('Generator', () => {
   it('generates the helper functions for nested nodes', async () => {
     const code = await generate('<div><span></span></div>@if (a) { <b></b> }@for (i of items; track i()) { <li></li> }');
 
-    expect(code).toContain('div0Children(div0, parentContext, nodeStrategy) {');
+    expect(code).toContain('div0Children(div0, context) {');
     expect(code).toContain('if1(if1, parentContext, anchor, nodeStrategy) {');
     expect(code).toContain('for2(for2, parentContext, items2, i2, anchor, nodeStrategy) {');
-    expect(code).toContain('return { context, update };');
-    expect(code).toContain('const { update } = _iterationVariables(');
+    expect(code).toContain('const entry = _iterationVariables(context, items2, i2);');
+    expect(code).toContain('return entry;');
+    expect(code).not.toContain('for2Variables');
   });
 
   it('emits module-level helper functions invoked with the component bound as this', async () => {
     const code = await generate('<div><span></span></div>@if (a) { <b></b> }@for (i of items; track i()) { <li></li> }');
 
-    expect(code).toContain('function div0Children(div0, parentContext, nodeStrategy) {');
-    expect(code).toContain('(div0, parentContext, nodeStrategy) => div0Children.call(this, div0, parentContext, nodeStrategy)');
+    expect(code).toContain('function div0Children(div0, context) {');
+    expect(code).toContain('(div0, context) => div0Children.call(this, div0, context)');
     expect(code).toContain('function if1(if1, parentContext, anchor, nodeStrategy) {');
     expect(code).toContain('block: if1.bind(this)');
     expect(code).toContain('function for2(for2, parentContext, items2, i2, anchor, nodeStrategy) {');

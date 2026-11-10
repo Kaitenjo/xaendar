@@ -74,6 +74,7 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
     },
     render: (next, failure) => renderByHand(run, next, failure)
   };
+  
   // The tests drive the block by hand
   if (registerDeferBlock(parentNode, parentContext, fixture)) {
     return;
@@ -149,7 +150,7 @@ function load(run: DeferRun): Promise<unknown> {
  * @param run - The block, whose `load` is defined.
  * @returns The load, never rejected.
  */
-function prefetch(run: DeferRun): Promise<unknown> {
+async function prefetch(run: DeferRun): Promise<unknown> {
   return load(run).catch(() => undefined);
 }
 

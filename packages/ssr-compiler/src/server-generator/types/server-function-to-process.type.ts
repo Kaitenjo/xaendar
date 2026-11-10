@@ -9,7 +9,7 @@ export type ServerFunctionToProcess = {
   /**
    * What the function renders.
    */
-  readonly fn: Pick<GeneratorFunctionToProcess['fn'], 'node' | 'context' | 'precode'> & {
+  readonly fn: Pick<GeneratorFunctionToProcess['fn'], 'node' | 'context' | 'precode' | 'declaration'> & {
     /**
      * Where the nodes of the function are rendered.
      */

@@ -55,7 +55,8 @@ export class _Context {
    * include nodes owned by child contexts). Used to determine, for a given
    * context, which DOM nodes belong to it — for example so `_for`'s keyed
    * diffing can move a reused item's nodes to a new position without
-   * recreating them.
+   * recreating them. Only the nodes at the top of the block are tracked, all rendered into the same node: the ones
+   * rendered into an element of the template are removed with it (see `trackNode`).
    */
   private _nodes: Array<Node> | null = null;
   /**

@@ -23,17 +23,22 @@ describe('generateFor', () => {
   it('generates the _for call and registers the loop body function', async () => {
     const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item.id) { <li>{ item() } { $index() } { $first() } { $last() } { $even() } { $odd() }</li> }'), 'root', '0', new GeneratorContext(cache), null);
 
-    expect(code).toEqual(['_for(root, context, null, () => this.items, (item, $index, $first, $last, $even, $odd) => item.id, for0.bind(this));']);
+    expect(code).toEqual(['_for(root, context, null, () => this.items, (item, $index, $first, $last, $even, $odd) => item.id, for0.bind(this), for0Variables);']);
 
     const body = functionsToProcess?.get('for0');
     expect(body?.args).toEqual(['for0', 'parentContext', 'items0', 'i0', 'anchor', 'nodeStrategy']);
     expect(body?.fn).toMatchObject({ parentNode: 'for0', anchor: 'anchor', isForBody: true });
-    expect(body?.fn.precode).toBe([
-      'const { vars, update } = _iterationVariables(context, items0, i0, \'item\', {',
-      '    $index: \'$index\', $first: \'$first\', $last: \'$last\', $even: \'$even\', $odd: \'$odd\'',
-      '  }, [\'item\', \'$index\', \'$first\', \'$last\', \'$even\', \'$odd\']);',
-      '  const { item, $index, $first, $last, $even, $odd } = vars;'
-    ].join('\n'));
+    expect(body?.fn.declaration).toBe('const for0Variables = { used: [\'item\', \'$index\', \'$first\', \'$last\', \'$even\', \'$odd\'], names: [\'item\', \'$index\', \'$first\', \'$last\', \'$even\', \'$odd\'] };');
+    expect(body?.fn.precode).toBe('const entry = _iterationVariables(context, items0, i0, for0Variables);');
+  });
+
+  it('names the constant of the variables after the function of the body, unique in the module', async () => {
+    const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item.id) { { item() } }'), 'tr0', '1', new GeneratorContext(cache), 'anchor');
+    const { fn } = functionsToProcess!.get('tr0__for1')!;
+
+    expect(code[0]).toMatch(/, tr0__for1\.bind\(this\), tr0__for1Variables\);$/);
+    expect(fn.declaration).toBe('const tr0__for1Variables = { used: [\'item\'], names: [\'item\'] };');
+    expect(fn.precode).toBe('const entry = _iterationVariables(context, tr0__items1, tr0__i1, tr0__for1Variables);');
   });
 
   it('declares the item and the implicit variables the body reads as signals of the body', async () => {
@@ -70,17 +75,16 @@ describe('generateFor', () => {
     const { code, functionsToProcess } = await generateFor(parse(`@for (${iterable}; track $index()) { <li></li> }`), 'root', '0', new GeneratorContext(cache), null);
 
     expect(code).toEqual([`_for(root, context, null, () => ${expected}, (_, $index, $first, $last, $even, $odd) => $index(), for0.bind(this));`]);
-    expect(functionsToProcess?.get('for0')?.fn.precode).toContain('_iterationVariables(context, items0, i0, undefined, {');
-    expect(functionsToProcess?.get('for0')?.fn.precode).toContain('}, []);');
+    expect(functionsToProcess?.get('for0')?.fn.precode).toBe('const entry = _iterationVariables(context, items0, i0);');
+    expect(functionsToProcess?.get('for0')?.fn.declaration).toBeUndefined();
   });
 
   it('applies the aliases declared for implicit variables, reading a variable by the name the template writes', async () => {
     const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item(); i = $index) { <li>{ i() }</li> }'), 'root', '0', new GeneratorContext(cache), null);
-    const { precode, context } = functionsToProcess!.get('for0')!.fn;
+    const { declaration, context } = functionsToProcess!.get('for0')!.fn;
 
-    expect(code[0]).toContain('(item, i, $first, $last, $even, $odd) => item()');
-    expect(precode).toContain('}, [\'$index\']);');
-    expect(precode).toContain('const { i } = vars;');
+    expect(code[0]).toContain('(item, i, $first, $last, $even, $odd) => item(), for0.bind(this), for0Variables);');
+    expect(declaration).toBe('const for0Variables = { used: [\'$index\'], names: [\'i\'] };');
     expect(context.getIdentifierKind('i')).toBe('signal');
     expect(context.getIdentifierKind('$index')).toBeUndefined();
   });
@@ -91,24 +95,24 @@ describe('generateFor', () => {
      */
     const generateBody = async (template: string) => {
       const { fn } = (await generateFor(parse(template), 'root', '0', new GeneratorContext(cache), null)).functionsToProcess!.get('for0')!;
-      return { created: /\}, \[(.*)\]\);/.exec(fn.precode!)![1], precode: fn.precode!, context: fn.context };
+      const declaration = fn.declaration ?? '';
+      return { created: /used: \[(.*?)\]/.exec(declaration)?.[1] ?? '', names: /names: \[(.*?)\]/.exec(declaration)?.[1], precode: fn.precode!, context: fn.context };
     };
 
     it('creates none when the body reads none, the track expression reading them as its parameters', async () => {
       const { created, precode, context } = await generateBody('@for (item of items(); track item().id + $index()) { <li>static</li> }');
 
       expect(created).toBe('');
-      expect(precode).toMatch(/^const \{ update \} = _iterationVariables\(/);
-      expect(precode).not.toContain('= vars;');
+      expect(precode).toBe('const entry = _iterationVariables(context, items0, i0);');
       expect(context.getIdentifierKind('item')).toBeUndefined();
       expect(context.getIdentifierKind('$index')).toBeUndefined();
     });
 
     it('creates only the item when the body reads only the item', async () => {
-      const { created, precode } = await generateBody('@for (item of items(); track item().id) { <li>{ item().name }</li> }');
+      const { created, names } = await generateBody('@for (item of items(); track item().id) { <li>{ item().name }</li> }');
 
       expect(created).toBe('\'item\'');
-      expect(precode).toContain('const { item } = vars;');
+      expect(names).toBe('\'item\'');
     });
 
     it('creates $index read only by an event', async () => {
@@ -127,10 +131,10 @@ describe('generateFor', () => {
     });
 
     it('creates the variables read by their alias', async () => {
-      const { created, precode } = await generateBody('@for (item of items(); track item().id; i = $index, odd = $odd) { <li [class.odd]="{odd()}">{ i() }</li> }');
+      const { created, names } = await generateBody('@for (item of items(); track item().id; i = $index, odd = $odd) { <li [class.odd]="{odd()}">{ i() }</li> }');
 
       expect(created).toBe('\'$index\', \'$odd\'');
-      expect(precode).toContain('const { i, odd } = vars;');
+      expect(names).toBe('\'i\', \'odd\'');
     });
 
     it('creates a variable read only by a template declared in the body', async () => {
@@ -144,10 +148,10 @@ describe('generateFor', () => {
     });
 
     it('creates the variables of the outer @for read by a nested @for', async () => {
-      const { created, precode } = await generateBody('@for (row of rows(); track row().id) { <tr>@for (cell of row().cells; track cell().id) { <td>{ cell() } { $first() }</td> }</tr> }');
+      const { created, names } = await generateBody('@for (row of rows(); track row().id) { <tr>@for (cell of row().cells; track cell().id) { <td>{ cell() } { $first() }</td> }</tr> }');
 
       expect(created).toBe('\'item\', \'$first\'');
-      expect(precode).toContain('const { row, $first } = vars;');
+      expect(names).toBe('\'row\', \'$first\'');
     });
 
     it('creates a variable whose name a nested @for or a @let declares again', async () => {

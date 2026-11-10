@@ -17,6 +17,7 @@ const {
   _removeAttribute,
   _renderElement,
   _resetProperty,
+  _ROOT_PARENT_CONTEXT,
   _setExpressionInput,
   _setExpressionProperty,
   _setInput,
@@ -40,7 +41,7 @@ function createRoot() {
   return new _Context({ createElement: _createElement } as never);
 }
 
-type Children = (element: Element, parentContext: InstanceType<typeof _Context>) => InstanceType<typeof _Context>;
+type Children = (element: Element, parentContext: InstanceType<typeof _Context>) => InstanceType<typeof _Context> | undefined;
 
 const render = (
   parent: Element,
@@ -141,6 +142,14 @@ const settle = () => new Promise<void>(resolve => setTimeout(resolve));
 describe('element factories', () => {
   it('creates an HTML element', () => {
     expect(_createElement('section').tagName).toBe('SECTION');
+  });
+
+  it('gives the root context of a render, through its shared parent, the HTML factory and undefined for a name no scope declares', () => {
+    const root = new _Context(_ROOT_PARENT_CONTEXT, CREATE_NODES);
+
+    expect(root.createElement).toBe(_createElement);
+    expect(root.get('undeclared')).toBeUndefined();
+    expect(new _Context(_ROOT_PARENT_CONTEXT).nodeStrategy).toBe(CREATE_NODES);
   });
 
   it('constructs a custom element defined by its class in the content of a @try, so that the error of its constructor is thrown', () => {
@@ -452,11 +461,74 @@ describe('_renderElement', () => {
     const context = createRoot();
     const element = render(document.createElement('div'), context, { children });
 
-    expect(children).toHaveBeenCalledExactlyOnceWith(element, context, CREATE_NODES);
+    expect(children).toHaveBeenCalledExactlyOnceWith(element, context);
     expect(element.firstChild!.nodeName).toBe('SPAN');
 
     context.clear();
 
+    expect(unlisten).toHaveBeenCalledOnce();
+  });
+
+  it('renders in the context of the element the children rendering in it, which track no node rendered into the element', () => {
+    const unlisten = vi.fn();
+    const context = createRoot();
+    const children = vi.fn<Children>((element, childrenContext) => {
+      render(element, childrenContext);
+      CREATE_NODES.text(childrenContext, element, null, 'text', false);
+      childrenContext.addUnlistener(unlisten);
+      return undefined;
+    });
+    const parent = document.createElement('section');
+    const element = render(parent, context, { children });
+
+    expect(children).toHaveBeenCalledExactlyOnceWith(element, context);
+    expect(element.childNodes).toHaveLength(2);
+    expect(context.getNodes()).toEqual([element]);
+    expect(context.getChildren()).toBeNull();
+
+    context.clear();
+
+    expect(unlisten).toHaveBeenCalledOnce();
+    expect(parent.childNodes).toHaveLength(0);
+    expect(element.childNodes).toHaveLength(2);
+  });
+
+  it('tracks the nodes of the context the element is rendered in again once its children are rendered, and when they throw', () => {
+    const context = createRoot();
+    const parent = document.createElement('section');
+    render(parent, context, { children: () => undefined });
+    const second = render(parent, context);
+    expect(() => render(parent, context, {
+      children: () => {
+        throw new Error('boom');
+      }
+    })).toThrow('boom');
+    const third = render(parent, context);
+
+    expect(context.getNodes()).toHaveLength(4);
+    expect(context.getNodes()).toContain(second);
+    expect(context.getNodes()).toContain(third);
+  });
+
+  it('renders the children in a child context with their own strategy when it differs from the one of the element', () => {
+    const own = Object.assign({}, CREATE_NODES);
+    const strategy = Object.assign({}, CREATE_NODES, { children: () => own });
+    const context = new _Context({ createElement: _createElement } as never, strategy);
+    const unlisten = vi.fn();
+    const children = vi.fn<Children>((element, childrenContext) => {
+      CREATE_NODES.text(childrenContext, element, null, 'text', false);
+      childrenContext.addUnlistener(unlisten);
+      return undefined;
+    });
+    const element = render(document.createElement('section'), context, { children });
+
+    const [childrenContext] = context.getChildren()!;
+    expect(children).toHaveBeenCalledExactlyOnceWith(element, childrenContext);
+    expect(childrenContext.nodeStrategy).toBe(own);
+    expect(childrenContext.getNodes()).toBeNull();
+    expect(element.textContent).toBe('text');
+
+    context.clear();
     expect(unlisten).toHaveBeenCalledOnce();
   });
 
@@ -1303,7 +1375,7 @@ describe('_renderElement', () => {
       const parent = document.createElement('section');
       renderStructural(parent, createRoot(), { structuralDirectives: [structural('visible', [visible(() => shown())])], children });
 
-      expect(children).toHaveBeenCalledExactlyOnceWith(target(parent), expect.any(_Context), CREATE_NODES);
+      expect(children).toHaveBeenCalledExactlyOnceWith(target(parent), expect.any(_Context));
       expect(parent.querySelector('#target > span')).not.toBeNull();
 
       shown.set(false);

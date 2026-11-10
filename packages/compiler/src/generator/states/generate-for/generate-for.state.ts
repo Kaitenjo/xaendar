@@ -2,27 +2,34 @@ import { ForImplicitVariables } from '../../../parser/types/nodes/for-implicit-v
 import { ForNode } from '../../../parser/types/nodes/for-node.type';
 import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
-import { getReadForVariables } from '../../utils/for-reads/for-reads.utils';
+import type { GeneratorFunctionToProcess } from '../../types/generator-function-to-process.type';
+import { getReadForVariables, writeIterationVariables } from '../../utils/for-reads/for-reads.utils';
 import { getBlockIdentifier, getTextIdentifier, resolveExpression } from '../../utils/generator/generator.utils';
 
 /**
  * Generates code for a `@for` iteration node.
  *
  * Emits a call of `_for`, and the function rendering the body of an item, which declares the item and the implicit
- * variables the body reads (see {@link getReadForVariables}) as signals, created by `_iterationVariables`:
+ * variables the body reads (see {@link getReadForVariables}) as signals, created by `_iterationVariables`, and returns
+ * the entry of the item. The variables are the same for every item: they are declared once, as a constant of the module
+ * written before the function (see {@link writeIterationVariables}), which `_for` and the function read. The body reads
+ * them from its context, by name:
  *
  * ```javascript
- * // @for (row of rows(); track row().id) { <td>{ row().name }</td> }
+ * // @for (row of rows(); track row().id; i = $index) { <td>{ i() } { row().name }</td> }
+ * _for(parent, context, null, () => this.rows(), (row, i, $first, $last, $even, $odd) => row().id, for0.bind(this), for0Variables);
+ *
+ * const for0Variables = { used: ['item', '$index'], names: ['row', 'i'] };
+ *
  * function for0(for0, parentContext, items0, i0, anchor, nodeStrategy) {
- *   const context = new _Context(parentContext, nodeStrategy);
- *   const { vars, update } = _iterationVariables(context, items0, i0, 'row', {
- *     $index: '$index', $first: '$first', $last: '$last', $even: '$even', $odd: '$odd'
- *   }, ['item']);
- *   const { row } = vars;
- *   // ... child nodes
- *   return { context, update };
+ *   const context = new _Context(parentContext, nodeStrategy, 2);
+ *   const entry = _iterationVariables(context, items0, i0, for0Variables);
+ *   // ... child nodes, reading context.get('i') and context.get('row')
+ *   return entry;
  * }
  * ```
+ *
+ * A body reading no variable has no constant: `_iterationVariables` and `_for` are called without it.
  *
  * The iterable expression is resolved through the active {@link GeneratorContext}
  * like any other template expression. A numeric iterable `n` is turned into
@@ -68,27 +75,22 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
     forContext.addIdentifier(readNames[i], 'signal');
   }
 
-  const precode = [
-    `const { ${readNames.length ? 'vars, ' : ''}update } = _iterationVariables(context, ${itemsName}, ${counterName}, ${node.itemAlias ? `'${node.itemAlias}'` : undefined}, {`,
-    `    $index: '${indexName}', $first: '${firstName}', $last: '${lastName}', $even: '${evenName}', $odd: '${oddName}'`,
-    `  }, [${read.map(variable => `'${variable}'`).join(', ')}]);`
-  ];
-  if (readNames.length) {
-    precode.push(`  const { ${readNames.join(', ')} } = vars;`);
+  // The variables, the same for every item, are a constant of the module, passed to _for and to _iterationVariables
+  const forKey = getBlockIdentifier('for', parentNode, index);
+  const variablesArgument = read.length ? `, ${forKey}Variables` : '';
+  const fn: GeneratorFunctionToProcess['fn'] = {
+    precode: `const entry = _iterationVariables(context, ${itemsName}, ${counterName}${variablesArgument});`,
+    node,
+    parentNode: forKey,
+    context: forContext,
+    anchor: 'anchor',
+    isForBody: true
+  };
+  if (read.length) {
+    fn.declaration = `const ${forKey}Variables = ${writeIterationVariables(node, read)};`;
   }
 
-  const forKey = getBlockIdentifier('for', parentNode, index);
-  retVal.functionsToProcess!.set(forKey, {
-    fn: {
-      precode: precode.join('\n'),
-      node,
-      parentNode: forKey,
-      context: forContext,
-      anchor: 'anchor',
-      isForBody: true
-    },
-    args: [forKey, 'parentContext', itemsName, counterName, 'anchor', 'nodeStrategy']
-  });
+  retVal.functionsToProcess!.set(forKey, { fn, args: [forKey, 'parentContext', itemsName, counterName, 'anchor', 'nodeStrategy'] });
 
   /*
     The track expression is a function written where the @for is, outside of the context of its rows: the item and
@@ -104,7 +106,7 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
   }
 
   const trackParameters = [itemName, ...identifiers].join(', ');
-  retVal.code.push(`_for(${parentNode}, context, ${anchor}, () => ${iterableExpr}, (${trackParameters}) => ${resolveExpression(node.trackExpression, trackContext).expression}, ${forKey}.bind(this));`);
+  retVal.code.push(`_for(${parentNode}, context, ${anchor}, () => ${iterableExpr}, (${trackParameters}) => ${resolveExpression(node.trackExpression, trackContext).expression}, ${forKey}.bind(this)${variablesArgument});`);
 
   return retVal
 }

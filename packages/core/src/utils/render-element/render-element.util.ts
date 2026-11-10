@@ -11,6 +11,7 @@ import type { SettableInputSignal } from '../../signals/types/settable-input-sig
 import type { Signal as SignalType } from '../../signals/types/signal.type';
 import { untracked } from '../../signals/untracked';
 import type { BindingHost } from '../../types/binding-host.type';
+import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { RenderConditionalBinding } from '../../types/render-conditional-binding.type';
 import type { RenderElementStructuralDirectiveConditionalBinding } from '../../types/render-element-structural-directive-conditional-binding.type';
 import type { RenderElementConditionalBinding } from '../../types/render-element-conditional-binding.type';
@@ -24,7 +25,7 @@ import { _Context } from '../context/context.util';
 import { _setElementRef } from '../element-refs/element-refs.util';
 import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { _selectBranch } from '../select-branch/select-branch.util';
-import { trackNode } from '../track-node/track-node.util';
+import { renderChildren, trackNode } from '../track-node/track-node.util';
 import { connectChild, isInTryScope } from '../try-scope/try-scope.util';
 import type { RenderChildren } from '../../types/render-children.type';
 import type { StructuralCollector } from '../../types/structural-collector.type';
@@ -37,8 +38,8 @@ import type { StructuralCollector } from '../../types/structural-collector.type'
  * attribute values are wrapped in a reactive `effect` so they update
  * automatically whenever the underlying signal changes. Event listeners are
  * attached with `addEventListener` and the corresponding `removeEventListener`
- * is registered as a cleanup function. The context the children are rendered in
- * is registered as a child of the one the element is rendered in, so it is destroyed along with it.
+ * is registered as a cleanup function. The children are rendered in the context the element is rendered in, or in a child
+ * of it when they need one (see `renderElementChildren`), so they are destroyed along with it.
  *
  * When structural directives are applied, the element, along with its children, is rendered only while every one of them
  * allows it: the condition of the rendering is the AND of the outcomes of the structural directives currently applied, either
@@ -144,7 +145,38 @@ function renderElement(parentNode: Element, context: _Context, anchor: Comment |
   }
 
   bindDirectives(element, context, directives);
-  children && context.addChild(children(element, context, nodeStrategy.children(element)));
+  if (children) {
+    renderElementChildren(element, context, nodeStrategy, children);
+  }
+}
+
+/**
+ * Renders the children of an element in the context the element is rendered in, when they get their nodes with its
+ * strategy, or in a child context with their own strategy otherwise: in a hydration, the children of an element created
+ * in place of a node of the server not matching it are created too. The context the children create for themselves,
+ * if any, is registered as a child of the one they are rendered in.
+ *
+ * N.B. Deliberate, to save memory: a context is created for the children only when their strategy differs, which only
+ * an element created in a hydration does, instead of one per element, which a large table pays per cell. Their effects
+ * and listeners are cleared with the context of the element, which removes the element and so its children too.
+ *
+ * @param element - The element.
+ * @param context - The context the element is rendered in.
+ * @param nodeStrategy - The strategy the element was got with.
+ * @param children - Renders the children.
+ * @throws The error of the render of the children.
+ */
+function renderElementChildren(element: Element, context: _Context, nodeStrategy: NodeStrategy, children: RenderChildren): void {
+  const childrenStrategy = nodeStrategy.children(element);
+  const childrenContext = childrenStrategy === nodeStrategy ? context : new _Context(context, childrenStrategy);
+  const ownContext = renderChildren(children, element, childrenContext);
+  if (ownContext) {
+    childrenContext.addChild(ownContext);
+  }
+
+  if (childrenContext !== context) {
+    context.addChild(childrenContext);
+  }
 }
 
 /**
@@ -422,6 +454,26 @@ function bindStructuralDirectives(context: _Context, structuralDirectives: Rende
 export function _createElement(tagName: string): HTMLElement {
   const Component = isInTryScope() ? customElements.get(tagName) : undefined;
   return Component ? new Component() : document.createElement(tagName);
+}
+
+/**
+ * The parent of the root context of every render of a template, written by the generated code as
+ * `new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy)`: the root creates its elements with {@link _createElement}, and a
+ * name no scope declares reads `undefined`.
+ *
+ * N.B. Deliberate, to save memory: a single object shared by every render, instead of an object literal and a function
+ * the generated code would create at each one. Its members are never written: the root context copies the factory, and
+ * changes its own one.
+ */
+export const _ROOT_PARENT_CONTEXT = { createElement: _createElement, get: readUndeclared } as unknown as _Context;
+
+/**
+ * Reads a name no scope of a template declares, as the parent of the root context of a render does.
+ *
+ * @returns `undefined`.
+ */
+function readUndeclared(): undefined {
+  return undefined;
 }
 
 /**

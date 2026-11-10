@@ -326,7 +326,7 @@ describe('_Context', () => {
       root.addUnlistener(first, second, third);
 
       root.removeUnlistener(first, third);
-      root.removeUnlistener(vi.fn());
+      root.removeUnlistener(vi.fn<() => void>());
       root.clear();
 
       expect(first).not.toHaveBeenCalled();

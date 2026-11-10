@@ -176,12 +176,12 @@ describe('generateElement', () => {
     const { code, functionsToProcess } = await run('<div><span></span></div>');
     expect(code).toEqual([
       '_renderElement(root, context, null, \'div\', [], [], [], [], [], [],',
-      '  (div0, parentContext, nodeStrategy) => div0Children.call(this, div0, parentContext, nodeStrategy)',
+      '  (div0, context) => div0Children.call(this, div0, context)',
       ');'
     ]);
     expect(functionsToProcess?.get('div0Children')).toMatchObject({
       fn: { parentNode: 'div0', precode: '' },
-      args: ['div0', 'parentContext', 'nodeStrategy']
+      args: ['div0', 'parentContext']
     });
   });
 
@@ -190,7 +190,7 @@ describe('generateElement', () => {
     const { code, functionsToProcess } = await run('<div #panel><span></span></div>', context);
     expect(code).toEqual([
       '_renderElement(root, context, null, \'div\', [], [], [], [], [], [],',
-      '  (div0, parentContext, nodeStrategy) => div0Children.call(this, div0, parentContext, nodeStrategy), \'panel\'',
+      '  (div0, context) => div0Children.call(this, div0, context), \'panel\'',
       ');'
     ]);
     expect(functionsToProcess?.get('div0Children')?.fn.context).toBe(context);
@@ -843,12 +843,12 @@ describe('generateElement', () => {
         '      attributes: []',
         '    },',
         '  ], [],',
-        '  (div0, parentContext, nodeStrategy) => div0Children.call(this, div0, parentContext, nodeStrategy)',
+        '  (div0, context) => div0Children.call(this, div0, context)',
         ');'
       ]);
       expect(functionsToProcess?.get('div0Children')).toMatchObject({
         fn: { parentNode: 'div0', precode: '' },
-        args: ['div0', 'parentContext', 'nodeStrategy']
+        args: ['div0', 'parentContext']
       });
       expectValidJavascript(code);
     });

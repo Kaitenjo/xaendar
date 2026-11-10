@@ -448,6 +448,34 @@ describe('hydration', () => {
     expect(console.warn).toHaveBeenCalledWith(`Xaendar: the server rendered in <${tag('client', 'list')}> other items in a <!--xd-for--> than the browser renders, which it renders again`);
   });
 
+  it('adopts the items of a @for reading some of its variables by their aliases, then moves them, updating the variables in place', async () => {
+    /**
+     * A list whose items repeat a key.
+     */
+    class Rows extends CustomElement {
+      public rows = signal([{ id: 1, name: 'a' }, { id: 2, name: 'b' }, { id: 1, name: 'c' }]);
+    }
+    const rows = await register('rows', Rows, () => '<ul>@for (row of rows(); track row().id; i = $index, last = $last) {<li>{ i() }:{ row().name }@if (last()) {!}</li>}</ul>', ['rows']);
+    const host = load(await renderToString(rows.Server));
+    const [first, second, third] = Array.from(host.shadowRoot!.querySelectorAll('li'));
+
+    onServer = false;
+    rows.define();
+    const component = host as unknown as Rows;
+
+    expect(Array.from(host.shadowRoot!.querySelectorAll('li'))).toEqual([first, second, third]);
+    expect([first, second, third].map(item => item.textContent)).toEqual(['0:a', '1:b', '2:c!']);
+
+    // happy-dom has no moveBefore: it moves the node as insertBefore does
+    Object.assign(Element.prototype, { moveBefore: Node.prototype.insertBefore });
+    component.rows.set([{ id: 2, name: 'b' }, { id: 1, name: 'a2' }, { id: 1, name: 'c' }]);
+    await flush();
+
+    expect(Array.from(host.shadowRoot!.querySelectorAll('li'))).toEqual([second, first, third]);
+    expect([second, first, third].map(item => item.textContent)).toEqual(['0:b', '1:a2', '2:c!']);
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+
   it('keeps the element of an asynchronous structural directive the server rendered until its outcome settles', async () => {
     /**
      * A notice the browser hides once its outcome settles.
@@ -1582,5 +1610,118 @@ describe('hydration', () => {
       expect(element.shadowRoot!.innerHTML).toBe('<i>Frozen</i>');
       expect(Frozen.inits).toBe(1);
     });
+  });
+});
+
+describe('the contexts of the elements', () => {
+  type Context = InstanceType<typeof core._Context>;
+
+  /**
+   * A table of rows and columns, every cell an element reading its row.
+   */
+  class Grid extends CustomElement {
+    public rows = signal([{ id: 1, a: 'a1', b: 'b1' }, { id: 2, a: 'a2', b: 'b2' }, { id: 3, a: 'a3', b: 'b3' }]);
+    public cols = signal(['a', 'b']);
+    public open = signal(true);
+  }
+
+  // happy-dom has no moveBefore, which a @for moves its items with: it moves them as insertBefore does
+  beforeEach(() => {
+    Object.assign(Element.prototype, { moveBefore: Element.prototype.insertBefore });
+  });
+
+  afterEach(() => {
+    delete (Element.prototype as Partial<Record<'moveBefore', unknown>>).moveBefore;
+  });
+
+  const gridTemplate = () => '<section>@for (row of rows(); track row().id) {<p>@for (col of cols(); track col()) {<span>{ row()[col()] }@if (open()) {<i>!</i>}</span>}</p>}</section>';
+
+  /**
+   * The contexts of a tree, each one with the nodes it tracks.
+   */
+  function collect(context: Context, contexts = new Array<Context>()): Context[] {
+    contexts.push(context);
+    const children = context.getChildren();
+    for (let i = 0; i < (children?.length ?? 0); i++) {
+      collect(children![i], contexts);
+    }
+
+    return contexts;
+  }
+
+  /**
+   * Checks that every context tracks only the nodes at the top of its block, all in the same node, and returns them.
+   */
+  function trackedNodes(host: Element): Node[] {
+    const nodes = new Array<Node>();
+    const contexts = collect((host as unknown as { _context: Context })._context);
+    for (let i = 0; i < contexts.length; i++) {
+      const tracked = contexts[i].getNodes();
+      if (tracked?.length) {
+        expect(new Set(tracked.map(node => node.parentNode)).size).toBe(1);
+        nodes.push(...tracked);
+      }
+    }
+
+    return nodes;
+  }
+
+  /**
+   * The texts of the cells, by row.
+   */
+  const cells = (root: ShadowRoot) => Array.from(root.querySelectorAll('p')).map(row => Array.from(row.querySelectorAll('span')).map(cell => cell.textContent));
+
+  it('renders the children of an element in its context, tracking only the nodes at the top of the blocks, which the @for moves and removes', async () => {
+    const grid = await register('grid', Grid, gridTemplate, ['rows', 'cols', 'open']);
+    grid.define();
+    const host = document.body.appendChild(document.createElement(tag('client', 'grid'))) as unknown as Grid & Element;
+    const root = host.shadowRoot!;
+
+    // The section, the three rows, the six cells and the <i> of each cell
+    expect(trackedNodes(host).map(node => (node as Element).localName)).toEqual(['section', 'p', 'span', 'i', 'span', 'i', 'p', 'span', 'i', 'span', 'i', 'p', 'span', 'i', 'span', 'i']);
+    const [first, second, third] = Array.from(root.querySelectorAll('p'));
+
+    host.rows.set([host.rows()[2], host.rows()[0]]);
+    host.open.set(false);
+    await flush();
+
+    expect(Array.from(root.querySelectorAll('p'))).toEqual([third, first]);
+    expect(second.isConnected).toBe(false);
+    expect(cells(root)).toEqual([['a3', 'b3'], ['a1', 'b1']]);
+    expect(root.querySelectorAll('i')).toHaveLength(0);
+
+    host.rows.set([{ id: 3, a: 'x3', b: 'y3' }]);
+    host.open.set(true);
+    await flush();
+
+    expect(cells(root)).toEqual([['x3!', 'y3!']]);
+    expect(trackedNodes(host)).toHaveLength(6);
+  });
+
+  it('adopts the children of the elements in their contexts, and renders in a context of their own the children of an element created in place of a node of the server', async () => {
+    const grid = await register('grid', Grid, gridTemplate, ['rows', 'cols', 'open']);
+    const host = load(await renderToString(grid.Server)) as unknown as Grid & Element;
+    const root = host.shadowRoot!;
+    const firstCell = root.querySelector('span')!;
+    // The browser creates the second cell of the first row, whose content the server wrote in another element
+    const replaced = root.querySelectorAll('span')[1];
+    const other = document.createElement('b');
+    other.append(...replaced.childNodes);
+    replaced.replaceWith(other);
+
+    grid.define();
+
+    expect(root.querySelector('span')).toBe(firstCell);
+    expect(console.warn).toHaveBeenCalled();
+    expect(cells(root)).toEqual([['a1!', 'b1!'], ['a2!', 'b2!'], ['a3!', 'b3!']]);
+    trackedNodes(host);
+
+    host.open.set(false);
+    host.rows.set([{ id: 1, a: 'x1', b: 'y1' }]);
+    await flush();
+
+    expect(cells(root)).toEqual([['x1', 'y1']]);
+    expect(root.querySelector('span')).toBe(firstCell);
+    expect(root.querySelectorAll('i')).toHaveLength(0);
   });
 });

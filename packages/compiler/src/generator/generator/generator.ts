@@ -112,7 +112,7 @@ export class Generator {
         'function render(nodeStrategy) {',
         ...indent([
           `const ${ROOT_NODE} = this._root;`,
-          `const context = ${createContext('{ createElement: _createElement, get: () => undefined }', 'nodeStrategy', generatorContext.identifierCount)};`
+          `const context = ${createContext('_ROOT_PARENT_CONTEXT', 'nodeStrategy', generatorContext.identifierCount)};`
         ])
       ]
 
@@ -137,21 +137,34 @@ export class Generator {
       )
 
       for (const [key, fnData] of this._nodeToProcess.entries()) {
-        const { node, parentNode, context, precode, anchor } = fnData.fn;
+        const { node, parentNode, context, precode, declaration, anchor } = fnData.fn;
         const parentTag = parentTags.get(key);
 
         /*
           A block, the content of an element a structural directive is applied to, or the content of a template, is a scope
           declaring its element refs, its templates and its @let, after the variables its precode registers: its context is
-          created for all of them. The children of any other element share the generator context of their scope, and their
-          runtime context declares nothing
+          created for all of them. The children of any other element share the generator context of their scope
         */
-        const isScope = node.type !== ASTNodeType.Element || isStructuralElement(node);
+        const isElement = node.type === ASTNodeType.Element;
+        const isScope = !isElement || isStructuralElement(node);
         const declarations = isScope ? declareScope(node.children, context, toTemplateFunction) : undefined;
-        generatedCode.push(
-          `\nfunction ${key}(${fnData.args?.join(', ')}) {`,
-          ...indent([`const context = ${createContext('parentContext', 'nodeStrategy', isScope ? context.identifierCount : 0)};`])
-        );
+        /*
+          N.B. Deliberate, to save memory: the children of an element are rendered in the runtime context the element is
+          rendered in, which the function receives as `context`, instead of one created for them, which a large table
+          would pay per cell. Only the ones declaring names, as the content of an element a structural directive is applied
+          to may, and the ones whose precode changes the factory of the elements (the children of <svg>, <math>,
+          <foreignObject>), which the blocks among them copy when they render later, create a context of their own,
+          receiving the parent one as `parentContext` and returning theirs. Do not create one for every element
+        */
+        const createsContext = !isElement || !!precode || (isScope && context.identifierCount > 0);
+        if (declaration) {
+          generatedCode.push(`\n${declaration}`);
+        }
+
+        generatedCode.push(`\nfunction ${key}(${(createsContext ? fnData.args! : [fnData.args![0], 'context']).join(', ')}) {`);
+        if (createsContext) {
+          generatedCode.push(indent(`const context = ${createContext('parentContext', isElement ? undefined : 'nodeStrategy', isScope ? context.identifierCount : 0)};`));
+        }
 
         if (precode) {
           generatedCode.push(indent(precode));
@@ -174,13 +187,13 @@ export class Generator {
           }
         }
 
-        generatedCode.push(
-          ...indent([
-            ...functionBody,
-            fnData.fn.isForBody ? 'return { context, update };' : 'return context;'
-          ]),
-          '}'
-        );
+        if (fnData.fn.isForBody) {
+          functionBody.push('return entry;');
+        } else if (createsContext) {
+          functionBody.push('return context;');
+        }
+
+        generatedCode.push(...indent(functionBody), '}');
       }
 
       // Only the symbols an expression reads are imported: a type, or a name only a type argument uses, is not a value at runtime

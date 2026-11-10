@@ -24,8 +24,8 @@ import { getElementIdentifier, resolveExpression, toStringLiteral } from '../../
  * and recursively processes children.
  *
  * The children are rendered by `_renderElement` through the function passed as last argument, since an element applying
- * structural directives is created, and created again, by the runtime only while they allow it: it receives the strategy
- * getting the nodes of the children, created or adopted from the HTML rendered on the server.
+ * structural directives is created, and created again, by the runtime only while they allow it: it receives the context
+ * the children are rendered in, whose strategy gets their nodes, created or adopted from the HTML rendered on the server.
  * The classes the element toggles come before its attributes, so that writing `class` finds them, and an element adopted
  * holding the same classes is not written.
  * The conditional bindings declared on the element are split in two lists: the descriptors of the element bindings
@@ -74,7 +74,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   const ref = node.ref ? `, '${node.ref.name}'` : '';
   hasChildren
     ? retVal.code.push(
-      indent(`(${nodeName}, parentContext, nodeStrategy) => ${nodeName}Children.call(this, ${nodeName}, parentContext, nodeStrategy)${ref}`),
+      indent(`(${nodeName}, context) => ${nodeName}Children.call(this, ${nodeName}, context)${ref}`),
       ');'
     )
     : retVal.code[retVal.code.length - 1] = `${retVal.code[retVal.code.length - 1]} null${ref});`;
@@ -98,7 +98,8 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
         context: isStructuralElement(node) || childrenNamespace !== generatorContext.namespace ? new GeneratorContext(generatorContext, childrenNamespace) : generatorContext,
         precode: overrideChildrenCreateElement(tagName)
       },
-      args: [nodeName, 'parentContext', 'nodeStrategy']
+      // The function takes the context of the element instead, when it renders the children in it (see `Generator`)
+      args: [nodeName, 'parentContext']
     });
   }
 

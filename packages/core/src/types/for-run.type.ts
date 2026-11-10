@@ -1,6 +1,7 @@
 import type { Function, NoArgsFunction } from '@xaendar/types';
 import type { _Context } from '../utils/context/context.util';
 import type { ForEntry } from './for-entry.type';
+import type { IterationVariables } from './iteration-variables.type';
 import type { NodeBlock } from './node-block.type';
 import type { NodeStrategy } from './node-strategy.type';
 import type { TrackExpression } from './track-expression.type';
@@ -38,6 +39,11 @@ export type ForRun = {
    * Renders a new item, returning its entry.
    */
   readonly forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null, NodeStrategy], ForEntry>;
+  /**
+   * The variables the body reads, which the signals of each entry hold by position: `undefined` when the body reads
+   * none.
+   */
+  readonly variables: IterationVariables | undefined;
   /**
    * The entries of each key, in the order of the items: a key repeated in the items has an entry per occurrence. `null`
    * until the first render.
