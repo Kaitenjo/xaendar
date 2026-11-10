@@ -97,3 +97,7 @@ A function created inside another one is a new object (~60 bytes plus its contex
 ### Verify
 
 Measure before and after (`process.memoryUsage().heapUsed` after `gc()`, or a heap snapshot): an apparently lighter version can allocate more, e.g. a field made lazy with `??= []` then `push`.
+
+### Document
+
+Every choice made to save memory that looks odd or worse than the obvious code (fixed argument slots instead of a closure, state in an object passed to a module-level function, `null` instead of an empty array, a union accepting an object as well as a function...) gets a paragraph starting with `N.B.` in the JSDoc of the declaration it shapes: what was chosen, what it saves, which obvious alternative it avoids, and `Do not ...` replace it with that alternative. Without it, the code reads as badly written and gets "fixed", bringing the memory back.

@@ -1,7 +1,8 @@
-import { Function, NoArgsVoidFunction } from '@xaendar/types';
+import { Function } from '@xaendar/types';
 import { trackNode } from '../track-node/track-node.util';
 import type { _DeclarationKind } from '../../types/declaration-kind.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
+import type { Unlistener } from '../../types/unlistener.type';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { captureContext } from '../try-scope/try-scope.util';
 
@@ -67,7 +68,7 @@ export class _Context {
    * Called when this context is destroyed to remove DOM nodes,
    * detach event listeners, and dispose signal effect subscriptions.
    */
-  private _unlistenFns: Array<NoArgsVoidFunction> | null = null;
+  private _unlistenFns: Array<Unlistener> | null = null;
 
   /**
    * Creates a new scope context. Created in the first render of the content of a `@try`, it is collected by the `@try`,
@@ -308,9 +309,12 @@ export class _Context {
    * Registers one or more cleanup functions to be invoked when this context is cleared.
    * Typically used to remove DOM nodes, detach event listeners or dispose signal effects.
    *
-   * @param fns - The cleanup functions to register.
+   * A function is called, an object, as an effect, is disposed with its `dispose()`, so that it is registered without
+   * a closure calling it.
+   *
+   * @param fns - The cleanups to register.
    */
-  public addUnlistener(...fns: NoArgsVoidFunction[]): void {
+  public addUnlistener(...fns: Unlistener[]): void {
     this._unlistenFns ? this._unlistenFns.push(...fns) : this._unlistenFns = [...fns];
   }
 
@@ -318,9 +322,9 @@ export class _Context {
    * Unregisters one or more cleanup functions previously added via {@link addUnlistener},
    * so they are no longer invoked when this context is cleared.
    *
-   * @param fns - The cleanup functions to unregister.
+   * @param fns - The cleanups to unregister.
    */
-  public removeUnlistener(...fns: NoArgsVoidFunction[]): void {
+  public removeUnlistener(...fns: Unlistener[]): void {
     if (this._unlistenFns) {
       this._unlistenFns = this._unlistenFns.filter(item => !fns.includes(item));
     }
@@ -332,7 +336,7 @@ export class _Context {
    *
    * @returns The cleanup functions that will be invoked when this context is cleared.
    */
-  public getUnlistenFns(): NoArgsVoidFunction[] | null {
+  public getUnlistenFns(): Unlistener[] | null {
     return this._unlistenFns;
   }
 
@@ -401,7 +405,8 @@ export class _Context {
 
     if (this._unlistenFns) {
       for (let i = 0; i < this._unlistenFns.length; i++) {
-        this._unlistenFns[i]();
+        const unlistener = this._unlistenFns[i];
+        typeof unlistener === 'function' ? unlistener() : unlistener.dispose();
       }
     }
 

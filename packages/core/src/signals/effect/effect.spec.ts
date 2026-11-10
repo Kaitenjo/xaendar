@@ -1,6 +1,7 @@
 import { loadSignals } from '@xaendar/signals';
 import { describe, expect, it, vi } from 'vitest';
-import { effect } from './effect';
+import { _Context } from '../../utils/context/context.util';
+import { _bindEffect, effect } from './effect';
 
 loadSignals();
 
@@ -377,5 +378,23 @@ describe('effect', () => {
       dispose();
       expect(() => dispose()).toThrow();
     });
+  });
+});
+
+describe('_bindEffect', () => {
+  it('runs the callback with its arguments, again when a signal it read changes, and is disposed with the context', async () => {
+    const context = new _Context({} as _Context);
+    const state = new Signal.State(1);
+    const seen: Array<[string, number]> = [];
+    _bindEffect(context, (label: string, source: Signal.State<number>) => { seen.push([label, source.get()]); }, 'value', state);
+
+    state.set(2);
+    await flushMicrotasks();
+    context.clear();
+    state.set(3);
+    await flushMicrotasks();
+
+    expect(seen).toEqual([['value', 1], ['value', 2]]);
+    expect(Signal.subtle.hasSinks(state)).toBe(false);
   });
 });

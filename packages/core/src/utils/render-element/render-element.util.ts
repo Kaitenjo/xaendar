@@ -3,7 +3,7 @@ import { _SSR_MARKERS, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, MATHML_NS, SET_D
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import { StructuralDirective } from '../../models/structural-directive/structural-directive';
-import { effect } from '../../signals/effect/effect';
+import { _bindEffect, effect } from '../../signals/effect/effect';
 import { isInputSignal } from '../../signals/input/input-instance.symbol';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
 import { signal } from '../../signals/signal/signal';
@@ -489,7 +489,7 @@ export function _setExpressionProperty(_context: _Context, target: Element | Bin
  * @param value - A function that returns the attribute value.
  */
 export function _setReactiveProperty(context: _Context, target: Element | BindingHost, name: string, value: NoArgsFunction<unknown>): void {
-  context.addUnlistener(effect(() => updateProperty(target, name, value())));
+  _bindEffect(context, updateReactiveProperty, target, name, value);
 }
 
 /**
@@ -527,7 +527,7 @@ export function _setExpressionInput(_context: _Context, target: Element | Bindin
  * @param value - Returns the value.
  */
 export function _setReactiveInput(context: _Context, target: Element | BindingHost, name: string, value: NoArgsFunction<unknown>): void {
-  context.addUnlistener(effect(() => updateInput(target, name, value())));
+  _bindEffect(context, updateReactiveInput, target, name, value);
 }
 
 /**
@@ -559,6 +559,33 @@ export function _resetProperty(_context: _Context, target: Element | BindingHost
     restoreToggledClasses(element, name);
   });
 }
+
+/**
+ * Updates an input with the value of a reactive expression: the callback of the effect of {@link _setReactiveInput},
+ * shared by every input binding.
+ *
+ * @param target - The element of the component, or the directive.
+ * @param name - The name of the property of the input.
+ * @param value - Returns the value.
+ * @throws When the target is a directive not declaring the property.
+ */
+function updateReactiveInput(target: Element | BindingHost, name: string, value: NoArgsFunction<unknown>): void {
+  updateInput(target, name, value());
+}
+
+/**
+ * Updates an attribute with the value of a reactive expression: the callback of the effect of
+ * {@link _setReactiveProperty}, shared by every attribute binding.
+ *
+ * @param target - The HTML element whose attribute is being updated.
+ * @param name - The name of the attribute.
+ * @param value - Returns the value.
+ * @throws When `name` is the one of an input of the target, or the target is a directive.
+ */
+function updateReactiveProperty(target: Element | BindingHost, name: string, value: NoArgsFunction<unknown>): void {
+  updateProperty(target, name, value());
+}
+
 
 /**
  * Updates an input of a component or of a directive: when the class of the component is defined the value is set into

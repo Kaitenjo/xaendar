@@ -1,5 +1,5 @@
 import type { NoArgsFunction } from '@xaendar/types';
-import { effect } from '../../signals/effect/effect';
+import { _bindEffect } from '../../signals/effect/effect';
 import { toggleClass, untoggleClass } from '../class-toggle/class-toggle.util';
 import type { _Context } from '../context/context.util';
 
@@ -26,7 +26,19 @@ export function _setExpressionClass(_context: _Context, element: Element, name: 
  * @param value - A function returning the value: the element has the class when it is truthy.
  */
 export function _setReactiveClass(context: _Context, element: Element, name: string, value: NoArgsFunction<unknown>): void {
-  context.addUnlistener(effect(() => toggleClass(element, name, !!value())));
+  _bindEffect(context, toggleReactiveClass, element, name, value);
+}
+
+/**
+ * Toggles a class on an element by the value of a reactive expression: the callback of the effect of
+ * {@link _setReactiveClass}, shared by every class binding.
+ *
+ * @param element - The element to toggle the class on.
+ * @param name - The name of the class.
+ * @param value - A function returning the value: the element has the class when it is truthy.
+ */
+function toggleReactiveClass(element: Element, name: string, value: NoArgsFunction<unknown>): void {
+  toggleClass(element, name, !!value());
 }
 
 /**

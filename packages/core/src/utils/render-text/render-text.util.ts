@@ -1,5 +1,5 @@
 import { NoArgsFunction } from '@xaendar/types';
-import { effect } from '../../signals/effect/effect';
+import { _bindEffect } from '../../signals/effect/effect';
 import { _Context } from '../context/context.util';
 
 /**
@@ -19,13 +19,22 @@ import { _Context } from '../context/context.util';
  */
 export function _renderText(parentNode: HTMLElement, context: _Context, textFn: NoArgsFunction<unknown>, referenceNode: Comment | null, separated = false): void {
   const node = context.nodeStrategy.text(context, parentNode, referenceNode, '', separated);
-  context.addUnlistener(effect(() => {
-    const value = textFn();
-    const text = value === null || value === undefined ? '' : `${value}`;
-    if (node.data !== text) {
-      node.data = text;
-    }
-  }));
+  _bindEffect(context, updateText, node, textFn);
+}
+
+/**
+ * Writes the value of the expression of a reactive text into its node, when it differs from the text the node holds:
+ * the callback of the effect of {@link _renderText}, shared by every text.
+ *
+ * @param node - The text node.
+ * @param textFn - Returns the value of the text.
+ */
+function updateText(node: Text, textFn: NoArgsFunction<unknown>): void {
+  const value = textFn();
+  const text = value === null || value === undefined ? '' : `${value}`;
+  if (node.data !== text) {
+    node.data = text;
+  }
 }
 
 /**

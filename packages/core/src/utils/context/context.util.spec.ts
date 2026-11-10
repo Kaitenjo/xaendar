@@ -305,6 +305,20 @@ describe('_Context', () => {
     });
   });
 
+  describe('addUnlistener', () => {
+    it('disposes on clear an object registered with its dispose method, as an effect, in registration order', () => {
+      const root = createRoot();
+      const order = new Array<string>();
+      const disposable = { dispose: vi.fn(() => order.push('dispose')) };
+      root.addUnlistener(() => order.push('first'), disposable, () => order.push('last'));
+
+      root.clear();
+
+      expect(order).toEqual(['first', 'dispose', 'last']);
+      expect(disposable.dispose).toHaveBeenCalledOnce();
+    });
+  });
+
   describe('removeUnlistener', () => {
     it('does not run the removed cleanups on clear, but keeps the others', () => {
       const root = createRoot();

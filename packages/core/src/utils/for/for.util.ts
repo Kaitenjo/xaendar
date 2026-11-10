@@ -1,12 +1,14 @@
 import { Function, NoArgsFunction } from '@xaendar/types';
 import { _SSR_MARKERS } from '../../costants';
-import { effect, signal, untracked, type Signal as SignalType } from '../../signals';
+import { signal, untracked, type Signal as SignalType } from '../../signals';
+import { _bindEffect } from '../../signals/effect/effect';
 import type { IterationVariable } from '../../types/iteration-variable.type';
 import { IterationVariablesHandle } from '../../types/iteration-variables.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { _Context } from '../context/context.util';
 import type { TrackExpression } from '../../types/track-expression.type';
 import type { ForEntry } from '../../types/for-entry.type';
+import type { ForRun } from '../../types/for-run.type';
 
 /**
  * Every variable a `@for` can declare in its body, created when the compiled code does not list the ones its body reads.
@@ -42,93 +44,123 @@ const ITERATION_VARIABLES: readonly IterationVariable[] = ['item', '$index', '$f
  *   viene riusato a un indice diverso.
  */
 export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, condition: NoArgsFunction<unknown[] | number>, trackExpression: TrackExpression, forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null, NodeStrategy], ForEntry>) {
+  const nodeBlock = parentContext.nodeStrategy.block(parentContext, parentNode, referenceNode, 'for', _SSR_MARKERS.for);
+  const run: ForRun = { 
+    parentNode, parentContext, 
+    nodeBlock, 
+    condition, 
+    trackExpression, 
+    forFn, 
+    entries: null 
+  };
+  
+  _bindEffect(parentContext, runFor, run);
+}
+
+/**
+ * Reads the items of a `@for` and their keys, then renders them: the callback of the effect of {@link _for}, shared by
+ * every `@for`. Only the items and the track expression are tracked.
+ *
+ * @param run - The `@for`.
+ */
+function runFor(run: ForRun): void {
+  const { trackExpression } = run;
+  const iterable = run.condition();
+  const items = typeof iterable === 'number' ? Array.from({ length: iterable }, (_, i) => i) : iterable;
+  // The track expression reads the item, the index and the implicit variables as the body does, by calling them
+  const newKeys = items.map((item, i) => trackExpression(() => item, () => i, () => i === 0, () => i === items.length - 1, () => i % 2 === 0, () => i % 2 !== 0));
+  const occurrences = countOccurrences(newKeys);
+  untracked(() => run.entries ? updateItems(run, items, newKeys, occurrences) : renderItems(run, items, newKeys, occurrences));
+}
+
+/**
+ * Renders the items of the first run, run synchronously by {@link _for}, in order before the anchor, getting their nodes
+ * with the strategy of the context: in a hydration, they are adopted when the server rendered the same keys.
+ *
+ * @param run - The `@for`.
+ * @param items - The items.
+ * @param newKeys - The key of each item.
+ * @param occurrences - The occurrences of the keys.
+ */
+function renderItems(run: ForRun, items: unknown[], newKeys: Array<string | number>, occurrences: ReturnType<typeof countOccurrences>): void {
+  const { parentNode, parentContext, nodeBlock, forFn } = run;
   const { nodeStrategy } = parentContext;
-  const block = nodeStrategy.block(parentContext, parentNode, referenceNode, 'for', _SSR_MARKERS.for);
-  const { anchor } = block;
-  // The entries of each key, in the order of the items: a key repeated in the items has an entry per occurrence
-  let entries = new Map<string | number, ForEntry[]>();
-  let started = false;
+  const entries = new Map<string | number, ForEntry[]>();
+  const itemNodeStrategy = nodeStrategy.adoptItems(parentNode, nodeBlock, newKeys);
+  for (let i = 0; i < items.length; i++) {
+    const key = newKeys[i];
+    const created = forFn(parentNode, parentContext, items, i, nodeBlock.anchor, itemNodeStrategy);
+    parentContext.addChild(created.context);
+    const keyEntries = entries.get(key) ?? new Array<ForEntry>(occurrences.counts.get(key)!);
+    keyEntries[occurrences.indexes[i]] = created;
+    entries.set(key, keyEntries);
+  }
 
-  const unlistener = effect(() => {
-    const iterable = condition();
-    const items = typeof iterable === 'number' ? Array.from({ length: iterable }, (_, i) => i) : iterable;
-    // The track expression reads the item, the index and the implicit variables as the body does, by calling them
-    const newKeys = items.map((item, i) => trackExpression(() => item, () => i, () => i === 0, () => i === items.length - 1, () => i % 2 === 0, () => i % 2 !== 0));
-    const occurrences = countOccurrences(newKeys);
+  run.entries = entries;
+  nodeStrategy.close(parentNode, nodeBlock);
+}
 
-    if (!started) {
-      started = true;
-      untracked(() => {
-        // The items are rendered in order before the anchor: adopted when the server rendered the same keys
-        const itemNodeStrategy = nodeStrategy.adoptItems(parentNode, block, newKeys);
-        for (let i = 0; i < items.length; i++) {
-          const key = newKeys[i];
-          const created = forFn(parentNode, parentContext, items, i, anchor, itemNodeStrategy);
-          parentContext.addChild(created.context);
-          const keyEntries = entries.get(key) ?? new Array<ForEntry>(occurrences.counts.get(key)!);
-          keyEntries[occurrences.indexes[i]] = created;
-          entries.set(key, keyEntries);
+/**
+ * Renders the items of a later run, reusing the entries of the keys that survive: their nodes are moved, and their
+ * implicit variables updated. The entries of the keys gone are destroyed, the ones of the new keys created.
+ *
+ * @param run - The `@for`, already rendered.
+ * @param items - The items.
+ * @param newKeys - The key of each item.
+ * @param occurrences - The occurrences of the keys.
+ */
+function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | number>, occurrences: ReturnType<typeof countOccurrences>): void {
+  const { parentNode, parentContext, forFn } = run;
+  const entries = run.entries!;
+  const newEntries = new Map<string | number, ForEntry[]>();
+
+  // The entries of the keys gone, and of the occurrences of a key beyond its new count, are destroyed
+  for (const [key, keyEntries] of entries) {
+    const kept = occurrences.counts.get(key) ?? 0;
+    for (let i = kept; i < keyEntries.length; i++) {
+      keyEntries[i].context.clear();
+      parentContext.removeChild(keyEntries[i].context);
+    }
+  }
+
+  let nextReference: Node = run.nodeBlock.anchor;
+
+  for (let i = items.length - 1; i >= 0; i--) {
+    const key = newKeys[i];
+    const occurrence = occurrences.indexes[i];
+    const existing = entries.get(key)?.[occurrence];
+
+    let entry: ForEntry;
+    let nodes: Node[];
+
+    if (existing) {
+      nodes = getItemNodes(parentNode, existing.context);
+      const lastNode = nodes[nodes.length - 1];
+      if (lastNode?.nextSibling !== nextReference) {
+        /*
+          moveBefore keeps the nodes in the document: the components of the row are not disconnected, so they
+          keep their render, their state and their effects. insertBefore would destroy and render them again
+        */
+        for (let j = 0; j < nodes.length; j++) {
+          parentNode.moveBefore(nodes[j], nextReference);
         }
-
-        nodeStrategy.close(parentNode, block);
-      });
-      return;
+      }
+      existing.update?.(i, items);
+      entry = existing;
+    } else {
+      const created = forFn(parentNode, parentContext, items, i, nextReference, parentContext.nodeStrategy);
+      parentContext.addChild(created.context);
+      nodes = getItemNodes(parentNode, created.context);
+      entry = created;
     }
 
-    untracked(() => {
-      const newEntries = new Map<string | number, ForEntry[]>();
+    const keyEntries = newEntries.get(key) ?? new Array<ForEntry>(occurrences.counts.get(key)!);
+    keyEntries[occurrence] = entry;
+    newEntries.set(key, keyEntries);
+    nextReference = nodes[0] ?? nextReference;
+  }
 
-      // The entries of the keys gone, and of the occurrences of a key beyond its new count, are destroyed
-      for (const [key, keyEntries] of entries) {
-        const kept = occurrences.counts.get(key) ?? 0;
-        for (let i = kept; i < keyEntries.length; i++) {
-          keyEntries[i].context.clear();
-          parentContext.removeChild(keyEntries[i].context);
-        }
-      }
-
-      let nextReference: Node = anchor;
-
-      for (let i = items.length - 1; i >= 0; i--) {
-        const key = newKeys[i];
-        const occurrence = occurrences.indexes[i];
-        const existing = entries.get(key)?.[occurrence];
-
-        let entry: ForEntry;
-        let nodes: Node[];
-
-        if (existing) {
-          nodes = getItemNodes(parentNode, existing.context);
-          const lastNode = nodes[nodes.length - 1];
-          if (lastNode?.nextSibling !== nextReference) {
-            /*
-              moveBefore keeps the nodes in the document: the components of the row are not disconnected, so they
-              keep their render, their state and their effects. insertBefore would destroy and render them again
-            */
-            for (let i = 0; i < nodes.length; i++) {
-              parentNode.moveBefore(nodes[i], nextReference);
-            }
-          }
-          existing.update?.(i, items);
-          entry = existing;
-        } else {
-          const created = forFn(parentNode, parentContext, items, i, nextReference, parentContext.nodeStrategy);
-          parentContext.addChild(created.context);
-          nodes = getItemNodes(parentNode, created.context);
-          entry = created;
-        }
-
-        const keyEntries = newEntries.get(key) ?? new Array<ForEntry>(occurrences.counts.get(key)!);
-        keyEntries[occurrence] = entry;
-        newEntries.set(key, keyEntries);
-        nextReference = nodes[0] ?? nextReference;
-      }
-
-      entries = newEntries;
-    });
-  });
-
-  parentContext.addUnlistener(unlistener);
+  run.entries = newEntries;
 }
 
 /**

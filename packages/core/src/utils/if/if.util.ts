@@ -1,7 +1,8 @@
-import type { NoArgsFunction } from '@xaendar/types';
 import { _SSR_MARKERS } from '../../costants';
-import { effect, untracked } from '../../signals';
+import { untracked } from '../../signals';
+import { _bindEffect } from '../../signals/effect/effect';
 import type { Block } from '../../types/if/block.type';
+import type { IfRun } from '../../types/if/if-run.type';
 import type { State } from '../../types/if/state.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { _Context } from '../context/context.util';
@@ -19,7 +20,7 @@ import { _Context } from '../context/context.util';
  * two branches are an `if` / `else if` when both of them declare a condition, and a
  * single branch may have none (e.g. a `@switch` declaring only its `@default`).
  *
- * The evaluation is wrapped in an {@link effect}, so it is automatically re-executed
+ * The evaluation is wrapped in an effect, so it is automatically re-executed
  * whenever any signal read by the conditions changes. On each re-execution, the current
  * state (which branch is active) and the related cleanup functions are only updated if
  * the active branch has actually changed.
@@ -37,36 +38,58 @@ import { _Context } from '../context/context.util';
  *   through it.
  */
 export function _if(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, blocks: Block[], kind: string = _SSR_MARKERS.if): void {
-  const { nodeStrategy } = parentContext;
-  const block = nodeStrategy.block(parentContext, parentNode, referenceNode, 'if', kind);
+  const nodeBlock = parentContext.nodeStrategy.block(parentContext, parentNode, referenceNode, 'if', kind);
   const [first, second] = blocks;
-  let select: NoArgsFunction<number | null>;
+  let select: IfRun['select'];
 
   if (blocks.length === 1 && first.condition) {
-    select = () => selectIf(first);
+    select = selectIf;
   } else if (blocks.length === 2 && first.condition && !second.condition) {
-    select = () => selectIfElse(first);
+    select = selectIfElse;
   } else {
-    select = () => selectIfElseIf(blocks);
+    select = selectIfElseIf;
   }
 
-  let state: State | undefined;
-  let started = false;
+  const run: IfRun = { 
+    parentNode, parentContext, 
+    nodeBlock, blocks, 
+    select, 
+    state: undefined, 
+    started: false 
+  };
+  
+  _bindEffect(parentContext, runIf, run);
+}
 
-  const unlistener = effect(() => {
-    const selected = select();
-    untracked(() => {
-      if (!started) {
-        started = true;
-        // The marker of the server holds the index of the branch it rendered, none when it rendered none
-        state = renderBranch(parentNode, parentContext, block.anchor, blocks, state, selected, nodeStrategy.adopt(parentNode, block, selected === null ? '' : `${selected}`));
-        nodeStrategy.close(parentNode, block);
-      } else if ((state?.activeBranch ?? null) !== selected) {
-        state = renderBranch(parentNode, parentContext, block.anchor, blocks, state, selected, parentContext.nodeStrategy);
-      }
-    });
-  });
-  parentContext.addUnlistener(unlistener);
+/**
+ * Selects the branch of an `@if` and renders it: the callback of the effect of {@link _if}, shared by every `@if`. Only
+ * the conditions are tracked.
+ *
+ * @param run - The `@if`.
+ */
+function runIf(run: IfRun): void {
+  const selected = run.select(run.blocks);
+  untracked(() => showBranch(run, selected));
+}
+
+/**
+ * Renders the branch selected, when it is not the one rendered already. The first render, run synchronously by
+ * {@link _if}, gets its nodes with the strategy of the context: in a hydration, it adopts the ones of the server.
+ *
+ * @param run - The `@if`.
+ * @param selected - The index of the branch to render, `null` to render none.
+ */
+function showBranch(run: IfRun, selected: number | null): void {
+  const { parentNode, parentContext, nodeBlock, blocks, state } = run;
+  if (!run.started) {
+    run.started = true;
+    const { nodeStrategy } = parentContext;
+    // The marker of the server holds the index of the branch it rendered, none when it rendered none
+    run.state = renderBranch(parentNode, parentContext, nodeBlock.anchor, blocks, state, selected, nodeStrategy.adopt(parentNode, nodeBlock, selected === null ? '' : `${selected}`));
+    nodeStrategy.close(parentNode, nodeBlock);
+  } else if ((state?.activeBranch ?? null) !== selected) {
+    run.state = renderBranch(parentNode, parentContext, nodeBlock.anchor, blocks, state, selected, parentContext.nodeStrategy);
+  }
 }
 
 /**
@@ -99,21 +122,21 @@ function renderBranch(parentNode: HTMLElement, parentContext: _Context, anchor: 
 /**
  * Selects the branch of a simple `if` (a single branch with a condition, no `else`).
  *
- * @param ifBlock - The `if` branch to evaluate.
+ * @param blocks - The branches: the `if` branch only.
  * @returns `0` when its condition holds, `null` otherwise.
  */
-function selectIf(ifBlock: Block): number | null {
-  return ifBlock.condition!() ? 0 : null;
+function selectIf(blocks: Block[]): number | null {
+  return blocks[0].condition!() ? 0 : null;
 }
 
 /**
  * Selects the branch of an `if` / `else` (exactly two branches, only the first one with a condition).
  *
- * @param ifBlock - The `if` branch to evaluate.
+ * @param blocks - The branches: the `if` branch and the `else` one.
  * @returns `0` when the condition of the `if` holds, `1`, the `else`, otherwise.
  */
-function selectIfElse(ifBlock: Block): number {
-  return ifBlock.condition!() ? 0 : 1;
+function selectIfElse(blocks: Block[]): number {
+  return blocks[0].condition!() ? 0 : 1;
 }
 
 /**

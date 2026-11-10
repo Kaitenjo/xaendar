@@ -1,5 +1,5 @@
 import { INTERNAL_HOST_EVENTS, INTERNAL_HOST_PROPERTIES } from '../../costants';
-import { effect } from '../../signals/effect/effect';
+import { _bindEffect } from '../../signals/effect/effect';
 import type { EventHost } from '../../types/event/event-host.type';
 import type { HostPropertyBinding } from '../../types/host/host-property-binding.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
@@ -83,7 +83,7 @@ export function _applyHostProperties(owner: EventHost, element: Element): void {
  */
 function bindProperty(owner: EventHost, element: Element, binding: HostPropertyBinding, context: _Context): void {
   const { name, isClass } = binding;
-  context.addUnlistener(effect(() => applyProperty(owner, element, binding)));
+  _bindEffect(context, applyProperty, owner, element, binding);
   context.addUnlistener(isClass ? () => untoggleClass(element, name) : () => writeAttribute(element, name, null));
 }
 
