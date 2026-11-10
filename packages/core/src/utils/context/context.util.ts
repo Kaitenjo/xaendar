@@ -1,4 +1,3 @@
-import { removeItem } from '@xaendar/common';
 import { Function, NoArgsVoidFunction } from '@xaendar/types';
 import { trackNode } from '../track-node/track-node.util';
 import type { _DeclarationKind } from '../../types/declaration-kind.type';
@@ -58,6 +57,11 @@ export class _Context {
    * recreating them.
    */
   private _nodes: Array<Node> | null = null;
+  /**
+   * The node each node of {@link _nodes}, at the same index, is inserted into, which {@link clear} removes it from: `null`
+   * for a node tracked without one, which the context does not remove. `null` while the context tracks no node.
+   */
+  private _parentNodes: Array<Node | null> | null = null;
   /**
    * Cleanup functions registered via {@link addUnlistener}.
    * Called when this context is destroyed to remove DOM nodes,
@@ -257,21 +261,35 @@ export class _Context {
   }
 
   /**
-   * Registers a DOM node as directly owned by this context.
+   * Registers a DOM node as directly owned by this context: when the context is cleared, the node is removed from the
+   * node it is inserted into, if it is still there.
    *
    * @param node - The DOM node to track.
+   * @param parentNode - The node the node is inserted into, or `null` for a node the context does not remove, as the
+   *   nodes of the server a `@hydrate` holds until its content adopts them.
    */
-  public addNode(node: Node): void {
-    this._nodes ?  this._nodes.push(node) : this._nodes = [node];
+  public addNode(node: Node, parentNode: Node | null = null): void {
+    // The first node gets arrays of exactly one item: a push into an empty array would reserve room for many more
+    if (this._nodes) {
+      this._nodes.push(node);
+      this._parentNodes!.push(parentNode);
+    } else {
+      this._nodes = [node];
+      this._parentNodes = [parentNode];
+    }
   }
 
   /**
-   * Removes a tracked DOM node from this context.
+   * Removes a tracked DOM node from this context, along with the node it is inserted into.
    *
    * @param nodeToRemove - The DOM node to untrack.
    */
   public removeNode(nodeToRemove: Node): void {
-    this._nodes && removeItem(this._nodes, nodeToRemove);
+    const index = this._nodes ? this._nodes.indexOf(nodeToRemove) : -1;
+    if (index !== -1) {
+      this._nodes!.splice(index, 1);
+      this._parentNodes!.splice(index, 1);
+    }
   }
 
   /**
@@ -355,13 +373,32 @@ export class _Context {
   }
 
   /**
-   * Clear this context by invoking all registered cleanup functions,
+   * Clear this context by removing its nodes from the DOM, invoking all registered cleanup functions,
    * recursively destroying child contexts, and clearing internal state.
+   *
+   * The nodes are removed first, from the last to the first, each one only from the node it was inserted into and only
+   * if it is still there: a node moved elsewhere, or never inserted, is left where it is.
    *
    * After calling `Clear`, this context and its entire subtree are
    * considered disposed and should no longer be used.
    */
   public clear(): void {
+    /*
+      Nodes are removed before unlistenFns to let events fired on
+      onDestroy actually works. UnlistenFns remove the listener on the node
+      preventing the parent to listen the event emitted on the destruction of the
+      element when is removed
+    */
+    if (this._nodes) {
+      for (let i = this._nodes.length - 1; i >= 0; i--) {
+        const node = this._nodes[i];
+        const parentNode = this._parentNodes![i];
+        if (parentNode !== null && node.parentNode === parentNode) {
+          parentNode.removeChild(node);
+        }
+      }
+    }
+
     if (this._unlistenFns) {
       for (let i = 0; i < this._unlistenFns.length; i++) {
         this._unlistenFns[i]();
@@ -376,7 +413,8 @@ export class _Context {
 
     this._unlistenFns = null;
     this._children = null;
-    this._nodes = [];
+    this._nodes = null;
+    this._parentNodes = null;
     this._variables = null;
   }
 }
@@ -441,9 +479,8 @@ function toMap(variables: unknown[]): Map<string, unknown> {
 /**
  * Mounts a node into the DOM and binds it to the context lifecycle.
  *
- * Registers the node with the context, inserts it into `parentNode` at the
- * given position, and schedules a cleanup listener that removes the node
- * from both the context and the DOM when the context is destroyed.
+ * Registers the node with the context, which removes it from `parentNode`
+ * when it is destroyed, and inserts it into `parentNode` at the given position.
  *
  * @param node - The node to mount.
  * @param parentNode - The node to insert the node into: an element, or the shadow root of a component.

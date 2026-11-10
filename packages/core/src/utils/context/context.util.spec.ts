@@ -276,6 +276,33 @@ describe('_Context', () => {
       context.removeNode(a);
       expect(context.getNodes()).toEqual([b]);
     });
+
+    it('ignores a node it does not track', () => {
+      const context = createRoot();
+      const a = document.createElement('a');
+      context.removeNode(a);
+      expect(context.getNodes()).toBeNull();
+
+      context.addNode(a);
+      context.removeNode(document.createElement('b'));
+      expect(context.getNodes()).toEqual([a]);
+    });
+
+    it('keeps the node each node is inserted into at the index of the node when one is removed', () => {
+      const context = createRoot();
+      const [first, second, third] = [document.createElement('div'), document.createElement('div'), document.createElement('div')];
+      const [a, b, c] = [first.appendChild(document.createElement('a')), second.appendChild(document.createElement('b')), third.appendChild(document.createElement('i'))];
+      context.addNode(a, first);
+      context.addNode(b, second);
+      context.addNode(c, third);
+
+      context.removeNode(b);
+      context.clear();
+
+      expect(a.parentNode).toBeNull();
+      expect(b.parentNode).toBe(second);
+      expect(c.parentNode).toBeNull();
+    });
   });
 
   describe('removeUnlistener', () => {
@@ -310,12 +337,67 @@ describe('_Context', () => {
       expect(first).toHaveBeenCalledOnce();
       expect(second).toHaveBeenCalledOnce();
       expect(childClear).toHaveBeenCalledOnce();
-      expect(root.getNodes()).toEqual([]);
+      expect(root.getNodes()).toBeNull();
       expect(root.get('name')).toBeUndefined();
 
       root.clear();
       expect(first).toHaveBeenCalledOnce();
       expect(childClear).toHaveBeenCalledOnce();
+    });
+
+    it('removes each node from the node it is inserted into, from the last to the first, before running the cleanups and destroying the children', () => {
+      const root = createRoot();
+      const parent = document.createElement('div');
+      const [a, b] = [parent.appendChild(document.createElement('a')), parent.appendChild(document.createElement('b'))];
+      root.addNode(a, parent);
+      root.addNode(b, parent);
+      const removed = new Array<Node>();
+      const removeChild = parent.removeChild.bind(parent);
+      vi.spyOn(parent, 'removeChild').mockImplementation(<T extends Node>(child: T): T => {
+        removed.push(child);
+        return removeChild(child);
+      });
+      const seen = new Array<string>();
+      root.addUnlistener(() => seen.push(`cleanup ${parent.childNodes.length}`));
+      vi.spyOn(root.addChild(), 'clear').mockImplementation(() => seen.push(`child ${parent.childNodes.length}`));
+
+      root.clear();
+
+      expect(removed).toEqual([b, a]);
+      expect(seen).toEqual(['cleanup 0', 'child 0']);
+    });
+
+    it('leaves a node moved into another node', () => {
+      const root = createRoot();
+      const [parent, other] = [document.createElement('div'), document.createElement('div')];
+      const node = parent.appendChild(document.createElement('p'));
+      root.addNode(node, parent);
+      other.appendChild(node);
+
+      root.clear();
+
+      expect(node.parentNode).toBe(other);
+    });
+
+    it('ignores a node never inserted', () => {
+      const root = createRoot();
+      const node = document.createElement('p');
+      root.addNode(node, document.createElement('div'));
+
+      root.clear();
+
+      expect(node.parentNode).toBeNull();
+    });
+
+    it('leaves a node tracked without the node it is inserted into, as the nodes of the server a @hydrate holds', () => {
+      const root = createRoot();
+      const parent = document.createElement('div');
+      const node = parent.appendChild(document.createElement('p'));
+      root.addNode(node);
+
+      root.clear();
+
+      expect(node.parentNode).toBe(parent);
     });
   });
 
@@ -417,7 +499,7 @@ describe('mountNode', () => {
     context.clear();
 
     expect(node.parentNode).toBeNull();
-    expect(context.getNodes()).toEqual([]);
+    expect(context.getNodes()).toBeNull();
   });
 });
 
