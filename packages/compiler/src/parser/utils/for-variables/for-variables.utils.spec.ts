@@ -8,7 +8,7 @@ const parse = (template: string) => new Parser(template, new Lexer(template).tok
 
 describe('getForVariables', () => {
   it('returns the item alias and the implicit variables, by their alias if any', () => {
-    const [withAlias] = parse('@for (item of items; track item(); f = $first) {}') as ForNode[];
+    const [withAlias] = parse('@for (item of items; track item; f = $first) {}') as ForNode[];
     const [withoutAlias] = parse('@for (3) {}') as ForNode[];
 
     expect(getForVariables(withAlias)).toEqual(['item', '$index', 'f', '$last', '$even', '$odd']);

@@ -1,6 +1,6 @@
 <template card(title: string, item: Item)>       <!-- declares the template: its name, then its typed parameters -->
-  <h3>{ title() }</h3>                            <!-- a parameter is a signal -->
-  <p>{ item().description }</p>
+  <h3>{ title }</h3>                            <!-- a parameter is a signal -->
+  <p>{ item.description }</p>
 </template>
 
 @render card('First', items()[0])                 <!-- renders an instance here -->

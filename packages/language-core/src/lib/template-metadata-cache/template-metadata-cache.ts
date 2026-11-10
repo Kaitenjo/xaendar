@@ -68,7 +68,7 @@ export class TemplateMetadataCache implements ContextCache {
    * Resolves what an `@import` specifier of a template imports: the metadata of the component or of the directive it
    * names, read from the file declaring it when the module re-exports it (a barrel), or any other export of the module,
    * reactive when reading it can read a signal (a namespace always is), as
-   * the build tells it: the type-check reads it to tell whether a `@let` is a signal.
+   * the build tells it: the type-check reads it to narrow the signals the conditions of an `@if` call.
    * A symbol of a package keeps the path written in the `@import`, which the type-check code imports it with, and a
    * component or a directive of a compiled library is read from the manifest of its package.
    *

@@ -33,31 +33,25 @@ describe('TypeChecker', () => {
   });
 
   it('declares the templates at the start of their scope, checks their content in an arrow function and their @render as a call, with the helpers they need before the function', async () => {
-    const template = '@render row(title, 1)\n<template row(label: string, count: number)><p>{ label() }</p></template>';
+    const template = '@render row(title, 1)\n<template row(label: string, count: number)><p>{ label }</p></template>';
     const start = template.indexOf('<template');
     const { text, mappingTable } = await new TypeChecker(template, parse(template)).generate([]);
 
     expect(text).toBe([
-      'import type * as __module0 from \'@xaendar/core/signals\';',
       'type __Template<Params extends unknown[]> = { readonly __params: Params };',
-      'type __Parameter<Value> = __module0.Computed<Value>;',
-      'type __Values<Params extends unknown[]> = { [Key in keyof Params]: Exclude<Params[Key], undefined> extends __Parameter<infer Value> ? Value : never };',
       'type __Arguments<Params extends unknown[], Count extends number> = Params[\'length\'] extends Count ? Params : Params extends [...infer Head, unknown] ? __Arguments<Head, Count> : Params;',
-      'declare function __render<Params extends unknown[], Count extends number>(template: __Template<Params>, count: Count): (...args: Count extends Params[\'length\'] ? __Arguments<__Values<Required<Params>>, Count> : __Values<Params>) => void;',
-      'declare function __default<Value>(value: Value): __Parameter<Value>;',
-      'declare function __optional<Value>(): __Parameter<Value | undefined>;',
-      'declare function __let<Value>(value: Value): __module0.Computed<Value>;',
+      'declare function __render<Params extends unknown[], Count extends number>(template: __Template<Params>, count: Count): (...args: Count extends Params[\'length\'] ? __Arguments<Required<Params>, Count> : Params) => void;',
       'function typeCheck() {',
       `  type __Params${start} = Parameters<typeof __template${start}>;`,
       `  let row!: __Template<__Params${start}>;`,
       '  __render(row, 2)(root.title, 1);',
-      `  const __template${start} = (label: __Parameter<string>, count: __Parameter<number>): void => {`,
-      '    label();',
+      `  const __template${start} = (label: string, count: number): void => {`,
+      '    label;',
       '  };',
       '}'
     ].join('\n'));
     // The name of the template, the @render, the parameters and the content are mapped onto the template
-    expect([...mappingTable.keys()]).toEqual([11, 12, 13, 14]);
+    expect([...mappingTable.keys()]).toEqual([5, 6, 7, 8]);
   });
 
   it('writes no template helper for a template declaring no template', async () => {
@@ -65,12 +59,12 @@ describe('TypeChecker', () => {
     expect((await new TypeChecker(template, parse(template)).generate([])).text).not.toContain('__Template');
   });
 
-  it('declares the @let at the start of their scope, typed with the constant their value is checked in, as signals when they read a reactive member, a reactive import or another signal @let', async () => {
+  it('declares the @let at the start of their scope, typed with the constant their value is checked in, the type of their value', async () => {
     const template = [
       '@import { count, format } from \'./store\'',
       '<button (click)="pick(label)">Go</button>',
       '@let total = price() * 2;',
-      '@let doubled = total() * 2;',
+      '@let doubled = total * 2;',
       '@let counted = count() + 1;',
       '@let label = format(unit);'
     ].join('\n');
@@ -83,7 +77,7 @@ describe('TypeChecker', () => {
     const at = (text: string) => template.indexOf(text);
     const { text } = await new TypeChecker(template, ast).generate([], [], [], symbols, ['price']);
 
-    expect(text).toContain('declare function __let<Value>(value: Value): __module0.Computed<Value>;');
+    expect(text).not.toContain('__let<');
     expect(text).toContain([
       'function typeCheck() {',
       `  let total!: typeof __let${at('@let total')};`,
@@ -91,9 +85,9 @@ describe('TypeChecker', () => {
       `  let counted!: typeof __let${at('@let counted')};`,
       `  let label!: typeof __let${at('@let label')};`,
       '  root.pick(label);',
-      `  const __let${at('@let total')} = __let(root.price() * 2);`,
-      `  const __let${at('@let doubled')} = __let(total() * 2);`,
-      `  const __let${at('@let counted')} = __let(count() + 1);`,
+      `  const __let${at('@let total')} = root.price() * 2;`,
+      `  const __let${at('@let doubled')} = total * 2;`,
+      `  const __let${at('@let counted')} = count() + 1;`,
       `  const __let${at('@let label')} = format(root.unit);`,
       '}'
     ].join('\n'));

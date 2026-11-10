@@ -16,6 +16,11 @@ export type HydrateBlock = {
    */
   when?: NoArgsFunction<unknown>,
   /**
+   * The names of the variables of the template the expression of `when` reads (see `_bindEffect`), omitted when it
+   * reads none.
+   */
+  whenReads?: readonly string[],
+  /**
    * Loads the modules of the components only the content renders, if any: the content is rendered once they are loaded.
    */
   load?: NoArgsFunction<Promise<unknown>>,
@@ -29,6 +34,11 @@ export type HydrateBlock = {
    * if the block declares one and has modules to load.
    */
   prefetchWhen?: NoArgsFunction<unknown>,
+  /**
+   * The names of the variables of the template the expression of the `when` following `prefetch` reads (see
+   * `_bindEffect`), omitted when it reads none.
+   */
+  prefetchWhenReads?: readonly string[],
   /**
    * Renders the content.
    */

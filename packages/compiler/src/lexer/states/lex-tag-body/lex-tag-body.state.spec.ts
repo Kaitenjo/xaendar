@@ -17,7 +17,7 @@ describe('lexTagBody', () => {
   it.each([
     ['the former @event syntax', '@click="onClick()"'],
     ['a keyword not followed by a space', '@if(cond()) { }'],
-    ['a keyword not allowed among the bindings', '@for (item of items; track item()) { }'],
+    ['a keyword not allowed among the bindings', '@for (item of items; track item) { }'],
     ['nothing', '@ click="onClick()"']
   ])('throws when @ starts neither a conditional binding nor a directive: %s', (_description, input) => {
     expect(() => lexTagBody(new LexerCursor(input), context)).toThrow('events are bound with (eventName)="handler()"');

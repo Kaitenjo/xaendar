@@ -1,11 +1,11 @@
 @import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <ul>
-  @for (row of rows(); track $index()) {
+  @for (row of rows(); track $index) {
     <li>
       @try {
-        @let person = parse(row());
-        <span>{ person().name }, { person().age }</span>
+        @let person = parse(row);
+        <span>{ person.name }, { person.age }</span>
       } @catch (error) {
         <span class="error">{ error instanceof Error ? error.message : 'Unreadable row' }</span>
       }

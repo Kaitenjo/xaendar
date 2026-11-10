@@ -24,9 +24,9 @@ export class CompilerContext {
    */
   private readonly _componentShadowingMembers = new Set<string>();
   /**
-   * Identifiers declared directly in this scope, mapped to whether they
-   * hold a plain value or a signal (e.g. the item of a `@for` and its implicit
-   * variables like `$index` are signals).
+   * Identifiers declared directly in this scope, mapped to what they hold (see
+   * `IdentifierKind`): e.g. the item of a `@for` and its implicit variables like
+   * `$index` are variables of the template.
    */
   private readonly _identifiers = new Map<string, IdentifierKind>();
   /**

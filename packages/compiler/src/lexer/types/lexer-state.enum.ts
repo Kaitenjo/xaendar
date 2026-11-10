@@ -100,8 +100,8 @@ export enum LexerState {
    */
   TEMPLATE_DECLARATION = 'template-declaration',
   /**
-   * Consuming the call of a template after `@render`: its name and its arguments, e.g. `row(item())` in
-   * `@render row(item())`.
+   * Consuming the call of a template after `@render`: its name and its arguments, e.g. `row(item)` in
+   * `@render row(item)`.
    */
   RENDER = 'render',
   /**

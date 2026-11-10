@@ -4,7 +4,7 @@ import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
 import type { ASTNodeType } from '../node.enum';
 
 /**
- * AST node representing the render of a template, e.g. `@render row(item(), $index())`: it renders an instance of the
+ * AST node representing the render of a template, e.g. `@render row(item, $index)`: it renders an instance of the
  * template where it is written.
  */
 export type RenderNode = ASTNodeWithSpan<{

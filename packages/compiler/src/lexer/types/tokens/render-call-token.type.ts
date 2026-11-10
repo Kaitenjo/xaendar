@@ -2,8 +2,8 @@ import { TokenType } from '../token-type.enum';
 import type { TokenWithSpan } from '../token-with-span.type';
 
 /**
- * Token emitted when the lexer consumes the call of a template after `@render`, e.g. `row(item(), index())` in
- * `@render row(item(), index())`.
+ * Token emitted when the lexer consumes the call of a template after `@render`, e.g. `row(item, index)` in
+ * `@render row(item, index)`.
  */
 export type RenderCallToken = TokenWithSpan<{
   /**

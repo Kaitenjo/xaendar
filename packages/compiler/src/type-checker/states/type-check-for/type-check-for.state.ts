@@ -19,7 +19,7 @@ const FOR_ITERABLE = '(<T extends number | readonly unknown[]>(iterable: T): T e
 
 /**
  * Name of the variable of the `for...of` loop holding each value of the iterable: the item alias is declared
- * in the body as a signal of its type, like the implicit variables. It starts with `$`, as the implicit
+ * in the body with its type, like the implicit variables. It starts with `$`, as the implicit
  * variables do, so that it cannot clash with an alias.
  */
 const FOR_VALUE = '$$item';
@@ -34,8 +34,8 @@ const FOR_VALUE = '$$item';
  * exactly like it would for a loop written by hand — with no synthetic
  * function boundary needed. The iterable goes through {@link FOR_ITERABLE}
  * so that a numeric iterable is accepted too. The item alias and the implicit
- * variables are declared in the body as signals, as they are at runtime: the
- * item is a signal of the type of the loop variable.
+ * variables are declared in the body as the values they are at runtime: the
+ * item has the type of the loop variable.
  *
  * @param node - The `ForNode` to type-check.
  * @param processNode - Callback emitting the lines of each child node.
@@ -51,11 +51,11 @@ export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: T
   const oddName = resolveImplicit(node, '$odd');
 
   if (node.itemAlias) {
-    forContext.addUnresolvableIdentifier(node.itemAlias, 'signal');
+    forContext.addUnresolvableIdentifier(node.itemAlias, 'variable');
   }
   const identifiers = [indexName, firstName, lastName, evenName, oddName];
   for (let i = 0; i < identifiers.length; i++) {
-    forContext.addUnresolvableIdentifier(identifiers[i], 'signal');
+    forContext.addUnresolvableIdentifier(identifiers[i], 'variable');
   }
 
   const lines = new Array<Line>();
@@ -65,15 +65,15 @@ export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: T
 
   const body = new Array<Line>();
   if (node.itemAlias) {
-    body.push(declareVariable(node.itemAlias, node.itemAliasSpan, `Signal<typeof ${FOR_VALUE}>`));
+    body.push(declareVariable(node.itemAlias, node.itemAliasSpan, `typeof ${FOR_VALUE}`));
   }
 
   body.push(
-    declareVariable(indexName, node.implicitAliasSpans.get('$index'), 'Signal<number>'),
-    declareVariable(firstName, node.implicitAliasSpans.get('$first'), 'Signal<boolean>'),
-    declareVariable(lastName, node.implicitAliasSpans.get('$last'), 'Signal<boolean>'),
-    declareVariable(evenName, node.implicitAliasSpans.get('$even'), 'Signal<boolean>'),
-    declareVariable(oddName, node.implicitAliasSpans.get('$odd'), 'Signal<boolean>')
+    declareVariable(indexName, node.implicitAliasSpans.get('$index'), 'number'),
+    declareVariable(firstName, node.implicitAliasSpans.get('$first'), 'boolean'),
+    declareVariable(lastName, node.implicitAliasSpans.get('$last'), 'boolean'),
+    declareVariable(evenName, node.implicitAliasSpans.get('$even'), 'boolean'),
+    declareVariable(oddName, node.implicitAliasSpans.get('$odd'), 'boolean')
   );
 
   // The body is a scope of its own: the element refs it declares follow the ones of the loop

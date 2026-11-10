@@ -32,7 +32,7 @@ describe('findUnusedImports', () => {
   it('counts a component used as an element, and a directive or structural directive used anywhere', async () => {
     expect(await unusedIn(`${imports}<my-child label="a"><b @@tooltip>x</b></my-child>`)).toEqual([['Media as M', 'M']]);
     expect(await unusedIn(`${imports}<b @@tooltip @if (true) { @@media }>x</b>`)).toEqual([['Child', 'Child']]);
-    expect(await unusedIn(`${imports}@for (item of items; track item().id) { <my-child label="a" @@tooltip @@media /> }`)).toBeUndefined();
+    expect(await unusedIn(`${imports}@for (item of items; track item.id) { <my-child label="a" @@tooltip @@media /> }`)).toBeUndefined();
   }, TIMEOUT);
 
   it('finds every import of a template using none', async () => {

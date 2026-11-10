@@ -1,7 +1,7 @@
 import type { IterationVariable } from './iteration-variable.type';
 
 /**
- * The variables the body of a `@for` reads, which each of its items creates as signals (see `_iterationVariables`): the
+ * The variables the body of a `@for` reads, which each of its items declares as values (see `_iterationVariables`): the
  * same for every item, so the compiled code declares them once, as a constant of the module of the template, which
  * `_for` and the function rendering an item read.
  *

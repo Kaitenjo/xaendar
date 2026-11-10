@@ -37,7 +37,7 @@ export type GeneratorTransitionFunctionReturnType = {
       /**
        * Optional line(s) of code to prepend to the function body, before
        * its children are generated (e.g. the `_iterationVariables(...)`
-       * destructuring assignment for a `@for` block).
+       * declaring the variables of a `@for` block).
        */
       precode?: string;
       /**
@@ -54,11 +54,6 @@ export type GeneratorTransitionFunctionReturnType = {
        * e le sue chiamate di rendering dirette devono usare `null`.
        */
       anchor?: string;
-      /**
-       * Whether the function renders the body of an item of a `@for`: it returns the entry of the item, created by its
-       * precode (`entry`), instead of its context.
-       */
-      isForBody?: boolean;
     };
     /**
      * Names of the parameters this generated function should declare, in

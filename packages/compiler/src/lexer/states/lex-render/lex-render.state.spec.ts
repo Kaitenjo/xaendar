@@ -40,6 +40,6 @@ describe('lexRender', () => {
     ['a whitespace separates the name from the arguments', '@render row (item())'],
     ['the name is not an identifier', '@render row.inner(item())']
   ])('throws when %s', (_description, input) => {
-    expect(() => lexRender(afterKeyword(input), context)).toThrow('@render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())');
+    expect(() => lexRender(afterKeyword(input), context)).toThrow('@render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item)');
   });
 });

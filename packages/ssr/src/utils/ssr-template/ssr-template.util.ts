@@ -1,6 +1,4 @@
 import type { _Context } from '@xaendar/core';
-import { computed } from '@xaendar/core/signals';
-import type { NoArgsFunction } from '@xaendar/types';
 import type { ServerOutput } from '../../types/server-output.type';
 import type { ServerTemplate } from '../../types/server-template.type';
 
@@ -16,14 +14,14 @@ export function _ssrTemplate(context: _Context, render: ServerTemplate['render']
 }
 
 /**
- * Writes an instance of a template, e.g. for `@render row(item())`: each argument becomes the signal of its parameter, as
- * on the client, so that the content reads the parameters the same way.
+ * Writes an instance of a template, e.g. for `@render row(item)`: the values of the arguments are its parameters, as on
+ * the client, so that the content reads the parameters the same way.
  *
  * @param out - The output.
  * @param _context - Unused runtime context rendering the instance.
  * @param template - The template.
- * @param args - The functions computing the arguments, one for each parameter.
+ * @param args - The values of the arguments, one for each parameter passed.
  */
-export function _ssrRenderTemplate(out: ServerOutput, _context: _Context, template: ServerTemplate, args: NoArgsFunction<unknown>[]): void {
-  template.render(out, template.context, args.map(arg => computed(arg)));
+export function _ssrRenderTemplate(out: ServerOutput, _context: _Context, template: ServerTemplate, args: unknown[]): void {
+  template.render(out, template.context, args);
 }

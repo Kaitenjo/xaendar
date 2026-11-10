@@ -214,6 +214,19 @@ describe('resolveExpression', () => {
       .toBe('typeof this.id !== \'boolean\' || this.pippo instanceof HTMLElement');
   });
 
+  it('reads the variables of the template as values, listing each one once, and calls one holding a function as written', () => {
+    const context = new GeneratorContext(cache);
+    context.addIdentifier('row', 'variable');
+    context.addIdentifier('handler', 'variable');
+    context.addIdentifier('field', 'value');
+
+    const resolved = resolve('handler(row) + row.id + field.value', context);
+
+    expect(resolved.expression).toBe('context.get(\'handler\')(context.get(\'row\')) + context.get(\'row\').id + context.get(\'field\').value');
+    expect(resolved.variables).toEqual(['handler', 'row']);
+    expect(resolved.reactive).toBeFalsy();
+  });
+
   it('propagates reactivity from any part of the expression', () => {
     const context = new GeneratorContext(cache);
     context.addSignalClassField('a');

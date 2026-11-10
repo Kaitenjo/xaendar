@@ -25,17 +25,17 @@
         </tr>
       </thead>
       <tbody>
-        @for (item of visible(); track item().id) {
+        @for (item of visible(); track item.id) {
           <tr>
-            <td>{ item().id }</td>
-            <td>{ item().name }</td>
+            <td>{ item.id }</td>
+            <td>{ item.name }</td>
             <td class="quantity">
-              <ex-button (click)="changeQuantity(item(), -1)">−</ex-button>
-              <span>{ item().quantity() }</span>
-              <ex-button (click)="changeQuantity(item(), 1)">+</ex-button>
+              <ex-button (click)="changeQuantity(item, -1)">−</ex-button>
+              <span>{ item.quantity() }</span>
+              <ex-button (click)="changeQuantity(item, 1)">+</ex-button>
             </td>
             <td>
-              <ex-button class="remove" (click)="removeItem(item())">Remove</ex-button>
+              <ex-button class="remove" (click)="removeItem(item)">Remove</ex-button>
             </td>
           </tr>
         }

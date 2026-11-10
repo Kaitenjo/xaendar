@@ -44,6 +44,11 @@ export class GeneratorContext extends CompilerContext {
    * The events the template listens to, held by the root scope (see {@link addEventName}).
    */
   private readonly _eventNames = new Set<string>();
+  /**
+   * The constants of the module listing the variables of the template a binding reads (see {@link getReads}), by the
+   * names they list, joined: held by the root scope.
+   */
+  private readonly _reads = new Map<string, string>();
 
   /**
    * The events the template listens to, read from the root scope.
@@ -52,6 +57,21 @@ export class GeneratorContext extends CompilerContext {
    */
   public get eventNames(): ReadonlySet<string> {
     return this._eventNames;
+  }
+
+  /**
+   * The declarations of the constants listing the variables the bindings read (see {@link getReads}), read from the root
+   * scope, to write at the top of the module.
+   *
+   * @returns The declarations, one per list, e.g. `const _reads0 = ['row'];`.
+   */
+  public get readsDeclarations(): string[] {
+    const declarations = new Array<string>();
+    for (const [names, constant] of this._reads) {
+      declarations.push(`const ${constant} = [${names.split(',').map(name => `'${name}'`).join(', ')}];`);
+    }
+
+    return declarations;
   }
 
   /**
@@ -137,6 +157,37 @@ export class GeneratorContext extends CompilerContext {
    */
   public getClientComponent(tagName: string): ComponentMetadata | undefined {
     return this._clientComponents.get(tagName) ?? this.parent?.getClientComponent(tagName);
+  }
+
+  /**
+   * Returns the constant of the module listing the variables of the template a binding reads, which the runtime receives
+   * to run the binding again when one of them changes (see `_bindEffect` of the runtime): one per list, held by the root
+   * scope and declared at the top of the module (see {@link readsDeclarations}), so that the bindings of a template,
+   * however many times it renders, share it.
+   *
+   * N.B. Deliberate, to save memory: a constant of the module instead of an array literal written in the render code,
+   * which would allocate an array per binding at each render, in every row of a table. Do not inline it.
+   *
+   * @param variables - The names of the variables the binding reads, if any.
+   * @returns The name of the constant, `undefined` when the binding reads no variable.
+   */
+  public getReads(variables: readonly string[] | undefined): string | undefined {
+    if (!variables?.length) {
+      return undefined;
+    }
+
+    if (this.parent) {
+      return this.parent.getReads(variables);
+    }
+
+    const key = variables.slice().sort().join(',');
+    let constant = this._reads.get(key);
+    if (!constant) {
+      constant = `_reads${this._reads.size}`;
+      this._reads.set(key, constant);
+    }
+
+    return constant;
   }
 
   /**

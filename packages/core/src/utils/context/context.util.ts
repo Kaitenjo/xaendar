@@ -1,6 +1,9 @@
 import { Function } from '@xaendar/types';
+import { _runBinding } from '../../models/effect/effect';
 import { trackNode } from '../track-node/track-node.util';
+import type { Binding } from '../../types/binding.type';
 import type { _DeclarationKind } from '../../types/declaration-kind.type';
+import type { Effect } from '../../types/effect.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { Unlistener } from '../../types/unlistener.type';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
@@ -13,9 +16,33 @@ import { captureContext } from '../try-scope/try-scope.util';
 const VARIABLES_LIMIT = 16;
 
 /**
- * Shared object as a parent for the Context object
+ * The parent of the staging contexts of the components and of the directives (`CustomElement`, `CustomDirective`),
+ * which never read a name through it. An internal of the runtime, as its `_` tells: the API reference leaves it out.
+ *
+ * N.B. Deliberate, to save memory: one object shared by every instance, instead of an empty object created for each
+ * one. Do not replace it with `{}` in the constructors.
  */
-export const EMPTY_CONTEXT = {} as unknown as _Context;
+export const _EMPTY_CONTEXT = {} as unknown as _Context;
+
+/**
+ * The names of the variables changed in the refresh running (see {@link _Context.refresh}), the ones of the scopes
+ * enclosing the context being refreshed included: `null` while none runs.
+ *
+ * N.B. Deliberate, to save memory: refreshing is synchronous, so the names travel through a variable of the module
+ * instead of an argument of every context visited, and the context keeps no list of its own.
+ */
+let changedNames: readonly string[] | null = null;
+
+/**
+ * The refresh running (see {@link _Context.refresh}): the contexts refreshed by it, and the ones it creates, which
+ * render with the values already changed, are marked with it, so that none is refreshed twice. `0` while none runs.
+ */
+let currentPass = 0;
+
+/**
+ * The number of refreshes run so far, numbering the next one.
+ */
+let passCount = 0;
 
 /**
  * Tracks identifier scope during run time template function execution
@@ -70,6 +97,16 @@ export class _Context {
    * detach event listeners, and dispose signal effect subscriptions.
    */
   private _unlistenFns: Array<Unlistener> | null = null;
+  /**
+   * The bindings of this scope reading variables of the template, registered via {@link addBinding}, in the order they
+   * were rendered: {@link refresh} runs again the ones reading a variable that changed. `null` while the scope has none.
+   */
+  private _bindings: Binding[] | null = null;
+  /**
+   * The last refresh that brought this context up to date (see {@link refresh}): the one running when it was created, or
+   * the last one that visited it.
+   */
+  private _pass: number;
 
   /**
    * Creates a new scope context. Created in the first render of the content of a `@try`, it is collected by the `@try`,
@@ -86,6 +123,8 @@ export class _Context {
     this.createElement = this._parent.createElement;
     this.nodeStrategy = nodeStrategy ?? this._parent.nodeStrategy ?? CREATE_NODES;
     this._variables = variableCount > VARIABLES_LIMIT ? new Map() : variableCount ? new Array(2 * variableCount) : null;
+    // Created by a refresh running, the context renders with the values already changed
+    this._pass = currentPass;
     captureContext(this);
   }
 
@@ -163,6 +202,48 @@ export class _Context {
     }
 
     this._parent.set(name, value);
+  }
+
+  /**
+   * Sets the value of a variable declared in this scope, telling whether it changed: the item of a `@for` reused for
+   * another item, a `@let` computing another value, a parameter of a template rendered with another argument. Values
+   * are compared as `Object.is` does. A variable declared without a value (see {@link declare}) is initialized, which
+   * is no change.
+   *
+   * @param name - The name of the variable.
+   * @param value - The new value.
+   * @returns `true` when the variable held another value.
+   * @throws When this scope does not declare the variable.
+   */
+  public update(name: string, value: unknown): boolean {
+    const variables = this._variables;
+    let previous: unknown;
+    if (variables instanceof Map) {
+      previous = variables.get(name);
+      variables.set(name, value);
+    } else {
+      const index = variables ? indexOfVariable(variables, name) : -1;
+      if (index === -1) {
+        throw new Error(`Identifier "${name}" is not declared in this scope.`);
+      }
+
+      previous = variables![index + 1];
+      variables![index + 1] = value;
+    }
+
+    return previous !== _Context._uninitialized.let && previous !== _Context._uninitialized.element && !Object.is(previous, value);
+  }
+
+  /**
+   * Tells the scope that a variable it declares changed outside of a refresh, as a `@let` reading a signal does, or
+   * during the one visiting it, as a `@let` reading another variable does: in the first case the scope is refreshed,
+   * in the second one the refresh running carries the name on, to the bindings rendered after the `@let` and to the
+   * contexts inside this one.
+   *
+   * @param name - The name of the variable.
+   */
+  public propagate(name: string): void {
+    changedNames ? changedNames = changedNames.concat(name) : this.refresh([name]);
   }
 
   /**
@@ -342,6 +423,49 @@ export class _Context {
   }
 
   /**
+   * Registers a binding reading variables of the template, which {@link refresh} runs again when one of them changes.
+   * Its effect, if any, is disposed when the context is cleared.
+   *
+   * @param binding - The binding.
+   */
+  public addBinding(binding: Binding): void {
+    this._bindings ? this._bindings.push(binding) : this._bindings = [binding];
+  }
+
+  /**
+   * Updates the scope after some of its variables changed, as Angular checks a view: the item and the implicit
+   * variables of the row of a `@for` reused for another item or at another index, the parameters of an instance of a
+   * template, a `@let`. The variables are values, so nothing is notified of the change: the scope runs again, in the
+   * order they were rendered, its bindings reading one of them, which apply the value only when it differs, then the
+   * contexts inside it, which may read them too (the branch of an `@if`, the rows of a `@for`, an instance of a
+   * template, the content of an element applying structural directives...). A block run again keeps reacting as it
+   * does to a signal: an `@if` renders another branch, a `@for` reconciles its rows.
+   *
+   * Each binding run again decides again whether it is an effect, as on its first run: it reads the signals its new
+   * values lead it to (see `_runBinding`). A binding reading only signals is left alone, as the bindings reading no
+   * variable that changed are.
+   *
+   * A refresh run inside another one, as the one of a row of a `@for` reconciled by the refresh of the row holding it,
+   * carries the names of the outer one too, and a context is never refreshed twice by the same one: the ones it created
+   * already render with the new values. An error thrown by a binding is reported as the one of an effect, in a
+   * microtask of its own, and the others run anyway.
+   *
+   * @param names - The names of the variables changed, the ones the scope declares.
+   */
+  public refresh(names: readonly string[]): void {
+    const outerNames = changedNames;
+    const outerPass = currentPass;
+    changedNames = outerNames ? outerNames.concat(names) : names;
+    currentPass = outerPass || ++passCount;
+    try {
+      this._refresh();
+    } finally {
+      changedNames = outerNames;
+      currentPass = outerPass;
+    }
+  }
+
+  /**
    * Sets how the nodes rendered within this context, and within the contexts it holds, are got: once a hydration ends,
    * they all create what they render from then on.
    *
@@ -378,6 +502,35 @@ export class _Context {
   }
 
   /**
+   * Runs again the bindings of this context reading a variable changed in the refresh running, then refreshes the
+   * contexts inside it it has not refreshed yet (see {@link refresh}). The names a `@let` of this scope adds while it
+   * runs (see {@link propagate}) are dropped once the context is done: the scopes beside it cannot read it.
+   */
+  private _refresh(): void {
+    const names = changedNames!;
+    this._pass = currentPass;
+    if (this._bindings) {
+      for (let i = 0; i < this._bindings.length; i++) {
+        const binding = this._bindings[i];
+        if (readsAny(binding.reads, changedNames!)) {
+          rerunBinding(binding);
+        }
+      }
+    }
+
+    if (this._children) {
+      for (let i = 0; i < this._children.length; i++) {
+        const child = this._children[i];
+        if (child._pass !== currentPass) {
+          child._refresh();
+        }
+      }
+    }
+
+    changedNames = names;
+  }
+
+  /**
    * Clear this context by removing its nodes from the DOM, invoking all registered cleanup functions,
    * recursively destroying child contexts, and clearing internal state.
    *
@@ -411,6 +564,12 @@ export class _Context {
       }
     }
 
+    if (this._bindings) {
+      for (let i = 0; i < this._bindings.length; i++) {
+        this._bindings[i].effect?.dispose();
+      }
+    }
+
     if (this._children) {
       for (let i = 0; i < this._children.length; i++) {
         this._children[i].clear();
@@ -418,6 +577,7 @@ export class _Context {
     }
 
     this._unlistenFns = null;
+    this._bindings = null;
     this._children = null;
     this._nodes = null;
     this._parentNodes = null;
@@ -480,6 +640,47 @@ function toMap(variables: unknown[]): Map<string, unknown> {
   }
 
   return map;
+}
+
+/**
+ * Tells whether a binding reads one of the variables changed.
+ *
+ * @param reads - The names of the variables the binding reads.
+ * @param names - The names of the variables changed.
+ * @returns `true` when one name is in both.
+ */
+function readsAny(reads: readonly string[], names: readonly string[]): boolean {
+  for (let i = 0; i < reads.length; i++) {
+    for (let j = 0; j < names.length; j++) {
+      if (reads[i] === names[j]) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Runs a binding again, with the current values of the variables: the run decides again whether it is an effect (see
+ * `_runBinding`), so its previous effect, if any, is disposed. When the run throws, the binding stays as it was and the
+ * error is reported in a microtask, as the one of an effect run by the queue: the refresh goes on.
+ *
+ * @param binding - The binding.
+ */
+function rerunBinding(binding: Binding): void {
+  let effect: Effect | null;
+  try {
+    effect = _runBinding(binding.callback, binding.first, binding.second, binding.third);
+  } catch (error) {
+    queueMicrotask(() => {
+      throw error;
+    });
+    return;
+  }
+
+  binding.effect?.dispose();
+  binding.effect = effect;
 }
 
 /**

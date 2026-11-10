@@ -7,8 +7,8 @@
   <ex-button (click)="toggleAll()">Mark every row</ex-button>
 </div>
 <ul>
-  @for (item of items(); track item()) {
-    <li #row @@exMark>{ item() }</li>
+  @for (item of items(); track item) {
+    <li #row @@exMark>{ item }</li>
   }
 </ul>
 <p>{ rows().length } rows found by the ref, { marked() } marked</p>

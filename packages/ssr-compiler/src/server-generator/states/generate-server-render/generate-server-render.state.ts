@@ -4,9 +4,9 @@ import type { ServerTransitionResult } from '../../types/server-transition-resul
 import { SERVER_RESOLVE_OPTIONS } from '../../utils/server-code/server-code.utils';
 
 /**
- * Generates the code rendering an instance of a template, e.g. `@render row(item(), $index())`: the template, read from
- * the scope declaring it, is called with a function for each argument, which the runtime turns into the signal of its
- * parameter, as the client does.
+ * Generates the code rendering an instance of a template, e.g. `@render row(item, $index)`: the template, read from the
+ * scope declaring it, is called with the values of the arguments, read once, which the instance declares as its
+ * parameters, as the client does.
  *
  * @param node - The `@render` node.
  * @param _parent - Unused place of the node.
@@ -20,6 +20,6 @@ export function generateServerRender(node: RenderNode, _parent: ServerParent, _i
   const { callee, calleeSpan } = node;
   assertRenderTarget(callee, calleeSpan, generatorContext.getTemplateNamespace(callee), generatorContext.namespace);
 
-  const args = node.arguments.map(argument => `() => ${resolveExpression(argument, generatorContext, SERVER_RESOLVE_OPTIONS).expression}`);
+  const args = node.arguments.map(argument => resolveExpression(argument, generatorContext, SERVER_RESOLVE_OPTIONS).expression);
   return { pieces: [{ statement: `_ssrRenderTemplate(out, context, context.get('${callee}'), [${args.join(', ')}]);` }] };
 }

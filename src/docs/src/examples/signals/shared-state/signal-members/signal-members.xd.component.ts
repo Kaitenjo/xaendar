@@ -3,9 +3,8 @@ import { computed } from '@xaendar/core/signals';
 import { level, readLevel } from './level.store';
 
 /**
- * The same shared signal, read in three ways: imported by the template, and through two members. The template
- * compiler decides whether an attribute binding is reactive by looking at the declaration of what it names, not
- * at its value.
+ * The same shared signal, read in three ways: imported by the template, and through two members. The bindings follow
+ * it in all of them, since they track the signals they read while they run.
  */
 @WebComponent({
   selector: 'ex-signal-members',
@@ -14,11 +13,11 @@ import { level, readLevel } from './level.store';
 })
 export class SignalMembersComponent extends CustomElement {
   /**
-   * Not recognized: initialized by calling a function of the application, even if it returns a signal.
+   * The signal, returned by a function of the application.
    */
   public readonly fromHelper = readLevel();
   /**
-   * Recognized: initialized by calling computed().
+   * A computed signal reading it.
    */
   public readonly wrapped = computed(() => this._computeWrapped());
 

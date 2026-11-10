@@ -30,10 +30,16 @@ export type RenderElementAttribute = {
    * @param target - The element, or the directive whose input is bound.
    * @param name - The name of the attribute, of the property or of the class.
    * @param value - The value of the attribute.
+   * @param reads - The names of the variables of the template the value reads, if any.
    */
-  setter(context: _Context, target: Element | BindingHost, name: string, value: string | NoArgsFunction<unknown>): void,
+  setter(context: _Context, target: Element | BindingHost, name: string, value: string | NoArgsFunction<unknown>, reads?: readonly string[]): void,
   /**
    * Removes the attribute, or the class, when the context binding it is destroyed.
    */
   unbind?: typeof _removeAttribute | typeof _resetProperty | typeof _removeClass;
+  /**
+   * The names of the variables of the template the getter reads (see `_bindEffect`): a module constant of the compiled
+   * code, omitted when it reads none.
+   */
+  reads?: readonly string[];
 }

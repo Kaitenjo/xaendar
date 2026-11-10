@@ -8,22 +8,23 @@ import { SERVER_RESOLVE_OPTIONS } from '../../utils/server-code/server-code.util
 /**
  * Generates the code of a `@for`: a loop rendering the body once per item, through the function rendering it, named
  * like the one of the client. A numeric iterable `n` is iterated as `0, 1, …, n - 1`. The body declares the item and the
- * implicit variables it reads as signals, as the one of the client does, so that its expressions read them the same way:
+ * implicit variables it reads as values, as the one of the client does, so that its expressions read them the same way:
  * the variables are a constant of the module, `for0Variables`, written before the function, which a body reading none
- * does without, creating none.
+ * does without, declaring none.
  *
  * The items are written between the markers of the browser, `<!--xd-for-->` and `<!--/xd-for-->`, the place of the
  * anchor of the client, each one opened by a marker holding its key (see `_ssrItemMarker`): the value of the `track`
- * expression, written as the client writes it, a function whose parameters are the item and the implicit variables.
+ * expression, written as the client writes it, a function whose parameters are the item and the implicit variables, as
+ * values.
  *
  * @example
- * // @for (user of users(); track user().id) { … }
+ * // @for (user of users(); track user.id) { … }
  * {
  *   const items = _ssrItems(this.users());
- *   const track = (user, $index, $first, $last, $even, $odd) => user().id;
+ *   const track = (user, $index, $first, $last, $even, $odd) => user.id;
  *   out.push('<!--xd-for-->');
  *   for (let index = 0; index < items.length; index++) {
- *     out.push(_ssrItemMarker(track(() => items[index], () => index, () => index === 0, () => index === items.length - 1, () => index % 2 === 0, () => index % 2 !== 0)));
+ *     out.push(_ssrItemMarker(track(items[index], index, index === 0, index === items.length - 1, index % 2 === 0, index % 2 !== 0)));
  *     for0.call(this, out, context, items, index);
  *   }
  *   out.push('<!--/xd-for-->');
@@ -51,7 +52,7 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
   const read = getReadForVariables(node);
   for (let i = 0; i < read.length; i++) {
     const variable = read[i];
-    context.addIdentifier(variable === 'item' ? itemAlias! : implicitNames[variable], 'signal');
+    context.addIdentifier(variable === 'item' ? itemAlias! : implicitNames[variable], 'variable');
   }
 
   const names = Object.values(implicitNames);
@@ -71,10 +72,10 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
   */
   const trackContext = new GeneratorContext(generatorContext);
   if (itemAlias) {
-    trackContext.addUnresolvableIdentifier(itemAlias, 'signal');
+    trackContext.addUnresolvableIdentifier(itemAlias);
   }
   for (let i = 0; i < names.length; i++) {
-    trackContext.addUnresolvableIdentifier(names[i], 'signal');
+    trackContext.addUnresolvableIdentifier(names[i]);
   }
   const track = resolveExpression(node.trackExpression, trackContext, SERVER_RESOLVE_OPTIONS).expression;
 
@@ -84,7 +85,7 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
     `  const track = (${[itemAlias ?? '_', ...names].join(', ')}) => ${track};`,
     `  out.push(${toStringLiteral(`<!--${SSR_MARKERS.for}-->`)});`,
     '  for (let index = 0; index < items.length; index++) {',
-    '    out.push(_ssrItemMarker(track(() => items[index], () => index, () => index === 0, () => index === items.length - 1, () => index % 2 === 0, () => index % 2 !== 0)));',
+    '    out.push(_ssrItemMarker(track(items[index], index, index === 0, index === items.length - 1, index % 2 === 0, index % 2 !== 0)));',
     `    ${key}.call(this, out, context, items, index);`,
     '  }',
     `  out.push(${toStringLiteral(`<!--/${SSR_MARKERS.for}-->`)});`,

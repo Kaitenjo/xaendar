@@ -11,6 +11,20 @@ const cache = {} as ContextCache;
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse()[0] as DeferNode;
 
 describe('getTriggerProperties', () => {
+  it('passes the names of the variables of the template the when expressions read, before and after prefetch', () => {
+    const context = new GeneratorContext(cache);
+    context.addIdentifier('row', 'variable');
+    const node = parse('@defer (when row.ready, prefetch when row.near) { <b></b> }');
+    context.deferredModules = new Map([[node, ['/card.ts']]]);
+
+    const properties = getTriggerProperties(node, context);
+
+    expect(properties).toContain('when: () => context.get(\'row\').ready');
+    expect(properties).toContain('whenReads: _reads0');
+    expect(properties).toContain('prefetchWhen: () => context.get(\'row\').near');
+    expect(properties).toContain('prefetchWhenReads: _reads0');
+  });
+
   it('writes the triggers by name, then the expression of when and the modules of the content', () => {
     const node = parse('@defer (visible, when ready(), idle) { <b></b> }');
     const context = new GeneratorContext(cache);

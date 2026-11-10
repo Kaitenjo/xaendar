@@ -11,18 +11,18 @@ const processNode: ProcessNode = () => [{ text: 'child;' }];
 const FOR_ITERABLE = '(<T extends number | readonly unknown[]>(iterable: T): T extends number ? number[] : T => iterable as never)';
 
 describe('typeCheckFor', () => {
-  it('emits a for...of loop declaring the item and the implicit variables as signals', () => {
-    const lines = typeCheckFor(parse('@for (item of items; track item().id) { <li></li> }'), processNode, new TypeCheckContext());
+  it('emits a for...of loop declaring the item and the implicit variables as the values they are', () => {
+    const lines = typeCheckFor(parse('@for (item of items; track item.id) { <li></li> }'), processNode, new TypeCheckContext());
 
     expect(lines.map(l => l.text)).toEqual([
       `for (const $$item of ${FOR_ITERABLE}(root.items)) {`,
-      '  let item!: Signal<typeof $$item>;',
-      '  let $index!: Signal<number>;',
-      '  let $first!: Signal<boolean>;',
-      '  let $last!: Signal<boolean>;',
-      '  let $even!: Signal<boolean>;',
-      '  let $odd!: Signal<boolean>;',
-      '  item().id;',
+      '  let item!: typeof $$item;',
+      '  let $index!: number;',
+      '  let $first!: boolean;',
+      '  let $last!: boolean;',
+      '  let $even!: boolean;',
+      '  let $odd!: boolean;',
+      '  item.id;',
       '  child;',
       '}'
     ]);
@@ -30,12 +30,12 @@ describe('typeCheckFor', () => {
   });
 
   it('declares the element refs of the body after the variables of the loop, before the track expression', () => {
-    const lines = typeCheckFor(parse('@for (item of items; track item().id) { <li><input #field /></li> }'), processNode, new TypeCheckContext());
+    const lines = typeCheckFor(parse('@for (item of items; track item.id) { <li><input #field /></li> }'), processNode, new TypeCheckContext());
 
     expect(lines.map(l => l.text).slice(6, 9)).toEqual([
-      '  let $odd!: Signal<boolean>;',
+      '  let $odd!: boolean;',
       '  let field!: (HTMLElementTagNameMap extends { \'input\': infer Type } ? Type : HTMLElement);',
-      '  item().id;'
+      '  item.id;'
     ]);
   });
 
@@ -44,31 +44,31 @@ describe('typeCheckFor', () => {
     ['numbers', 'root.numbers'],
     ['numbers()', 'root.numbers()']
   ])('declares no item when no item alias is given, iterating %s', (iterable, expected) => {
-    const lines = typeCheckFor(parse(`@for (${iterable}; track $index()) { <li></li> }`), processNode, new TypeCheckContext());
+    const lines = typeCheckFor(parse(`@for (${iterable}; track $index) { <li></li> }`), processNode, new TypeCheckContext());
     expect(lines[0].text).toBe(`for (const $$item of ${FOR_ITERABLE}(${expected})) {`);
-    expect(lines[1].text).toBe('  let $index!: Signal<number>;');
-    expect(lines[6].text).toBe('  $index();');
+    expect(lines[1].text).toBe('  let $index!: number;');
+    expect(lines[6].text).toBe('  $index;');
   });
 
   it('does not prefix the identifiers declared in scope', () => {
     const context = new TypeCheckContext();
     context.addUnresolvableIdentifier('item');
-    const lines = typeCheckFor(parse('@for (child of item.children; track child()) { <li></li> }'), processNode, context);
+    const lines = typeCheckFor(parse('@for (child of item.children; track child) { <li></li> }'), processNode, context);
     expect(lines[0].text).toBe(`for (const $$item of ${FOR_ITERABLE}(item.children)) {`);
   });
 
   it('reads the members of the component in the track expression from root', () => {
-    const lines = typeCheckFor(parse('@for (item of items; track keyOf(item())) { <li></li> }'), processNode, new TypeCheckContext());
-    expect(lines[7].text).toBe('  root.keyOf(item());');
+    const lines = typeCheckFor(parse('@for (item of items; track keyOf(item)) { <li></li> }'), processNode, new TypeCheckContext());
+    expect(lines[7].text).toBe('  root.keyOf(item);');
   });
 
   it('uses the aliases declared for implicit variables', () => {
-    const lines = typeCheckFor(parse('@for (item of items; track item(); i = $index) { <li></li> }'), processNode, new TypeCheckContext());
-    expect(lines[2].text).toBe('  let i!: Signal<number>;');
+    const lines = typeCheckFor(parse('@for (item of items; track item; i = $index) { <li></li> }'), processNode, new TypeCheckContext());
+    expect(lines[2].text).toBe('  let i!: number;');
   });
 
   it('maps the declarations of the item and of the aliases onto the template, and the expressions finely', () => {
-    const template = '@for (item of items; track item(); i = $index) { <li></li> }';
+    const template = '@for (item of items; track item; i = $index) { <li></li> }';
     const lines = typeCheckFor(parse(template), processNode, new TypeCheckContext());
     const at = (text: string) => ({ start: template.indexOf(text), end: template.indexOf(text) + text.length });
 
@@ -77,6 +77,7 @@ describe('typeCheckFor', () => {
     expect(lines[1].mappings).toEqual([{ columnStart: 6, columnEnd: 10, original: at('item') }]);
     expect(lines[2].mappings).toEqual([{ columnStart: 6, columnEnd: 7, original: { start: template.indexOf('i ='), end: template.indexOf('i =') + 1 } }]);
     expect(lines[3].mappings).toBeUndefined();
-    expect(lines[7].mappings).toContainEqual({ columnStart: 2, columnEnd: 6, original: { start: template.indexOf('item()'), end: template.indexOf('item()') + 4 } });
+    const track = template.indexOf('track item') + 'track '.length;
+    expect(lines[7].mappings).toContainEqual({ columnStart: 2, columnEnd: 6, original: { start: track, end: track + 4 } });
   });
 });

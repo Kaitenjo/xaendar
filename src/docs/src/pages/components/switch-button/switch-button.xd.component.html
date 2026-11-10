@@ -1,7 +1,7 @@
-@for (item of items(); track item().value) {
-  <button #button class="lang" type="button" (click)="onButtonClick(item(), button)">
-    <span class="label" [class.label--active]="{item().value === selected()?.value}">
-      { item().label }
+@for (item of items(); track item.value) {
+  <button #button class="lang" type="button" (click)="onButtonClick(item, button)">
+    <span class="label" [class.label--active]="{item.value === selected()?.value}">
+      { item.label }
     </span>
   </button>
 }

@@ -26,7 +26,7 @@ const firstUsage = (source: string, reactiveMembers?: readonly string[]) => {
 describe('getTemplateUsage', () => {
   describe('the logic', () => {
     it.each([
-      ['elements, texts and blocks', '<p class="a">{ title() }</p>@if (a) { <b></b> } @for (item of items; track item()) { { item() } }'],
+      ['elements, texts and blocks', '<p class="a">{ title() }</p>@if (a) { <b></b> } @for (item of items; track item) { { item } }'],
       ['a component of the project', '<x-child label="a"></x-child>'],
       ['a member named like a global', '{ status }'],
       ['a variable named like a global', '@let status = 1; { status }'],
@@ -82,7 +82,10 @@ describe('getTemplateUsage', () => {
       ['a value in a reactive @if', '<x-child @if (open()) { label="a" }></x-child>'],
       ['a value in the @else of a reactive @if', '<x-child @if (open()) { size="1" } @else { label="a" }></x-child>'],
       ['a value in a reactive @switch', '<x-child @switch (kind()) { @case (1) { label="a" } }></x-child>'],
-      ['a value nested in a reactive @if', '<x-child @if (open()) { @if (other) { label="a" } }></x-child>']
+      ['a value nested in a reactive @if', '<x-child @if (open()) { @if (other) { label="a" } }></x-child>'],
+      ['the item of a @for', '@for (item of items; track item) { <x-child label="{ item.name }"></x-child> }'],
+      ['a @let', '@let name = title;<x-child label="{ name }"></x-child>'],
+      ['a parameter of a template', '<template row(value: string)><x-child label="{ value }"></x-child></template>']
     ])('tells an input depends on a signal through %s', (_case, source) => {
       expect(firstUsage(source, ['total']).reactiveInputs).toBe(true);
     });
@@ -102,7 +105,7 @@ describe('getTemplateUsage', () => {
       ['the @else of a reactive @if', '@if (open()) { } @else { <x-child></x-child> }'],
       ['the @else if of a reactive @if', '@if (open()) { } @else if (other) { <x-child></x-child> }'],
       ['a reactive @else if', '@if (open) { } @else if (other()) { <x-child></x-child> }'],
-      ['a reactive @for', '@for (item of items(); track item()) { <x-child></x-child> }'],
+      ['a reactive @for', '@for (item of items(); track item) { <x-child></x-child> }'],
       ['a reactive @switch', '@switch (kind()) { @case (1) { <x-child></x-child> } }'],
       ['a @default of a reactive @switch', '@switch (kind()) { @default { <x-child></x-child> } }'],
       ['a <template>', '<template row()><x-child></x-child></template>'],
@@ -122,7 +125,7 @@ describe('getTemplateUsage', () => {
     it.each([
       ['a constant @if', '@if (open) { <x-child></x-child> }'],
       ['the @else of a constant @if', '@if (open) { } @else { <x-child></x-child> }'],
-      ['a constant @for', '@for (item of items; track item()) { <x-child></x-child> }'],
+      ['a constant @for', '@for (item of items; track item) { <x-child></x-child> }'],
       ['a constant @switch', '@switch (kind) { @case (1) { <x-child></x-child> } }'],
       ['a @hydrate', '@hydrate (idle) { <x-child></x-child> }']
     ])('tells the server is the only one rendering a component in %s', (_case, source) => {

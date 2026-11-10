@@ -42,7 +42,7 @@ export function createShim(componentData: ReadonlyMap<string, readonly string[]>
  * @returns The full shim source, ready to be passed to `updateVirtualFile`.
  */
 function buildTypecheckShim(componentData: [string, readonly string[]][], shimPath: string, body: string): { code: string, bodyLineOffset: number, path: string, classNames: string[] } {
-  const prefixLinesLength = componentData.length + 4;
+  const prefixLinesLength = componentData.length + 3;
   const prefixLines = new Array<string>(prefixLinesLength).fill(''); 
   const classNames = new Array<string>();
 
@@ -51,7 +51,6 @@ function buildTypecheckShim(componentData: [string, readonly string[]][], shimPa
     classNames.push(...classes);
     prefixLines[i] = `import { ${classes.join(', ')} } from './${basename(path, extname(path))}';`
   }
-  prefixLines[prefixLinesLength - 4] = 'import { Signal } from \'@xaendar/core/signals\'';
   /*
     A generic class cannot be named without its type arguments: its instance type is read from its constructor, where
     each type parameter is its constraint (`unknown` without one), so the template of a generic component compiles

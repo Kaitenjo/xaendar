@@ -7,7 +7,7 @@
 <ex-button (click)="switchUser()">Switch user (untracked)</ex-button>
 <ex-button (click)="newMessage()">New message (tracked)</ex-button>
 <ol>
-  @for (line of sent(); track line().id) {
-    <li>{ line().text }</li>
+  @for (line of sent(); track line.id) {
+    <li>{ line.text }</li>
   }
 </ol>

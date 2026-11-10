@@ -4,8 +4,8 @@ import { toggleClass, untoggleClass } from '../class-toggle/class-toggle.util';
 import type { _Context } from '../context/context.util';
 
 /**
- * Toggles a class on an element by the value of a non-reactive expression, once.
- * E.g., `<div [class.active]="{ isActive }"></div>`.
+ * Toggles a class on an element by the value of an expression reading nothing that can change, once: a literal, e.g.
+ * `<div [class.active]="{ true }"></div>`, or any expression on the server, which reads every value once.
  *
  * @param _context - The current template execution scope.
  * @param element - The element to toggle the class on.
@@ -17,20 +17,21 @@ export function _setExpressionClass(_context: _Context, element: Element, name: 
 }
 
 /**
- * Toggles a class on an element by the value of a reactive expression, again whenever it changes.
- * E.g., `<div [class.active]="{ isActive() }"></div>`.
+ * Toggles a class on an element by the value of an expression, again whenever a signal or a variable of the template it
+ * reads changes (see `_bindEffect`). E.g., `<div [class.active]="{ isActive() }"></div>`.
  *
- * @param context - The current template execution scope, which disposes the effect.
+ * @param context - The current template execution scope, which disposes the binding.
  * @param element - The element to toggle the class on.
  * @param name - The name of the class.
  * @param value - A function returning the value: the element has the class when it is truthy.
+ * @param reads - The names of the variables of the template the expression reads, omitted when it reads none.
  */
-export function _setReactiveClass(context: _Context, element: Element, name: string, value: NoArgsFunction<unknown>): void {
-  _bindEffect(context, toggleReactiveClass, element, name, value);
+export function _setReactiveClass(context: _Context, element: Element, name: string, value: NoArgsFunction<unknown>, reads?: readonly string[]): void {
+  _bindEffect(context, toggleReactiveClass, element, name, value, reads);
 }
 
 /**
- * Toggles a class on an element by the value of a reactive expression: the callback of the effect of
+ * Toggles a class on an element by the value of an expression: the callback of the binding of
  * {@link _setReactiveClass}, shared by every class binding.
  *
  * @param element - The element to toggle the class on.

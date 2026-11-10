@@ -1,5 +1,5 @@
 import { slice } from '@xaendar/common';
-import { type CompilerHost, ComponentOrDirectiveMetadata, type ContextCache, Cursor, describeSelectorConflict, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, type ImportNode, isReactiveExport, type LibraryComponentMetadata, type LibraryDirectiveMetadata, readLibraryMetadata, resolveExportedClass, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
+import { type CompilerHost, ComponentOrDirectiveMetadata, type ContextCache, Cursor, describeSelectorConflict, describeVariableCall, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, type ImportNode, isReactiveExport, type LibraryComponentMetadata, type LibraryDirectiveMetadata, readLibraryMetadata, resolveExportedClass, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
 import { resolveModule, resolveModulePath, type TemplateWarning } from '@xaendar/language-core';
 import type MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
@@ -347,12 +347,14 @@ export function injectTemplate(code: MagicString, sourceFile: SourceFile, module
  * @param templateSource - The raw content of the template the shim was generated from.
  * @param diagnostic - The TS diagnostic reported on the shim.
  * @param bodyLineOffset - The line of the shim where the template body starts.
- * @param mappingTable - The mapping from shim positions to template spans.
+ * @param typeCheck - The type-check code of the template: the mapping from shim positions to template spans, and the
+ *   calls of the variables of the template, whose error is told as such (see `describeVariableCall`).
  * @returns The diagnostic message, prefixed with its template position and followed by the
  *   offending template snippet when the diagnostic can be mapped back to the template.
  */
-export function describeDiagnostic(templateSource: string, diagnostic: Diagnostic, bodyLineOffset: number, mappingTable: TypeCheckResult['mappingTable']): string {
-  const message = typeof diagnostic.messageText === 'string' ? diagnostic.messageText : diagnostic.messageText.messageText;
+export function describeDiagnostic(templateSource: string, diagnostic: Diagnostic, bodyLineOffset: number, typeCheck: Pick<TypeCheckResult, 'mappingTable' | 'variableCalls'>): string {
+  const { mappingTable } = typeCheck;
+  let message = typeof diagnostic.messageText === 'string' ? diagnostic.messageText : diagnostic.messageText.messageText;
   const cursor = new Cursor(templateSource);
   if (!diagnostic.file || diagnostic.start === undefined) {
     return message;
@@ -369,6 +371,7 @@ export function describeDiagnostic(templateSource: string, diagnostic: Diagnosti
     return message;
   }
 
+  message = describeVariableCall(typeCheck, templateSpan, diagnostic.code) ?? message;
   const templatePosition = cursor.getPositionFromCharacterIndex(templateSpan.start);
   return `${templatePosition} - ${message}\n ---> ${slice(templateSource, templateSpan.start, templateSpan.end)}`;
 }

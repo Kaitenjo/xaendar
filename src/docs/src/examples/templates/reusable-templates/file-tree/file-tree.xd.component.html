@@ -3,11 +3,11 @@
 
 <template branch(entry: Entry)>
   <li>
-    <span [class.folder]="{entry().children.length}" [class.file]="{!entry().children.length}">{ entry().name }</span>
-    @if (entry().children.length) {
+    <span [class.folder]="{entry.children.length}" [class.file]="{!entry.children.length}">{ entry.name }</span>
+    @if (entry.children.length) {
       <ul>
-        @for (child of entry().children; track child().name) {
-          @render branch(child())
+        @for (child of entry.children; track child.name) {
+          @render branch(child)
         }
       </ul>
     }
@@ -15,8 +15,8 @@
 </template>
 
 <ul class="tree">
-  @for (top of entries(); track top().name) {
-    @render branch(top())
+  @for (top of entries(); track top.name) {
+    @render branch(top)
   }
 </ul>
 <ex-button (click)="addFile()">addFile()</ex-button>

@@ -1,8 +1,8 @@
 # Xaendar
 
-**Declarative Web Components with fine-grained reactivity decided at build time.**
+**Declarative Web Components with fine-grained reactivity.**
 
-Xaendar is a TypeScript framework for building native Web Components. A component is a class plus a template written in an extended HTML5 syntax. The compiler analyses each template statically and wires every element, attribute and text node to the exact signals it reads. There is no virtual DOM and no component re-render: when a signal changes, only the nodes that depend on it are updated.
+Xaendar is a TypeScript framework for building native Web Components. A component is a class plus a template written in an extended HTML5 syntax. The compiler turns each template into code that creates its DOM once, and every element, attribute and text node follows the exact signals its expression reads, while the variables of the template (`@for` items, `@let`, template parameters) are plain values. There is no virtual DOM and no component re-render: when a signal changes, only the nodes that depend on it are updated.
 
 ## Highlights
 

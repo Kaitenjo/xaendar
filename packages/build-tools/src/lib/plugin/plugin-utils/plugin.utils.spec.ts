@@ -564,12 +564,12 @@ describe('describeTemplateWarning()', () => {
 
 describe('describeDiagnostic()', () => {
   const templateSource = 'line one\nline two\nline three';
-  const mappingTable: TypeCheckResult['mappingTable'] = new Map();
+  const typeCheck: Pick<TypeCheckResult, 'mappingTable' | 'variableCalls'> = { mappingTable: new Map() };
 
   it('returns the raw message when the diagnostic has no source file', () => {
     const diagnostic = { messageText: 'Something went wrong', file: undefined, start: 5 } as unknown as Diagnostic;
 
-    expect(describeDiagnostic(templateSource, diagnostic, 0, mappingTable)).toBe('Something went wrong');
+    expect(describeDiagnostic(templateSource, diagnostic, 0, typeCheck)).toBe('Something went wrong');
   });
 
   it('returns the raw message when the diagnostic has no start position', () => {
@@ -579,7 +579,7 @@ describe('describeDiagnostic()', () => {
       start: undefined
     } as unknown as Diagnostic;
 
-    expect(describeDiagnostic(templateSource, diagnostic, 0, mappingTable)).toBe('Something went wrong');
+    expect(describeDiagnostic(templateSource, diagnostic, 0, typeCheck)).toBe('Something went wrong');
   });
 
   it('extracts the nested messageText when messageText is a diagnostic chain', () => {
@@ -589,7 +589,7 @@ describe('describeDiagnostic()', () => {
       start: 5
     } as unknown as Diagnostic;
 
-    expect(describeDiagnostic(templateSource, diagnostic, 0, mappingTable)).toBe('Chained message');
+    expect(describeDiagnostic(templateSource, diagnostic, 0, typeCheck)).toBe('Chained message');
   });
 
   it('returns the raw message when the mapped body line is negative', () => {
@@ -599,7 +599,7 @@ describe('describeDiagnostic()', () => {
       start: 10
     } as unknown as Diagnostic;
 
-    expect(describeDiagnostic(templateSource, diagnostic, 5, mappingTable)).toBe('Something went wrong');
+    expect(describeDiagnostic(templateSource, diagnostic, 5, typeCheck)).toBe('Something went wrong');
   });
 
   it('returns the raw message when the template span cannot be resolved', () => {
@@ -610,7 +610,7 @@ describe('describeDiagnostic()', () => {
       start: 10
     } as unknown as Diagnostic;
 
-    expect(describeDiagnostic(templateSource, diagnostic, 1, mappingTable)).toBe('Something went wrong');
+    expect(describeDiagnostic(templateSource, diagnostic, 1, typeCheck)).toBe('Something went wrong');
   });
 
   it('formats the diagnostic with the resolved template position and source snippet', () => {
@@ -621,9 +621,23 @@ describe('describeDiagnostic()', () => {
       start: 10
     } as unknown as Diagnostic;
 
-    const result = describeDiagnostic(templateSource, diagnostic, 1, mappingTable);
+    const result = describeDiagnostic(templateSource, diagnostic, 1, typeCheck);
 
     expect(result).toBe('[Ln 1, Col 1] - Something went wrong\n ---> line');
+  });
+
+  it('tells that a variable of the template called while its value is not a function is not a signal', () => {
+    vi.mocked(resolveTemplateSpan).mockReturnValue({ start: 0, end: 4 } as unknown as Span);
+    const diagnostic = {
+      code: 2349,
+      messageText: 'This expression is not callable.',
+      file: { getLineAndCharacterOfPosition: vi.fn().mockReturnValue({ line: 3, character: 3 }) },
+      start: 10
+    } as unknown as Diagnostic;
+
+    const result = describeDiagnostic(templateSource, diagnostic, 1, { mappingTable: new Map(), variableCalls: [{ name: 'line', span: { start: 0, end: 4 } }] });
+
+    expect(result).toBe('[Ln 1, Col 1] - \'line\' is a template variable, not a signal: remove the parentheses and read it as line, since the variables of a template (@for, @let, parameters of a template) hold their values\n ---> line');
   });
 });
 

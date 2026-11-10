@@ -76,9 +76,9 @@ describe('parseTemplateLayout', () => {
   });
 
   it('reads the render of a template, with its arguments as written', () => {
-    expect(parseTemplateLayout('<p></p>@render  row( item(), \')\' )text')).toEqual([
+    expect(parseTemplateLayout('<p></p>@render  row( item, \')\' )text')).toEqual([
       { kind: 'element', name: 'p', selfClosing: false, items: [], children: [] },
-      { kind: 'render', callee: 'row', args: ' item(), \')\' ' },
+      { kind: 'render', callee: 'row', args: ' item, \')\' ' },
       { kind: 'text', value: 'text' }
     ]);
   });

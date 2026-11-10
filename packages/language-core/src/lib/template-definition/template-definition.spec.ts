@@ -14,7 +14,7 @@ const template = [
   '@import { Tooltip, Media } from \'./directives\';',
   '@import { Child as C } from \'./child\';',
   '<my-child label="{title}" size="{2}" (picked)="select($event)" (closed)="select(1)" @@tooltip(text="a" (shown)="select(2)") *media(query="q")></my-child>',
-  '@for (item of items; track item.id) { {item().name} }',
+  '@for (item of items; track item.id) { {item.name} }',
   '<b (click)="select(3)">x</b>'
 ].join('\n');
 
@@ -114,7 +114,7 @@ describe('getTemplateDefinition', () => {
   });
 
   it('leads a variable declared by the template to its declaration in the template', () => {
-    expect(textsOf(getTemplateDefinition(analysis, at('item()')))).toEqual([['src/app.html', 'item']]);
+    expect(textsOf(getTemplateDefinition(analysis, at('item')))).toEqual([['src/app.html', 'item']]);
   });
 
   it('finds nothing outside of a symbol, or for a symbol declared in the shim only', () => {
@@ -141,9 +141,9 @@ describe('getTemplateDefinition', () => {
   }, TIMEOUT);
 
   it('finds nothing for a symbol TypeScript doesn\'t define, or for an implicit variable without alias', async () => {
-    const { analysis: loop } = await project.analyze('@for (items; track $index()) { { $index() } { 2 } }');
+    const { analysis: loop } = await project.analyze('@for (items; track $index) { { $index } { 2 } }');
 
-    expect(getTemplateDefinition(loop!, loop!.source.indexOf('$index()') + 2)).toEqual([]);
+    expect(getTemplateDefinition(loop!, loop!.source.indexOf('$index') + 2)).toEqual([]);
     expect(getTemplateDefinition(loop!, loop!.source.indexOf('2'))).toEqual([]);
   }, TIMEOUT);
 
@@ -172,12 +172,12 @@ describe('getTemplateDefinition of imported symbols', () => {
 
 describe('getTemplateDefinition of templates', () => {
   it('leads the name a @render calls to the declaration of the template, and the reads of a parameter to its declaration', async () => {
-    const source = '@render row(title)\n<template row(label: string)>{ label() }</template>';
+    const source = '@render row(title)\n<template row(label: string)>{ label }</template>';
     const templates = (await project.analyze(source)).analysis!;
     const definitionsAt = (offset: number) => getTemplateDefinition(templates, offset).map(({ fileName, span }) => [fileName.replace(`${project.root}/`, ''), source.slice(span.start, span.end), span.start]);
 
     expect(definitionsAt(source.indexOf('row') + 1)).toEqual([['src/app.html', 'row', source.indexOf('row(label')]]);
-    expect(definitionsAt(source.indexOf('label()') + 1)).toEqual([['src/app.html', 'label', source.indexOf('label:')]]);
+    expect(definitionsAt(source.indexOf('label') + 1)).toEqual([['src/app.html', 'label', source.indexOf('label:')]]);
   }, TIMEOUT);
 });
 

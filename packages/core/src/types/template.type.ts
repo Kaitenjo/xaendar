@@ -13,4 +13,9 @@ export type _Template = {
    * Renders an instance of the template.
    */
   readonly render: RenderTemplate;
+  /**
+   * The names of the parameters of the template, in order: a `@render` passing other arguments to an instance updates
+   * them by name (see `_renderTemplate`). A constant of the module of the compiled code, shared by every instance.
+   */
+  readonly parameters: readonly string[];
 };

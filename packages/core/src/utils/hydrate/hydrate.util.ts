@@ -1,6 +1,6 @@
 import type { NoArgsVoidFunction } from '@xaendar/types';
 import { _SSR_MARKERS } from '../../costants';
-import { effect } from '../../signals/effect/effect';
+import { _bindEffect } from '../../signals/effect/effect';
 import { untracked } from '../../signals/untracked';
 import type { HydrateBlock } from '../../types/hydrate-block.type';
 import type { HydrateRun } from '../../types/hydrate-run.type';
@@ -21,8 +21,8 @@ import { trackNode } from '../track-node/track-node.util';
  * warnings. When the modules fail to load, the error is logged and the content stays inert.
  *
  * `visible`, `interaction` and `hover` watch the elements of the content: content the server rendered without elements
- * waits for the browser to be idle in their place. The `when` expression is read in an effect, and fires once it is
- * truthy. The triggers following `prefetch`, and the expression of the `when` following it, load the modules of the
+ * waits for the browser to be idle in their place. The `when` expression is read by a binding (see `_bindEffect`), and
+ * fires once it is truthy. The triggers following `prefetch`, and the expression of the `when` following it, load the modules of the
  * content without hydrating it: the trigger hydrating it waits for the same load. With `never`, the content stays the
  * HTML of the server for good: no event is recorded and no module is loaded.
  *
@@ -94,22 +94,11 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
   }
 
   if (block.prefetchWhen) {
-    const prefetchWhen = block.prefetchWhen;
-    run.disarms.push(effect(() => {
-      if (prefetchWhen()) {
-        queueMicrotask(() => run.active && !run.fired && prefetchModules(run));
-      }
-    }));
+    _bindEffect(parentContext, checkPrefetchWhen, run, undefined, undefined, block.prefetchWhenReads);
   }
 
   if (block.when) {
-    const when = block.when;
-    // Fired once the effect has run: the effect is disposed by the trigger firing
-    run.disarms.push(effect(() => {
-      if (when()) {
-        queueMicrotask(() => run.active && fire(run));
-      }
-    }));
+    _bindEffect(parentContext, checkWhen, run, undefined, undefined, block.whenReads);
   }
 
   // Recorded until the content is hydrated, after its trigger fires too, while its modules load
@@ -124,6 +113,31 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
   }
 }
 
+
+/**
+ * Reads the `when` expression of a block, firing the block once it is truthy, once the binding has run: the callback of
+ * the binding of the expression (see `_bindEffect`). Once the block has fired it reads nothing, so it never runs again.
+ *
+ * @param run - The block, whose `when` is defined.
+ */
+function checkWhen(run: HydrateRun): void {
+  if (!run.fired && run.block.when!()) {
+    queueMicrotask(() => run.active && fire(run));
+  }
+}
+
+/**
+ * Reads the `when` expression following the `prefetch` of a block, loading the modules of its content once it is
+ * truthy: the callback of the binding of the expression (see `_bindEffect`). Once the block has fired it reads nothing,
+ * so it never runs again.
+ *
+ * @param run - The block, whose `prefetchWhen` is defined.
+ */
+function checkPrefetchWhen(run: HydrateRun): void {
+  if (!run.fired && run.block.prefetchWhen!()) {
+    queueMicrotask(() => run.active && !run.fired && prefetchModules(run));
+  }
+}
 
 /**
  * Loads the modules of the content of a block, once, for the trigger hydrating it and the ones prefetching them.

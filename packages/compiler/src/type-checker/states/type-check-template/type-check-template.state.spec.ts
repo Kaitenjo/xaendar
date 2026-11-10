@@ -9,7 +9,7 @@ import { typeCheckTemplate } from './type-check-template.state';
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse()[0] as TemplateNode;
 
 describe('typeCheckTemplate', () => {
-  it('checks the content in an arrow function taking the signals of the parameters, mapped onto their names and types', () => {
+  it('checks the content in an arrow function taking the parameters as declared, mapped onto their names and types', () => {
     const template = '<template row(item: Item, index: number)><p /></template>';
     const contexts = new Array<TypeCheckContext>();
     const processNode: ProcessNode = (_node, context) => {
@@ -20,7 +20,7 @@ describe('typeCheckTemplate', () => {
     const lines = typeCheckTemplate(parse(template), processNode, context);
 
     expect(lines.map(({ text }) => text)).toEqual([
-      'const __template0 = (item: __Parameter<Item>, index: __Parameter<number>): void => {',
+      'const __template0 = (item: Item, index: number): void => {',
       '  child;',
       '};'
     ]);
@@ -28,24 +28,24 @@ describe('typeCheckTemplate', () => {
     const column = (text: string) => lines[0].text.indexOf(text);
     expect(lines[0].mappings).toEqual([
       { columnStart: column('item'), columnEnd: column('item') + 4, original: at('item') },
-      { columnStart: column('Item>'), columnEnd: column('Item>') + 4, original: at('Item') },
+      { columnStart: column('Item,'), columnEnd: column('Item,') + 4, original: at('Item') },
       { columnStart: column('index'), columnEnd: column('index') + 5, original: at('index') },
       { columnStart: column('number'), columnEnd: column('number') + 6, original: at('number') }
     ]);
-    // The content reads the parameters as written, as signals, in a scope nested in the one declaring the template
+    // The content reads the parameters as written, as variables, in a scope nested in the one declaring the template
     const [contentContext] = contexts;
     expect(contentContext).not.toBe(context);
-    expect(contentContext.getUnresolvableIdentifierKind('item')).toBe('signal');
+    expect(contentContext.getUnresolvableIdentifierKind('item')).toBe('variable');
     expect(context.hasUnresolvableIdentifier('item')).toBe(false);
   });
 
-  it('initializes the parameters whose argument may be left out, with their default value or undefined', () => {
-    const template = '<template row(item: Item, label = item().name + suffix, dense: boolean = false, count?: number)></template>';
+  it('writes the parameters whose argument may be left out as optional, with their default value', () => {
+    const template = '<template row(item: Item, label = item.name + suffix, dense: boolean = false, count?: number)></template>';
     const [first] = typeCheckTemplate(parse(template), () => [], new TypeCheckContext());
 
-    expect(first.text).toBe('const __template0 = (item: __Parameter<Item>, label = __default(item().name + root.suffix), dense = __default<boolean>(false), count = __optional<number>()): void => {');
-    const column = first.text.indexOf('item().name');
-    const start = template.indexOf('item().name');
+    expect(first.text).toBe('const __template0 = (item: Item, label = item.name + root.suffix, dense: boolean = false, count?: number): void => {');
+    const column = first.text.indexOf('item.name');
+    const start = template.indexOf('item.name');
     expect(first.mappings).toEqual(expect.arrayContaining([
       { columnStart: column, columnEnd: column + 4, original: { start, end: start + 4 } }
     ]));

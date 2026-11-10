@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Xaendar is a framework for building Web Components declaratively, using a template language that extends HTML5. No virtual DOM, no component-level re-renders: the compiler statically analyses each template and wires every DOM node (element, attribute, or text node) directly to the exact signal(s) it depends on, so a signal change updates only the nodes that read it.
+Xaendar is a framework for building Web Components declaratively, using a template language that extends HTML5. No virtual DOM, no component-level re-renders: the compiler turns each template into code creating its DOM nodes, and every binding of a node (element, attribute, or text node) becomes an effect on the exact signal(s) it reads at runtime, so a signal change updates only the nodes that read it. The variables of a template (the item of a `@for`, `$index`, a `@let`, the parameters of a `<template>`) are plain values, not signals: a scope whose variables change runs again only the bindings the compiler found reading them, and a binding reading no signal is no effect at all.
 
 This is a monorepo of the framework's own client libraries, published as separate `@xaendar/*` npm packages, all consumed under TS path aliases (`@xaendar/build-tools`, `@xaendar/common`, `@xaendar/core`, `@xaendar/compiler`, `@xaendar/language-core`, `@xaendar/signals`, `@xaendar/ssr`, `@xaendar/ssr-compiler`, `@xaendar/types`, plus the `@xaendar/core/signals`, `@xaendar/core/testing` and `@xaendar/ssr/dom` entry points) defined once in the root `tsconfig.json`. `vitest.config.ts` reuses that same `paths` map as its single source of truth for aliasing in tests — don't duplicate alias definitions elsewhere.
 

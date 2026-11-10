@@ -29,6 +29,7 @@ import { _if } from '../if/if.util';
  *     or `null` for the default branch.
  *   - `block`: function that applies the branch's side effects and returns
  *     its cleanup functions.
+ * @param reads - The names of the variables of the template the expression reads, omitted when it reads none.
  */
 export function _switch(
   parentNode: HTMLElement,
@@ -38,10 +39,11 @@ export function _switch(
   blocks: Array<{
     condition: unknown[] | null,
     block: Function<[HTMLElement, _Context, Node | null, NodeStrategy], _Context>
-  }>
+  }>,
+  reads?: readonly string[]
 ): void {
   /*
-    The expression is evaluated only once per run, inside the effect of `_if`, so that the switch stays reactive:
+    The expression is evaluated only once per run, inside the binding of `_if`, so that the switch stays reactive:
     the condition of the first block, always evaluated first, makes the selection, and the others only compare
     their position with it. Evaluating it here, once and for all, would freeze the selected case.
   */
@@ -52,7 +54,7 @@ export function _switch(
       ? () => (selected = selectCase(expression, blocks)) === index
       : () => selected === index,
     block
-  })), _SSR_MARKERS.switch);
+  })), reads, _SSR_MARKERS.switch);
 }
 
 /**

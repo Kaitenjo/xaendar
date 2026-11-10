@@ -7,7 +7,7 @@ import type { CreateComponentOptions } from '../../types/create-component/create
 import type { HostDirectives } from '../../types/web-component/host-directives.type';
 import { claimShadowRoot, isClaimed } from '../../utils/claim-nodes/claim-nodes.util';
 import { _getComponentRuntime } from '../../utils/component-runtime/component-runtime.util';
-import { _Context, EMPTY_CONTEXT } from '../../utils/context/context.util';
+import { _Context, _EMPTY_CONTEXT } from '../../utils/context/context.util';
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import { deferElementHydration, replayContractEvents, replayElementEvents } from '../../utils/hydration-triggers/hydration-triggers.util';
@@ -45,7 +45,7 @@ export class CustomElement extends HTMLElement {
    * The active template execution context for this component instance,
    * holding all identifier bindings and registered cleanup functions.
    */
-  private _context = new _Context(EMPTY_CONTEXT);
+  private _context = new _Context(_EMPTY_CONTEXT);
   /**
    * The context the host directives are connected to: it lives from the connection to the disconnection of the element,
    * disposing the effects of the directives.
@@ -77,7 +77,7 @@ export class CustomElement extends HTMLElement {
     super();
     this.hostDirectives = _createHostDirectives(this);
     if (this.hostDirectives.size) {
-      this._hostDirectivesContext = new _Context(EMPTY_CONTEXT);
+      this._hostDirectivesContext = new _Context(_EMPTY_CONTEXT);
     }
   }
 

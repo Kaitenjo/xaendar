@@ -22,7 +22,7 @@ const IDENTIFIER_RE = /[A-Za-z_$][\w$]*/g;
  * wastes memory, while missing one breaks the body.
  *
  * @example
- * // @for (row of rows(); track row().id; i = $index) { <td (click)="pick(i())">{ row().name }</td> }
+ * // @for (row of rows(); track row.id; i = $index) { <td (click)="pick(i)">{ row.name }</td> }
  * getReadForVariables(node); // ['item', '$index']
  *
  * @param node - The `@for` block.
@@ -71,7 +71,7 @@ export function getReadForVariables(node: ForNode): ForVariable[] {
  * module, which every item of the `@for` reads.
  *
  * @example
- * // @for (row of rows(); track row().id; i = $index) { <td>{ i() } { row().name }</td> }
+ * // @for (row of rows(); track row.id; i = $index) { <td>{ i } { row.name }</td> }
  * writeIterationVariables(node, ['item', '$index']); // "{ used: ['item', '$index'], names: ['row', 'i'] }"
  *
  * @param node - The `@for` block.

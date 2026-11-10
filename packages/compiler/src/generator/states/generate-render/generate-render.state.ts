@@ -2,12 +2,13 @@ import type { RenderNode } from '../../../parser/types/nodes/render-node.type';
 import { assertRenderTarget } from '../../../utils/render-target/render-target.utils';
 import { GeneratorContext } from '../../context/context';
 import type { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
-import { resolveExpression } from '../../utils/generator/generator.utils';
+import { joinVariables, resolveExpression } from '../../utils/generator/generator.utils';
 
 /**
- * Generates the code rendering an instance of a template, e.g. `@render row(item(), $index())`: the template, read from
- * the scope declaring it, is called with a function for each argument, which the runtime turns into the signal of its
- * parameter, so that the instance updates the nodes reading a parameter instead of being rendered again.
+ * Generates the code rendering an instance of a template, e.g. `@render row(item, $index)`: the template, read from
+ * the scope declaring it, is called with a function for each argument, which the runtime computes again when a signal or
+ * a variable of the template it reads changes, updating the parameters of the instance instead of rendering it again.
+ * When the arguments read variables of the enclosing scopes, the runtime receives their names.
  *
  * @param node - The `RenderNode` to process.
  * @param parentNode - Variable name of the parent DOM node.
@@ -24,6 +25,15 @@ export async function generateRender(node: RenderNode, parentNode: string, _inde
   const { callee, calleeSpan } = node;
   assertRenderTarget(callee, calleeSpan, generatorContext.getTemplateNamespace(callee), generatorContext.namespace);
 
-  const args = node.arguments.map(argument => `() => ${resolveExpression(argument, generatorContext).expression}`);
-  return { code: [`_renderTemplate(${parentNode}, context, ${anchor}, context.get('${callee}'), [${args.join(', ')}]${separated ? ', true' : ''});`] };
+  const args = new Array<string>();
+  let variables: readonly string[] | undefined;
+  for (let i = 0; i < node.arguments.length; i++) {
+    const argument = resolveExpression(node.arguments[i], generatorContext);
+    args.push(`() => ${argument.expression}`);
+    variables = joinVariables(variables, argument.variables);
+  }
+
+  const reads = generatorContext.getReads(variables);
+  const trailing = reads ? `, ${separated}, ${reads}` : separated ? ', true' : '';
+  return { code: [`_renderTemplate(${parentNode}, context, ${anchor}, context.get('${callee}'), [${args.join(', ')}]${trailing});`] };
 }

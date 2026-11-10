@@ -87,7 +87,7 @@ async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: 
  * @param shadowingMembers - Class members named like a global identifier, which they shadow in the template.
  * @param customElements - Patterns of the tag names of the custom elements of other libraries.
  * @param symbols - The symbols the template imports from modules, which are neither components nor directives.
- * @param reactiveMembers - Class members that can read a signal, telling whether a `@let` reading them is a signal.
+ * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
  * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
  * @returns A promise that resolves to the type-checking result.
  * @throws A `TemplateError` if the template fails type-checking with an error pointing to a part of it.
@@ -106,7 +106,7 @@ export async function typeCheckTemplate(input: string, nodes: ASTNode[], metadat
  * @param shadowingMembers - Class members named like a global identifier, which they shadow in the template.
  * @param customElements - Patterns of the tag names of the custom elements of other libraries.
  * @param symbols - The symbols the template imports from modules, which are neither components nor directives.
- * @param reactiveMembers - Class members that can read a signal, telling whether a `@let` reading them is a signal.
+ * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
  * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
  * @returns A promise that resolves to the type-checking result, with the errors of the nodes that failed.
  */

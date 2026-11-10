@@ -7,7 +7,7 @@ import type { TemplateDeclarationNode } from './template-declaration-node.type';
 
 /**
  * AST node representing the declaration of a template, e.g. `<template row(item: Item)>…</template>`: its content is
- * rendered by each `@render` calling it, e.g. `@render row(item())`, and nowhere it is declared.
+ * rendered by each `@render` calling it, e.g. `@render row(item)`, and nowhere it is declared.
  */
 export type TemplateNode = ASTNodeWithSpan<{
   /**

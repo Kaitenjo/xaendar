@@ -9,10 +9,10 @@
   <ex-button (click)="defineClassAgain()">The same class again</ex-button>
 </div>
 <ul>
-  @for (attempt of attempts(); track attempt().id) {
+  @for (attempt of attempts(); track attempt.id) {
     <li>
-      <code>customElements.{ attempt().call }</code>
-      <br />→ { attempt().outcome }
+      <code>customElements.{ attempt.call }</code>
+      <br />→ { attempt.outcome }
     </li>
   }
 </ul>

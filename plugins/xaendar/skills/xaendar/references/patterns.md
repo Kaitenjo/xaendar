@@ -106,7 +106,7 @@ A field without bound value is emptied by `form.reset()`; `new FormData(form)` r
 ## Lists and CRUD
 
 - The list is a signal holding an array, replaced at every change: `items.update(list => [...list, item])`, `list.filter(…)`, never `push` or `splice`.
-- `@for (item of visible(); track item().id)`, with ids from a counter or the server: never the position or an editable field.
+- `@for (item of visible(); track item.id)`, with ids from a counter or the server: never the position or an editable field.
 - Filters, sorting and totals are `computed`s over the list.
 - A field that changes often can be a signal inside the item (`quantity: signal(1)`): updating it rewrites one cell, not the row.
 

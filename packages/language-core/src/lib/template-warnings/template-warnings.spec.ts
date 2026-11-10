@@ -28,7 +28,7 @@ describe('getTemplateWarnings', () => {
       ['an attribute', '<p title="{ window.name }"></p>', 'window'],
       ['a class binding', '<p [class.a]="{ innerWidth > 1 }"></p>', 'innerWidth'],
       ['a @if', '@if (matchMedia(\'print\').matches) { }', 'matchMedia'],
-      ['a @for', '@for (item of history.state; track item()) { }', 'history'],
+      ['a @for', '@for (item of history.state; track item) { }', 'history'],
       ['a @switch', '@switch (location.hash) { }', 'location'],
       ['a @let', '@let a = screen.width;', 'screen'],
       ['a @render', '<template row(a: unknown)></template>@render row(Notification)', 'Notification'],
@@ -61,7 +61,7 @@ describe('getTemplateWarnings', () => {
       ['an imported name', '@import { location } from \'./a\';\n{ location }'],
       ['an element ref', '<p #top></p>{ top.id }'],
       ['a @let', '@let screen = 1;\n{ screen }'],
-      ['a variable of a @for', '@for (status of items; track status()) { { status } }'],
+      ['a variable of a @for', '@for (status of items; track status) { { status } }'],
       ['a parameter of a template', '<template row(name: string)>{ name }</template>'],
       ['the types of the casts', '{ format(value as HTMLElement) }']
     ])('leaves out %s', (_case, source) => {

@@ -229,7 +229,7 @@ describe('xaendar-template grammar', () => {
   });
 
   it('colors the optional parameters of a template, and the default values as expressions', () => {
-    const template = '<template row(item: Item, label = format(item(), 2), dense: boolean = false, count?: number, run: Handler = noop)></template>';
+    const template = '<template row(item: Item, label = format(item, 2), dense: boolean = false, count?: number, run: Handler = noop)></template>';
 
     expect(scopesOf(template, 'label')).toContain('variable.parameter.xaendar');
     expect(scopesOf(template, '= format')).toContain('keyword.operator.assignment.xaendar');

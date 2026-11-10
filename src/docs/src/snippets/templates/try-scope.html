@@ -1,9 +1,9 @@
 @try {
   <!-- ✓ Caught: the expressions, the @let, the @render, the directives and the blocks, while the block is first rendered -->
   @let theme = settings().theme;
-  <p>{ theme().name }</p>
-  @if (theme().dark) {
-    <p>{ theme().palette.join(', ') }</p>
+  <p>{ theme.name }</p>
+  @if (theme.dark) {
+    <p>{ theme.palette.join(', ') }</p>
   }
 
   <!-- ✓ Caught: the constructor, the onInit and the first render of a component it renders -->

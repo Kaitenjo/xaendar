@@ -4,7 +4,7 @@ import { EffectOptions } from '../../signals/types/effect-options.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
 import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
 import { _getComponentRuntime } from '../../utils/component-runtime/component-runtime.util';
-import { _Context, EMPTY_CONTEXT } from '../../utils/context/context.util';
+import { _Context, _EMPTY_CONTEXT } from '../../utils/context/context.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import type { CustomElement } from '../custom-element/custom-element';
 
@@ -29,7 +29,7 @@ export abstract class CustomDirective<T extends Element = Element> {
    * Until the connection it is a staging context, holding the effects created in the constructor or in a field
    * initializer: they are moved to the context of the element when the directive is connected.
    */
-  private _context = new _Context(EMPTY_CONTEXT);
+  private _context = new _Context(_EMPTY_CONTEXT);
 
   /**
    * Reference to the HTML Element the directive is applied

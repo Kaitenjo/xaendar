@@ -49,7 +49,7 @@ describe('checkTriggerTargets', () => {
     ['an element', '<div>@hydrate (visible) { text }</div>'],
     ['an @if', '@if (a()) { @hydrate (visible) { text } }'],
     ['an @else', '@if (a()) { <b></b> } @else { @hydrate (visible) { text } }'],
-    ['a @for', '@for (item of items(); track item()) { @hydrate (visible) { text } }'],
+    ['a @for', '@for (item of items(); track item) { @hydrate (visible) { text } }'],
     ['a @switch', '@switch (a()) { @case (1) { @hydrate (visible) { text } } }'],
     ['a template', '<template row()>@hydrate (visible) { text }</template>'],
     ['a @client', '@client { @hydrate (visible) { text } }'],

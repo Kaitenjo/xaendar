@@ -36,17 +36,34 @@ describe('generateElement', () => {
     expect(code[0]).toContain('context, anchor, \'div\'');
   });
 
-  it('generates literal, expression and reactive attributes', async () => {
-    const context = new GeneratorContext(cache);
-    context.addSignalClassField('count');
-    const { code } = await run('<div class="a" title="{heading}" id="{count}"></div>', context);
+  it('generates literal attributes, written once, the ones of an expression reading no name, evaluated once, and the bindings of any other expression', async () => {
+    const { code } = await run('<div class="a" width="{1 + 2}" title="{heading}"></div>', new GeneratorContext(cache));
     const output = code.join('\n');
 
-    expect(output).toContain('value: \'a\',');
-    expect(output).toContain('setter: _setProperty');
-    expect(output).toContain('value: () => this.heading,');
-    expect(output).toContain('setter: _setExpressionProperty');
-    expect(output).toContain('setter: _setReactiveProperty');
+    expect(output).toContain('value: \'a\',\n      setter: _setProperty');
+    expect(output).toContain('value: () => 1 + 2,\n      setter: _setExpressionProperty');
+    expect(output).toContain('value: () => this.heading,\n      setter: _setReactiveProperty\n');
+  });
+
+  it('passes to the binding of an attribute the constant listing the variables of the template it reads', async () => {
+    const context = new GeneratorContext(cache);
+    context.addIdentifier('row', 'variable');
+    context.addIdentifier('field', 'value');
+    const { code } = await run('<div title="{row.name + field.value}" class="{field.value}"></div>', context);
+
+    expect(code.join('\n')).toContain([
+      '      value: () => context.get(\'row\').name + context.get(\'field\').value,',
+      '      setter: _setReactiveProperty,',
+      '      reads: _reads0',
+      '    },',
+      '    {',
+      '      name: \'class\',',
+      '      value: () => context.get(\'field\').value,',
+      '      setter: _setReactiveProperty',
+      '    },'
+    ].join('\n'));
+    expect(context.readsDeclarations).toEqual(['const _reads0 = [\'row\'];']);
+    expectValidJavascript(code);
   });
 
   describe('component inputs', () => {
@@ -60,7 +77,7 @@ describe('generateElement', () => {
     it('sets the inputs of a component by the name of their property, the one they are exposed with for the inputs of a host directive, through the setters of the inputs', async () => {
       const context = new GeneratorContext(cache);
       context.addSignalClassField('count');
-      const { code } = await run('<my-el user-id="u" title="{heading}" count="{count()}" tone="dark" id="main"></my-el>', context);
+      const { code } = await run('<my-el user-id="u" title="{\'heading\'}" count="{count()}" tone="dark" id="main"></my-el>', context);
 
       expect(code).toEqual([
         '_renderElement(root, context, null, \'my-el\',',
@@ -72,7 +89,7 @@ describe('generateElement', () => {
         '    },',
         '    {',
         '      name: \'title\',',
-        '      value: () => this.heading,',
+        '      value: () => \'heading\',',
         '      setter: _setExpressionInput',
         '    },',
         '    {',
@@ -246,7 +263,7 @@ describe('generateElement', () => {
   it('generates the classes toggled on the element before its attributes, with a setter toggling them, so that writing class finds them', async () => {
     const context = new GeneratorContext(cache);
     context.addSignalClassField('active');
-    const { code } = await run('<div [class.is-on]="{active()}" title="x" [class.big]="{size > 1}"></div>', context);
+    const { code } = await run('<div [class.is-on]="{active()}" title="x" [class.big]="{2 > 1}"></div>', context);
 
     expect(code).toEqual([
       '_renderElement(root, context, null, \'div\',',
@@ -258,7 +275,7 @@ describe('generateElement', () => {
       '    },',
       '    {',
       '      name: \'big\',',
-      '      value: () => this.size > 1,',
+      '      value: () => 2 > 1,',
       '      setter: _setExpressionClass',
       '    },',
       '    {',
@@ -822,7 +839,7 @@ describe('generateElement', () => {
         '        {',
         '          name: \'level\',',
         '          value: () => this.count(),',
-        '          setter: _setExpressionInput',
+        '          setter: _setReactiveInput',
         '        },',
         '      ]',
         '    },',

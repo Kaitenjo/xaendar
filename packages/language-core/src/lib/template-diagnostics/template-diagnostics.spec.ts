@@ -103,7 +103,7 @@ describe('getTemplateDiagnostics', () => {
   }, TIMEOUT);
 
   it('reports the type errors on the exact characters of the template they come from', async () => {
-    const source = '<b (click)="nope()">{ missing }</b>\n@for (item of items; track item().id) { {item().nam} }';
+    const source = '<b (click)="nope()">{ missing }</b>\n@for (item of items; track item.id) { {item.nam} }';
 
     expect(await diagnose(source)).toEqual([
       ['nope', 'Property \'nope\' does not exist on type \'App\'.', DiagnosticCategory.Error],
@@ -124,7 +124,7 @@ describe('getTemplateDiagnostics', () => {
   it('checks the casts of the arguments of the calls, the ones of a @render included', async () => {
     const source = [
       '@import { Row } from \'./utils\';',
-      '<template row(item: Row)>{ item().id }</template>',
+      '<template row(item: Row)>{ item.id }</template>',
       '@render row(items[0] as Row)',
       '{ select(title as unknown as number) } { select(title as Unknown) }'
     ].join('\n');
@@ -159,7 +159,7 @@ describe('getTemplateDiagnostics', () => {
     ]);
   }, TIMEOUT);
 
-  it('types a @let with its value, or with the signal of its value when it reads one, reporting its reads before it', async () => {
+  it('types a @let with its value, the one reading a signal too, reporting its reads before it', async () => {
     project.write('src/store.ts', 'import type { Signal } from \'@xaendar/core/signals\';\nexport declare const total: Signal<number>;\n');
     const source = [
       '@import { total } from \'./store\';',
@@ -167,13 +167,31 @@ describe('getTemplateDiagnostics', () => {
       '@let early = 1;',
       '@let sum = total() + 1;',
       '@let label = title;',
-      '{ sum().toFixed() } { label.length } { sum.toFixed() } { label() }'
+      '{ sum.toFixed() } { label.length } { sum.nope } { label }'
     ].join('\n');
 
     expect(await diagnose(source)).toEqual([
       ['early', '"early" is read before its @let: only an event handler can read a @let declared after it', DiagnosticCategory.Error],
-      ['toFixed', 'Property \'toFixed\' does not exist on type \'Computed<number>\'.', DiagnosticCategory.Error],
-      ['label', 'This expression is not callable.\n  Type \'String\' has no call signatures.', DiagnosticCategory.Error]
+      ['nope', 'Property \'nope\' does not exist on type \'number\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('tells that a variable of the template is not a signal when an expression calls it, unless its value is a function', async () => {
+    project.write('src/handlers.ts', 'export type Handler = () => string;\n');
+    const source = [
+      '@import { Handler } from \'./handlers\';',
+      '@let total = items.length;',
+      '<template row(item: { id: number }, format: Handler)>{ item().id } { format() }</template>',
+      '@for (row of items; track row.id; i = $index) { { row() } { $even() } { i() } { total() } }'
+    ].join('\n');
+    const message = (name: string) => `'${name}' is a template variable, not a signal: remove the parentheses and read it as ${name}, since the variables of a template (@for, @let, parameters of a template) hold their values`;
+
+    expect(await diagnose(source)).toEqual([
+      ['item', message('item'), DiagnosticCategory.Error],
+      ['row', message('row'), DiagnosticCategory.Error],
+      ['$even', message('$even'), DiagnosticCategory.Error],
+      ['i', message('i'), DiagnosticCategory.Error],
+      ['total', message('total'), DiagnosticCategory.Error]
     ]);
   }, TIMEOUT);
 
@@ -184,7 +202,7 @@ describe('getTemplateDiagnostics', () => {
       '@render row(items[0], \'a\')',
       '@render row(items[0])',
       '@render row(items[0], 1, 2)',
-      '<template row(item: Row, index: number)>{ item().id } { item().nam } { index().toFixed() }</template>',
+      '<template row(item: Row, index: number)>{ item.id } { item.nam } { index.toFixed() }</template>',
       '<template wrong(value: Nope) />'
     ].join('\n');
 
@@ -206,19 +224,19 @@ describe('getTemplateDiagnostics', () => {
       '@render row(items[0], undefined)',
       '@render row(items[0], \'x\', 1)',
       '@render row()',
-      '<template row(item: Row, label = \'#\' + item().id, dense: boolean = title === \'\', count?: number)>',
-      '  { label().toUpperCase() } { dense() } { count().toFixed() } { label().nope }',
+      '<template row(item: Row, label = \'#\' + item.id, dense: boolean = title === \'\', count?: number)>',
+      '  { label.toUpperCase() } { dense } { count.toFixed() } { label.nope }',
       '</template>',
-      '<template wrong(first: number = \'a\', second = third(), third: number = 1) />'
+      '<template wrong(first: number = \'a\', second = third, third: number = 1) />'
     ].join('\n');
 
     expect(await diagnose(source)).toEqual([
       ['undefined', 'Argument of type \'undefined\' is not assignable to parameter of type \'string\'.', DiagnosticCategory.Error],
       ['1', 'Argument of type \'number\' is not assignable to parameter of type \'boolean\'.', DiagnosticCategory.Error],
       ['@render row()', 'Expected 1-4 arguments, but got 0.', DiagnosticCategory.Error],
-      ['count', 'Object is possibly \'undefined\'.', DiagnosticCategory.Error],
+      ['count', '\'count\' is possibly \'undefined\'.', DiagnosticCategory.Error],
       ['nope', 'Property \'nope\' does not exist on type \'string\'.', DiagnosticCategory.Error],
-      ['\'a\'', 'Argument of type \'string\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error],
+      ['first', 'Type \'string\' is not assignable to type \'number\'.', DiagnosticCategory.Error],
       ['third', 'Parameter \'second\' cannot reference identifier \'third\' declared after it.', DiagnosticCategory.Error]
     ]);
   }, TIMEOUT);
@@ -233,8 +251,8 @@ describe('getTemplateDiagnostics', () => {
   }, TIMEOUT);
 
   it('reads the members and the imports of the template in the track expression of a @for', async () => {
-    expect(await diagnose('@import { formatDate } from \'./utils\';\n@for (item of items; track title + formatDate(item().id)) { {item().name} }')).toEqual([]);
-    expect(await diagnose('@for (item of items; track nope(item())) { }')).toEqual([
+    expect(await diagnose('@import { formatDate } from \'./utils\';\n@for (item of items; track title + formatDate(item.id)) { {item.name} }')).toEqual([]);
+    expect(await diagnose('@for (item of items; track nope(item)) { }')).toEqual([
       ['nope', 'Property \'nope\' does not exist on type \'App\'.', DiagnosticCategory.Error]
     ]);
   }, TIMEOUT);
@@ -297,7 +315,7 @@ describe('getTemplateDiagnostics', () => {
   });
 
   it('reports the diagnostics of the unmapped lines on the element enclosing them, and the others at the start', async () => {
-    const source = '<ul>\n  @for (item of items; track item().id) { <li>{ item().name }</li> }\n</ul>';
+    const source = '<ul>\n  @for (item of items; track item.id) { <li>{ item.name }</li> }\n</ul>';
     const { analysis } = await project.analyze(source);
     const shimFile = createSourceFile(analysis!.shimPath, analysis!.languageService.getProgram()!.getSourceFile(analysis!.shimPath)!.text, ScriptTarget.Latest);
     // `let $index!: Signal<number>;`, declared by the shim only
@@ -630,14 +648,14 @@ describe('getTemplateDiagnostics narrowed signals', () => {
 
   it('narrows the item of a @for, a @let and a template parameter, reporting what the condition does not leave out on the call', async () => {
     const source = [
-      '@for (row of rows; track $index()) { @if (row()) { { row().label } } }',
+      '@for (row of rows; track $index) { @if (row) { { row.label } } }',
       '@let current = user();',
-      '@if (current()) { { current().name } { current().address.city } }',
-      '<template card(person: { name: string } | null)>@if (person()) { { person().name } }</template>'
+      '@if (current) { { current.name } { current.address.city } }',
+      '<template card(person: { name: string } | null)>@if (person) { { person.name } }</template>'
     ].join('\n');
 
     expect(await diagnoseProfile(source)).toEqual([
-      ['current()', 'Object is possibly \'undefined\'.']
+      ['current', '\'current.address\' is possibly \'undefined\'.']
     ]);
   }, TIMEOUT);
 });

@@ -21,11 +21,12 @@ describe('typeCheckLet', () => {
     expect(context.usesTemplateHelpers).toBe(false);
   });
 
-  it('passes a value reading a signal to the function typing it as a signal, which the helpers declare', () => {
+  it('checks a value reading a signal or a variable of the template the same way, typing the @let with the value', () => {
     const context = new TypeCheckContext();
-    context.addUnresolvableIdentifier('item', 'signal');
+    context.addSignalClassField('price');
+    context.addUnresolvableIdentifier('item', 'variable');
 
-    expect(typeCheckLet(parse('@let name = item().name;'), () => [], context)[0].text).toBe('const __let0 = __let(item().name);');
-    expect(context.usesTemplateHelpers).toBe(true);
+    expect(typeCheckLet(parse('@let total = item.count * price();'), () => [], context)[0].text).toBe('const __let0 = item.count * root.price();');
+    expect(context.usesTemplateHelpers).toBe(false);
   });
 });

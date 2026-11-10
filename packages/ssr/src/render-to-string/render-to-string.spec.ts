@@ -123,18 +123,18 @@ customElements.define('team-list', TeamElement);
 _defineServerRender(TeamElement, await compile([
   '<h1 class="title" [class.long]="{ heading().length > 5 }">{ heading() } &amp; { name }</h1>',
   '<template row(user: { name: string, admin: boolean }, index: number)>',
-  '  <user-badge label="{ user().name }" admin="{ user().admin }">#{ index() }</user-badge>',
+  '  <user-badge label="{ user.name }" admin="{ user.admin }">#{ index }</user-badge>',
   '</template>',
   '@if (users().length) {',
-  '  @for (user of users(); track user().id) {',
-  '    @render row(user(), $index())',
+  '  @for (user of users(); track user.id) {',
+  '    @render row(user, $index)',
   '  }',
   '} @else {',
   '  <p>Nobody</p>',
   '}',
   '@let total = users().length;',
-  '@switch (kind) { @case (\'a\') { <i>a</i> } @case (\'b\', \'c\') { <i>{ total() }</i> } @default { <i>?</i> } }',
-  '<p @if (total() > 1) { title="many" } @else { title="few" }>{ typeof window } { innerWidth }</p>',
+  '@switch (kind) { @case (\'a\') { <i>a</i> } @case (\'b\', \'c\') { <i>{ total }</i> } @default { <i>?</i> } }',
+  '<p @if (total > 1) { title="many" } @else { title="few" }>{ typeof window } { innerWidth }</p>',
   '<input #field value="{ field }" />',
   '<b *delay(allow="{ true }")>late</b><b *delay(allow="{ false }")>never</b>',
   '<style>a > b {}</style>',
@@ -163,7 +163,7 @@ describe('renderToString', () => {
       '<!--/xd-for--><!--/xd-if-->',
       '<!--xd-switch:1--><i><!---->2</i><!--/xd-switch-->',
       '<p title="many"><!---->undefined<!----> <!----></p>',
-      '<input value="undefined">',
+      '<input>',
       '<!--xd-s:1--><b>late</b><!--/xd-s--><!--xd-s:0--><!--/xd-s-->',
       '<style>a > b </style>',
       '<lazy-element></lazy-element>',
@@ -234,7 +234,7 @@ describe('renderToString', () => {
       public items = [1];
     }
     customElements.define('markers-card', MarkersElement);
-    _defineServerRender(MarkersElement, await compile('@if (true) { a }@switch (1) { @case (1) { b } }@for (item of items; track item()) { c }@client { d }@client { e } @placeholder { f }@defer (idle) { g } @placeholder { h }'));
+    _defineServerRender(MarkersElement, await compile('@if (true) { a }@switch (1) { @case (1) { b } }@for (item of items; track item) { c }@client { d }@client { e } @placeholder { f }@defer (idle) { g } @placeholder { h }'));
 
     const html = await renderToString(MarkersElement);
 

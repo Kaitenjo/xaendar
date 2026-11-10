@@ -117,11 +117,11 @@ export enum TokenType {
    */
   TEMPLATE_DECLARATION,
   /**
-   * Opening keyword of a `@render`, e.g. `@render` in `@render row(item())`.
+   * Opening keyword of a `@render`, e.g. `@render` in `@render row(item)`.
    */
   RENDER,
   /**
-   * The call of a template after `@render`, e.g. `row(item())` in `@render row(item())`.
+   * The call of a template after `@render`, e.g. `row(item)` in `@render row(item)`.
    */
   RENDER_CALL,
   /**

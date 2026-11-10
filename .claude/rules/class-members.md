@@ -76,7 +76,7 @@ Any type works, imported aliases included: the type-check code of the parent tem
 
 ## Module signals
 
-A module-level signal a template reads is imported by the template (`@import { count } from './cart.store.ts'`): the compiler follows the import to its declaration, so attribute bindings reading it are reactive. The class reads it directly (`count()`): never copy it into a member (`public readonly count = count;`) or forward it through a method. A member initialized by a function of the application or from another object (`level = readLevel()`, `this.log = target.log`) is not followed: annotate it with a type of `@xaendar/core/signals`.
+A module-level signal a template reads is imported by the template (`@import { count } from './cart.store.ts'`). The class reads it directly (`count()`): never copy it into a member (`public readonly count = count;`) or forward it through a method. The bindings follow any signal they read at runtime, however they reach it, but the type-check recognizes a signal only by its declaration: annotate a member initialized by a function of the application or from another object (`level = readLevel()`, `this.log = target.log`) with a type of `@xaendar/core/signals`, so that the conditions of `@if` narrow it.
 
 ## Module constants
 

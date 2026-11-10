@@ -30,7 +30,7 @@ describe('visitScopeDeclarations', () => {
   it('leaves out the declarations of the scopes opened by control-flow blocks and by elements a structural directive is applied to', () => {
     const template = [
       '@if (open()) { <input #inBranch /> }',
-      '@for (item of items(); track item()) { <input #inRow /> }',
+      '@for (item of items(); track item) { <input #inRow /> }',
       '@switch (mode()) { @case (1) { <input #inCase /> } }',
       '<div *visible><input #inStructural /></div>',
       '<div @if (cond()) { *visible }><input #inConditionallyStructural /></div>',

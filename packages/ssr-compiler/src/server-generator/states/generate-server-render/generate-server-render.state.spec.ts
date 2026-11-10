@@ -5,13 +5,13 @@ import { generateServerRender } from './generate-server-render.state';
 const cache = {} as ContextCache;
 
 describe('generateServerRender', () => {
-  it('renders an instance of the template with a function for each argument', () => {
+  it('renders an instance of the template with the value of each argument, read once', () => {
     const context = new GeneratorContext(cache);
     context.addIdentifier('row');
     context.addTemplate('row', 'html');
 
     expect(generateServerRender(parseTemplate('@render row(item, 1)')[0] as RenderNode, { id: 'root' }, '0', context)).toEqual({
-      pieces: [{ statement: '_ssrRenderTemplate(out, context, context.get(\'row\'), [() => this.item, () => 1]);' }]
+      pieces: [{ statement: '_ssrRenderTemplate(out, context, context.get(\'row\'), [this.item, 1]);' }]
     });
   });
 

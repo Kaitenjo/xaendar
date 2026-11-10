@@ -227,7 +227,7 @@ describe('parseElement', () => {
 
   describe('templates', () => {
     it('parses a <template> into the declaration of a template, with its name, its parameters and its content', () => {
-      const template = '<template row(item: Item, index: number)><li>{ item() }</li></template>';
+      const template = '<template row(item: Item, index: number)><li>{ item }</li></template>';
       const [node] = parse(template) as TemplateNode[];
       const at = (text: string) => ({ start: template.indexOf(text), end: template.indexOf(text) + text.length });
       expect(node).toMatchObject({
@@ -252,7 +252,7 @@ describe('parseElement', () => {
 
     it('throws for a <template> without name, pointing to its tag name', () => {
       const template = '<template></template>';
-      expect(() => parse(template)).toThrow('A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item())');
+      expect(() => parse(template)).toThrow('A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item)');
       expect(() => parse(template)).toThrow(expect.objectContaining({ span: { start: 1, end: 9 } }));
     });
 

@@ -1,6 +1,5 @@
 import type { ASTNode } from '../../../parser/types/ast.type';
 import type { IdentifierKind } from '../../../generator/types/identifier-kind.type';
-import { resolveExpression, ROOT_NODE } from '../../../generator/utils/generator/generator.utils';
 import type { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import type { LetNode } from '../../../parser/types/nodes/let-node.type';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
@@ -39,8 +38,7 @@ export function getInstantiationSuffix(element: Pick<ElementNode, 'span'>): stri
  * and declared once they are, when it is known whether the generic components the variables name were instantiated. A
  * name declared twice in the scope is registered once: TypeScript reports both its declarations.
  *
- * The `@let` are registered after the other names, in the order they are written, as signals when their value reads one,
- * as the render code does: the value of one tells whether it reads the signal of another one written before it. A
+ * The `@let` are registered after the other names, in the order they are written, as variables of the template: a
  * `@let` is typed with the constant its value is checked in, where it is written (see `typeCheckLet`).
  *
  * @param nodes - The nodes of the scope.
@@ -60,8 +58,7 @@ export function typeCheckScope(nodes: readonly ASTNode[], context: TypeCheckCont
   });
 
   for (let i = 0; i < lets.length; i++) {
-    const { name, value } = lets[i];
-    register(context, name, resolveExpression(value, context, { resolver: ROOT_NODE }).reactive ? 'signal' : 'value');
+    register(context, lets[i].name, 'variable');
   }
 
   const lines = nodes.flatMap(node => processNode(node, context));
@@ -126,7 +123,7 @@ function getVariableType(element: ElementNode, namespace: ElementNamespace, cont
  *
  * @param context - The context of the scope.
  * @param name - The name.
- * @param kind - Whether the name holds a signal or a value.
+ * @param kind - What the name holds: a value, or a variable of the template.
  */
 function register(context: TypeCheckContext, name: string, kind: IdentifierKind): void {
   if (!context.declaresIdentifier(name)) {

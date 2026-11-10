@@ -17,12 +17,12 @@ Scope: the files named by the caller. Otherwise use the changed Xaendar files fr
 Check at least the following:
 
 **Bugs that compile**
-- Attribute bindings that read a member the compiler cannot recognize as reactive: a method reading signals only through functions outside the class (`readPercent()`), a member initialized by calling a function of the application (`level = readLevel()`) or assigned from another object (`this.log = target.log`) without a signal type, or annotated with a type alias of the project instead of a type of `@xaendar/core/signals`. These are evaluated only once.
+- Members holding the value of a signal instead of the signal (`level = readLevel()()`, a field initialized with `this.price() * 2`): read once, so the bindings reading them never change. Keep the signal, or a `computed`.
 - Mixed static text and `{ }` in one attribute value. It renders literally.
-- Boolean attributes bound to an expression (`disabled="{x()}"`, `checked="{…}"`), and attributes bound to `null`/`undefined` expected to disappear. They stay, as `"false"`, `"null"`, `"undefined"`.
+- Boolean attributes bound to a boolean (`disabled="{x()}"`, `checked="{…}"`): `false` is written as `"false"`, which still disables. Bind `null`/`undefined` when the attribute must be absent (`disabled="{ x() || null }"`), or use a conditional binding.
 - `value`/`checked` bindings on inputs that the user edits. Only the initial state is applied.
 - Whitespace between elements on separate lines that is expected to render. It is dropped.
-- `track $index()`, or keys that repeat or can be edited, on lists whose rows hold state (fields, focus) and get inserted, sorted or prepended items.
+- `track $index`, or keys that repeat or can be edited, on lists whose rows hold state (fields, focus) and get inserted, sorted or prepended items.
 - Signal values mutated in place (`items().push(x)`, `user().name = …`). Nobody is notified.
 - Effects writing a signal they also read (an endless loop), signals read after an `await` in an effect or in an async `shouldRender` (not tracked), inputs read once in a hook instead of reactively.
 - Listeners on `window`/`document`, observers and timers without removal in `onDestroy`. Directive setup reading `this.element` or the inputs in the constructor, or reading the children of the element synchronously in `onInit`.

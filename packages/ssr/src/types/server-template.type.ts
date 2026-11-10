@@ -1,5 +1,5 @@
 import type { _Context } from '@xaendar/core';
-import type { Function, NoArgsFunction } from '@xaendar/types';
+import type { Function } from '@xaendar/types';
 import type { ServerOutput } from './server-output.type';
 
 /**
@@ -11,8 +11,8 @@ export type ServerTemplate = {
    */
   readonly context: _Context;
   /**
-   * Writes an instance of the template, given the output, the runtime context of the scope declaring it and the signals
-   * of the parameters.
+   * Writes an instance of the template, given the output, the runtime context of the scope declaring it and the values
+   * of the arguments, in the order of the parameters.
    */
-  readonly render: Function<[out: ServerOutput, declarationContext: _Context, params: NoArgsFunction<unknown>[]], void>;
+  readonly render: Function<[out: ServerOutput, declarationContext: _Context, params: unknown[]], void>;
 };

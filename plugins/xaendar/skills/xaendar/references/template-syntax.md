@@ -6,7 +6,7 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 
 ```html
 <!-- Interpolation: any expression, always reactive, always a text node -->
-<p>Hello { name() }, you have { count() + 1 } messages</p>
+<p>Hello { name }, you have { count() + 1 } messages</p>
 <p>{`${count()} items`}</p>                 <!-- template literal -->
 <p>{ user()?.name ?? 'anonymous' }</p>
 
@@ -46,10 +46,10 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 
 - An attribute value is either fully static or one expression. `class="btn { kind() }"` is the literal string `btn { kind() }`; write `class="{`btn ${kind()}`}"`.
 - `[class.name]="{ expr }"` toggles one class by the truthiness of a value of any type; it works inside conditional bindings (the class is removed with its branch) and survives a bound `class`, winning over it. Its value is always an expression in braces. Brackets only toggle classes (`[style.x]`, `[attr]` are errors), a class is toggled once per element, and never inside the parentheses of a directive.
-- On native elements a binding calls `setAttribute`: the value becomes a string (an object becomes `[object Object]`), and a boolean attribute counts by presence (`disabled="{ false }"` still disables, `checked="false"` is still checked). Add or remove boolean attributes with a conditional binding. `value`/`checked` attributes are only the initial state once the user interacts: write the DOM property from code (a directive or a query).
+- On native elements a binding calls `setAttribute`: the value becomes a string (an object becomes `[object Object]`), `null` and `undefined` remove the attribute (the server leaves it out), and a boolean attribute counts by presence (`disabled="{ false }"` still disables, `checked="false"` is still checked). Add or remove boolean attributes with a value that is `null` when absent (`disabled="{ busy() || null }"`) or with a conditional binding. `value`/`checked` attributes are only the initial state once the user interacts: write the DOM property from code (a directive or a query).
 - Static values are type-checked as `string`: a numeric input needs `count="{ 3 }"`, not `count="3"`.
-- Attribute bindings are reactive only when they name a member the compiler recognizes as a signal (initialized with `signal()` or `computed()`, annotated with `Signal<T>`, `Computed<T>`, `InputSignal<T>`, …, or initialized with a module-level signal, declared in the file or imported), or a method or getter of the class whose body reads one of those members, a module signal or another such method. A call the compiler cannot trace back to a signal, as one to a function outside the class, is evaluated once: declare the reactivity with a `computed`. Text, `@if`, `@for` and `@switch` are always reactive.
-- Listeners call exactly one method of the component, of one of its members (`cart.clear()`, `count.set(0)`) or of an element ref (`dialog.showModal()`). Arguments are expressions: literals (`'a'`, `1`, `true`, `null`), `$event` (in any position) and its properties (`$event.key`; `$event.target` is `EventTarget | null`, so read a field through an element ref instead, or pass `$event.target as HTMLInputElement`), members, `@for` variables, called, and their properties (`item().id`), element refs and their properties (`field.value`), a signal or a `@for` variable without the call (passes the signal itself), calls and operators (`format(item().id)`, `count() + 1`). No assignments, arrow functions or several statements: put the logic in the method.
+- Every binding follows the signals it reads while it runs, wherever they are read (a signal or computed member, an input, a query, a method, a getter, a function of another module or of a compiled package): it runs again when one of them changes, in attributes as in text, `@if`, `@for` and `@switch`, and follows what its last run read (a signal behind a condition only while the condition leads to it). A binding reading no signal is set once and creates no effect. A binding reading the variables of the template (`@for` items, `$index`, `@let`, template parameters) runs again when its scope changes them.
+- Listeners call exactly one method of the component, of one of its members (`cart.clear()`, `count.set(0)`) or of an element ref (`dialog.showModal()`). Arguments are expressions: literals (`'a'`, `1`, `true`, `null`), `$event` (in any position) and its properties (`$event.key`; `$event.target` is `EventTarget | null`, so read a field through an element ref instead, or pass `$event.target as HTMLInputElement`), members, called, and their properties, the variables of the template and their properties (`item.id`, `$index`), read when the event fires, element refs and their properties (`field.value`), a signal without the call (passes the signal itself), calls and operators (`format(item.id)`, `count() + 1`). No assignments, arrow functions or several statements: put the logic in the method.
 - No event modifiers: `(keydown.enter)` listens to an event literally named `keydown.enter`. Filter the key, call `preventDefault()`/`stopPropagation()` in the method.
 - On a component tag, an event it does not declare with `@Event` is a native event of its element (`(click)`), typed through `HTMLElementEventMap`; only composed native events leave its shadow root. A name that is neither is a build error.
 - `$event` is typed by the event name (`MouseEvent` for `click`, the `CustomEvent<T>` of an `Output<T>`). An `Output` without a type argument gives a `CustomEvent<null>`.
@@ -74,16 +74,16 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 @import { Row } from './row.ts'
 
 @render row(rows()[0], 0)                        <!-- before the declaration too -->
-@for (item of rows(); track item().id) {
-  @render row(item(), $index())                  <!-- arguments checked like a call -->
+@for (item of rows(); track item.id) {
+  @render row(item, $index)                  <!-- arguments checked like a call -->
 }
 
 <template row(row: Row, index: number)>         <!-- renders nothing where declared -->
-  <li>{ index() + 1 }. { row().name }</li>       <!-- parameters are signals -->
+  <li>{ index + 1 }. { row.name }</li>       <!-- parameters are values -->
 </template>
 ```
 
-- `<template name(params)>` declares a template: only `name(…)` on the tag, parentheses also without parameters. Each parameter needs a type (imported types too) or a default value typing it: `name?: Type`, `name: Type = value`, `name = value`, only after the required ones. The default applies only to an argument left out (an explicit `undefined` stays), reads like JS (content names, earlier parameters) and is reactive. No rest or destructuring.
+- `<template name(params)>` declares a template: only `name(…)` on the tag, parentheses also without parameters. Each parameter needs a type (imported types too) or a default value typing it: `name?: Type`, `name: Type = value`, `name = value`, only after the required ones. The default applies only to an argument left out (an explicit `undefined` stays), reads like JS (content names, earlier parameters) and is computed again when what it reads changes. No rest or destructuring.
 - `@render name(args)` renders a new instance wherever content goes. A changed argument updates only the nodes reading its parameter. No spread arguments.
 - Visible in the whole of its scope, like an element ref. The content reads the names of its declaration (closure, `@for` items included), not of the `@render`: pass them as arguments. Recursion works.
 - Content created in the namespace of the declaration: a `@render` in another namespace is an error. An element ref the content reads must come before every `@render`. Only the declaring template renders it.
@@ -91,13 +91,13 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 ## @let
 
 ```html
-@let address = user().address;                   <!-- reads a signal: a signal, read as address() -->
-@let country = defaults.country;                 <!-- reads none: a value, computed once -->
-<p>{ address().street }, { address().city }, { country }</p>
+@let address = user().address;                   <!-- reads a signal: computed again when it changes -->
+@let country = defaults.country;                 <!-- reads no signal: computed once -->
+<p>{ address.street }, { address.city }, { country }</p>
 ```
 
 - `@let name = value;`, also called a template variable, goes wherever content goes, with the `;` required; the value may span lines. Use it to name a part of a signal read several times (`@let address = user().address;`), not for computations, which stay in the class.
-- A signal when the value reads one (a signal or reactive member, an imported signal, a `@for` variable, a template parameter, a signal `@let`), decided at compile time; otherwise a value computed once. Typed by its value, never assigned.
+- A value, read as `name`, typed by its value, never assigned; calling it is a compile error, unless the value is a function. Computed when the render reaches it, again when a signal it read changes or when its scope changes a variable it reads (a reused `@for` row, a template parameter), otherwise once; what reads it is updated only when the value changes.
 - Scope like an element ref: visible in the whole scope, but only event handlers read it before its `;`, and a template reading it must be rendered after it. Not readable by the `track` of a `@for`. Same reserved names.
 
 ## Control flow
@@ -111,17 +111,17 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
   <p>None</p>
 }
 
-@for (item of items(); track item().id) {
-  <li>{ $index() + 1 }. { item().name } { $first() ? '(first)' : '' }</li>
+@for (item of items(); track item.id) {
+  <li>{ $index + 1 }. { item.name } { $first ? '(first)' : '' }</li>
 }
-@for (row of rows(); track row().id; index = $index) {  <!-- alias -->
+@for (row of rows(); track row.id; index = $index) {  <!-- alias -->
   …
 }
 @for (5) {                                               <!-- a number of times -->
   <span>★</span>
 }
-@for (step of count(); track step()) {                   <!-- 0 … count() - 1 -->
-  <span>{ step() }</span>
+@for (step of count(); track step) {                   <!-- 0 … count() - 1 -->
+  <span>{ step }</span>
 }
 
 @switch (status()) {
@@ -171,8 +171,8 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 - `@defer (triggers) { … }` renders its content once the first trigger fires (the triggers of `@hydrate` but `never`; without parentheses, `@defer { … }`, it waits for `idle`), loading first the modules of the components and directives only the content renders, split into chunks of their own. It works in any project, with or without SSR. `visible`, `interaction` and `hover` watch the element an element ref names (`hover(more)`, `visible(frame, { rootMargin: '300px' })`, the options of the `IntersectionObserver` but `root`, as an object literal, also alone), read once the template holding the block is rendered (the element can follow the block). A trigger after `prefetch` (`@defer (interaction, prefetch hover)`, `prefetch when expr`) loads the modules without rendering the content, which then waits for the same load. Each block following it is optional, written once, in any order: `@placeholder { … }` until a trigger fires (its listeners work: `visible`, `interaction` and `hover` without an element ref watch its elements, so with those triggers a `@placeholder` holding an element is required, a compile error otherwise; `@placeholder (minimum 500ms)` keeps it at least that long), `@loading { … }` while the modules load (never shown when there is nothing to load; `@loading (after 100ms, minimum 1s)` shows it only once the modules have loaded for `after`, then at least for `minimum`), `@error (error) { … }` when they fail to load (the name is optional, the value `unknown`; without `@error` the error is logged and the `@placeholder` comes back). Times are a number with `ms` or `s` (milliseconds without a unit). The content renders once: `when` going falsy again keeps it. With SSR the server renders only the `@placeholder`, which the browser adopts. Errors of the content's render are caught by a `@try` inside the `@defer`, not around it (the content renders after the first render). Each part is a scope of its own.
 - `@for` iterates arrays and numbers only: convert a `Set`, a `Map` or a string with `[...value]` in a computed signal. Without `track` the item itself is the key; a negative number renders nothing; there is no `$count` (read the length).
 - `@switch` compares with `===`; `@case` values are literals (no members of the component); `@default` applies only when no case matches, wherever it is written.
-- The `@for` item and context variables `$index`, `$first`, `$last`, `$even`, `$odd` are signals: call them (`item().id`, `$index()`), in `track` too. Aliases are signals too. Each call reads the signal again, so `@if (item().page)` does not narrow `item().page` inside the block: use `?.` or a method.
-- A row reused for a new item with the same key shows the new item and keeps its DOM state (typed text, focus): with `track $index()` that state stays at its position. Track a stable id when rows hold state.
+- The `@for` item and context variables `$index`, `$first`, `$last`, `$even`, `$odd`, and their aliases, are values: read them without parentheses (`item.id`, `$index`), in `track` too; calling one is a compile error telling to remove the parentheses. A row reused for another item with the same key, or moved, gets the new values in place: only the bindings reading them run again, and an event handler reads them when the event fires. `@if (item.page)` narrows `item.page` inside the block.
+- A row reused for a new item with the same key shows the new item and keeps its DOM state (typed text, focus): with `track $index` that state stays at its position. Track a stable id when rows hold state.
 - Write control-flow blocks on multiple lines, one block per line, with the content indented.
 
 ## Conditional bindings
@@ -241,8 +241,8 @@ A `@Property.required` input must be bound in every branch. By convention, a blo
 - Components and directives can be imported through a barrel (`@import { CardComponent } from './ui/index.ts'`, the barrel holding `export * from './card/card.xd.component'`, `export { Card as Tile } from './card'` or a class imported and exported again): the template reads each one from the file declaring it, and loads only that file, not the barrel, also in a `@defer` or a `@hydrate`.
 - The components and directives of a library built by `xd build` are imported from its package like local ones (`@import { CardComponent } from '@acme/ui'`, or by the path of their module, `@acme/ui/card/card.xd.component`): its `xaendar-manifest.json` describes them, the type-check reads its declarations, and the template loads only their modules. The project needs `@xaendar/core` of the same major version as the one compiling the library, not an older one. The components and directives of any other package compiled to JavaScript cannot be imported: its `.d.ts` keeps no decorator. Its functions, constants, enums, classes and types can; the components of a package publishing its TypeScript sources, of the same monorepo, or reached through an alias, are imported like local ones.
 - Any export can be imported: functions, constants, enums, classes, module signals, types, interfaces; `default as name` for the default export, `* as name` for the whole module. The expressions read them by their local name, like members: `{ formatPrice(price, Currency.Euro) }`, `@if (value instanceof Shape)`, `(click)="addItem()"`; a type can be a type argument (`<ex-list(Row)>`). Only the names the expressions read are imported at runtime, so a type costs nothing.
-- A module signal stays reactive (`{ quantity() }`, `value="{quantity()}"`), and so does a binding calling an exported function that reads one. A signal of a compiled package is recognized from its type in the declarations, but the body of its functions is not there: an attribute binding calling one is evaluated once (wrap it in a `computed` member).
-- Import what belongs to another module: types for the type arguments of generic components and directives, enums and classes for particular conditions (`@if (task().status === Status.Archived)`, `@if (shape() instanceof Circle)`), helpers shared by many templates, the signals of a store. The state of the component and the logic reading or changing it stay in its class (signals, computed signals, methods): never import a function or a constant only because it is possible.
+- A module signal stays reactive (`{ quantity() }`, `value="{quantity()}"`), and so does a binding calling an exported function that reads one, of the project or of a compiled package: the bindings follow the signals they read at runtime.
+- Import what belongs to another module: types for the type arguments of generic components and directives, enums and classes for particular conditions (`@if (task.status === Status.Archived)`, `@if (shape() instanceof Circle)`), helpers shared by many templates, the signals of a store. The state of the component and the logic reading or changing it stay in its class (signals, computed signals, methods): never import a function or a constant only because it is possible.
 - The variables of the template (`@for` items and aliases) hide an import named like them. Importing a name that is also a member of the component (inherited and DOM ones included, e.g. `title`) is an error: import it `as` another name. `root`, `$event` and the names starting with `__` are reserved.
 - Every tag containing a dash must be an imported Xaendar component, or match a pattern of `customElements` in `xaendar.json` (`["sl-*"]`; `xaendarPlugin({ customElements })` with plain Vite). Those custom elements of other libraries are used like native elements: bindings write attributes (strings only; set object properties from code), and `$event` is typed through `HTMLElementEventMap`, or `any` for events it does not declare.
 
@@ -262,7 +262,7 @@ Forbidden    assignments, new, arrow and function expressions, this, a cast of a
 ```
 
 - An object literal needs parentheses (`{ ({ id: 1 }) }`): without them the interpolation renders nothing.
-- A cast `as Type` closes a whole interpolation (`{ value() as string }`, `label="{name() as Label}"`) or casts an argument of a call: of a listener (`(input)="search($event.target as HTMLInputElement)"`, `pick($event as MouseEvent, row() as Row)`), of a `@render` (`@render row(item() as Row)`), of a call in any expression (`{ format(value() as Date) }`, `as unknown as Date` included). The type is written as is in the type-check (imported types included) and generates no code. Any other cast (`{ (item as Row).id }`, `{ a + (b as number) }`) is an error.
+- A cast `as Type` closes a whole interpolation (`{ value() as string }`, `label="{name as Label}"`) or casts an argument of a call: of a listener (`(input)="search($event.target as HTMLInputElement)"`, `pick($event as MouseEvent, row as Row)`), of a `@render` (`@render row(item as Row)`), of a call in any expression (`{ format(value() as Date) }`, `as unknown as Date` included). The type is written as is in the type-check (imported types included) and generates no code. Any other cast (`{ (item as Row).id }`, `{ a + (b as number) }`) is an error.
 - Members used by the template must be `public`. A module constant, function or signal the template reads is imported (`@import { LIMIT } from './limits.ts'`) rather than copied into a member that only aliases it; what is state of the component stays in its class.
 - A member named like a global (`name`, `location`, `history`), inherited ones included, hides the global in the template. Read the global as `window.location` or `globalThis.location`.
 

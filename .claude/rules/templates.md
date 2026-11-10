@@ -78,7 +78,7 @@ Use a `@let`, also called a template variable, to name a part of a signal the te
 ```html
 <!-- ✓ -->
 @let address = user().address;
-<p>{ address().street }, { address().city }</p>
+<p>{ address.street }, { address.city }</p>
 
 <!-- ✗ logic belongs in the class -->
 @let total = price() * quantity();
@@ -93,7 +93,7 @@ The language server formats the templates (Format Document, `xaendar.format.prin
 
 ## Names
 
-Never use one-letter names in templates either: `@for` items and aliases (`@for (row of rows(); track row().id; index = $index)`, not `r` / `i`).
+Never use one-letter names in templates either: `@for` items and aliases (`@for (row of rows(); track row.id; index = $index)`, not `r` / `i`).
 
 ## Self-closing tags
 
@@ -114,7 +114,7 @@ Self-close every element without content, native ones included: `<div class="spa
   ```
 
 - Every element and block starts on a line of its own after another node, also when the template had them on one line (`</button> <button>`): the formatter writes a line break there and the space is dropped, so write `{ ' ' }` when it matters. A text is never separated from the element that follows it (`Use <code>x</code>.` stays on one line), and nothing is moved next to a comment or inside `<pre>`.
-- An element that contains only text and interpolations stays on one line (`<span class="count">{ total() } items</span>`), as long as its opening tag is short and the line stays within about 120 characters. Otherwise, the text goes on its own line, indented one level. Exception: text that already touches both tags (`<x-card>Text</x-card>`) stays inline even when long, because on its own line it would gain spaces at both ends, and they are visible when the content flows inline (slotted next to other content, for example).
+- An element that contains only text and interpolations stays on one line (`<span class="count">{ total } items</span>`), as long as its opening tag is short and the line stays within about 120 characters. Otherwise, the text goes on its own line, indented one level. Exception: text that already touches both tags (`<x-card>Text</x-card>`) stays inline even when long, because on its own line it would gain spaces at both ends, and they are visible when the content flows inline (slotted next to other content, for example).
 - An opening tag that does not fit the line (`xaendar.format.printWidth`) is wrapped like the default HTML formatter does: the items fill each line up to the width, the next lines indented one level, and `>` (or `/>`) ends the last line. A tag that contains a conditional block has one item per line instead, indented one level, and ends with `>` (or `/>`) on its own line, as in the example above.
 - Control-flow blocks, inside a tag or between elements, are never inline: one block per line, with its content indented.
 

@@ -1,9 +1,9 @@
 @import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <div class="controls">
-  @for (option of statuses; track option()) {
-    <ex-button class="option" [class.option--active]="{option() === status()}" (click)="choose(option())">
-      { option() }
+  @for (option of statuses; track option) {
+    <ex-button class="option" [class.option--active]="{option === status()}" (click)="choose(option)">
+      { option }
     </ex-button>
   }
 </div>

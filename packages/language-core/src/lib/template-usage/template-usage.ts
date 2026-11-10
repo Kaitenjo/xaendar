@@ -1,4 +1,4 @@
-import { type ASTNode, ASTNodeType, type AttributeNode, type ComponentMetadata, type ComponentMembers, type ComponentOrDirectiveMetadata, type ConditionalBindingNode, type ElementNode, forEachExpressionChild, isBrowserOnlyGlobal, type SymbolImport, walkTemplate } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type AttributeNode, type ComponentMetadata, type ComponentMembers, type ComponentOrDirectiveMetadata, type ConditionalBindingNode, type ElementNode, forEachExpressionChild, getForVariables, isBrowserOnlyGlobal, type SymbolImport, walkTemplate } from '@xaendar/compiler';
 import { type Expression, type Identifier, isCallExpression, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, type Node } from 'typescript';
 import type { ComponentUsage } from '../types/component-usage.type';
 import type { TemplateUsage } from '../types/template-usage.type';
@@ -7,7 +7,8 @@ import type { TemplateUsage } from '../types/template-usage.type';
  * Reads what a template needs from the browser, for the analysis finding the static components of a project: what it
  * does there, which a static component cannot, and the components it renders, with what they depend on.
  *
- * What the analysis cannot prove counts: any call reading a value may read a signal.
+ * What the analysis cannot prove counts: any call reading a value may read a signal, and so may any variable of the
+ * template (the ones of a `@for`, a `@let`, the parameters of a template), whose value may come from one.
  *
  * @param ast - The top-level nodes of the template.
  * @param metadatas - The metadata of the components and directives the template imports.
@@ -17,8 +18,37 @@ import type { TemplateUsage } from '../types/template-usage.type';
  */
 export function getTemplateUsage(ast: readonly ASTNode[], metadatas: readonly ComponentOrDirectiveMetadata[], symbols: readonly SymbolImport[], members: Pick<ComponentMembers, 'reactiveMembers' | 'shadowingMembers'>): TemplateUsage {
   const components = new Array<ComponentUsage>();
-  collectComponents(ast, { dynamic: false, placeholder: false }, metadatas, new Set(members.reactiveMembers), components);
+  collectComponents(ast, { dynamic: false, placeholder: false }, metadatas, collectReactiveNames(ast, metadatas, members.reactiveMembers), components);
   return { logic: findTemplateLogic(ast, metadatas, symbols, members.shadowingMembers), components };
+}
+
+/**
+ * Lists the names an expression of a template may read a signal through: the members of the component reading one, and
+ * the variables of the template, which are values that may come from a signal, as a `@let` reading one, or from the
+ * items of a `@for` the browser renders again.
+ *
+ * @param ast - The top-level nodes of the template.
+ * @param metadatas - The metadata of the components and directives the template imports.
+ * @param reactiveMembers - The members of the component reading a signal.
+ * @returns The names.
+ */
+function collectReactiveNames(ast: readonly ASTNode[], metadatas: readonly ComponentOrDirectiveMetadata[], reactiveMembers: readonly string[]): Set<string> {
+  const names = new Set(reactiveMembers);
+  walkTemplate(ast, metadatas, {
+    forBlock: node => {
+      const variables = getForVariables(node);
+      for (let i = 0; i < variables.length; i++) {
+        names.add(variables[i]);
+      }
+    },
+    let: ({ name }) => names.add(name),
+    template: ({ parameters }) => {
+      for (let i = 0; i < parameters.length; i++) {
+        names.add(parameters[i].name);
+      }
+    }
+  });
+  return names;
 }
 
 /**
@@ -88,7 +118,7 @@ function findExpressionLogic(expression: Expression, reactive: ReadonlySet<strin
  * @param nodes - The nodes.
  * @param position - Where the nodes are.
  * @param metadatas - The metadata of the components and directives the template imports.
- * @param reactive - The members of the component reading a signal.
+ * @param reactive - The names reading a signal: the members of the component, and the variables of the template.
  * @param components - The usages, filled as they are found.
  */
 function collectComponents(nodes: readonly ASTNode[], position: Pick<ComponentUsage, 'dynamic' | 'placeholder'>, metadatas: readonly ComponentOrDirectiveMetadata[], reactive: ReadonlySet<string>, components: ComponentUsage[]): void {
@@ -233,10 +263,11 @@ function isBindingReactive(binding: ConditionalBindingNode, reactive: ReadonlySe
 }
 
 /**
- * Tells whether an expression may read a signal: it reads a reactive member, or calls anything.
+ * Tells whether an expression may read a signal: it reads a reactive member or a variable of the template, or calls
+ * anything.
  *
  * @param expression - The expression.
- * @param reactive - The members reading a signal.
+ * @param reactive - The names reading a signal: the members of the component, and the variables of the template.
  * @returns `true` when it may read one.
  */
 function isReactive(expression: Node, reactive: ReadonlySet<string>): boolean {

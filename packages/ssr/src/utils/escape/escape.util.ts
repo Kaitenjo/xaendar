@@ -23,6 +23,19 @@ export function _escapeAttribute(value: unknown): string {
 }
 
 /**
+ * Writes an attribute bound by a template in a start tag, as the client renders it: left out when its value is `null` or
+ * `undefined`, which remove the attribute in the browser, and written with its value escaped otherwise (see
+ * {@link _escapeAttribute}).
+ *
+ * @param name - The name of the attribute.
+ * @param value - The value.
+ * @returns The attribute, preceded by a space, or an empty string.
+ */
+export function _ssrAttribute(name: string, value: unknown): string {
+  return value === null || value === undefined ? '' : ` ${name}="${_escapeAttribute(value)}"`;
+}
+
+/**
  * Prepares the value of an interpolation written as the text of an element whose content the parser does not decode,
  * such as `<style>`: converted as the browser converts it (see {@link toText}), and written as it is, except for the
  * sequences ending the element.

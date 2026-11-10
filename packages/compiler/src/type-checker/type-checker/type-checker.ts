@@ -39,12 +39,16 @@ import { checkVariableOrder } from '../utils/variable-order/variable-order.utils
  *
  * - No variable is declared per HTML element. Element identifiers exist in
  *   the JS output purely so runtime code can create/reference the actual
- *   DOM node; an expression only references the elements a template
- *   variable names (`#name`), which are declared at the start of the block
+ *   DOM node; an expression only references the elements an element ref
+ *   names (`#name`), which are declared at the start of the block
  *   of their scope, typed with the type of the element. A template
  *   (`<template name(…)>`) is declared there too, its content is an arrow
  *   function taking its parameters, and a `@render` calls it. A `@let` is
  *   declared there too, typed with the constant its value is checked in.
+ *   The variables of the template (the ones of a `@for`, the `@let`, the
+ *   parameters of a template) are typed with the types of their values, as
+ *   the expressions read them: a call of one whose value is not a function is
+ *   an error, described by `describeVariableCall`.
  * - No control-flow block gets its own function. In the JS output, each
  *   `@if`/`@for`/`@switch` becomes a separate function because it needs
  *   its own runtime closure over the `Context` chain. The type checker has
@@ -107,7 +111,7 @@ export class TypeChecker {
    * @param shadowingMembers - Class members named like a global identifier, read from the component instead of the global scope.
    * @param customElements - Patterns of the tag names of the custom elements of other libraries, checked like native elements.
    * @param symbols - The symbols the template imports from modules, which its expressions and type arguments read.
-   * @param reactiveMembers - Class members that can read a signal, telling whether a `@let` reading them is a signal.
+   * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
    * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws If the template fails type-checking, e.g. it uses a selector not imported in it, with the error message prefixed by `[TypeChecker]` and, when the error carries its span, the slice of the template it refers to.
@@ -129,7 +133,7 @@ export class TypeChecker {
    * @param shadowingMembers - Class members named like a global identifier, read from the component instead of the global scope.
    * @param customElements - Patterns of the tag names of the custom elements of other libraries, checked like native elements.
    * @param symbols - The symbols the template imports from modules, which its expressions and type arguments read.
-   * @param reactiveMembers - Class members that can read a signal, telling whether a `@let` reading them is a signal.
+   * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
    * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
    * @returns The text of the shim and its mapping table, together with the errors of the nodes that failed, formatted like the ones thrown by {@link generate}.
    * @throws If a node has no transition function, with the error message prefixed by `[TypeChecker]`.
@@ -180,10 +184,16 @@ export class TypeChecker {
     const prelude = this._context.usesTemplateHelpers ? imports.concat(getTemplateHelpers()) : imports;
     const lines = hoistImportTypes(prelude.concat(plain('function typeCheck() {'), indentLines(declarations.concat(body)), plain('}')));
 
-    return {
+    const result: TypeCheckResult = {
       text: lines.map(line => line.text).join('\n'),
       mappingTable: this.buildMappingTable(lines)
     };
+    const { variableCalls } = this._context;
+    if (variableCalls?.length) {
+      result.variableCalls = variableCalls;
+    }
+
+    return result;
   }
 
   /**

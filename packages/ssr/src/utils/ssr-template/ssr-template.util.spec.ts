@@ -19,14 +19,14 @@ describe('ssr templates', () => {
     expect(_ssrTemplate(context, render)).toEqual({ context, render });
   });
 
-  it('renders an instance in the context of the declaration, each argument the signal of its parameter', () => {
+  it('renders an instance in the context of the declaration, the value of each argument the one of its parameter', () => {
     const declarationContext = new _Context({} as never);
-    const render = vi.fn((out: ServerOutput, _context: unknown, params: Array<() => unknown>) => {
-      out.push(params.map(param => String(param())).join(','));
+    const render = vi.fn((out: ServerOutput, _context: unknown, params: unknown[]) => {
+      out.push(params.map(param => String(param)).join(','));
     });
     const out: ServerOutput = [];
 
-    _ssrRenderTemplate(out, new _Context({} as never), _ssrTemplate(declarationContext, render), [() => 1, () => 'b']);
+    _ssrRenderTemplate(out, new _Context({} as never), _ssrTemplate(declarationContext, render), [1, 'b']);
 
     expect(out).toEqual(['1,b']);
     expect(render.mock.calls[0][1]).toBe(declarationContext);

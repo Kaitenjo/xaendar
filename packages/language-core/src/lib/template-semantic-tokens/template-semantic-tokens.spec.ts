@@ -26,9 +26,9 @@ describe('getTemplateSemanticTokens', () => {
       '@import { Tooltip, Media } from \'./directives\';',
       '<my-child label="{title}" class="a" (picked)="select($event)" (click)="select(1)" @@tooltip(text="a" (shown)="select(2)") *media(query="q")></my-child>',
       '<span title="x" (click)="select(2)" />',
-      '@for (item of items; track item().id; i = $index) { { i() } { item().item } { ({ item: 1 }).item } }',
+      '@for (item of items; track item.id; i = $index) { { i } { item.item } { ({ item: 1 }).item } }',
       '<my-child label="a" />',
-      '@for (3) { { $index() } }'
+      '@for (3) { { $index } }'
     ].join('\n');
     const { analysis } = await project.analyze(source);
 
@@ -89,7 +89,7 @@ describe('getTemplateSemanticTokens', () => {
   }, TIMEOUT);
 
   it('colors the name of a template where declared and where rendered, and its parameters where declared and where read', async () => {
-    const source = '@render row(title)\n<template row(label: string, shown = !label())>{ label() }</template>';
+    const source = '@render row(title)\n<template row(label: string, shown = !label)>{ label }</template>';
     const { analysis } = await project.analyze(source);
 
     expect(getTemplateSemanticTokens(analysis!).map(({ span, type, modifiers }) => [source.slice(span.start, span.end), type, ...modifiers])).toEqual([

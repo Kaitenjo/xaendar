@@ -1,10 +1,10 @@
 @import { Row } from './row.ts'
 
 @render row(rows()[0], 0)                        <!-- before the declaration too -->
-@for (item of rows(); track item().id) {
-  @render row(item(), $index())                  <!-- arguments checked like a call -->
+@for (item of rows(); track item.id) {
+  @render row(item, $index)                  <!-- arguments checked like a call -->
 }
 
 <template row(row: Row, index: number)>          <!-- renders nothing where declared -->
-  <li>{ index() + 1 }. { row().name }</li>       <!-- parameters are signals -->
+  <li>{ index + 1 }. { row.name }</li>       <!-- parameters are signals -->
 </template>

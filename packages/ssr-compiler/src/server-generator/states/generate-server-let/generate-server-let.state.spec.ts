@@ -5,12 +5,12 @@ import { generateServerLet } from './generate-server-let.state';
 const cache = {} as ContextCache;
 
 describe('generateServerLet', () => {
-  it('initializes a @let reading a signal with a signal computing its value', () => {
+  it('initializes a @let reading a signal with its value, read once', () => {
     const context = new GeneratorContext(cache);
     context.addSignalClassField('price');
 
     expect(generateServerLet(parseTemplate('@let total = price() * 2;')[0] as LetNode, { id: 'root' }, '0', context)).toEqual({
-      pieces: [{ statement: 'context.set(\'total\', _let(() => this.price() * 2));' }]
+      pieces: [{ statement: 'context.set(\'total\', this.price() * 2);' }]
     });
   });
 

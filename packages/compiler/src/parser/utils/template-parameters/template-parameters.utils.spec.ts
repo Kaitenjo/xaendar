@@ -63,12 +63,12 @@ describe('parseTemplateParameters', () => {
   });
 
   it('parses a default value, with its type or typed by it, as an expression mapped onto the template', () => {
-    const text = 'item: Item, label: string = item().name, dense = !label()';
+    const text = 'item: Item, label: string = item.name, dense = !label()';
     const [, label, dense] = parseTemplateParameters(text, OFFSET, 'row');
 
     expect(label).toMatchObject({ name: 'label', nameSpan: at('label', text), type: 'string', typeSpan: at('string', text) });
-    expect(label.initializer!.getText()).toBe('item().name');
-    expect(getTemplateSpan(label.initializer!)).toEqual(at('item().name', text));
+    expect(label.initializer!.getText()).toBe('item.name');
+    expect(getTemplateSpan(label.initializer!)).toEqual(at('item.name', text));
     expect(dense).toMatchObject({ name: 'dense', nameSpan: at('dense', text) });
     expect(dense.type).toBeUndefined();
     expect(dense.typeSpan).toBeUndefined();

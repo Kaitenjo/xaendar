@@ -21,10 +21,10 @@
   @if (open()) {
     <div class="source">
       <div class="tabs" role="tablist" aria-label="{translations().example.files}">
-        @for (file of files(); track file().name) {
-          <button class="tab" [class.tab--active]="{file().name === current().name}" type="button" role="tab"
-            (click)="select(file().name)">
-            { file().name }
+        @for (file of files(); track file.name) {
+          <button class="tab" [class.tab--active]="{file.name === current().name}" type="button" role="tab"
+            (click)="select(file.name)">
+            { file.name }
           </button>
         }
       </div>

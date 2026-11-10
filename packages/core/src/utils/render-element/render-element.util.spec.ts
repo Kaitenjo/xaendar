@@ -214,6 +214,33 @@ describe('property setters', () => {
     expect(element.getAttribute('title')).toBe('b');
   });
 
+  it('_setReactiveProperty removes the attribute while the value is null or undefined, and writes it again for another one', async () => {
+    const element = document.createElement('div');
+    const title = signal<string | null | undefined>(null);
+    _setReactiveProperty(createRoot(), element, 'title', () => title());
+    expect(element.hasAttribute('title')).toBe(false);
+
+    title.set('a');
+    await flush();
+    expect(element.getAttribute('title')).toBe('a');
+
+    title.set(undefined);
+    await flush();
+    expect(element.hasAttribute('title')).toBe(false);
+
+    title.set('b');
+    await flush();
+    expect(element.getAttribute('title')).toBe('b');
+  });
+
+  it('_setExpressionProperty writes false and 0 as text, as any value but null and undefined', () => {
+    const element = document.createElement('div');
+    _setExpressionProperty(createRoot(), element, 'title', () => false);
+    _setExpressionProperty(createRoot(), element, 'tabindex', () => 0);
+    expect(element.getAttribute('title')).toBe('false');
+    expect(element.getAttribute('tabindex')).toBe('0');
+  });
+
   it('_setReactiveProperty stops following once the context is destroyed', async () => {
     const element = document.createElement('div');
     const context = createRoot();

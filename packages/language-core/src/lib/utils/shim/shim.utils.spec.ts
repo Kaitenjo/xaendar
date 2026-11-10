@@ -23,10 +23,9 @@ describe('createShim()', () => {
 
     expect(shim.path).toBe('/src/foo/foo.component.ts.__typecheck__.ts');
     expect(shim.classNames).toEqual(['FooComponent']);
-    expect(shim.bodyLineOffset).toBe(5);
+    expect(shim.bodyLineOffset).toBe(4);
     expect(shim.code).toBe([
       "import { FooComponent } from './foo.component';",
-      "import { Signal } from '@xaendar/core/signals'",
       '',
       'declare const root: InstanceType<typeof FooComponent>;',
       '',
@@ -51,11 +50,10 @@ describe('createShim()', () => {
     const shim = createShim(componentData, typecheckBody('body'));
 
     expect(shim.classNames).toEqual(['FooComponent', 'BarDirective', 'BarBaseDirective']);
-    expect(shim.bodyLineOffset).toBe(6);
+    expect(shim.bodyLineOffset).toBe(5);
     expect(shim.code).toBe([
       "import { FooComponent } from './foo.component';",
       "import { BarDirective, BarBaseDirective } from './bar.directive';",
-      "import { Signal } from '@xaendar/core/signals'",
       '',
       'declare const root: InstanceType<typeof FooComponent> & InstanceType<typeof BarDirective> & InstanceType<typeof BarBaseDirective>;',
       '',

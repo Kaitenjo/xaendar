@@ -74,7 +74,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** Parentheses after the name of an element ref.
 - **Fix:** Write #name alone.
 
-### `[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())`
+### `[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item)`
 
 - **Cause:** A @render without the name of the template, without parentheses, or with a space or a dot between the name and the parentheses.
 - **Fix:** Write @render name(arguments), with () when the template has no parameters.
@@ -159,17 +159,12 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 ### `[Parser] A cast with 'as' only closes a whole interpolation or an argument of a call, e.g. { value() as string }, { format(value() as Date) } or (click)="select($event as MouseEvent)".`
 
 - **Cause:** A cast of something that is not an argument of a call: { (item as Row).id }, { a + (b as number) }, [value as Row].
-- **Fix:** Cast the whole interpolation or an argument ({ item() as Row }, { show(item() as Row) }), or type the value in the class.
+- **Fix:** Cast the whole interpolation or an argument ({ item as Row }, { show(item as Row) }), or type the value in the class.
 
 ### `[Parser] 'let i' is not a valid alias identifier.`
 
 - **Cause:** An alias of @for written with let.
 - **Fix:** Write the alias as index = $index.
-
-### `[Parser] The track expression of a @for reads the item and the implicit variables as signals: call it, e.g. track item()`
-
-- **Cause:** A track expression that is the item or an implicit variable without parentheses: the key would be the signal, a new function every time, and no row would be reused.
-- **Fix:** Call the signal: track item(), or track a property of it, as in track item().id.
 
 ### `[Parser] <input> declares more than one element ref (#first, #second): an element has a single name`
 
@@ -191,7 +186,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @let named by something other than an identifier; 'root' is reserved in templates is reported for root, $event and the names starting with __ or $$.
 - **Fix:** Use an identifier the generated code does not reserve.
 
-### `[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item())`
+### `[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item)`
 
 - **Cause:** A <template> without name(…): a <template> is always the declaration of a template.
 - **Fix:** Name it and declare its parameters, then render it with @render.
@@ -463,10 +458,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** @for over something that is neither an array nor a number: a Set, a Map, a string.
 - **Fix:** Convert it to an array, for instance in a computed signal.
 
-### `Property '$count' does not exist on type 'XList'.`
+$1
+### `'task' is a template variable, not a signal: remove the parentheses and read it as task, since the variables of a template (@for, @let, parameters of a template) hold their values`
 
-- **Cause:** $count is not one of the variables of @for.
-- **Fix:** Read the length of the list.
+- **Cause:** A variable of @for, a @let or a parameter of a template called as a function, here in the track expression: they hold values, not signals.
+- **Fix:** Remove the parentheses: track task.id. A variable whose value is a function is called as usual.
 
 ### `Cannot find name 'first'.`
 
@@ -538,10 +534,10 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @let read by the track expression of a @for.
 - **Fix:** Track the item, a property of it, or $index.
 
-### `Property 'toFixed' does not exist on type 'Computed<number>'.`
+### `'total' is a template variable, not a signal: remove the parentheses and read it as total, since the variables of a template (@for, @let, parameters of a template) hold their values`
 
-- **Cause:** A @let whose value reads a signal is a signal, read here without parentheses.
-- **Fix:** Call it: total().toFixed(2).
+- **Cause:** A @let called as a function: it holds its value, not a signal.
+- **Fix:** Remove the parentheses: { total }. A @let whose value is a function is called as usual.
 
 ### `Expected 2 arguments, but got 1.`
 

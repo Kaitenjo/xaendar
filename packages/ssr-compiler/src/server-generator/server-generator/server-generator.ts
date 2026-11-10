@@ -25,8 +25,8 @@ import { SSR_MARKERS } from '../../costants/ssr-markers.constants';
  * The runtime helpers the code rendering on the server calls, imported by the module of every template.
  */
 const RUNTIME_IMPORTS: readonly string[] = [
-  'import { _Context, _ROOT_PARENT_CONTEXT, _iterationVariables, _let, _parameter, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
-  'import { _escapeAttribute, _escapeRawText, _escapeText, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTemplate, _ssrTry } from \'@xaendar/ssr\';'
+  'import { _Context, _ROOT_PARENT_CONTEXT, _iterationVariables, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
+  'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTemplate, _ssrTry } from \'@xaendar/ssr\';'
 ];
 
 /**
@@ -190,7 +190,7 @@ export class ServerGenerator {
    */
   private _writeBody(nodes: readonly ASTNode[], parent: ServerParent, generatorContext: GeneratorContext, parentContext: string, precode?: string): string[] {
     // Declared first, so that the context is created for the variables of the scope
-    const declarations = declareScope(nodes, generatorContext, toTemplateFunction, '_ssrTemplate');
+    const declarations = declareScope(nodes, generatorContext, toTemplateFunction, '_ssrTemplate', false);
     const lines = [`const context = ${createContext(parentContext, undefined, generatorContext.identifierCount)};`];
     if (precode) {
       lines.push(...precode.split('\n'));
@@ -273,19 +273,20 @@ function skipNode(): undefined {
 
 /**
  * Describes the function rendering an instance of a template on the server: it creates the scope of the instance, whose
- * parent is the runtime context of the scope declaring the template, and declares the parameters, as the client does.
+ * parent is the runtime context of the scope declaring the template, and declares the parameters as values, as the client
+ * does, a default value written as an expression, which the server reads once.
  *
  * @param template - The template.
  * @param key - The name of the function.
  * @param namespace - The namespace the content of the template is created in.
  * @param generatorContext - The generator context of the scope declaring the template.
- * @returns The function, taking the output, the runtime context of the scope declaring the template and the signals of
- *   the parameters.
+ * @returns The function, taking the output, the runtime context of the scope declaring the template and the values of
+ *   the arguments.
  */
 function toTemplateFunction(template: TemplateNode, key: string, namespace: ElementNamespace, generatorContext: GeneratorContext): GeneratorFunctionToProcess {
   const context = new GeneratorContext(generatorContext, namespace);
   return {
-    fn: { node: template, parentNode: key, context, precode: declareTemplateParameters(template, context, SERVER_RESOLVE_OPTIONS).join('\n') },
+    fn: { node: template, parentNode: key, context, precode: declareTemplateParameters(template, context, SERVER_RESOLVE_OPTIONS, true).join('\n') },
     args: ['out', 'parentContext', 'params']
   };
 }

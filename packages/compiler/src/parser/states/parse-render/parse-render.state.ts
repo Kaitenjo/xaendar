@@ -11,7 +11,7 @@ import { getTemplateSpan, validateExpression } from '../../utils/expression-vali
 import { isValidIdentifier } from '../../utils/identifier/identifier.utils';
 
 /**
- * Parses a `@render`, consuming the RENDER token and the RENDER_CALL token following it, e.g. `@render row(item(), 1)`,
+ * Parses a `@render`, consuming the RENDER token and the RENDER_CALL token following it, e.g. `@render row(item, 1)`,
  * into a `RenderNode`: the call is validated as a template expression.
  *
  * @param cursor - Parser cursor positioned at the RENDER token.
@@ -27,7 +27,7 @@ export function parseRender(cursor: ParserCursor, _parseNode: NoArgsFunction<AST
 
   const callToken = cursor.peek();
   if (callToken.type !== TokenType.RENDER_CALL) {
-    throw '@render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())';
+    throw '@render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item)';
   }
 
   // consume RENDER_CALL

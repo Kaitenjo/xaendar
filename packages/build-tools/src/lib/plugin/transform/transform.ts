@@ -248,7 +248,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       }
 
       for (let i = 0; i < diagnostics.length; i++) {
-        state.logError('', `[TypeChecker] Failed to compile template - ${templatePath}\n${describeDiagnostic(templateSource, diagnostics[i], shim.bodyLineOffset, typecheckBody.mappingTable)}`);
+        state.logError('', `[TypeChecker] Failed to compile template - ${templatePath}\n${describeDiagnostic(templateSource, diagnostics[i], shim.bodyLineOffset, typecheckBody)}`);
       }
 
       if (diagnostics.length) {

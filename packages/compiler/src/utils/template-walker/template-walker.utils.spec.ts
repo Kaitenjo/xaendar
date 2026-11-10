@@ -14,7 +14,7 @@ const template = [
   '</my-child>',
   '@if (j) { {k} } @else if (l) { {m} } @else { {n} }',
   '@if (o) { {p} }',
-  '@for (item of items; track item.id; i = $index) { {item} @for (q; track $index()) { {r} } }',
+  '@for (item of items; track item.id; i = $index) { {item} @for (q; track $index) { {r} } }',
   '@switch (s) { @case (1) { {t} } @default { {u} } }'
 ].join('\n');
 
@@ -68,7 +68,7 @@ describe('walkTemplate', () => {
       'expression item [item,i,$first,$last,$even,$odd]',
       'for undefined',
       'expression q [item,i,$first,$last,$even,$odd]',
-      'expression $index() [item,i,$first,$last,$even,$odd,$index]',
+      'expression $index [item,i,$first,$last,$even,$odd,$index]',
       'expression r [item,i,$first,$last,$even,$odd,$index]',
       'expression s []',
       'expression t []',
@@ -205,7 +205,7 @@ describe('walkTemplate', () => {
     const refsTemplate = [
       '<button (click)="pick(field)">{ field }</button><label><input #field /></label>',
       '@if (a) { { inBranch } <i #inBranch></i> }',
-      '@for (item of items; track item()) { { inRow } <i #inRow></i> }',
+      '@for (item of items; track item) { { inRow } <i #inRow></i> }',
       '@switch (b) { @case (1) { { inCase } <i #inCase></i> } }',
       '<div *visible>{ inContent } <i #inContent></i></div>',
       '{ c }'
@@ -226,7 +226,7 @@ describe('walkTemplate', () => {
       'expression inBranch [field,inBranch]',
       'ref inBranch',
       'expression items [field]',
-      'expression item() [field,item,$index,$first,$last,$even,$odd]',
+      'expression item [field,item,$index,$first,$last,$even,$odd]',
       'expression inRow [field,item,$index,$first,$last,$even,$odd,inRow]',
       'ref inRow',
       'expression b [field]',
@@ -242,7 +242,7 @@ describe('walkTemplate', () => {
     const templatesTemplate = [
       '@render row(field)',
       '<label><input #field /></label>',
-      '<template row(item: Item, label = item().name)>{ item() } <i #inRow></i> @render row(inRow)</template>'
+      '<template row(item: Item, label = item.name)>{ item } <i #inRow></i> @render row(inRow)</template>'
     ].join('\n');
     const visits = new Array<string>();
     walkTemplate(parseTemplate(templatesTemplate), [], {
@@ -257,8 +257,8 @@ describe('walkTemplate', () => {
       'expression field [field,row]',
       'ref field',
       'template row',
-      'expression item().name [field,row,item,label]',
-      'expression item() [field,row,item,label,inRow]',
+      'expression item.name [field,row,item,label]',
+      'expression item [field,row,item,label,inRow]',
       'ref inRow',
       'render row',
       'expression inRow [field,row,item,label,inRow]'

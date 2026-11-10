@@ -382,6 +382,48 @@ describe('effect', () => {
 });
 
 describe('_bindEffect', () => {
+  it('keeps nothing for a binding reading neither a signal nor a variable of the template', () => {
+    const context = new _Context({} as _Context);
+    const callback = vi.fn();
+    _bindEffect(context, callback, 'value');
+
+    expect(callback).toHaveBeenCalledExactlyOnceWith('value', undefined, undefined);
+    expect(context.getUnlistenFns()).toBeNull();
+  });
+
+  it('registers in the context a binding reading variables of the template, without an effect when it reads no signal', () => {
+    const context = new _Context({} as _Context, undefined, 1);
+    context.addIdentifier('row', 'a');
+    const seen = new Array<unknown>();
+    const callback = (scope: _Context) => { seen.push(scope.get('row')); };
+    _bindEffect(context, callback, context, undefined, undefined, ['row']);
+
+    context.update('row', 'b');
+    context.refresh(['row']);
+
+    expect(seen).toEqual(['a', 'b']);
+    expect(context.getUnlistenFns()).toBeNull();
+  });
+
+  it('makes a binding reading a variable and a signal an effect too, running again for both, disposed with the context', async () => {
+    const context = new _Context({} as _Context, undefined, 1);
+    context.addIdentifier('row', 'a');
+    const state = new Signal.State(1);
+    const seen = new Array<string>();
+    _bindEffect(context, (scope: _Context, source: Signal.State<number>) => { seen.push(`${scope.get('row')}${source.get()}`); }, context, state, undefined, ['row']);
+
+    state.set(2);
+    await flushMicrotasks();
+    context.update('row', 'b');
+    context.refresh(['row']);
+    context.clear();
+    state.set(3);
+    await flushMicrotasks();
+
+    expect(seen).toEqual(['a1', 'a2', 'b2']);
+    expect(Signal.subtle.hasSinks(state)).toBe(false);
+  });
+
   it('runs the callback with its arguments, again when a signal it read changes, and is disposed with the context', async () => {
     const context = new _Context({} as _Context);
     const state = new Signal.State(1);

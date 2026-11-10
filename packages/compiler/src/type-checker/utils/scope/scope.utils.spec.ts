@@ -81,10 +81,10 @@ describe('typeCheckScope', () => {
 
   it('leaves a name the scope already declares, e.g. an item of a @for, as it is registered', () => {
     const context = new TypeCheckContext();
-    context.addUnresolvableIdentifier('item', 'signal');
+    context.addUnresolvableIdentifier('item', 'variable');
 
     expect(text(typeCheckScope(parse('<input #item />'), context, processNode).declarations)).toHaveLength(1);
-    expect(context.getUnresolvableIdentifierKind('item')).toBe('signal');
+    expect(context.getUnresolvableIdentifierKind('item')).toBe('variable');
   });
 
   it('declares the templates of the scope, however deeply nested, with the parameters of the functions their content is checked in', () => {
@@ -108,8 +108,8 @@ describe('typeCheckScope', () => {
     expect(context.getTemplateNamespace('empty')).toBe('svg');
   });
 
-  it('declares the @let of the scope, however deeply nested, after the other names, as signals when they read one', () => {
-    const template = '<div>@let total = count() * 2;</div>@let label = field.value;<input #field />@let doubled = total() * 2;';
+  it('declares the @let of the scope, however deeply nested, after the other names, as variables of the template', () => {
+    const template = '<div>@let total = count() * 2;</div>@let label = field.value;<input #field />@let doubled = total * 2;';
     const context = new TypeCheckContext();
     context.addSignalClassField('count');
     const skipLets: ProcessNode = (node, nodeContext) => (node.type === ASTNodeType.Let ? [] : processNode(node, nodeContext));
@@ -123,9 +123,9 @@ describe('typeCheckScope', () => {
       `let doubled!: typeof __let${template.indexOf('@let doubled')};`
     ]);
     expect(declarations[0].mappings).toEqual([{ columnStart: 4, columnEnd: 9, original: { start: total + 5, end: total + 10 } }]);
-    expect(context.getUnresolvableIdentifierKind('total')).toBe('signal');
-    expect(context.getUnresolvableIdentifierKind('label')).toBe('value');
-    expect(context.getUnresolvableIdentifierKind('doubled')).toBe('signal');
+    expect(context.getUnresolvableIdentifierKind('total')).toBe('variable');
+    expect(context.getUnresolvableIdentifierKind('label')).toBe('variable');
+    expect(context.getUnresolvableIdentifierKind('doubled')).toBe('variable');
   });
 });
 

@@ -311,7 +311,7 @@ function assertUniqueInBranches(conditionalBindings: ConditionalBindingNode[], d
  */
 function toTemplateNode(nameSpan: TemplateNode['nameSpan'], declaration: TemplateDeclarationNode | undefined, parameters: string | undefined): MaybeASTNodeWithSpan<TemplateNode> {
   if (!declaration) {
-    throw new Error('A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item())', { cause: nameSpan });
+    throw new Error('A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item)', { cause: nameSpan });
   }
 
   if (parameters === undefined) {

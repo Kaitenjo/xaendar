@@ -1,5 +1,5 @@
 /**
- * The render of a template, e.g. `@render row(item())`.
+ * The render of a template, e.g. `@render row(item)`.
  */
 export type LayoutRender = {
   /**

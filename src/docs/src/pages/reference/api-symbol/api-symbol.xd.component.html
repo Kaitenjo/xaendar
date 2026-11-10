@@ -18,33 +18,33 @@
   <docs-code code="{view().signature}" />
   <h2>{ translations().reference.symbol.description }</h2>
   <div @@html(content="{view().description}") />
-  @for (group of view().groups; track group().key) {
-    <h2>{ group().title }</h2>
-    @for (member of group().members; track member().name) {
-      <docs-api-member name="{member().name}" signature="{member().signature}">
-        <div @@html(content="{member().text}") />
-        @for (snippet of member().snippets ?? []; track snippet()) {
-          <docs-code snippet="{snippet()}" />
+  @for (group of view().groups; track group.key) {
+    <h2>{ group.title }</h2>
+    @for (member of group.members; track member.name) {
+      <docs-api-member name="{member.name}" signature="{member.signature}">
+        <div @@html(content="{member.text}") />
+        @for (snippet of member.snippets ?? []; track snippet) {
+          <docs-code snippet="{snippet}" />
         }
       </docs-api-member>
     }
   }
   @if (view().usage.length) {
     <h2>{ translations().reference.symbol.usage }</h2>
-    @for (note of view().usage; track note().key) {
-      <h3>{ note().title }</h3>
-      <div @@html(content="{note().body}") />
-      @for (snippet of note().snippets ?? []; track snippet()) {
-        <docs-code snippet="{snippet()}" />
+    @for (note of view().usage; track note.key) {
+      <h3>{ note.title }</h3>
+      <div @@html(content="{note.body}") />
+      @for (snippet of note.snippets ?? []; track snippet) {
+        <docs-code snippet="{snippet}" />
       }
     }
   }
   @if (view().guides.length) {
     <h2>{ translations().reference.symbol.guides }</h2>
     <ul>
-      @for (guide of view().guides; track guide().href) {
+      @for (guide of view().guides; track guide.href) {
         <li>
-          <a href="{guide().href}">{ guide().title }</a>
+          <a href="{guide.href}">{ guide.title }</a>
         </li>
       }
     </ul>

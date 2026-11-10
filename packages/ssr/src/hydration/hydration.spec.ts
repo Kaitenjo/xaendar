@@ -264,9 +264,9 @@ describe('hydration', () => {
 
   const teamTemplate = (tag: (name: string) => string) => [
     '<h1 class="title" [class.long]="{ users().length > 1 }">Hello { users()[0].name }!</h1>',
-    '<template row(text: string)><em>{ text() }</em></template>',
+    '<template row(text: string)><em>{ text }</em></template>',
     '@if (users().length) {',
-    `@for (user of users(); track user().id) {<${tag('badge')} label="{ user().name }">#{ $index() }</${tag('badge')}>}`,
+    `@for (user of users(); track user.id) {<${tag('badge')} label="{ user.name }">#{ $index }</${tag('badge')}>}`,
     '} @else {<p>Nobody</p>}',
     '@switch (kind()) { @case (\'a\') {<i>a</i>} @default {<i>{ count() }</i>} }',
     '<button (click)="select()">{ empty }</button>',
@@ -331,7 +331,7 @@ describe('hydration', () => {
       public open = signal(false);
     }
     const details = await register('details', Details, () => [
-      '<section>@for (item of items(); track item()) {<p>@if (open()) {<b>{ item() }</b>}</p>}</section>',
+      '<section>@for (item of items(); track item) {<p>@if (open()) {<b>{ item }</b>}</p>}</section>',
       '<i *later(allow="{ open() }")>late</i>'
     ].join(''), ['items', 'open']);
     const host = load(await renderToString(details.Server));
@@ -435,7 +435,7 @@ describe('hydration', () => {
     class List extends CustomElement {
       public items = signal(onServer ? ['a', 'b'] : ['b', 'c']);
     }
-    const list = await register('list', List, () => '<ul>@for (item of items(); track item()) {<li>{ item() }</li>}</ul>', ['items']);
+    const list = await register('list', List, () => '<ul>@for (item of items(); track item) {<li>{ item }</li>}</ul>', ['items']);
     const host = load(await renderToString(list.Server));
     const items = Array.from(host.shadowRoot!.querySelectorAll('li'));
 
@@ -455,7 +455,7 @@ describe('hydration', () => {
     class Rows extends CustomElement {
       public rows = signal([{ id: 1, name: 'a' }, { id: 2, name: 'b' }, { id: 1, name: 'c' }]);
     }
-    const rows = await register('rows', Rows, () => '<ul>@for (row of rows(); track row().id; i = $index, last = $last) {<li>{ i() }:{ row().name }@if (last()) {!}</li>}</ul>', ['rows']);
+    const rows = await register('rows', Rows, () => '<ul>@for (row of rows(); track row.id; i = $index, last = $last) {<li>{ i }:{ row.name }@if (last) {!}</li>}</ul>', ['rows']);
     const host = load(await renderToString(rows.Server));
     const [first, second, third] = Array.from(host.shadowRoot!.querySelectorAll('li'));
 
@@ -474,6 +474,38 @@ describe('hydration', () => {
     expect(Array.from(host.shadowRoot!.querySelectorAll('li'))).toEqual([second, first, third]);
     expect([second, first, third].map(item => item.textContent)).toEqual(['0:b', '1:a2', '2:c!']);
     expect(console.warn).not.toHaveBeenCalled();
+  });
+
+  it('adopts without writing them the nodes of the bindings reading only variables of the template, then updates them when a row is reused', async () => {
+    /**
+     * A list whose rows read their variables through a @let, a block and a template.
+     */
+    class Board extends CustomElement {
+      public rows = signal([{ id: 1, name: 'a', done: false }, { id: 2, name: 'b', done: true }]);
+    }
+    const board = await register('board', Board, () => [
+      '<template cell(value: string)><em>{ value }</em></template>',
+      '<ul>@for (row of rows(); track row.id) {@let label = `${row.name}!`;<li title="{label}">{ label }@if (row.done) {<b>done</b>}@render cell(row.name)</li>}</ul>'
+    ].join(''), ['rows']);
+    const host = load(await renderToString(board.Server));
+    const root = host.shadowRoot!;
+    const items = Array.from(root.querySelectorAll('li'));
+    const records = observe(root);
+
+    onServer = false;
+    board.define();
+
+    // Only the markers of the server are removed: no text and no attribute is written
+    expect(Array.from(root.querySelectorAll('li'))).toEqual(items);
+    expect(describeMutations(records()).added).toBe(0);
+    expect(items.map(item => [item.getAttribute('title'), item.textContent])).toEqual([['a!', 'a!a'], ['b!', 'b!doneb']]);
+    expect(console.warn).not.toHaveBeenCalled();
+
+    (host as unknown as Board).rows.set([{ id: 1, name: 'c', done: true }, { id: 2, name: 'b', done: true }]);
+    await flush();
+
+    expect(Array.from(root.querySelectorAll('li'))).toEqual(items);
+    expect(items.map(item => [item.getAttribute('title'), item.textContent])).toEqual([['c!', 'c!donec'], ['b!', 'b!doneb']]);
   });
 
   it('keeps the element of an asynchronous structural directive the server rendered until its outcome settles', async () => {
@@ -526,6 +558,37 @@ describe('hydration', () => {
 
     expect(host.shadowRoot!.querySelector('input')).toBe(field);
     expect(field.value).toBe('Grace');
+  });
+
+  it('leaves out on the server the attributes bound to null or undefined, as the browser does, which adopts them without writing', async () => {
+    /**
+     * A hint shown in the title of two elements only while there is one, the second one toggling a class.
+     */
+    class Hint extends CustomElement {
+      public hint = signal<string | null>(null);
+      public missing = undefined;
+    }
+    const hint = await register('hint', Hint, () => '<p title="{ hint() }" data-note="{ missing }">p</p><b title="{ hint() }" [class.on]="{ hint() }">b</b>', ['hint']);
+    const html = await renderToString(hint.Server);
+    const host = load(html);
+    const root = host.shadowRoot!;
+    const records = observe(root);
+
+    expect(html).toContain('<p>p</p><b>b</b>');
+
+    onServer = false;
+    hint.define();
+
+    expect(describeMutations(records()).added).toBe(0);
+    expect(console.warn).not.toHaveBeenCalled();
+
+    (host as unknown as Hint).hint.set('more');
+    await flush();
+    expect(Array.from(root.querySelectorAll('p, b')).map(element => element.getAttribute('title'))).toEqual(['more', 'more']);
+
+    (host as unknown as Hint).hint.set(null);
+    await flush();
+    expect(Array.from(root.querySelectorAll('p, b')).map(element => element.hasAttribute('title'))).toEqual([false, false]);
   });
 
   it('hydrates a component whose class is defined after the component rendering it, once it is defined', async () => {
@@ -1634,7 +1697,7 @@ describe('the contexts of the elements', () => {
     delete (Element.prototype as Partial<Record<'moveBefore', unknown>>).moveBefore;
   });
 
-  const gridTemplate = () => '<section>@for (row of rows(); track row().id) {<p>@for (col of cols(); track col()) {<span>{ row()[col()] }@if (open()) {<i>!</i>}</span>}</p>}</section>';
+  const gridTemplate = () => '<section>@for (row of rows(); track row.id) {<p>@for (col of cols(); track col) {<span>{ row[col] }@if (open()) {<i>!</i>}</span>}</p>}</section>';
 
   /**
    * The contexts of a tree, each one with the nodes it tracks.

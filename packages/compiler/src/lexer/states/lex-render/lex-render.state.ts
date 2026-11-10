@@ -9,8 +9,8 @@ import { lexGroup } from '../../utils/expression-text/expression-text.utils';
 
 /**
  * Consumes the call of a template after `@render`, already consumed by the flow-control state, and transitions back
- * to TEXT: the name of the template, then its arguments up to the parenthesis closing them, e.g. `row(item(), 1)` in
- * `@render row(item(), 1)`.
+ * to TEXT: the name of the template, then its arguments up to the parenthesis closing them, e.g. `row(item, 1)` in
+ * `@render row(item, 1)`.
  *
  * @param cursor - The lexer cursor positioned right after `@render `.
  * @param _context - Unused lexer context.
@@ -29,7 +29,7 @@ export function lexRender(cursor: LexerCursor, _context: LexerTransitionFunction
   }
 
   if (!callee || cursor.peek() !== LPAREN) {
-    throw '@render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())';
+    throw '@render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item)';
   }
 
   // Consume '('

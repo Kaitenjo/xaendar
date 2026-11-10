@@ -38,6 +38,27 @@ describe('mappedExpression', () => {
 
     expect(line(mappedExpression(node, new TypeCheckContext(), span)).mappings).toEqual([{ columnStart: 0, columnEnd: 9, original: span }]);
   });
+
+  it('records the calls of the variables of the template, mapped onto their names, in the outermost scope', () => {
+    const context = new TypeCheckContext();
+    context.addUnresolvableIdentifier('row', 'variable');
+    context.addUnresolvableIdentifier('field');
+    const nested = new TypeCheckContext(context);
+
+    mappedExpression(validateExpression('row().name + field() + count()', 2).node, nested, span);
+
+    expect(context.variableCalls).toEqual([{ name: 'row', span: { start: 2, end: 5 } }]);
+    expect(nested.variableCalls).toBe(context.variableCalls);
+  });
+
+  it('records no call of a variable whose offset in the template is not known', () => {
+    const context = new TypeCheckContext();
+    context.addUnresolvableIdentifier('row', 'variable');
+
+    mappedExpression(validateExpression('row()').node, context, span);
+
+    expect(context.variableCalls).toBeUndefined();
+  });
 });
 
 describe('mappedInterpolation', () => {

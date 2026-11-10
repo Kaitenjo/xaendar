@@ -26,7 +26,43 @@ let EffectClass: ReturnType<typeof defineEffectClass> | undefined;
  */
 export function createEffect<First, Second, Third>(callback: EffectCallback<First, Second, Third>, options?: EffectOptions, first?: First, second?: Second, third?: Third): Effect {
   EffectClass ??= defineEffectClass();
-  return new EffectClass(callback, options, first, second, third);
+  const effect = new EffectClass(callback, options, first, second, third);
+  effect.start();
+  return effect;
+}
+
+/**
+ * Runs the callback of a binding of a template, synchronously, in the computed signal of an effect, which tracks the
+ * signals it reads: when it reads at least one, the computed becomes the effect of the binding, watched, so that it runs
+ * again whenever one of them changes. When it reads none, nothing is kept: the binding has no reason to run again but
+ * the variables of the template it reads, which are not signals (see `_Context.refresh`).
+ *
+ * The run is the first one of a binding, or the one its scope asks for when a variable it reads changes: each run decides
+ * again, since the signals a binding reads can change from one run to the next.
+ *
+ * N.B. Deliberate, to save memory: a binding reading no signal, the bindings reading only the variables of a template
+ * (the item of a `@for`, a `@let`, the parameters of a template), keeps neither the computed signal nor a watcher, and
+ * the watcher of the other ones is created only once the run has read a signal. Do not create the watcher before the run,
+ * nor keep the computed of a binding reading no signal.
+ *
+ * @template First - The type of the first argument of the callback.
+ * @template Second - The type of the second argument of the callback.
+ * @template Third - The type of the third argument of the callback.
+ * @param callback - The callback of the binding, called with the three arguments.
+ * @param first - The first argument of the callback.
+ * @param second - The second argument of the callback.
+ * @param third - The third argument of the callback.
+ * The run is never a dependency of a computation running around it, as an effect rendering a template: a template
+ * renders untracked, so the run is untracked only when one is running, and no closure is created otherwise.
+ *
+ * @returns The effect of the binding, `null` when the run read no signal.
+ * @throws The exception thrown by the run: nothing is watched.
+ */
+export function _runBinding<First, Second, Third>(callback: EffectCallback<First, Second, Third>, first: First, second?: Second, third?: Third): Effect | null {
+  EffectClass ??= defineEffectClass();
+  const effect = new EffectClass(callback, undefined, first, second, third);
+  const watched = Signal.subtle.currentComputed() ? Signal.subtle.untrack(() => effect.track()) : effect.track();
+  return watched ? effect : null;
 }
 
 /**
@@ -74,19 +110,19 @@ function defineEffectClass() {
      */
     private readonly _third: Third;
     /**
-     * The watcher of the effect: notified when a signal the last run read changes, it queues itself.
+     * The watcher of the effect: notified when a signal the last run read changes, it queues itself. `undefined` until
+     * the effect is watched (see {@link start} and {@link track}).
      */
-    private readonly _watcher: Signal.subtle.Watcher;
+    private _watcher: Signal.subtle.Watcher | undefined;
 
     /**
-     * Creates the effect, running its callback a first time, synchronously.
+     * Creates the effect, without running it.
      *
      * @param callback - The callback.
      * @param options - The hooks.
      * @param first - The first argument of the callback.
      * @param second - The second argument of the callback.
      * @param third - The third argument of the callback.
-     * @throws The exception thrown by the first run.
      */
     constructor(callback: EffectCallback<First, Second, Third>, options?: EffectOptions, first?: First, second?: Second, third?: Third) {
       super(computeEffect);
@@ -95,17 +131,44 @@ function defineEffectClass() {
       this._first = first as First;
       this._second = second as Second;
       this._third = third as Third;
-      this._watcher = new Signal.subtle.Watcher(queueWatcher);
+    }
 
-      // Initial synchronous execution + first subscription
-      this._watcher.watch(this);
+    /**
+     * Watches the effect, then runs it a first time, synchronously, so that it runs again whenever a signal it read
+     * changes, also when it reads none at first.
+     *
+     * @throws The exception thrown by the first run: the effect is no longer watched.
+     */
+    public start(): void {
+      const watcher = this._watcher = new Signal.subtle.Watcher(queueWatcher);
+      watcher.watch(this);
       try {
         this.get();
       } catch (error) {
         // The caller gets no effect to dispose: stop watching, or the effect would re-run forever
-        this._watcher.unwatch(this);
+        watcher.unwatch(this);
         throw error;
       }
+    }
+
+    /**
+     * Runs the effect a first time, synchronously, without watching it, then watches it when the run has read a signal.
+     *
+     * The computed signal is watched after its evaluation: becoming live, it subscribes to the signals the run read,
+     * which did not change meanwhile, so a change of any of them notifies it.
+     *
+     * @returns `true` when the effect is watched, `false` when the run read no signal.
+     * @throws The exception thrown by the run.
+     */
+    public track(): boolean {
+      this.get();
+      if (!Signal.subtle.hasSources(this)) {
+        return false;
+      }
+
+      this._watcher = new Signal.subtle.Watcher(queueWatcher);
+      this._watcher.watch(this);
+      return true;
     }
 
     /**
@@ -137,7 +200,7 @@ function defineEffectClass() {
      */
     public dispose(): void {
       this._options?.onCleanup?.();
-      this._watcher.unwatch(this);
+      this._watcher!.unwatch(this);
     }
   };
 }

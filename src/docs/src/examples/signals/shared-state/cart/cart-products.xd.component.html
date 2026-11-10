@@ -2,7 +2,7 @@
 @import { add, count } from './cart.store.ts'
 
 <h4>Products</h4>
-@for (product of products; track product()) {
-  <ex-button (click)="add(product())">Add { product() }</ex-button>
+@for (product of products; track product) {
+  <ex-button (click)="add(product)">Add { product }</ex-button>
 }
 <p>{ count() } pieces in the cart</p>

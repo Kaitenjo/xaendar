@@ -6,10 +6,10 @@
   <ex-button (click)="unwatch()">watcher.unwatch(total)</ex-button>
 </div>
 <table>
-  @for (row of rows(); track row()) {
+  @for (row of rows(); track row) {
     <tr>
-      <td>{ row().call }</td>
-      <td>{ row().result }</td>
+      <td>{ row.call }</td>
+      <td>{ row.result }</td>
     </tr>
   }
 </table>

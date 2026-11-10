@@ -8,7 +8,7 @@
   <input #draft />                               <!-- visible inside the @if only -->
 }
 
-@for (task of tasks(); track task().id) {
+@for (task of tasks(); track task.id) {
   <input #note />                                <!-- one for every row -->
-  <button (click)="save(task(), note.value)">Save</button>
+  <button (click)="save(task, note.value)">Save</button>
 }

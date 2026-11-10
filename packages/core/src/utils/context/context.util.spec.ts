@@ -1,8 +1,32 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
 import type { NodeStrategy } from '../../types/node-strategy.type';
+import { _bindEffect } from '../../signals/effect/effect';
 import { closeTryScope, openTryScope } from '../try-scope/try-scope.util';
 import { _Context, createAnchor, mountNode } from './context.util';
+
+await vi.hoisted(async () => {
+  const { loadSignals } = await import('@xaendar/signals');
+  loadSignals();
+});
+
+const flush = () => new Promise<void>(resolve => setTimeout(resolve));
+
+/**
+ * Registers a binding of a context reading some of its variables, as a template does: it records the values of the
+ * variables at each run, and reads the signal, if any, while `readsSignal` holds.
+ */
+function bindVariables(context: _Context, reads: string[], signal?: Signal.State<number>, readsSignal: () => boolean = () => true): unknown[][] {
+  const runs = new Array<unknown[]>();
+  _bindEffect(context, (scope: _Context) => {
+    const values = reads.map(name => scope.get(name));
+    if (signal && readsSignal()) {
+      values.push(signal.get());
+    }
+    runs.push(values);
+  }, context, undefined, undefined, reads);
+  return runs;
+}
 
 function createRoot(): _Context {
   const parent = {
@@ -471,6 +495,223 @@ describe('_Context', () => {
       expect(target.getChildren()).toEqual([child]);
       expect(target.getUnlistenFns()).toBeNull();
       expect(staging.getChildren()).toBeNull();
+    });
+  });
+
+  describe('update', () => {
+    it('sets the value of a variable of the scope, telling whether it changed as Object.is compares', () => {
+      const context = new _Context(createRoot(), undefined, 2);
+      context.addIdentifier('row', 1);
+      context.addIdentifier('nan', NaN);
+
+      expect(context.update('row', 2)).toBe(true);
+      expect(context.update('row', 2)).toBe(false);
+      expect(context.update('nan', NaN)).toBe(false);
+      expect(context.get('row')).toBe(2);
+    });
+
+    it('initializes a variable declared without a value, which is no change', () => {
+      const context = createRoot();
+      context.declare('total', 'let');
+      context.declare('field');
+
+      expect(context.update('total', 1)).toBe(false);
+      expect(context.update('field', 'element')).toBe(false);
+      expect(context.get('total')).toBe(1);
+      expect(context.update('total', 2)).toBe(true);
+    });
+
+    it('sets a variable of a scope keeping its variables in a Map', () => {
+      const context = new _Context(createRoot(), undefined, 17);
+      for (let i = 0; i < 17; i++) {
+        context.addIdentifier(`v${i}`, i);
+      }
+
+      expect(context.update('v16', 16)).toBe(false);
+      expect(context.update('v16', 0)).toBe(true);
+      expect(context.get('v16')).toBe(0);
+    });
+
+    it('throws for a variable the scope does not declare', () => {
+      const context = new _Context(createRoot(), undefined, 1);
+      expect(() => createRoot().update('row', 1)).toThrow('Identifier "row" is not declared in this scope.');
+      expect(() => context.update('row', 1)).toThrow('Identifier "row" is not declared in this scope.');
+    });
+  });
+
+  describe('refresh', () => {
+    it('runs again, in the order they were rendered, the bindings reading a variable that changed, and only them', () => {
+      const context = new _Context(createRoot(), undefined, 2);
+      context.addIdentifier('row', 'a');
+      context.addIdentifier('index', 0);
+      const order = new Array<string>();
+      const row = bindVariables(context, ['row']);
+      _bindEffect(context, () => order.push('first'), null, undefined, undefined, ['row', 'index']);
+      const index = bindVariables(context, ['index']);
+      _bindEffect(context, () => order.push('second'), null, undefined, undefined, ['row']);
+
+      context.update('row', 'b');
+      context.refresh(['row']);
+
+      expect(row).toEqual([['a'], ['b']]);
+      expect(index).toEqual([[0]]);
+      expect(order).toEqual(['first', 'second', 'first', 'second']);
+    });
+
+    it('refreshes the contexts inside the scope, which read its variables', () => {
+      const context = new _Context(createRoot(), undefined, 1);
+      context.addIdentifier('row', 'a');
+      const branch = context.addChild();
+      const nested = branch.addChild();
+      const runs = bindVariables(nested, ['row']);
+
+      context.update('row', 'b');
+      context.refresh(['row']);
+
+      expect(runs).toEqual([['a'], ['b']]);
+    });
+
+    it('makes a binding an effect when a run reads a signal, and a plain binding again when a run reads none', async () => {
+      const context = new _Context(createRoot(), undefined, 1);
+      context.addIdentifier('row', { flagged: false });
+      const signal = new Signal.State(1);
+      const runs = bindVariables(context, ['row'], signal, () => (context.get('row') as { flagged: boolean }).flagged);
+      expect(Signal.subtle.hasSinks(signal)).toBe(false);
+
+      context.update('row', { flagged: true });
+      context.refresh(['row']);
+      expect(Signal.subtle.hasSinks(signal)).toBe(true);
+
+      signal.set(2);
+      await flush();
+      expect(runs.map(values => values[1])).toEqual([undefined, 1, 2]);
+
+      context.update('row', { flagged: false });
+      context.refresh(['row']);
+      expect(Signal.subtle.hasSinks(signal)).toBe(false);
+
+      signal.set(3);
+      await flush();
+      expect(runs).toHaveLength(4);
+    });
+
+    it('carries the names of an outer refresh into a refresh run inside it, and never refreshes a context twice', () => {
+      const outer = new _Context(createRoot(), undefined, 1);
+      outer.addIdentifier('row', 'a');
+      const inner = new _Context(outer, undefined, 1);
+      outer.addChild(inner);
+      inner.addIdentifier('cell', 1);
+      const runs = bindVariables(inner, ['row', 'cell']);
+      // A binding of the outer scope refreshing the inner one, as a @for reconciling its rows does
+      _bindEffect(outer, (scope: _Context) => {
+        if (scope.get('row') === 'b') {
+          inner.update('cell', 2);
+          inner.refresh(['cell']);
+        }
+      }, outer, undefined, undefined, ['row']);
+
+      outer.update('row', 'b');
+      outer.refresh(['row']);
+
+      expect(runs).toEqual([['a', 1], ['b', 2]]);
+    });
+
+    it('does not refresh the contexts created while it runs, which render with the new values', () => {
+      const context = new _Context(createRoot(), undefined, 1);
+      context.addIdentifier('row', 'a');
+      const created = new Array<unknown[][]>();
+      _bindEffect(context, (scope: _Context) => {
+        // A block rendering new content, which reads the variable
+        created.push(bindVariables(scope.addChild(), ['row']));
+      }, context, undefined, undefined, ['row']);
+
+      context.update('row', 'b');
+      context.refresh(['row']);
+
+      // The child created by the first run is refreshed, the one created by the refresh renders with the new value once
+      expect(created).toEqual([[['a'], ['b']], [['b']]]);
+    });
+
+    it('carries the name of a variable of the scope changed while it runs on to the bindings after it and the contexts inside the scope, not beside it', () => {
+      const root = new _Context(createRoot(), undefined, 1);
+      root.addIdentifier('row', 'a');
+      const scope = root.addChild(new _Context(root, undefined, 1));
+      scope.declare('label', 'let');
+      const beside = root.addChild(new _Context(root, undefined, 1));
+      beside.addIdentifier('label', 'beside');
+      _bindEffect(scope, (context: _Context) => {
+        if (context.update('label', `${context.get('row')}!`)) {
+          context.propagate('label');
+        }
+      }, scope, undefined, undefined, ['row']);
+      const after = bindVariables(scope, ['label']);
+      const inside = bindVariables(scope.addChild(), ['label']);
+      const besides = bindVariables(beside, ['label']);
+
+      root.update('row', 'b');
+      root.refresh(['row']);
+
+      expect(after).toEqual([['a!'], ['b!']]);
+      expect(inside).toEqual([['a!'], ['b!']]);
+      expect(besides).toEqual([['beside']]);
+    });
+
+    it('is run by a variable of the scope that changes outside of a refresh, as a @let reading a signal', () => {
+      const context = new _Context(createRoot(), undefined, 1);
+      context.addIdentifier('total', 1);
+      const runs = bindVariables(context, ['total']);
+      const refresh = vi.spyOn(context, 'refresh');
+
+      context.update('total', 2);
+      context.propagate('total');
+
+      expect(refresh).toHaveBeenCalledExactlyOnceWith(['total']);
+      expect(runs).toEqual([[1], [2]]);
+    });
+
+    it('reports the error of a binding in a microtask, keeping it as it was, and runs the other ones', async () => {
+      const context = new _Context(createRoot(), undefined, 1);
+      context.addIdentifier('row', 'a');
+      const signal = new Signal.State(1);
+      const failing = vi.fn((scope: _Context) => {
+        signal.get();
+        if (scope.get('row') === 'b') {
+          throw new Error('boom');
+        }
+      });
+      _bindEffect(context, failing, context, undefined, undefined, ['row']);
+      const runs = bindVariables(context, ['row']);
+      const tasks = new Array<() => void>();
+      const queueMicrotask = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(task => { tasks.push(task); });
+
+      context.update('row', 'b');
+      context.refresh(['row']);
+      queueMicrotask.mockRestore();
+
+      expect(runs).toEqual([['a'], ['b']]);
+      expect(tasks).toHaveLength(1);
+      expect(() => tasks[0]()).toThrow('boom');
+      // The effect of the failing binding still runs when its signal changes
+      context.update('row', 'c');
+      signal.set(2);
+      await flush();
+      expect(failing).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe('clear of the bindings', () => {
+    it('disposes the effects of the bindings, which never run again', async () => {
+      const context = new _Context(createRoot(), undefined, 1);
+      context.addIdentifier('row', 'a');
+      const signal = new Signal.State(1);
+      const runs = bindVariables(context, ['row'], signal);
+
+      context.clear();
+      signal.set(2);
+      await flush();
+
+      expect(runs).toHaveLength(1);
+      expect(Signal.subtle.hasSinks(signal)).toBe(false);
     });
   });
 });

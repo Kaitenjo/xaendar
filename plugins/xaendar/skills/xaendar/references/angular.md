@@ -22,13 +22,13 @@
 | `[attr]="expr"`, `[prop]="expr"` | `attr="{expr}"`: an attribute on native elements, an input on components |
 | `[class.x]="cond"` | `[class.x]="{cond}"` |
 | `[ngClass]`, `[style.x]`, `[ngStyle]` | `class="{`a ${b()}`}"`, `style="{…}"`, or a conditional binding |
-| `@if`, `@for`, `@switch` | the same blocks: `@for` without `@empty`, its variables are signals (`item()`, `$index()`) |
+| `@if`, `@for`, `@switch` | the same blocks: `@for` without `@empty`, its variables read as in Angular (`item.name`, `$index`) |
 | `@defer (on …)` with `@placeholder`, `@loading`, `@error` | `@defer (triggers) { … }` with the same blocks, written once each in any order, triggers separated by commas without `on`: `load` (`immediate`), `idle`/`idle(500)`, `timer(2s)`, `visible` (`viewport`), `interaction`, `hover`, `when expr`; no parentheses waits for `idle`. An element: `hover(ref)`, `visible(ref, { rootMargin: '200px' })` (Angular's `viewport({ trigger: ref, … })`). `prefetch idle`, `prefetch when expr` (Angular's `prefetch on idle`). `@placeholder (minimum 500ms)`, `@loading (after 100ms, minimum 1s)`, commas between the parameters. `@error (error)` receives the error |
 | `@defer (hydrate on …)` | `@hydrate (triggers) { … }` (the triggers of `@defer` without element refs, `never`, and `prefetch`): only for content rendered on the server, in the browser the content renders at once |
 | `TestBed` `DeferBlockBehavior`, `getDeferBlocks()`, `render(DeferBlockState.Complete)` | `@xaendar/core/testing`: `setDeferBlockBehavior('manual')`, `getDeferBlocks(element)`, `await block.render('complete')` |
 | `<ng-content select="…">` | `<slot name="…" />`; children pick it with `slot="…"` |
 | `<ng-template #row let-item>` + `ngTemplateOutlet` | `<template row(item: Item)>` + `@render row(item)`, in the same template |
-| `@let` | `@let name = value;`, a signal when its value reads one |
+| `@let` | `@let name = value;`, read as `name`, as in Angular |
 | pipes | methods of the class and `computed` signals |
 | services, `inject()`, providers | modules exporting signals, `computed`s and functions (patterns.md, Shared state) |
 | `Router` | a module signal and an `@switch` (patterns.md, Routing) |
@@ -45,7 +45,7 @@
 
 ## What works differently
 
-- Bindings on native elements call `setAttribute`: `disabled="{false}"` still disables (use a conditional binding), and `value`/`checked` are only the initial state.
+- Bindings on native elements call `setAttribute`: `disabled="{false}"` still disables (bind `null`, which removes the attribute as `[attr.name]` does, or use a conditional binding), and `value`/`checked` are only the initial state.
 - A removed element is destroyed, and rendered again as a new instance: never move or reattach elements with the DOM APIs.
 - Inputs are never written by attributes set from outside the templates, and the hooks run at every connection, not once.
 - Expressions cannot assign, create objects with `new`, or declare functions: logic belongs in the class.

@@ -8,9 +8,9 @@
   <ex-button @@exSubmit variant="primary">Add</ex-button>
 </form>
 <ul>
-  @for (todo of visible(); track todo().id) {
+  @for (todo of visible(); track todo.id) {
     <li>
-      <ex-todo-item todo="{todo()}" (doneChange)="onDoneChange($event)" (removed)="onRemove($event)" />
+      <ex-todo-item todo="{todo}" (doneChange)="onDoneChange($event)" (removed)="onRemove($event)" />
     </li>
   }
 </ul>

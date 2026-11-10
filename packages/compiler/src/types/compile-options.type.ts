@@ -61,8 +61,8 @@ export type CompileOptions = {
   shadowingMembers?: readonly string[];
   /**
    * Names of the component class members (inherited ones included) that can read a signal, as listed by
-   * `extractComponentMembers`: the type-check tells by them whether a `@let` reading them is a signal, as the generated
-   * code does by `signals`. Defaults to `signals`, or to none.
+   * `extractComponentMembers`: the type-check narrows by them the signals the conditions of an `@if` call (see
+   * `narrowSignals`). Defaults to `signals`, or to none.
    */
   reactiveMembers?: readonly string[];
   /**

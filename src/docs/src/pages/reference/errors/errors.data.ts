@@ -100,7 +100,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Lexer',
-    message: '[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())',
+    message: '[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item)',
     page: 'templates/reusable-templates'
   },
   {
@@ -170,11 +170,6 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
-    message: '[Parser] The track expression of a @for reads the item and the implicit variables as signals: call it, e.g. track item()',
-    page: 'templates/for'
-  },
-  {
-    phase: 'Parser',
     message: '[Parser] <input> declares more than one element ref (#first, #second): an element has a single name',
     page: 'templates/element-refs'
   },
@@ -195,7 +190,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
-    message: '[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item())',
+    message: '[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item)',
     page: 'templates/reusable-templates'
   },
   {
@@ -440,6 +435,11 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
+    message: "'task' is a template variable, not a signal: remove the parentheses and read it as task, since the variables of a template (@for, @let, parameters of a template) hold their values",
+    page: 'templates/for'
+  },
+  {
+    phase: 'TypeChecker',
     message: "Cannot find name 'first'.",
     page: 'templates/switch'
   },
@@ -620,7 +620,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
-    message: "Property 'toFixed' does not exist on type 'Computed<number>'.",
+    message: "'total' is a template variable, not a signal: remove the parentheses and read it as total, since the variables of a template (@for, @let, parameters of a template) hold their values",
     page: 'templates/let'
   },
   {

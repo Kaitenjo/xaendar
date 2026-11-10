@@ -51,24 +51,24 @@ describe('Generator', () => {
     });
 
     it('creates the context of a @for body for the iteration variables its body reads and the variables of its scope', async () => {
-      const code = await generate('@for (item of items; track item()) { <input #field />@let label = item().name; { label() } }');
+      const code = await generate('@for (item of items; track item) { <input #field />@let label = item.name; { label } }');
 
       expect(code).toContain('function for0(for0, parentContext, items0, i0, anchor, nodeStrategy) {\n  const context = new _Context(parentContext, nodeStrategy, 3);');
     });
 
     it('declares the variables of a @for body after its iteration variables', async () => {
-      const code = await generate('@for (item of items; track item()) { <input #field [class.first]="{$first()}" />{ item() } }');
+      const code = await generate('@for (item of items; track item) { <input #field [class.first]="{$first}" />{ item } }');
 
-      expect(code).toContain('const entry = _iterationVariables(context, items0, i0, for0Variables);\n  context.declare(\'field\');');
+      expect(code).toContain('_iterationVariables(context, items0, i0, for0Variables);\n  context.declare(\'field\');');
     });
 
     it('declares the variables a @for body reads once, as a constant of the module before its function, which _for and the body read', async () => {
-      const code = await generate('@for (item of items; track item(); i = $index) { { i() } { item() } }');
+      const code = await generate('@for (item of items; track item; i = $index) { { i } { item } }');
 
       expect(code).toContain('\nconst for0Variables = { used: [\'item\', \'$index\'], names: [\'item\', \'i\'] };\n\nfunction for0(for0, parentContext, items0, i0, anchor, nodeStrategy) {');
       expect(code.match(/const for0Variables/g)).toHaveLength(1);
       expect(code).toContain('for0.bind(this), for0Variables);');
-      expect(code).toMatch(/const entry = _iterationVariables\(context, items0, i0, for0Variables\);[\s\S]*return entry;\n\}/);
+      expect(code).toMatch(/_iterationVariables\(context, items0, i0, for0Variables\);[\s\S]*return context;\n\}/);
       expect(code).not.toContain('$index: \'$index\'');
     });
 
@@ -111,18 +111,20 @@ describe('Generator', () => {
   });
 
   describe('templates', () => {
-    it('registers a template at the start of its scope, and renders its content in a scope of its own, reading the parameters as signals', async () => {
-      const template = '@render row(name(), 1)<template row(label: string, count: number)><p>{ label() } { count() }</p></template>';
+    it('registers a template at the start of its scope, and renders its content in a scope of its own, reading the parameters as variables', async () => {
+      const template = '@render row(name(), 1)<template row(label: string, count: number)><p>{ label } { count }</p></template>';
       const code = await generate(template, ['name']);
       const start = template.indexOf('<template');
 
       expect(code).toContain([
         '  const context = new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 1);',
-        `  context.addIdentifier('row', _template(context, template_row_${start}.bind(this)));`,
+        `  context.addIdentifier('row', _template(context, template_row_${start}.bind(this), template_row_${start}Parameters));`,
         '  _renderTemplate(root, context, null, context.get(\'row\'), [() => this.name(), () => 1]);',
         '  return context;'
       ].join('\n'));
       expect(code).toContain([
+        `const template_row_${start}Parameters = ['label', 'count'];`,
+        '',
         `function template_row_${start}(template_row_${start}, parentContext, anchor, params, nodeStrategy) {`,
         '  const context = new _Context(parentContext, nodeStrategy, 2);',
         '  context.createElement = _createElement;',
@@ -130,24 +132,25 @@ describe('Generator', () => {
         '  context.addIdentifier(\'count\', params[1]);',
         `  _renderElement(template_row_${start}, context, anchor, 'p', [], [], [], [], [], [],`
       ].join('\n'));
-      expect(code).toContain('_renderText(template_row_22__p0, context, () => context.get(\'label\')(), null, true);');
+      expect(code).toContain('_renderText(template_row_22__p0, context, () => context.get(\'label\'), null, true, _reads0);');
+      expect(code.startsWith('const _reads0 = [\'label\'];\nconst _reads1 = [\'count\'];\nfunction render(nodeStrategy) {')).toBe(true);
     });
 
     it('gives the parameters whose argument may be left out their default value, reading the parameters and the members', async () => {
-      const code = await generate('<template row(item: Item, label = item().name + suffix(), count?: number, later: number = 1)>{ label() }</template>', ['suffix']);
+      const code = await generate('<template row(item: Item, label = item.name + suffix(), count?: number, later: number = 1)>{ label }</template>', ['suffix']);
 
       expect(code).toContain([
         '  context.addIdentifier(\'item\', params[0]);',
-        '  context.addIdentifier(\'label\', _parameter(params, 1, () => context.get(\'item\')().name + this.suffix()));',
-        '  context.addIdentifier(\'count\', _parameter(params, 2));',
-        '  context.addIdentifier(\'later\', _parameter(params, 3, () => 1));'
+        '  _parameter(context, params, 1, \'label\', () => context.get(\'item\').name + this.suffix(), _reads0);',
+        '  context.addIdentifier(\'count\', params[2]);',
+        '  _parameter(context, params, 3, \'later\', () => 1);'
       ].join('\n'));
     });
 
     it('declares the element refs and the templates of the content of a template in its scope', async () => {
       const code = await generate('<template row()><input #field /><template inner() /></template>');
 
-      expect(code).toMatch(/context\.createElement = _createElement;\n {2}context\.declare\('field'\);\n {2}context\.addIdentifier\('inner', _template\(context, template_inner_\d+\.bind\(this\)\)\);/);
+      expect(code).toMatch(/context\.createElement = _createElement;\n {2}context\.declare\('field'\);\n {2}context\.addIdentifier\('inner', _template\(context, template_inner_\d+\.bind\(this\), template_inner_\d+Parameters\)\);/);
     });
 
     it('creates the content of a template in the namespace of its declaration, and renders it there', async () => {
@@ -160,7 +163,7 @@ describe('Generator', () => {
     it('registers the templates of a block in the function rendering it, forwarding its anchor to the @render', async () => {
       const code = await generate('@if (a) { <template row() />@render row() }');
 
-      expect(code).toMatch(/function if0\(if0, parentContext, anchor, nodeStrategy\) \{\n {2}const context = new _Context\(parentContext, nodeStrategy, 1\);\n {2}context\.addIdentifier\('row', _template\(context, template_row_\d+\.bind\(this\)\)\);/);
+      expect(code).toMatch(/function if0\(if0, parentContext, anchor, nodeStrategy\) \{\n {2}const context = new _Context\(parentContext, nodeStrategy, 1\);\n {2}context\.addIdentifier\('row', _template\(context, template_row_\d+\.bind\(this\), template_row_\d+Parameters\)\);/);
       expect(code).toContain('_renderTemplate(if0, context, anchor, context.get(\'row\'), []);');
     });
 
@@ -174,8 +177,8 @@ describe('Generator', () => {
   });
 
   describe('@let', () => {
-    it('declares the @let of a scope after its other names, as a signal when its value reads one, and initializes it where it is written', async () => {
-      const template = '<button (click)="pick(label)">Go</button><div>@let total = price() * 2;</div>@let double = total() * 2;@let label = field.value;<input #field /><p>{ double() }</p>';
+    it('declares the @let of a scope after its other names, and initializes it where it is written, with the variables it reads', async () => {
+      const template = '<button (click)="pick(label)">Go</button><div>@let total = price() * 2;</div>@let double = total * 2;@let label = field.value;<input #field /><p>{ double }</p>';
       const code = await generate(template, ['price']);
 
       expect(code).toContain([
@@ -185,15 +188,15 @@ describe('Generator', () => {
         '  context.declare(\'label\', \'let\');'
       ].join('\n'));
       expect(code).toContain('handler: () => this.pick(context.get(\'label\'))');
-      expect(code).toContain('  context.set(\'total\', _let(() => this.price() * 2));');
-      expect(code).toContain('  context.set(\'double\', _let(() => context.get(\'total\')() * 2));\n  context.set(\'label\', context.get(\'field\').value);');
-      expect(code).toContain('() => context.get(\'double\')()');
+      expect(code).toContain('  _let(context, \'total\', () => this.price() * 2);');
+      expect(code).toContain('  _let(context, \'double\', () => context.get(\'total\') * 2, _reads0);\n  _let(context, \'label\', () => context.get(\'field\').value);');
+      expect(code).toContain('() => context.get(\'double\'), null, true, _reads1);');
     });
 
     it('declares the @let of a block, of the content of a template and of a @for body in their own scope', async () => {
-      const code = await generate('@for (item of items; track item()) { @let name = item().name; }<template row()>@let id = 1;</template>');
+      const code = await generate('@for (item of items; track item) { @let name = item.name; }<template row()>@let id = 1;</template>');
 
-      expect(code).toMatch(/for0Variables\);\n {2}context\.declare\('name', 'let'\);\n {2}context\.set\('name', _let\(\(\) => context\.get\('item'\)\(\)\.name\)\);/);
+      expect(code).toMatch(/for0Variables\);\n {2}context\.declare\('name', 'let'\);\n {2}_let\(context, 'name', \(\) => context\.get\('item'\)\.name, _reads0\);/);
       expect(code).toMatch(/context\.createElement = _createElement;\n {2}context\.declare\('id', 'let'\);\n {2}context\.set\('id', 1\);/);
     });
 
@@ -209,18 +212,18 @@ describe('Generator', () => {
   });
 
   it('generates the helper functions for nested nodes', async () => {
-    const code = await generate('<div><span></span></div>@if (a) { <b></b> }@for (i of items; track i()) { <li></li> }');
+    const code = await generate('<div><span></span></div>@if (a) { <b></b> }@for (i of items; track i) { <li></li> }');
 
     expect(code).toContain('div0Children(div0, context) {');
     expect(code).toContain('if1(if1, parentContext, anchor, nodeStrategy) {');
     expect(code).toContain('for2(for2, parentContext, items2, i2, anchor, nodeStrategy) {');
-    expect(code).toContain('const entry = _iterationVariables(context, items2, i2);');
-    expect(code).toContain('return entry;');
+    expect(code).not.toContain('_iterationVariables');
+    expect(code).toContain('for2(for2, parentContext, items2, i2, anchor, nodeStrategy) {\n  const context = new _Context(parentContext, nodeStrategy);');
     expect(code).not.toContain('for2Variables');
   });
 
   it('emits module-level helper functions invoked with the component bound as this', async () => {
-    const code = await generate('<div><span></span></div>@if (a) { <b></b> }@for (i of items; track i()) { <li></li> }');
+    const code = await generate('<div><span></span></div>@if (a) { <b></b> }@for (i of items; track i) { <li></li> }');
 
     expect(code).toContain('function div0Children(div0, context) {');
     expect(code).toContain('(div0, context) => div0Children.call(this, div0, context)');
@@ -232,7 +235,7 @@ describe('Generator', () => {
   });
 
   it('renders the content of every flow-control block before the anchor of the block', async () => {
-    const code = await generate('@if (a) { <i></i> }@switch (m) { @case (1) { <b></b> } @default { <u></u>@if (n) { <s></s> } } }@for (i of items; track i()) { <li></li> }<p></p>');
+    const code = await generate('@if (a) { <i></i> }@switch (m) { @case (1) { <b></b> } @default { <u></u>@if (n) { <s></s> } } }@for (i of items; track i) { <li></li> }<p></p>');
 
     expect(code).toContain('_renderElement(if0, context, anchor, \'i\',');
     expect(code).toContain('_renderElement(case1_0, context, anchor, \'b\',');

@@ -6,7 +6,7 @@
   <ex-button (click)="show()">Start watching the signal</ex-button>
 }
 <ul>
-  @for (outcome of outcomes(); track outcome()) {
-    <li>{ outcome() }</li>
+  @for (outcome of outcomes(); track outcome) {
+    <li>{ outcome }</li>
   }
 </ul>

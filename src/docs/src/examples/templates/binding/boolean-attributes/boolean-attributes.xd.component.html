@@ -6,6 +6,9 @@
   <button disabled="{locked()}">disabled="{ '{ locked() }' }"</button>
 </p>
 <p>
+  <button disabled="{locked() || null}">disabled="{ '{ locked() || null }' }"</button>
+</p>
+<p>
   <button
     @if (locked()) {
       disabled

@@ -38,13 +38,13 @@ describe('Lexer', () => {
   });
 
   it('tokenizes the render of a template, the keyword spanning from the @ and the call from the name to the closing parenthesis', () => {
-    const template = '<ul>@render row(item(), \')\')</ul>';
+    const template = '<ul>@render row(item, \')\')</ul>';
     const tokens: ReadToken[] = new Lexer(template).tokenize();
     expect(tokens.map(({ type, parts, span }) => [type, parts, template.slice(span?.start, span?.end)])).toEqual([
       [TokenType.TAG_OPEN_NAME, ['ul'], '<ul'],
       [TokenType.TAG_OPEN_END, [], '>'],
       [TokenType.RENDER, undefined, '@render '],
-      [TokenType.RENDER_CALL, ['row', 'item(), \')\''], 'row(item(), \')\')'],
+      [TokenType.RENDER_CALL, ['row', 'item, \')\''], 'row(item, \')\')'],
       [TokenType.TAG_CLOSE_NAME, ['ul'], '</ul>']
     ]);
   });

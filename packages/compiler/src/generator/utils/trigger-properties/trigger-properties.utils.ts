@@ -7,8 +7,9 @@ import { resolveExpression } from '../generator/generator.utils';
 /**
  * Generates the properties of the block a `@hydrate` or a `@defer` passes to the runtime about what it waits for: its
  * triggers, written by name or described with their arguments, `idle` when it declares none, the function reading the
- * expression of its `when` trigger, if any, and the one loading the modules of the components only its content renders
- * (see `getDeferredModules`), if any, together with the triggers following `prefetch`, which load them only.
+ * expression of its `when` trigger, if any, with the names of the variables of the template it reads, and the one
+ * loading the modules of the components only its content renders (see `getDeferredModules`), if any, together with the
+ * triggers following `prefetch`, which load them only.
  *
  * A trigger naming the element it watches reads it with a function, called once the template is rendered, and the
  * options of the observer of `visible` are evaluated where the block is.
@@ -22,11 +23,14 @@ import { resolveExpression } from '../generator/generator.utils';
  * @returns The properties, as written in the object literal of the block.
  */
 export function getTriggerProperties(node: HydrateNode | DeferNode, generatorContext: GeneratorContext): string[] {
-  const { triggers, when } = describeTriggers(node.triggers, generatorContext);
+  const { triggers, when, whenReads } = describeTriggers(node.triggers, generatorContext);
   // Without a trigger rendering the content, the block waits for the browser to be idle
   const properties = [`triggers: [${triggers.length || when ? triggers.join(', ') : '\'idle\''}]`];
   if (when) {
     properties.push(`when: () => ${when}`);
+    if (whenReads) {
+      properties.push(`whenReads: ${whenReads}`);
+    }
   }
 
   const modules = generatorContext.deferredModules?.get(node);
@@ -39,6 +43,9 @@ export function getTriggerProperties(node: HydrateNode | DeferNode, generatorCon
 
     if (prefetch.when) {
       properties.push(`prefetchWhen: () => ${prefetch.when}`);
+      if (prefetch.whenReads) {
+        properties.push(`prefetchWhenReads: ${prefetch.whenReads}`);
+      }
     }
   }
 
@@ -50,17 +57,21 @@ export function getTriggerProperties(node: HydrateNode | DeferNode, generatorCon
  *
  * @param triggers - The triggers.
  * @param generatorContext - The generator context of the block.
- * @returns The triggers, as written in an array literal, and the expression of the `when` among them, if any.
+ * @returns The triggers, as written in an array literal, the expression of the `when` among them, if any, and the
+ *   constant listing the variables of the template it reads, if any.
  */
-function describeTriggers(triggers: readonly HydrateTrigger[], generatorContext: GeneratorContext): { triggers: string[], when?: string } {
+function describeTriggers(triggers: readonly HydrateTrigger[], generatorContext: GeneratorContext): { triggers: string[], when?: string, whenReads?: string } {
   const described = new Array<string>();
-  const result: { triggers: string[], when?: string } = { triggers: described };
+  const result: { triggers: string[], when?: string, whenReads?: string } = { triggers: described };
   for (let i = 0; i < triggers.length; i++) {
     const trigger = triggers[i];
     switch (trigger.kind) {
-      case 'when':
-        result.when = resolveExpression(trigger.expressionNode, generatorContext).expression;
+      case 'when': {
+        const { expression, variables } = resolveExpression(trigger.expressionNode, generatorContext);
+        result.when = expression;
+        result.whenReads = generatorContext.getReads(variables);
         break;
+      }
 
       case 'idle':
         described.push(trigger.timeout === undefined ? '\'idle\'' : `{ kind: 'idle', timeout: ${trigger.timeout} }`);

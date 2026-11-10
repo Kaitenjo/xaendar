@@ -46,7 +46,7 @@ describe('checkVariableOrder', () => {
 
   it('keeps the first declaration of a name declared twice in a scope, which TypeScript reports', () => {
     expect(errorsOf('<input #field /><p>{ field.value }</p><select #field />')).toBeUndefined();
-    expect(errorsOf('@for (item of items(); track item()) { <p>{ item() }</p><input #item /> }')).toBeUndefined();
+    expect(errorsOf('@for (item of items(); track item) { <p>{ item }</p><input #item /> }')).toBeUndefined();
   });
 
   it('reports a read in a shorthand property', () => {
@@ -82,7 +82,7 @@ describe('checkVariableOrder', () => {
     });
 
     it('checks the iterable of a @for in the enclosing scope, and its body in the scope of the loop, where its variables exist from the start', () => {
-      expect(errorsOf('@for (item of field.items; track item(); index = $index) { <p>{ item() } { index() } { $odd() } { row.value }</p><input #row /> }<input #field />')).toEqual([
+      expect(errorsOf('@for (item of field.items; track item; index = $index) { <p>{ item } { index } { $odd } { row.value }</p><input #row /> }<input #field />')).toEqual([
         [readBefore('field'), 'field'],
         [readBefore('row'), 'row']
       ]);
@@ -150,7 +150,7 @@ describe('checkVariableOrder', () => {
     });
 
     it('reports an element ref read by the track expression of a @for, declared by its body or outside of it', () => {
-      expect(errorsOf('<input #field />@for (item of items(); track field.value + row.value + item()) { <input #row /> }')).toEqual([
+      expect(errorsOf('<input #field />@for (item of items(); track field.value + row.value + item) { <input #row /> }')).toEqual([
         [readByTrack('field'), 'field'],
         [readByTrack('row'), 'row']
       ]);
@@ -189,13 +189,13 @@ describe('checkVariableOrder', () => {
     });
 
     it('checks the reads of the content of a template against its own element refs, and accepts its parameters and the templates', () => {
-      expect(errorsOf('<template row(item: Item)><p>{ item() } { other } { inner.value }</p><input #inner /><template other() /></template>')).toEqual([[readBefore('inner'), 'inner']]);
+      expect(errorsOf('<template row(item: Item)><p>{ item } { other } { inner.value }</p><input #inner /><template other() /></template>')).toEqual([[readBefore('inner'), 'inner']]);
     });
 
     it('checks the default values of the parameters like the content of the template, against its own element refs and each @render', () => {
       expect(errorsOf('<template row(label = inner.value)><input #inner /></template>')).toEqual([[readBefore('inner'), 'inner']]);
       expect(errorsOf('@render row()<input #field /><template row(label = field.value) />')).toEqual([[readByRender('field', 'row'), 'row']]);
-      expect(errorsOf('<input #field /><template row(item: Item, label = item().name + field.value) />@render row(1)')).toBeUndefined();
+      expect(errorsOf('<input #field /><template row(item: Item, label = item.name + field.value) />@render row(1)')).toBeUndefined();
     });
 
     it('checks the element refs declared outside of a template, which its content reads, against each @render of the template', () => {
@@ -225,7 +225,7 @@ describe('checkVariableOrder', () => {
     });
 
     it('terminates on a recursive template', () => {
-      expect(errorsOf('<template tree(node: Node)>{ field.value }@for (child of node().children; track child()) { @render tree(child()) }</template><input #field />@render tree(root)')).toBeUndefined();
+      expect(errorsOf('<template tree(node: Node)>{ field.value }@for (child of node.children; track child) { @render tree(child) }</template><input #field />@render tree(root)')).toBeUndefined();
     });
 
     it('ignores the @render of a name that is not a template, which the type-check reports', () => {
@@ -252,21 +252,21 @@ describe('checkVariableOrder', () => {
       expect(errorsOf('@render row()<template row()>{ total }</template>@let total = 1;')).toEqual([[
         '"total" is read by the template rendered by @render row before its @let: render the template after the @let, or read it from an event handler', 'row'
       ]]);
-      expect(errorsOf('@let total = 1;@for (item of items(); track total + item()) { }')).toEqual([[
+      expect(errorsOf('@let total = 1;@for (item of items(); track total + item) { }')).toEqual([[
         'The track expression of a @for cannot read the @let "total": it only reads the item of the @for and its implicit variables', 'total'
       ]]);
     });
   });
 
   it('points to the part declaring an expression whose positions in the template are unknown', () => {
-    const template = '<p>{ x }</p><input #field />@for (item of items(); track item()) { }';
+    const template = '<p>{ x }</p><input #field />@for (item of items(); track item) { }';
     const ast = parse(template);
     (ast[0] as unknown as { children: InterpolationNode[] }).children[0].expression = validateExpression('field.value').node;
     (ast[2] as ForNode).trackExpression = validateExpression('field.value').node;
 
     expect(errorsOf(template, ast)).toEqual([
       [readBefore('field'), 'x }'],
-      [readByTrack('field'), '@for (item of items(); track item()) { }']
+      [readByTrack('field'), '@for (item of items(); track item) { }']
     ]);
   });
 });

@@ -12,8 +12,8 @@ import { ForImplicitVariables } from './nodes/for-implicit-variables.type';
  */
 export type ForExpression = {
   /**
-   * The loop variable alias (e.g. `item` in `@for(item of items)`), `undefined` when the
-   * `item of` part is omitted (e.g. `@for(10; track $index())`).
+   * The loop variable alias (e.g. `item` in `@for (item of items)`), `undefined` when the
+   * `item of` part is omitted (e.g. `@for (10; track $index)`).
    */
   itemAlias?: string;
   /**

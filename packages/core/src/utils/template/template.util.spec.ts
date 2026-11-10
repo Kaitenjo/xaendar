@@ -9,7 +9,8 @@ await vi.hoisted(async () => {
 const { _Context, mountNode } = await import('../context/context.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _parameter, _renderTemplate, _template } = await import('./template.util');
-const { computed, effect, signal } = await import('../../signals');
+const { _bindEffect } = await import('../../signals/effect/effect');
+const { effect, signal } = await import('../../signals');
 
 const flush = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 
@@ -20,47 +21,64 @@ function createRoot() {
 }
 
 /**
- * Creates a template rendering a `<span>` reading its parameters, as the generated code does.
+ * Creates a template declaring the parameters `label` and `count`, rendering a `<span>` whose text reads them through a
+ * binding of the instance, as the generated code does.
  */
 function createTemplate(declarationContext: Context) {
-  const render = vi.fn((parentNode: Element, parentContext: Context, referenceNode: Comment | null, params: Array<() => unknown>) => {
-    const context = new _Context(parentContext);
+  const instances = new Array<Context>();
+  const render = vi.fn((parentNode: Element, parentContext: Context, referenceNode: Comment | null, params: unknown[]) => {
+    const context = new _Context(parentContext, undefined, 2);
+    context.addIdentifier('label', params[0]);
+    context.addIdentifier('count', params[1]);
+    instances.push(context);
     const span = document.createElement('span');
-    span.textContent = params.map(param => param()).join(' ');
     mountNode(span, parentNode, context, referenceNode);
+    _bindEffect(context, (scope: Context) => { span.textContent = `${scope.get('label')} ${scope.get('count')}`; }, context, undefined, undefined, ['label', 'count']);
     return context;
   });
 
-  return { render, template: _template(declarationContext, render) };
+  return { render, instances, template: _template(declarationContext, render, ['label', 'count']) };
 }
 
 describe('_template', () => {
-  it('holds the context of the scope declaring the template and the function rendering it', () => {
+  it('holds the context of the scope declaring the template, the function rendering it and the names of its parameters', () => {
     const context = createRoot();
     const render = vi.fn();
-    expect(_template(context, render)).toEqual({ context, render });
+    expect(_template(context, render, ['item'])).toEqual({ context, render, parameters: ['item'] });
   });
 });
 
 describe('_parameter', () => {
-  it('is the signal of the argument when the @render passes it, also as undefined', () => {
-    const params = [computed(() => 'a'), computed(() => undefined)];
+  it('declares the value of the argument when the @render passes it, also as undefined', () => {
+    const context = new _Context(createRoot(), undefined, 2);
+    _parameter(context, ['a', undefined], 0, 'first', () => 'default');
+    _parameter(context, ['a', undefined], 1, 'second', () => 'default');
 
-    expect(_parameter(params, 0, () => 'default')).toBe(params[0]);
-    expect(_parameter(params, 1, () => 'default')).toBe(params[1]);
+    expect(context.get('first')).toBe('a');
+    expect(context.get('second')).toBeUndefined();
   });
 
-  it('is the signal of the default value when the @render leaves the argument out, read again when what it reads changes', () => {
-    const label = signal('a');
-    const param = _parameter([], 0, () => `${label()}!`);
+  it('declares the default value when the @render leaves the argument out, computed again when a parameter it reads changes', () => {
+    const context = new _Context(createRoot(), undefined, 2);
+    context.addIdentifier('item', 'a');
+    _parameter(context, ['a'], 1, 'label', () => `${context.get('item')}!`, ['item']);
+    expect(context.get('label')).toBe('a!');
 
-    expect(param()).toBe('a!');
-    label.set('b');
-    expect(param()).toBe('b!');
+    context.update('item', 'b');
+    context.refresh(['item']);
+
+    expect(context.get('label')).toBe('b!');
   });
 
-  it('holds undefined for an optional parameter left out', () => {
-    expect(_parameter([computed(() => 1)], 1)()).toBeUndefined();
+  it('computes the default value again when a signal it reads changes', async () => {
+    const suffix = signal('!');
+    const context = new _Context(createRoot(), undefined, 1);
+    _parameter(context, [], 0, 'label', () => `a${suffix()}`);
+
+    suffix.set('?');
+    await flush();
+
+    expect(context.get('label')).toBe('a?');
   });
 });
 
@@ -76,27 +94,86 @@ describe('_renderTemplate', () => {
     _renderTemplate(parent, renderingContext, anchor, template, [() => 'a', () => 1]);
 
     expect(parent.innerHTML).toBe('<span>a 1</span><!--anchor-->');
-    expect(render).toHaveBeenCalledWith(parent, declarationContext, anchor, [expect.any(Function), expect.any(Function)], CREATE_NODES);
+    expect(render).toHaveBeenCalledWith(parent, declarationContext, anchor, ['a', 1], CREATE_NODES);
     const [instance] = renderingContext.getChildren()!;
     renderingContext.clear();
     expect(instance.getNodes()).toBeNull();
     expect(parent.innerHTML).toBe('<!--anchor-->');
   });
 
-  it('turns each argument into a signal, which reads the argument again when what it reads changes', () => {
+  it('passes over the separator the server wrote before the instance, once', () => {
+    const declarationContext = createRoot();
+    const { template } = createTemplate(declarationContext);
+    const separator = vi.spyOn(CREATE_NODES, 'separator');
+
+    _renderTemplate(document.createElement('div'), declarationContext, null, template, [() => 'a', () => 1], true);
+
+    expect(separator).toHaveBeenCalledExactlyOnceWith(expect.any(HTMLDivElement), true);
+    separator.mockRestore();
+  });
+
+  it('updates the parameters of the instance when an argument reading a signal changes, instead of rendering it again', async () => {
     const declarationContext = createRoot();
     const label = signal('a');
-    let param!: () => unknown;
-    const template = _template(declarationContext, (_parentNode, parentContext, _referenceNode, params) => {
-      [param] = params;
-      return new _Context(parentContext);
-    });
+    const { render, instances, template } = createTemplate(declarationContext);
+    const parent = document.createElement('div');
 
-    _renderTemplate(document.createElement('div'), declarationContext, null, template, [() => `${label()}!`]);
+    _renderTemplate(parent, declarationContext, null, template, [() => label(), () => 1]);
+    const refresh = vi.spyOn(instances[0], 'refresh');
 
-    expect(param()).toBe('a!');
     label.set('b');
-    expect(param()).toBe('b!');
+    await flush();
+
+    expect(render).toHaveBeenCalledOnce();
+    expect(refresh).toHaveBeenCalledExactlyOnceWith(['label']);
+    expect(parent.innerHTML).toBe('<span>b 1</span>');
+  });
+
+  it('updates the parameters of the instance when its scope is refreshed with a variable an argument reads', () => {
+    const declarationContext = createRoot();
+    const rowContext = new _Context(declarationContext, undefined, 1);
+    rowContext.addIdentifier('row', { name: 'a', count: 1 });
+    const { render, template } = createTemplate(declarationContext);
+    const parent = document.createElement('div');
+
+    _renderTemplate(parent, rowContext, null, template, [() => (rowContext.get('row') as { name: string }).name, () => (rowContext.get('row') as { count: number }).count], false, ['row']);
+    rowContext.update('row', { name: 'b', count: 1 });
+    rowContext.refresh(['row']);
+
+    expect(render).toHaveBeenCalledOnce();
+    expect(parent.innerHTML).toBe('<span>b 1</span>');
+  });
+
+  it('refreshes the instance once with the names of every parameter whose argument changed', async () => {
+    const declarationContext = createRoot();
+    const label = signal('a');
+    const count = signal(1);
+    const { instances, template } = createTemplate(declarationContext);
+    const parent = document.createElement('div');
+
+    _renderTemplate(parent, declarationContext, null, template, [() => label(), () => count()]);
+    const refresh = vi.spyOn(instances[0], 'refresh');
+
+    label.set('b');
+    count.set(2);
+    await flush();
+
+    expect(refresh).toHaveBeenCalledExactlyOnceWith(['label', 'count']);
+    expect(parent.innerHTML).toBe('<span>b 2</span>');
+  });
+
+  it('does not refresh the instance when the arguments computed again keep their values', () => {
+    const declarationContext = createRoot();
+    const rowContext = new _Context(declarationContext, undefined, 1);
+    rowContext.addIdentifier('row', { name: 'a' });
+    const { instances, template } = createTemplate(declarationContext);
+
+    _renderTemplate(document.createElement('div'), rowContext, null, template, [() => (rowContext.get('row') as { name: string }).name], false, ['row']);
+    const refresh = vi.spyOn(instances[0], 'refresh');
+    rowContext.update('row', { name: 'a' });
+    rowContext.refresh(['row']);
+
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it('does not make the signals read while rendering the instance dependencies of the code rendering it', async () => {
@@ -106,7 +183,7 @@ describe('_renderTemplate', () => {
     const renders = vi.fn();
     const stop = effect(() => {
       renders();
-      _renderTemplate(document.createElement('div'), declarationContext, null, template, [() => label()]);
+      _renderTemplate(document.createElement('div'), declarationContext, null, template, [() => 'x', () => label()]);
     });
 
     label.set('b');

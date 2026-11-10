@@ -22,7 +22,11 @@ export type RenderConditionalBinding<Bindings extends { conditionalBindings: Ren
   /**
    * Only a `@switch` declares an expression.
    */
-  expression?: never
+  expression?: never,
+  /**
+   * The names of the variables of the template the conditions read (see `_bindEffect`), omitted when they read none.
+   */
+  reads?: readonly string[]
 } | {
   /**
    * The `@case` and `@default` branches of the `@switch`.
@@ -37,5 +41,9 @@ export type RenderConditionalBinding<Bindings extends { conditionalBindings: Ren
   /**
    * The expression whose value selects the branch.
    */
-  expression: NoArgsFunction<unknown>
+  expression: NoArgsFunction<unknown>,
+  /**
+   * The names of the variables of the template the expression reads (see `_bindEffect`), omitted when it reads none.
+   */
+  reads?: readonly string[]
 }

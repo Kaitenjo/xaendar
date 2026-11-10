@@ -1,6 +1,6 @@
 import type { NoArgsVoidFunction } from '@xaendar/types';
 import { _SSR_MARKERS } from '../../costants';
-import { effect } from '../../signals/effect/effect';
+import { _bindEffect } from '../../signals/effect/effect';
 import { untracked } from '../../signals/untracked';
 import type { DeferBlock } from '../../types/defer-block.type';
 import type { DeferBlockFixture } from '../../types/defer-testing/defer-block-fixture.type';
@@ -16,7 +16,7 @@ import { armTriggers, disarmAll, watchedTriggers } from '../hydration-triggers/h
  * the modules of the components only the content renders are loaded. Meanwhile the `@loading` is shown, if any; when the
  * modules fail to load, the `@error` is rendered with the error, or, without one, the error is logged and the
  * `@placeholder` rendered again. The content is rendered once: the triggers are disarmed when the first one fires, and the
- * `when` expression, read in an effect, fires once it is truthy.
+ * `when` expression, read by a binding (see `_bindEffect`), fires once it is truthy.
  *
  * The triggers following `prefetch`, and the expression of the `when` following it, load the modules without rendering
  * the content: the trigger rendering it waits for the same load. The `@placeholder` is shown at least for its `minimum`,
@@ -91,22 +91,36 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
   });
 
   if (block.when) {
-    const when = block.when;
-    // Fired once the effect has run: the effect is disposed by the trigger firing
-    run.disarms.push(effect(() => {
-      if (when()) {
-        queueMicrotask(() => run.active && fire(run));
-      }
-    }));
+    _bindEffect(parentContext, checkWhen, run, undefined, undefined, block.whenReads);
   }
 
   if (block.prefetchWhen) {
-    const prefetchWhen = block.prefetchWhen;
-    run.disarms.push(effect(() => {
-      if (prefetchWhen()) {
-        queueMicrotask(() => run.active && !run.fired && prefetch(run));
-      }
-    }));
+    _bindEffect(parentContext, checkPrefetchWhen, run, undefined, undefined, block.prefetchWhenReads);
+  }
+}
+
+/**
+ * Reads the `when` expression of a block, firing the block once it is truthy, once the binding has run: the callback of
+ * the binding of the expression (see `_bindEffect`). Once the block has fired it reads nothing, so it never runs again.
+ *
+ * @param run - The block, whose `when` is defined.
+ */
+function checkWhen(run: DeferRun): void {
+  if (!run.fired && run.block.when!()) {
+    queueMicrotask(() => run.active && fire(run));
+  }
+}
+
+/**
+ * Reads the `when` expression following the `prefetch` of a block, loading its modules once it is truthy: the callback
+ * of the binding of the expression (see `_bindEffect`). Once the block has fired it reads nothing, so it never runs
+ * again.
+ *
+ * @param run - The block, whose `prefetchWhen` is defined.
+ */
+function checkPrefetchWhen(run: DeferRun): void {
+  if (!run.fired && run.block.prefetchWhen!()) {
+    queueMicrotask(() => run.active && !run.fired && prefetch(run));
   }
 }
 

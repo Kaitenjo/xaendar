@@ -10,7 +10,7 @@ const template = [
   '@import { Child } from \'./child\';',
   '@import { Tooltip } from \'./directives\';',
   '<my-child label="{title}" (closed)="select(1)" @@tooltip(text="a" (shown)="select(2)")></my-child>',
-  '@for (item of items; track item.id) { {item().name} }'
+  '@for (item of items; track item.id) { {item.name} }'
 ].join('\n');
 
 let project: FixtureProject;
@@ -81,7 +81,7 @@ describe('getTemplateHover', () => {
     expect(hover?.contents).toContain('The title of the page.');
     expect(analysis.source.slice(hover!.span.start, hover!.span.end)).toBe('title');
     expect(getTemplateHover(analysis, at('select'))?.contents).not.toContain('\n\n\n');
-    expect(getTemplateHover(analysis, at('item()'))?.contents).toContain('item');
+    expect(getTemplateHover(analysis, at('item'))?.contents).toContain('item');
   });
 
   it('shows nothing on the path of an @import, outside of a symbol, or when the declaration is unknown', () => {

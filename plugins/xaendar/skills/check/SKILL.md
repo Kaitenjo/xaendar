@@ -1,7 +1,7 @@
 ---
 name: check
 description: Compile and type-check a Xaendar project with xd build, which reports the template errors, the stylesheet errors and the type errors of the whole project. Use after editing Xaendar components, templates, directives or stylesheets, or before committing them.
-argument-hint: [project folder]
+argument-hint: "[project folder]"
 allowed-tools: Bash(npx xd build*), Read, Grep, Glob
 ---
 

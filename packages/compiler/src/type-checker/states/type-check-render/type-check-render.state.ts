@@ -16,8 +16,8 @@ import { RENDER } from '../../utils/template-types/template-types.utils';
  * as declared, even when the parameter is optional: an argument passed as `undefined` is not left out.
  *
  * @example
- * // @render row(item(), $index())
- * __render(row, 2)(item(), $index());
+ * // @render row(item, $index)
+ * __render(row, 2)(item, $index);
  *
  * @param node - The `RenderNode` to type-check.
  * @param _processNode - Unused callback emitting the lines of a node.

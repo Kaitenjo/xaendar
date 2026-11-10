@@ -10,6 +10,8 @@ import type { Span } from '../../../types/span.type';
 import type { CompilerContext } from '../../../models/compiler-context/compiler-context.model';
 import type { EmittedNode } from '../../types/emitted-node.type';
 import { forEachExpressionChild } from '../../../utils/expression-children/expression-children.utils';
+import { collectReads } from '../../../utils/expression-reads/expression-reads.utils';
+import type { IdentifierKind } from '../../types/identifier-kind.type';
 import { ResolveExpressionOptions } from '../../types/resolve-expresion-options.type';
 
 /**
@@ -64,12 +66,13 @@ export function isBrowserOnlyGlobal(name: string): boolean {
  * Identifiers that are not found in the active scope chain and are not
  * well-known globals are prefixed with `this.` so they resolve against
  * the component instance at runtime. Identifiers found in the scope chain
- * are resolved either as a bare local reference (if declared directly in
- * the current generated function's own scope) or via a runtime
- * `parentContext.get(...)` traversal (if inherited from an enclosing
- * scope) — and a trailing `()` is appended in either case if the
- * identifier was declared as a signal, so the generated code always
- * correctly unwraps it.
+ * (the variables of the template, the element refs, the templates) are read
+ * through the runtime context, `context.get(...)`, as the values they are:
+ * the expression reads them as written, without calling them.
+ *
+ * The result tells whether the expression reads a signal the compiler knows (a signal member, a reactive import), and
+ * lists the variables of the template it reads (see `IdentifierKind`): the runtime runs a binding again when one of
+ * them changes, so the generated code passes them to it.
  *
  * The original formatting of the expression — parentheses, spacing,
  * operator tokens, member access dots — is preserved verbatim by delegating
@@ -86,16 +89,16 @@ export function isBrowserOnlyGlobal(name: string): boolean {
  * @param generatorContext - The active template scope context.
  * @param options - The options of the resolution.
  * @param segments - Optional collector of the mappings of the resolved expression, whose columns are relative to its start.
- * @returns The resolved expression as a JavaScript string ready for codegen.
+ * @returns The resolved expression as a JavaScript string ready for codegen, whether it reads a signal, and the variables
+ *   of the template it reads, if any.
  *
  * @example
  * // Simple identifier
- * resolveExpression('items', context) // → 'this.items'
+ * resolveExpression('items', context) // → { expression: 'this.items' }
  *
  * @example
- * // Signal identifier inherited from an ancestor scope (e.g. `$index` in a
- * // nested @for body)
- * resolveExpression('$index', context) // → "parentContext.get('$index')()"
+ * // Variable of the template (e.g. `$index` in a nested @for body)
+ * resolveExpression('$index', context) // → { expression: "context.get('$index')", variables: ['$index'] }
  *
  * @example
  * // Complex expression — formatting preserved
@@ -103,7 +106,7 @@ export function isBrowserOnlyGlobal(name: string): boolean {
  * // typeof id !== 'boolean' || pippo instanceof HTMLElement
  * // → typeof this.id !== 'boolean' || this.pippo instanceof HTMLElement
  */
-export function resolveExpression(expression: Expression, generatorContext: CompilerContext, options?: ResolveExpressionOptions, segments?: LineMapping[]): { expression: string, reactive?: boolean } {
+export function resolveExpression(expression: Expression, generatorContext: CompilerContext, options?: ResolveExpressionOptions, segments?: LineMapping[]): Omit<EmittedNode, 'segments'> {
   const { segments: emittedSegments, ...resolved } = emitNode(expression, expression, generatorContext, mapDefaultOptions(options));
 
   /*
@@ -150,6 +153,11 @@ function segmentOf(text: string, span: Span | undefined, columnStart = 0): LineM
  */
 
 function emitNode(node: Node, parent: Node, generatorContext: CompilerContext, options: Required<ResolveExpressionOptions>): EmittedNode {
+  const called = getCalledIdentifier(node);
+  if (called && getKind(called.text, generatorContext) === 'variable') {
+    options.variableCall(called);
+  }
+
   /*
     A signal an `@if` narrows is read through the constant holding its value, which TypeScript narrows: the call is kept
     before it, so that the features of the editor still find the signal (`(root.item(), __if12_item)`)
@@ -173,13 +181,35 @@ function emitNode(node: Node, parent: Node, generatorContext: CompilerContext, o
 }
 
 /**
- * Returns the identifier a call without arguments calls, as an expression reads a signal (`item()`).
+ * Returns the identifier a call without arguments calls, as an expression reads a signal (`count()`).
  *
  * @param node - The node of the expression.
  * @returns The called identifier, `undefined` if the node is not such a call.
  */
 export function getSignalCallee(node: Node): Identifier | undefined {
   return isCallExpression(node) && isIdentifier(node.expression) && !node.arguments.length && !node.questionDotToken ? node.expression : undefined;
+}
+
+/**
+ * Returns the identifier a call calls, as `row` in `row()` or `format` in `format(value)`.
+ *
+ * @param node - The node of the expression.
+ * @returns The called identifier, `undefined` if the node is not the call of an identifier.
+ */
+function getCalledIdentifier(node: Node): Identifier | undefined {
+  return isCallExpression(node) && isIdentifier(node.expression) ? node.expression : undefined;
+}
+
+/**
+ * Returns what an identifier of the scopes of a template holds, as {@link resolveIdentifier} reads it: the
+ * unresolvable identifiers first.
+ *
+ * @param name - The name of the identifier.
+ * @param generatorContext - The active template scope context.
+ * @returns The kind, `undefined` when no scope declares the name.
+ */
+function getKind(name: string, generatorContext: CompilerContext): IdentifierKind | undefined {
+  return generatorContext.hasUnresolvableIdentifier(name) ? generatorContext.getUnresolvableIdentifierKind(name) : generatorContext.getIdentifierKind(name);
 }
 
 /**
@@ -265,6 +295,31 @@ function appendEmitted(result: EmittedNode, sourceText: string, templateDelta: n
 
   result.expression = `${result.expression}${verbatim}${child?.expression ?? ''}`;
   result.reactive = result.reactive || child?.reactive;
+  const variables = child?.variables;
+  if (variables?.length) {
+    result.variables = mergeVariables(result.variables, variables);
+  }
+}
+
+/**
+ * Adds the variables a part of an expression reads to the ones read before it, each one once.
+ *
+ * @param read - The variables read before, if any.
+ * @param variables - The variables the part reads.
+ * @returns The variables, the ones read before first.
+ */
+function mergeVariables(read: string[] | undefined, variables: readonly string[]): string[] {
+  if (!read?.length) {
+    return variables.slice();
+  }
+
+  for (let i = 0; i < variables.length; i++) {
+    if (!read.includes(variables[i])) {
+      read.push(variables[i]);
+    }
+  }
+
+  return read;
 }
 
 /**
@@ -286,16 +341,15 @@ function emitVerbatim(node: Node): EmittedNode {
  * @param text - The name of the identifier.
  * @param generatorContext - Current render scope context.
  * @param options - The options of the resolution.
- * @returns The resolved access expression, and whether it reads a signal.
+ * @returns The resolved access expression, whether it reads a signal, and the variable of the template it reads, if any.
  */
-function resolveIdentifier(text: string, generatorContext: CompilerContext, options: Required<ResolveExpressionOptions>): { expression: string, reactive?: boolean } {
+function resolveIdentifier(text: string, generatorContext: CompilerContext, options: Required<ResolveExpressionOptions>): Omit<EmittedNode, 'segments'> {
   if (generatorContext.hasUnresolvableIdentifier(text)) {
-    return { expression: text, reactive: generatorContext.getUnresolvableIdentifierKind(text) === 'signal' };
+    return resolveDeclared(text, text, generatorContext.getUnresolvableIdentifierKind(text));
   }
 
   if (generatorContext.hasIdentifier(text)) {
-    const kind = generatorContext.getIdentifierKind(text);
-    return { expression: `context.get('${text}')`, reactive: kind === 'signal' };
+    return resolveDeclared(`context.get('${text}')`, text, generatorContext.getIdentifierKind(text));
   }
 
   const member = options.resolver ? `${options.resolver}.${text}` : text;
@@ -315,6 +369,23 @@ function resolveIdentifier(text: string, generatorContext: CompilerContext, opti
   }
 
   return { expression: member };
+}
+
+/**
+ * Resolves an identifier the scopes of the template declare, read through `expression`.
+ *
+ * @param expression - The expression reading it.
+ * @param name - The name of the identifier.
+ * @param kind - What it holds.
+ * @returns The access expression, whether it reads a signal, and the variable it reads, if it is one.
+ */
+function resolveDeclared(expression: string, name: string, kind: IdentifierKind | undefined): Omit<EmittedNode, 'segments'> {
+  const resolved: Omit<EmittedNode, 'segments'> = { expression, reactive: kind === 'signal' };
+  if (kind === 'variable') {
+    resolved.variables = [name];
+  }
+
+  return resolved;
 }
 
 /**
@@ -468,6 +539,34 @@ function mapDefaultOptions(options?: ResolveExpressionOptions): Required<Resolve
     resolver: options?.resolver ?? 'this',
     preserveTypeScript: options?.preserveTypeScript ?? false,
     narrowedSignal: options?.narrowedSignal ?? (() => undefined),
-    browserGlobals: options?.browserGlobals ?? ''
+    browserGlobals: options?.browserGlobals ?? '',
+    variableCall: options?.variableCall ?? (() => undefined)
   };
+}
+
+/**
+ * Joins the variables of the template two expressions read, as a binding reading both lists them (the conditions of an
+ * `@if` chain, the iterable and the track expression of a `@for`), each one once.
+ *
+ * @param first - The variables the first expression reads, if any.
+ * @param second - The variables the second expression reads, if any.
+ * @returns The variables, the ones of the first expression first, `undefined` when neither reads any.
+ */
+export function joinVariables(first: readonly string[] | undefined, second: readonly string[] | undefined): readonly string[] | undefined {
+  if (!second?.length) {
+    return first;
+  }
+
+  return first?.length ? first.concat(second.filter(name => !first.includes(name))) : second;
+}
+
+/**
+ * Tells whether an expression reads nothing that can change: no name at all, as a literal (`'text'`, `1 + 2`, `true`)
+ * or a method of a literal (`'a'.toUpperCase()`). Any name, a global included, may read a signal.
+ *
+ * @param expression - The expression.
+ * @returns `true` when the expression reads no name.
+ */
+export function isConstantExpression(expression: Expression): boolean {
+  return !collectReads(expression).length;
 }

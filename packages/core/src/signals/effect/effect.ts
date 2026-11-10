@@ -1,5 +1,5 @@
 import { NoArgsVoidFunction } from '@xaendar/types';
-import { createEffect } from '../../models/effect/effect';
+import { _runBinding, createEffect } from '../../models/effect/effect';
 import type { EffectCallback } from '../../types/effect-callback.type';
 import type { _Context } from '../../utils/context/context.util';
 import { EffectOptions } from '../types/effect-options.type';
@@ -54,17 +54,30 @@ export function effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsV
 }
 
 /**
- * Runs an effect disposed with a context, for the bindings of the templates: the callback is declared once, and receives
- * the data of each binding as arguments, so that an effect allocates no closure, and the context keeps the effect itself
- * as its cleanup, disposing it with its `dispose()`.
+ * Runs a binding of a template, disposed with its context: the callback is declared once, and receives the data of the
+ * binding as arguments, so that a binding allocates no closure. The first run, synchronous, tracks the signals the
+ * callback reads (see `_runBinding`), and decides what the binding keeps:
+ * - a binding reading a variable of the template (the item and the implicit variables of a `@for`, a `@let`, the
+ *   parameters of a template), which the compiler lists in `reads`, is registered in the context, which runs it again
+ *   when one of them changes (see `_Context.refresh`); while it reads a signal, it is an effect too;
+ * - any other binding reading a signal is an effect, which the context keeps as its cleanup, disposing it with its
+ *   `dispose()`;
+ * - any other binding reads nothing that can change: nothing is kept.
  *
- * @param context - The context disposing the effect when it is cleared.
- * @param callback - The callback of the effect, run at once and again whenever a signal it read changes.
+ * @param context - The context the binding lives in, which disposes it when it is cleared.
+ * @param callback - The callback of the binding, run at once and again whenever a signal or a variable it read changes.
  * @param first - The first argument of the callback.
  * @param second - The second argument of the callback.
  * @param third - The third argument of the callback.
+ * @param reads - The names of the variables of the template the binding reads, the ones of the enclosing scopes
+ *   included: omitted when it reads none.
  * @throws The exception thrown by the first run.
  */
-export function _bindEffect<First, Second, Third>(context: _Context, callback: EffectCallback<First, Second, Third>, first: First, second?: Second, third?: Third): void {
-  context.addUnlistener(createEffect(callback, undefined, first, second, third));
+export function _bindEffect<First, Second, Third>(context: _Context, callback: EffectCallback<First, Second, Third>, first: First, second?: Second, third?: Third, reads?: readonly string[]): void {
+  const effect = _runBinding(callback, first, second, third);
+  if (reads) {
+    context.addBinding({ callback, first, second, third, reads, effect });
+  } else if (effect) {
+    context.addUnlistener(effect);
+  }
 }

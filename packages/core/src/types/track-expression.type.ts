@@ -1,7 +1,7 @@
-import type { Function, NoArgsFunction } from '@xaendar/types';
+import type { Function } from '@xaendar/types';
 
 /**
- * Computes the key of an item, receiving the item, its index and the implicit variables derived from them as functions
- * reading them, like the signals of the body read them.
+ * Computes the key of an item, receiving the item, its index and the implicit variables derived from them as values,
+ * as the body reads them.
  */
-export type TrackExpression = Function<[item: NoArgsFunction<unknown>, index: NoArgsFunction<number>, first: NoArgsFunction<boolean>, last: NoArgsFunction<boolean>, even: NoArgsFunction<boolean>, odd: NoArgsFunction<boolean>], string | number>;
+export type TrackExpression = Function<[item: unknown, index: number, first: boolean, last: boolean, even: boolean, odd: boolean], string | number>;

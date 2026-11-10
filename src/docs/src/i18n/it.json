@@ -457,7 +457,7 @@
           "title": "Una classe base per la logica condivisa",
           "p1": "La classe base estende <code>CustomElement</code> e non ha decoratore: non è un componente, e non viene mai registrata. Ogni componente la estende, con il proprio <code>@WebComponent</code> e il proprio template.",
           "example1": "Due contatori, una logica",
-          "p2": "<code>count</code>, <code>atZero</code> e i tre metodi vivono in <code>CounterBase</code>; i due template li leggono come se fossero dichiarati nei componenti. I signal dichiarati in una classe base vengono riconosciuti anche nei binding degli attributi: il compilatore segue la catena degli <code>extends</code>, anche in altri file.",
+          "p2": "<code>count</code>, <code>atZero</code> e i tre metodi vivono in <code>CounterBase</code>; i due template li leggono come se fossero dichiarati nei componenti. Il type check segue la catena degli <code>extends</code>, anche in altri file, e i binding seguono i signal di una classe base come qualsiasi altro.",
           "p3": "Anche input ed eventi vengono ereditati. <code>CounterBase</code> dichiara <code>step</code> con <code>@Property</code>, e il compilatore controlla <code>step=\"{ 5 }\"</code> rispetto al suo tipo, come se l’input fosse dichiarato nel componente."
         },
         "extendingAComponent": {
@@ -1359,9 +1359,9 @@
       "title": "Cos’è Xaendar?",
       "lead": "Xaendar è un framework per costruire Web Component in modo dichiarativo. Un componente è una classe TypeScript più un template scritto in una sintassi HTML5 estesa; il compilatore trasforma il template in codice che aggiorna il DOM con la precisione di JavaScript scritto a mano.",
       "fineGrainedReactivityDecided": {
-        "title": "Reattività a grana fine, decisa in fase di build",
+        "title": "Reattività a grana fine, senza rieseguire il render",
         "p1": "La maggior parte dei framework a componenti riesegue una funzione di render quando lo stato cambia, e ne confronta il risultato con quello precedente: il diff del virtual DOM. Xaendar non fa né l’una né l’altra cosa.",
-        "p2": "In fase di build il compilatore analizza ogni template e trova, per ogni elemento, attributo e nodo di testo, l’espressione che lo produce. A runtime ogni espressione diventa un piccolo binding reattivo, sottoscritto solo ai signal che legge. Il cambio di un signal esegue esattamente i binding che ne dipendono, e ogni binding scrive esattamente un nodo.",
+        "p2": "In fase di build il compilatore analizza ogni template e trova, per ogni elemento, attributo e nodo di testo, l’espressione che lo produce, e le variabili del template che legge. A runtime ogni espressione viene eseguita una volta: una che legge signal diventa un piccolo effect, sottoscritto solo a quelli, e una che non ne legge viene solo impostata. Il cambio di un signal esegue esattamente i binding che ne dipendono, e ogni binding scrive esattamente un nodo.",
         "example1": "Si aggiornano solo i nodi che leggono un signal",
         "p3": "Il log viene da un <code>MutationObserver</code> collegato alla card. Premi i pulsanti e guarda quali nodi lampeggiano: l’incremento tocca un nodo di testo e un attributo, il cambio di nome un solo nodo di testo, e il paragrafo statico non compare mai."
       },
@@ -1538,7 +1538,7 @@
         "anInventory": {
           "title": "Un inventario",
           "example1": "Aggiungere, rimuovere, modificare, filtrare, ordinare",
-          "p1": "<code>items</code> non viene mai mutato: aggiungere, inserire e rimuovere scrivono tutti un nuovo array, dato che i signal confrontano i valori con <code>Object.is</code>, come spiegato in <a href=\"#/it/signals/overview\">Signal</a>. Il <code>@for</code> traccia <code>item().id</code>: quando l’array cambia, le righe degli elementi ancora presenti vengono mantenute e spostate, e solo quelle nuove vengono create. Inserisci un elemento a caso, o ordina la lista: le righe esistenti si spostano, intatte.",
+          "p1": "<code>items</code> non viene mai mutato: aggiungere, inserire e rimuovere scrivono tutti un nuovo array, dato che i signal confrontano i valori con <code>Object.is</code>, come spiegato in <a href=\"#/it/signals/overview\">Signal</a>. Il <code>@for</code> traccia <code>item.id</code>: quando l’array cambia, le righe degli elementi ancora presenti vengono mantenute e spostate, e solo quelle nuove vengono create. Inserisci un elemento a caso, o ordina la lista: le righe esistenti si spostano, intatte.",
           "p2": "<code>visible</code> filtra e ordina gli elementi in un computed, e il template si limita a renderizzarlo; l’ordine originale resta in <code>items</code>. Gli id vengono da un contatore e non vengono mai riusati, quindi le chiavi restano uniche anche dopo le rimozioni.",
           "p3": "La quantità di ogni elemento è un signal a sé. I pulsanti <strong>+</strong> e <strong>−</strong> la aggiornano sul posto: l’array non cambia, nessuna riga viene toccata, e vengono scritti solo la cella e il totale, un computed che legge ogni quantità.",
           "p4": "Il form viene letto con <code>FormData</code> e svuotato con <code>form.reset()</code>: il campo non ha un valore legato, quindi ripristinarne il valore iniziale lo svuota, senza bisogno di direttive. Vedi <a href=\"#/it/patterns/forms\">Form</a> per i campi guidati dallo stato."
@@ -1690,12 +1690,12 @@
           "td17": "Metodi e computed",
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> e custom property",
           "td19": "<code>&lt;template name(…)&gt;</code> e <code>@render name(…)</code>, con parametri tipizzati, nel template che li dichiara: vedi <a href=\"#/it/templates/reusable-templates\">Template e @render</a>",
-          "td20": "<code>@let</code>, chiamata anche variabile di template, un signal letto con <code>nome()</code> quando il suo valore ne legge uno: vedi <a href=\"#/it/templates/let\">@let</a>",
+          "td20": "<code>@let</code>, chiamata anche variabile di template, un valore letto come <code>nome</code>, come in Angular, tenuto aggiornato con ciò che legge: vedi <a href=\"#/it/templates/let\">@let</a>",
           "td21": "Stessa sintassi: <code>[class.x]=\"{ condizione }\"</code>, con il valore tra graffe. Vedi <a href=\"#/it/templates/binding\">Binding</a>."
         },
         "whatWorksDifferently": {
           "title": "Cosa funziona diversamente",
-          "li2": "<strong>I binding impostano attributi.</strong> Sugli elementi nativi un binding chiama <code>setAttribute</code>: un <code>value</code> smette di contare quando l’utente digita, e <code>disabled=\"{ false }\"</code> disabilita comunque. Vedi <a href=\"#/it/templates/binding\">Binding</a> e <a href=\"#/it/patterns/forms\">Form</a>.",
+          "li2": "<strong>I binding impostano attributi.</strong> Sugli elementi nativi un binding chiama <code>setAttribute</code>: un <code>value</code> smette di contare quando l’utente digita, e <code>disabled=\"{ false }\"</code> disabilita comunque, mentre <code>null</code> rimuove l’attributo, come con <code>[attr.name]</code>. Vedi <a href=\"#/it/templates/binding\">Binding</a> e <a href=\"#/it/patterns/forms\">Form</a>.",
           "li3": "<strong>Un elemento rimosso viene distrutto.</strong> Quando un template rimuove un elemento, la sua istanza è persa, e renderizzarlo di nuovo ne crea una nuova. Spostare o riattaccare elementi con le API del DOM non è supportato. Vedi <a href=\"#/it/components/lifecycle\">Ciclo di vita</a>.",
           "li4": "<strong>I template sono rigorosi.</strong> I listener chiamano un solo metodo, le espressioni non possono assegnare né creare oggetti, e alcuni caratteri vanno trattati con l’escape. Vedi <a href=\"#/it/reference/template-syntax\">il prontuario</a>.",
           "callout1": {
@@ -1727,11 +1727,11 @@
         },
         "controlFlow": {
           "title": "Control flow",
-          "p1": "Le variabili di <code>@for</code> sono l’elemento, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e <code>$odd</code>, tutte signal. Vedi <a href=\"#/it/templates/if\">@if</a>, <a href=\"#/it/templates/for\">@for</a>, <a href=\"#/it/templates/switch\">@switch</a>, <a href=\"#/it/templates/try\">@try</a> e <a href=\"#/it/templates/defer\">@defer</a>, e <a href=\"#/it/tools/ssr/progressive-hydration\">Rendering lato server</a> per <code>@hydrate</code>."
+          "p1": "Le variabili di <code>@for</code> sono l’elemento, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e <code>$odd</code>, valori letti senza parentesi. Vedi <a href=\"#/it/templates/if\">@if</a>, <a href=\"#/it/templates/for\">@for</a>, <a href=\"#/it/templates/switch\">@switch</a>, <a href=\"#/it/templates/try\">@try</a> e <a href=\"#/it/templates/defer\">@defer</a>, e <a href=\"#/it/tools/ssr/progressive-hydration\">Rendering lato server</a> per <code>@hydrate</code>."
         },
         "templates": {
           "title": "Template e @render",
-          "p1": "Un template non renderizza nulla dove viene dichiarato: ogni <code>@render</code> ne renderizza un’istanza, e i suoi parametri sono signal. Vedi <a href=\"#/it/templates/reusable-templates\">Template e @render</a>."
+          "p1": "Un template non renderizza nulla dove viene dichiarato: ogni <code>@render</code> ne renderizza un’istanza, e i suoi parametri sono valori, letti senza parentesi. Vedi <a href=\"#/it/templates/reusable-templates\">Template e @render</a>."
         },
         "let": {
           "title": "@let",
@@ -2035,19 +2035,19 @@
         },
         "exposingSharedSignalsTo": {
           "title": "Leggere signal condivisi in un template",
-          "p1": "Un template legge un signal condiviso importandolo, come qualsiasi altro export di un modulo: <code>@import { level } from './level.store.ts'</code>. I binding di attributo che lo leggono restano reattivi, perché il compilatore segue l’import fino alla dichiarazione del signal. Funziona anche un membro che contiene un signal, ma il modo in cui lo inizializzi conta: il compilatore decide se un binding di attributo è reattivo guardando la <strong>dichiarazione</strong> dei membri che legge, non i loro valori.",
+          "p1": "Un template legge un signal condiviso importandolo, come qualsiasi altro export di un modulo: <code>@import { level } from './level.store.ts'</code>. Funziona allo stesso modo un membro della classe che contiene il signal, comunque sia inizializzato: i binding seguono i signal che leggono mentre vengono eseguiti, da dovunque vengano.",
           "example1": "Lo stesso signal, letto in tre modi",
-          "p2": "Aumenta il livello: i tre testi lo seguono, ma la seconda barra resta dov’era. Le interpolazioni di testo sono sempre reattive; un binding di attributo è reattivo solo se nomina un signal che il compilatore riconosce — un signal di modulo importato dal template, o un membro inizializzato chiamando <code>signal()</code> o <code>computed()</code>, annotato con un tipo signal di <code>@xaendar/core/signals</code>, o inizializzato con una variabile di modulo che è a sua volta un signal. Il compilatore segue le variabili di modulo attraverso import e re-export fino alla loro dichiarazione."
+          "p2": "Aumenta il livello: i tre testi e le tre barre lo seguono. <code>fromHelper</code> contiene il signal restituito da una funzione dell’applicazione, <code>wrapped</code> un computed che lo legge: per i binding sono lo stesso signal dell’import."
         },
         "edgeCases": {
           "title": "Casi limite",
           "callout1": {
-            "heading": "I signal restituiti da tue funzioni bloccano i binding degli attributi",
-            "body": "Un membro come <code>readonly level = readLevel()</code> viene valutato una sola volta negli attributi: il compilatore non guarda dentro la funzione. Importa il signal del modulo nel template, annota il membro con il suo tipo signal, <code>readonly level: Signal&lt;number&gt; = readLevel()</code>, oppure avvolgi la chiamata in <code>computed()</code>."
+            "heading": "Un membro che contiene il valore, non il signal",
+            "body": "Un membro inizializzato con il valore del signal, <code>readonly level = readLevel()()</code>, lo legge una volta, quando il componente viene creato, e i binding che leggono il membro non cambiano mai. Tieni il signal nel membro e chiamalo dove serve il valore, oppure avvolgi la lettura in <code>computed()</code>."
           },
           "callout2": {
-            "heading": "L’annotazione deve essere un tipo di @xaendar/core/signals",
-            "body": "Il riconoscimento è sintattico: considera i nomi importati da <code>@xaendar/core/signals</code>, e segue le variabili di modulo fino alle loro dichiarazioni. Un tuo alias di tipo, anche se è lo stesso tipo, non viene riconosciuto."
+            "heading": "Signal letti tramite altro codice",
+            "body": "Un binding segue un signal comunque ci arrivi: un metodo, un getter, una funzione di un altro modulo o di un pacchetto compilato. Segue ciò che ha letto la sua ultima esecuzione: un signal letto solo dietro una condizione, come in <code>{ expanded() ? details().title : summary }</code>, viene seguito finché la condizione porta a leggerlo."
           },
           "callout3": {
             "heading": "Un’istanza per pagina",
@@ -2091,19 +2091,19 @@
         "bindingAttributes": {
           "title": "Legare gli attributi",
           "example1": "Quattro attributi legati alla stessa pagina",
-          "p1": "L’intero valore deve essere un’unica espressione: un template literal quando serve del testo intorno. Il valore viene convertito in stringa e scritto con <code>setAttribute</code>, quindi <code>class</code> e <code>style</code> si legano come qualsiasi altro attributo, come mostrato in <a href=\"#/it/components/styling\">Stili</a>."
+          "p1": "L’intero valore deve essere un’unica espressione: un template literal quando serve del testo intorno. Il valore viene convertito in stringa e scritto con <code>setAttribute</code>, quindi <code>class</code> e <code>style</code> si legano come qualsiasi altro attributo, come mostrato in <a href=\"#/it/components/styling\">Stili</a>; <code>null</code> e <code>undefined</code> invece rimuovono l’attributo."
         },
         "whichExpressionsAreReactive": {
           "title": "Quali espressioni sono reattive",
-          "p1": "Gli attributi seguono una regola più rigida del testo. Il compilatore decide a build time se un attributo può cambiare, cercando i <strong>membri reattivi</strong> che l’espressione nomina: i membri signal, inizializzati con <code>signal()</code> o <code>computed()</code>, input e query, e i metodi e i getter del componente il cui corpo legge uno di essi, un signal di modulo o un altro metodo reattivo. Un attributo che non ne nomina nessuno viene impostato una volta sola.",
+          "p1": "Ogni attributo legato segue i signal che legge, come fa un testo. La prima volta che un binding viene eseguito, il runtime registra i signal letti per calcolarne il valore, nell’espressione e in tutto ciò che chiama: i membri del componente, un metodo, un getter, una funzione di un altro modulo. Il binding viene eseguito di nuovo ogni volta che uno di essi cambia. Un binding che non legge signal viene impostato una volta e non costa altro: non gli viene creato alcun effect. Le variabili del template non sono signal: un binding che ne legge una viene eseguito di nuovo quando il suo scope la cambia.",
           "example1": "Due metodi e un computed",
-          "p2": "<code>percentOf()</code> legge il livello nel proprio corpo, quindi il suo indicatore lo segue. <code>percentFromHelper()</code> lo legge tramite <code>readPercent()</code>, una funzione esterna alla classe: il compilatore non segue le chiamate che non riesce a ricondurre a un signal, quindi il secondo indicatore mantiene il valore del primo render, mentre lo stesso metodo nel testo sotto è reattivo, perché le interpolazioni nel testo lo sono sempre. Quando un attributo ha bisogno di un valore del genere, dichiarane la reattività con un computed, come fa <code>percent</code>. La regola per i membri che contengono un signal creato altrove è in <a href=\"#/it/signals/shared-state\">Stato condiviso</a>."
+          "p2": "<code>percentOf()</code> legge il livello nel proprio corpo, <code>percentFromHelper()</code> tramite <code>readPercent()</code>, una funzione esterna alla classe, e <code>percent</code> è un computed che lo legge: i tre indicatori lo seguono, come il testo sotto, perché conta il signal letto mentre il binding viene eseguito, non il modo in cui l’espressione ci arriva. Lo stesso vale per i membri che contengono un signal creato altrove: vedi <a href=\"#/it/signals/shared-state\">Stato condiviso</a>."
         },
         "togglingAClass": {
           "title": "Attivare una classe",
           "p1": "<code>[class.nome]=\"{ espressione }\"</code> dà all’elemento la classe <code>nome</code> finché il valore dell’espressione è truthy, e gliela toglie altrimenti. Il valore può essere di qualsiasi tipo. Funziona sugli elementi nativi, sui tag dei componenti, dove la classe va sull’elemento stesso, e dentro i <a href=\"#/it/templates/conditional-bindings\">binding condizionali</a>, dove la classe viene tolta quando il suo ramo non è più selezionato. Dopo il punto va qualsiasi nome di classe senza spazi, <code>[class.is-active]</code> compreso.",
           "example1": "Un attributo class legato e due binding di classe",
-          "p2": "I binding di classe e l’attributo <code>class</code> funzionano insieme, anche quando è legato: ogni volta che <code>class</code> viene riscritto, le classi dei binding vengono applicate sopra, e un binding con valore falsy toglie la sua classe anche quando <code>class</code> la elenca. Se il binding segue il suo valore si decide in fase di build, come per gli attributi."
+          "p2": "I binding di classe e l’attributo <code>class</code> funzionano insieme, anche quando è legato: ogni volta che <code>class</code> viene riscritto, le classi dei binding vengono applicate sopra, e un binding con valore falsy toglie la sua classe anche quando <code>class</code> la elenca. Un binding di classe segue i signal che legge, come un attributo."
         },
         "bindingTheInputsOf": {
           "title": "Legare gli input dei componenti",
@@ -2112,7 +2112,7 @@
         "edgeCases": {
           "title": "Casi limite",
           "example1": "disabled legato a false",
-          "p1": "Un attributo booleano conta per la sua presenza, non per il suo valore: <code>disabled=\"false\"</code> disabilita comunque il pulsante, quindi il primo è sempre disabilitato. Usa un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a>, che aggiunge e rimuove l’attributo.",
+          "p1": "Un attributo booleano conta per la sua presenza, non per il suo valore: <code>disabled=\"false\"</code> disabilita comunque il pulsante, quindi il primo è sempre disabilitato. Legalo a <code>null</code> o <code>undefined</code> quando deve mancare, come fa il secondo, oppure usa un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a>, che aggiunge e rimuove l’attributo, come fa il terzo.",
           "example2": "L’attributo value e la proprietà value",
           "p2": "Scrivi in entrambi i campi, poi resetta. Un binding imposta l’attributo <code>value</code>, che è solo il valore iniziale del campo: dopo che l’utente ha scritto, il campo mostra la sua proprietà <code>value</code>, e il primo campo non si svuota. Il secondo campo imposta la proprietà da un effect. Il pattern <a href=\"#/it/patterns/forms\">Form</a> lo racchiude in una direttiva.",
           "callout1": {
@@ -2121,7 +2121,7 @@
           },
           "callout2": {
             "heading": "null e undefined",
-            "body": "Un attributo legato a <code>null</code> o <code>undefined</code> non viene rimosso: diventa il testo <code>\"null\"</code> o <code>\"undefined\"</code>. Per rimuovere un attributo, legalo in modo condizionale."
+            "body": "Un attributo legato a <code>null</code> o <code>undefined</code> viene rimosso, e il server non lo scrive: <code>aria-describedby=\"{ error() ? 'hint' : null }\"</code> c’è solo finché c’è un errore. Viene riscritto appena il valore è un altro. <code>false</code> e <code>0</code> sono valori come gli altri, scritti come il testo <code>\"false\"</code> e <code>\"0\"</code>."
           },
           "callout3": {
             "heading": "Un attributo legato due volte",
@@ -2145,7 +2145,7 @@
           "th1": "Sintassi",
           "th2": "Risultato",
           "td1": "Un attributo statico.",
-          "td2": "Un attributo impostato con <code>String(value)</code>, di nuovo a ogni cambiamento di un membro signal che nomina.",
+          "td2": "Un attributo impostato con <code>String(value)</code>, rimosso per <code>null</code> e <code>undefined</code>, di nuovo a ogni cambiamento di un signal che ha letto.",
           "td3": "Lo stesso, con del testo intorno al valore.",
           "td4": "Un attributo presente solo finché vale la condizione.",
           "td5": "<code>input=\"{ expression }\"</code> su un componente",
@@ -2200,8 +2200,8 @@
           "p1": "Gli argomenti possono essere:",
           "li1": "letterali: stringhe, numeri, <code>true</code>, <code>false</code>, <code>null</code>;",
           "li2": "<code>$event</code>, l’evento stesso, in qualsiasi posizione, e le sue proprietà, come in <code>$event.key</code>;",
-          "li3": "membri del componente, variabili di un <code>@for</code> e element ref, con le loro proprietà, come in <code>color().id</code> o <code>field.value</code>;",
-          "li5": "espressioni e chiamate, come <code>count() + 1</code> o <code>format(item().id)</code>, valutate quando arriva l’evento;",
+          "li3": "membri del componente, variabili di un <code>@for</code> e element ref, con le loro proprietà, come in <code>color.id</code> o <code>field.value</code>;",
+          "li5": "espressioni e chiamate, come <code>count() + 1</code> o <code>format(item.id)</code>, valutate quando arriva l’evento;",
           "li4": "un signal senza chiamata, che passa il signal stesso: <code>bump</code> cambia il contatore che riceve.",
           "p2": "Il template è controllato dai tipi: <code>$event</code> ha il tipo dell’evento, un <code>MouseEvent</code> per <code>click</code> o un <code>KeyboardEvent</code> per <code>keydown</code>, e ogni argomento deve essere compatibile con il parametro del metodo."
         },
@@ -2241,7 +2241,7 @@
         "casts": {
           "title": "Cast",
           "p1": "Un cast, <code>as</code> seguito da un tipo come in TypeScript, può chiudere un’interpolazione, e allora l’intera espressione prima di <code>as</code> assume quel tipo, o seguire un argomento di una chiamata: del metodo di un listener, di un <code>@render</code>, di una funzione chiamata in qualsiasi espressione. Il tipo viene scritto così com’è nel type-check, quindi può nominare un tipo che il template importa, e non genera codice: a runtime il valore resta lo stesso.",
-          "p2": "Il cast di un’interpolazione prosegue fino alla sua <code>}</code>, quello di un argomento fino alla <code>,</code> o alla <code>)</code> che lo chiude. Ogni altro cast, come in <code>{ (item() as Row).id }</code> o <code>{ total + (tax as number) }</code>, viene rifiutato: fai il cast dell’intera interpolazione, o di un argomento. TypeScript controlla un cast come ogni <code>as</code>: una conversione tra tipi che non si sovrappongono viene segnalata, e passare da <code>unknown</code> (<code>value as unknown as Row</code>) la forza. Preferisci tipizzare i membri della classe: un cast dice a TypeScript ciò che non può sapere, come l’elemento da cui arriva un evento."
+          "p2": "Il cast di un’interpolazione prosegue fino alla sua <code>}</code>, quello di un argomento fino alla <code>,</code> o alla <code>)</code> che lo chiude. Ogni altro cast, come in <code>{ (item as Row).id }</code> o <code>{ total + (tax as number) }</code>, viene rifiutato: fai il cast dell’intera interpolazione, o di un argomento. TypeScript controlla un cast come ogni <code>as</code>: una conversione tra tipi che non si sovrappongono viene segnalata, e passare da <code>unknown</code> (<code>value as unknown as Row</code>) la forza. Preferisci tipizzare i membri della classe: un cast dice a TypeScript ciò che non può sapere, come l’elemento da cui arriva un evento."
         },
         "whatItCannotDo": {
           "title": "Cosa non può fare",
@@ -2261,8 +2261,8 @@
             "p1": "Il template viene controllato con le opzioni strict del progetto. Con <code>noUncheckedIndexedAccess</code>, una proprietà di un <code>Record</code> può essere undefined; un membro <code>readonly</code> ha il tipo letterale del suo valore, quindi confrontarlo con un altro letterale viene segnalato. I messaggi mostrano il membro con il prefisso <code>root.</code>."
           },
           "callout2": {
-            "heading": "La reattività dipende da dove si trova l’espressione",
-            "body": "Ogni signal letto da un’espressione viene tracciato nel testo, nelle condizioni e nei cicli. In un attributo, solo i membri signal e i signal importati che l’espressione nomina: vedi <a href=\"#/it/templates/binding\">Binding</a>. Gli handler degli eventi seguono una propria sintassi, più limitata: vedi <a href=\"#/it/templates/events\">Gestione degli eventi</a>."
+            "heading": "Ogni espressione segue i suoi signal",
+            "body": "Un’espressione viene eseguita di nuovo quando cambia un signal che ha letto, nel testo, in un attributo, in una condizione o in un ciclo allo stesso modo, anche quando a leggere il signal è un metodo o una funzione che chiama; una che non legge signal viene eseguita una volta. Gli event handler seguono una propria sintassi, più limitata: vedi <a href=\"#/it/templates/events\">Gestione degli eventi</a>."
           }
         },
         "summary": {
@@ -2289,12 +2289,12 @@
         "itemsKeysAndContext": {
           "title": "Elementi, chiavi e contesto",
           "example1": "Il contesto di ogni riga",
-          "p1": "Dentro il blocco, l’elemento e <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e <code>$odd</code> sono signal: chiamali, come in <code>task().title</code>. L’elemento si aggiorna quando la sua riga viene riusata per un nuovo oggetto con la stessa chiave, gli altri quando vengono aggiunte o rimosse righe prima, come mostrano le righe alternate, senza renderizzare di nuovo la riga. Passato a un metodo, <code>task()</code> dà l’elemento e <code>task</code> il signal. <code>position = $index</code> dà a una delle variabili della posizione un altro nome, ed è il modo per raggiungere l’indice di un ciclo esterno da uno interno.",
-          "p2": "La chiave è un’espressione dell’elemento, che <code>track</code> legge come il blocco: una proprietà, come in <code>track task().id</code>, oppure l’elemento stesso con <code>track task()</code>. Senza <code>track</code> la chiave è l’elemento stesso."
+          "p1": "Dentro il blocco, l’elemento e <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e <code>$odd</code> sono valori, letti senza parentesi, come in <code>task.title</code>. Quando la sua riga viene riusata per un nuovo oggetto con la stessa chiave, l’elemento diventa il nuovo oggetto, e quando vengono aggiunte o rimosse righe prima, cambiano le variabili della posizione, come mostrano le righe alternate: la riga non viene renderizzata di nuovo, si aggiornano solo i nodi che le leggono. Un event handler le legge quando l’evento scatta, quindi riceve sempre l’elemento attuale: passato a un metodo, <code>task</code> è l’elemento stesso. <code>position = $index</code> dà a una delle variabili della posizione un altro nome, ed è il modo per raggiungere l’indice di un ciclo esterno da uno interno.",
+          "p2": "La chiave è un’espressione dell’elemento, che <code>track</code> legge come il blocco: una proprietà, come in <code>track task.id</code>, oppure l’elemento stesso con <code>track task</code>. Senza <code>track</code> la chiave è l’elemento stesso."
         },
         "repeatingANumberOf": {
           "title": "Ripetere un certo numero di volte",
-          "p1": "Un numero al posto di un array ripete il blocco: <code>@for (5)</code> senza variabile, oppure <code>@for (step of count())</code> con <code>step()</code> che va da <code>0</code> a <code>count() - 1</code>. Il numero può venire da un signal, e le righe lo seguono.",
+          "p1": "Un numero al posto di un array ripete il blocco: <code>@for (5)</code> senza variabile, oppure <code>@for (step of count())</code> con <code>step</code> che va da <code>0</code> a <code>count() - 1</code>. Il numero può venire da un signal, e le righe lo seguono.",
           "example1": "Cinque punti e una valutazione"
         },
         "nestedLoops": {
@@ -2326,8 +2326,8 @@
           "th2": "Descrizione",
           "td1": "Una riga per ogni elemento, identificata dalla sua chiave.",
           "td2": "La chiave è l’elemento stesso.",
-          "td3": "Ripete il blocco, con <code>step()</code> da <code>0</code>.",
-          "td4": "La posizione della riga, come signal.",
+          "td3": "Ripete il blocco, con <code>step</code> da <code>0</code>.",
+          "td4": "La posizione della riga, come valori.",
           "td5": "Un alias per una variabile di contesto."
         }
       },
@@ -2388,7 +2388,7 @@
         "whenToImport": {
           "title": "Quando importare",
           "p1": "Poter importare qualsiasi export non fa del template il posto giusto per tutto. Lo stato di un componente, e la logica che lo legge e lo modifica, vivono nella sua classe quando le appartengono: i suoi membri mostrano da cosa dipende il template, la classe si legge e si testa da sola, e il template resta una descrizione della vista. In un template si importa ciò che appartiene davvero a un altro modulo.",
-          "p2": "I tipi sono il caso più chiaro: un type argument di un componente o di una direttiva generici, <code>&lt;ex-list(Row)&gt;</code>, a runtime non costa nulla. Enum e classi meritano l’import in condizioni particolari, come <code>@if (task().status === Status.Archived)</code> o <code>@if (shape() instanceof Circle)</code>, dove un membro che li avvolge non aggiungerebbe niente. Si possono importare anche funzioni, costanti e signal, ad esempio un formatter condiviso da molti template o i signal di uno store, ma non sono la scelta predefinita: un computed o un metodo della classe di solito dice meglio cosa mostra il componente.",
+          "p2": "I tipi sono il caso più chiaro: un type argument di un componente o di una direttiva generici, <code>&lt;ex-list(Row)&gt;</code>, a runtime non costa nulla. Enum e classi meritano l’import in condizioni particolari, come <code>@if (task.status === Status.Archived)</code> o <code>@if (shape() instanceof Circle)</code>, dove un membro che li avvolge non aggiungerebbe niente. Si possono importare anche funzioni, costanti e signal, ad esempio un formatter condiviso da molti template o i signal di uno store, ma non sono la scelta predefinita: un computed o un metodo della classe di solito dice meglio cosa mostra il componente.",
           "p3": "Gli esempi di questa pagina e di <a href=\"#/it/signals/shared-state\">Stato condiviso</a> importano funzioni e signal per mostrare cosa supporta il compilatore, non perché ogni componente vada scritto così."
         },
         "importingIsNotRegistering": {
@@ -2406,8 +2406,8 @@
             "body": "Un pacchetto compilato in JavaScript pubblica file di dichiarazioni (<code>.d.ts</code>), che non conservano i decorator. Una libreria compilata da <code>xd build</code> descrive i suoi componenti e le sue direttive nel suo <code>xaendar-manifest.json</code>: un template li importa dal pacchetto, o dal percorso del loro modulo, come quelli locali, con il type check sulle dichiarazioni del pacchetto, e carica solo i moduli che renderizza. I componenti e le direttive di qualsiasi altro pacchetto compilato non si importano; le sue funzioni, costanti, enum, classi e tipi sì. I componenti di un pacchetto che pubblica i sorgenti TypeScript, di un pacchetto dello stesso monorepo, o raggiunti tramite un alias, si importano come quelli locali."
           },
           "callout4": {
-            "heading": "Reattività dei pacchetti compilati",
-            "body": "Un signal esportato da un pacchetto compilato si riconosce dal suo tipo nelle dichiarazioni (<code>Signal&lt;number&gt;</code>), e resta reattivo. Il corpo delle sue funzioni non fa parte delle dichiarazioni: un binding di attributo che ne chiama una viene valutato una sola volta, anche se la funzione legge un signal. Avvolgi la chiamata in un membro <code>computed</code> della classe."
+            "heading": "Signal dei pacchetti compilati",
+            "body": "Un signal esportato da un pacchetto compilato si legge come uno del progetto, e così una funzione del pacchetto che ne legge uno: i binding seguono i signal letti mentre vengono eseguiti, anche dentro codice il cui corpo non fa parte delle dichiarazioni."
           }
         },
         "summary": {
@@ -2627,30 +2627,30 @@
       "let": {
         "eyebrow": "Template",
         "title": "@let",
-        "lead": "<code>@let nome = valore;</code>, chiamata anche variabile di template, dà un nome a una parte di un signal che il template legge più volte, come un campo dell’oggetto che contiene: <code>@let address = user().address;</code>, poi <code>address().city</code>, invece di un getter nella classe che serve solo ad accorciare l’accesso. I calcoli restano nella classe, in un <code>computed</code> o in un metodo.",
+        "lead": "<code>@let nome = valore;</code>, chiamata anche variabile di template, dà un nome a una parte di un signal che il template legge più volte, come un campo dell’oggetto che contiene: <code>@let address = user().address;</code>, poi <code>address.city</code>, invece di un getter nella classe che serve solo ad accorciare l’accesso. I calcoli restano nella classe, in un <code>computed</code> o in un metodo.",
         "declaring": {
           "title": "Dichiarare una @let",
           "p1": "Una <code>@let</code> va ovunque possa stare del contenuto: il nome, <code>=</code>, un’espressione e un <code>;</code>, obbligatorio. Il valore può andare a capo, e un <code>;</code> dentro una stringa o tra parentesi tonde, quadre o graffe non lo chiude. Una <code>@let</code> non renderizza niente e non si può riassegnare: il suo valore segue l’espressione con cui è dichiarata.",
           "example1": "Un indirizzo letto tramite una @let",
-          "p2": "<code>address</code> legge <code>user</code>, quindi è un signal: <code>move()</code> cambia l’utente e aggiorna le righe che lo leggono. <code>country</code> legge un membro costante, quindi è un valore, calcolato una volta."
+          "p2": "<code>address</code> legge <code>user</code>, un signal: <code>move()</code> cambia l’utente, la <code>@let</code> viene ricalcolata, e si aggiornano solo le righe che leggono <code>address</code>. <code>country</code> legge un membro costante e nessun signal, quindi viene calcolata una volta."
         },
         "signals": {
-          "title": "Signal o valore",
-          "p1": "Il compilatore li distingue da ciò che legge il valore, come fa per i binding: un membro signal, un metodo o un getter del componente che ne legge uno, un signal importato con <code>@import</code>, una variabile di <code>@for</code>, un parametro di un template, o un’altra <code>@let</code> signal. In questi casi anche la <code>@let</code> è un signal, letto con <code>nome()</code>: calcola il suo valore quando viene letto, e di nuovo quando cambia ciò che legge, così si aggiornano solo i nodi che la leggono. Altrimenti è un valore, calcolato una volta quando nasce il suo scope, e letto come <code>nome</code>.",
-          "p2": "Il suo tipo è quello che TypeScript deduce per il valore, un <code>Computed</code> di quel tipo per un signal. TypeScript segnala un signal letto senza tonde, come <code>total.toFixed(2)</code>, e un valore chiamato come una funzione. Un valore scritto come letterale mantiene il tipo letterale: <code>@let mode = 'grid';</code> ha tipo <code>'grid'</code>."
+          "title": "Quando si calcola una @let",
+          "p1": "Una <code>@let</code> contiene un valore, letto come <code>nome</code>, e viene tenuta aggiornata come un binding: calcolata quando il render la raggiunge, poi di nuovo quando cambia un signal che ha letto, anche tramite un metodo, un getter o una funzione di un altro modulo, o quando il suo scope cambia una variabile che legge, come l’item di una riga riusata per un altro oggetto o un parametro di un template. I nodi che la leggono si aggiornano solo quando il suo valore cambia. Un valore che non legge né signal né variabili viene calcolato una volta.",
+          "p2": "Il suo tipo è quello che TypeScript deduce per il valore: <code>@let total = price();</code> è un <code>number</code>, letto come <code>total.toFixed(2)</code>. Un valore scritto come letterale mantiene il tipo letterale: <code>@let mode = 'grid';</code> ha tipo <code>'grid'</code>. Chiamare una <code>@let</code>, come in <code>total()</code>, viene segnalato con un messaggio che dice di togliere le parentesi, a meno che il suo valore non sia una funzione."
         },
         "scope": {
           "title": "Scope e ordine",
           "p1": "Una <code>@let</code> ha lo scope di un <a href=\"#/it/templates/element-refs\">element ref</a>: tutto il template, un ramo di <code>@if</code>, un caso di <code>@switch</code>, una riga di <code>@for</code>, il contenuto di un template o di un elemento a cui è applicata una direttiva strutturale, anche dentro altri elementi. Uno scope annidato può dichiarare una <code>@let</code> con lo stesso nome di una esterna, che nasconde.",
           "example1": "Una @let per ogni riga",
-          "p2": "Ogni riga ha il suo <code>stats</code>, un signal perché legge l’item della riga: completare un’attività aggiorna solo la riga di quella persona.",
+          "p2": "Ogni riga ha il suo <code>stats</code>, calcolato dall’item della riga: completare un’attività dà a quella persona un nuovo oggetto con la stessa chiave, quindi la sua riga viene riusata, <code>stats</code> viene ricalcolato, e si aggiornano solo i testi di quella riga.",
           "p3": "Una <code>@let</code> viene inizializzata quando il render la raggiunge: un handler può leggerla ovunque nel suo scope, mentre ogni altra espressione, compreso il suo stesso valore, la legge solo dopo il suo <code>;</code>. Il contenuto di un template la legge solo se ogni <code>@render</code> del template viene dopo. Il compilatore segnala gli altri casi:"
         },
         "edgeCases": {
           "title": "Casi limite",
           "callout1": {
-            "heading": "Signal che il compilatore non segue",
-            "body": "Una funzione di un altro modulo, o un membro di un altro oggetto, che legge un signal non rende signal una <code>@let</code>: il compilatore segue solo i membri del componente, gli import e le variabili del template. Una <code>@let</code> così viene calcolata una volta: leggi il signal direttamente, o tramite un membro del componente."
+            "heading": "Signal letti dietro una condizione",
+            "body": "Una <code>@let</code> segue i signal letti dal suo ultimo calcolo: in <code>@let label = expanded() ? details().title : summary;</code>, <code>details</code> viene seguito solo finché <code>expanded()</code> è vero, e basta così, perché altrimenti il valore non ne dipende."
           },
           "callout2": {
             "heading": "Eventi durante il render",
@@ -2670,8 +2670,8 @@
           "th1": "Sintassi",
           "th2": "Descrizione",
           "td1": "Dà un nome al valore dell’espressione nel suo scope: le espressioni lo leggono dopo il suo <code>;</code>, gli handler ovunque.",
-          "td2": "Legge una <code>@let</code> il cui valore legge un signal: è un signal, aggiornato quando cambia ciò che legge.",
-          "td3": "Legge una <code>@let</code> il cui valore non legge signal: un valore, calcolato una volta."
+          "td2": "Legge il valore di una <code>@let</code>, senza parentesi: i nodi che la leggono si aggiornano quando cambia.",
+          "td3": "Segnalato da TypeScript, a meno che il valore non sia una funzione: una <code>@let</code> contiene un valore, non un signal."
         }
       },
       "try": {
@@ -2875,7 +2875,7 @@
           "title": "Dichiarare e renderizzare",
           "p1": "Un <code>&lt;template&gt;</code> è una dichiarazione: dove è scritto non renderizza niente. Il suo nome segue quello del tag, poi vengono i suoi parametri, ciascuno con il suo tipo, tra parentesi che si scrivono anche quando non ce ne sono. Ogni <code>@render</code> renderizza una nuova istanza del suo contenuto, con elementi tutti suoi.",
           "example1": "Una riga renderizzata tre volte",
-          "p2": "Nel contenuto un parametro è un signal, letto come l’item di un <code>@for</code>: <code>label()</code>. Quando un argomento cambia, l’istanza non viene renderizzata di nuovo: si aggiornano solo i nodi che leggono il parametro, come fanno gli importi quando premi il pulsante."
+          "p2": "Nel contenuto un parametro è un valore, letto come l’item di un <code>@for</code>: <code>label</code>. Quando un argomento cambia, l’istanza non viene renderizzata di nuovo: il parametro prende il nuovo valore, e si aggiornano solo i nodi che lo leggono, come fanno gli importi quando premi il pulsante."
         },
         "parameters": {
           "title": "I parametri e i loro tipi",
@@ -2885,9 +2885,9 @@
         },
         "optionalParameters": {
           "title": "Parametri opzionali e valori di default",
-          "p1": "Un parametro può essere opzionale, <code>note?: string</code>, o avere un valore di default, con il suo tipo o tipizzato dal valore: <code>dense: boolean = false</code>, <code>label = item().name</code>. Un <code>@render</code> può allora omettere il suo argomento, e possono esserlo solo gli ultimi parametri.",
+          "p1": "Un parametro può essere opzionale, <code>note?: string</code>, o avere un valore di default, con il suo tipo o tipizzato dal valore: <code>dense: boolean = false</code>, <code>label = item.name</code>. Un <code>@render</code> può allora omettere il suo argomento, e possono esserlo solo gli ultimi parametri.",
           "example1": "Badge con un tono di default e un conteggio opzionale",
-          "p2": "Il valore di default si usa solo quando l’argomento viene omesso: un argomento passato come <code>undefined</code> resta <code>undefined</code>, e TypeScript lo accetta solo se lo accetta il tipo del parametro. Come in JavaScript, il valore di default legge ciò che legge il contenuto e i parametri che lo precedono, come signal, ed è anch’esso un signal: si aggiorna quando cambia ciò che legge. Un parametro opzionale omesso vale <code>undefined</code>."
+          "p2": "Il valore di default si usa solo quando l’argomento viene omesso: un argomento passato come <code>undefined</code> resta <code>undefined</code>, e TypeScript lo accetta solo se lo accetta il tipo del parametro. Come in JavaScript, il valore di default legge ciò che legge il contenuto e i parametri che lo precedono, e, come una <code>@let</code>, viene ricalcolato quando cambia un signal o un parametro che ha letto. Un parametro opzionale omesso vale <code>undefined</code>."
         },
         "scope": {
           "title": "Cosa legge un template",
@@ -2921,7 +2921,7 @@
           "th2": "Descrizione",
           "td1": "Dichiara un template con parametri tipizzati, visibile in tutto il suo scope.",
           "td2": "Renderizza un’istanza del template dove è scritto, controllando gli argomenti rispetto ai parametri.",
-          "td3": "Legge un parametro nel contenuto: un signal, aggiornato quando cambia il suo argomento.",
+          "td3": "Legge un parametro nel contenuto: un valore, aggiornato quando cambia il suo argomento.",
           "td4": "Un parametro opzionale, e parametri con un valore di default, tipizzati come dichiarato o dal valore: un <code>@render</code> può ometterne gli argomenti."
         }
       },
@@ -2970,7 +2970,7 @@
         "whatThePluginDoes": {
           "title": "Cosa fa il plugin",
           "p1": "Vengono compilati solo i file il cui nome termina con <code>.xd.component.ts</code>. Per ogni classe componente in un file del genere, il plugin legge le opzioni di <code>@WebComponent</code>, valida e riserva il selettore, esegue il type check del template rispetto alla classe, e aggiunge al modulo due import da moduli virtuali: la funzione di render del template e il foglio di stile.",
-          "p2": "Ogni template diventa un modulo che esporta la sua funzione <code>render</code>. Il parametro <code>signals</code> nel suo id elenca i membri della classe riconosciuti come signal, che decidono quali binding sono reattivi. Ogni foglio di stile diventa un modulo che esporta un <code>CSSStyleSheet</code>: i componenti che puntano allo stesso file condividono lo stesso foglio.",
+          "p2": "Ogni template diventa un modulo che esporta la sua funzione <code>render</code>. Il parametro <code>signals</code> nel suo id elenca i membri della classe riconosciuti come signal. Ogni foglio di stile diventa un modulo che esporta un <code>CSSStyleSheet</code>: i componenti che puntano allo stesso file condividono lo stesso foglio.",
           "p3": "Un file <code>.scss</code> o <code>.sass</code> viene prima compilato con il pacchetto <code>sass</code>, un file <code>.less</code> con <code>less</code>: peer dependency opzionali di <code>@xaendar/build-tools</code>, che il progetto installa da sé (vedi <a href=\"#/it/components/styling\">Stili</a>). Poi i commenti vengono rimossi dal CSS. In <code>vite build</code>, il CSS viene anche minificato con Lightning CSS, a meno che la configurazione di Vite non disattivi la minificazione del CSS."
         },
         "errors": {
@@ -3033,7 +3033,7 @@
             "title": "Cosa scrive il server",
             "p1": "Ogni componente è scritto come il suo elemento, con gli attributi dei suoi <code>@HostProperty</code>, seguito da un declarative shadow root con il suo <code>&lt;style&gt;</code> e il suo template, poi il contenuto che proietta negli slot. Il browser trasforma il template in uno shadow root mentre legge la pagina, quindi i componenti appaiono, con i loro stili, prima dei loro script:",
             "p2": "I commenti segnano le parti dinamiche che il browser adotta: <code>&lt;!----&gt;</code> prima di ogni interpolazione, <code>&lt;!--xd-if:0--&gt;</code> … <code>&lt;!--/xd-if--&gt;</code> attorno a un blocco con l’indice del suo ramo, e lo stesso per <code>@switch</code>, per <code>@for</code>, i cui elementi portano la chiave di <code>track</code>, e per le direttive strutturali. Nessuno viene scritto dentro <code>&lt;textarea&gt;</code>, <code>&lt;title&gt;</code>, <code>&lt;style&gt;</code> e <code>&lt;script&gt;</code>.",
-            "p3": "Un custom element di cui il server non ha la classe, come uno di un’altra libreria o un componente importato con <code>@import lazy</code>, è scritto senza shadow root: il browser lo renderizza quando la sua classe è definita. Testi e attributi vengono escapati."
+            "p3": "Un custom element di cui il server non ha la classe, come uno di un’altra libreria o un componente importato con <code>@import lazy</code>, è scritto senza shadow root: il browser lo renderizza quando la sua classe è definita. Testi e attributi vengono escapati, e un attributo legato a <code>null</code> o <code>undefined</code> non viene scritto, come il browser lo rimuove."
           },
           "onTheServer": {
             "title": "Il codice dei componenti sul server",
@@ -3583,7 +3583,7 @@
       },
       "step2StateIn": {
         "title": "Passo 2 — Lo stato in un signal",
-        "p1": "I todo si spostano in un signal. Il template li renderizza con <code>@for</code>, e ne mostra il numero con un’interpolazione. <code>track todo().id</code> dice a <code>@for</code> come riconoscere un todo tra un cambiamento e l’altro, così da poterne riusare il DOM.",
+        "p1": "I todo si spostano in un signal. Il template li renderizza con <code>@for</code>, e ne mostra il numero con un’interpolazione. <code>track todo.id</code> dice a <code>@for</code> come riconoscere un todo tra un cambiamento e l’altro, così da poterne riusare il DOM.",
         "example1": "Passo 2: renderizzare un signal"
       },
       "step3AddingTodos": {
@@ -3928,7 +3928,7 @@
       "cause": "Parentesi dopo il nome di un element ref.",
       "fix": "Scrivi #name da solo."
     },
-    "[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())": {
+    "[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item)": {
       "cause": "Un @render senza il nome del template, senza parentesi, o con uno spazio o un punto tra il nome e le parentesi.",
       "fix": "Scrivi @render nome(argomenti), con () quando il template non ha parametri."
     },
@@ -3952,7 +3952,7 @@
       "cause": "Una @let con un nome che non è un identificatore; 'root' is reserved in templates viene segnalato per root, $event e i nomi che iniziano con __ o $$.",
       "fix": "Usa un identificatore che il codice generato non riserva."
     },
-    "[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item())": {
+    "[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item)": {
       "cause": "Un <template> senza name(…): un <template> è sempre la dichiarazione di un template.",
       "fix": "Dagli un nome e dichiara i suoi parametri, poi renderizzalo con @render."
     },
@@ -4140,9 +4140,9 @@
       "cause": "Una @let letta dalla track expression di un @for.",
       "fix": "Usa come track l’item, una sua proprietà, oppure $index."
     },
-    "Property 'toFixed' does not exist on type 'Computed<number>'.": {
-      "cause": "Una @let il cui valore legge un signal è un signal, qui letto senza tonde.",
-      "fix": "Chiamala: total().toFixed(2)."
+    "'total' is a template variable, not a signal: remove the parentheses and read it as total, since the variables of a template (@for, @let, parameters of a template) hold their values": {
+      "cause": "Una @let chiamata come una funzione: contiene il suo valore, non un signal.",
+      "fix": "Togli le parentesi: { total }. Una @let il cui valore è una funzione si chiama come sempre."
     },
     "Expected 2 arguments, but got 1.": {
       "cause": "Un @render che passa meno o più argomenti dei parametri del template: viene segnalato sul @render, o sugli argomenti in più.",
@@ -4156,9 +4156,9 @@
       "cause": "Un handler eseguito mentre il template è ancora in rendering, per un evento che un componente figlio emette dal suo onInit, che legge una @let che il render non ha ancora raggiunto.",
       "fix": "Emetti l’evento dopo il render (afterRender), oppure leggi la @let più tardi."
     },
-    "[Parser] The track expression of a @for reads the item and the implicit variables as signals: call it, e.g. track item()": {
-      "cause": "Un’espressione di track che è l’item o una variabile implicita senza parentesi: la chiave sarebbe il signal, una funzione nuova ogni volta, e nessuna riga verrebbe riusata.",
-      "fix": "Chiama il signal: track item(), oppure traccia una sua proprietà, come in track item().id."
+    "'task' is a template variable, not a signal: remove the parentheses and read it as task, since the variables of a template (@for, @let, parameters of a template) hold their values": {
+      "cause": "Una variabile di @for, una @let o un parametro di un template chiamati come una funzione, qui nell’espressione di track: contengono valori, non signal.",
+      "fix": "Togli le parentesi: track task.id. Una variabile il cui valore è una funzione si chiama come sempre."
     },
     "Error: No element matches the required query 'input' of <x-search>": {
       "cause": "Una @Query.required è stata letta mentre nessun elemento della shadow root le corrispondeva: prima del render (in onInit, in un effect creato lì, nel template), oppure mentre l’elemento non era nel template.",

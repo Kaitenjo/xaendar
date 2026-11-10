@@ -3,12 +3,13 @@ import { _bindEffect } from '../../signals/effect/effect';
 import { _Context } from '../context/context.util';
 
 /**
- * Renders a reactive text node, kept in sync with the signals its expression reads.
+ * Renders a text node holding the value of an expression, kept in sync with the signals and the variables of the
+ * template it reads (see `_bindEffect`).
  *
  * The node is got through the strategy of the context: created, or adopted from the HTML rendered on the server. Its
- * text is written by an effect, only when it differs from the one the node holds: the first run of an adopted node
- * writes nothing, unless the browser computes another text than the server did. As `textContent` does, `null` and
- * `undefined` are an empty text.
+ * text is written only when it differs from the one the node holds: the first run of an adopted node writes nothing,
+ * unless the browser computes another text than the server did. As `textContent` does, `null` and `undefined` are an
+ * empty text.
  *
  * @param parentNode - The node to render the text into.
  * @param context - The current template execution scope.
@@ -16,15 +17,16 @@ import { _Context } from '../context/context.util';
  * @param referenceNode - The node to insert the text before, `null` to append it.
  * @param separated - Whether the server wrote `<!---->` before the text, as it does before each interpolation where the
  *   parser does not read the content of the element as text.
+ * @param reads - The names of the variables of the template the expression reads, omitted when it reads none.
  */
-export function _renderText(parentNode: HTMLElement, context: _Context, textFn: NoArgsFunction<unknown>, referenceNode: Comment | null, separated = false): void {
+export function _renderText(parentNode: HTMLElement, context: _Context, textFn: NoArgsFunction<unknown>, referenceNode: Comment | null, separated = false, reads?: readonly string[]): void {
   const node = context.nodeStrategy.text(context, parentNode, referenceNode, '', separated);
-  _bindEffect(context, updateText, node, textFn);
+  _bindEffect(context, updateText, node, textFn, undefined, reads);
 }
 
 /**
- * Writes the value of the expression of a reactive text into its node, when it differs from the text the node holds:
- * the callback of the effect of {@link _renderText}, shared by every text.
+ * Writes the value of the expression of a text into its node, when it differs from the text the node holds: the
+ * callback of the binding of {@link _renderText}, shared by every text.
  *
  * @param node - The text node.
  * @param textFn - Returns the value of the text.

@@ -20,8 +20,8 @@ import { _Context } from '../context/context.util';
  * two branches are an `if` / `else if` when both of them declare a condition, and a
  * single branch may have none (e.g. a `@switch` declaring only its `@default`).
  *
- * The evaluation is wrapped in an effect, so it is automatically re-executed
- * whenever any signal read by the conditions changes. On each re-execution, the current
+ * The evaluation is a binding (see `_bindEffect`), so it is automatically re-executed
+ * whenever any signal or variable of the template read by the conditions changes. On each re-execution, the current
  * state (which branch is active) and the related cleanup functions are only updated if
  * the active branch has actually changed.
  *
@@ -34,10 +34,11 @@ import { _Context } from '../context/context.util';
  * @param parentContext - The parent Context object containing all the variables definition from the Parent Closure
  * @param referenceNode - The node to insert the structure before, `null` to append it.
  * @param blocks - Ordered list of conditional branches to evaluate.
+ * @param reads - The names of the variables of the template the conditions read, omitted when they read none.
  * @param kind - The marker the server writes around the structure: the one of `@if`, or of `@switch`, which renders
  *   through it.
  */
-export function _if(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, blocks: Block[], kind: string = _SSR_MARKERS.if): void {
+export function _if(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, blocks: Block[], reads?: readonly string[], kind: string = _SSR_MARKERS.if): void {
   const nodeBlock = parentContext.nodeStrategy.block(parentContext, parentNode, referenceNode, 'if', kind);
   const [first, second] = blocks;
   let select: IfRun['select'];
@@ -58,11 +59,11 @@ export function _if(parentNode: HTMLElement, parentContext: _Context, referenceN
     started: false 
   };
   
-  _bindEffect(parentContext, runIf, run);
+  _bindEffect(parentContext, runIf, run, undefined, undefined, reads);
 }
 
 /**
- * Selects the branch of an `@if` and renders it: the callback of the effect of {@link _if}, shared by every `@if`. Only
+ * Selects the branch of an `@if` and renders it: the callback of the binding of {@link _if}, shared by every `@if`. Only
  * the conditions are tracked.
  *
  * @param run - The `@if`.

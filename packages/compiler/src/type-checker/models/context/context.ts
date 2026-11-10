@@ -6,6 +6,7 @@ import type { ImportSpecifier } from '../../../parser/types/nodes/import-specifi
 import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { SymbolImport } from '../../../types/symbol-import.type';
 import type { ElementEventMap } from '../../types/element-event-map.type';
+import type { VariableCall } from '../../types/variable-call.type';
 import { getEventMap } from '../../utils/namespace-types/namespace-types.utils';
 
 /**
@@ -38,8 +39,13 @@ export class TypeCheckContext extends CompilerContext {
    */
   private readonly _narrowedSignals = new Map<string, string>();
   /**
-   * Whether the type-check code reads the declarations of the template helpers, as the one of a template or of a `@let`
-   * reading a signal does: kept by the outermost scope, for the whole template.
+   * The calls of the variables of the template its expressions make (see {@link recordVariableCall}): kept by the
+   * outermost scope, for the whole template, `null` while there is none.
+   */
+  private _variableCalls: VariableCall[] | null = null;
+  /**
+   * Whether the type-check code reads the declarations of the template helpers, as the one of a template does: kept by
+   * the outermost scope, for the whole template.
    */
   private _usesTemplateHelpers = false;
 
@@ -51,6 +57,16 @@ export class TypeCheckContext extends CompilerContext {
    */
   public get usesTemplateHelpers(): boolean {
     return this.parent ? this.parent.usesTemplateHelpers : this._usesTemplateHelpers;
+  }
+
+  /**
+   * The calls of the variables of the template its expressions make (see {@link recordVariableCall}), read from the
+   * outermost scope.
+   *
+   * @returns The calls, `undefined` when the template makes none.
+   */
+  public get variableCalls(): readonly VariableCall[] | undefined {
+    return this.parent ? this.parent.variableCalls : this._variableCalls ?? undefined;
   }
 
   /**
@@ -92,6 +108,20 @@ export class TypeCheckContext extends CompilerContext {
   public override addTemplate(name: string, namespace: ElementNamespace): void {
     super.addTemplate(name, namespace);
     this.recordTemplateHelpers();
+  }
+
+  /**
+   * Records in the outermost scope the call of a variable of the template in an expression (`row()`): when TypeScript
+   * rejects it, the error tells the variable is not a signal (see `describeVariableCall`).
+   *
+   * @param call - The variable called and the span of its name.
+   */
+  public recordVariableCall(call: VariableCall): void {
+    if (this.parent) {
+      this.parent.recordVariableCall(call);
+    } else {
+      this._variableCalls ? this._variableCalls.push(call) : this._variableCalls = [call];
+    }
   }
 
   /**

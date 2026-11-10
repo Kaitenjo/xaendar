@@ -12,8 +12,9 @@ import { SUBMIT_ATTRIBUTE } from '../../../costants/ssr-markers.constants';
 /**
  * Generates the code writing an element: its start tag, its children and its end tag.
  *
- * A native element with only static and expression attributes, the most common case, is written as HTML, the values of
- * its expressions escaped when it is rendered. An element toggling classes, with conditional bindings or applying custom
+ * A native element with only static and expression attributes, the most common case, is written as HTML, each attribute
+ * bound to an expression written when it is rendered by `_ssrAttribute`, which escapes its value and leaves it out for
+ * `null` and `undefined`, as the client removes it. An element toggling classes, with conditional bindings or applying custom
  * directives writes its start tag through `_ssrStartTag`, which applies the bindings and the directives as the client
  * applies them, and a component through
  * `_ssrComponent`, which renders it, `_ssrIsland` for an interactive one a static template renders, or
@@ -108,7 +109,7 @@ function writeElement(node: ElementNode, generatorContext: GeneratorContext, chi
       const { name, value } = attributes[i];
       typeof value === 'string'
         ? pieces.push({ html: ` ${name}="${escapeAttribute(value)}"` })
-        : pieces.push({ html: ` ${name}="` }, { value: `_escapeAttribute(${resolve(value.expression, generatorContext)})` }, { html: '"' });
+        : pieces.push({ value: `_ssrAttribute('${name}', ${resolve(value.expression, generatorContext)})` });
     }
 
     if (listensToSubmit(node)) {

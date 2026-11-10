@@ -33,7 +33,7 @@ describe('parseRender', () => {
 
   it('throws when the template ends before the call', () => {
     const tokens: Token[] = [{ type: TokenType.RENDER, span: { start: 0, end: 8 } }];
-    expect(() => new Parser('@render ', tokens).parse()).toThrow('@render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())');
+    expect(() => new Parser('@render ', tokens).parse()).toThrow('@render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item)');
   });
 
   it('throws when the name is not an identifier, pointing to it', () => {

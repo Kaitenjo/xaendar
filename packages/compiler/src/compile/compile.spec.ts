@@ -59,7 +59,7 @@ describe('compile', () => {
   });
 
   it('writes the casts of the arguments of the calls only in the type-check, the ones of a @render included', async () => {
-    const template = '<template row(item: Row)><b>{ item().id }</b></template>@render row(selected() as Row)<p>{ format(count as number) }</p>';
+    const template = '<template row(item: Row)><b>{ item.id }</b></template>@render row(selected() as Row)<p>{ format(count as number) }</p>';
     const { javascript, typescript } = await compile(template, { baseDir: '/base', signals: ['selected'], cache: createCache() });
 
     expect(javascript).not.toContain(' as ');
@@ -235,8 +235,8 @@ describe('compile imported symbols', () => {
     ]);
     // A type is not a value at runtime
     expect(javascript).not.toContain('Row');
-    expect(javascript).toContain('value: () => __import_formatDate(this.d),\n        setter: _setExpressionProperty');
-    // A symbol reading a signal makes the binding reactive
+    // An expression reading a name is a binding, which the runtime keeps as an effect when it reads a signal
+    expect(javascript).toContain('value: () => __import_formatDate(this.d),\n        setter: _setReactiveProperty');
     expect(javascript).toContain('value: () => __import_count(),\n        setter: _setReactiveProperty');
     expect(javascript).toContain('handler: ($event) => __import_track($event)');
     expect(javascript).toContain('() => __import_Status.Active');
@@ -265,7 +265,7 @@ describe('compile imported symbols', () => {
   });
 
   it('reads a variable of the template rather than a symbol named like it, and a symbol rather than a global named like it', async () => {
-    const source = '@import { item, Map } from \'./utils\'\n@for (item of items; track item()) { {item} } { Map.size }';
+    const source = '@import { item, Map } from \'./utils\'\n@for (item of items; track item) { {item} } { Map.size }';
     const { javascript } = await compile(source, { baseDir: '/base', signals: [], cache: createSymbolCache() });
 
     expect(javascript).toContain('context.get(\'item\')');

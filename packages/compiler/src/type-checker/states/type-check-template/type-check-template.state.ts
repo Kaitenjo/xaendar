@@ -8,19 +8,20 @@ import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-
 import type { LinePart } from '../../types/line-part.type';
 import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
 import { typeCheckScope } from '../../utils/scope/scope.utils';
-import { DEFAULT, getContentFunction, OPTIONAL, PARAMETER } from '../../utils/template-types/template-types.utils';
+import { getContentFunction } from '../../utils/template-types/template-types.utils';
 
 /**
  * Type-checks the content of a template in an arrow function, declared where the template is: its body is a scope of
- * its own, nested in the one declaring the template, whose names it reads, and its parameters are the signals of the
- * ones of the template. The declaration of the template reads the parameters of the function (see `typeCheckScope`,
- * declaring the template at the start of its scope), so that a parameter whose argument may be left out is optional,
- * and the type of a parameter typed by its default value is the one TypeScript infers. A default value is checked as
- * in JavaScript: it reads the names the content reads, and the parameters before it.
+ * its own, nested in the one declaring the template, whose names it reads, and its parameters are the ones of the
+ * template, written as declared: the values the content reads. The declaration of the template reads the parameters of
+ * the function (see `typeCheckScope`, declaring the template at the start of its scope), so that a parameter whose
+ * argument may be left out is optional, and the type of a parameter typed by its default value is the one TypeScript
+ * infers. A default value is checked as in JavaScript: it reads the names the content reads, and the parameters before
+ * it.
  *
  * @example
  * // <template row(item: Item, dense: boolean = false, count?: number)>…</template>
- * const __template12 = (item: __Parameter<Item>, dense = __default<boolean>(false), count = __optional<number>()): void => {
+ * const __template12 = (item: Item, dense: boolean = false, count?: number): void => {
  *   …
  * };
  *
@@ -33,7 +34,7 @@ export function typeCheckTemplate(node: TemplateNode, processNode: ProcessNode, 
   const templateContext = new TypeCheckContext(context);
   const { parameters } = node;
   for (let i = 0; i < parameters.length; i++) {
-    templateContext.addUnresolvableIdentifier(parameters[i].name, 'signal');
+    templateContext.addUnresolvableIdentifier(parameters[i].name, 'variable');
   }
 
   const parts: LinePart[] = [`const ${getContentFunction(node)} = (`];
@@ -55,8 +56,8 @@ export function typeCheckTemplate(node: TemplateNode, processNode: ProcessNode, 
 }
 
 /**
- * Writes a parameter of the function a template is type-checked in: the signal of its type, or, when its argument may
- * be left out, its initialization with its default value or with `undefined`, which makes it optional.
+ * Writes a parameter of the function a template is type-checked in, as declared: its name, `?` when it is optional,
+ * its type, if any, and its default value, if any.
  *
  * @param parameter - The parameter.
  * @param context - The scope of the content of the template.
@@ -65,21 +66,15 @@ export function typeCheckTemplate(node: TemplateNode, processNode: ProcessNode, 
  */
 function typeCheckParameter({ name, nameSpan, type, typeSpan, optional, initializer }: TemplateParameterNode, context: TypeCheckContext, parts: LinePart[]): void {
   parts.push(mapped(name, nameSpan));
-  if (initializer) {
-    parts.push(` = ${DEFAULT}`);
-  } else if (optional) {
-    parts.push(` = ${OPTIONAL}`);
-  } else {
-    parts.push(`: ${PARAMETER}`);
+  if (optional) {
+    parts.push('?');
   }
 
   if (type && typeSpan) {
-    parts.push('<', mapped(type, typeSpan), '>');
+    parts.push(': ', mapped(type, typeSpan));
   }
 
   if (initializer) {
-    parts.push('(', mappedExpression(initializer, context, getTemplateSpan(initializer)!), ')');
-  } else if (optional) {
-    parts.push('()');
+    parts.push(' = ', mappedExpression(initializer, context, getTemplateSpan(initializer)!));
   }
 }

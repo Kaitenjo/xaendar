@@ -16,7 +16,7 @@ import { getChildrenNamespace, getElementNamespace } from '../../../utils/elemen
 import { readsEvent } from '../../../utils/event-reads/event-reads.utils';
 import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
-import { getElementIdentifier, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
+import { getElementIdentifier, isConstantExpression, joinVariables, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
 
 /**
  * Generates code for an HTML element node: creates the DOM element, sets attributes,
@@ -132,6 +132,10 @@ function appendArgument(code: string[], lines: string[]): void {
  * never by its alias, the one it is exposed with for an input of a host directive, through the setters of the inputs:
  * an element whose class is not defined yet, e.g. one of a component loaded lazily, holds the value until the class
  * recovers it. Every attribute of a directive is one of its inputs, since a directive has no underlying attribute.
+ * A value is a literal, written once, or an expression: one reading no name is evaluated once (`_setExpressionProperty`,
+ * `_setExpressionInput`), any other one is a binding (`_setReactiveProperty`, `_setReactiveInput`) the runtime runs
+ * again when a signal it reads changes, receiving in `reads` the names of the variables of the template it reads, so
+ * that it runs again when they change too.
  * Attributes declared inside a conditional binding also get the `unbind` applied when their
  * branch is no longer the selected one: a property of a custom element or of a directive, known from
  * the metadata of its owner, is reset at runtime to the default value its owner declares, any other
@@ -172,16 +176,17 @@ async function mapAttributes(attributes: AttributeNode[], generatorContext: Gene
         ])
       );
     } else {
-      const { expression, reactive } = resolveExpression(value.expression, generatorContext);
-      const setter = reactive
-        ? input ? '_setReactiveInput' : '_setReactiveProperty'
-        : input ? '_setExpressionInput' : '_setExpressionProperty';
+      const { expression, variables } = resolveExpression(value.expression, generatorContext);
+      const setter = isConstantExpression(value.expression)
+        ? input ? '_setExpressionInput' : '_setExpressionProperty'
+        : input ? '_setReactiveInput' : '_setReactiveProperty';
       retval.push(
         ...indent([
           `value: () => ${expression},`,
           `setter: ${setter}`,
         ])
       );
+      appendReads(retval, generatorContext.getReads(variables));
     }
 
     const extra = new Array<string>();
@@ -215,7 +220,8 @@ async function mapAttributes(attributes: AttributeNode[], generatorContext: Gene
 
 /**
  * Maps the classes an element toggles to descriptors `_renderElement` applies like the ones of its attributes, with a
- * setter toggling the class instead of setting an attribute.
+ * setter toggling the class instead of setting an attribute: once for a value reading no name, as a binding otherwise,
+ * with the names of the variables of the template it reads.
  *
  * A class toggled inside a conditional binding is also removed when its branch is no longer the selected one.
  *
@@ -228,26 +234,37 @@ function mapClassBindings(classBindings: ClassBindingNode[], generatorContext: G
   const mappedAttributes = new Array<string>();
   for (let i = 0; i < classBindings.length; i++) {
     const { className, value } = classBindings[i];
-    const { expression, reactive } = resolveExpression(value.expression, generatorContext);
-    const setter = `setter: ${reactive ? '_setReactiveClass' : '_setExpressionClass'}`;
-
-    mappedAttributes.push(
+    const { expression, variables } = resolveExpression(value.expression, generatorContext);
+    const descriptor = [
       '{',
-      ...indent([
-        `name: ${toStringLiteral(className)},`,
-        `value: () => ${expression},`,
-        conditional ? `${setter},` : setter
-      ])
-    );
-
+      indent(`name: ${toStringLiteral(className)},`),
+      indent(`value: () => ${expression},`),
+      indent(`setter: ${isConstantExpression(value.expression) ? '_setExpressionClass' : '_setReactiveClass'}`)
+    ];
+    appendReads(descriptor, generatorContext.getReads(variables));
     if (conditional) {
-      mappedAttributes.push(indent('unbind: _removeClass'));
+      descriptor[descriptor.length - 1] = `${descriptor[descriptor.length - 1]},`;
+      descriptor.push(indent('unbind: _removeClass'));
     }
 
-    mappedAttributes.push('},');
+    descriptor.push('},');
+    mappedAttributes.push(...descriptor);
   }
 
   return mappedAttributes;
+}
+
+/**
+ * Appends to the lines of a descriptor the constant listing the variables of the template its value reads, if any.
+ *
+ * @param lines - The lines of the descriptor, the last one holding its last property.
+ * @param reads - The name of the constant, `undefined` when the value reads no variable.
+ */
+function appendReads(lines: string[], reads: string | undefined): void {
+  if (reads) {
+    lines[lines.length - 1] = `${lines[lines.length - 1]},`;
+    lines.push(indent(`reads: ${reads}`));
+  }
 }
 
 /**
@@ -342,7 +359,8 @@ async function mapStructuralConditionalBindings(conditionalBindings: Conditional
 
 /**
  * Maps conditional binding nodes to descriptors: the branches of the conditional binding, each one mapped by `mapBranch`,
- * and, for a `@switch`, the expression whose value selects the branch to apply.
+ * and, for a `@switch`, the expression whose value selects the branch to apply, and the names of the variables of the
+ * template the conditions or the expression read, if any.
  *
  * @param conditionalBindings - The conditional binding nodes to map.
  * @param generatorContext - Current render scope context, used to resolve identifier references.
@@ -366,24 +384,32 @@ async function mapConditionalBindingDescriptors(
     }
 
     const mappedBranches = new Array<string>();
+    const variables: { read?: readonly string[] } = {};
     for (let j = 0; j < branches.length; j++) {
-      mappedBranches.push(...await mapBranch(branches[j], mapCondition(conditionalBinding, j, generatorContext)));
+      mappedBranches.push(...await mapBranch(branches[j], mapCondition(conditionalBinding, j, generatorContext, variables)));
     }
 
     const retVal = ['{'];
 
     if (conditionalBinding.type === ASTNodeType.SwitchBinding) {
-      retVal.push(indent(`expression: () => ${resolveExpression(conditionalBinding.expression, generatorContext).expression},`));
+      const { expression, variables: read } = resolveExpression(conditionalBinding.expression, generatorContext);
+      variables.read = read;
+      retVal.push(indent(`expression: () => ${expression},`));
     }
 
+    const reads = generatorContext.getReads(variables.read);
     retVal.push(
       ...indent([
         'branches: [',
         ...indent(mappedBranches),
-        ']'
-      ]),
-      '},'
+        reads ? '],' : ']'
+      ])
     );
+    if (reads) {
+      retVal.push(indent(`reads: ${reads}`));
+    }
+
+    retVal.push('},');
     mappedConditionalBindings.push(...retVal);
   };
 
@@ -422,16 +448,23 @@ function appliesStructuralDirectives({ structuralDirectives, conditionalBindings
  * @param conditionalBinding - The conditional binding node the branch belongs to.
  * @param index - The index of the branch among the ones of the conditional binding.
  * @param generatorContext - Current render scope context, used to resolve identifier references.
+ * @param variables - Collects the variables of the template the conditions read.
  * @returns The generated code lines declaring the condition of the branch, if any.
  */
-function mapCondition(conditionalBinding: ConditionalBindingNode, index: number, generatorContext: GeneratorContext): string[] {
+function mapCondition(conditionalBinding: ConditionalBindingNode, index: number, generatorContext: GeneratorContext, variables: { read?: readonly string[] }): string[] {
   if (conditionalBinding.type === ASTNodeType.SwitchBinding) {
     const { condition } = conditionalBinding.branches[index];
     return [`condition: ${condition ? `[${condition.join(', ')}]` : 'null'},`];
   }
 
   const { condition } = conditionalBinding.branches[index];
-  return condition ? [`condition: () => ${resolveExpression(condition, generatorContext).expression},`] : [];
+  if (!condition) {
+    return [];
+  }
+
+  const resolved = resolveExpression(condition, generatorContext);
+  variables.read = joinVariables(variables.read, resolved.variables);
+  return [`condition: () => ${resolved.expression},`];
 }
 
 /**

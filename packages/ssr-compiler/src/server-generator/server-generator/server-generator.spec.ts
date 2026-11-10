@@ -25,8 +25,8 @@ const symbol = (local: string, reactive = false): SymbolImport => ({
 describe('ServerGenerator', () => {
   it('writes the imports of the runtime helpers, then render creating the root context and writing the template', () => {
     expect(generate('<p>{ title() }</p>', ['title'])).toBe([
-      'import { _Context, _ROOT_PARENT_CONTEXT, _iterationVariables, _let, _parameter, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
-      'import { _escapeAttribute, _escapeRawText, _escapeText, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTemplate, _ssrTry } from \'@xaendar/ssr\';',
+      'import { _Context, _ROOT_PARENT_CONTEXT, _iterationVariables, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
+      'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTemplate, _ssrTry } from \'@xaendar/ssr\';',
       'function render(out) {',
       '  const context = new _Context(_ROOT_PARENT_CONTEXT);',
       '  out.push(\'<p><!---->\' + _escapeText(this.title()) + \'</p>\');',
@@ -115,7 +115,7 @@ describe('ServerGenerator', () => {
   });
 
   it('declares the element refs, the templates and the @let of each scope, and writes the functions it calls after render', () => {
-    const source = '<input #field /><template row(item: string)><b>{ item() }</b></template>@if (visible) { @let n = 1; @for (user of users(); track user()) { @render row(user()) } }';
+    const source = '<input #field /><template row(item: string)><b>{ item }</b></template>@if (visible) { @let n = 1; @for (user of users(); track user) { @render row(user) } }';
     const code = generate(source, ['users']);
     const key = `template_row_${source.indexOf('<template')}`;
 
@@ -139,7 +139,7 @@ describe('ServerGenerator', () => {
       `function ${key}(out, parentContext, params) {`,
       '  const context = new _Context(parentContext, undefined, 1);',
       '  context.addIdentifier(\'item\', params[0]);',
-      '  out.push(\'<b><!---->\' + _escapeText(context.get(\'item\')()) + \'</b>\');',
+      '  out.push(\'<b><!---->\' + _escapeText(context.get(\'item\')) + \'</b>\');',
       '}'
     ].join('\n'));
     expect(code).toContain([
@@ -155,7 +155,7 @@ describe('ServerGenerator', () => {
       'function if2__for1(out, parentContext, items, index) {',
       '  const context = new _Context(parentContext, undefined, 1);',
       '  _iterationVariables(context, items, index, if2__for1Variables);',
-      '  _ssrRenderTemplate(out, context, context.get(\'row\'), [() => context.get(\'user\')()]);',
+      '  _ssrRenderTemplate(out, context, context.get(\'row\'), [context.get(\'user\')]);',
       '}'
     ].join('\n'));
   });
@@ -170,7 +170,7 @@ describe('ServerGenerator', () => {
   it('reads the members shadowing a global from the component, and writes the custom elements of other libraries like native ones', () => {
     const code = generate('<sl-icon name="{ name }"></sl-icon>', [], ['name'], ['sl-*']);
 
-    expect(code).toContain('out.push(\'<sl-icon name="\' + _escapeAttribute(this.name) + \'"></sl-icon>\');');
+    expect(code).toContain('out.push(\'<sl-icon\' + _ssrAttribute(\'name\', this.name) + \'></sl-icon>\');');
   });
 
   it('imports the symbols an expression reads, after the runtime helpers, and reads them through their alias', () => {

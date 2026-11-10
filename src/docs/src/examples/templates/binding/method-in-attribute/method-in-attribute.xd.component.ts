@@ -18,7 +18,7 @@ export class MethodInAttributeComponent extends CustomElement {
   public readonly percent = computed(() => this._computePercent());
 
   /**
-   * The level as a percentage, read by the method itself: the compiler sees the signal.
+   * The level as a percentage, read by the method itself.
    *
    * @returns The percentage.
    */
@@ -27,7 +27,8 @@ export class MethodInAttributeComponent extends CustomElement {
   }
 
   /**
-   * The level as a percentage, read through a function of the store: the compiler does not follow it.
+   * The level as a percentage, read through a function of the store: the binding follows the signal all the same,
+   * since it tracks what it reads while it runs.
    *
    * @returns The percentage.
    */

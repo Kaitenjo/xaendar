@@ -25,7 +25,7 @@ describe('generateServerElement', () => {
   it('writes a native element with static and expression attributes as HTML, escaping the values of the expressions when rendered', () => {
     const { code, functionsToProcess } = generate('<a href="/x?a=1&amp;b=&quot;2&quot;" title="{ on() }">t</a>');
 
-    expect(code).toEqual(['out.push(\'<a href="/x?a=1&amp;b=&quot;2&quot;" title="\' + _escapeAttribute(this.on()) + \'">{children of a0}</a>\');']);
+    expect(code).toEqual(['out.push(\'<a href="/x?a=1&amp;b=&quot;2&quot;"\' + _ssrAttribute(\'title\', this.on()) + \'>{children of a0}</a>\');']);
     expect(functionsToProcess).toBeUndefined();
   });
 

@@ -1,16 +1,20 @@
 import type { LetNode } from '../../../parser/types/nodes/let-node.type';
 import { GeneratorContext } from '../../context/context';
 import type { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
-import { resolveExpression } from '../../utils/generator/generator.utils';
+import { isConstantExpression, resolveExpression } from '../../utils/generator/generator.utils';
 
 /**
- * Generates the code initializing a `@let`, declared at the start of its scope, once the render reaches it: with the
- * value of its expression, computed once, or, when the expression reads a signal, with a signal computing it, which the
- * expressions reading the `@let` call.
+ * Generates the code initializing a `@let`, declared at the start of its scope, once the render reaches it: a literal is
+ * written once, any other value by `_let`, which computes it again when a signal or a variable of the template it reads
+ * changes, receiving the names of the variables. The expressions reading the `@let` read its value, as any variable.
  *
  * @example
  * // @let total = price() * quantity();
- * context.set('total', _let(() => this.price() * this.quantity()));
+ * _let(context, 'total', () => this.price() * this.quantity());
+ * // @let name = row.name;
+ * _let(context, 'name', () => context.get('row').name, _reads0);
+ * // @let size = 10;
+ * context.set('size', 10);
  *
  * @param node - The `LetNode` to process.
  * @param _parentNode - Unused variable name of the parent DOM node.
@@ -20,6 +24,11 @@ import { resolveExpression } from '../../utils/generator/generator.utils';
  * @returns The generated code.
  */
 export async function generateLet(node: LetNode, _parentNode: string, _index: string, generatorContext: GeneratorContext, _anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
-  const { expression, reactive } = resolveExpression(node.value, generatorContext);
-  return { code: [`context.set('${node.name}', ${reactive ? `_let(() => ${expression})` : expression});`] };
+  const { expression, variables } = resolveExpression(node.value, generatorContext);
+  if (isConstantExpression(node.value)) {
+    return { code: [`context.set('${node.name}', ${expression});`] };
+  }
+
+  const reads = generatorContext.getReads(variables);
+  return { code: [`_let(context, '${node.name}', () => ${expression}${reads ? `, ${reads}` : ''});`] };
 }

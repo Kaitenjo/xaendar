@@ -180,7 +180,7 @@ describe('formatTemplate', () => {
     });
 
     it('keeps a text-only element on one line, and the text of several lines indented', () => {
-      expect(format('<span class="count">{ total() } items</span>')).toBe(lines('<span class="count">{ total() } items</span>'));
+      expect(format('<span class="count">{ total } items</span>')).toBe(lines('<span class="count">{ total } items</span>'));
       expect(format('<p>\n        first\n    second\n\n\n   third\n</p>')).toBe(lines('<p>', '  first', '  second', '', '  third', '</p>'));
     });
 
@@ -311,18 +311,18 @@ describe('formatTemplate', () => {
 
     it('writes the element ref of an element, and the parameters of a <template> without the spaces around them', () => {
       expect(format('<input   #field   type="text"/>')).toBe(lines('<input #field type="text" />'));
-      expect(format('<template row(  item: Item, index: number )>\n<li>{ item() }</li>\n</template>')).toBe(lines(
+      expect(format('<template row(  item: Item, index: number )>\n<li>{ item }</li>\n</template>')).toBe(lines(
         '<template row(item: Item, index: number)>',
-        '  <li>{ item() }</li>',
+        '  <li>{ item }</li>',
         '</template>'
       ));
     });
 
     it('writes a @render on a line of its own, without the spaces around its arguments', () => {
-      expect(format('<ul><li>a</li>@render   row(  item(),  1 )</ul>@render empty()<p>b</p>')).toBe(lines(
+      expect(format('<ul><li>a</li>@render   row(  item,  1 )</ul>@render empty()<p>b</p>')).toBe(lines(
         '<ul>',
         '  <li>a</li>',
-        '  @render row(item(),  1)',
+        '  @render row(item,  1)',
         '</ul>',
         '@render empty()',
         '<p>b</p>'
@@ -335,10 +335,10 @@ describe('formatTemplate', () => {
     });
 
     it('writes a @let on a line of its own, with a space around its =', () => {
-      expect(format('<p>a</p>@let   total=price()  *  2  ;<p>{ total() }</p>')).toBe(lines(
+      expect(format('<p>a</p>@let   total=price()  *  2  ;<p>{ total }</p>')).toBe(lines(
         '<p>a</p>',
         '@let total = price()  *  2;',
-        '<p>{ total() }</p>'
+        '<p>{ total }</p>'
       ));
     });
 

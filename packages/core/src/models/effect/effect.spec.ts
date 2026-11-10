@@ -6,7 +6,7 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { createEffect } = await import('./effect');
+const { _runBinding, createEffect } = await import('./effect');
 
 /**
  * Waits for the microtask running the queued effects, and for the ones it schedules.
@@ -329,5 +329,69 @@ describe('createEffect', () => {
     const first = createEffect(() => undefined);
     const second = createEffect(() => undefined);
     expect(Object.getPrototypeOf(first)).toBe(Object.getPrototypeOf(second));
+  });
+
+  it('is watched also when its first run reads no signal, so that it can be disposed', () => {
+    const effect = createEffect(() => undefined);
+    expect(() => effect.dispose()).not.toThrow();
+  });
+});
+
+describe('_runBinding', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('runs the callback synchronously, with its three arguments', () => {
+    const callback = vi.fn();
+    _runBinding(callback, 'a', 2, true);
+    expect(callback).toHaveBeenCalledExactlyOnceWith('a', 2, true);
+  });
+
+  it('keeps nothing when the run reads no signal', () => {
+    expect(_runBinding(() => undefined, null)).toBeNull();
+  });
+
+  it('is the effect of the binding when the run reads a signal: watched, it runs again when the signal changes', async () => {
+    const state = new Signal.State(1);
+    const seen = new Array<number>();
+    const effect = _runBinding((source: Signal.State<number>) => { seen.push(source.get()); }, state);
+
+    expect(effect).toBeInstanceOf(Signal.Computed);
+    expect(Signal.subtle.hasSinks(state)).toBe(true);
+
+    state.set(2);
+    await flush();
+    effect!.dispose();
+    state.set(3);
+    await flush();
+
+    expect(seen).toEqual([1, 2]);
+    expect(Signal.subtle.hasSinks(state)).toBe(false);
+  });
+
+  it('rethrows the exception of the run, watching nothing', () => {
+    const state = new Signal.State(0);
+    expect(() => _runBinding(() => {
+      state.get();
+      throw new Error('boom');
+    }, null)).toThrow('boom');
+    expect(Signal.subtle.hasSinks(state)).toBe(false);
+  });
+
+  it('is not a dependency of a computation running around it', async () => {
+    const inner = new Signal.State(0);
+    const outer = vi.fn();
+    const holder: { effect?: Effect | null } = {};
+    const effect = createEffect(() => {
+      outer();
+      holder.effect ??= _runBinding((source: Signal.State<number>) => { source.get(); }, inner);
+    });
+
+    expect(Signal.subtle.introspectSources(effect)).toEqual([]);
+    inner.set(1);
+    await flush();
+    expect(outer).toHaveBeenCalledOnce();
+    expect(holder.effect).toBeInstanceOf(Signal.Computed);
   });
 });

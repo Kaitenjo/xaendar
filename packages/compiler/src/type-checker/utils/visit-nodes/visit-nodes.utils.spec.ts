@@ -27,7 +27,7 @@ describe('visitNodes', () => {
     ['an element', '<a><b></b></a>', ['a', 'b']],
     ['an @if, an @else if and an @else', '@if (a) { <a></a> } @else if (b) { <b></b> } @else { <i></i> }', ['a', 'b', 'i']],
     ['an @if without an @else', '@if (a) { <a></a> }', ['a']],
-    ['a @for', '@for (item of items; track item()) { <a></a> }', ['a']],
+    ['a @for', '@for (item of items; track item) { <a></a> }', ['a']],
     ['a @switch', '@switch (a) { @case (1) { <a></a> } @case (2) { <b></b> } }', ['a', 'b']],
     ['a template', '<template row()><a></a></template>', ['a']],
     ['a @hydrate', '@hydrate (idle) { <a></a> }', ['a']],

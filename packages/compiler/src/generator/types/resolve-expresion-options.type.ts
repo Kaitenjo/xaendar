@@ -1,3 +1,5 @@
+import type { Identifier } from 'typescript';
+
 /**
  * Options for resolving an expression during code generation.
  */
@@ -22,5 +24,11 @@ export type ResolveExpressionOptions = {
    * `ReferenceError`. A member of the component named like one of them keeps shadowing it. They are left as written
    * when omitted.
    */
-  browserGlobals?: string
+  browserGlobals?: string,
+  /**
+   * Receives the identifier of each call of a variable of the template (`row()` of an item `row`), which reads its
+   * value without calling it: the type-check code collects them, to tell why TypeScript rejects the call of a variable
+   * whose value is not a function.
+   */
+  variableCall?: (callee: Identifier) => void
 }

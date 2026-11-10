@@ -10,8 +10,9 @@ import { resolveExpression, toStringLiteral } from '../../utils/generator/genera
  *
  * Emits a `_renderLiteralText` call for plain text nodes and a
  * `_renderText` call for interpolation nodes, both appending a DOM text
- * node to the parent. A text the server separates from what precedes it with `<!---->` passes `true` last, so that
- * the hydration adopts the text after it.
+ * node to the parent. A text the server separates from what precedes it with `<!---->` passes `true` as `separated`,
+ * so that the hydration adopts the text after it, and an interpolation reading variables of the template passes their
+ * names last, so that the text is written again when they change.
  *
  * @param node - A `TextNode` or `InterpolationNode` to process.
  * @param parentNode - Variable name of the parent DOM node to append to.
@@ -23,11 +24,11 @@ import { resolveExpression, toStringLiteral } from '../../utils/generator/genera
  */
 export async function generateTextAndInterpolation(node: TextNode | InterpolationNode, parentNode: string, _index: string, generatorContext: GeneratorContext, anchor: string | null, separated: boolean): Promise<GeneratorTransitionFunctionReturnType> {
   const separator = separated ? ', true' : '';
-  return {
-    code: [`${node.type === ASTNodeType.Text
-      ? `_renderLiteralText(${parentNode}, context, ${toStringLiteral(node.value)}, ${anchor}${separator});`
-      : `_renderText(${parentNode}, context, () => ${resolveExpression(node.expression, generatorContext).expression}, ${anchor}${separator});`
-      }`,
-    ]
-  };
+  if (node.type === ASTNodeType.Text) {
+    return { code: [`_renderLiteralText(${parentNode}, context, ${toStringLiteral(node.value)}, ${anchor}${separator});`] };
+  }
+
+  const { expression, variables } = resolveExpression(node.expression, generatorContext);
+  const reads = generatorContext.getReads(variables);
+  return { code: [`_renderText(${parentNode}, context, () => ${expression}, ${anchor}${reads ? `, ${separated}, ${reads}` : separator});`] };
 }

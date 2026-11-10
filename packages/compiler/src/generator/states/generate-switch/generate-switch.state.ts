@@ -6,7 +6,8 @@ import { getBlockIdentifier, resolveExpression } from '../../utils/generator/gen
 
 /**
  * Generates code for a `@switch` node.
- * Emits a `_switch(...)` call that delegates to the reactive `_switch` runtime utility.
+ * Emits a `_switch(...)` call that delegates to the reactive `_switch` runtime utility, receiving the names of the
+ * variables of the enclosing scopes its expression reads, if any, so that it selects the case again when they change.
  *
  * @param node - The `SwitchNode` to process.
  * @param index - Base variable name prefix for child nodes.
@@ -20,7 +21,8 @@ export async function generateSwitch(node: SwitchNode, parentNode: string, index
     functionsToProcess: new Map()
   }
 
-  retVal.code.push(`_switch(${parentNode}, context, ${anchor}, () => ${resolveExpression(node.expression, generatorContext).expression}, [`);
+  const { expression, variables } = resolveExpression(node.expression, generatorContext);
+  retVal.code.push(`_switch(${parentNode}, context, ${anchor}, () => ${expression}, [`);
 
   const children = node.children;
   for (let i = 0; i < children.length; i++) {
@@ -43,6 +45,7 @@ export async function generateSwitch(node: SwitchNode, parentNode: string, index
     );
   };
 
-  retVal.code.push('])');
+  const reads = generatorContext.getReads(variables);
+  retVal.code.push(reads ? `], ${reads})` : '])');
   return retVal;
 }

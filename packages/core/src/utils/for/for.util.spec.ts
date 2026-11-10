@@ -10,7 +10,8 @@ await vi.hoisted(async () => {
 const { _Context, mountNode } = await import('../context/context.util');
 const { _for, _iterationVariables } = await import('./for.util');
 const { _if } = await import('../if/if.util');
-const { effect, signal } = await import('../../signals');
+const { _bindEffect } = await import('../../signals/effect/effect');
+const { signal } = await import('../../signals');
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
@@ -23,13 +24,14 @@ const moveBefore = vi.fn(function (this: Element, node: Node, child: Node | null
 });
 Object.assign(Element.prototype, { moveBefore });
 
+type Context = InstanceType<typeof _Context>;
+
 function createRoot() {
   return new _Context({ createElement: (tag: string) => document.createElement(tag) } as never);
 }
 
-type Body = (parentNode: HTMLElement, itemContext: InstanceType<typeof _Context>, text: string, reference: Node | null) => void;
+type Body = (parentNode: HTMLElement, itemContext: Context, text: string, reference: Node | null) => void;
 type Options = { withNodes?: boolean, variables?: IterationVariables | null, body?: Body };
-type Entry = ReturnType<typeof _iterationVariables>;
 
 /**
  * Every variable of a `@for`, declared by its own name.
@@ -37,9 +39,9 @@ type Entry = ReturnType<typeof _iterationVariables>;
 const ALL_VARIABLES: IterationVariables = { used: ['item', '$index', '$first', '$last', '$even', '$odd'], names: ['item', '$index', '$first', '$last', '$even', '$odd'] };
 
 /**
- * Reads the values of the signals of an entry.
+ * Reads the values of the variables an item declares.
  */
-const valuesOf = (entry: Entry) => entry.signals!.map(state => state());
+const valuesOf = (context: Context, { names }: IterationVariables = ALL_VARIABLES) => names.map(name => context.get(name));
 
 const renderItem: Body = (parentNode, itemContext, text, reference) => {
   const li = document.createElement('li');
@@ -79,19 +81,21 @@ function setup(initial: string[], { withNodes = true, variables = ALL_VARIABLES,
   const parent = document.createElement('ul');
   const context = createRoot();
   const items = signal(initial);
-  // The entries created, in order of creation
-  const entries = new Array<Entry>();
-  const forFn = vi.fn((parentNode: HTMLElement, parentContext: InstanceType<typeof _Context>, list: unknown[], index: number, reference: Node | null) => {
+  // The contexts of the items created, in order of creation
+  const entries = new Array<Context>();
+  const forFn = vi.fn((parentNode: HTMLElement, parentContext: Context, list: unknown[], index: number, reference: Node | null) => {
     const itemContext = new _Context(parentContext);
-    const entry = _iterationVariables(itemContext, list, index, variables ?? undefined);
-    entries.push(entry);
+    if (variables) {
+      _iterationVariables(itemContext, list, index, variables);
+    }
+    entries.push(itemContext);
     if (withNodes) {
       body(parentNode, itemContext, String(list[index]), reference);
     }
-    return entry;
+    return itemContext;
   });
 
-  _for(parent, context, null, () => items(), item => item() as string, forFn as never, variables ?? undefined);
+  _for(parent, context, null, () => items(), item => item as string, forFn as never, variables ?? undefined);
 
   const texts = () => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
   const change = async (next: string[]) => {
@@ -122,15 +126,14 @@ describe('_for', () => {
     expect(forFn).toHaveBeenCalledTimes(4);
   });
 
-  it('passes the item, the index and the implicit variables to the track expression, as functions reading them', () => {
+  it('passes the item, the index and the implicit variables to the track expression, as values', () => {
     const keys = new Array<unknown[]>();
-    const track = (...variables: Array<() => unknown>) => {
-      const values = variables.map(variable => variable());
-      keys.push(values);
-      return values.join();
+    const track = (...variables: unknown[]) => {
+      keys.push(variables);
+      return variables.join();
     };
 
-    _for(document.createElement('ul'), createRoot(), null, () => ['a', 'b', 'c'], track, () => _iterationVariables(new _Context(createRoot()), [], 0));
+    _for(document.createElement('ul'), createRoot(), null, () => ['a', 'b', 'c'], track as never, () => new _Context(createRoot()));
 
     expect(keys).toEqual([
       ['a', 0, true, false, true, false],
@@ -174,65 +177,76 @@ describe('_for', () => {
     expect(texts()).toEqual(['a', 'c']);
   });
 
-  it('moves the existing items and updates their variables in place', async () => {
+  it('moves the existing items and updates their variables in place, as values of their contexts', async () => {
     const { texts, forFn, entries, change } = setup(['a', 'b', 'c']);
     const [a, b, c] = entries;
-    const signals = entries.map(entry => entry.signals);
 
     await change(['c', 'b', 'a']);
 
     expect(texts()).toEqual(['c', 'b', 'a']);
     expect(forFn).toHaveBeenCalledTimes(3);
-    expect(entries.map(entry => entry.signals)).toEqual(signals);
     expect(valuesOf(c)).toEqual(['c', 0, true, false, true, false]);
     expect(valuesOf(b)).toEqual(['b', 1, false, false, false, true]);
     expect(valuesOf(a)).toEqual(['a', 2, false, true, true, false]);
   });
 
-  it('notifies what reads a variable of a reused item, leaving the rest of the item as it is', async () => {
+  it('refreshes a reused item with the names of the variables that changed, and leaves alone the ones that did not change', async () => {
+    const { entries, change } = setup(['a', 'b', 'c']);
+    const [a, b, c] = entries;
+    const refreshes = [vi.spyOn(a, 'refresh'), vi.spyOn(b, 'refresh'), vi.spyOn(c, 'refresh')];
+
+    await change(['c', 'b', 'a']);
+
+    // From the index 0 to the index 2 and back, an item stays at an even index
+    expect(refreshes[0]).toHaveBeenCalledExactlyOnceWith(['$index', '$first', '$last']);
+    expect(refreshes[1]).not.toHaveBeenCalled();
+    expect(refreshes[2]).toHaveBeenCalledExactlyOnceWith(['$index', '$first', '$last']);
+  });
+
+  it('runs again the bindings of a reused item reading a variable that changed, synchronously', async () => {
     const { entries, change } = setup(['a', 'b']);
     const [a] = entries;
     const seen = new Array<unknown>();
-    effect(() => { seen.push(a.signals![1]()); });
-    await flush();
+    _bindEffect(a, (context: Context) => { seen.push(context.get('$index')); }, a, undefined, undefined, ['$index']);
 
     await change(['b', 'a']);
-    await flush();
 
     expect(seen).toEqual([0, 1]);
-    expect(a.context.get('$index')).toBe(a.signals![1]);
   });
 
   it('updates only the variables the body reads, in the order of the variables of the @for', async () => {
     const variables: IterationVariables = { used: ['$index', '$last'], names: ['i', 'last'] };
     const { entries, change } = setup(['a', 'b', 'c'], { variables });
     const [a] = entries;
+    const refresh = vi.spyOn(a, 'refresh');
 
-    expect(a.signals).toHaveLength(2);
-    expect(valuesOf(a)).toEqual([0, false]);
+    expect(valuesOf(a, variables)).toEqual([0, false]);
 
     await change(['b', 'c', 'a']);
 
-    expect(valuesOf(a)).toEqual([2, true]);
-    expect((a.context.get('i') as () => number)()).toBe(2);
+    expect(valuesOf(a, variables)).toEqual([2, true]);
+    expect(refresh).toHaveBeenCalledExactlyOnceWith(['i', 'last']);
   });
 
   it('updates the item of an entry reused for a new item with the same key', async () => {
     const parent = document.createElement('ul');
     const items = signal([{ id: 1, name: 'old' }]);
-    const entries = new Array<Entry>();
+    const entries = new Array<Context>();
     const variables: IterationVariables = { used: ['item'], names: ['row'] };
-    _for(parent, createRoot(), null, () => items(), item => (item() as { id: number }).id, (_parentNode, parentContext, list, index) => {
-      const entry = _iterationVariables(new _Context(parentContext), list, index, variables);
-      entries.push(entry);
-      return entry;
+    _for(parent, createRoot(), null, () => items(), item => (item as { id: number }).id, (_parentNode, parentContext, list, index) => {
+      const itemContext = new _Context(parentContext);
+      _iterationVariables(itemContext, list, index, variables);
+      entries.push(itemContext);
+      return itemContext;
     }, variables);
+    const refresh = vi.spyOn(entries[0], 'refresh');
 
     items.set([{ id: 1, name: 'new' }]);
     await flush();
 
     expect(entries).toHaveLength(1);
-    expect(valuesOf(entries[0])).toEqual([{ id: 1, name: 'new' }]);
+    expect(entries[0].get('row')).toEqual({ id: 1, name: 'new' });
+    expect(refresh).toHaveBeenCalledExactlyOnceWith(['row']);
   });
 
   it('updates the variables of each occurrence of a repeated key by its own position', async () => {
@@ -245,6 +259,32 @@ describe('_for', () => {
     expect(valuesOf(firstA).slice(0, 2)).toEqual(['a', 0]);
     expect(valuesOf(secondA).slice(0, 2)).toEqual(['a', 1]);
     expect(valuesOf(b)).toEqual(['b', 2, false, true, true, false]);
+  });
+
+  it('moves the nodes a reused item renders once refreshed, a block at the top of its body rendering other ones', async () => {
+    const parent = document.createElement('ul');
+    const items = signal([{ id: 1, done: false }, { id: 2, done: false }]);
+    const variables: IterationVariables = { used: ['item'], names: ['row'] };
+    // The body is a block reading the item: the branch it renders, at the top of the item, changes with it
+    const render = (text: string) => (blockParent: HTMLElement, blockContext: Context, blockReference: Node | null) => {
+      const branchContext = new _Context(blockContext);
+      renderItem(blockParent, branchContext, `${text}${(branchContext.get('row') as { id: number }).id}`, blockReference);
+      return branchContext;
+    };
+    _for(parent, createRoot(), null, () => items(), item => (item as { id: number }).id, (parentNode, parentContext, list, index, reference) => {
+      const itemContext = new _Context(parentContext);
+      _iterationVariables(itemContext, list, index, variables);
+      _if(parentNode, itemContext, reference as Comment | null, [
+        { condition: () => (itemContext.get('row') as { done: boolean }).done, block: render('done ') },
+        { block: render('todo ') }
+      ], ['row']);
+      return itemContext;
+    }, variables);
+
+    items.set([{ id: 2, done: true }, { id: 1, done: false }]);
+    await flush();
+
+    expect(nodeTexts(parent)).toEqual(['done 2', 'if', 'todo 1', 'if', 'for']);
   });
 
   it('reuses the same DOM nodes when reordering', async () => {
@@ -269,13 +309,15 @@ describe('_for', () => {
     expect(insertBefore).not.toHaveBeenCalled();
   });
 
-  it('moves the items of a body reading no variable, whose entries have no signals', async () => {
+  it('moves the items of a body reading no variable, which declare none', async () => {
     const { texts, entries, change } = setup(['a', 'b'], { variables: null });
+    const refreshes = entries.map(entry => vi.spyOn(entry, 'refresh'));
 
     await change(['b', 'a']);
 
     expect(texts()).toEqual(['b', 'a']);
-    expect(entries.map(entry => entry.signals)).toEqual([null, null]);
+    expect(refreshes[0]).not.toHaveBeenCalled();
+    expect(refreshes[1]).not.toHaveBeenCalled();
   });
 
   it('works when the items do not own any node', async () => {
@@ -360,14 +402,14 @@ describe('_for', () => {
   it('iterates a number n as the indexes from 0 to n - 1', async () => {
     const parent = document.createElement('ul');
     const count = signal(3);
-    const forFn = vi.fn((parentNode: HTMLElement, parentContext: InstanceType<typeof _Context>, list: unknown[], index: number, reference: Node | null) => {
+    const forFn = vi.fn((parentNode: HTMLElement, parentContext: Context, list: unknown[], index: number, reference: Node | null) => {
       const itemContext = new _Context(parentContext);
       renderItem(parentNode, itemContext, String(list[index]), reference);
-      return { context: itemContext };
+      return itemContext;
     });
     const texts = () => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
 
-    _for(parent, createRoot(), null, () => count(), (_item, index) => index(), forFn as never);
+    _for(parent, createRoot(), null, () => count(), (_item, index) => index, forFn as never);
     expect(texts()).toEqual(['0', '1', '2']);
 
     count.set(5);
@@ -378,6 +420,27 @@ describe('_for', () => {
     count.set(0);
     await flush();
     expect(texts()).toEqual([]);
+  });
+
+  it('reconciles its items again when a variable of the enclosing scope they read changes', () => {
+    const parent = document.createElement('ul');
+    const rowContext = new _Context(createRoot(), undefined, 1);
+    rowContext.addIdentifier('row', { cells: ['a', 'b'] });
+    const forFn = vi.fn((parentNode: HTMLElement, parentContext: Context, list: unknown[], index: number, reference: Node | null) => {
+      const itemContext = new _Context(parentContext);
+      renderItem(parentNode, itemContext, String(list[index]), reference);
+      return itemContext;
+    });
+    const texts = () => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
+
+    _for(parent, rowContext, null, () => (rowContext.get('row') as { cells: string[] }).cells, item => item as string, forFn as never, undefined, ['row']);
+    expect(texts()).toEqual(['a', 'b']);
+
+    rowContext.update('row', { cells: ['b', 'c'] });
+    rowContext.refresh(['row']);
+
+    expect(texts()).toEqual(['b', 'c']);
+    expect(forFn).toHaveBeenCalledTimes(3);
   });
 
   it('stops reacting and cleans up when the parent context is destroyed', async () => {
@@ -392,54 +455,28 @@ describe('_for', () => {
 });
 
 describe('_iterationVariables', () => {
-  it('returns the entry of the item: its context, and the signals of the variables in the order of used', () => {
+  it('declares the variables in the context, as values, in the order of used', () => {
     const context = createRoot();
-    const entry = _iterationVariables(context, ['a', 'b', 'c'], 1, ALL_VARIABLES);
+    _iterationVariables(context, ['a', 'b', 'c'], 1, ALL_VARIABLES);
 
-    expect(entry.context).toBe(context);
-    expect(Object.keys(entry)).toEqual(['context', 'signals']);
-    expect(entry.signals).toHaveLength(6);
-    expect(valuesOf(entry)).toEqual(['b', 1, false, false, false, true]);
+    expect(valuesOf(context)).toEqual(['b', 1, false, false, false, true]);
   });
 
   it('flags the first and last items', () => {
-    expect(valuesOf(_iterationVariables(createRoot(), ['a', 'b'], 0, ALL_VARIABLES))).toEqual(['a', 0, true, false, true, false]);
-    expect(valuesOf(_iterationVariables(createRoot(), ['a', 'b'], 1, ALL_VARIABLES))).toEqual(['b', 1, false, true, false, true]);
+    const first = createRoot();
+    const last = createRoot();
+    _iterationVariables(first, ['a', 'b'], 0, ALL_VARIABLES);
+    _iterationVariables(last, ['a', 'b'], 1, ALL_VARIABLES);
+
+    expect(valuesOf(first)).toEqual(['a', 0, true, false, true, false]);
+    expect(valuesOf(last)).toEqual(['b', 1, false, true, false, true]);
   });
 
-  it('registers each signal in the context by the name of the variable, honouring the aliases', () => {
+  it('declares each variable by its name, honouring the aliases, and only the variables listed', () => {
     const context = createRoot();
     const addIdentifier = vi.spyOn(context, 'addIdentifier');
-    const entry = _iterationVariables(context, ['a', 'b', 'c'], 2, { used: ['item', '$index', '$last'], names: ['row', 'i', '$last'] });
+    _iterationVariables(context, ['a', 'b', 'c'], 2, { used: ['item', '$index', '$last'], names: ['row', 'i', '$last'] });
 
-    expect(addIdentifier.mock.calls).toEqual([['row', entry.signals![0]], ['i', entry.signals![1]], ['$last', entry.signals![2]]]);
-    expect((context.get('row') as () => string)()).toBe('c');
-    expect((context.get('i') as () => number)()).toBe(2);
-  });
-
-  it('creates only the variables listed, in an array of their exact number', () => {
-    const entry = _iterationVariables(createRoot(), [0, 1], 1, { used: ['$odd'], names: ['$odd'] });
-
-    expect(entry.signals).toHaveLength(1);
-    expect(valuesOf(entry)).toEqual([true]);
-  });
-
-  it('creates nothing without variables, the body reading none', () => {
-    const context = createRoot();
-    const addIdentifier = vi.spyOn(context, 'addIdentifier');
-    const entry = _iterationVariables(context, ['a', 'b'], 0);
-
-    expect(entry).toEqual({ context, signals: null });
-    expect(addIdentifier).not.toHaveBeenCalled();
-  });
-
-  it('shares nothing between the entries of the same variables but the variables themselves', () => {
-    const variables: IterationVariables = { used: ['item'], names: ['item'] };
-    const first = _iterationVariables(createRoot(), ['a', 'b'], 0, variables);
-    const second = _iterationVariables(createRoot(), ['a', 'b'], 1, variables);
-
-    expect(first.signals).not.toBe(second.signals);
-    expect(first.signals![0]).not.toBe(second.signals![0]);
-    expect(variables).toEqual({ used: ['item'], names: ['item'] });
+    expect(addIdentifier.mock.calls).toEqual([['row', 'c'], ['i', 2], ['$last', true]]);
   });
 });

@@ -457,7 +457,7 @@
           "title": "A base class for shared logic",
           "p1": "The base class extends <code>CustomElement</code> and has no decorator: it is not a component, and it is never registered. Each component extends it, with its own <code>@WebComponent</code> and its own template.",
           "example1": "Two counters, one logic",
-          "p2": "<code>count</code>, <code>atZero</code> and the three methods live in <code>CounterBase</code>; the two templates read them as if they were declared in the components. Signals declared in a base class are recognized in attribute bindings too: the compiler follows the <code>extends</code> chain, also into other files.",
+          "p2": "<code>count</code>, <code>atZero</code> and the three methods live in <code>CounterBase</code>; the two templates read them as if they were declared in the components. The type-check follows the <code>extends</code> chain, also into other files, and the bindings follow the signals of a base class like any other.",
           "p3": "Inputs and events are inherited too. <code>CounterBase</code> declares <code>step</code> with <code>@Property</code>, and the compiler checks <code>step=\"{ 5 }\"</code> against its type, as if the input were declared in the component."
         },
         "extendingAComponent": {
@@ -1359,9 +1359,9 @@
       "title": "What is Xaendar?",
       "lead": "Xaendar is a framework for building Web Components declaratively. A component is a TypeScript class plus a template written in an extended HTML5 syntax; the compiler turns the template into code that updates the DOM with the precision of hand-written JavaScript.",
       "fineGrainedReactivityDecided": {
-        "title": "Fine-grained reactivity, decided at build time",
+        "title": "Fine-grained reactivity, without re-rendering",
         "p1": "Most component frameworks run a render function again when the state changes, and compare its output with the previous one: the virtual DOM diff. Xaendar does neither.",
-        "p2": "At build time the compiler analyses each template and finds, for every element, attribute and text node, the expression that produces it. At runtime each expression becomes a tiny reactive binding, subscribed only to the signals it reads. A signal change runs exactly the bindings that depend on it, and each binding writes exactly one node.",
+        "p2": "At build time the compiler analyses each template and finds, for every element, attribute and text node, the expression that produces it, and the variables of the template it reads. At runtime each expression runs once: one reading signals becomes a tiny effect, subscribed only to them, and one reading none is just set. A signal change runs exactly the bindings that depend on it, and each binding writes exactly one node.",
         "example1": "Only the nodes reading a signal are updated",
         "p3": "The log comes from a <code>MutationObserver</code> attached to the card. Click the buttons and watch which nodes flash: incrementing touches one text node and one attribute, renaming touches one text node, and the static paragraph never appears."
       },
@@ -1538,7 +1538,7 @@
         "anInventory": {
           "title": "An inventory",
           "example1": "Add, remove, edit, filter, sort",
-          "p1": "<code>items</code> is never mutated: adding, inserting and removing all write a new array, as signals compare values with <code>Object.is</code>, explained in <a href=\"#/en/signals/overview\">Signals</a>. The <code>@for</code> tracks <code>item().id</code>: when the array changes, the rows of the items still present are kept and moved, and only the new ones are created. Insert an item at random, or sort the list: the existing rows move, untouched.",
+          "p1": "<code>items</code> is never mutated: adding, inserting and removing all write a new array, as signals compare values with <code>Object.is</code>, explained in <a href=\"#/en/signals/overview\">Signals</a>. The <code>@for</code> tracks <code>item.id</code>: when the array changes, the rows of the items still present are kept and moved, and only the new ones are created. Insert an item at random, or sort the list: the existing rows move, untouched.",
           "p2": "<code>visible</code> filters and sorts the items in a computed signal, and the template only renders it; the original order stays in <code>items</code>. The ids come from a counter and are never reused, so the keys stay unique even after removals.",
           "p3": "The quantity of each item is a signal of its own. The <strong>+</strong> and <strong>−</strong> buttons update it in place: the array does not change, no row is touched, and only the cell and the total, a computed signal reading every quantity, are written.",
           "p4": "The form is read with <code>FormData</code> and cleared with <code>form.reset()</code>: the field has no bound value, so restoring its initial value empties it, with no directive needed. See <a href=\"#/en/patterns/forms\">Forms</a> for fields driven by the state."
@@ -1690,12 +1690,12 @@
           "td17": "Methods and computed signals",
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> and custom properties",
           "td19": "<code>&lt;template name(…)&gt;</code> and <code>@render name(…)</code>, with typed parameters, in the template declaring them: see <a href=\"#/en/templates/reusable-templates\">Templates and @render</a>",
-          "td20": "<code>@let</code>, also called a template variable, a signal read with <code>name()</code> when its value reads one: see <a href=\"#/en/templates/let\">@let</a>",
+          "td20": "<code>@let</code>, also called a template variable, a value read as <code>name</code>, as in Angular, kept up to date with what it reads: see <a href=\"#/en/templates/let\">@let</a>",
           "td21": "The same syntax: <code>[class.x]=\"{ condition }\"</code>, with the value in braces. See <a href=\"#/en/templates/binding\">Binding</a>."
         },
         "whatWorksDifferently": {
           "title": "What works differently",
-          "li2": "<strong>Bindings set attributes.</strong> On native elements a binding calls <code>setAttribute</code>: a <code>value</code> stops mattering once the user types, and <code>disabled=\"{ false }\"</code> still disables. See <a href=\"#/en/templates/binding\">Binding</a> and <a href=\"#/en/patterns/forms\">Forms</a>.",
+          "li2": "<strong>Bindings set attributes.</strong> On native elements a binding calls <code>setAttribute</code>: a <code>value</code> stops mattering once the user types, and <code>disabled=\"{ false }\"</code> still disables, while <code>null</code> removes the attribute, as with <code>[attr.name]</code>. See <a href=\"#/en/templates/binding\">Binding</a> and <a href=\"#/en/patterns/forms\">Forms</a>.",
           "li3": "<strong>A removed element is destroyed.</strong> When a template removes an element, its instance is gone, and rendering it again creates a new one. Moving or reattaching elements with the DOM APIs is not supported. See <a href=\"#/en/components/lifecycle\">Lifecycle</a>.",
           "li4": "<strong>Templates are strict.</strong> Listeners call one method, expressions cannot assign or create objects, and a few characters must be escaped. See <a href=\"#/en/reference/template-syntax\">the cheat sheet</a>.",
           "callout1": {
@@ -1727,11 +1727,11 @@
         },
         "controlFlow": {
           "title": "Control flow",
-          "p1": "The variables of <code>@for</code> are the item, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> and <code>$odd</code>, all signals. See <a href=\"#/en/templates/if\">@if</a>, <a href=\"#/en/templates/for\">@for</a>, <a href=\"#/en/templates/switch\">@switch</a>, <a href=\"#/en/templates/try\">@try</a> and <a href=\"#/en/templates/defer\">@defer</a>, and <a href=\"#/en/tools/ssr/progressive-hydration\">Server-side rendering</a> for <code>@hydrate</code>."
+          "p1": "The variables of <code>@for</code> are the item, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> and <code>$odd</code>, values read without parentheses. See <a href=\"#/en/templates/if\">@if</a>, <a href=\"#/en/templates/for\">@for</a>, <a href=\"#/en/templates/switch\">@switch</a>, <a href=\"#/en/templates/try\">@try</a> and <a href=\"#/en/templates/defer\">@defer</a>, and <a href=\"#/en/tools/ssr/progressive-hydration\">Server-side rendering</a> for <code>@hydrate</code>."
         },
         "templates": {
           "title": "Templates and @render",
-          "p1": "A template renders nothing where it is declared: each <code>@render</code> renders an instance of it, and its parameters are signals. See <a href=\"#/en/templates/reusable-templates\">Templates and @render</a>."
+          "p1": "A template renders nothing where it is declared: each <code>@render</code> renders an instance of it, and its parameters are values, read without parentheses. See <a href=\"#/en/templates/reusable-templates\">Templates and @render</a>."
         },
         "let": {
           "title": "@let",
@@ -2035,19 +2035,19 @@
         },
         "exposingSharedSignalsTo": {
           "title": "Reading shared signals in a template",
-          "p1": "A template reads a shared signal by importing it, like any other export of a module: <code>@import { level } from './level.store.ts'</code>. The attribute bindings reading it stay reactive, since the compiler follows the import to the declaration of the signal. A member holding a signal works too, but how you initialize it matters: the compiler decides whether an attribute binding is reactive by looking at the <strong>declaration</strong> of the members it reads, not at their values.",
+          "p1": "A template reads a shared signal by importing it, like any other export of a module: <code>@import { level } from './level.store.ts'</code>. A member of the class holding the signal works as well, however it is initialized: the bindings follow the signals they read while they run, wherever they come from.",
           "example1": "The same signal, read three ways",
-          "p2": "Raise the level: the three texts follow it, but the second progress bar stays where it was. Text interpolations are always reactive; an attribute binding is reactive only if it names a signal the compiler recognizes — a module signal the template imports, or a member initialized by calling <code>signal()</code> or <code>computed()</code>, annotated with a signal type of <code>@xaendar/core/signals</code>, or initialized with a module variable that is itself a signal. The compiler follows module variables through imports and re-exports to their declaration."
+          "p2": "Raise the level: the three texts and the three progress bars follow it. <code>fromHelper</code> holds the signal returned by a function of the application, <code>wrapped</code> a computed signal reading it: for the bindings, they are the same signal as the import."
         },
         "edgeCases": {
           "title": "Edge cases",
           "callout1": {
-            "heading": "Signals returned by your own functions freeze attribute bindings",
-            "body": "A member like <code>readonly level = readLevel()</code> is evaluated once in attributes: the compiler does not look inside the function. Import the module signal in the template, annotate the member with its signal type, <code>readonly level: Signal&lt;number&gt; = readLevel()</code>, or wrap the call in <code>computed()</code>."
+            "heading": "A member holding the value, not the signal",
+            "body": "A member initialized with the value of the signal, <code>readonly level = readLevel()()</code>, reads it once, when the component is created, and the bindings reading the member never change. Keep the signal in the member and call it where the value is needed, or wrap the read in <code>computed()</code>."
           },
           "callout2": {
-            "heading": "The annotation must be a type of @xaendar/core/signals",
-            "body": "The detection is syntactic: it recognizes the names imported from <code>@xaendar/core/signals</code>, and follows module variables to their declarations. A type alias of your own, even if it is the same type, is not recognized."
+            "heading": "Signals read through other code",
+            "body": "A binding follows a signal however it reaches it: a method, a getter, a function of another module or of a compiled package. It follows what its last run read: a signal read only behind a condition, as in <code>{ expanded() ? details().title : summary }</code>, is followed while the condition leads to it."
           },
           "callout3": {
             "heading": "One instance per page",
@@ -2091,19 +2091,19 @@
         "bindingAttributes": {
           "title": "Binding attributes",
           "example1": "Four attributes bound to the same page",
-          "p1": "The whole value has to be one expression: a template literal when you need text around it. The value is converted to a string and written with <code>setAttribute</code>, so <code>class</code> and <code>style</code> are bound like any other attribute, as shown in <a href=\"#/en/components/styling\">Styling</a>."
+          "p1": "The whole value has to be one expression: a template literal when you need text around it. The value is converted to a string and written with <code>setAttribute</code>, so <code>class</code> and <code>style</code> are bound like any other attribute, as shown in <a href=\"#/en/components/styling\">Styling</a>; <code>null</code> and <code>undefined</code> remove the attribute instead."
         },
         "whichExpressionsAreReactive": {
           "title": "Which expressions are reactive",
-          "p1": "Attributes follow a stricter rule than text. The compiler decides at build time whether an attribute can change, by looking for the <strong>reactive members</strong> the expression names: the signal members, initialized with <code>signal()</code> or <code>computed()</code>, inputs and queries, and the methods and getters of the component whose body reads one of them, a module signal or another reactive method. An attribute that names none is set once.",
+          "p1": "Every bound attribute follows the signals it reads, as a text does. The first time a binding runs, the runtime records the signals read while computing its value, in the expression and in everything it calls: the members of the component, a method, a getter, a function of another module. The binding runs again whenever one of them changes. A binding reading no signal is set once and costs nothing more: no effect is created for it. The variables of the template are not signals: a binding reading one runs again when its scope changes it.",
           "example1": "Two methods and a computed signal",
-          "p2": "<code>percentOf()</code> reads the level in its own body, so its meter follows it. <code>percentFromHelper()</code> reads it through <code>readPercent()</code>, a function outside the class: the compiler does not follow calls it cannot trace back to a signal, so the second meter keeps the value of the first render, while the same method in the text below is reactive, because text interpolations always are. When an attribute needs such a value, declare its reactivity with a computed signal, as <code>percent</code> does. The rule for members that hold a signal created elsewhere is in <a href=\"#/en/signals/shared-state\">Shared state</a>."
+          "p2": "<code>percentOf()</code> reads the level in its own body, <code>percentFromHelper()</code> through <code>readPercent()</code>, a function outside the class, and <code>percent</code> is a computed signal reading it: the three meters follow it, as the text below does, since what counts is the signal read while the binding runs, not the way the expression reaches it. The same holds for the members holding a signal created elsewhere: see <a href=\"#/en/signals/shared-state\">Shared state</a>."
         },
         "togglingAClass": {
           "title": "Toggling a class",
           "p1": "<code>[class.name]=\"{ expression }\"</code> gives the element the class <code>name</code> while the value of the expression is truthy, and takes it away otherwise. The value can be of any type. It works on native elements, on the tags of components, where the class goes on the element itself, and inside <a href=\"#/en/templates/conditional-bindings\">conditional bindings</a>, where the class is taken away when its branch is no longer selected. Any class name without spaces follows the dot, <code>[class.is-active]</code> included.",
           "example1": "A bound class attribute and two class bindings",
-          "p2": "The class bindings and the <code>class</code> attribute work together, also when it is bound: whenever <code>class</code> is written again, the classes of the bindings are applied on top of it, and a binding whose value is falsy takes its class away even when <code>class</code> lists it. Whether the binding follows its value is decided at build time, as for attributes."
+          "p2": "The class bindings and the <code>class</code> attribute work together, also when it is bound: whenever <code>class</code> is written again, the classes of the bindings are applied on top of it, and a binding whose value is falsy takes its class away even when <code>class</code> lists it. A class binding follows the signals it reads, as an attribute does."
         },
         "bindingTheInputsOf": {
           "title": "Binding the inputs of components",
@@ -2112,7 +2112,7 @@
         "edgeCases": {
           "title": "Edge cases",
           "example1": "disabled bound to false",
-          "p1": "A boolean attribute counts by its presence, not its value: <code>disabled=\"false\"</code> still disables the button, so the first one is always disabled. Use a <a href=\"#/en/templates/conditional-bindings\">conditional binding</a>, which adds and removes the attribute.",
+          "p1": "A boolean attribute counts by its presence, not its value: <code>disabled=\"false\"</code> still disables the button, so the first one is always disabled. Bind it to <code>null</code> or <code>undefined</code> when it must be absent, as the second one does, or use a <a href=\"#/en/templates/conditional-bindings\">conditional binding</a>, which adds and removes the attribute, as the third one does.",
           "example2": "The value attribute and the value property",
           "p2": "Type in both fields, then reset. A binding sets the <code>value</code> attribute, which is only the initial value of the field: once the user has typed, the field shows its <code>value</code> property, and the first field is not cleared. The second field sets the property from an effect. The <a href=\"#/en/patterns/forms\">Forms</a> pattern wraps this in a directive.",
           "callout1": {
@@ -2121,7 +2121,7 @@
           },
           "callout2": {
             "heading": "null and undefined",
-            "body": "An attribute bound to <code>null</code> or <code>undefined</code> is not removed: it becomes the text <code>\"null\"</code> or <code>\"undefined\"</code>. To remove an attribute, bind it conditionally."
+            "body": "An attribute bound to <code>null</code> or <code>undefined</code> is removed, and the server does not write it: <code>aria-describedby=\"{ error() ? 'hint' : null }\"</code> is there only while there is an error. It is written again as soon as the value is another one. <code>false</code> and <code>0</code> are values like any other, written as the text <code>\"false\"</code> and <code>\"0\"</code>."
           },
           "callout3": {
             "heading": "An attribute bound twice",
@@ -2145,7 +2145,7 @@
           "th1": "Syntax",
           "th2": "Result",
           "td1": "A static attribute.",
-          "td2": "An attribute set with <code>String(value)</code>, again whenever a signal member it names changes.",
+          "td2": "An attribute set with <code>String(value)</code>, removed for <code>null</code> and <code>undefined</code>, again whenever a signal it read changes.",
           "td3": "The same, with text around the value.",
           "td4": "An attribute present only while the condition holds.",
           "td5": "<code>input=\"{ expression }\"</code> on a component",
@@ -2200,8 +2200,8 @@
           "p1": "The arguments can be:",
           "li1": "literals: strings, numbers, <code>true</code>, <code>false</code>, <code>null</code>;",
           "li2": "<code>$event</code>, the event itself, in any position, and its properties, as in <code>$event.key</code>;",
-          "li3": "members of the component, variables of an <code>@for</code> and element refs, with their properties, as in <code>color().id</code> or <code>field.value</code>;",
-          "li5": "expressions and calls, as in <code>count() + 1</code> or <code>format(item().id)</code>, evaluated when the event fires;",
+          "li3": "members of the component, variables of an <code>@for</code> and element refs, with their properties, as in <code>color.id</code> or <code>field.value</code>;",
+          "li5": "expressions and calls, as in <code>count() + 1</code> or <code>format(item.id)</code>, evaluated when the event fires;",
           "li4": "a signal without the call, which passes the signal itself: <code>bump</code> changes whichever counter it receives.",
           "p2": "The template is type-checked: <code>$event</code> has the type of the event, a <code>MouseEvent</code> for <code>click</code> or a <code>KeyboardEvent</code> for <code>keydown</code>, and each argument must fit the parameter of the method."
         },
@@ -2241,7 +2241,7 @@
         "casts": {
           "title": "Casts",
           "p1": "A cast, <code>as</code> followed by a type as in TypeScript, can end an interpolation, and then the whole expression before <code>as</code> takes that type, or follow an argument of a call: of the method of a listener, of a <code>@render</code>, of a function called in any expression. The type is written as is in the type-check, so it can name a type the template imports, and it generates no code: at runtime the value stays the same.",
-          "p2": "The cast of an interpolation goes on up to its <code>}</code>, the one of an argument up to the <code>,</code> or the <code>)</code> ending it. Any other cast, as in <code>{ (item() as Row).id }</code> or <code>{ total + (tax as number) }</code>, is rejected: cast the whole interpolation, or an argument. TypeScript checks a cast as any <code>as</code>: a conversion between types that don't overlap is reported, and going through <code>unknown</code> (<code>value as unknown as Row</code>) forces it. Prefer typing the members of the class: a cast tells TypeScript what it cannot know, such as the element an event comes from."
+          "p2": "The cast of an interpolation goes on up to its <code>}</code>, the one of an argument up to the <code>,</code> or the <code>)</code> ending it. Any other cast, as in <code>{ (item as Row).id }</code> or <code>{ total + (tax as number) }</code>, is rejected: cast the whole interpolation, or an argument. TypeScript checks a cast as any <code>as</code>: a conversion between types that don't overlap is reported, and going through <code>unknown</code> (<code>value as unknown as Row</code>) forces it. Prefer typing the members of the class: a cast tells TypeScript what it cannot know, such as the element an event comes from."
         },
         "whatItCannotDo": {
           "title": "What it cannot do",
@@ -2261,8 +2261,8 @@
             "p1": "The template is checked with the strict options of the project. With <code>noUncheckedIndexedAccess</code>, a property of a <code>Record</code> may be undefined; a <code>readonly</code> member has the literal type of its value, so comparing it with another literal is flagged. The messages show the member with a <code>root.</code> prefix."
           },
           "callout2": {
-            "heading": "Reactivity depends on where the expression is",
-            "body": "Every signal an expression reads is tracked in text, conditions and loops. In an attribute, only the signal members and the imported signals the expression names are: see <a href=\"#/en/templates/binding\">Binding</a>. Event handlers follow their own, more limited syntax: see <a href=\"#/en/templates/events\">Event listeners</a>."
+            "heading": "Every expression follows its signals",
+            "body": "An expression runs again when a signal it read changes, in a text, an attribute, a condition or a loop alike, also when a method or a function it calls reads the signal; one reading no signal runs once. Event handlers follow their own, more limited syntax: see <a href=\"#/en/templates/events\">Event listeners</a>."
           }
         },
         "summary": {
@@ -2289,12 +2289,12 @@
         "itemsKeysAndContext": {
           "title": "Items, keys and context",
           "example1": "The context of each row",
-          "p1": "Inside the block, the item and <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> and <code>$odd</code> are signals: call them, as in <code>task().title</code>. The item updates when its row is reused for a new object with the same key, the others when rows are added or removed before, as the stripes show, without rendering the row again. Passed to a method, <code>task()</code> gives the item and <code>task</code> the signal. <code>position = $index</code> gives one of the variables of the position another name, which is the way to reach the index of an outer loop from an inner one.",
-          "p2": "The key is an expression of the item, which <code>track</code> reads as the block does: a property, as in <code>track task().id</code>, or the item itself with <code>track task()</code>. Without <code>track</code> the item itself is the key."
+          "p1": "Inside the block, the item and <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> and <code>$odd</code> are values, read without parentheses, as in <code>task.title</code>. When its row is reused for a new object with the same key, the item becomes the new object, and when rows are added or removed before it, the variables of the position change, as the stripes show: the row is not rendered again, only the nodes reading them are updated. An event handler reads them when the event fires, so it always gets the current item: passed to a method, <code>task</code> is the item itself. <code>position = $index</code> gives one of the variables of the position another name, which is the way to reach the index of an outer loop from an inner one.",
+          "p2": "The key is an expression of the item, which <code>track</code> reads as the block does: a property, as in <code>track task.id</code>, or the item itself with <code>track task</code>. Without <code>track</code> the item itself is the key."
         },
         "repeatingANumberOf": {
           "title": "Repeating a number of times",
-          "p1": "A number instead of an array repeats the block: <code>@for (5)</code> without a variable, or <code>@for (step of count())</code> with <code>step()</code> going from <code>0</code> to <code>count() - 1</code>. The number can come from a signal, and the rows follow it.",
+          "p1": "A number instead of an array repeats the block: <code>@for (5)</code> without a variable, or <code>@for (step of count())</code> with <code>step</code> going from <code>0</code> to <code>count() - 1</code>. The number can come from a signal, and the rows follow it.",
           "example1": "Five dots and a rating"
         },
         "nestedLoops": {
@@ -2326,8 +2326,8 @@
           "th2": "Description",
           "td1": "A row for each item, identified by its key.",
           "td2": "The item itself is the key.",
-          "td3": "Repeats the block, with <code>step()</code> from <code>0</code>.",
-          "td4": "The position of the row, as signals.",
+          "td3": "Repeats the block, with <code>step</code> from <code>0</code>.",
+          "td4": "The position of the row, as values.",
           "td5": "An alias for a context variable."
         }
       },
@@ -2388,7 +2388,7 @@
         "whenToImport": {
           "title": "When to import",
           "p1": "Being able to import any export does not make the template the place for everything. The state of a component, and the logic that reads and changes it, live in its class whenever they belong to it: its members show what the template depends on, the class can be read and tested on its own, and the template stays a description of the view. Import in a template what really belongs to another module.",
-          "p2": "Types are the clearest case: a type argument of a generic component or directive, <code>&lt;ex-list(Row)&gt;</code>, costs nothing at runtime. Enums and classes are worth their import in particular conditions, such as <code>@if (task().status === Status.Archived)</code> or <code>@if (shape() instanceof Circle)</code>, where a member wrapping them would add nothing. Functions, constants and signals can be imported too, e.g. a formatter shared by many templates or the signals of a store, but they are not the default choice: a computed signal or a method of the class usually tells better what the component shows.",
+          "p2": "Types are the clearest case: a type argument of a generic component or directive, <code>&lt;ex-list(Row)&gt;</code>, costs nothing at runtime. Enums and classes are worth their import in particular conditions, such as <code>@if (task.status === Status.Archived)</code> or <code>@if (shape() instanceof Circle)</code>, where a member wrapping them would add nothing. Functions, constants and signals can be imported too, e.g. a formatter shared by many templates or the signals of a store, but they are not the default choice: a computed signal or a method of the class usually tells better what the component shows.",
           "p3": "The examples of this page and of <a href=\"#/en/signals/shared-state\">Sharing state</a> import functions and signals to show what the compiler supports, not because every component should be written that way."
         },
         "importingIsNotRegistering": {
@@ -2406,8 +2406,8 @@
             "body": "A package compiled to JavaScript publishes declaration files (<code>.d.ts</code>), which keep no decorator. A library built by <code>xd build</code> describes its components and directives in its <code>xaendar-manifest.json</code>: a template imports them from the package, or from the path of their module, like the local ones, type-checked against the declarations of the package, and loads only the modules it renders. The components and directives of any other compiled package cannot be imported; its functions, constants, enums, classes and types can. The components of a package that publishes its TypeScript sources, of a package of the same monorepo, or reached through an alias, are imported like the local ones."
           },
           "callout4": {
-            "heading": "Reactivity of compiled packages",
-            "body": "A signal exported by a compiled package is recognized from its type in the declarations (<code>Signal&lt;number&gt;</code>), and stays reactive. The body of its functions is not part of the declarations: an attribute binding calling one is evaluated once, even if the function reads a signal. Wrap the call in a <code>computed</code> member of the class."
+            "heading": "Signals of compiled packages",
+            "body": "A signal exported by a compiled package is read like one of the project, and so is a function of the package reading one: the bindings follow the signals read while they run, also inside code whose body is not part of the declarations."
           }
         },
         "summary": {
@@ -2627,30 +2627,30 @@
       "let": {
         "eyebrow": "Templates",
         "title": "@let",
-        "lead": "<code>@let name = value;</code>, also called a template variable, names a part of a signal that the template reads several times, such as a field of the object it holds: <code>@let address = user().address;</code>, then <code>address().city</code>, instead of a getter in the class that only shortens the access. Computations stay in the class, in a <code>computed</code> or a method.",
+        "lead": "<code>@let name = value;</code>, also called a template variable, names a part of a signal that the template reads several times, such as a field of the object it holds: <code>@let address = user().address;</code>, then <code>address.city</code>, instead of a getter in the class that only shortens the access. Computations stay in the class, in a <code>computed</code> or a method.",
         "declaring": {
           "title": "Declaring a @let",
           "p1": "A <code>@let</code> goes wherever content goes: its name, <code>=</code>, an expression and a <code>;</code>, which is required. The value can span several lines, and a <code>;</code> inside a string or between parentheses, brackets or braces does not end it. A <code>@let</code> renders nothing and cannot be assigned: its value follows the expression it is declared with.",
           "example1": "An address read through a @let",
-          "p2": "<code>address</code> reads <code>user</code>, so it is a signal: <code>move()</code> changes the user and updates the lines reading it. <code>country</code> reads a constant member, so it is a value, computed once."
+          "p2": "<code>address</code> reads <code>user</code>, a signal: <code>move()</code> changes the user, the <code>@let</code> is computed again, and only the lines reading <code>address</code> are updated. <code>country</code> reads a constant member and no signal, so it is computed once."
         },
         "signals": {
-          "title": "Signal or value",
-          "p1": "The compiler tells them apart by what the value reads, as it does for the bindings: a signal member, a method or a getter of the component reading one, a signal imported with <code>@import</code>, a variable of <code>@for</code>, a parameter of a template, or another <code>@let</code> that is a signal. Then the <code>@let</code> is a signal too, read with <code>name()</code>: it computes its value when it is read, and again when what it reads changes, so only the nodes reading it are updated. Otherwise it is a value, computed once when its scope is created, and read as <code>name</code>.",
-          "p2": "Its type is the one TypeScript infers for its value, a <code>Computed</code> of it for a signal. TypeScript reports a signal read without parentheses, as <code>total.toFixed(2)</code>, and a value called as a function. A value written as a literal keeps its literal type: <code>@let mode = 'grid';</code> is typed <code>'grid'</code>."
+          "title": "When a @let is computed",
+          "p1": "A <code>@let</code> holds a value, read as <code>name</code>, and is kept up to date like a binding: computed when the render reaches it, then again when a signal it read changes, also through a method, a getter or a function of another module, or when its scope changes a variable it reads, as the item of a row reused for another object or a parameter of a template. The nodes reading it are updated only when its value changes. A value reading neither a signal nor a variable is computed once.",
+          "p2": "Its type is the one TypeScript infers for its value: <code>@let total = price();</code> is a <code>number</code>, read as <code>total.toFixed(2)</code>. A value written as a literal keeps its literal type: <code>@let mode = 'grid';</code> is typed <code>'grid'</code>. Calling a <code>@let</code>, as in <code>total()</code>, is reported with a message telling to remove the parentheses, unless its value is a function."
         },
         "scope": {
           "title": "Scope and order",
           "p1": "A <code>@let</code> has the scope of an <a href=\"#/en/templates/element-refs\">element ref</a>: the whole of the template, of a branch of <code>@if</code>, of a case of <code>@switch</code>, of a row of <code>@for</code>, of the content of a template or of an element a structural directive is applied to, inside other elements too. A nested scope can declare a <code>@let</code> named like an outer one, which it hides.",
           "example1": "A @let for every row",
-          "p2": "Each row has its own <code>stats</code>, a signal since it reads the item of the row: completing a task updates only the row of that member.",
+          "p2": "Each row has its own <code>stats</code>, computed from the item of the row: completing a task gives that member a new object with the same key, so its row is reused, <code>stats</code> is computed again, and only the texts of that row are updated.",
           "p3": "A <code>@let</code> is initialized when the render reaches it: an event handler can read it anywhere in its scope, while any other expression, its own value included, only reads it after its <code>;</code>. The content of a template reads it only if every <code>@render</code> of the template comes after it. The compiler reports the others:"
         },
         "edgeCases": {
           "title": "Edge cases",
           "callout1": {
-            "heading": "Signals the compiler cannot follow",
-            "body": "A function of another module, or a member of another object, reading a signal does not make a <code>@let</code> a signal: the compiler follows the members of the component, the imports and the variables of the template only. Such a <code>@let</code> is computed once: read the signal directly, or through a member of the component."
+            "heading": "Signals read behind a condition",
+            "body": "A <code>@let</code> follows the signals its last computation read: in <code>@let label = expanded() ? details().title : summary;</code>, <code>details</code> is followed only while <code>expanded()</code> is true, which is enough, since the value does not depend on it otherwise."
           },
           "callout2": {
             "heading": "Events during the render",
@@ -2670,8 +2670,8 @@
           "th1": "Syntax",
           "th2": "Description",
           "td1": "Names the value of the expression in its scope: the expressions read it after its <code>;</code>, the event handlers anywhere.",
-          "td2": "Reads a <code>@let</code> whose value reads a signal: it is a signal, updated when what it reads changes.",
-          "td3": "Reads a <code>@let</code> whose value reads no signal: a value, computed once."
+          "td2": "Reads the value of a <code>@let</code>, without parentheses: the nodes reading it are updated when it changes.",
+          "td3": "Reported by TypeScript, unless the value is a function: a <code>@let</code> holds a value, not a signal."
         }
       },
       "try": {
@@ -2875,7 +2875,7 @@
           "title": "Declaring and rendering",
           "p1": "A <code>&lt;template&gt;</code> is a declaration: it renders nothing where it is written. Its name follows the tag name, then its parameters, each with its type, between parentheses that are written also when there are none. Each <code>@render</code> renders a new instance of its content, with elements of its own.",
           "example1": "A line rendered three times",
-          "p2": "In the content, a parameter is a signal, read like the item of a <code>@for</code>: <code>label()</code>. When an argument changes, the instance is not rendered again: only the nodes reading the parameter are updated, as the amounts do when you press the button."
+          "p2": "In the content, a parameter is a value, read like the item of a <code>@for</code>: <code>label</code>. When an argument changes, the instance is not rendered again: the parameter takes the new value, and only the nodes reading it are updated, as the amounts do when you press the button."
         },
         "parameters": {
           "title": "Parameters and their types",
@@ -2885,9 +2885,9 @@
         },
         "optionalParameters": {
           "title": "Optional parameters and default values",
-          "p1": "A parameter can be optional, <code>note?: string</code>, or have a default value, with its type or typed by the value: <code>dense: boolean = false</code>, <code>label = item().name</code>. A <code>@render</code> can then leave out its argument, and only the last parameters can be so.",
+          "p1": "A parameter can be optional, <code>note?: string</code>, or have a default value, with its type or typed by the value: <code>dense: boolean = false</code>, <code>label = item.name</code>. A <code>@render</code> can then leave out its argument, and only the last parameters can be so.",
           "example1": "Badges with a default tone and an optional count",
-          "p2": "The default value is used only when the argument is left out: an argument passed as <code>undefined</code> stays <code>undefined</code>, and TypeScript accepts it only if the type of the parameter does. Like in JavaScript, the default value reads what the content reads and the parameters before it, as signals, and it is a signal too: it updates when what it reads changes. An optional parameter left out holds <code>undefined</code>."
+          "p2": "The default value is used only when the argument is left out: an argument passed as <code>undefined</code> stays <code>undefined</code>, and TypeScript accepts it only if the type of the parameter does. Like in JavaScript, the default value reads what the content reads and the parameters before it, and, like a <code>@let</code>, it is computed again when a signal or a parameter it read changes. An optional parameter left out holds <code>undefined</code>."
         },
         "scope": {
           "title": "What a template reads",
@@ -2921,7 +2921,7 @@
           "th2": "Description",
           "td1": "Declares a template with typed parameters, visible in the whole of its scope.",
           "td2": "Renders an instance of the template where it is written, checking the arguments against the parameters.",
-          "td3": "Reads a parameter in the content: a signal, updated when its argument changes.",
+          "td3": "Reads a parameter in the content: a value, updated when its argument changes.",
           "td4": "An optional parameter, and parameters with a default value, typed as declared or by the value: a <code>@render</code> may leave out their arguments."
         }
       },
@@ -2970,7 +2970,7 @@
         "whatThePluginDoes": {
           "title": "What the plugin does",
           "p1": "Only files whose name ends with <code>.xd.component.ts</code> are compiled. For each component class in such a file, the plugin reads the options of <code>@WebComponent</code>, validates and claims the selector, type-checks the template against the class, and adds to the module two imports from virtual modules: the render function of the template and the stylesheet.",
-          "p2": "Each template becomes a module exporting its <code>render</code> function. The <code>signals</code> parameter in its id lists the members of the class recognized as signals, which decide which bindings are reactive. Each stylesheet becomes a module exporting a <code>CSSStyleSheet</code>: components pointing to the same file share the same sheet.",
+          "p2": "Each template becomes a module exporting its <code>render</code> function. The <code>signals</code> parameter in its id lists the members of the class recognized as signals. Each stylesheet becomes a module exporting a <code>CSSStyleSheet</code>: components pointing to the same file share the same sheet.",
           "p3": "A <code>.scss</code> or <code>.sass</code> file is first compiled with the <code>sass</code> package, a <code>.less</code> file with <code>less</code>: optional peer dependencies of <code>@xaendar/build-tools</code>, which the project installs itself (see <a href=\"#/en/components/styling\">Styling</a>). Comments are then removed from the CSS. In <code>vite build</code>, the CSS is also minified with Lightning CSS, unless the Vite configuration turns CSS minification off."
         },
         "errors": {
@@ -3033,7 +3033,7 @@
             "title": "What the server writes",
             "p1": "Each component is written as its element, with the attributes of its <code>@HostProperty</code>, followed by a declarative shadow root holding its <code>&lt;style&gt;</code> and its template, then the content it projects into its slots. The browser turns the template into a shadow root while it parses the page, so the components show, styled, before their scripts:",
             "p2": "The comments mark the dynamic parts the browser adopts: <code>&lt;!----&gt;</code> before each interpolation, <code>&lt;!--xd-if:0--&gt;</code> … <code>&lt;!--/xd-if--&gt;</code> around a block with the index of its branch, and the same for <code>@switch</code>, for <code>@for</code>, whose items carry the key of <code>track</code>, and for the structural directives. None is written inside <code>&lt;textarea&gt;</code>, <code>&lt;title&gt;</code>, <code>&lt;style&gt;</code> and <code>&lt;script&gt;</code>.",
-            "p3": "A custom element the server has no class for, such as one of another library or a component imported with <code>@import lazy</code>, is written without shadow root: the browser renders it once its class is defined. Texts and attributes are escaped."
+            "p3": "A custom element the server has no class for, such as one of another library or a component imported with <code>@import lazy</code>, is written without shadow root: the browser renders it once its class is defined. Texts and attributes are escaped, and an attribute bound to <code>null</code> or <code>undefined</code> is left out, as the browser removes it."
           },
           "onTheServer": {
             "title": "The code of the components on the server",
@@ -3583,7 +3583,7 @@
       },
       "step2StateIn": {
         "title": "Step 2 — State in a signal",
-        "p1": "The todos move into a signal. The template renders them with <code>@for</code>, and shows their number with an interpolation. <code>track todo().id</code> tells <code>@for</code> how to recognise a todo across changes, so that its DOM can be reused.",
+        "p1": "The todos move into a signal. The template renders them with <code>@for</code>, and shows their number with an interpolation. <code>track todo.id</code> tells <code>@for</code> how to recognise a todo across changes, so that its DOM can be reused.",
         "example1": "Step 2: rendering a signal"
       },
       "step3AddingTodos": {
@@ -3928,7 +3928,7 @@
       "cause": "Parentheses after the name of an element ref.",
       "fix": "Write #name alone."
     },
-    "[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item())": {
+    "[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item)": {
       "cause": "A @render without the name of the template, without parentheses, or with a space or a dot between the name and the parentheses.",
       "fix": "Write @render name(arguments), with () when the template has no parameters."
     },
@@ -3952,7 +3952,7 @@
       "cause": "A @let named by something other than an identifier; 'root' is reserved in templates is reported for root, $event and the names starting with __ or $$.",
       "fix": "Use an identifier the generated code does not reserve."
     },
-    "[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item())": {
+    "[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item)": {
       "cause": "A <template> without name(…): a <template> is always the declaration of a template.",
       "fix": "Name it and declare its parameters, then render it with @render."
     },
@@ -4140,9 +4140,9 @@
       "cause": "A @let read by the track expression of a @for.",
       "fix": "Track the item, a property of it, or $index."
     },
-    "Property 'toFixed' does not exist on type 'Computed<number>'.": {
-      "cause": "A @let whose value reads a signal is a signal, read here without parentheses.",
-      "fix": "Call it: total().toFixed(2)."
+    "'total' is a template variable, not a signal: remove the parentheses and read it as total, since the variables of a template (@for, @let, parameters of a template) hold their values": {
+      "cause": "A @let called as a function: it holds its value, not a signal.",
+      "fix": "Remove the parentheses: { total }. A @let whose value is a function is called as usual."
     },
     "Expected 2 arguments, but got 1.": {
       "cause": "A @render passing fewer or more arguments than the template declares parameters: reported on the @render, or on the extra arguments.",
@@ -4156,9 +4156,9 @@
       "cause": "An event handler run while the template is still being rendered, for an event a child component emits from its onInit, reading a @let the render has not reached yet.",
       "fix": "Emit the event after the render (afterRender), or read the @let later."
     },
-    "[Parser] The track expression of a @for reads the item and the implicit variables as signals: call it, e.g. track item()": {
-      "cause": "A track expression that is the item or an implicit variable without parentheses: the key would be the signal, a new function every time, and no row would be reused.",
-      "fix": "Call the signal: track item(), or track a property of it, as in track item().id."
+    "'task' is a template variable, not a signal: remove the parentheses and read it as task, since the variables of a template (@for, @let, parameters of a template) hold their values": {
+      "cause": "A variable of @for, a @let or a parameter of a template called as a function, here in the track expression: they hold values, not signals.",
+      "fix": "Remove the parentheses: track task.id. A variable whose value is a function is called as usual."
     },
     "Error: No element matches the required query 'input' of <x-search>": {
       "cause": "A @Query.required was read while no element of the shadow root matched it: before the render (in onInit, in an effect created there, in the template), or while the element was not in the template.",

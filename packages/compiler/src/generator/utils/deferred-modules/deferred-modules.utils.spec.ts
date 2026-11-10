@@ -93,7 +93,7 @@ describe('getDeferredModules', () => {
       '@hydrate (idle) {',
       '  <p><b-x></b-x></p>',
       '  @if (a) { <c-x></c-x> } @else if (b) { <d-x></d-x> } @else { <e-x></e-x> }',
-      '  @for (item of items; track item()) { <f-x></f-x> }',
+      '  @for (item of items; track item) { <f-x></f-x> }',
       '  @switch (a) { @case (1) { <g-x></g-x> } @default { <h-x></h-x> } }',
       '  <template row()><i-x></i-x></template>',
       '  { text } @let total = 1; @render row()',

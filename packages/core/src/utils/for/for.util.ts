@@ -1,13 +1,12 @@
 import { Function, NoArgsFunction } from '@xaendar/types';
 import { _SSR_MARKERS } from '../../costants';
-import { signal, untracked, type Signal } from '../../signals';
+import { untracked } from '../../signals';
 import { _bindEffect } from '../../signals/effect/effect';
 import type { IterationVariable } from '../../types/iteration-variable.type';
 import type { IterationVariables } from '../../types/iteration-variables.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { _Context } from '../context/context.util';
 import type { TrackExpression } from '../../types/track-expression.type';
-import type { ForEntry } from '../../types/for-entry.type';
 import type { ForRun } from '../../types/for-run.type';
 
 /**
@@ -21,6 +20,9 @@ import type { ForRun } from '../../types/for-run.type';
  * - key sparita → il Context viene distrutto.
  * - key nuova → il Context viene creato.
  *
+ * The items and their keys are read by a binding (see `_bindEffect`): the `@for` runs again whenever a signal, or a
+ * variable of the template, they read changes.
+ *
  * The first run renders the items in order, getting their nodes with the strategy of the context: in the hydration of a
  * component, the items the server rendered are adopted when it rendered the same keys in the same order, otherwise
  * the block is emptied, with a warning, and the items created. Every later run reads the strategy of the context again:
@@ -31,14 +33,14 @@ import type { ForRun } from '../../types/for-run.type';
  * @param referenceNode - The node to insert the items before, `null` to append them.
  * @param condition - Ritorna gli item da iterare: un array, oppure un numero
  *   `n` iterato come `0, 1, ..., n - 1`.
- * @param trackExpression - Ritorna la key di un item, ricevendo l'item, il suo indice e $first/$last/$even/$odd
- *   come funzioni che li leggono, come i signal del body.
- * @param forFn - Callback invocata per creare un nuovo item: ritorna la sua entry, creata da {@link _iterationVariables}
- *   con le stesse `variables`.
- * @param variables - The variables the body reads, declared once by the compiled code, which the signals of each entry
- *   hold by position: omitted when the body reads none.
+ * @param trackExpression - Ritorna la key di un item, ricevendo l'item, il suo indice e $first/$last/$even/$odd, come
+ *   valori, come li legge il body.
+ * @param forFn - Callback invocata per creare un nuovo item: ritorna il context del suo body, dove
+ *   {@link _iterationVariables} dichiara le stesse `variables`.
+ * @param variables - The variables the body reads, declared once by the compiled code: omitted when the body reads none.
+ * @param reads - The names of the variables of the template the items and their keys read, omitted when they read none.
  */
-export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, condition: NoArgsFunction<unknown[] | number>, trackExpression: TrackExpression, forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null, NodeStrategy], ForEntry>, variables?: IterationVariables) {
+export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, condition: NoArgsFunction<unknown[] | number>, trackExpression: TrackExpression, forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null, NodeStrategy], _Context>, variables?: IterationVariables, reads?: readonly string[]) {
   const nodeBlock = parentContext.nodeStrategy.block(parentContext, parentNode, referenceNode, 'for', _SSR_MARKERS.for);
   const run: ForRun = {
     parentNode, parentContext,
@@ -50,11 +52,11 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
     entries: null
   };
 
-  _bindEffect(parentContext, runFor, run);
+  _bindEffect(parentContext, runFor, run, undefined, undefined, reads);
 }
 
 /**
- * Reads the items of a `@for` and their keys, then renders them: the callback of the effect of {@link _for}, shared by
+ * Reads the items of a `@for` and their keys, then renders them: the callback of the binding of {@link _for}, shared by
  * every `@for`. Only the items and the track expression are tracked.
  *
  * @param run - The `@for`.
@@ -63,8 +65,9 @@ function runFor(run: ForRun): void {
   const { trackExpression } = run;
   const iterable = run.condition();
   const items = typeof iterable === 'number' ? Array.from({ length: iterable }, (_, i) => i) : iterable;
-  // The track expression reads the item, the index and the implicit variables as the body does, by calling them
-  const newKeys = items.map((item, i) => trackExpression(() => item, () => i, () => i === 0, () => i === items.length - 1, () => i % 2 === 0, () => i % 2 !== 0));
+  // The track expression reads the item, the index and the implicit variables as the body does: as values
+  const last = items.length - 1;
+  const newKeys = items.map((item, i) => trackExpression(item, i, i === 0, i === last, i % 2 === 0, i % 2 !== 0));
   const occurrences = countOccurrences(newKeys);
   untracked(() => run.entries ? updateItems(run, items, newKeys, occurrences) : renderItems(run, items, newKeys, occurrences));
 }
@@ -81,13 +84,13 @@ function runFor(run: ForRun): void {
 function renderItems(run: ForRun, items: unknown[], newKeys: Array<string | number>, occurrences: ReturnType<typeof countOccurrences>): void {
   const { parentNode, parentContext, nodeBlock, forFn } = run;
   const { nodeStrategy } = parentContext;
-  const entries = new Map<string | number, ForEntry[]>();
+  const entries = new Map<string | number, _Context[]>();
   const itemNodeStrategy = nodeStrategy.adoptItems(parentNode, nodeBlock, newKeys);
   for (let i = 0; i < items.length; i++) {
     const key = newKeys[i];
     const created = forFn(parentNode, parentContext, items, i, nodeBlock.anchor, itemNodeStrategy);
-    parentContext.addChild(created.context);
-    const keyEntries = entries.get(key) ?? new Array<ForEntry>(occurrences.counts.get(key)!);
+    parentContext.addChild(created);
+    const keyEntries = entries.get(key) ?? new Array<_Context>(occurrences.counts.get(key)!);
     keyEntries[occurrences.indexes[i]] = created;
     entries.set(key, keyEntries);
   }
@@ -97,8 +100,9 @@ function renderItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
 }
 
 /**
- * Renders the items of a later run, reusing the entries of the keys that survive: their nodes are moved, and their
- * implicit variables updated. The entries of the keys gone are destroyed, the ones of the new keys created.
+ * Renders the items of a later run, reusing the entries of the keys that survive: their variables are updated, which
+ * refreshes the bindings reading them, and their nodes moved, read once refreshed, since a block at the top of the body
+ * may render other nodes. The entries of the keys gone are destroyed, the ones of the new keys created.
  *
  * @param run - The `@for`, already rendered.
  * @param items - The items.
@@ -108,14 +112,14 @@ function renderItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
 function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | number>, occurrences: ReturnType<typeof countOccurrences>): void {
   const { parentNode, parentContext, forFn, variables } = run;
   const entries = run.entries!;
-  const newEntries = new Map<string | number, ForEntry[]>();
+  const newEntries = new Map<string | number, _Context[]>();
 
   // The entries of the keys gone, and of the occurrences of a key beyond its new count, are destroyed
   for (const [key, keyEntries] of entries) {
     const kept = occurrences.counts.get(key) ?? 0;
     for (let i = kept; i < keyEntries.length; i++) {
-      keyEntries[i].context.clear();
-      parentContext.removeChild(keyEntries[i].context);
+      keyEntries[i].clear();
+      parentContext.removeChild(keyEntries[i]);
     }
   }
 
@@ -126,11 +130,15 @@ function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
     const occurrence = occurrences.indexes[i];
     const existing = entries.get(key)?.[occurrence];
 
-    let entry: ForEntry;
+    let entry: _Context;
     let nodes: Node[];
 
     if (existing) {
-      nodes = getItemNodes(parentNode, existing.context);
+      if (variables) {
+        updateIterationVariables(existing, variables, items, i);
+      }
+
+      nodes = getItemNodes(parentNode, existing);
       const lastNode = nodes[nodes.length - 1];
       if (lastNode?.nextSibling !== nextReference) {
         /*
@@ -141,19 +149,16 @@ function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
           parentNode.moveBefore(nodes[j], nextReference);
         }
       }
-      if (variables) {
-        updateIterationVariables(existing.signals!, variables.used, items, i);
-      }
 
       entry = existing;
     } else {
       const created = forFn(parentNode, parentContext, items, i, nextReference, parentContext.nodeStrategy);
-      parentContext.addChild(created.context);
-      nodes = getItemNodes(parentNode, created.context);
+      parentContext.addChild(created);
+      nodes = getItemNodes(parentNode, created);
       entry = created;
     }
 
-    const keyEntries = newEntries.get(key) ?? new Array<ForEntry>(occurrences.counts.get(key)!);
+    const keyEntries = newEntries.get(key) ?? new Array<_Context>(occurrences.counts.get(key)!);
     keyEntries[occurrence] = entry;
     newEntries.set(key, keyEntries);
     nextReference = nodes[0] ?? nextReference;
@@ -245,54 +250,52 @@ function collectNodes(parentNode: Node, context: _Context, nodes: Node[]): void 
 }
 
 /**
- * Creates the entry of an item of a `@for`, declaring in the context of its body the variables the body reads. The item
- * and `$index`/`$first`/`$last`/`$even`/`$odd` are signals: when a row is reused, for an item moved to a different
- * position in the array or for a new item with the same key, `_for` writes the new values into these signals in place
- * (see {@link updateIterationVariables}), instead of recreating the item's template output. Anything bound to these
- * variables re-runs reactively; everything else in the item's subtree (state, subscriptions, pending requests) is left
- * completely untouched.
+ * Declares in the context of the body of an item of a `@for` the variables the body reads: the item and
+ * `$index`/`$first`/`$last`/`$even`/`$odd`, as values. When a row is reused, for an item moved to a different
+ * position in the array or for a new item with the same key, `_for` writes the new values into the context in place
+ * and refreshes it (see {@link updateIterationVariables}), instead of recreating the item's template output: the
+ * bindings reading the variables run again, everything else in the item's subtree (state, subscriptions, pending
+ * requests) is left completely untouched.
  *
- * Only the variables the body reads are created: a signal per variable and per item is what a large table pays for the
- * variables its body never reads.
+ * Only the variables the body reads are declared: the compiled code does not call it for a body reading none.
  *
  * @param context - The context of the body of the item, which the variables are declared in.
  * @param items - The full array being iterated.
  * @param index - The current iteration index.
- * @param variables - The variables to create, declared once for the `@for` by the compiled code, and given to `_for`
- *   too: omitted when the body reads none.
- * @returns The entry of the item: its context, and the signals of the variables, in the order of `variables.used`.
+ * @param variables - The variables to declare, declared once for the `@for` by the compiled code, and given to `_for`
+ *   too.
  */
-export function _iterationVariables(context: _Context, items: unknown[], index: number, variables?: IterationVariables): ForEntry {
-  if (!variables) {
-    return { context, signals: null };
-  }
-
+export function _iterationVariables(context: _Context, items: unknown[], index: number, variables: IterationVariables): void {
   const { used, names } = variables;
-  const signals = new Array<Signal<unknown>>(used.length);
   for (let i = 0; i < used.length; i++) {
-    const state = signal(iterationValue(used[i], items, index));
-    signals[i] = state;
-    context.addIdentifier(names[i], state);
+    context.addIdentifier(names[i], iterationValue(used[i], items, index));
   }
-
-  return { context, signals };
 }
 
 /**
- * Writes into the signals of an item reused by a later run of a `@for` the values of its new position.
+ * Writes into the context of an item reused by a later run of a `@for` the values of its new position, then refreshes
+ * it with the names of the variables that changed, if any (see `_Context.refresh`).
  *
- * N.B. Deliberate, to save memory: a single function of the module, given the signals of the entry and the variables of
+ * N.B. Deliberate, to save memory: a single function of the module, given the context of the item and the variables of
  * the `@for`, instead of an `update` closure created by {@link _iterationVariables} for each item, capturing its
  * variables, which cost a function and its context per item. Do not move it back into a closure per item.
  *
- * @param signals - The signals of the item, in the order of `used`.
- * @param used - The variables the body reads.
+ * @param context - The context of the item.
+ * @param variables - The variables the body reads.
  * @param items - The full array being iterated.
  * @param index - The new index of the item.
  */
-function updateIterationVariables(signals: Array<Signal<unknown>>, used: readonly IterationVariable[], items: unknown[], index: number): void {
+function updateIterationVariables(context: _Context, { used, names }: IterationVariables, items: unknown[], index: number): void {
+  let changed: string[] | null = null;
   for (let i = 0; i < used.length; i++) {
-    signals[i].set(iterationValue(used[i], items, index));
+    const name = names[i];
+    if (context.update(name, iterationValue(used[i], items, index))) {
+      changed ? changed.push(name) : changed = [name];
+    }
+  }
+
+  if (changed) {
+    context.refresh(changed);
   }
 }
 
