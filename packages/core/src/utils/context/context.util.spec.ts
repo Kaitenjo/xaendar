@@ -5,6 +5,16 @@ import { _bindEffect } from '../../signals/effect/effect';
 import { closeTryScope, openTryScope } from '../try-scope/try-scope.util';
 import { _Context, createAnchor, mountNode } from './context.util';
 
+/**
+ * The nodes a context tracks, in mount order.
+ */
+const nodesOf = (context: { getNodeCount(): number, getNode(index: number): Node }): Node[] => Array.from({ length: context.getNodeCount() }, (_item, index) => context.getNode(index));
+
+/**
+ * The child contexts of a context, in registration order.
+ */
+const childrenOf = <TContext>(context: { getChildCount(): number, getChild(index: number): TContext }): TContext[] => Array.from({ length: context.getChildCount() }, (_item, index) => context.getChild(index));
+
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
   loadSignals();
@@ -236,7 +246,7 @@ describe('_Context', () => {
 
       expect(children.get('form')).toBe('the form');
       expect(scope.get('field')).toBe('the field');
-      expect(children.getChildren()![0].get('field')).toBe('the field');
+      expect(childrenOf(children)[0].get('field')).toBe('the field');
     });
 
     it('throws when a variable is declared twice in the same scope', () => {
@@ -274,6 +284,44 @@ describe('_Context', () => {
     });
   });
 
+  describe('children', () => {
+    it('keeps the children in registration order, from one to many, and removes any of them', () => {
+      const root = createRoot();
+      const first = root.addChild();
+      expect(root.getChildCount()).toBe(1);
+      expect(root.getChild(0)).toBe(first);
+
+      const second = root.addChild();
+      const third = root.addChild();
+      expect(childrenOf(root)).toEqual([first, second, third]);
+
+      root.removeChild(second);
+      expect(childrenOf(root)).toEqual([first, third]);
+
+      root.removeChild(first);
+      root.removeChild(third);
+      expect(root.getChildCount()).toBe(0);
+
+      const fourth = root.addChild();
+      expect(childrenOf(root)).toEqual([fourth]);
+      root.removeChild(fourth);
+      expect(root.getChildCount()).toBe(0);
+    });
+
+    it('refreshes and clears a single child as it does many', () => {
+      const root = createRoot();
+      const child = root.addChild();
+      const refresh = vi.spyOn(child as unknown as { _refresh(): void }, '_refresh');
+      const clear = vi.spyOn(child, 'clear');
+
+      root.refresh(['name']);
+      root.clear();
+
+      expect(refresh).toHaveBeenCalledOnce();
+      expect(clear).toHaveBeenCalledOnce();
+    });
+  });
+
   describe('removeChild', () => {
     it('ignores a context that is not a child', () => {
       const root = createRoot();
@@ -281,6 +329,9 @@ describe('_Context', () => {
       const childClear = vi.spyOn(child, 'clear');
 
       root.removeChild(createRoot());
+      const other = root.addChild();
+      root.removeChild(createRoot());
+      expect(childrenOf(root)).toEqual([child, other]);
       root.clear();
 
       expect(childClear).toHaveBeenCalledOnce();
@@ -291,7 +342,7 @@ describe('_Context', () => {
 
       root.removeChild(createRoot());
 
-      expect(root.getChildren()).toBeNull();
+      expect(childrenOf(root)).toEqual([]);
     });
   });
 
@@ -303,21 +354,42 @@ describe('_Context', () => {
 
       context.addNode(a);
       context.addNode(b);
-      expect(context.getNodes()).toEqual([a, b]);
+      expect(nodesOf(context)).toEqual([a, b]);
 
       context.removeNode(a);
-      expect(context.getNodes()).toEqual([b]);
+      expect(nodesOf(context)).toEqual([b]);
+    });
+
+    it('removes a node in the middle, keeping the others in mount order, and untracks the last one', () => {
+      const context = createRoot();
+      const [a, b, c] = [document.createElement('a'), document.createElement('b'), document.createElement('i')];
+      context.addNode(a);
+      context.addNode(b);
+      context.addNode(c);
+      expect(context.getNodeCount()).toBe(3);
+
+      context.removeNode(b);
+      expect(context.getNodeCount()).toBe(2);
+      expect(context.getNode(0)).toBe(a);
+      expect(context.getNode(1)).toBe(c);
+
+      context.removeNode(a);
+      context.removeNode(c);
+      expect(context.getNodeCount()).toBe(0);
+
+      context.addNode(b);
+      expect(nodesOf(context)).toEqual([b]);
     });
 
     it('ignores a node it does not track', () => {
       const context = createRoot();
       const a = document.createElement('a');
       context.removeNode(a);
-      expect(context.getNodes()).toBeNull();
+      expect(nodesOf(context)).toEqual([]);
 
       context.addNode(a);
       context.removeNode(document.createElement('b'));
-      expect(context.getNodes()).toEqual([a]);
+      expect(nodesOf(context)).toEqual([a]);
     });
 
     it('keeps the node each node is inserted into at the index of the node when one is removed', () => {
@@ -400,7 +472,7 @@ describe('_Context', () => {
       expect(first).toHaveBeenCalledOnce();
       expect(second).toHaveBeenCalledOnce();
       expect(childClear).toHaveBeenCalledOnce();
-      expect(root.getNodes()).toBeNull();
+      expect(nodesOf(root)).toEqual([]);
       expect(root.get('name')).toBeUndefined();
 
       root.clear();
@@ -572,9 +644,9 @@ describe('_Context', () => {
 
       staging.moveTo(target);
 
-      expect(target.getChildren()).toEqual([child]);
+      expect(childrenOf(target)).toEqual([child]);
       expect(target.getUnlistenFns()).toBeNull();
-      expect(staging.getChildren()).toBeNull();
+      expect(childrenOf(staging)).toEqual([]);
     });
 
     it('moves the cleanups of a context without children', () => {
@@ -586,7 +658,7 @@ describe('_Context', () => {
       staging.moveTo(target);
 
       expect(target.getUnlistenFns()).toEqual([cleanup]);
-      expect(target.getChildren()).toBeNull();
+      expect(childrenOf(target)).toEqual([]);
     });
   });
 
@@ -834,7 +906,7 @@ describe('mountNode', () => {
     const context = createRoot();
     const node = document.createElement('p');
     mountNode(node, document.createElement('div'), context);
-    expect(context.getNodes()).toEqual([node]);
+    expect(nodesOf(context)).toEqual([node]);
   });
 
   it('removes the node from the DOM and the context when the context is destroyed', () => {
@@ -846,7 +918,7 @@ describe('mountNode', () => {
     context.clear();
 
     expect(node.parentNode).toBeNull();
-    expect(context.getNodes()).toBeNull();
+    expect(nodesOf(context)).toEqual([]);
   });
 });
 
@@ -860,7 +932,7 @@ describe('createAnchor', () => {
     expect(anchor).toBeInstanceOf(Comment);
     expect(anchor.textContent).toBe('label');
     expect(anchor.parentNode).toBe(parent);
-    expect(context.getNodes()).toEqual([anchor]);
+    expect(nodesOf(context)).toEqual([anchor]);
   });
 
   it('honours the reference node', () => {

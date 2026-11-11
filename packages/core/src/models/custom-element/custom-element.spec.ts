@@ -15,6 +15,11 @@ import type { NodeStrategy } from '../../types/node-strategy.type';
 import { CustomDirective } from '../custom-directive/custom-directive';
 import { CustomElement } from './custom-element';
 
+/**
+ * The child contexts of a context, in registration order.
+ */
+const childrenOf = <TContext>(context: { getChildCount(): number, getChild(index: number): TContext }): TContext[] => Array.from({ length: context.getChildCount() }, (_item, index) => context.getChild(index));
+
 loadSignals();
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
@@ -645,7 +650,7 @@ describe('CustomElement', () => {
       });
 
       document.body.appendChild(element);
-      expect(context.getChildren()).toHaveLength(1);
+      expect(childrenOf(context)).toHaveLength(1);
 
       element.remove();
       expect(child!.isConnected).toBe(false);
@@ -658,7 +663,7 @@ describe('CustomElement', () => {
 
       destroy();
       expect(child.isConnected).toBe(false);
-      expect(context.getChildren()).toHaveLength(0);
+      expect(childrenOf(context)).toHaveLength(0);
 
       element.remove();
       expect(child.destroyed).toHaveBeenCalledOnce();

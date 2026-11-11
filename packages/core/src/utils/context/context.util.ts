@@ -77,9 +77,15 @@ export class _Context {
     let: Symbol('uninitialized @let')
   };
   /**
-   * Child contexts representing nested scopes (e.g. `@for` loop iterations, `@if` branches).
+   * Child contexts representing nested scopes (e.g. `@for` loop iterations, `@if` branches): the context itself while
+   * there is only one, an array from the second, `null` while there is none. Read through {@link getChildCount} and
+   * {@link getChild}.
+   *
+   * N.B. Deliberate, to save memory: most contexts hold one child (the branch of the `@switch` of a cell, the row of a
+   * `@for` holding one block), and the context itself costs nothing, where the array `[child]` costs a `JSArray` and its
+   * backing store per context. Do not go back to an array for a single child.
    */
-  private _children: Array<_Context> | null = null;
+  private _children: _Context | _Context[] | null = null;
   /**
    * The variables declared in this scope (e.g. the variables of a `@for`, the element refs, the `@let`), by name. Up to
    * {@link VARIABLES_LIMIT} variables, an array alternating names and values (`[name, value, name, value]`), sized when
@@ -89,18 +95,20 @@ export class _Context {
   private _variables: unknown[] | Map<string, unknown> | null;
   /**
    * DOM nodes directly mounted into this scope via {@link mountNode} or {@link trackNode} (does not
-   * include nodes owned by child contexts). Used to determine, for a given
-   * context, which DOM nodes belong to it — for example so `_for`'s keyed
-   * diffing can move a reused item's nodes to a new position without
-   * recreating them. Only the nodes at the top of the block are tracked, all rendered into the same node: the ones
-   * rendered into an element of the template are removed with it (see `trackNode`).
+   * include nodes owned by child contexts), each one followed by the node it is inserted into, which {@link clear}
+   * removes it from (`[node, parentNode, node, parentNode]`): `null` for a node tracked without one, which the context
+   * does not remove. Used to determine, for a given context, which DOM nodes belong to it — for example so `_for`'s keyed
+   * diffing can move a reused item's nodes to a new position without recreating them. Only the nodes at the top of the
+   * block are tracked, all rendered into the same node: the ones rendered into an element of the template are removed
+   * with it (see `trackNode`). `null` while the context tracks no node. Read through {@link getNodeCount} and
+   * {@link getNode}.
+   *
+   * N.B. Deliberate, to save memory: one array alternating the nodes and the nodes they are inserted into, instead of
+   * two parallel arrays, which cost one more array per context tracking a node, that is nearly every context. The
+   * callers read the nodes through {@link getNode} instead of an array of the nodes alone, which would be allocated at
+   * every read. Do not split it into two arrays again, nor return the nodes as a new array.
    */
-  private _nodes: Array<Node> | null = null;
-  /**
-   * The node each node of {@link _nodes}, at the same index, is inserted into, which {@link clear} removes it from: `null`
-   * for a node tracked without one, which the context does not remove. `null` while the context tracks no node.
-   */
-  private _parentNodes: Array<Node | null> | null = null;
+  private _nodes: Array<Node | null> | null = null;
   /**
    * Cleanup functions registered via {@link addUnlistener}.
    * Called when this context is destroyed to remove DOM nodes,
@@ -109,9 +117,14 @@ export class _Context {
   private _unlistenFns: Array<Unlistener> | null = null;
   /**
    * The bindings of this scope reading variables of the template, registered via {@link addBinding}, in the order they
-   * were rendered: {@link refresh} runs again the ones reading a variable that changed. `null` while the scope has none.
+   * were rendered: {@link refresh} runs again the ones reading a variable that changed. The binding itself while there is
+   * only one, an array from the second, `null` while the scope has none.
+   *
+   * N.B. Deliberate, to save memory: a scope often holds a single binding reading its variables (the text of a cell, the
+   * class of a row), and the binding itself costs nothing, where the array `[binding]` costs a `JSArray` and its backing
+   * store per context. Do not go back to an array for a single binding.
    */
-  private _bindings: Binding[] | null = null;
+  private _bindings: Binding | Binding[] | null = null;
   /**
    * The last refresh that brought this context up to date (see {@link refresh}): the one running when it was created, or
    * the last one that visited it.
@@ -350,7 +363,14 @@ export class _Context {
    */
   public addChild(context?: _Context): _Context {
     context ??= new _Context(this);
-    this._children?.length ? this._children.push(context) : this._children = [context]
+    const children = this._children;
+    if (Array.isArray(children)) {
+      children.length ? children.push(context) : this._children = context;
+    } else {
+      // The second child gets an array of exactly two items: a push into an empty array would reserve room for many more
+      this._children = children ? [children, context] : context;
+    }
+
     return context;
   }
 
@@ -360,21 +380,36 @@ export class _Context {
    * @param context - The child context to remove.
    */
   public removeChild(context: _Context): void {
-    if (this._children) {
-      const index = this._children.indexOf(context);
+    const children = this._children;
+    if (children === context) {
+      this._children = null;
+    } else if (Array.isArray(children)) {
+      const index = children.indexOf(context);
       if (index !== -1) {
-        this._children.splice(index, 1);
+        children.splice(index, 1);
       }
     }
   }
 
   /**
-   * Returns the child contexts registered in this scope, in registration order.
+   * Returns the number of child contexts registered in this scope, which {@link getChild} reads.
    *
-   * @returns The child contexts of this context.
+   * @returns The number of child contexts.
    */
-  public getChildren(): ReadonlyArray<_Context> | null {
-    return this._children;
+  public getChildCount(): number {
+    const children = this._children;
+    return Array.isArray(children) ? children.length : children ? 1 : 0;
+  }
+
+  /**
+   * Returns a child context registered in this scope, by its position in registration order.
+   *
+   * @param index - The position of the child context, lower than {@link getChildCount}.
+   * @returns The child context.
+   */
+  public getChild(index: number): _Context {
+    const children = this._children!;
+    return Array.isArray(children) ? children[index] : children;
   }
 
   /**
@@ -386,14 +421,8 @@ export class _Context {
    *   nodes of the server a `@hydrate` holds until its content adopts them.
    */
   public addNode(node: Node, parentNode: Node | null = null): void {
-    // The first node gets arrays of exactly one item: a push into an empty array would reserve room for many more
-    if (this._nodes) {
-      this._nodes.push(node);
-      this._parentNodes!.push(parentNode);
-    } else {
-      this._nodes = [node];
-      this._parentNodes = [parentNode];
-    }
+    // The first node gets an array of exactly its two items: a push into an empty array would reserve room for many more
+    this._nodes ? this._nodes.push(node, parentNode) : this._nodes = [node, parentNode];
   }
 
   /**
@@ -402,23 +431,36 @@ export class _Context {
    * @param nodeToRemove - The DOM node to untrack.
    */
   public removeNode(nodeToRemove: Node): void {
-    const index = this._nodes ? this._nodes.indexOf(nodeToRemove) : -1;
-    if (index !== -1) {
-      this._nodes!.splice(index, 1);
-      this._parentNodes!.splice(index, 1);
+    const nodes = this._nodes;
+    if (nodes) {
+      for (let i = 0; i < nodes.length; i += 2) {
+        if (nodes[i] === nodeToRemove) {
+          nodes.length === 2 ? this._nodes = null : nodes.splice(i, 2);
+          return;
+        }
+      }
     }
   }
 
   /**
-   * Returns the DOM nodes directly owned by this context (not recursively
-   * including nodes owned by child contexts), in mount order. Used by
-   * `_for`'s keyed diffing to locate a reused item's nodes so they can be
-   * repositioned with `moveBefore` instead of being destroyed and recreated.
+   * Returns the number of DOM nodes directly owned by this context (not recursively including nodes owned by child
+   * contexts), which {@link getNode} reads.
    *
-   * @returns The nodes directly owned by this context.
+   * @returns The number of nodes.
    */
-  public getNodes(): ReadonlyArray<Node> | null {
-    return this._nodes;
+  public getNodeCount(): number {
+    return this._nodes ? this._nodes.length / 2 : 0;
+  }
+
+  /**
+   * Returns a DOM node directly owned by this context, by its position in mount order. Used by `_for`'s keyed diffing to
+   * locate a reused item's nodes so they can be repositioned with `moveBefore` instead of being destroyed and recreated.
+   *
+   * @param index - The position of the node, lower than {@link getNodeCount}.
+   * @returns The node.
+   */
+  public getNode(index: number): Node {
+    return this._nodes![2 * index]!;
   }
 
   /**
@@ -463,7 +505,13 @@ export class _Context {
    * @param binding - The binding.
    */
   public addBinding(binding: Binding): void {
-    this._bindings ? this._bindings.push(binding) : this._bindings = [binding];
+    const bindings = this._bindings;
+    if (Array.isArray(bindings)) {
+      bindings.push(binding);
+    } else {
+      // The second binding gets an array of exactly two items: a push into an empty array would reserve room for many more
+      this._bindings = bindings ? [bindings, binding] : binding;
+    }
   }
 
   /**
@@ -507,10 +555,8 @@ export class _Context {
    */
   public setNodeStrategy(nodeStrategy: NodeStrategy): void {
     this.nodeStrategy = nodeStrategy;
-    if (this._children) {
-      for (let i = 0; i < this._children.length; i++) {
-        this._children[i].setNodeStrategy(nodeStrategy);
-      }
+    for (let i = 0; i < this.getChildCount(); i++) {
+      this.getChild(i).setNodeStrategy(nodeStrategy);
     }
   }
 
@@ -525,10 +571,8 @@ export class _Context {
       context.addUnlistener(...this._unlistenFns);
     }
 
-    if (this._children) {
-      for (let i = 0; i < this._children.length; i++) {
-        context.addChild(this._children[i]);
-      }
+    for (let i = 0; i < this.getChildCount(); i++) {
+      context.addChild(this.getChild(i));
     }
 
     this._unlistenFns = null;
@@ -543,21 +587,20 @@ export class _Context {
   private _refresh(): void {
     const names = changedNames!;
     this._pass = currentPass;
-    if (this._bindings) {
-      for (let i = 0; i < this._bindings.length; i++) {
-        const binding = this._bindings[i];
-        if (readsAny(binding.reads, changedNames!)) {
-          rerunBinding(binding);
-        }
+    const bindings = this._bindings;
+    if (Array.isArray(bindings)) {
+      for (let i = 0; i < bindings.length; i++) {
+        refreshBinding(bindings[i]);
       }
+    } else if (bindings) {
+      refreshBinding(bindings);
     }
 
-    if (this._children) {
-      for (let i = 0; i < this._children.length; i++) {
-        const child = this._children[i];
-        if (child._pass !== currentPass) {
-          child._refresh();
-        }
+    // The children are read at each iteration: refreshing one may add or remove the ones after it
+    for (let i = 0; i < this.getChildCount(); i++) {
+      const child = this.getChild(i);
+      if (child._pass !== currentPass) {
+        child._refresh();
       }
     }
 
@@ -581,11 +624,12 @@ export class _Context {
       preventing the parent to listen the event emitted on the destruction of the
       element when is removed
     */
-    if (this._nodes) {
-      for (let i = this._nodes.length - 1; i >= 0; i--) {
-        const node = this._nodes[i];
-        const parentNode = this._parentNodes![i];
-        if (parentNode !== null && node.parentNode === parentNode) {
+    const nodes = this._nodes;
+    if (nodes) {
+      for (let i = nodes.length - 2; i >= 0; i -= 2) {
+        const node = nodes[i]!;
+        const parentNode = nodes[i + 1];
+        if (parentNode && node.parentNode === parentNode) {
           parentNode.removeChild(node);
         }
       }
@@ -598,23 +642,23 @@ export class _Context {
       }
     }
 
-    if (this._bindings) {
-      for (let i = 0; i < this._bindings.length; i++) {
-        this._bindings[i].effect?.dispose();
+    const bindings = this._bindings;
+    if (Array.isArray(bindings)) {
+      for (let i = 0; i < bindings.length; i++) {
+        bindings[i].effect?.dispose();
       }
+    } else {
+      bindings?.effect?.dispose();
     }
 
-    if (this._children) {
-      for (let i = 0; i < this._children.length; i++) {
-        this._children[i].clear();
-      }
+    for (let i = 0; i < this.getChildCount(); i++) {
+      this.getChild(i).clear();
     }
 
     this._unlistenFns = null;
     this._bindings = null;
     this._children = null;
     this._nodes = null;
-    this._parentNodes = null;
     this._variables = null;
   }
 }
@@ -693,6 +737,17 @@ function readsAny(reads: readonly string[], names: readonly string[]): boolean {
   }
 
   return false;
+}
+
+/**
+ * Runs a binding again when it reads one of the variables changed in the refresh running (see `_Context.refresh`).
+ *
+ * @param binding - The binding.
+ */
+function refreshBinding(binding: Binding): void {
+  if (readsAny(binding.reads, changedNames!)) {
+    rerunBinding(binding);
+  }
 }
 
 /**

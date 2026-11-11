@@ -228,20 +228,19 @@ function getItemNodes(parentNode: Node, context: _Context): Node[] {
  * @param nodes - The array the collected nodes are pushed into.
  */
 function collectNodes(parentNode: Node, context: _Context, nodes: Node[]): void {
-  const owned = context.getNodes();
-  if (owned?.length) {
-    if (owned[0].parentNode !== parentNode) {
+  const count = context.getNodeCount();
+  if (count) {
+    if (context.getNode(0).parentNode !== parentNode) {
       return;
     }
 
-    nodes.push(...owned);
+    for (let i = 0; i < count; i++) {
+      nodes.push(context.getNode(i));
+    }
   }
 
-  const children = context.getChildren();
-  if (children?.length) {
-    for (let i = 0; i < children.length; i++) {
-      collectNodes(parentNode, children[i], nodes);
-    }
+  for (let i = 0; i < context.getChildCount(); i++) {
+    collectNodes(parentNode, context.getChild(i), nodes);
   }
 }
 

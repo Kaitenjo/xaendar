@@ -10,6 +10,11 @@ import { _defineRender } from '../../utils/render-registry/render-registry.util'
 import { CustomElement } from '../custom-element/custom-element';
 import { CustomDirective } from './custom-directive';
 
+/**
+ * The child contexts of a context, in registration order.
+ */
+const childrenOf = <TContext>(context: { getChildCount(): number, getChild(index: number): TContext }): TContext[] => Array.from({ length: context.getChildCount() }, (_item, index) => context.getChild(index));
+
 loadSignals();
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
@@ -314,12 +319,12 @@ describe('CustomDirective', () => {
       const directive = create(TestDirective);
       const { element, destroy } = directive.createComponent(Child, { target: document.body });
       const context = connect(directive);
-      expect(context.getChildren()).toHaveLength(1);
+      expect(childrenOf(context)).toHaveLength(1);
 
       destroy();
 
       expect(element.isConnected).toBe(false);
-      expect(context.getChildren()).toHaveLength(0);
+      expect(childrenOf(context)).toHaveLength(0);
     });
   });
 

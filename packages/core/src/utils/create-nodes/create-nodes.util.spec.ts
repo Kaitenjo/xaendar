@@ -3,6 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { _Context } from '../context/context.util';
 import { CREATE_NODES } from './create-nodes.util';
 
+/**
+ * The nodes a context tracks, in mount order.
+ */
+const nodesOf = (context: { getNodeCount(): number, getNode(index: number): Node }): Node[] => Array.from({ length: context.getNodeCount() }, (_item, index) => context.getNode(index));
+
 const createContext = () => new _Context({ createElement: (tagName: string) => document.createElement(tagName) } as never);
 
 describe('CREATE_NODES', () => {
@@ -28,7 +33,7 @@ describe('CREATE_NODES', () => {
     CREATE_NODES.separator(parent, true);
 
     expect(parent.innerHTML).toBe('a<!--anchor-->');
-    expect(context.getNodes()).toEqual([text]);
+    expect(nodesOf(context)).toEqual([text]);
   });
 
   it('creates the anchor of a block, whose content it creates, without marker', () => {
@@ -40,7 +45,7 @@ describe('CREATE_NODES', () => {
 
     expect(block.marker).toBeUndefined();
     expect(parent.innerHTML).toBe('<!--if-->');
-    expect(context.getNodes()).toEqual([block.anchor]);
+    expect(nodesOf(context)).toEqual([block.anchor]);
     expect(CREATE_NODES.adopt(parent, block, '0')).toBe(CREATE_NODES);
     expect(CREATE_NODES.adoptItems(parent, block, [1])).toBe(CREATE_NODES);
     expect(nodes).toBeInstanceOf(Array);
@@ -64,6 +69,6 @@ describe('CREATE_NODES', () => {
     expect(Object.isFrozen(block)).toBe(true);
     expect(CREATE_NODES.block(createContext(), document.createElement('p'), text, 'for', 'xd-for', true)).toBe(block);
     expect(parent.childNodes.length).toBe(1);
-    expect(context.getNodes()).toBeNull();
+    expect(nodesOf(context)).toEqual([]);
   });
 });

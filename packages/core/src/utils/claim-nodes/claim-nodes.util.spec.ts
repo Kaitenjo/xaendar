@@ -7,6 +7,11 @@ import { deferElementHydration } from '../hydration-triggers/hydration-triggers.
 import { claimShadowRoot, ClaimNodes, isClaimed } from './claim-nodes.util';
 
 /**
+ * The nodes a context tracks, in mount order.
+ */
+const nodesOf = (context: { getNodeCount(): number, getNode(index: number): Node }): Node[] => Array.from({ length: context.getNodeCount() }, (_item, index) => context.getNode(index));
+
+/**
  * A parent holding the HTML of the server.
  */
 function parse(html: string): HTMLDivElement {
@@ -195,7 +200,7 @@ describe('ClaimNodes', () => {
       expect(nodeStrategy.text(context, parent, null, 'x', false)).toBe(first);
       expect(nodeStrategy.text(context, parent, null, 'x', true)).toBe(second);
       expect(parent.innerHTML).toBe('ab');
-      expect(context.getNodes()).toEqual([first, second]);
+      expect(nodesOf(context)).toEqual([first, second]);
     });
 
     it('creates a text where the server rendered none, as for an empty interpolation, without a warning', () => {
@@ -204,7 +209,7 @@ describe('ClaimNodes', () => {
       const text = nodeStrategy.text(context, parent, null, 'x', true);
 
       expect(parent.innerHTML).toBe('x<b></b>');
-      expect(context.getNodes()).toEqual([text]);
+      expect(nodesOf(context)).toEqual([text]);
       expect(console.warn).not.toHaveBeenCalled();
     });
 
@@ -227,7 +232,7 @@ describe('ClaimNodes', () => {
       const block = nodeStrategy.block(context, parent, null, 'if', 'xd-if');
 
       expect(block).toEqual({ anchor, marker: '1', kind: 'xd-if' });
-      expect(context.getNodes()).toEqual([anchor]);
+      expect(nodesOf(context)).toEqual([anchor]);
       expect(nodeStrategy.adopt(parent, block, '1')).toBe(nodeStrategy);
       nodeStrategy.element(context, parent, 'p');
       nodeStrategy.close(parent, block);
@@ -251,7 +256,7 @@ describe('ClaimNodes', () => {
 
       expect(block).toEqual({ anchor: null, marker: '1', kind: 'xd-if' });
       expect(parent.innerHTML).toBe('<p></p>');
-      expect(context.getNodes()).toBeNull();
+      expect(nodesOf(context)).toEqual([]);
       expect(nodeStrategy.adopt(parent, block, '1')).toBe(nodeStrategy);
       expect(nodeStrategy.element(context, parent, 'p')).toBe(p);
       nodeStrategy.close(parent, block);
@@ -268,7 +273,7 @@ describe('ClaimNodes', () => {
       expect(block).toBe(CREATE_NODES.block(context, parent, null, 'if', 'xd-if', true));
       expect(block).toEqual({ anchor: null, marker: undefined });
       expect(parent.innerHTML).toBe('<p></p>');
-      expect(context.getNodes()).toBeNull();
+      expect(nodesOf(context)).toEqual([]);
       expect(nodeStrategy.adopt(parent, block, '0')).toBe(CREATE_NODES);
       expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> <b> where the browser renders <!--xd-if-->, which it creates');
       expect(console.warn).toHaveBeenCalledOnce();
@@ -330,7 +335,7 @@ describe('ClaimNodes', () => {
 
       expect(block.marker).toBeUndefined();
       expect(parent.innerHTML).toBe('<!--if--><b></b>');
-      expect(context.getNodes()).toEqual([block.anchor, other.anchor]);
+      expect(nodesOf(context)).toEqual([block.anchor, other.anchor]);
       expect(nodeStrategy.adopt(parent, block, '')).toBe(CREATE_NODES);
       expect(nodeStrategy.adoptItems(parent, block, [])).toBe(CREATE_NODES);
       nodeStrategy.close(parent, block);

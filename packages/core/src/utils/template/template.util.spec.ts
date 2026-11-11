@@ -14,6 +14,16 @@ const { _parameter, _renderTemplate } = await import('./template.util');
 const { _bindEffect } = await import('../../signals/effect/effect');
 const { effect, signal } = await import('../../signals');
 
+/**
+ * The nodes a context tracks, in mount order.
+ */
+const nodesOf = (context: { getNodeCount(): number, getNode(index: number): Node }): Node[] => Array.from({ length: context.getNodeCount() }, (_item, index) => context.getNode(index));
+
+/**
+ * The child contexts of a context, in registration order.
+ */
+const childrenOf = <TContext>(context: { getChildCount(): number, getChild(index: number): TContext }): TContext[] => Array.from({ length: context.getChildCount() }, (_item, index) => context.getChild(index));
+
 const flush = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 
 type Context = InstanceType<typeof _Context>;
@@ -91,9 +101,9 @@ describe('_renderTemplate', () => {
 
     expect(parent.innerHTML).toBe('<span>a 1</span><!--anchor-->');
     expect(render).toHaveBeenCalledWith(parent, declarationContext, anchor, ['a', 1], CREATE_NODES);
-    const [instance] = renderingContext.getChildren()!;
+    const [instance] = childrenOf(renderingContext);
     renderingContext.clear();
-    expect(instance.getNodes()).toBeNull();
+    expect(nodesOf(instance)).toEqual([]);
     expect(parent.innerHTML).toBe('<!--anchor-->');
   });
 
@@ -213,7 +223,7 @@ describe('_renderTemplate', () => {
 
     _renderTemplate(parent, renderingContext, null, { template: 'row', args: () => ['a', 1] });
 
-    const [instance] = renderingContext.getChildren()!;
+    const [instance] = childrenOf(renderingContext);
     expect(instance.get('title')).toBe('declared');
     expect(instance.ownerOf('title')).toBe(declarationContext);
     expect(instance.ownerOf('row')).toBe(declarationContext);

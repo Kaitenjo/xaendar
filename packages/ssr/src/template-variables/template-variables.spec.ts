@@ -107,6 +107,26 @@ describe('the variables of a template', () => {
     expect(watchers).toBe(before);
   });
 
+  it('renders the children of the elements of a row in the context of the row, updating their bindings when the row is reused for another item', async () => {
+    class Rows extends CustomElement {
+      public rows = signal<Row[]>([{ id: 1, name: 'a' }, { id: 2, name: 'b' }]);
+    }
+    const { element, root } = await mount('<table><tbody>@for (row of rows(); track row.id) {<tr><td><span title="{row.name}">{ row.name }</span></td></tr>}</tbody></table>', Rows, ['rows']);
+    const rendered = (element as unknown as { _context: InstanceType<typeof _Context> })._context;
+    // The rows are the only contexts inside the root: the elements of a row open none
+    expect(rendered.getChildCount()).toBe(2);
+    for (let i = 0; i < 2; i++) {
+      expect(rendered.getChild(i).getChildCount()).toBe(0);
+      expect(rendered.getChild(i).getNodeCount()).toBe(1);
+    }
+
+    element.rows.set([{ id: 1, name: 'c' }, { id: 2, name: 'b' }]);
+    await flush();
+
+    expect(texts(root, 'span')).toEqual(['c', 'b']);
+    expect(root.querySelector('span')!.getAttribute('title')).toBe('c');
+  });
+
   it('updates a binding reading a variable and a signal of the component, when the row is reused and when the signal changes', async () => {
     class Rows extends CustomElement {
       public rows = signal<Row[]>([{ id: 1, name: 'a' }]);

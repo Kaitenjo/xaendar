@@ -142,6 +142,15 @@ describe('Generator', () => {
       expect(code).toContain('function div0Children(div0, context) {\n  _renderElement(div0, context, null, div0__input0$element);\n}');
     });
 
+    it('declares the @let and the templates of the children of an element without structural directives in the scope holding the element, creating no context for them', async () => {
+      const code = await generate('<div><span>@let total = count + 1;{ total }</span><template row(item: string)><b>{ item }</b></template></div>');
+
+      expect(code).toContain('const context = new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 2, this);');
+      expect(code).toContain('function div0Children(div0, context) {');
+      expect(code).toContain('function div0__span0Children(div0__span0, context) {');
+      expect(code.match(/new _Context\(/g)).toHaveLength(2);
+    });
+
     it('renders the children of an element a structural directive is applied to in the context of the element when they declare nothing', async () => {
       const code = await generate('<div *visible><p>{ name }</p></div>');
 

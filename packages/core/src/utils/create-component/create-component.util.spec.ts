@@ -19,6 +19,11 @@ const { _Context } = await import('../context/context.util');
 const { _defineRender } = await import('../render-registry/render-registry.util');
 const { _createComponent } = await import('./create-component.util');
 
+/**
+ * The child contexts of a context, in registration order.
+ */
+const childrenOf = <TContext>(context: { getChildCount(): number, getChild(index: number): TContext }): TContext[] => Array.from({ length: context.getChildCount() }, (_item, index) => context.getChild(index));
+
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
 let counter = 0;
@@ -362,13 +367,13 @@ describe('_createComponent', () => {
       const connected = new _Context({} as never);
       let current = staging;
       const { destroy } = _createComponent(() => current, Card, { target: document.body });
-      expect(staging.getChildren()).toHaveLength(1);
+      expect(childrenOf(staging)).toHaveLength(1);
 
       staging.moveTo(connected);
       current = connected;
       destroy();
 
-      expect(connected.getChildren()).toHaveLength(0);
+      expect(childrenOf(connected)).toHaveLength(0);
     });
 
     it('does nothing when called again, or after its owner is cleared', () => {

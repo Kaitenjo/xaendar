@@ -1870,9 +1870,8 @@ describe('the contexts of the elements', () => {
    */
   function collect(context: Context, contexts = new Array<Context>()): Context[] {
     contexts.push(context);
-    const children = context.getChildren();
-    for (let i = 0; i < (children?.length ?? 0); i++) {
-      collect(children![i], contexts);
+    for (let i = 0; i < context.getChildCount(); i++) {
+      collect(context.getChild(i), contexts);
     }
 
     return contexts;
@@ -1885,10 +1884,10 @@ describe('the contexts of the elements', () => {
     const nodes = new Array<Node>();
     const contexts = collect((host as unknown as { _context: Context })._context);
     for (let i = 0; i < contexts.length; i++) {
-      const tracked = contexts[i].getNodes();
-      if (tracked?.length) {
-        expect(new Set(tracked.map(node => node.parentNode)).size).toBe(1);
-        nodes.push(...tracked);
+      const context = contexts[i];
+      for (let j = 0; j < context.getNodeCount(); j++) {
+        expect(context.getNode(j).parentNode).toBe(context.getNode(0).parentNode);
+        nodes.push(context.getNode(j));
       }
     }
 

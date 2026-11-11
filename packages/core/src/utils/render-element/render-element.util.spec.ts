@@ -18,6 +18,16 @@ const { input } = await import('../../signals/input/input');
 const { _Context } = await import('../context/context.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { ClaimNodes } = await import('../claim-nodes/claim-nodes.util');
+
+/**
+ * The nodes a context tracks, in mount order.
+ */
+const nodesOf = (context: { getNodeCount(): number, getNode(index: number): Node }): Node[] => Array.from({ length: context.getNodeCount() }, (_item, index) => context.getNode(index));
+
+/**
+ * The child contexts of a context, in registration order.
+ */
+const childrenOf = <TContext>(context: { getChildCount(): number, getChild(index: number): TContext }): TContext[] => Array.from({ length: context.getChildCount() }, (_item, index) => context.getChild(index));
 const {
   _createElement,
   _createMATHMLElement,
@@ -614,8 +624,8 @@ describe('_renderElement', () => {
 
     expect(children).toHaveBeenCalledExactlyOnceWith(element, context);
     expect(element.childNodes).toHaveLength(2);
-    expect(context.getNodes()).toEqual([element]);
-    expect(context.getChildren()).toBeNull();
+    expect(nodesOf(context)).toEqual([element]);
+    expect(childrenOf(context)).toEqual([]);
 
     context.clear();
 
@@ -636,9 +646,9 @@ describe('_renderElement', () => {
     })).toThrow('boom');
     const third = render(parent, context);
 
-    expect(context.getNodes()).toHaveLength(4);
-    expect(context.getNodes()).toContain(second);
-    expect(context.getNodes()).toContain(third);
+    expect(nodesOf(context)).toHaveLength(4);
+    expect(nodesOf(context)).toContain(second);
+    expect(nodesOf(context)).toContain(third);
   });
 
   it('renders the children in a child context with their own strategy when it differs from the one of the element', () => {
@@ -653,10 +663,10 @@ describe('_renderElement', () => {
     });
     const element = render(document.createElement('section'), context, { children });
 
-    const [childrenContext] = context.getChildren()!;
+    const [childrenContext] = childrenOf(context);
     expect(children).toHaveBeenCalledExactlyOnceWith(element, childrenContext);
     expect(childrenContext.nodeStrategy).toBe(own);
-    expect(childrenContext.getNodes()).toBeNull();
+    expect(nodesOf(childrenContext)).toEqual([]);
     expect(element.textContent).toBe('text');
 
     context.clear();
@@ -675,8 +685,8 @@ describe('_renderElement', () => {
     });
     render(document.createElement('section'), context, { children });
 
-    const [childrenContext] = context.getChildren()!;
-    expect(childrenContext.getChildren()).toHaveLength(1);
+    const [childrenContext] = childrenOf(context);
+    expect(childrenOf(childrenContext)).toHaveLength(1);
 
     context.clear();
     expect(unlisten).toHaveBeenCalledOnce();
@@ -820,7 +830,7 @@ describe('_renderElement', () => {
 
       expect(element.hasAttribute('data-on')).toBe(true);
       expect(condition.mock.contexts).toEqual([component]);
-      expect(context.getChildren()).toContain(condition.mock.calls[0][0]);
+      expect(childrenOf(context)).toContain(condition.mock.calls[0][0]);
     });
 
     it('attaches events only while the condition is true', async () => {

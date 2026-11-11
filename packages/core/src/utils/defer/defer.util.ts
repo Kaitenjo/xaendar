@@ -314,21 +314,15 @@ function elementsOf(context: _Context | undefined, parentNode: Node, elements = 
     return elements;
   }
 
-  const nodes = context.getNodes();
-  if (nodes?.length) {
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-      if (node.nodeType === Node.ELEMENT_NODE && node.parentNode === parentNode) {
-        elements.push(node as Element);
-      }
+  for (let i = 0; i < context.getNodeCount(); i++) {
+    const node = context.getNode(i);
+    if (node.nodeType === Node.ELEMENT_NODE && node.parentNode === parentNode) {
+      elements.push(node as Element);
     }
   }
 
-  const children = context.getChildren();
-  if (children?.length) {
-    for (let i = 0; i < children.length; i++) {
-      elementsOf(children[i], parentNode, elements);
-    }
+  for (let i = 0; i < context.getChildCount(); i++) {
+    elementsOf(context.getChild(i), parentNode, elements);
   }
 
   return elements;

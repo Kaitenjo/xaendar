@@ -4,6 +4,11 @@ import { _Context } from '../context/context.util';
 import { renderChildren, trackNode } from './track-node.util';
 
 /**
+ * The nodes a context tracks, in mount order.
+ */
+const nodesOf = (context: { getNodeCount(): number, getNode(index: number): Node }): Node[] => Array.from({ length: context.getNodeCount() }, (_item, index) => context.getNode(index));
+
+/**
  * A root context creating the elements with the document.
  */
 function createContext(): _Context {
@@ -17,13 +22,13 @@ describe('trackNode', () => {
     const context = createContext();
 
     trackNode(node, parent, context);
-    expect(context.getNodes()).toEqual([node]);
+    expect(nodesOf(context)).toEqual([node]);
     expect(node.parentNode).toBeNull();
 
     parent.appendChild(node);
     context.clear();
     expect(node.parentNode).toBeNull();
-    expect(context.getNodes()).toBeNull();
+    expect(nodesOf(context)).toEqual([]);
   });
 
   it('removes the node before the cleanup listeners registered after it run', () => {
@@ -49,7 +54,7 @@ describe('trackNode', () => {
     context.clear();
 
     expect(node.parentNode).toBeNull();
-    expect(context.getNodes()).toBeNull();
+    expect(nodesOf(context)).toEqual([]);
   });
 
   it('tracks a node the context does not remove, without the node it is inserted into', () => {
@@ -60,7 +65,7 @@ describe('trackNode', () => {
     trackNode(node, null, context);
     context.clear();
 
-    expect(context.getNodes()).toBeNull();
+    expect(nodesOf(context)).toEqual([]);
     expect(node.parentNode).toBe(parent);
   });
 
@@ -96,8 +101,8 @@ describe('renderChildren', () => {
     trackNode(after, element, context);
 
     expect(result).toBe(block);
-    expect(context.getNodes()).toEqual([after]);
-    expect(block.getNodes()).toEqual([inBlock]);
+    expect(nodesOf(context)).toEqual([after]);
+    expect(nodesOf(block)).toEqual([inBlock]);
   });
 
   it('tracks the nodes of the context again when the children throw, and restores the context of an outer render', () => {
@@ -114,7 +119,7 @@ describe('renderChildren', () => {
       return undefined;
     }, element, outer);
 
-    expect(outer.getNodes()).toBeNull();
-    expect(inner.getNodes()).toHaveLength(1);
+    expect(nodesOf(outer)).toEqual([]);
+    expect(nodesOf(inner)).toHaveLength(1);
   });
 });

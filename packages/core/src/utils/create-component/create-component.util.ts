@@ -78,7 +78,7 @@ export function _createComponent<
   const element = untracked(() => {
     _renderElement(options.target, context, null, { tagName: selector, attributes, events, conditionalBindings, directives });
     // The element is the first node tracked by the context, the only one rendered in it
-    const element = context.getNodes()![0] as Component;
+    const element = context.getNode(0) as Component;
     // Appended once the directives are applied, as a template renders the children of a tag: they are not tracked, so they stay in the element
     if (options.content?.length) {
       element.append(...options.content);
