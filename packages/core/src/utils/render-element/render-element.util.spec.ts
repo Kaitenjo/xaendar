@@ -13,7 +13,7 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { MATHML_NS, SVG_NS } = await import('../../costants');
+const { SVG_NS } = await import('../../costants');
 const { input } = await import('../../signals/input/input');
 const { _Context } = await import('../context/context.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
@@ -29,9 +29,6 @@ const nodesOf = (context: { getNodeCount(): number, getNode(index: number): Node
  */
 const childrenOf = <TContext>(context: { getChildCount(): number, getChild(index: number): TContext }): TContext[] => Array.from({ length: context.getChildCount() }, (_item, index) => context.getChild(index));
 const {
-  _createElement,
-  _createMATHMLElement,
-  _createSVGElement,
   _removeAttribute,
   _renderElement,
   _resetProperty,
@@ -53,7 +50,6 @@ const { TemplateListener } = await import('../../models/template-listener/templa
 const { _defineDirective } = await import('../directive-registry/directive-registry.util');
 const { _getAppliedDirectives } = await import('../applied-directives/applied-directives.util');
 const { _getElementRef } = await import('../element-refs/element-refs.util');
-const { closeTryScope, openTryScope } = await import('../try-scope/try-scope.util');
 
 type Context = InstanceType<typeof _Context>;
 
@@ -65,7 +61,7 @@ type ElementBindings = Omit<RenderElementConditionalBinding['branches'][number],
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
 function createRoot(): Context {
-  return new _Context({ createElement: _createElement } as never);
+  return new _Context({} as never);
 }
 
 /**
@@ -168,55 +164,15 @@ _defineDirective('asyncVisible', AsyncVisibleDirective);
  */
 const settle = () => new Promise<void>(resolve => setTimeout(resolve));
 
-describe('element factories', () => {
-  it('creates an HTML element', () => {
-    expect(_createElement('section').tagName).toBe('SECTION');
-  });
-
-  it('gives the root context of a render, through its shared parent, the HTML factory and undefined for a name no scope declares', () => {
+describe('_ROOT_PARENT_CONTEXT', () => {
+  it('gives the root context of a render, through its shared parent, undefined for a name no scope declares', () => {
     const root = new _Context(_ROOT_PARENT_CONTEXT, CREATE_NODES);
 
-    expect(root.createElement).toBe(_createElement);
     expect(root.get('undeclared')).toBeUndefined();
     expect(new _Context(_ROOT_PARENT_CONTEXT).nodeStrategy).toBe(CREATE_NODES);
   });
-
-  it('constructs a custom element defined by its class in the content of a @try, so that the error of its constructor is thrown', () => {
-    const failure = new Error('constructor');
-    let fails = false;
-    class Failing extends HTMLElement {
-      constructor() {
-        super();
-        if (fails) {
-          throw failure;
-        }
-      }
-    }
-    customElements.define('x-factory-failing', Failing);
-    const create = vi.spyOn(document, 'createElement');
-    const scope = openTryScope();
-
-    try {
-      expect(_createElement('x-factory-failing')).toBeInstanceOf(Failing);
-      expect(_createElement('x-factory-undefined').localName).toBe('x-factory-undefined');
-      fails = true;
-      expect(() => _createElement('x-factory-failing')).toThrow(failure);
-    } finally {
-      closeTryScope(scope);
-    }
-
-    expect(create.mock.calls).toEqual([['x-factory-undefined']]);
-    create.mockRestore();
-  });
-
-  it('creates an SVG element in the SVG namespace', () => {
-    expect(_createSVGElement('circle').namespaceURI).toBe(SVG_NS);
-  });
-
-  it('creates a MathML element in the MathML namespace', () => {
-    expect(_createMATHMLElement('mi').namespaceURI).toBe(MATHML_NS);
-  });
 });
+
 
 describe('property setters', () => {
   it('_setProperty sets a literal attribute', () => {
@@ -523,12 +479,13 @@ describe('_renderElement', () => {
     const created = document.createElement('article');
     const element = vi.fn(() => created);
     const mount = vi.fn(CREATE_NODES.mount);
-    const context = new _Context({ createElement: _createElement } as never, Object.assign({}, CREATE_NODES, { element, mount }));
+    const context = new _Context({} as never, Object.assign({}, CREATE_NODES, { element, mount }));
 
     _renderElement(parent, context, anchor, { tagName: 'article' });
+    _renderElement(parent, context, anchor, { tagName: 'circle', namespace: 1 });
 
-    expect(element).toHaveBeenCalledExactlyOnceWith(context, parent, 'article');
-    expect(mount).toHaveBeenCalledExactlyOnceWith(created, parent, anchor);
+    expect(element.mock.calls).toEqual([[context, parent, 'article', undefined], [context, parent, 'circle', 1]]);
+    expect(mount).toHaveBeenCalledWith(created, parent, anchor);
     expect(parent.firstChild).toBe(created);
   });
 
@@ -659,7 +616,7 @@ describe('_renderElement', () => {
   it('renders the children in a child context with their own strategy when it differs from the one of the element', () => {
     const own = Object.assign({}, CREATE_NODES);
     const strategy = Object.assign({}, CREATE_NODES, { children: () => own });
-    const context = new _Context({ createElement: _createElement } as never, strategy);
+    const context = new _Context({} as never, strategy);
     const unlisten = vi.fn();
     const children = vi.fn<RenderChildren>((element, childrenContext) => {
       CREATE_NODES.text(childrenContext, element, null, 'text', false);
@@ -681,7 +638,7 @@ describe('_renderElement', () => {
   it('registers in the child context with their own strategy the context the children create for themselves', () => {
     const own = Object.assign({}, CREATE_NODES);
     const strategy = Object.assign({}, CREATE_NODES, { children: () => own });
-    const context = new _Context({ createElement: _createElement } as never, strategy);
+    const context = new _Context({} as never, strategy);
     const unlisten = vi.fn();
     const children = vi.fn<RenderChildren>((_element, childrenContext) => {
       const ownContext = new _Context(childrenContext);
@@ -775,7 +732,7 @@ describe('_renderElement', () => {
       const created = document.createElement('div');
       const add = vi.spyOn(created, 'addEventListener');
       const remove = vi.spyOn(created, 'removeEventListener');
-      const context = new _Context({ createElement: _createElement } as never, Object.assign({}, CREATE_NODES, { element: () => created }));
+      const context = new _Context({} as never, Object.assign({}, CREATE_NODES, { element: () => created }));
       render(document.createElement('section'), context, { events: [{ name: 'click', handler: vi.fn() }] });
 
       const [name, listener] = add.mock.calls[0];
@@ -1596,7 +1553,7 @@ describe('_renderElement', () => {
 
     it('binds the properties of a structural directive before evaluating it', () => {
       const context = createRoot();
-      const createElement = vi.spyOn(context, 'createElement');
+      const createElement = vi.spyOn(CREATE_NODES, 'element');
       renderStructural(document.createElement('section'), context, {
         structuralDirectives: [structural('visible', [{ name: 'visible', value: () => false, setter: _setExpressionInput }])]
       });
@@ -1645,7 +1602,7 @@ describe('_renderElement', () => {
       const parent = document.createElement('section');
       parent.innerHTML = '<!--xd-s:1--><div id="target"></div>';
       const element = parent.lastChild;
-      const context = new _Context({ createElement: _createElement } as never, new ClaimNodes('x-host'));
+      const context = new _Context({} as never, new ClaimNodes('x-host'));
 
       renderStructural(parent, context, { structuralDirectives: [structural()], last: true });
 
@@ -1686,13 +1643,11 @@ describe('_renderElement', () => {
       expect(target(parent)).toBe(element);
     });
 
-    it('creates the element through the factory of the context it is rendered in', async () => {
+    it('creates the element again in its namespace', async () => {
       const shown = signal(true);
       const context = createRoot();
-      context.createElement = _createSVGElement;
-      const parent = document.createElement('section');
-      renderStructural(parent, context, { structuralDirectives: [structural('visible', [visible(() => shown())])] });
-      context.createElement = _createElement;
+      const parent = document.createElementNS(SVG_NS, 'svg');
+      _renderElement(parent as unknown as Element, context, null, { tagName: 'g', namespace: 1, attributes: [{ name: 'id', value: 'target', setter: _setProperty }], structuralDirectives: [structural('visible', [visible(() => shown())])] });
 
       shown.set(false);
       await settle();
@@ -1825,7 +1780,7 @@ describe('_renderElement', () => {
         const first = signal(true);
         const hidden = signal(true);
         const context = createRoot();
-        const createElement = vi.spyOn(context, 'createElement');
+        const createElement = vi.spyOn(CREATE_NODES, 'element');
         renderStructural(document.createElement('section'), context, {
           structuralConditionalBindings: [{
             branches: [
@@ -1850,7 +1805,7 @@ describe('_renderElement', () => {
       it('never creates the element because of an intermediate state while different conditional bindings swap their structural directives', async () => {
         const swapped = signal(false);
         const context = createRoot();
-        const createElement = vi.spyOn(context, 'createElement');
+        const createElement = vi.spyOn(CREATE_NODES, 'element');
         renderStructural(document.createElement('section'), context, {
           structuralConditionalBindings: [
             { branches: [{ condition: () => swapped(), structuralDirectives: [structural('visible', [visible(() => false)])] }] },

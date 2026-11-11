@@ -2,6 +2,7 @@ export * from './class-binding/class-binding.util';
 export * from './component-runtime/component-runtime.util';
 export type * from '../types/component-runtime.type';
 export * from './context/context.util';
+export { _createElement, _createMATHMLElement, _createSVGElement } from './create-element/create-element.util';
 export type * from '../types/declaration-kind.type';
 export * from './directive-registry/directive-registry.util';
 export * from './for/for.util';

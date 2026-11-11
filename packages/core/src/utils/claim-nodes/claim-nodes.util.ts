@@ -3,6 +3,8 @@ import { _HYDRATE_ATTRIBUTE, _SSR_MARKERS, HYDRATE } from '../../costants';
 import type { NodeBlock } from '../../types/node-block.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { _Context } from '../context/context.util';
+import type { RenderElementNamespace } from '../../types/render-element-namespace.type';
+import { createNamespacedElement } from '../create-element/create-element.util';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { deferElementHydration, waitedForTrigger } from '../hydration-triggers/hydration-triggers.util';
 import { _encodeTrackKey } from '../track-key/track-key.util';
@@ -64,12 +66,14 @@ export class ClaimNodes implements NodeStrategy {
   /**
    * Adopts the element at the position, or creates it when the node there is not one with the same tag name.
    *
-   * @param context - The context rendering the element, whose factory creates it.
+   * @param _context - Unused: the element is adopted, or created in its namespace.
    * @param parentNode - The node the element is rendered into.
    * @param tagName - The tag name of the element.
+   * @param namespace - The namespace an element created is created in, `undefined` for HTML.
    * @returns The element.
+   * @throws The error of the constructor of a custom element created, in the content of a `@try`.
    */
-  public element(context: _Context, parentNode: Node, tagName: string): Element {
+  public element(_context: _Context, parentNode: Node, tagName: string, namespace?: RenderElementNamespace): Element {
     const node = this._next(parentNode);
     if (node?.nodeType === Node.ELEMENT_NODE && (node as Element).localName === tagName) {
       this._positions.set(parentNode, node.nextSibling);
@@ -77,7 +81,7 @@ export class ClaimNodes implements NodeStrategy {
     }
 
     this._warn(`${describe(node)} where the browser renders <${tagName}>, which it creates`);
-    const element = context.createElement(tagName);
+    const element = createNamespacedElement(tagName, namespace);
     this._created.add(element);
     return element;
   }

@@ -1,6 +1,7 @@
 import type { NodeBlock } from '../../types/node-block.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { createAnchor, mountNode } from '../context/context.util';
+import { createNamespacedElement } from '../create-element/create-element.util';
 
 /**
  * The block created as the last node of its parent: no anchor, its content appended to the parent.
@@ -16,7 +17,7 @@ const LAST_BLOCK: NodeBlock = Object.freeze({ anchor: null, marker: undefined })
  * every component without a declarative shadow root, and of every render of a block after the first one.
  */
 export const CREATE_NODES: NodeStrategy = {
-  element: (context, _parentNode, tagName) => context.createElement(tagName),
+  element: (_context, _parentNode, tagName, namespace) => createNamespacedElement(tagName, namespace),
   mount: (element, parentNode, referenceNode) => {
     parentNode.insertBefore(element, referenceNode);
   },

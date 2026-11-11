@@ -8,12 +8,11 @@ await vi.hoisted(async () => {
 });
 
 const { _Context } = await import('../context/context.util');
-const { _createElement } = await import('../render-element/render-element.util');
 const { signal } = await import('../../signals');
 const { _removeClass, _setExpressionClass, _setReactiveClass } = await import('./class-binding.util');
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
-const createContext = () => new _Context({ createElement: _createElement } as never);
+const createContext = () => new _Context({} as never);
 
 /**
  * Describes a class binding the way the module of a template does.

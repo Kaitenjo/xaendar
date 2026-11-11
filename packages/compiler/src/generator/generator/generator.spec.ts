@@ -158,15 +158,30 @@ describe('Generator', () => {
       expect(code).not.toContain('return context;\n}\n\nfunction div0__p0Children');
     });
 
-    it('renders the children of an element changing the factory of the elements in a context of their own', async () => {
+    it('renders the children of an <svg>, a <math> and a <foreignObject> in the context of the element, their elements naming their namespace', async () => {
       const code = await generate('<svg><g><circle /></g><foreignObject><p /></foreignObject></svg><math><mi>x</mi></math>');
 
-      expect(code).toContain('function svg0Children(svg0, parentContext) {\n  const context = new _Context(parentContext);\n  context.createElement = _createSVGElement;');
+      expect(code).toContain('function svg0Children(svg0, context) {');
       expect(code).toContain('function svg0__g0Children(svg0__g0, context) {');
-      expect(code).toContain('function svg0__foreignObject1Children(svg0__foreignObject1, parentContext) {\n  const context = new _Context(parentContext);\n  context.createElement = _createElement;');
-      expect(code).toContain('function math1Children(math1, parentContext) {\n  const context = new _Context(parentContext);\n  context.createElement = _createMATHMLElement;');
-      // render, and the three functions creating a context
-      expect(code.match(/return context;/g)).toHaveLength(4);
+      expect(code).toContain('function svg0__foreignObject1Children(svg0__foreignObject1, context) {');
+      expect(code).toContain('function math1Children(math1, context) {');
+      expect(code).toContain('const svg0$element = { tagName: \'svg\', namespace: 1, children: svg0Children };');
+      expect(code).toContain('const svg0__g0__circle0$element = { tagName: \'circle\', namespace: 1 };');
+      expect(code).toContain('const svg0__foreignObject1$element = { tagName: \'foreignObject\', namespace: 1, children: svg0__foreignObject1Children };');
+      expect(code).toContain('const svg0__foreignObject1__p0$element = { tagName: \'p\' };');
+      expect(code).toContain('const math1__mi0$element = { tagName: \'mi\', namespace: 2, children: math1__mi0Children };');
+      expect(code).not.toContain('createElement');
+      // Only render creates a context
+      expect(code.match(/new _Context\(/g)).toHaveLength(1);
+      expect(code.match(/return context;/g)).toHaveLength(1);
+    });
+
+    it('names the namespace of the elements of the blocks in an <svg>, and of the HTML ones in a <foreignObject>', async () => {
+      const code = await generate('<svg>@if (a) { @for (item of items; track item) { <circle /> } }<foreignObject>@if (a) { <p /> }</foreignObject></svg>');
+
+      expect(code).toMatch(/const svg0__if0__for0__circle0\$element = \{ tagName: 'circle', namespace: 1 \};/);
+      expect(code).toMatch(/const svg0__foreignObject1__if0__p0\$element = \{ tagName: 'p' \};/);
+      expect(code).not.toContain('createElement');
     });
   });
 
@@ -191,7 +206,6 @@ describe('Generator', () => {
       expect(code).toContain([
         `function template_row_${start}(template_row_${start}, parentContext, anchor, params, nodeStrategy) {`,
         '  const context = new _Context(parentContext, nodeStrategy, 2);',
-        '  context.createElement = _createElement;',
         '  context.addIdentifier(\'label\', params[0]);',
         '  context.addIdentifier(\'count\', params[1]);',
         `  _renderElement(template_row_${start}, context, anchor, template_row_${start}__p0$element);`
@@ -217,14 +231,18 @@ describe('Generator', () => {
     it('declares the element refs and the templates of the content of a template in its scope', async () => {
       const code = await generate('<template row()><input #field /><template inner() /></template>');
 
-      expect(code).toMatch(/context\.createElement = _createElement;\n {2}context\.declare\('field'\);\n {2}context\.addIdentifier\('inner', template_inner_\d+\$template\);/);
+      expect(code).toMatch(/new _Context\(parentContext, nodeStrategy, 2\);\n {2}context\.declare\('field'\);\n {2}context\.addIdentifier\('inner', template_inner_\d+\$template\);/);
       expect(code).toMatch(/const template_inner_(\d+)\$template = \{ render: template_inner_\1, parameters: \[\] \};/);
     });
 
     it('creates the content of a template in the namespace of its declaration, and renders it there', async () => {
-      const code = await generate('<svg><template dot(x: number) /><g>@render dot(1)</g></svg>');
+      const code = await generate('<svg><template dot(x: number)><circle /></template><g>@render dot(1)</g></svg><div>@render other()</div><svg><foreignObject><template other()><p /></template></foreignObject></svg>');
 
-      expect(code).toMatch(/function template_dot_\d+\(template_dot_\d+, parentContext, anchor, params, nodeStrategy\) \{\n {2}const context = new _Context\(parentContext, nodeStrategy, 1\);\n {2}context\.createElement = _createSVGElement;/);
+      expect(code).toMatch(/function template_dot_\d+\(template_dot_\d+, parentContext, anchor, params, nodeStrategy\) \{\n {2}const context = new _Context\(parentContext, nodeStrategy, 1\);\n {2}context\.addIdentifier\('x', params\[0\]\);\n {2}_renderElement\(/);
+      expect(code).toMatch(/const template_dot_\d+__circle0\$element = \{ tagName: 'circle', namespace: 1 \};/);
+      // A template declared in a <foreignObject> creates HTML elements, wherever it is rendered
+      expect(code).toMatch(/const template_other_\d+__p0\$element = \{ tagName: 'p' \};/);
+      expect(code).not.toContain('createElement');
       expect(code).toContain('const svg0__g1__render0$render = { template: \'dot\', args: svg0__g1__render0$args };');
       expect(code).toContain('_renderTemplate(svg0__g1, context, null, svg0__g1__render0$render);');
     });
@@ -270,7 +288,7 @@ describe('Generator', () => {
       const code = await generate('@for (item of items; track item) { @let name = item.name; }<template row()>@let id = 1;</template>');
 
       expect(code).toMatch(/for0Variables\);\n {2}context\.declare\('name', 'let'\);\n {2}_let\(context, 'name', for0\$let_name, _reads0\);/);
-      expect(code).toMatch(/context\.createElement = _createElement;\n {2}context\.declare\('id', 'let'\);\n {2}context\.set\('id', 1\);/);
+      expect(code).toMatch(/new _Context\(parentContext, nodeStrategy, 1\);\n {2}context\.declare\('id', 'let'\);\n {2}context\.set\('id', 1\);/);
     });
 
     it('throws for a @let declared twice in a scope', async () => {

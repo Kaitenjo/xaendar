@@ -3,7 +3,7 @@ import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
 import type { LineMapping } from '../../../type-checker/types/line-mapping.type';
 import { GeneratorContext } from '../../context/context';
-import { getBlockIdentifier, getElementFactory, getElementIdentifier, getSignalCallee, getTextIdentifier, GLOBAL_IDENTIFIERS, isBrowserOnlyGlobal, resolveExpression, ROOT_NODE, toStringLiteral } from './generator.utils';
+import { getBlockIdentifier, getElementIdentifier, getSignalCallee, getTextIdentifier, GLOBAL_IDENTIFIERS, isBrowserOnlyGlobal, resolveExpression, ROOT_NODE, toStringLiteral } from './generator.utils';
 import type { ContextCache } from '../../../types/context-cache.type';
 
 const cache = {} as ContextCache;
@@ -325,16 +325,6 @@ describe('identifier helpers', () => {
   it('builds block identifiers', () => {
     expect(getBlockIdentifier('if', ROOT_NODE, '0')).toBe('if0');
     expect(getBlockIdentifier('elseIf', 'div0', '0_1')).toBe('div0__elseIf0_1');
-  });
-});
-
-describe('getElementFactory', () => {
-  it.each([
-    ['html', '_createElement'],
-    ['svg', '_createSVGElement'],
-    ['mathml', '_createMATHMLElement']
-  ] as const)('returns the runtime factory of the %s namespace', (namespace, factory) => {
-    expect(getElementFactory(namespace)).toBe(factory);
   });
 });
 

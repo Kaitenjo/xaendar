@@ -1,4 +1,4 @@
-import { _SSR_MARKERS, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, MATHML_NS, ROOT_PARENT, SET_DIRECTIVE_ELEMENT, SVG_NS } from '../../costants';
+import { _SSR_MARKERS, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, ROOT_PARENT, SET_DIRECTIVE_ELEMENT } from '../../costants';
 import { AttributeUnbinding } from '../../models/attribute-unbinding/attribute-unbinding';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
@@ -33,7 +33,7 @@ import { _setElementRef } from '../element-refs/element-refs.util';
 import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { _selectBranch } from '../select-branch/select-branch.util';
 import { renderChildren, trackNode } from '../track-node/track-node.util';
-import { connectChild, isInTryScope } from '../try-scope/try-scope.util';
+import { connectChild } from '../try-scope/try-scope.util';
 import { writeAttribute } from '../write-attribute/write-attribute.util';
 
 /**
@@ -87,7 +87,7 @@ export function _renderElement(parentNode: Element, context: _Context, anchor: C
 function renderElement(parentNode: Element, context: _Context, anchor: Comment | null, config: RenderElement): void {
   const { attributes, events, conditionalBindings, directives, children, ref } = config;
   const { nodeStrategy } = context;
-  const element = nodeStrategy.element(context, parentNode, config.tagName);
+  const element = nodeStrategy.element(context, parentNode, config.tagName, config.namespace);
   if (ref) {
     context.set(ref, element);
     _setElementRef(element, ref);
@@ -540,30 +540,14 @@ function bindStructuralDirectives(context: _Context, structuralDirectives: reado
 }
 
 /**
- * Creates an HTML element with the specified tag name. In the content of a `@try`, the element of a custom element
- * already defined is constructed by its class, so that the error of the constructor is thrown here, as the template
- * calls it: `document.createElement` reports it and creates an element that is not the component.
- *
- * @param tagName - The HTML tag name of the element to create.
- * @returns The newly created HTML element.
- * @throws The error of the constructor of the custom element, in the content of a `@try`.
- */
-export function _createElement(tagName: string): HTMLElement {
-  const Component = isInTryScope() ? customElements.get(tagName) : undefined;
-  return Component ? new Component() : document.createElement(tagName);
-}
-
-/**
  * The parent of the root context of every render of a template, written by the generated code as
- * `new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, count, this)`: the root creates its elements with
- * {@link _createElement}, a name no scope declares reads `undefined`, and {@link ROOT_PARENT} tells the root context it
- * keeps no node (see `_Context.addNode`).
+ * `new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, count, this)`: a name no scope declares reads `undefined`, and
+ * {@link ROOT_PARENT} tells the root context it keeps no node (see `_Context.addNode`).
  *
  * N.B. Deliberate, to save memory: a single object shared by every render, instead of an object literal and a function
- * the generated code would create at each one. Its members are never written: the root context copies the factory, and
- * changes its own one.
+ * the generated code would create at each one. Its members are never written.
  */
-export const _ROOT_PARENT_CONTEXT = { createElement: _createElement, get: readUndeclared, [ROOT_PARENT]: true } as unknown as _Context;
+export const _ROOT_PARENT_CONTEXT = { get: readUndeclared, [ROOT_PARENT]: true } as unknown as _Context;
 
 /**
  * Reads a name no scope of a template declares, as the parent of the root context of a render does.
@@ -572,26 +556,6 @@ export const _ROOT_PARENT_CONTEXT = { createElement: _createElement, get: readUn
  */
 function readUndeclared(): undefined {
   return undefined;
-}
-
-/**
- * Creates an SVG element with the specified tag name using the SVG namespace.
- *
- * @param tagName - The SVG tag name of the element to create.
- * @returns The newly created SVG element.
- */
-export function _createSVGElement(tagName: string): SVGElement {
-  return document.createElementNS(SVG_NS, tagName);
-}
-
-/**
- * Creates a MathML element with the specified tag name using the MathML namespace.
-*
-* @param tagName - The MathML tag name of the element to create.
-* @returns The newly created MathML element.
-*/
-export function _createMATHMLElement(tagName: string): MathMLElement {
-  return document.createElementNS(MATHML_NS, tagName);
 }
 
 /**

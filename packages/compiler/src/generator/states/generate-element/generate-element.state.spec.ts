@@ -216,7 +216,7 @@ describe('generateElement', () => {
     expect(code).toEqual(['_renderElement(root, context, null, div0$element);']);
     expect(constants).toEqual(['const div0$element = { tagName: \'div\', children: div0Children };']);
     expect(functionsToProcess?.get('div0Children')).toMatchObject({
-      fn: { parentNode: 'div0', precode: '' },
+      fn: { parentNode: 'div0' },
       args: ['div0', 'parentContext']
     });
   });
@@ -260,18 +260,30 @@ describe('generateElement', () => {
   });
 
   it.each([
-    ['svg', 'context.createElement = _createSVGElement;'],
-    ['math', 'context.createElement = _createMATHMLElement;']
-  ])('overrides the element factory for %s', async (tag, precode) => {
-    const { code, functionsToProcess } = await run(`<${tag}><b></b></${tag}>`);
-    expect(code).toEqual([precode, `_renderElement(root, context, null, ${tag}0$element);`, 'context.createElement = _createElement;']);
-    expect(functionsToProcess?.get(`${tag}0Children`)?.fn.precode).toBe(precode);
+    ['svg', 1],
+    ['math', 2]
+  ])('names the namespace %s opens in its constant, with no code changing how the elements are created', async (tag, namespace) => {
+    const { code, functionsToProcess, constants } = await run(`<${tag}><b></b></${tag}>`);
+    expect(code).toEqual([`_renderElement(root, context, null, ${tag}0$element);`]);
+    expect(constants).toEqual([`const ${tag}0$element = { tagName: '${tag}', namespace: ${namespace}, children: ${tag}0Children };`]);
+    expect(functionsToProcess?.get(`${tag}0Children`)?.fn.precode).toBeUndefined();
+  });
+
+  it('names the namespace of the elements of its scope, and none for an HTML one', async () => {
+    const { constants } = await run('<circle />', new GeneratorContext(cache, 'svg'));
+    const { constants: mathml } = await run('<mi />', new GeneratorContext(cache, 'mathml'));
+    const { constants: html } = await run('<div />');
+    expect(constants).toEqual(['const circle0$element = { tagName: \'circle\', namespace: 1 };']);
+    expect(mathml).toEqual(['const mi0$element = { tagName: \'mi\', namespace: 2 };']);
+    expect(html).toEqual(['const div0$element = { tagName: \'div\' };']);
   });
 
   it('creates the children of a foreignObject as HTML elements, keeping the foreignObject in the namespace of its parent', async () => {
-    const { code, functionsToProcess } = await run('<foreignObject><div></div></foreignObject>');
+    const { code, functionsToProcess, constants } = await run('<foreignObject><div></div></foreignObject>', new GeneratorContext(cache, 'svg'));
     expect(code).toEqual(['_renderElement(root, context, null, foreignObject0$element);']);
-    expect(functionsToProcess?.get('foreignObject0Children')?.fn.precode).toBe('context.createElement = _createElement;');
+    expect(constants).toEqual(['const foreignObject0$element = { tagName: \'foreignObject\', namespace: 1, children: foreignObject0Children };']);
+    expect(functionsToProcess?.get('foreignObject0Children')?.fn.precode).toBeUndefined();
+    expect(functionsToProcess?.get('foreignObject0Children')?.fn.context.namespace).toBe('html');
   });
 
   it('generates the classes toggled on the element before its attributes, with a setter toggling them, so that writing class finds them', async () => {
@@ -783,7 +795,7 @@ describe('generateElement', () => {
 
       expect(constants).toEqual(['const div0$element = { tagName: \'div\', structuralDirectives: [{ selector: \'first\' }], children: div0Children };']);
       expect(functionsToProcess?.get('div0Children')).toMatchObject({
-        fn: { parentNode: 'div0', precode: '' },
+        fn: { parentNode: 'div0' },
         args: ['div0', 'parentContext']
       });
     });
@@ -864,14 +876,11 @@ describe('generateElement', () => {
       expectValidJavascript(result);
     });
 
-    it('keeps the svg element factory while the element applying structural directives is created', async () => {
-      const { code } = await run('<svg *first><g></g></svg>');
+    it('names the namespace of an svg applying structural directives, which the runtime creates again in it', async () => {
+      const { code, constants } = await run('<svg *first><g></g></svg>');
 
-      expect(code).toEqual([
-        'context.createElement = _createSVGElement;',
-        '_renderElement(root, context, null, svg0$element);',
-        'context.createElement = _createElement;'
-      ]);
+      expect(code).toEqual(['_renderElement(root, context, null, svg0$element);']);
+      expect(constants[0]).toContain('namespace: 1');
     });
   });
 });

@@ -1,4 +1,3 @@
-import { Function } from '@xaendar/types';
 import { ROOT_PARENT } from '../../costants';
 import { _runBinding } from '../../models/effect/effect';
 import { trackNode } from '../track-node/track-node.util';
@@ -52,10 +51,6 @@ let passCount = 0;
  * and can be chained to a parent context for outer-scope resolution.
  */
 export class _Context {
-  /**
-   * Function used to create new DOM elements within this context.
-   */
-  public createElement: Function<[string], Element>;
   /**
    * How the nodes rendered within this context are got: created, or adopted from the HTML rendered on the server.
    * Inherited from the parent context, unless the context is created with its own.
@@ -154,7 +149,6 @@ export class _Context {
    *   root context of a render passes it.
    */
   constructor(private _parent: _Context, nodeStrategy?: NodeStrategy, variableCount = 0, component: unknown = _parent.component) {
-    this.createElement = this._parent.createElement;
     this.nodeStrategy = nodeStrategy ?? this._parent.nodeStrategy ?? CREATE_NODES;
     this.component = component;
     this._variables = variableCount > VARIABLES_LIMIT ? new Map() : variableCount ? new Array(2 * variableCount) : null;

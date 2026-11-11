@@ -1,5 +1,6 @@
 import type { _Context } from '../utils/context/context.util';
 import type { NodeBlock } from './node-block.type';
+import type { RenderElementNamespace } from './render-element-namespace.type';
 
 /**
  * How the code of a template gets the nodes it renders: by creating them, or by adopting the ones the server rendered
@@ -10,12 +11,13 @@ export type NodeStrategy = {
   /**
    * Gets an element, without inserting it: created, or adopted where the server rendered it.
    *
-   * @param context - The context rendering the element, whose factory creates it.
+   * @param context - The context rendering the element.
    * @param parentNode - The node the element is rendered into.
    * @param tagName - The tag name of the element.
+   * @param namespace - The namespace an element created is created in, `undefined` for HTML (see `RenderElement`).
    * @returns The element.
    */
-  element(context: _Context, parentNode: Node, tagName: string): Element;
+  element(context: _Context, parentNode: Node, tagName: string, namespace?: RenderElementNamespace): Element;
   /**
    * Puts an element got by {@link element} in its place, once its bindings are applied: an element created is inserted,
    * which connects a component, while one adopted already is in its place, and a component starts its hydration.

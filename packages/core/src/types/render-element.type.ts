@@ -4,6 +4,7 @@ import type { RenderElementAttribute } from './render-element-attribute.type';
 import type { RenderElementConditionalBinding } from './render-element-conditional-binding.type';
 import type { RenderElementDirective } from './render-element-directive.type';
 import type { RenderElementEvent } from './render-element-event.type';
+import type { RenderElementNamespace } from './render-element-namespace.type';
 import type { RenderElementStructuralDirectiveConditionalBinding } from './render-element-structural-directive-conditional-binding.type';
 import type { RenderElementStructuralDirective } from './render-element-structural-directive.type';
 
@@ -22,6 +23,11 @@ export type RenderElement = BlockPosition & {
    * The tag name of the element.
    */
   readonly tagName: string;
+  /**
+   * The namespace the element is created in, the compiler knowing it from the place of the element in the template:
+   * `1` for SVG, `2` for MathML, left out for HTML.
+   */
+  readonly namespace?: RenderElementNamespace;
   /**
    * The attributes of the element, and the classes it toggles, which come first so that writing `class` finds them.
    */

@@ -15,6 +15,7 @@ import { isStructuralElement } from '../../../parser/utils/scope-declarations/sc
 import { getChildrenNamespace, getElementNamespace } from '../../../utils/element-namespace/element-namespace.utils';
 import { readsEvent } from '../../../utils/event-reads/event-reads.utils';
 import { GeneratorContext } from '../../context/context';
+import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { DescriptorOwner } from '../../types/descriptor-owner.type';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getElementIdentifier, isConstantExpression, joinVariables, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
@@ -31,7 +32,9 @@ import { declareExpression, toArrayLiteral, toObjectLiteral, toRoleName } from '
  * function rendering its children and its element ref. Every expression it holds is a function of the module, named
  * after the element and the role of the expression (`tr0$class`, `td0$on_click`), which the runtime calls with the
  * component and the context: nothing of it is created at each render. The lists the element does not declare are left
- * out.
+ * out, and so is the namespace of an HTML element: an SVG or a MathML one, which the compiler knows from its place in the
+ * template, names its namespace, so that the runtime creates it there wherever it is rendered, in a block, in a template
+ * declared in an `<svg>` and rendered elsewhere, or in the HTML of a `<foreignObject>`.
  *
  * The children are rendered by `_renderElement` through the function the constant names, since an element applying
  * structural directives is created, and created again, by the runtime only while they allow it: it receives the context
@@ -69,16 +72,9 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
     functionsToProcess: new Map()
   };
 
-  /*
-    Remove the if would create an empty line in the generated code
-    when the precode is empty, it avoids adding unnecessary blank line.
-  */
-  const precode = overrideCreateElement(tagName);
-  if (precode) {
-    retVal.code.push(precode);
-  }
-
+  const namespace = getElementNamespace(tagName, generatorContext.namespace);
   const members = [`tagName: '${tagName}'`];
+  appendNamespace(members, namespace);
   appendList(members, 'attributes', attributes);
   appendList(members, 'events', events);
   appendList(members, 'conditionalBindings', conditionalBindings);
@@ -100,24 +96,18 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   const element = generatorContext.declareConstant(`${nodeName}$element`, toObjectLiteral(members));
   retVal.code.push(`_renderElement(${parentNode}, context, ${anchor}, ${element});`);
 
-  switch (tagName) {
-    case 'svg':
-    case 'math':
-      retVal.code.push('context.createElement = _createElement;');
-  }
-
   if (hasChildren) {
-    const childrenNamespace = getChildrenNamespace(tagName, getElementNamespace(tagName, generatorContext.namespace));
+    const childrenNamespace = getChildrenNamespace(tagName, namespace);
     retVal.functionsToProcess!.set(`${nodeName}Children`, {
       fn: {
         node,
         parentNode: nodeName,
         /*
           The content of an element a structural directive is applied to is a scope of its own, created and destroyed with
-          it, and the children of an element opening a namespace are created in it
+          it, and the children of an element opening a namespace are generated in it, so that their elements name it: at
+          runtime they are rendered in the context of the element all the same
         */
-        context: isStructuralElement(node) || childrenNamespace !== generatorContext.namespace ? new GeneratorContext(generatorContext, childrenNamespace) : generatorContext,
-        precode: overrideChildrenCreateElement(tagName)
+        context: isStructuralElement(node) || childrenNamespace !== generatorContext.namespace ? new GeneratorContext(generatorContext, childrenNamespace) : generatorContext
       },
       // The function takes the context of the element instead, when it renders the children in it (see `Generator`)
       args: [nodeName, 'parentContext']
@@ -125,6 +115,29 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   }
 
   return retVal;
+}
+
+/**
+ * Appends the namespace of an element to the members of its configuration, as the runtime reads it (see
+ * `RenderElementNamespace`): `1` for SVG, `2` for MathML, nothing for HTML.
+ *
+ * N.B. Deliberate, to save memory: nothing for an HTML element, nearly every element, whose configuration keeps the shape
+ * it had, and a number for the others, instead of the factory each context held and the context the children of an
+ * `<svg>` needed only to change it. Do not write the namespace of an HTML element.
+ *
+ * @param members - The members of the object literal being written.
+ * @param namespace - The namespace of the element.
+ */
+function appendNamespace(members: string[], namespace: ElementNamespace): void {
+  switch (namespace) {
+    case 'svg':
+      members.push('namespace: 1');
+      break;
+
+    case 'mathml':
+      members.push('namespace: 2');
+      break;
+  }
 }
 
 /**
@@ -551,39 +564,4 @@ async function mapStructuralDirectives(structuralDirectives: StructuralDirective
   }
 
   return mappedStructuralDirectives;
-}
-
-/**
- * Returns the code switching the element factory of the context to the namespace an element opens:
- * an `<svg>` and a `<math>` element, and their descendants, are created in the SVG and the MathML namespace.
- *
- * @param tagName - The tag name of the element.
- * @returns The code assigning the element factory, or an empty string when the element does not change namespace.
- */
-function overrideCreateElement(tagName: string): string {
-  switch (tagName) {
-    case 'svg':
-      return 'context.createElement = _createSVGElement;';
-    case 'math':
-      return 'context.createElement = _createMATHMLElement;';
-    default:
-      return '';
-  }
-}
-
-/**
- * Returns the code switching the element factory of the context rendering the children of an element to their namespace:
- * the namespace the element opens (see {@link overrideCreateElement}), or the HTML one for the children of a
- * `<foreignObject>`, which embeds HTML in an SVG.
- *
- * @param tagName - The tag name of the element.
- * @returns The code assigning the element factory, or an empty string when the children keep the namespace of the element.
- */
-function overrideChildrenCreateElement(tagName: string): string {
-  switch (tagName) {
-    case 'foreignObject':
-      return 'context.createElement = _createElement;';
-    default:
-      return overrideCreateElement(tagName);
-  }
 }

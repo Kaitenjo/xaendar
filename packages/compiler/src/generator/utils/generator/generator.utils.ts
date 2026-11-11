@@ -5,7 +5,6 @@ import { Expression, forEachChild, Identifier, isAsExpression, isCallExpression,
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import type { LineMapping } from '../../../type-checker/types/line-mapping.type';
-import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { Span } from '../../../types/span.type';
 import type { CompilerContext } from '../../../models/compiler-context/compiler-context.model';
 import type { EmittedNode } from '../../types/emitted-node.type';
@@ -492,23 +491,6 @@ export function getTextIdentifier(prefix = 'text', parentNode: string, index: st
  */
 export function getBlockIdentifier(prefix: 'if' | 'elseIf' | 'else' | 'for' | 'switch' | 'case' | 'default' | 'hydrate' | 'client' | 'placeholder' | 'try' | 'catch' | 'defer' | 'loading' | 'error' | 'render', parentNode: string, index: string): string {
   return getIdentifier(prefix, parentNode, index);
-}
-
-/**
- * Returns the runtime factory creating the elements of a namespace, assigned to `createElement` of a runtime context.
- *
- * @param namespace - The namespace.
- * @returns The name of the factory: `_createElement`, `_createSVGElement` or `_createMATHMLElement`.
- */
-export function getElementFactory(namespace: ElementNamespace): string {
-  switch (namespace) {
-    case 'svg':
-      return '_createSVGElement';
-    case 'mathml':
-      return '_createMATHMLElement';
-    default:
-      return '_createElement';
-  }
 }
 
 /**

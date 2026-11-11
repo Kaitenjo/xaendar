@@ -48,14 +48,6 @@ function createRoot(): _Context {
 }
 
 describe('_Context', () => {
-  describe('createElement', () => {
-    it('is inherited from the parent context', () => {
-      const root = createRoot();
-      expect(root.createElement('div').tagName).toBe('DIV');
-      expect(root.addChild().createElement).toBe(root.createElement);
-    });
-  });
-
   describe('identifiers', () => {
     it('stores and returns an identifier', () => {
       const context = createRoot();

@@ -62,6 +62,14 @@ describe('ClaimNodes', () => {
       expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> <div> where the browser renders <p>, which it creates');
     });
 
+    it('creates an element where the node does not match in the namespace it is given, HTML without one', () => {
+      const parent = parse('<b></b>');
+
+      expect(nodeStrategy.element(context, parent, 'circle', 1).namespaceURI).toBe('http://www.w3.org/2000/svg');
+      expect(nodeStrategy.element(context, parent, 'mi', 2).namespaceURI).toBe('http://www.w3.org/1998/Math/MathML');
+      expect(nodeStrategy.element(context, parent, 'p').namespaceURI).toBe('http://www.w3.org/1999/xhtml');
+    });
+
     it('names what the server rendered where an element does not match', () => {
       nodeStrategy.element(context, parse('<!--c-->'), 'p');
       nodeStrategy.element(context, parse('text'), 'p');

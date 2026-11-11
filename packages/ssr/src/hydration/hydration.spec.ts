@@ -1953,3 +1953,59 @@ describe('the contexts of the elements', () => {
     expect(root.querySelectorAll('i')).toHaveLength(0);
   });
 });
+
+describe('namespaces', () => {
+  /**
+   * A drawing whose blocks render SVG elements, a template declared in an <svg> and rendered in another one, HTML in a
+   * <foreignObject> and MathML.
+   */
+  class Drawing extends CustomElement {
+    public open = signal(true);
+    public points = signal([1, 2]);
+  }
+
+  const drawingTemplate = () => [
+    '<svg><template dot()><rect /></template>@if (open()) { @for (point of points(); track point) { <circle /> } }<foreignObject>@if (open()) { <p /> }</foreignObject></svg>',
+    '<svg><g>@if (open()) { @render dot() }</g></svg>',
+    '<math><mi>x</mi>@if (open()) { <mn>1</mn> }</math>'
+  ].join('');
+
+  /**
+   * The namespace of every element of the drawing, by tag name.
+   */
+  const namespacesOf = (root: ShadowRoot) => Array.from(root.querySelectorAll('*')).map(element => `${element.localName}:${element.namespaceURI!.split('/').at(-1)}`);
+
+  const expected = ['svg:svg', 'circle:svg', 'circle:svg', 'foreignObject:svg', 'p:xhtml', 'svg:svg', 'g:svg', 'rect:svg', 'math:MathML', 'mi:MathML', 'mn:MathML'];
+
+  it('creates each element in its namespace, in the blocks of an <svg>, in a template declared in one and in a <foreignObject>, also when the blocks render again', async () => {
+    const drawing = await register('drawing', Drawing, drawingTemplate, ['open', 'points']);
+    onServer = false;
+    drawing.define();
+    const host = document.body.appendChild(document.createElement(tag('client', 'drawing'))) as unknown as Drawing & Element;
+    const root = host.shadowRoot!;
+
+    expect(namespacesOf(root)).toEqual(expected);
+    host.open.set(false);
+    await flush();
+    host.open.set(true);
+    host.points.set([3, 4]);
+    await flush();
+    expect(namespacesOf(root)).toEqual(expected);
+  });
+
+  it('adopts the elements of the server in their namespace, and creates the ones it renders later there', async () => {
+    const drawing = await register('drawing', Drawing, drawingTemplate, ['open', 'points']);
+    const host = load(await renderToString(drawing.Server)) as unknown as Drawing & Element;
+    const root = host.shadowRoot!;
+    onServer = false;
+    drawing.define();
+
+    expect(console.warn).not.toHaveBeenCalled();
+    host.open.set(false);
+    await flush();
+    host.open.set(true);
+    await flush();
+    // happy-dom parses <math> and its children of the server as HTML elements, which a browser parses as MathML
+    expect(namespacesOf(root)).toEqual(expected.map(element => element.startsWith('math:') || element.startsWith('mi:') ? element.replace('MathML', 'xhtml') : element));
+  });
+});

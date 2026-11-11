@@ -25,7 +25,7 @@ import { skipGeneration } from '../states/skip-generation/skip-generation.state.
 import { GeneratorStates } from '../types/generator-states.type.js';
 import type { GeneratorFunctionToProcess } from '../types/generator-function-to-process.type.js';
 import { GeneratorTransitionFunctionReturnType } from '../types/generator-transition-function-return-type.type.js';
-import { getElementFactory, ROOT_NODE } from '../utils/generator/generator.utils.js';
+import { ROOT_NODE } from '../utils/generator/generator.utils.js';
 import { getDeferredModules } from '../utils/deferred-modules/deferred-modules.utils.js';
 import { createContext, declareScope, declareTemplateParameters } from '../utils/scope-generation/scope-generation.utils.js';
 import { getTextSeparators } from '../utils/text-separators/text-separators.utils.js';
@@ -154,17 +154,18 @@ export class Generator {
         const isScope = !isElement || isStructuralElement(node);
         const declarations = isScope ? declareScope(node.children, context, toTemplateFunction) : undefined;
         /*
-          N.B. Deliberate, to save memory: the children of an element are rendered in the runtime context the element is
-          rendered in, which the function receives as `context`, instead of one created for them, which a large table
-          would pay per cell. Only the ones declaring names, as the content of an element a structural directive is applied
-          to may, and the ones whose precode changes the factory of the elements (the children of <svg>, <math>,
-          <foreignObject>), which the blocks among them copy when they render later, create a context of their own,
-          receiving the parent one as `parentContext` and returning theirs. Do not create one for every element
+          N.B. Deliberate, to save memory: a context is created only for a scope, a block (its precode registering the
+          variables of a @for, the error of a @catch, the parameters of a template) or the children of an element declaring
+          names, as the content of an element a structural directive is applied to may. The children of any other element
+          are rendered in the runtime context the element is rendered in, which the function receives as `context`,
+          instead of one created for them, which a large table would pay per cell: the children of an <svg>, a <math> or a
+          <foreignObject> too, their elements naming their namespace (see `generateElement`). Do not create one for every
+          element, nor to change how the elements are created
         */
-        const createsContext = !isElement || !!precode || (isScope && context.identifierCount > 0);
+        const createsContext = !isElement || (isScope && context.identifierCount > 0);
         generatedCode.push(`\nfunction ${key}(${(createsContext ? fnData.args! : [fnData.args![0], 'context']).join(', ')}) {`);
         if (createsContext) {
-          generatedCode.push(indent(`const context = ${createContext('parentContext', isElement ? undefined : 'nodeStrategy', isScope ? context.identifierCount : 0)};`));
+          generatedCode.push(indent(`const context = ${createContext('parentContext', isElement ? undefined : 'nodeStrategy', context.identifierCount)};`));
         }
 
         if (precode) {
@@ -279,9 +280,8 @@ export class Generator {
  *
  * @param template - The template.
  * @param key - The name of the function.
- * @param namespace - The namespace the content of the template is created in, the one of its declaration: the factory
- *   of the elements of the instance is set explicitly, since the scope declaring the template may create its elements
- *   in another namespace.
+ * @param namespace - The namespace the content of the template is created in, the one of its declaration, which its
+ *   elements name (see `generateElement`), wherever the instance is rendered.
  * @param generatorContext - The generator context of the scope declaring the template.
  * @returns The function, taking the element the instance is rendered into, the runtime context of the scope declaring
  *   the template, the node the instance is rendered before, the values of the arguments and the strategy getting the
@@ -289,10 +289,10 @@ export class Generator {
  */
 function toTemplateFunction(template: TemplateNode, key: string, namespace: ElementNamespace, generatorContext: GeneratorContext): GeneratorFunctionToProcess {
   const context = new GeneratorContext(generatorContext, namespace);
-  const precode = [`context.createElement = ${getElementFactory(namespace)};`].concat(declareTemplateParameters(template, key, context));
+  const precode = declareTemplateParameters(template, key, context);
 
   return {
-    fn: { node: template, parentNode: key, context, precode: precode.join('\n  '), anchor: 'anchor' },
+    fn: { node: template, parentNode: key, context, precode: precode.length ? precode.join('\n  ') : undefined, anchor: 'anchor' },
     args: [key, 'parentContext', 'anchor', 'params', 'nodeStrategy']
   };
 }

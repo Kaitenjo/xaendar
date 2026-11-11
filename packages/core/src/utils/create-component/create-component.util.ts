@@ -8,11 +8,11 @@ import { BindableProperties } from '../../types/create-component/bindable-proper
 import { BindingGroup } from '../../types/create-component/binding-group.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
 import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
-import { _Context } from '../context/context.util';
+import { _Context, _EMPTY_CONTEXT } from '../context/context.util';
 import { getSelector } from '../get-selector/get-selector.util';
 import { _assertRequiredInputs } from '../required-inputs/required-inputs.util';
 import { _toPropertyName } from '../input-names/input-names.util';
-import { _createElement, _renderElement, _resetProperty, _setReactiveInput } from '../render-element/render-element.util';
+import { _renderElement, _resetProperty, _setReactiveInput } from '../render-element/render-element.util';
 import type { Bindings } from '../../types/create-component/bindings.type';
 import type { TemplateHandler } from '../../types/template-handler.type';
 
@@ -71,7 +71,7 @@ export function _createComponent<
   }
 
   // The root of the component's own bindings: it is never a scope of identifiers, only the owner of their cleanup
-  const context = new _Context({ createElement: _createElement } as unknown as _Context);
+  const context = new _Context(_EMPTY_CONTEXT);
   // Registered before the render, so that what a render failing halfway leaves is cleared along with the owner
   owner().addChild(context);
   const { attributes, events, conditionalBindings, directives } = bindings;
