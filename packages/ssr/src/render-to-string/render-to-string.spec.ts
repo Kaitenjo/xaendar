@@ -220,6 +220,27 @@ describe('renderToString', () => {
     expect(await renderToString(TryingParent)).toContain('<!--xd-t:1--><p><!---->Child failed</p><!--/xd-t-->');
   });
 
+  it('renders the @case of a @switch one of whose values is strictly equal to the value, or else the @default', async () => {
+    const render = await compile('@switch (kind) { @case (\'a\') {<i>a</i>} @case (\'b\', \'c\') {<i>b or c</i>} @default {<i>other</i>} }');
+    const kinds: unknown[] = ['a', 'c', 'z', 'b, c'];
+    const html = new Array<string>();
+    for (let i = 0; i < kinds.length; i++) {
+      const KindCard = class extends CustomElement {
+        public kind = kinds[i];
+      };
+      customElements.define(`kind-card-${i}`, KindCard);
+      _defineServerRender(KindCard, render);
+      html.push((await renderToString(KindCard)).replace(/^.*shadowrootmode="open">|<\/template>.*$/gs, ''));
+    }
+
+    expect(html).toEqual([
+      '<!--xd-switch:0--><i>a</i><!--/xd-switch-->',
+      '<!--xd-switch:1--><i>b or c</i><!--/xd-switch-->',
+      '<!--xd-switch:2--><i>other</i><!--/xd-switch-->',
+      '<!--xd-switch:2--><i>other</i><!--/xd-switch-->'
+    ]);
+  });
+
   it('renders only the @placeholder of a @defer between the markers of the block, or nothing without one', async () => {
     class DeferringCard extends CustomElement { }
     customElements.define('deferring-card', DeferringCard);

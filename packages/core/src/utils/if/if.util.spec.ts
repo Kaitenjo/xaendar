@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
+import type { BlockConfig } from '../../types/if/block-config.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -8,7 +9,11 @@ await vi.hoisted(async () => {
 
 const { _Context, mountNode } = await import('../context/context.util');
 const { _if } = await import('./if.util');
+const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
+const { _SSR_MARKERS } = await import('../../costants');
 const { signal } = await import('../../signals');
+
+type Context = InstanceType<typeof _Context>;
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
@@ -16,8 +21,8 @@ function createRoot() {
   return new _Context({ createElement: (tag: string) => document.createElement(tag) } as never);
 }
 
-function branch(label: string, condition?: () => boolean) {
-  const block = vi.fn((parent: HTMLElement, parentContext: InstanceType<typeof _Context>, reference: Node | null) => {
+function branch(label: string, condition?: (context: Context) => unknown) {
+  const block = vi.fn((parent: HTMLElement, parentContext: Context, reference: Node | null) => {
     const context = new _Context(parentContext);
     const element = document.createElement('span');
     element.textContent = label;
@@ -27,25 +32,55 @@ function branch(label: string, condition?: () => boolean) {
   return { condition, block };
 }
 
+/**
+ * Freezes an object and every object it holds, functions excluded, so that a write into it throws in strict mode.
+ */
+function deepFreeze<Value extends object>(value: Value): Value {
+  const members = Object.values(value);
+  for (let i = 0; i < members.length; i++) {
+    const member: unknown = members[i];
+    if (member && typeof member === 'object') {
+      deepFreeze(member);
+    }
+  }
+
+  return Object.freeze(value);
+}
+
 const text = (parent: HTMLElement) => Array.from(parent.querySelectorAll('span')).map(span => span.textContent);
 
 describe('_if', () => {
   it('inserts an anchor comment', () => {
     const parent = document.createElement('div');
-    _if(parent, createRoot(), null, [branch('a', () => false)]);
+    _if(parent, createRoot(), null, { branches: [branch('a', () => false)] });
     expect(parent.lastChild?.textContent).toBe('if');
+  });
+
+  it('gets the block with the marker of an @if, unless another one is given', () => {
+    const block = vi.spyOn(CREATE_NODES, 'block');
+    const context = createRoot();
+    const parent = document.createElement('div');
+
+    _if(parent, context, null, { branches: [] });
+    _if(parent, context, null, { branches: [] }, _SSR_MARKERS.switch);
+
+    expect(block.mock.calls).toEqual([
+      [context, parent, null, 'if', _SSR_MARKERS.if],
+      [context, parent, null, 'if', _SSR_MARKERS.switch]
+    ]);
+    block.mockRestore();
   });
 
   describe('single branch', () => {
     it('renders the branch when the condition is true', () => {
       const parent = document.createElement('div');
-      _if(parent, createRoot(), null, [branch('a', () => true)]);
+      _if(parent, createRoot(), null, { branches: [branch('a', () => true)] });
       expect(text(parent)).toEqual(['a']);
     });
 
     it('renders nothing when the condition is false', () => {
       const parent = document.createElement('div');
-      _if(parent, createRoot(), null, [branch('a', () => false)]);
+      _if(parent, createRoot(), null, { branches: [branch('a', () => false)] });
       expect(text(parent)).toEqual([]);
     });
 
@@ -53,7 +88,7 @@ describe('_if', () => {
       const parent = document.createElement('div');
       const show = signal(true);
       const a = branch('a', () => show());
-      _if(parent, createRoot(), null, [a]);
+      _if(parent, createRoot(), null, { branches: [a] });
 
       show.set(false);
       await flush();
@@ -69,7 +104,7 @@ describe('_if', () => {
       const parent = document.createElement('div');
       const value = signal(1);
       const a = branch('a', () => value() > 0);
-      _if(parent, createRoot(), null, [a]);
+      _if(parent, createRoot(), null, { branches: [a] });
 
       value.set(2);
       await flush();
@@ -81,20 +116,20 @@ describe('_if', () => {
   describe('if / else', () => {
     it('renders the if branch when the condition is true', () => {
       const parent = document.createElement('div');
-      _if(parent, createRoot(), null, [branch('a', () => true), branch('b')]);
+      _if(parent, createRoot(), null, { branches: [branch('a', () => true), branch('b')] });
       expect(text(parent)).toEqual(['a']);
     });
 
     it('renders the else branch when the condition is false', () => {
       const parent = document.createElement('div');
-      _if(parent, createRoot(), null, [branch('a', () => false), branch('b')]);
+      _if(parent, createRoot(), null, { branches: [branch('a', () => false), branch('b')] });
       expect(text(parent)).toEqual(['b']);
     });
 
     it('swaps the branches reactively, destroying the previous one', async () => {
       const parent = document.createElement('div');
       const flag = signal(true);
-      _if(parent, createRoot(), null, [branch('a', () => flag()), branch('b')]);
+      _if(parent, createRoot(), null, { branches: [branch('a', () => flag()), branch('b')] });
 
       flag.set(false);
       await flush();
@@ -109,20 +144,20 @@ describe('_if', () => {
   describe('if / else if', () => {
     it('renders the if branch when its condition is true', () => {
       const parent = document.createElement('div');
-      _if(parent, createRoot(), null, [branch('a', () => true), branch('b', () => true)]);
+      _if(parent, createRoot(), null, { branches: [branch('a', () => true), branch('b', () => true)] });
       expect(text(parent)).toEqual(['a']);
     });
 
     it('renders the else if branch when only its condition is true', () => {
       const parent = document.createElement('div');
-      _if(parent, createRoot(), null, [branch('a', () => false), branch('b', () => true)]);
+      _if(parent, createRoot(), null, { branches: [branch('a', () => false), branch('b', () => true)] });
       expect(text(parent)).toEqual(['b']);
     });
 
     it('renders nothing when no condition is true, since the second branch is not an else', () => {
       const parent = document.createElement('div');
       const b = branch('b', () => false);
-      _if(parent, createRoot(), null, [branch('a', () => false), b]);
+      _if(parent, createRoot(), null, { branches: [branch('a', () => false), b] });
 
       expect(text(parent)).toEqual([]);
       expect(b.block).not.toHaveBeenCalled();
@@ -132,7 +167,7 @@ describe('_if', () => {
       const parent = document.createElement('div');
       const value = signal(2);
       const b = branch('b', () => value() === 2);
-      _if(parent, createRoot(), null, [branch('a', () => value() === 1), b]);
+      _if(parent, createRoot(), null, { branches: [branch('a', () => value() === 1), b] });
       expect(text(parent)).toEqual(['b']);
 
       value.set(9);
@@ -149,7 +184,7 @@ describe('_if', () => {
   describe('branches without a condition', () => {
     it('renders a single branch without a condition', () => {
       const parent = document.createElement('div');
-      _if(parent, createRoot(), null, [branch('a')]);
+      _if(parent, createRoot(), null, { branches: [branch('a')] });
       expect(text(parent)).toEqual(['a']);
     });
 
@@ -159,7 +194,7 @@ describe('_if', () => {
     ])('renders a branch without a condition even when it is followed by %s', (_description, condition) => {
       const parent = document.createElement('div');
       const b = branch('b', condition);
-      _if(parent, createRoot(), null, [branch('a'), b]);
+      _if(parent, createRoot(), null, { branches: [branch('a'), b] });
 
       expect(text(parent)).toEqual(['a']);
       expect(b.block).not.toHaveBeenCalled();
@@ -167,27 +202,29 @@ describe('_if', () => {
   });
 
   describe('if / else if / else', () => {
-    const blocks = (value: () => number) => [
-      branch('a', () => value() === 1),
-      branch('b', () => value() === 2),
-      branch('c')
-    ];
+    const config = (value: () => number): BlockConfig => ({
+      branches: [
+        branch('a', () => value() === 1),
+        branch('b', () => value() === 2),
+        branch('c')
+      ]
+    });
 
     it('renders the first matching branch', () => {
       const parent = document.createElement('div');
-      _if(parent, createRoot(), null, blocks(() => 2));
+      _if(parent, createRoot(), null, config(() => 2));
       expect(text(parent)).toEqual(['b']);
     });
 
     it('falls back to the branch without condition', () => {
       const parent = document.createElement('div');
-      _if(parent, createRoot(), null, blocks(() => 3));
+      _if(parent, createRoot(), null, config(() => 3));
       expect(text(parent)).toEqual(['c']);
     });
 
     it('renders nothing when no branch matches', () => {
       const parent = document.createElement('div');
-      _if(parent, createRoot(), null, [branch('a', () => false), branch('b', () => false), branch('c', () => false)]);
+      _if(parent, createRoot(), null, { branches: [branch('a', () => false), branch('b', () => false), branch('c', () => false)] });
       expect(text(parent)).toEqual([]);
     });
 
@@ -195,7 +232,7 @@ describe('_if', () => {
       const parent = document.createElement('div');
       const value = signal(1);
       const a = branch('a', () => value() === 1);
-      _if(parent, createRoot(), null, [a, branch('b', () => value() === 2), branch('c', () => value() === 3)]);
+      _if(parent, createRoot(), null, { branches: [a, branch('b', () => value() === 2), branch('c', () => value() === 3)] });
 
       value.set(9);
       await flush();
@@ -210,7 +247,7 @@ describe('_if', () => {
     it('switches branch reactively', async () => {
       const parent = document.createElement('div');
       const value = signal(1);
-      _if(parent, createRoot(), null, blocks(() => value()));
+      _if(parent, createRoot(), null, config(() => value()));
 
       value.set(2);
       await flush();
@@ -227,7 +264,7 @@ describe('_if', () => {
     const reference = document.createComment('ref');
     parent.appendChild(reference);
 
-    _if(parent, createRoot(), reference, [branch('a', () => true)]);
+    _if(parent, createRoot(), reference, { branches: [branch('a', () => true)] });
 
     expect(Array.from(parent.childNodes).map(node => node.textContent)).toEqual(['a', 'if', 'ref']);
   });
@@ -237,7 +274,7 @@ describe('_if', () => {
     const context = createRoot();
     const show = signal(true);
     const a = branch('a', () => show());
-    _if(parent, context, null, [a]);
+    _if(parent, context, null, { branches: [a] });
 
     context.clear();
     show.set(false);
@@ -246,5 +283,65 @@ describe('_if', () => {
 
     expect(parent.childNodes.length).toBe(0);
     expect(a.block).toHaveBeenCalledOnce();
+  });
+
+  it('calls the conditions with the component of the context as this and the context', () => {
+    const component = { visible: true };
+    const context = new _Context(createRoot(), undefined, 0, component);
+    const condition = vi.fn(function (this: typeof component, _context: Context) {
+      return this.visible;
+    });
+    const parent = document.createElement('div');
+
+    _if(parent, context, null, { branches: [branch('a', condition)] });
+
+    expect(text(parent)).toEqual(['a']);
+    expect(condition).toHaveBeenCalledOnce();
+    expect(condition.mock.contexts[0]).toBe(component);
+    expect(condition.mock.calls[0][0]).toBe(context);
+  });
+
+  it('follows a variable of the template its conditions read when the scope is refreshed with it', () => {
+    const context = new _Context(createRoot(), undefined, 1);
+    context.addIdentifier('show', true);
+    const parent = document.createElement('div');
+    _if(parent, context, null, { branches: [branch('a', scope => scope.get('show')), branch('b')], reads: ['show'] });
+
+    context.update('show', false);
+    context.refresh(['show']);
+
+    expect(text(parent)).toEqual(['b']);
+  });
+
+  it('shares the same config and the same conditions between two instances of the block, each reading its own context, without writing into the config', () => {
+    const condition = vi.fn((scope: Context) => scope.get('show'));
+    const a = branch('a', condition);
+    const b = branch('b');
+    const config = deepFreeze<BlockConfig>({ branches: [a, b], reads: ['show'] });
+    const first = new _Context(createRoot(), undefined, 1);
+    const second = new _Context(createRoot(), undefined, 1);
+    first.addIdentifier('show', true);
+    second.addIdentifier('show', false);
+    const firstParent = document.createElement('div');
+    const secondParent = document.createElement('div');
+
+    _if(firstParent, first, null, config);
+    _if(secondParent, second, null, config);
+
+    const scopes = new Map([[first, 'first'], [second, 'second']]);
+    expect(text(firstParent)).toEqual(['a']);
+    expect(text(secondParent)).toEqual(['b']);
+    expect(condition.mock.calls.map(call => scopes.get(call[0]))).toEqual(['first', 'second']);
+
+    second.update('show', true);
+    second.refresh(['show']);
+    first.update('show', false);
+    first.refresh(['show']);
+
+    expect(text(firstParent)).toEqual(['b']);
+    expect(text(secondParent)).toEqual(['a']);
+    expect(condition.mock.calls.map(call => scopes.get(call[0]))).toEqual(['first', 'second', 'second', 'first']);
+    expect(a.block.mock.calls.map(call => scopes.get(call[1]))).toEqual(['first', 'second']);
+    expect(b.block.mock.calls.map(call => scopes.get(call[1]))).toEqual(['second', 'first']);
   });
 });

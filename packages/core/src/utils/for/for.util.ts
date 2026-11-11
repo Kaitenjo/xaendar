@@ -1,17 +1,15 @@
-import { Function, NoArgsFunction } from '@xaendar/types';
 import { _SSR_MARKERS } from '../../costants';
 import { untracked } from '../../signals';
 import { _bindEffect } from '../../signals/effect/effect';
 import type { IterationVariable } from '../../types/iteration-variable.type';
 import type { IterationVariables } from '../../types/iteration-variables.type';
-import type { NodeStrategy } from '../../types/node-strategy.type';
 import { _Context } from '../context/context.util';
-import type { TrackExpression } from '../../types/track-expression.type';
+import type { ForConfig } from '../../types/for-config.type';
 import type { ForRun } from '../../types/for-run.type';
 
 /**
  * Reactively iterates over a list of items. Items are matched across re-runs
- * by the key produced by `trackExpression`:
+ * by the key produced by the track expression of the `@for`:
  * - key sopravvive → il Context e l'intero sottoalbero (stato, subscription,
  *   richieste pendenti) vengono riusati SEMPRE, indipendentemente da un
  *   eventuale cambio di indice: si spostano solo i nodi DOM, e se il body usa
@@ -31,28 +29,20 @@ import type { ForRun } from '../../types/for-run.type';
  * @param parentNode - The parent HTML element the items are rendered into.
  * @param parentContext - The context owning the items.
  * @param referenceNode - The node to insert the items before, `null` to append them.
- * @param condition - Ritorna gli item da iterare: un array, oppure un numero
- *   `n` iterato come `0, 1, ..., n - 1`.
- * @param trackExpression - Ritorna la key di un item, ricevendo l'item, il suo indice e $first/$last/$even/$odd, come
- *   valori, come li legge il body.
- * @param forFn - Callback invocata per creare un nuovo item: ritorna il context del suo body, dove
- *   {@link _iterationVariables} dichiara le stesse `variables`.
- * @param variables - The variables the body reads, declared once by the compiled code: omitted when the body reads none.
- * @param reads - The names of the variables of the template the items and their keys read, omitted when they read none.
+ * @param config - The `@for`, a constant of the module of the template: its items and their keys, functions of the
+ *   module called with the component and the context, the function rendering an item, the variables the body reads and
+ *   the variables of the template the items and their keys read (see `ForConfig`).
  */
-export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, condition: NoArgsFunction<unknown[] | number>, trackExpression: TrackExpression, forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null, NodeStrategy], _Context>, variables?: IterationVariables, reads?: readonly string[]) {
+export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, config: ForConfig): void {
   const nodeBlock = parentContext.nodeStrategy.block(parentContext, parentNode, referenceNode, 'for', _SSR_MARKERS.for);
   const run: ForRun = {
     parentNode, parentContext,
     nodeBlock,
-    condition,
-    trackExpression,
-    forFn,
-    variables,
+    config,
     entries: null
   };
 
-  _bindEffect(parentContext, runFor, run, undefined, undefined, reads);
+  _bindEffect(parentContext, runFor, run, undefined, undefined, config.reads);
 }
 
 /**
@@ -62,12 +52,17 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
  * @param run - The `@for`.
  */
 function runFor(run: ForRun): void {
-  const { trackExpression } = run;
-  const iterable = run.condition();
+  const { config, parentContext } = run;
+  const { component } = parentContext;
+  const iterable = config.items.call(component, parentContext);
   const items = typeof iterable === 'number' ? Array.from({ length: iterable }, (_, i) => i) : iterable;
   // The track expression reads the item, the index and the implicit variables as the body does: as values
   const last = items.length - 1;
-  const newKeys = items.map((item, i) => trackExpression(item, i, i === 0, i === last, i % 2 === 0, i % 2 !== 0));
+  const newKeys = new Array<string | number>(items.length);
+  for (let i = 0; i < items.length; i++) {
+    newKeys[i] = config.track.call(component, parentContext, items[i], i, i === 0, i === last, i % 2 === 0, i % 2 !== 0);
+  }
+
   const occurrences = countOccurrences(newKeys);
   untracked(() => run.entries ? updateItems(run, items, newKeys, occurrences) : renderItems(run, items, newKeys, occurrences));
 }
@@ -82,13 +77,13 @@ function runFor(run: ForRun): void {
  * @param occurrences - The occurrences of the keys.
  */
 function renderItems(run: ForRun, items: unknown[], newKeys: Array<string | number>, occurrences: ReturnType<typeof countOccurrences>): void {
-  const { parentNode, parentContext, nodeBlock, forFn } = run;
+  const { parentNode, parentContext, nodeBlock, config } = run;
   const { nodeStrategy } = parentContext;
   const entries = new Map<string | number, _Context[]>();
   const itemNodeStrategy = nodeStrategy.adoptItems(parentNode, nodeBlock, newKeys);
   for (let i = 0; i < items.length; i++) {
     const key = newKeys[i];
-    const created = forFn(parentNode, parentContext, items, i, nodeBlock.anchor, itemNodeStrategy);
+    const created = config.block(parentNode, parentContext, items, i, nodeBlock.anchor, itemNodeStrategy);
     parentContext.addChild(created);
     const keyEntries = entries.get(key) ?? new Array<_Context>(occurrences.counts.get(key)!);
     keyEntries[occurrences.indexes[i]] = created;
@@ -110,7 +105,8 @@ function renderItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
  * @param occurrences - The occurrences of the keys.
  */
 function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | number>, occurrences: ReturnType<typeof countOccurrences>): void {
-  const { parentNode, parentContext, forFn, variables } = run;
+  const { parentNode, parentContext, config } = run;
+  const { variables } = config;
   const entries = run.entries!;
   const newEntries = new Map<string | number, _Context[]>();
 
@@ -152,7 +148,7 @@ function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
 
       entry = existing;
     } else {
-      const created = forFn(parentNode, parentContext, items, i, nextReference, parentContext.nodeStrategy);
+      const created = config.block(parentNode, parentContext, items, i, nextReference, parentContext.nodeStrategy);
       parentContext.addChild(created);
       nodes = getItemNodes(parentNode, created);
       entry = created;

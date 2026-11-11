@@ -159,7 +159,7 @@ describe('_createHostDirectives', () => {
     it('binds the exposed input as the template runtime does, setting the one of the directive', () => {
       const element = create([{ directive: TooltipDirective, properties: [{ name: 'text', alias: 'label' }] }]);
       const context = new _Context({} as never);
-      _setInput(context, element, 'label', 'hello');
+      _setInput(context, element, { name: 'label', value: 'hello', setter: _setInput });
 
       expect(element.hostDirectives.get(TooltipDirective)?.text()).toBe('hello');
     });

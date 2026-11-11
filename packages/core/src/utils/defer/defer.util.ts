@@ -83,9 +83,9 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
   queueMicrotask(() => {
     if (run.active && !run.fired) {
       const elements = elementsOf(run.shown, parentNode);
-      run.disarms.push(armTriggers(watchedTriggers(block.triggers, elements), elements, () => fire(run)));
+      run.disarms.push(armTriggers(watchedTriggers(block.triggers, elements), elements, () => fire(run), parentContext));
       if (block.prefetch) {
-        run.disarms.push(armTriggers(watchedTriggers(block.prefetch, elements), elements, () => prefetch(run)));
+        run.disarms.push(armTriggers(watchedTriggers(block.prefetch, elements), elements, () => prefetch(run), parentContext));
       }
     }
   });
@@ -106,7 +106,7 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
  * @param run - The block, whose `when` is defined.
  */
 function checkWhen(run: DeferRun): void {
-  if (!run.fired && run.block.when!()) {
+  if (!run.fired && run.block.when!.call(run.parentContext.component, run.parentContext)) {
     queueMicrotask(() => run.active && fire(run));
   }
 }
@@ -119,7 +119,7 @@ function checkWhen(run: DeferRun): void {
  * @param run - The block, whose `prefetchWhen` is defined.
  */
 function checkPrefetchWhen(run: DeferRun): void {
-  if (!run.fired && run.block.prefetchWhen!()) {
+  if (!run.fired && run.block.prefetchWhen!.call(run.parentContext.component, run.parentContext)) {
     queueMicrotask(() => run.active && !run.fired && prefetch(run));
   }
 }

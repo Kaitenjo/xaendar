@@ -46,7 +46,7 @@ describe('_ssrStructural', () => {
   it('writes the element at once between the markers of a rendered element, in a child of the context, when every structural directive allows it synchronously', () => {
     const out: ServerOutput = [];
 
-    _ssrStructural(out, context, [guard(true), guard(true)], [], render);
+    _ssrStructural(out, context, { structuralDirectives: [guard(true), guard(true)], render });
 
     expect(out).toEqual(['<!--xd-s:1-->', '<p></p>', '<!--/xd-s-->']);
     const elementContext = render.mock.lastCall![1];
@@ -58,7 +58,7 @@ describe('_ssrStructural', () => {
     const out: ServerOutput = [];
     render.mockClear();
 
-    _ssrStructural(out, context, [guard(Promise.reject(new Error('denied'))), guard(false)], [], render);
+    _ssrStructural(out, context, { structuralDirectives: [guard(Promise.reject(new Error('denied'))), guard(false)], render });
     await Promise.resolve();
 
     expect(out).toEqual(['<!--xd-s:0-->', '<!--/xd-s-->']);
@@ -76,7 +76,7 @@ describe('_ssrStructural', () => {
     });
     const runtime = _createServerRuntime({ product: 42 });
 
-    _runOnServer(runtime, () => _ssrStructural(out, context, [guard(true), guard(Promise.resolve(true))], [], render));
+    _runOnServer(runtime, () => _ssrStructural(out, context, { structuralDirectives: [guard(true), guard(Promise.resolve(true))], render }));
 
     expect(out).toHaveLength(2);
     expect(out[1]).toBe('<!--/xd-s-->');
@@ -89,8 +89,8 @@ describe('_ssrStructural', () => {
     const denied: ServerOutput = [];
     const failed: ServerOutput = [];
 
-    _ssrStructural(denied, context, [guard(Promise.resolve(false))], [], render);
-    _ssrStructural(failed, context, [guard(Promise.reject(new Error('failed')))], [], render);
+    _ssrStructural(denied, context, { structuralDirectives: [guard(Promise.resolve(false))], render });
+    _ssrStructural(failed, context, { structuralDirectives: [guard(Promise.reject(new Error('failed')))], render });
 
     await expect(denied[0]).resolves.toEqual(['<!--xd-s:0-->']);
     await expect(failed[0]).resolves.toEqual(['<!--xd-s:0-->']);
@@ -102,22 +102,40 @@ describe('_ssrStructural', () => {
     const conditionalBindings: StructuralConditionalBinding[] = [
       {
         branches: [
-          { condition: () => false, structuralDirectives: [guard(false)], conditionalBindings: [] },
+          { condition: () => false, structuralDirectives: [guard(false)] },
           {
             structuralDirectives: [guard(true)],
-            conditionalBindings: [{ expression: () => 'b', branches: [{ condition: ['b'], structuralDirectives: [guard(false)], conditionalBindings: [] }] }]
+            conditionalBindings: [{ expression: () => 'b', branches: [{ condition: ['b'], structuralDirectives: [guard(false)] }] }]
           }
         ]
       },
-      { branches: [{ condition: () => false, structuralDirectives: [guard(false)], conditionalBindings: [] }] }
+      { branches: [{ condition: () => false, structuralDirectives: [guard(false)] }] }
     ];
 
-    _ssrStructural(out, context, [], conditionalBindings, render);
+    _ssrStructural(out, context, { structuralConditionalBindings: conditionalBindings, render });
 
     expect(out).toEqual(['<!--xd-s:0-->', '<!--/xd-s-->']);
   });
 
+  it('writes the element with the component of the context as this, a structural directive binding no property applying its defaults', () => {
+    const out: ServerOutput = [];
+    const component = { name: 'card' };
+    const componentContext = new _Context(context, undefined, 0, component);
+    let self: unknown;
+
+    _ssrStructural(out, componentContext, {
+      structuralDirectives: [{ selector: 'guard' }],
+      render(this: unknown, output: ServerOutput) {
+        self = this;
+        output.push('<p></p>');
+      }
+    });
+
+    expect(out).toEqual(['<!--xd-s:1-->', '<p></p>', '<!--/xd-s-->']);
+    expect(self).toBe(component);
+  });
+
   it('throws when no structural directive is registered for a selector', () => {
-    expect(() => _ssrStructural([], context, [{ selector: 'missing', attributes: [] }], [], render)).toThrow('No directive registered for selector "missing"');
+    expect(() => _ssrStructural([], context, { structuralDirectives: [{ selector: 'missing', attributes: [] }], render })).toThrow('No directive registered for selector "missing"');
   });
 });

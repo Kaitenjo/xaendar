@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { _EVENT_CONTRACT_KEY, WAITS_FOR_HYDRATION } from '../../costants';
-import { armTriggers, deferElementHydration, recordEvents, replayContractEvents, replayElementEvents, replayEvents, toIdle, waitedForTrigger } from './hydration-triggers.util';
+import type { _Context } from '../context/context.util';
+import { armTriggers, deferElementHydration, recordEvents, replayContractEvents, replayElementEvents, replayEvents, toIdle, waitedForTrigger, watchedTriggers } from './hydration-triggers.util';
 
 /**
  * The IntersectionObserver standing for the one of the browser: `intersect` calls the callback of the last one created.
@@ -132,6 +133,36 @@ describe('armTriggers', () => {
     expect(fire).toHaveBeenCalledOnce();
   });
 
+  it('reads the element a trigger names and the options of visible with the component and the context of the block, once armed', () => {
+    const named = document.body.appendChild(document.createElement('button'));
+    const component = { named, margin: '20px' };
+    const context = { component } as unknown as _Context;
+    const target = vi.fn(function (this: typeof component, _context: _Context) {
+      return this.named;
+    });
+    const options = vi.fn(function (this: typeof component, _context: _Context) {
+      return { rootMargin: this.margin };
+    });
+
+    armTriggers([{ kind: 'visible', target, options }], [], vi.fn(), context);
+
+    expect(FakeIntersectionObserver.last.observed).toEqual([named]);
+    expect(FakeIntersectionObserver.last.options).toEqual({ rootMargin: '20px' });
+    expect(target.mock.contexts[0]).toBe(component);
+    expect(target.mock.calls[0][0]).toBe(context);
+    expect(options.mock.contexts[0]).toBe(component);
+    expect(options.mock.calls[0][0]).toBe(context);
+  });
+
+  it('observes with the options of visible given as an object, with the context of the block', () => {
+    const elements = [document.createElement('p')];
+
+    armTriggers([{ kind: 'visible', options: { threshold: 0.5 } }], elements, vi.fn(), { component: {} } as unknown as _Context);
+
+    expect(FakeIntersectionObserver.last.observed).toEqual(elements);
+    expect(FakeIntersectionObserver.last.options).toEqual({ threshold: 0.5 });
+  });
+
   it('fires visible when one of the elements enters the viewport', () => {
     const elements = [document.createElement('p'), document.createElement('b')];
     const fire = vi.fn();
@@ -199,6 +230,15 @@ describe('toIdle', () => {
     ] as const;
 
     expect(triggers.map(toIdle)).toEqual(triggers);
+  });
+});
+
+describe('watchedTriggers', () => {
+  it('keeps the triggers when there are elements to watch, and waits for the browser to be idle in place of the ones watching them otherwise', () => {
+    const triggers = ['visible', 'load'] as const;
+
+    expect(watchedTriggers(triggers, [document.createElement('p')])).toBe(triggers);
+    expect(watchedTriggers(triggers, [])).toEqual(['idle', 'load']);
   });
 });
 

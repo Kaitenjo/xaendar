@@ -4,6 +4,7 @@ import type { _ContractEvent } from '../../types/event-contract.type';
 import type { HydrateTrigger } from '../../types/hydrate-trigger.type';
 import type { RecordedEvents } from '../../types/recorded-events.type';
 import type { Trigger } from '../../types/triggers/trigger.type';
+import type { _Context } from '../context/context.util';
 
 /**
  * The events firing the `hover` trigger: the pointer moving over an element, and the focus entering it, for the users
@@ -34,14 +35,18 @@ let replayScheduled = false;
  * passed, `visible` when one of the elements enters the viewport, observed with the options it declares, `interaction`
  * at the first event on one of them, once the listeners of the element and of the ones it holds have handled it, `hover`
  * when the pointer moves over one of them or the focus enters it, before any listener. A trigger naming the element it
- * watches watches that one in place of the elements.
+ * watches watches that one in place of the elements. The element a trigger names, and the options of `visible` when
+ * an expression computes them, are read now, calling the functions of the module of the template with the component and
+ * the context of the scope holding the block.
  *
  * @param triggers - The triggers.
  * @param elements - The elements `visible`, `interaction` and `hover` watch, unless they name the element to watch.
  * @param fire - Runs when a trigger fires.
+ * @param context - The context of the scope holding the block, which the triggers naming an element read: given by a
+ *   `@defer` or a `@hydrate`, whose triggers are written in the template.
  * @returns Disarms the triggers.
  */
-export function armTriggers(triggers: readonly Trigger[], elements: readonly Element[], fire: NoArgsVoidFunction): NoArgsVoidFunction {
+export function armTriggers(triggers: readonly Trigger[], elements: readonly Element[], fire: NoArgsVoidFunction, context?: _Context): NoArgsVoidFunction {
   const disarms = new Array<NoArgsVoidFunction>();
   const disarm = () => disarmAll(disarms);
   const once = () => {
@@ -50,7 +55,7 @@ export function armTriggers(triggers: readonly Trigger[], elements: readonly Ele
   };
 
   for (let i = 0; i < triggers.length; i++) {
-    disarms.push(armTrigger(triggers[i], elements, once));
+    disarms.push(armTrigger(triggers[i], elements, once, context));
   }
 
   return disarm;
@@ -329,10 +334,12 @@ function isOnTargets({ path }: _ContractEvent, targets: readonly EventTarget[]):
  * @param trigger - The trigger.
  * @param elements - The elements a trigger watching elements watches, unless it names the element to watch.
  * @param fire - Runs when the trigger fires.
+ * @param context - The context of the scope holding the block, which the element a trigger names, and the options of
+ *   `visible` when an expression computes them, read.
  * @param options - The options of the observer of `visible`, if it declares them.
  * @returns Disarms the trigger.
  */
-function armTrigger(trigger: Trigger, elements: readonly Element[], fire: NoArgsVoidFunction, options?: IntersectionObserverInit): NoArgsVoidFunction {
+function armTrigger(trigger: Trigger, elements: readonly Element[], fire: NoArgsVoidFunction, context: _Context | undefined, options?: IntersectionObserverInit): NoArgsVoidFunction {
   if (typeof trigger !== 'string') {
     switch (trigger.kind) {
       case 'idle':
@@ -341,8 +348,11 @@ function armTrigger(trigger: Trigger, elements: readonly Element[], fire: NoArgs
       case 'timer':
         return whenTimer(fire, trigger.delay);
 
-      default:
-        return armTrigger(trigger.kind, trigger.target ? [trigger.target()] : elements, fire, trigger.options);
+      default: {
+        const { target, options: declared } = trigger;
+        const component = context?.component;
+        return armTrigger(trigger.kind, target ? [target.call(component, context!)] : elements, fire, context, typeof declared === 'function' ? declared.call(component, context!) : declared);
+      }
     }
   }
 

@@ -8,14 +8,17 @@ await vi.hoisted(async () => {
   loadServerDom();
 });
 
+const { _Context } = await import('@xaendar/core');
 const { _ssrTry } = await import('./ssr-try.util');
+
+const context = new _Context({} as never);
 
 describe('_ssrTry', () => {
   it('writes the content between the markers of a content rendered', () => {
     const out: ServerOutput = ['<p>'];
     const pending = Promise.resolve<ServerOutput>(['later']);
 
-    _ssrTry(out, output => output.push('<b>', pending, '</b>'), output => output.push('<i></i>'));
+    _ssrTry(out, context, output => output.push('<b>', pending, '</b>'), output => output.push('<i></i>'));
 
     expect(out).toEqual(['<p>', '<!--xd-t:0-->', '<b>', pending, '</b>', '<!--/xd-t-->']);
   });
@@ -25,10 +28,10 @@ describe('_ssrTry', () => {
     const failure = new Error('broken');
     const errors = new Array<unknown>();
 
-    _ssrTry(out, output => {
+    _ssrTry(out, context, output => {
       output.push('<b>');
       throw failure;
-    }, (output, error) => {
+    }, (output, _context, error) => {
       errors.push(error);
       output.push('<i></i>');
     });
@@ -37,11 +40,26 @@ describe('_ssrTry', () => {
     expect(errors).toEqual([failure]);
   });
 
+  it('calls the content and the @catch with the component as this and the context of the scope holding the block', () => {
+    const component = { name: 'card' };
+    const componentContext = new _Context(context, undefined, 0, component);
+    const calls = new Array<[unknown, unknown]>();
+
+    _ssrTry([], componentContext, function (this: unknown, _output, contentContext) {
+      calls.push([this, contentContext]);
+      throw new Error('content');
+    }, function (this: unknown, _output, catchContext) {
+      calls.push([this, catchContext]);
+    });
+
+    expect(calls).toEqual([[component, componentContext], [component, componentContext]]);
+  });
+
   it('lets the error of the @catch through, writing nothing', () => {
     const out: ServerOutput = [];
     const fallbackFailure = new Error('catch');
 
-    expect(() => _ssrTry(out, () => {
+    expect(() => _ssrTry(out, context, () => {
       throw new Error('content');
     }, () => {
       throw fallbackFailure;

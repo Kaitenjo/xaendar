@@ -77,8 +77,11 @@ export class Generator {
    * @param symbols The symbols the template imports from modules: the expressions read them through the declarations
    *   importing them, written first, only for the ones an expression reads (a type is never imported at runtime).
    * @returns The generated code as a string: the declarations importing the symbols, the constants listing the
-   *   variables of the template the bindings read (see `GeneratorContext.getReads`), then module-level functions, the
-   *   entry point being `render`, each expecting to be invoked with the component instance bound as `this`. `render`
+   *   variables of the template the bindings read (see `GeneratorContext.getReads`), the constants describing the
+   *   elements and the blocks (see `GeneratorContext.declareConstant`), then module-level functions: the entry point,
+   *   `render`, invoked with the component instance bound as `this`, which it gives to the root context, the functions
+   *   rendering the blocks, which the runtime calls as they are, and the ones computing the expressions, which the
+   *   runtime calls with the component as `this` and the context (see `GeneratorContext.declareFunction`). `render`
    *   takes the strategy getting the nodes, created or adopted from the HTML rendered on the server, and every function
    *   takes the one of its scope, which its context gets.
    */
@@ -113,7 +116,7 @@ export class Generator {
         'function render(nodeStrategy) {',
         ...indent([
           `const ${ROOT_NODE} = this._root;`,
-          `const context = ${createContext('_ROOT_PARENT_CONTEXT', 'nodeStrategy', generatorContext.identifierCount)};`
+          `const context = ${createContext('_ROOT_PARENT_CONTEXT', 'nodeStrategy', generatorContext.identifierCount, 'this')};`
         ])
       ]
 
@@ -138,7 +141,7 @@ export class Generator {
       )
 
       for (const [key, fnData] of this._nodeToProcess.entries()) {
-        const { node, parentNode, context, precode, declaration, anchor } = fnData.fn;
+        const { node, parentNode, context, precode, anchor } = fnData.fn;
         const parentTag = parentTags.get(key);
 
         /*
@@ -158,10 +161,6 @@ export class Generator {
           receiving the parent one as `parentContext` and returning theirs. Do not create one for every element
         */
         const createsContext = !isElement || !!precode || (isScope && context.identifierCount > 0);
-        if (declaration) {
-          generatedCode.push(`\n${declaration}`);
-        }
-
         generatedCode.push(`\nfunction ${key}(${(createsContext ? fnData.args! : [fnData.args![0], 'context']).join(', ')}) {`);
         if (createsContext) {
           generatedCode.push(indent(`const context = ${createContext('parentContext', isElement ? undefined : 'nodeStrategy', isScope ? context.identifierCount : 0)};`));
@@ -195,10 +194,16 @@ export class Generator {
         generatedCode.push(...indent(functionBody), '}');
       }
 
+      // The functions of the module computing the expressions follow the ones rendering the blocks
+      const expressions = generatorContext.functionDeclarations;
+      for (let i = 0; i < expressions.length; i++) {
+        generatedCode.push(`\n${expressions[i]}`);
+      }
+
       // Only the symbols an expression reads are imported: a type, or a name only a type argument uses, is not a value at runtime
       const imports = symbols.filter(({ local }) => generatorContext.getImportedIdentifier(local)!.used).map(toRuntimeImport);
-      const reads = generatorContext.readsDeclarations;
-      const prelude = reads.length ? imports.concat(reads) : imports;
+      // The constants of the module read the ones listing the variables the bindings read
+      const prelude = imports.concat(generatorContext.readsDeclarations, generatorContext.constantDeclarations);
       return (prelude.length ? prelude.concat(generatedCode) : generatedCode).join('\n');
     } catch (err) {
       throw catchErrorWithPrefix('Generator', this._input, err);
@@ -261,9 +266,8 @@ export class Generator {
  * Describes the function rendering an instance of a template: it creates the scope of the instance, whose parent is the
  * runtime context of the scope declaring the template, so that its content reads the names visible where the template
  * is declared, and not where it is rendered. The parameters are variables of the template, read like the item of a
- * `@for` (see `declareTemplateParameters`), whose names are a constant of the module written before the function
- * (`template_row_12Parameters`), which the value of the template holds (see `declareScope`): a `@render` passing other
- * arguments updates them by name.
+ * `@for` (see `declareTemplateParameters`), whose names the constant of the module the scope declaring the template
+ * holds lists (`template_row_12$template`, see `declareScope`): a `@render` passing other arguments updates them by name.
  *
  * @param template - The template.
  * @param key - The name of the function.
@@ -277,11 +281,10 @@ export class Generator {
  */
 function toTemplateFunction(template: TemplateNode, key: string, namespace: ElementNamespace, generatorContext: GeneratorContext): GeneratorFunctionToProcess {
   const context = new GeneratorContext(generatorContext, namespace);
-  const precode = [`context.createElement = ${getElementFactory(namespace)};`].concat(declareTemplateParameters(template, context));
-  const names = template.parameters.map(({ name }) => `'${name}'`).join(', ');
+  const precode = [`context.createElement = ${getElementFactory(namespace)};`].concat(declareTemplateParameters(template, key, context));
 
   return {
-    fn: { node: template, parentNode: key, context, precode: precode.join('\n  '), anchor: 'anchor', declaration: `const ${key}Parameters = [${names}];` },
+    fn: { node: template, parentNode: key, context, precode: precode.join('\n  '), anchor: 'anchor' },
     args: [key, 'parentContext', 'anchor', 'params', 'nodeStrategy']
   };
 }

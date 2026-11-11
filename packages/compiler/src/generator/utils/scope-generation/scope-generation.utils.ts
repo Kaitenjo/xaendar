@@ -8,29 +8,28 @@ import type { GeneratorTransitionFunctionReturnType } from '../../types/generato
 import type { ResolveExpressionOptions } from '../../types/resolve-expresion-options.type';
 import { isConstantExpression, resolveExpression } from '../generator/generator.utils';
 import type { TemplateFunctionFactory } from '../../types/template-function-factory.type';
+import { declareExpression, toArrayLiteral, toObjectLiteral, toRoleName } from '../module-code/module-code.utils';
 
 /**
  * Declares the element refs, the templates and the `@let` of a scope: registers them in its generator context, so
  * that every expression and every `@render` of the scope reads them, the ones written before their declaration too, and
  * writes the code declaring them in its runtime context:
  * - an element ref is declared uninitialized, and the element it names initializes it once rendered;
- * - a template is initialized with the function rendering its content (see `toTemplateFunction`), together with the
- *   runtime context of the scope, which its content reads names from, and, on the client, the names of its parameters,
- *   a constant of the module the function to process declares (`template_row_12Parameters`);
+ * - a template is initialized, on the client, with a constant of the module (`template_row_12$template`, see `_Template`
+ *   of the runtime) naming the function rendering its content (see `toTemplateFunction`) and its parameters, on the
+ *   server with the function alone: a `@render` finds the scope declaring it, whose names its content reads, by its name;
  * - a `@let` is declared uninitialized, and initialized once the render reaches it (see `generateLet`): it is a variable
  *   of the template, whose value the runtime computes again, unless its value is a literal, which never changes.
  *
  * @param nodes - The nodes of the scope.
  * @param generatorContext - The generator context of the scope.
  * @param toTemplateFunction - Describes the function rendering an instance of a template of the scope.
- * @param templateFactory - The runtime function creating the value of a template from the runtime context of its scope
- *   and from the function rendering an instance of it.
- * @param templateParameters - Whether the value of a template receives the names of its parameters, which the client
- *   updates in an instance rendered again with other arguments, while the server renders every instance once.
+ * @param server - Whether the code renders on the server, which renders every instance of a template once, so the value
+ *   of a template is the function rendering it, without the names of the parameters the client updates an instance by.
  * @returns The code declaring the names, and the functions rendering the content of the templates, `undefined` if the
  *   scope declares none.
  */
-export function declareScope(nodes: readonly ASTNode[], generatorContext: GeneratorContext, toTemplateFunction: TemplateFunctionFactory, templateFactory = '_template', templateParameters = true): Required<GeneratorTransitionFunctionReturnType> | undefined {
+export function declareScope(nodes: readonly ASTNode[], generatorContext: GeneratorContext, toTemplateFunction: TemplateFunctionFactory, server = false): Required<GeneratorTransitionFunctionReturnType> | undefined {
   const declarations: Required<GeneratorTransitionFunctionReturnType> = { code: [], functionsToProcess: new Map() };
   const lets = new Array<LetNode>();
   const templates = new Array<{ template: TemplateNode, key: string, namespace: ElementNamespace }>();
@@ -45,7 +44,8 @@ export function declareScope(nodes: readonly ASTNode[], generatorContext: Genera
       const key = `template_${name}_${template.span.start}`;
       generatorContext.addIdentifier(name, 'value');
       generatorContext.addTemplate(name, namespace);
-      declarations.code.push(`context.addIdentifier('${name}', ${templateFactory}(context, ${key}.bind(this)${templateParameters ? `, ${key}Parameters` : ''}));`);
+      const value = server ? key : generatorContext.declareConstant(`${key}$template`, toObjectLiteral([`render: ${key}`, `parameters: ${toArrayLiteral(template.parameters.map(parameter => `'${parameter.name}'`))}`]));
+      declarations.code.push(`context.addIdentifier('${name}', ${value});`);
       templates.push({ template, key, namespace });
     }
   });
@@ -71,16 +71,19 @@ export function declareScope(nodes: readonly ASTNode[], generatorContext: Genera
  * function rendering the instance receives as `params`. A parameter whose argument the `@render` leaves out holds its
  * default value, which reads the parameters before it, or `undefined`.
  *
- * On the client the default value is computed as the value of a `@let` (`_parameter`), again when a signal or another
- * parameter it reads changes, while the server, which reads every value once, writes it as an expression.
+ * On the client the default value is computed as the value of a `@let` (`_parameter`), a function of the module named
+ * after the template and the parameter (`template_row_12$label`), again when a signal or another parameter it reads
+ * changes, while the server, which reads every value once, writes it as an expression.
  *
  * @param template - The template.
+ * @param key - The name of the function rendering an instance of the template, which the functions of the default values
+ *   are named after.
  * @param context - The generator context of the content of the instance.
  * @param options - The options resolving the default values of the parameters.
  * @param server - Whether the code renders on the server.
  * @returns The lines of code adding the parameters to the runtime context of the instance.
  */
-export function declareTemplateParameters({ parameters }: TemplateNode, context: GeneratorContext, options?: ResolveExpressionOptions, server = false): string[] {
+export function declareTemplateParameters({ parameters }: TemplateNode, key: string, context: GeneratorContext, options?: ResolveExpressionOptions, server = false): string[] {
   for (let i = 0; i < parameters.length; i++) {
     context.addIdentifier(parameters[i].name, 'variable');
   }
@@ -100,7 +103,8 @@ export function declareTemplateParameters({ parameters }: TemplateNode, context:
     }
 
     const reads = context.getReads(variables);
-    lines.push(`_parameter(context, params, ${i}, '${name}', () => ${expression}${reads ? `, ${reads}` : ''});`);
+    const initial = declareExpression(context, `${key}$${toRoleName(name)}`, expression);
+    lines.push(`_parameter(context, params, ${i}, '${name}', ${initial}${reads ? `, ${reads}` : ''});`);
   }
 
   return lines;
@@ -114,13 +118,20 @@ export function declareTemplateParameters({ parameters }: TemplateNode, context:
  * @example
  * createContext('parentContext', 'nodeStrategy', 2); // 'new _Context(parentContext, nodeStrategy, 2)'
  * createContext('parentContext', undefined, 0);      // 'new _Context(parentContext)'
+ * createContext('_ROOT_PARENT_CONTEXT', 'nodeStrategy', 1, 'this'); // 'new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 1, this)'
  *
  * @param parent - The expression of the parent context.
  * @param nodeStrategy - The expression of the node strategy, `undefined` to inherit the one of the parent.
  * @param variableCount - The number of variables the scope declares, `0` for a function whose context declares none.
+ * @param component - The expression of the component, for the root context of a render, which the contexts inside it
+ *   inherit: the runtime calls the functions of the module computing the expressions with it as `this`.
  * @returns The expression creating the context.
  */
-export function createContext(parent: string, nodeStrategy: string | undefined, variableCount: number): string {
+export function createContext(parent: string, nodeStrategy: string | undefined, variableCount: number, component?: string): string {
+  if (component) {
+    return `new _Context(${parent}, ${nodeStrategy}, ${variableCount}, ${component})`;
+  }
+
   if (variableCount) {
     return `new _Context(${parent}, ${nodeStrategy}, ${variableCount})`;
   }

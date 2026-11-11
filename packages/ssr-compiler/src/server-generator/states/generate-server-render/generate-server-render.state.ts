@@ -21,5 +21,5 @@ export function generateServerRender(node: RenderNode, _parent: ServerParent, _i
   assertRenderTarget(callee, calleeSpan, generatorContext.getTemplateNamespace(callee), generatorContext.namespace);
 
   const args = node.arguments.map(argument => resolveExpression(argument, generatorContext, SERVER_RESOLVE_OPTIONS).expression);
-  return { pieces: [{ statement: `_ssrRenderTemplate(out, context, context.get('${callee}'), [${args.join(', ')}]);` }] };
+  return { pieces: [{ statement: `_ssrRenderTemplate(out, context, '${callee}', [${args.join(', ')}]);` }] };
 }

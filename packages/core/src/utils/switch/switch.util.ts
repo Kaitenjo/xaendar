@@ -1,71 +1,22 @@
-import { Function, NoArgsFunction } from '@xaendar/types';
 import { _SSR_MARKERS } from '../../costants';
-import type { NodeStrategy } from '../../types/node-strategy.type';
+import type { BlockConfig } from '../../types/if/block-config.type';
 import { _Context } from '../context/context.util';
 import { _if } from '../if/if.util';
 
 /**
- * Creates a reactive switch/case structure by converting it into an if/else-if chain
- * and delegating to {@link _if}.
+ * Renders a `@switch` block: the first `@case`, in order, one of whose values is strictly equal to the value of the
+ * expression, or the `@default` when none is, wherever it is written, none when there is no `@default`.
  *
- * Each run evaluates the `expression` function once, and selects the first block one of whose
- * condition values is strictly equal (`===`) to the result, or else the block with
- * `condition: null`, the `default` branch, wherever it is declared. Multiple values per case
- * are supported (e.g. fall-through cases) and matched with `Array.some`.
+ * The block is a constant of the module of the template (see `BlockConfig`): its expression, a function of the module
+ * called with the component and the context, and its cases, each with its values, `null` for the `@default`, and the
+ * function rendering it. It renders through `_if`, which selects the case in its binding: the expression is evaluated
+ * once per run, and the block follows it whenever a signal or a variable of the template it reads changes.
  *
- * The condition of the first block of the underlying chain makes the selection, since `_if` always evaluates
- * it first, and the others only compare their position with the selected one.
- *
- * Because it delegates to `_if`, the switch benefits from the same optimisation:
- * the active branch is only re-rendered when it actually changes, and, in the hydration of a component, the block the
- * server rendered is adopted when the browser selects the same one.
- *
- * @param parentNode - The parent HTML element where the conditional structure is applied.
- * @param parentContext - The parent Context object containing all the variables definition from the Parent Closure
- * @param expression - Function that evaluates the switch expression. Called
- *   reactively inside an effect so that signal reads are tracked.
- * @param blocks - Ordered list of case branches. Each entry contains:
- *   - `condition`: array of values to match against the expression result,
- *     or `null` for the default branch.
- *   - `block`: function that applies the branch's side effects and returns
- *     its cleanup functions.
- * @param reads - The names of the variables of the template the expression reads, omitted when it reads none.
+ * @param parentNode - The parent HTML element where the switch structure is applied.
+ * @param parentContext - The context of the scope holding the block, which its expression reads.
+ * @param anchor - The node to insert the structure before, `null` to append it.
+ * @param config - The expression and the cases of the block, a constant of the module of the template.
  */
-export function _switch(
-  parentNode: HTMLElement,
-  parentContext: _Context,
-  anchor: Comment | null,
-  expression: NoArgsFunction<unknown>,
-  blocks: Array<{
-    condition: unknown[] | null,
-    block: Function<[HTMLElement, _Context, Node | null, NodeStrategy], _Context>
-  }>,
-  reads?: readonly string[]
-): void {
-  /*
-    The expression is evaluated only once per run, inside the binding of `_if`, so that the switch stays reactive:
-    the condition of the first block, always evaluated first, makes the selection, and the others only compare
-    their position with it. Evaluating it here, once and for all, would freeze the selected case.
-  */
-  let selected = -1;
-
-  _if(parentNode, parentContext, anchor, blocks.map(({ block }, index) => ({
-    condition: index === 0
-      ? () => (selected = selectCase(expression, blocks)) === index
-      : () => selected === index,
-    block
-  })), reads, _SSR_MARKERS.switch);
-}
-
-/**
- * Selects the case of a `@switch` matching its expression, or its `@default`.
- *
- * @param expression - The expression of the `@switch`.
- * @param blocks - The cases, `condition` holding the values each one matches, `null` for the `@default`.
- * @returns The index of the case, `-1` when none matches and there is no `@default`.
- */
-function selectCase(expression: NoArgsFunction<unknown>, blocks: ReadonlyArray<{ condition: unknown[] | null }>): number {
-  const value = expression();
-  const matching = blocks.findIndex(({ condition }) => condition?.some(candidate => candidate === value));
-  return matching !== -1 ? matching : blocks.findIndex(({ condition }) => !condition);
+export function _switch(parentNode: HTMLElement, parentContext: _Context, anchor: Comment | null, config: BlockConfig): void {
+  _if(parentNode, parentContext, anchor, config, _SSR_MARKERS.switch);
 }

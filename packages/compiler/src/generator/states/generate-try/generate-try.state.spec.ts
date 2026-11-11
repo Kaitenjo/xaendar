@@ -16,7 +16,8 @@ describe('generateTry', () => {
     const node = parse('@try { <b></b> } @catch (failure) { <i></i> }');
     const { code, functionsToProcess } = await generateTry(node, 'root', '0', context, null);
 
-    expect(code).toEqual(['_try(root, context, null, { content: try0.bind(this), catch: catch0.bind(this) });']);
+    expect(code).toEqual(['_try(root, context, null, try0$try);']);
+    expect(context.constantDeclarations).toEqual(['const try0$try = { content: try0, catch: catch0 };']);
     expect([...functionsToProcess!.keys()]).toEqual(['try0', 'catch0']);
     expect(functionsToProcess!.get('try0')).toMatchObject({
       fn: { node, parentNode: 'try0', anchor: 'anchor' },
@@ -37,9 +38,11 @@ describe('generateTry', () => {
   });
 
   it('declares no error for a @catch without a name', async () => {
-    const { code, functionsToProcess } = await generateTry(parse('@try { a } @catch { b }'), 'root', '2', new GeneratorContext(cache), 'anchor');
+    const context = new GeneratorContext(cache);
+    const { code, functionsToProcess } = await generateTry(parse('@try { a } @catch { b }'), 'root', '2', context, 'anchor');
 
-    expect(code).toEqual(['_try(root, context, anchor, { content: try2.bind(this), catch: catch2.bind(this) });']);
+    expect(code).toEqual(['_try(root, context, anchor, try2$try);']);
+    expect(context.constantDeclarations).toEqual(['const try2$try = { content: try2, catch: catch2 };']);
     expect(functionsToProcess!.get('catch2')!.fn.precode).toBeUndefined();
   });
 });

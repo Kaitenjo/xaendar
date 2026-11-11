@@ -8,9 +8,9 @@ export type ServerDirective = {
   /**
    * The selector the directive is registered with, as the template writes it.
    */
-  selector: string;
+  readonly selector: string;
   /**
-   * The properties of the directive.
+   * The properties of the directive, left out when it binds none.
    */
-  attributes: ServerAttribute[];
+  readonly attributes?: readonly ServerAttribute[];
 };

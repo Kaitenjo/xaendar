@@ -38,7 +38,7 @@ vi.mock('../../registry/metadata-registry/metadata-registry', async (importOrigi
 
 import { ASTNodeType, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, type ImportNode, isReactiveExport, parseTemplate, readLibraryMetadata, resolveExportedClass, resolveTemplateSpan } from '@xaendar/compiler';
 import MagicString from 'magic-string';
-import { type CompilerOptions, createSourceFile, Diagnostic, ModuleKind, ModuleResolutionKind, ScriptKind, ScriptTarget } from 'typescript';
+import { type CompilerOptions, createProgram, createSourceFile, Diagnostic, ModuleKind, ModuleResolutionKind, ScriptKind, ScriptTarget } from 'typescript';
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import { getLibrarySelectorOwner, getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
 import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
@@ -178,6 +178,17 @@ describe('generateTemplateModule()', () => {
     expect(code.startsWith('import { _if, _switch')).toBe(true);
     expect(code).toContain('} from \'@xaendar/core\';\n\nfunction render() {}\n\nexport { render };\n');
   });
+
+  it('imports only helpers @xaendar/core exports, the specs of the generators evaluating the code without its imports', () => {
+    const imported = /import \{ (.*) \} from '@xaendar\/core';/.exec(generateTemplateModule('function render() {}'))![1].split(', ');
+    const publicApi = resolvePosixPath(join(process.cwd(), 'packages/core/src/public-api.ts'));
+    const program = createProgram([publicApi], { module: ModuleKind.ESNext, moduleResolution: ModuleResolutionKind.Bundler, target: ScriptTarget.ESNext, noEmit: true });
+    const checker = program.getTypeChecker();
+    const exported = new Set(checker.getExportsOfModule(checker.getSymbolAtLocation(program.getSourceFile(publicApi)!)!).map(({ name }) => name));
+
+    expect(exported.has('_renderElement') && exported.has('CustomElement')).toBe(true);
+    expect(imported.filter(name => !exported.has(name))).toEqual([]);
+  }, 60000);
 
   it('imports the dependencies of the template for their side effects, before the runtime helpers', () => {
     const code = generateTemplateModule('function render() {}', ['/src/a.xd.component.ts', 'C:/my src/b.xd.component.ts']);

@@ -240,6 +240,19 @@ describe('_createComponent', () => {
     expect(onClick).toHaveBeenCalledOnce();
   });
 
+  it('calls a listener with the event alone, the element being this, as addEventListener does', () => {
+    const targets = new Array<EventTarget | null>();
+    const onClick = vi.fn((event: MouseEvent) => targets.push(event.currentTarget));
+    const { element } = _createComponent(owner, Card, { target: document.body, events: [{ click: onClick }] });
+
+    element.click();
+
+    expect(onClick.mock.calls[0]).toHaveLength(1);
+    expect(onClick.mock.calls[0][0]).toBeInstanceOf(MouseEvent);
+    expect(targets).toEqual([element]);
+    expect(onClick.mock.contexts[0]).toBe(element);
+  });
+
   it('listens to a group of events only while its condition holds', async () => {
     const enabled = signal(true);
     const onClosed = vi.fn();

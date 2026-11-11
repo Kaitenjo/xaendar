@@ -1,8 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { _Context } from '../context/context.util';
 import { captureContext, closeTryScope, connectChild, isInTryScope, openTryScope, runConnection } from './try-scope.util';
 
 const context = (name: string) => ({ name }) as unknown as _Context;
+
+const element = { localName: 'x-child' } as unknown as Element;
+
+const parentNode = { localName: 'div' } as unknown as Element;
+
+/**
+ * Mounts the element with a strategy whose `mount` runs a function.
+ */
+const mountWith = (mount: () => unknown) => connectChild({ mount } as unknown as NodeStrategy, element, parentNode, null);
 
 describe('try scope', () => {
   describe('openTryScope', () => {
@@ -28,10 +38,24 @@ describe('try scope', () => {
   });
 
   describe('connectChild', () => {
+    it('mounts the element with the strategy it was got with, inside and outside of a @try', () => {
+      const mount = vi.fn();
+      const anchor = { nodeType: 8 } as unknown as Comment;
+      connectChild({ mount } as unknown as NodeStrategy, element, parentNode, anchor);
+      const scope = openTryScope();
+      try {
+        connectChild({ mount } as unknown as NodeStrategy, element, parentNode, null);
+      } finally {
+        closeTryScope(scope);
+      }
+
+      expect(mount.mock.calls).toEqual([[element, parentNode, anchor], [element, parentNode, null]]);
+    });
+
     it('mounts the element, the error of its component going through, outside of a @try', () => {
       const failure = new Error('child');
 
-      expect(() => connectChild(() => runConnection(() => {
+      expect(() => mountWith(() => runConnection(() => {
         throw failure;
       }))).toThrow(failure);
     });
@@ -43,7 +67,7 @@ describe('try scope', () => {
       try {
         let thrown: unknown = 'nothing';
         try {
-          connectChild(() => {
+          mountWith(() => {
             runConnection(() => {
               throw undefined;
             });
@@ -55,7 +79,7 @@ describe('try scope', () => {
 
         expect(steps).toEqual(['mounted']);
         expect(thrown).toBeUndefined();
-        expect(() => connectChild(() => runConnection(() => steps.push('connected')))).not.toThrow();
+        expect(() => mountWith(() => runConnection(() => steps.push('connected')))).not.toThrow();
         expect(steps).toEqual(['mounted', 'connected']);
       } finally {
         closeTryScope(scope);
@@ -70,7 +94,7 @@ describe('try scope', () => {
       const inside = vi.fn(() => isInTryScope());
 
       try {
-        connectChild(() => runConnection(() => {
+        mountWith(() => runConnection(() => {
           inside();
           // A component the code of this one inserts by itself
           expect(() => runConnection(() => {

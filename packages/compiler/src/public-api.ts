@@ -1,5 +1,6 @@
 export * from './compile/compile';
 export * from './generator/context/context';
+export type * from './generator/types/descriptor-owner.type';
 export type * from './generator/types/for-variable.type';
 export type * from './generator/types/generator-function-to-process.type';
 export type * from './generator/types/generator-transition-function-return-type.type';
@@ -9,6 +10,7 @@ export type * from './generator/types/resolve-expresion-options.type';
 export type * from './generator/types/template-function-factory.type';
 export * from './generator/utils/for-reads/for-reads.utils';
 export * from './generator/utils/generator/generator.utils';
+export * from './generator/utils/module-code/module-code.utils';
 export * from './generator/utils/scope-generation/scope-generation.utils';
 export * from './generator/utils/text-separators/text-separators.utils';
 export type * from './lexer/types/binding-context.type';

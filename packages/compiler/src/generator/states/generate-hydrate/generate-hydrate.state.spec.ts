@@ -15,12 +15,8 @@ describe('generateHydrate', () => {
     const context = new GeneratorContext(cache);
     const { code, functionsToProcess } = await generateHydrate(parse('@hydrate (idle, load) { <b></b> }'), 'root', '0', context, null);
 
-    expect(code).toEqual([
-      '_hydrate(root, context, null, {',
-      '  triggers: [\'idle\', \'load\'],',
-      '  content: hydrate0.bind(this)',
-      '});'
-    ]);
+    expect(code).toEqual(['_hydrate(root, context, null, hydrate0$hydrate);']);
+    expect(context.constantDeclarations).toEqual(['const hydrate0$hydrate = { triggers: [\'idle\', \'load\'], content: hydrate0 };']);
     expect([...functionsToProcess!.keys()]).toEqual(['hydrate0']);
     expect(functionsToProcess!.get('hydrate0')).toMatchObject({
       fn: { parentNode: 'hydrate0', anchor: 'anchor' },
@@ -29,25 +25,31 @@ describe('generateHydrate', () => {
     expect(functionsToProcess!.get('hydrate0')!.fn.context).not.toBe(context);
   });
 
-  it('passes the expression of when and the modules of the content', async () => {
+  it('passes the function of when and the one loading the modules of the content', async () => {
     const node = parse('@hydrate (visible, when ready()) { <b></b> }');
     const context = new GeneratorContext(cache);
     context.deferredModules = new Map([[node, ['/src/a.ts', '/src/b.ts']]]);
-    const { code } = await generateHydrate(node, 'root', '1', context, 'anchor');
+    const { code } = await generateHydrate(node, 'div0', '1', context, 'anchor');
 
-    expect(code).toEqual([
-      '_hydrate(root, context, anchor, {',
+    expect(code).toEqual(['_hydrate(div0, context, anchor, div0__hydrate1$hydrate);']);
+    expect(context.constantDeclarations).toEqual([[
+      'const div0__hydrate1$hydrate = {',
       '  triggers: [\'visible\'],',
-      '  when: () => this.ready(),',
-      '  load: () => Promise.all([import("/src/a.ts"), import("/src/b.ts")]),',
-      '  content: hydrate1.bind(this)',
-      '});'
+      '  when: div0__hydrate1$when,',
+      '  load: div0__hydrate1$load,',
+      '  content: div0__hydrate1',
+      '};'
+    ].join('\n')]);
+    expect(context.functionDeclarations).toEqual([
+      'function div0__hydrate1$when(context) {\n  return this.ready();\n}',
+      'function div0__hydrate1$load() {\n  return Promise.all([import("/src/a.ts"), import("/src/b.ts")]);\n}'
     ]);
   });
 
   it('passes no triggers written by name when only when triggers the block', async () => {
-    const { code } = await generateHydrate(parse('@hydrate (when ready()) { <b></b> }'), 'root', '0', new GeneratorContext(cache), null);
+    const context = new GeneratorContext(cache);
+    await generateHydrate(parse('@hydrate (when ready()) { <b></b> }'), 'root', '0', context, null);
 
-    expect(code[1]).toBe('  triggers: [],');
+    expect(context.constantDeclarations).toEqual(['const hydrate0$hydrate = { triggers: [], when: hydrate0$when, content: hydrate0 };']);
   });
 });

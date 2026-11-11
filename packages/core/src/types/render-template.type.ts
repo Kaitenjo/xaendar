@@ -8,4 +8,4 @@ import type { NodeStrategy } from './node-strategy.type';
  * values of the arguments, in the order of the parameters, and the strategy getting its nodes, the one of the place it is
  * rendered in, and returns the context it creates for the instance, which declares the parameters.
  */
-export type RenderTemplate = Function<[parentNode: Element, declarationContext: _Context, referenceNode: Comment | null, params: unknown[], nodeStrategy: NodeStrategy], _Context>;
+export type RenderTemplate = Function<[parentNode: Element, declarationContext: _Context, referenceNode: Comment | null, params: readonly unknown[], nodeStrategy: NodeStrategy], _Context>;

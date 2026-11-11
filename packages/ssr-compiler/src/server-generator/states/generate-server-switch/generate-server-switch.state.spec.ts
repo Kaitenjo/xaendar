@@ -10,7 +10,7 @@ const cache = {} as ContextCache;
 const generate = (source: string) => {
   const context = new GeneratorContext(cache);
   context.addSignalClassField('kind');
-  return generateServerSwitch(parseTemplate(source)[0] as SwitchNode, { id: 'root' }, '0', context);
+  return Object.assign(generateServerSwitch(parseTemplate(source)[0] as SwitchNode, { id: 'root' }, '0', context), { context });
 };
 
 /**
@@ -20,17 +20,17 @@ const CLOSE = { html: '<!--/xd-switch-->' };
 
 describe('generateServerSwitch', () => {
   it('renders the first @case one of whose values matches, or else the @default wherever it is declared, between the markers holding the position of the block', () => {
-    const { pieces, functionsToProcess } = generate('@switch (kind()) { @default { d } @case (\'a\', \'b\') { ab } @case (1) { one } }');
+    const { pieces, functionsToProcess, context } = generate('@switch (kind()) { @default { d } @case (\'a\', \'b\') { ab } @case (1) { one } }');
 
     expect(pieces).toEqual([
       {
         statement: [
           '{',
           '  const __value = this.kind();',
-          '  if ([\'a\', \'b\'].some(candidate => candidate === __value)) {',
+          '  if (case0_1$values.indexOf(__value) !== -1) {',
           '    out.push(\'<!--xd-switch:1-->\');',
           '    case0_1.call(this, out, context);',
-          '  } else if ([1].some(candidate => candidate === __value)) {',
+          '  } else if (case0_2$values.indexOf(__value) !== -1) {',
           '    out.push(\'<!--xd-switch:2-->\');',
           '    case0_2.call(this, out, context);',
           '  } else {',
@@ -42,6 +42,7 @@ describe('generateServerSwitch', () => {
       },
       CLOSE
     ]);
+    expect(context.constantDeclarations).toEqual(['const case0_1$values = [\'a\', \'b\'];', 'const case0_2$values = [1];']);
     expect([...functionsToProcess!.keys()]).toEqual(['default0', 'case0_1', 'case0_2']);
   });
 
@@ -62,7 +63,7 @@ describe('generateServerSwitch', () => {
         statement: [
           '{',
           '  const __value = this.kind();',
-          '  if ([1].some(candidate => candidate === __value)) {',
+          '  if (case0_0$values.indexOf(__value) !== -1) {',
           '    out.push(\'<!--xd-switch:0-->\');',
           '    case0_0.call(this, out, context);',
           '  } else {',

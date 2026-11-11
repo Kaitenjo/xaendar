@@ -1,5 +1,12 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
+import type { RenderChildren } from '../../types/render-children.type';
+import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
+import type { RenderElementConditionalBinding } from '../../types/render-element-conditional-binding.type';
+import type { RenderElementDirective } from '../../types/render-element-directive.type';
+import type { RenderElementStructuralDirective } from '../../types/render-element-structural-directive.type';
+import type { RenderElement } from '../../types/render-element.type';
+import type { TemplateExpression } from '../../types/template-expression.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -27,29 +34,40 @@ const {
 } = await import('./render-element.util');
 const { signal } = await import('../../signals');
 const { _setExpressionClass } = await import('../class-binding/class-binding.util');
+const { AttributeUnbinding } = await import('../../models/attribute-unbinding/attribute-unbinding');
 const { CustomDirective } = await import('../../models/custom-directive/custom-directive');
 const { CustomElement } = await import('../../models/custom-element/custom-element');
 const { StructuralDirective } = await import('../../models/structural-directive/structural-directive');
+const { TemplateListener } = await import('../../models/template-listener/template-listener');
 const { _defineDirective } = await import('../directive-registry/directive-registry.util');
 const { _getAppliedDirectives } = await import('../applied-directives/applied-directives.util');
 const { _getElementRef } = await import('../element-refs/element-refs.util');
 const { closeTryScope, openTryScope } = await import('../try-scope/try-scope.util');
 
+type Context = InstanceType<typeof _Context>;
+
+/**
+ * The bindings of a branch of a conditional binding of an element, without its condition.
+ */
+type ElementBindings = Omit<RenderElementConditionalBinding['branches'][number], 'condition'>;
+
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
-function createRoot() {
+function createRoot(): Context {
   return new _Context({ createElement: _createElement } as never);
 }
 
-type Children = (element: Element, parentContext: InstanceType<typeof _Context>) => InstanceType<typeof _Context> | undefined;
+/**
+ * Describes an attribute the way the module of a template does, for the setters and the unbinds called directly.
+ */
+const attributeOf = (name: string, value: RenderElementAttribute['value'] = ''): RenderElementAttribute => ({ name, value, setter: _setProperty });
 
-const render = (
-  parent: Element,
-  context: InstanceType<typeof _Context>,
-  { attributes = [], events = [], conditionalBindings = [], directives = [], children = null, anchor = null }: { attributes?: unknown[], events?: unknown[], conditionalBindings?: unknown[], directives?: unknown[], children?: Children | null, anchor?: Comment | null } = {}
-) => {
-  _renderElement(parent, context, anchor, 'div', attributes as never, events as never, conditionalBindings as never, directives as never, [], [], children);
-  // The element is the node mounted right before the anchor, or the last one appended when there is none
+/**
+ * Renders a `div` described by `element`, returning it: the node mounted right before the anchor, or the last one
+ * appended when there is none.
+ */
+const render = (parent: Element, context: Context, element: Omit<RenderElement, 'tagName'> = {}, anchor: Comment | null = null) => {
+  _renderElement(parent, context, anchor, Object.assign({ tagName: 'div' }, element));
   return (anchor ? anchor.previousSibling : parent.lastChild) as Element;
 };
 
@@ -192,20 +210,34 @@ describe('element factories', () => {
 describe('property setters', () => {
   it('_setProperty sets a literal attribute', () => {
     const element = document.createElement('div');
-    _setProperty(createRoot(), element, 'title', 'hello');
+    _setProperty(createRoot(), element, attributeOf('title', 'hello'));
     expect(element.getAttribute('title')).toBe('hello');
   });
 
   it('_setExpressionProperty evaluates the expression once', () => {
     const element = document.createElement('div');
-    _setExpressionProperty(createRoot(), element, 'title', () => 5);
+    _setExpressionProperty(createRoot(), element, attributeOf('title', () => 5));
     expect(element.getAttribute('title')).toBe('5');
+  });
+
+  it('_setExpressionProperty calls the expression with the component of the context as this and the context', () => {
+    const element = document.createElement('div');
+    const component = { title: 'from component' };
+    const context = new _Context(createRoot(), undefined, 0, component);
+    const expression = vi.fn(function (this: typeof component, _context: Context) {
+      return this.title;
+    });
+
+    _setExpressionProperty(context, element, attributeOf('title', expression));
+
+    expect(expression).toHaveBeenCalledExactlyOnceWith(context);
+    expect(element.getAttribute('title')).toBe('from component');
   });
 
   it('_setReactiveProperty follows the signals it reads', async () => {
     const element = document.createElement('div');
     const title = signal('a');
-    _setReactiveProperty(createRoot(), element, 'title', () => title());
+    _setReactiveProperty(createRoot(), element, attributeOf('title', () => title()));
     expect(element.getAttribute('title')).toBe('a');
 
     title.set('b');
@@ -214,10 +246,23 @@ describe('property setters', () => {
     expect(element.getAttribute('title')).toBe('b');
   });
 
+  it('_setReactiveProperty evaluates the expression again when a variable of the template it reads changes', () => {
+    const element = document.createElement('div');
+    const context = createRoot();
+    context.addIdentifier('label', 'first');
+    _setReactiveProperty(context, element, { name: 'title', value: scope => scope.get('label'), setter: _setReactiveProperty, reads: ['label'] });
+    expect(element.getAttribute('title')).toBe('first');
+
+    context.update('label', 'second');
+    context.refresh(['label']);
+
+    expect(element.getAttribute('title')).toBe('second');
+  });
+
   it('_setReactiveProperty removes the attribute while the value is null or undefined, and writes it again for another one', async () => {
     const element = document.createElement('div');
     const title = signal<string | null | undefined>(null);
-    _setReactiveProperty(createRoot(), element, 'title', () => title());
+    _setReactiveProperty(createRoot(), element, attributeOf('title', () => title()));
     expect(element.hasAttribute('title')).toBe(false);
 
     title.set('a');
@@ -233,10 +278,21 @@ describe('property setters', () => {
     expect(element.getAttribute('title')).toBe('b');
   });
 
+  it('_setExpressionProperty removes the attribute for null and undefined', () => {
+    const element = document.createElement('div');
+    element.setAttribute('title', 'a');
+    element.setAttribute('lang', 'b');
+
+    _setExpressionProperty(createRoot(), element, attributeOf('title', () => null));
+    _setExpressionProperty(createRoot(), element, attributeOf('lang', () => undefined));
+
+    expect(element.getAttributeNames()).toEqual([]);
+  });
+
   it('_setExpressionProperty writes false and 0 as text, as any value but null and undefined', () => {
     const element = document.createElement('div');
-    _setExpressionProperty(createRoot(), element, 'title', () => false);
-    _setExpressionProperty(createRoot(), element, 'tabindex', () => 0);
+    _setExpressionProperty(createRoot(), element, attributeOf('title', () => false));
+    _setExpressionProperty(createRoot(), element, attributeOf('tabindex', () => 0));
     expect(element.getAttribute('title')).toBe('false');
     expect(element.getAttribute('tabindex')).toBe('0');
   });
@@ -245,7 +301,7 @@ describe('property setters', () => {
     const element = document.createElement('div');
     const context = createRoot();
     const title = signal('a');
-    _setReactiveProperty(context, element, 'title', () => title());
+    _setReactiveProperty(context, element, attributeOf('title', () => title()));
 
     context.clear();
     title.set('b');
@@ -257,15 +313,15 @@ describe('property setters', () => {
   it('_removeAttribute removes the attribute', () => {
     const element = document.createElement('div');
     element.setAttribute('title', 'x');
-    _removeAttribute(createRoot(), element, 'title');
+    _removeAttribute(createRoot(), element, attributeOf('title'));
     expect(element.hasAttribute('title')).toBe(false);
   });
 
   it('keeps the classes toggled by class bindings when the class attribute is written, removed or reset', async () => {
     const element = document.createElement('div');
     const classes = signal('a');
-    _setExpressionClass(createRoot(), element, 'on', () => true);
-    _setReactiveProperty(createRoot(), element, 'class', () => classes());
+    _setExpressionClass(createRoot(), element, attributeOf('on', () => true));
+    _setReactiveProperty(createRoot(), element, attributeOf('class', () => classes()));
     await flush();
     expect(element.className).toBe('a on');
 
@@ -273,11 +329,11 @@ describe('property setters', () => {
     await flush();
     expect(element.className).toBe('b on');
 
-    _removeAttribute(createRoot(), element, 'class');
+    _removeAttribute(createRoot(), element, attributeOf('class'));
     expect(element.className).toBe('on');
 
-    _setProperty(createRoot(), element, 'class', 'c');
-    _resetProperty(createRoot(), element, 'class');
+    _setProperty(createRoot(), element, attributeOf('class', 'c'));
+    _resetProperty(createRoot(), element, attributeOf('class'));
     expect(element.className).toBe('on');
   });
 
@@ -286,19 +342,20 @@ describe('property setters', () => {
       const element = document.createElement('div') as unknown as HTMLElement & { label: ReturnType<typeof input<string>> };
       element.label = input<string>('initial');
 
-      expect(() => _setProperty(createRoot(), element, 'label', 'updated')).toThrow('"label" is an input of HTMLDivElement, bound as an attribute: an input declaring an alias is bound by its alias');
+      expect(() => _setProperty(createRoot(), element, attributeOf('label', 'updated'))).toThrow('"label" is an input of HTMLDivElement, bound as an attribute: an input declaring an alias is bound by its alias');
+      expect(() => _setExpressionProperty(createRoot(), element, attributeOf('label', () => 'updated'))).toThrow('"label" is an input of HTMLDivElement, bound as an attribute');
       expect(element.label()).toBe('initial');
       expect(element.hasAttribute('label')).toBe(false);
-      expect(() => _setProperty(createRoot(), new LabelDirective(), 'label', 'updated')).toThrow('"label" is an input of LabelDirective, bound as an attribute');
+      expect(() => _setProperty(createRoot(), new LabelDirective(), attributeOf('label', 'updated'))).toThrow('"label" is an input of LabelDirective, bound as an attribute');
     });
 
     it('sets the value of an input signal of a directive, by the name of its property, never by its alias', () => {
       const directive = new LabelDirective();
 
-      _setInput(createRoot(), directive, 'label', 'updated');
+      _setInput(createRoot(), directive, attributeOf('label', 'updated'));
 
       expect(directive.label()).toBe('updated');
-      expect(() => _setInput(createRoot(), directive, 'my-label', 'aliased')).toThrow('LabelDirective does not declare a property named "my-label"');
+      expect(() => _setInput(createRoot(), directive, attributeOf('my-label', 'aliased'))).toThrow('LabelDirective does not declare a property named "my-label"');
     });
 
     it('sets the input named like the alias of another one, never the one the alias names', () => {
@@ -310,7 +367,7 @@ describe('property setters', () => {
       customElements.define('x-crossed', Crossed);
       const element = document.createElement('x-crossed') as Crossed;
 
-      _setInput(createRoot(), element, 'value', 'set');
+      _setInput(createRoot(), element, attributeOf('value', 'set'));
 
       expect(element.value()).toBe('set');
       expect(element.internalValue()).toBe('internal');
@@ -319,27 +376,27 @@ describe('property setters', () => {
     it('throws when a directive does not declare the property', () => {
       const directive = new LabelDirective();
 
-      expect(() => _setProperty(createRoot(), directive, 'missing', 'value')).toThrow('LabelDirective does not declare a property named "missing"');
-      expect(() => _setInput(createRoot(), directive, 'missing', 'value')).toThrow('LabelDirective does not declare a property named "missing"');
+      expect(() => _setProperty(createRoot(), directive, attributeOf('missing', 'value'))).toThrow('LabelDirective does not declare a property named "missing"');
+      expect(() => _setInput(createRoot(), directive, attributeOf('missing', 'value'))).toThrow('LabelDirective does not declare a property named "missing"');
     });
 
     it('sets the value of an input signal of a structural directive', () => {
       const directive = new VisibleDirective();
 
-      _setExpressionInput(createRoot(), directive, 'visible', () => false);
+      _setExpressionInput(createRoot(), directive, attributeOf('visible', () => false));
 
       expect(directive.visible()).toBe(false);
     });
 
     it('throws when a structural directive does not declare the property', () => {
-      expect(() => _setInput(createRoot(), new VisibleDirective(), 'missing', 'value')).toThrow('VisibleDirective does not declare a property named "missing"');
+      expect(() => _setInput(createRoot(), new VisibleDirective(), attributeOf('missing', 'value'))).toThrow('VisibleDirective does not declare a property named "missing"');
     });
 
     it('falls back to the attribute for properties that are not input signals', () => {
       const element = document.createElement('div') as unknown as HTMLElement & { custom: string };
       element.custom = 'not-a-signal';
 
-      _setProperty(createRoot(), element, 'custom', 'value');
+      _setProperty(createRoot(), element, attributeOf('custom', 'value'));
 
       expect(element.getAttribute('custom')).toBe('value');
     });
@@ -349,41 +406,41 @@ describe('property setters', () => {
     it('sets an input signal back to its initial value, without applying the transform', () => {
       const element = document.createElement('div') as unknown as HTMLElement & { label: ReturnType<typeof input<string>> };
       element.label = input<string>('initial', { transform: value => value.toUpperCase() });
-      _setInput(createRoot(), element, 'label', 'updated');
+      _setInput(createRoot(), element, attributeOf('label', 'updated'));
       expect(element.label()).toBe('UPDATED');
 
-      _resetProperty(createRoot(), element, 'label');
+      _resetProperty(createRoot(), element, attributeOf('label'));
 
       expect(element.label()).toBe('initial');
     });
 
     it('resets an input of a directive by the name of its property', () => {
       const directive = new LabelDirective();
-      _setInput(createRoot(), directive, 'label', 'updated');
+      _setInput(createRoot(), directive, attributeOf('label', 'updated'));
 
-      _resetProperty(createRoot(), directive, 'label');
+      _resetProperty(createRoot(), directive, attributeOf('label'));
 
       expect(directive.label()).toBe('initial');
     });
 
     it('throws when a directive does not declare the property', () => {
-      expect(() => _resetProperty(createRoot(), new LabelDirective(), 'missing')).toThrow('LabelDirective does not declare a property named "missing"');
+      expect(() => _resetProperty(createRoot(), new LabelDirective(), attributeOf('missing'))).toThrow('LabelDirective does not declare a property named "missing"');
     });
 
     it('removes the attribute of a property that is not an input signal', () => {
       const element = document.createElement('div');
       element.setAttribute('custom', 'value');
 
-      _resetProperty(createRoot(), element, 'custom');
+      _resetProperty(createRoot(), element, attributeOf('custom'));
 
       expect(element.hasAttribute('custom')).toBe(false);
     });
 
     it('removes the value of an input assigned to an element whose class is not defined yet', () => {
       const element = document.createElement('x-not-defined-reset');
-      _setInput(createRoot(), element, 'label', 'early');
+      _setInput(createRoot(), element, attributeOf('label', 'early'));
 
-      _resetProperty(createRoot(), element, 'label');
+      _resetProperty(createRoot(), element, attributeOf('label'));
 
       expect(Object.hasOwn(element, 'label')).toBe(false);
     });
@@ -395,11 +452,11 @@ describe('property setters', () => {
       element.label = input<string>('initial');
       const label = signal('reactive');
 
-      _setInput(createRoot(), element, 'label', 'literal');
+      _setInput(createRoot(), element, attributeOf('label', 'literal'));
       expect(element.label()).toBe('literal');
-      _setExpressionInput(createRoot(), element, 'label', () => 'expression');
+      _setExpressionInput(createRoot(), element, attributeOf('label', () => 'expression'));
       expect(element.label()).toBe('expression');
-      _setReactiveInput(createRoot(), element, 'label', () => label());
+      _setReactiveInput(createRoot(), element, attributeOf('label', () => label()));
       expect(element.label()).toBe('reactive');
       label.set('changed');
       await flush();
@@ -413,8 +470,8 @@ describe('property setters', () => {
       const items = [1, 2];
       const count = signal(1);
 
-      _setExpressionInput(createRoot(), element, 'items', () => items);
-      _setReactiveInput(createRoot(), element, 'count', () => count());
+      _setExpressionInput(createRoot(), element, attributeOf('items', () => items));
+      _setReactiveInput(createRoot(), element, attributeOf('count', () => count()));
       count.set(2);
       await flush();
 
@@ -439,9 +496,24 @@ describe('_renderElement', () => {
     const anchor = document.createComment('anchor');
     parent.appendChild(anchor);
 
-    const element = render(parent, createRoot(), { anchor });
+    const element = render(parent, createRoot(), {}, anchor);
 
     expect(element.nextSibling).toBe(anchor);
+  });
+
+  it('gets the element from the strategy of its context and mounts it through that strategy', () => {
+    const parent = document.createElement('div');
+    const anchor = parent.appendChild(document.createComment('anchor'));
+    const created = document.createElement('article');
+    const element = vi.fn(() => created);
+    const mount = vi.fn(CREATE_NODES.mount);
+    const context = new _Context({ createElement: _createElement } as never, Object.assign({}, CREATE_NODES, { element, mount }));
+
+    _renderElement(parent, context, anchor, { tagName: 'article' });
+
+    expect(element).toHaveBeenCalledExactlyOnceWith(context, parent, 'article');
+    expect(mount).toHaveBeenCalledExactlyOnceWith(created, parent, anchor);
+    expect(parent.firstChild).toBe(created);
   });
 
   it('removes the element when the context is destroyed', () => {
@@ -455,7 +527,7 @@ describe('_renderElement', () => {
   });
 
   it('returns nothing', () => {
-    expect(_renderElement(document.createElement('div'), createRoot(), null, 'div', [], [], [], [], [], [], null)).toBeUndefined();
+    expect(_renderElement(document.createElement('div'), createRoot(), null, { tagName: 'div' })).toBeUndefined();
   });
 
   it('initializes the element ref naming the element, declared by its scope, before binding it and rendering its children', () => {
@@ -463,12 +535,17 @@ describe('_renderElement', () => {
     const scope = createRoot();
     scope.declare('panel');
     const seen = new Array<unknown>();
-    const children = vi.fn<Children>((_element, parentContext) => {
+    const children = vi.fn<RenderChildren>((_element, parentContext) => {
       seen.push(parentContext.get('panel'));
       return new _Context(parentContext);
     });
 
-    _renderElement(parent, scope.addChild(), null, 'section', [{ name: 'title', value: () => seen.push(scope.get('panel')), setter: _setExpressionProperty }] as never, [], [], [], [], [], children, 'panel');
+    _renderElement(parent, scope.addChild(), null, {
+      tagName: 'section',
+      attributes: [{ name: 'title', value: () => seen.push(scope.get('panel')), setter: _setExpressionProperty }],
+      children,
+      ref: 'panel'
+    });
     const element = parent.firstElementChild;
 
     expect(element?.tagName).toBe('SECTION');
@@ -477,9 +554,35 @@ describe('_renderElement', () => {
     expect(seen).toEqual([element, element]);
   });
 
+  it('calls the same function of the module for every element rendered from one configuration, with the component and the context of each', async () => {
+    const suffix = signal('!');
+    const title = vi.fn(function (this: unknown, context: Context) {
+      return `${context.get('label')}${suffix()}`;
+    });
+    const config: RenderElement = { tagName: 'div', attributes: [{ name: 'title', value: title, setter: _setReactiveProperty }] };
+    const component = { name: 'component' };
+    const componentContext = new _Context(createRoot(), undefined, 0, component);
+    const first = new _Context(componentContext);
+    first.addIdentifier('label', 'first');
+    const second = new _Context(componentContext);
+    second.addIdentifier('label', 'second');
+    const parent = document.createElement('section');
+
+    _renderElement(parent, first, null, config);
+    _renderElement(parent, second, null, config);
+    suffix.set('?');
+    await flush();
+
+    expect(title).toHaveBeenCalledTimes(4);
+    expect(title.mock.calls.filter(([context]) => context === first)).toHaveLength(2);
+    expect(title.mock.calls.filter(([context]) => context === second)).toHaveLength(2);
+    expect(title.mock.contexts).toEqual([component, component, component, component]);
+    expect([...parent.children].map(element => element.getAttribute('title'))).toEqual(['first?', 'second?']);
+  });
+
   it('renders the children in the element, destroying them together with the context', () => {
     const unlisten = vi.fn();
-    const children = vi.fn<Children>((element, parentContext) => {
+    const children = vi.fn<RenderChildren>((element, parentContext) => {
       element.appendChild(document.createElement('span'));
       const childrenContext = new _Context(parentContext);
       childrenContext.addUnlistener(unlisten);
@@ -499,7 +602,7 @@ describe('_renderElement', () => {
   it('renders in the context of the element the children rendering in it, which track no node rendered into the element', () => {
     const unlisten = vi.fn();
     const context = createRoot();
-    const children = vi.fn<Children>((element, childrenContext) => {
+    const children = vi.fn<RenderChildren>((element, childrenContext) => {
       render(element, childrenContext);
       CREATE_NODES.text(childrenContext, element, null, 'text', false);
       childrenContext.addUnlistener(unlisten);
@@ -542,7 +645,7 @@ describe('_renderElement', () => {
     const strategy = Object.assign({}, CREATE_NODES, { children: () => own });
     const context = new _Context({ createElement: _createElement } as never, strategy);
     const unlisten = vi.fn();
-    const children = vi.fn<Children>((element, childrenContext) => {
+    const children = vi.fn<RenderChildren>((element, childrenContext) => {
       CREATE_NODES.text(childrenContext, element, null, 'text', false);
       childrenContext.addUnlistener(unlisten);
       return undefined;
@@ -559,14 +662,33 @@ describe('_renderElement', () => {
     expect(unlisten).toHaveBeenCalledOnce();
   });
 
-  describe('attributes', () => {
-    it('applies attributes through their setter', () => {
-      const setter = vi.fn(_setProperty);
-      const element = render(document.createElement('div'), createRoot(), {
-        attributes: [{ name: 'title', value: 'hi', setter }]
-      });
+  it('registers in the child context with their own strategy the context the children create for themselves', () => {
+    const own = Object.assign({}, CREATE_NODES);
+    const strategy = Object.assign({}, CREATE_NODES, { children: () => own });
+    const context = new _Context({ createElement: _createElement } as never, strategy);
+    const unlisten = vi.fn();
+    const children = vi.fn<RenderChildren>((_element, childrenContext) => {
+      const ownContext = new _Context(childrenContext);
+      ownContext.addUnlistener(unlisten);
+      return ownContext;
+    });
+    render(document.createElement('section'), context, { children });
 
-      expect(setter).toHaveBeenCalledOnce();
+    const [childrenContext] = context.getChildren()!;
+    expect(childrenContext.getChildren()).toHaveLength(1);
+
+    context.clear();
+    expect(unlisten).toHaveBeenCalledOnce();
+  });
+
+  describe('attributes', () => {
+    it('applies attributes through their setter, which receives the whole descriptor', () => {
+      const setter = vi.fn(_setProperty);
+      const attribute: RenderElementAttribute = { name: 'title', value: 'hi', setter };
+      const context = createRoot();
+      const element = render(document.createElement('div'), context, { attributes: [attribute] });
+
+      expect(setter).toHaveBeenCalledExactlyOnceWith(context, element, attribute);
       expect(element.getAttribute('title')).toBe('hi');
     });
 
@@ -592,18 +714,61 @@ describe('_renderElement', () => {
 
       expect(element.hasAttribute('title')).toBe(false);
     });
+
+    it('registers no unbinding for attributes declaring no unbind', () => {
+      const dispose = vi.spyOn(AttributeUnbinding.prototype, 'dispose');
+      const context = createRoot();
+      const element = render(document.createElement('div'), context, {
+        attributes: [{ name: 'title', value: 'hi', setter: _setProperty }]
+      });
+
+      context.clear();
+
+      expect(dispose).not.toHaveBeenCalled();
+      expect(element.getAttribute('title')).toBe('hi');
+      dispose.mockRestore();
+    });
   });
 
   describe('events', () => {
-    it('calls the handler with the event', () => {
+    it('calls the handler with the component as this, the context and the event', () => {
+      const handler = vi.fn();
+      const component = { name: 'component' };
+      const context = new _Context(createRoot(), undefined, 0, component);
+      const element = render(document.createElement('div'), context, { events: [{ name: 'click', handler }] });
+      const event = new Event('click');
+
+      element.dispatchEvent(event);
+
+      expect(handler).toHaveBeenCalledExactlyOnceWith(context, event);
+      expect(handler.mock.contexts).toEqual([component]);
+    });
+
+    it('calls the handler with the event, which it reads after the context', () => {
       const onClick = vi.fn();
       const element = render(document.createElement('div'), createRoot(), {
-        events: [{ name: 'click', handler: ($event: Event) => onClick($event.type, 'extra') }]
+        events: [{ name: 'click', handler: (_context, $event) => onClick($event.type, 'extra') }]
       });
 
       element.dispatchEvent(new Event('click'));
 
       expect(onClick).toHaveBeenCalledWith('click', 'extra');
+    });
+
+    it('listens with an object handling the events, removed from the element when the context is cleared', () => {
+      const created = document.createElement('div');
+      const add = vi.spyOn(created, 'addEventListener');
+      const remove = vi.spyOn(created, 'removeEventListener');
+      const context = new _Context({ createElement: _createElement } as never, Object.assign({}, CREATE_NODES, { element: () => created }));
+      render(document.createElement('section'), context, { events: [{ name: 'click', handler: vi.fn() }] });
+
+      const [name, listener] = add.mock.calls[0];
+      expect(name).toBe('click');
+      expect(listener).toBeInstanceOf(TemplateListener);
+
+      context.clear();
+
+      expect(remove).toHaveBeenCalledExactlyOnceWith('click', listener);
     });
 
     it('detaches the listener when the context is destroyed', () => {
@@ -621,15 +786,14 @@ describe('_renderElement', () => {
   });
 
   describe('conditional bindings', () => {
-    const attribute = (name: string, value = 'on') => ({ name, value, setter: _setProperty, unbind: _removeAttribute });
-    const branch = (overrides: Record<string, unknown> = {}) => ({ attributes: [], events: [], conditionalBindings: [], directives: [], ...overrides });
-    const ifBinding = (...branches: unknown[]) => ({ branches });
-    const switchBinding = (expression: () => unknown, ...branches: unknown[]) => ({ expression, branches });
+    const attribute = (name: string, value = 'on'): RenderElementAttribute => ({ name, value, setter: _setProperty, unbind: _removeAttribute });
+    const ifBinding = (...branches: Array<ElementBindings & { readonly condition?: TemplateExpression<unknown> }>): RenderElementConditionalBinding => ({ branches });
+    const switchBinding = (expression: TemplateExpression<unknown>, ...branches: Array<ElementBindings & { readonly condition: readonly unknown[] | null }>): RenderElementConditionalBinding => ({ expression, branches });
 
     it('applies attributes only while the condition is true', async () => {
       const enabled = signal(false);
       const element = render(document.createElement('div'), createRoot(), {
-        conditionalBindings: [ifBinding(branch({ condition: () => enabled(), attributes: [attribute('data-on')] }))]
+        conditionalBindings: [ifBinding({ condition: () => enabled(), attributes: [attribute('data-on')] })]
       });
       expect(element.hasAttribute('data-on')).toBe(false);
 
@@ -642,11 +806,27 @@ describe('_renderElement', () => {
       expect(element.hasAttribute('data-on')).toBe(false);
     });
 
+    it('calls the conditions with the component as this and the context of the branch, reading the variables of the scope', () => {
+      const component = { enabled: true };
+      const context = new _Context(createRoot(), undefined, 0, component);
+      context.addIdentifier('suffix', 'scope');
+      const condition = vi.fn(function (this: typeof component, branchContext: Context) {
+        return this.enabled && branchContext.get('suffix') === 'scope';
+      });
+      const element = render(document.createElement('div'), context, {
+        conditionalBindings: [ifBinding({ condition, attributes: [attribute('data-on')] })]
+      });
+
+      expect(element.hasAttribute('data-on')).toBe(true);
+      expect(condition.mock.contexts).toEqual([component]);
+      expect(context.getChildren()).toContain(condition.mock.calls[0][0]);
+    });
+
     it('attaches events only while the condition is true', async () => {
       const onClick = vi.fn();
       const enabled = signal(true);
       const element = render(document.createElement('div'), createRoot(), {
-        conditionalBindings: [ifBinding(branch({ condition: () => enabled(), events: [{ name: 'click', handler: onClick }] }))]
+        conditionalBindings: [ifBinding({ condition: () => enabled(), events: [{ name: 'click', handler: onClick }] })]
       });
 
       element.dispatchEvent(new Event('click'));
@@ -663,8 +843,8 @@ describe('_renderElement', () => {
       const second = signal(false);
       const element = render(document.createElement('div'), createRoot(), {
         conditionalBindings: [
-          ifBinding(branch({ condition: () => first(), attributes: [attribute('data-first')] })),
-          ifBinding(branch({ condition: () => second(), attributes: [attribute('data-second')] }))
+          ifBinding({ condition: () => first(), attributes: [attribute('data-first')] }),
+          ifBinding({ condition: () => second(), attributes: [attribute('data-second')] })
         ]
       });
       expect(element.hasAttribute('data-first')).toBe(true);
@@ -677,13 +857,49 @@ describe('_renderElement', () => {
       expect(element.hasAttribute('data-second')).toBe(true);
     });
 
+    it('unbinds the attributes of a branch with a single cleanup, in the order they are declared, once per branch unbound', async () => {
+      const dispose = vi.spyOn(AttributeUnbinding.prototype, 'dispose');
+      const unbound = new Array<string>();
+      const unbind = (context: Context, target: Element | object, bound: RenderElementAttribute) => {
+        unbound.push(bound.name);
+        _removeAttribute(context, target as Element, bound);
+      };
+      const enabled = signal(true);
+      const element = render(document.createElement('div'), createRoot(), {
+        conditionalBindings: [ifBinding(
+          {
+            condition: () => enabled(),
+            attributes: [
+              { name: 'data-a', value: 'on', setter: _setProperty, unbind },
+              { name: 'data-static', value: 'on', setter: _setProperty },
+              { name: 'data-b', value: 'on', setter: _setProperty, unbind }
+            ]
+          },
+          { attributes: [{ name: 'data-c', value: 'on', setter: _setProperty, unbind }] }
+        )]
+      });
+      expect(dispose).not.toHaveBeenCalled();
+
+      enabled.set(false);
+      await flush();
+      expect(dispose).toHaveBeenCalledOnce();
+      expect(unbound).toEqual(['data-a', 'data-b']);
+      expect(element.getAttributeNames()).toEqual(['data-static', 'data-c']);
+
+      enabled.set(true);
+      await flush();
+      expect(dispose).toHaveBeenCalledTimes(2);
+      expect(unbound).toEqual(['data-a', 'data-b', 'data-c']);
+      dispose.mockRestore();
+    });
+
     describe('@if chains', () => {
       it('applies the @else branch while the condition is false, swapping the branches reactively', async () => {
         const enabled = signal(false);
         const element = render(document.createElement('div'), createRoot(), {
           conditionalBindings: [ifBinding(
-            branch({ condition: () => enabled(), attributes: [attribute('data-on')] }),
-            branch({ attributes: [attribute('data-off')] })
+            { condition: () => enabled(), attributes: [attribute('data-on')] },
+            { attributes: [attribute('data-off')] }
           )]
         });
         expect(element.hasAttribute('data-on')).toBe(false);
@@ -704,8 +920,8 @@ describe('_renderElement', () => {
         const enabled = signal(true);
         const element = render(document.createElement('div'), createRoot(), {
           conditionalBindings: [ifBinding(
-            branch({ condition: () => enabled(), attributes: [attribute('title', 'first')] }),
-            branch({ attributes: [attribute('title', 'second')] })
+            { condition: () => enabled(), attributes: [attribute('title', 'first')] },
+            { attributes: [attribute('title', 'second')] }
           )]
         });
         expect(element.getAttribute('title')).toBe('first');
@@ -723,9 +939,9 @@ describe('_renderElement', () => {
         const value = signal(1);
         const element = render(document.createElement('div'), createRoot(), {
           conditionalBindings: [ifBinding(
-            branch({ condition: () => value() === 1, attributes: [attribute('data-one')] }),
-            branch({ condition: () => value() > 0, attributes: [attribute('data-positive')] }),
-            branch({ attributes: [attribute('data-other')] })
+            { condition: () => value() === 1, attributes: [attribute('data-one')] },
+            { condition: () => value() > 0, attributes: [attribute('data-positive')] },
+            { attributes: [attribute('data-other')] }
           )]
         });
         const bound = () => element.getAttributeNames();
@@ -744,8 +960,8 @@ describe('_renderElement', () => {
         const value = signal(0);
         const element = render(document.createElement('div'), createRoot(), {
           conditionalBindings: [ifBinding(
-            branch({ condition: () => value() === 1, attributes: [attribute('data-one')] }),
-            branch({ condition: () => value() === 2, attributes: [attribute('data-two')] })
+            { condition: () => value() === 1, attributes: [attribute('data-one')] },
+            { condition: () => value() === 2, attributes: [attribute('data-two')] }
           )]
         });
         expect(element.getAttributeNames()).toEqual([]);
@@ -765,8 +981,8 @@ describe('_renderElement', () => {
         const second = vi.fn(() => other() > 0);
         render(document.createElement('div'), createRoot(), {
           conditionalBindings: [ifBinding(
-            branch({ condition: first, attributes: [attribute('data-first')] }),
-            branch({ condition: second, attributes: [attribute('data-second')] })
+            { condition: first, attributes: [attribute('data-first')] },
+            { condition: second, attributes: [attribute('data-second')] }
           )]
         });
 
@@ -776,13 +992,27 @@ describe('_renderElement', () => {
         expect(first).toHaveBeenCalledOnce();
         expect(second).not.toHaveBeenCalled();
       });
+
+      it('selects the branch again when a variable of the template its conditions read changes', () => {
+        const context = createRoot();
+        context.addIdentifier('enabled', false);
+        const element = render(document.createElement('div'), context, {
+          conditionalBindings: [{ branches: [{ condition: scope => scope.get('enabled'), attributes: [attribute('data-on')] }], reads: ['enabled'] }]
+        });
+        expect(element.hasAttribute('data-on')).toBe(false);
+
+        context.update('enabled', true);
+        context.refresh(['enabled']);
+
+        expect(element.hasAttribute('data-on')).toBe(true);
+      });
     });
 
     describe('@switch', () => {
       const branches = () => [
-        branch({ condition: ['a', 'b'], attributes: [attribute('data-letter')] }),
-        branch({ condition: [1], attributes: [attribute('data-number')] }),
-        branch({ condition: null, attributes: [attribute('data-default')] })
+        { condition: ['a', 'b'], attributes: [attribute('data-letter')] },
+        { condition: [1], attributes: [attribute('data-number')] },
+        { condition: null, attributes: [attribute('data-default')] }
       ];
 
       it('applies the branch listing the value of the expression, switching branch reactively', async () => {
@@ -826,7 +1056,7 @@ describe('_renderElement', () => {
         const unbind = vi.fn(_removeAttribute);
         const mode = signal('a');
         const element = render(document.createElement('div'), createRoot(), {
-          conditionalBindings: [switchBinding(() => mode(), branch({ condition: ['a', 'b'], attributes: [{ name: 'data-letter', value: 'on', setter, unbind }] }))]
+          conditionalBindings: [switchBinding(() => mode(), { condition: ['a', 'b'], attributes: [{ name: 'data-letter', value: 'on', setter, unbind }] })]
         });
 
         mode.set('b');
@@ -850,10 +1080,10 @@ describe('_renderElement', () => {
     it('supports nested conditional bindings', async () => {
       const inner = signal(false);
       const element = render(document.createElement('div'), createRoot(), {
-        conditionalBindings: [ifBinding(branch({
+        conditionalBindings: [ifBinding({
           condition: () => true,
-          conditionalBindings: [ifBinding(branch({ condition: () => inner(), attributes: [attribute('data-inner')] }))]
-        }))]
+          conditionalBindings: [ifBinding({ condition: () => inner(), attributes: [attribute('data-inner')] })]
+        })]
       });
       expect(element.hasAttribute('data-inner')).toBe(false);
 
@@ -867,10 +1097,10 @@ describe('_renderElement', () => {
       const outer = signal(true);
       const inner = signal(true);
       const element = render(document.createElement('div'), createRoot(), {
-        conditionalBindings: [ifBinding(branch({
+        conditionalBindings: [ifBinding({
           condition: () => outer(),
-          conditionalBindings: [ifBinding(branch({ condition: () => inner(), attributes: [attribute('data-inner')] }))]
-        }))]
+          conditionalBindings: [ifBinding({ condition: () => inner(), attributes: [attribute('data-inner')] })]
+        })]
       });
       expect(element.getAttribute('data-inner')).toBe('on');
 
@@ -888,8 +1118,8 @@ describe('_renderElement', () => {
       const inner = signal(true);
       const element = render(document.createElement('div'), createRoot(), {
         conditionalBindings: [ifBinding(
-          branch({ condition: () => outer(), conditionalBindings: [ifBinding(branch({ condition: () => inner(), attributes: [attribute('data-if')] }))] }),
-          branch({ conditionalBindings: [switchBinding(() => inner(), branch({ condition: [true], attributes: [attribute('data-else')] }))] })
+          { condition: () => outer(), conditionalBindings: [ifBinding({ condition: () => inner(), attributes: [attribute('data-if')] })] },
+          { conditionalBindings: [switchBinding(() => inner(), { condition: [true], attributes: [attribute('data-else')] })] }
         )]
       });
       expect(element.getAttributeNames()).toEqual(['data-if']);
@@ -909,11 +1139,11 @@ describe('_renderElement', () => {
       const unbind = vi.fn(_removeAttribute);
       const count = signal(1);
       const element = render(document.createElement('div'), createRoot(), {
-        conditionalBindings: [ifBinding(branch({
+        conditionalBindings: [ifBinding({
           condition: () => count() > 0,
           attributes: [{ name: 'data-positive', value: 'on', setter, unbind }],
           events: [{ name: 'click', handler: onClick }]
-        }))]
+        })]
       });
 
       count.set(2);
@@ -928,7 +1158,7 @@ describe('_renderElement', () => {
     it('does not apply a directive again when the condition is evaluated again without changing its outcome', async () => {
       const count = signal(1);
       render(document.createElement('div'), createRoot(), {
-        conditionalBindings: [ifBinding(branch({ condition: () => count() > 0, directives: [{ selector: 'label', attributes: [], events: [], conditionalBindings: [] }] }))]
+        conditionalBindings: [ifBinding({ condition: () => count() > 0, directives: [{ selector: 'label' }] })]
       });
       const instance = LabelDirective.instances.at(-1)!;
 
@@ -939,14 +1169,14 @@ describe('_renderElement', () => {
       expect(instance.destroyed).not.toHaveBeenCalled();
     });
 
-    it('applies a directive only while the condition is true', async () => {
+    it('applies at once the directive of a branch selected once the element is mounted, only while the condition is true', async () => {
       const enabled = signal(false);
       const instances = LabelDirective.instances.length;
       const element = render(document.createElement('div'), createRoot(), {
-        conditionalBindings: [ifBinding(branch({
+        conditionalBindings: [ifBinding({
           condition: () => enabled(),
-          directives: [{ selector: 'label', attributes: [{ name: 'label', value: 'bound', setter: _setInput }], events: [], conditionalBindings: [] }]
-        }))]
+          directives: [{ selector: 'label', attributes: [{ name: 'label', value: 'bound', setter: _setInput }] }]
+        })]
       });
       expect(LabelDirective.instances).toHaveLength(instances);
 
@@ -955,6 +1185,7 @@ describe('_renderElement', () => {
       const instance = LabelDirective.instances.at(-1)!;
       expect(LabelDirective.instances).toHaveLength(instances + 1);
       expect(instance.element).toBe(element);
+      expect(instance.mounted).toBe(true);
       expect(instance.seen).toEqual(['bound']);
       expect(instance.destroyed).not.toHaveBeenCalled();
 
@@ -967,13 +1198,28 @@ describe('_renderElement', () => {
       expect(LabelDirective.instances).toHaveLength(instances + 2);
     });
 
+    it('applies the directives of the branches selected before the element is mounted once it is, in the order they were selected', () => {
+      const instances = LabelDirective.instances.length;
+      const labelDirective = (label: string): RenderElementDirective => ({ selector: 'label', attributes: [{ name: 'label', value: label, setter: _setInput }] });
+      render(document.createElement('div'), createRoot(), {
+        conditionalBindings: [
+          ifBinding({ condition: () => true, directives: [labelDirective('first')] }),
+          ifBinding({ condition: () => true, directives: [labelDirective('second')] })
+        ]
+      });
+
+      const applied = LabelDirective.instances.slice(instances);
+      expect(applied.map(instance => instance.seen)).toEqual([['first'], ['second']]);
+      expect(applied.map(instance => instance.mounted)).toEqual([true, true]);
+    });
+
     it('disposes the directive of the previous branch before applying the one of the selected branch', async () => {
       const enabled = signal(true);
-      const labelDirective = (label: string) => ({ selector: 'label', attributes: [{ name: 'label', value: label, setter: _setInput }], events: [], conditionalBindings: [] });
+      const labelDirective = (label: string): RenderElementDirective => ({ selector: 'label', attributes: [{ name: 'label', value: label, setter: _setInput }] });
       render(document.createElement('div'), createRoot(), {
         conditionalBindings: [ifBinding(
-          branch({ condition: () => enabled(), directives: [labelDirective('first')] }),
-          branch({ directives: [labelDirective('second')] })
+          { condition: () => enabled(), directives: [labelDirective('first')] },
+          { directives: [labelDirective('second')] }
         )]
       });
       const first = LabelDirective.instances.at(-1)!;
@@ -993,7 +1239,7 @@ describe('_renderElement', () => {
       const instances = TrackingDirective.instances;
       const before = instances.length;
       render(document.createElement('div'), createRoot(), {
-        conditionalBindings: [ifBinding(branch({ condition: () => true, directives: [{ selector: 'tracking', attributes: [], events: [], conditionalBindings: [] }] }))]
+        conditionalBindings: [ifBinding({ condition: () => true, directives: [{ selector: 'tracking' }] })]
       });
       expect(instances).toHaveLength(before + 1);
 
@@ -1008,8 +1254,8 @@ describe('_renderElement', () => {
       const context = createRoot();
       const element = render(document.createElement('div'), context, {
         conditionalBindings: [ifBinding(
-          branch({ condition: () => enabled(), attributes: [attribute('data-on')] }),
-          branch({ attributes: [attribute('data-off')] })
+          { condition: () => enabled(), attributes: [attribute('data-on')] },
+          { attributes: [attribute('data-off')] }
         )]
       });
 
@@ -1043,7 +1289,7 @@ describe('_renderElement', () => {
       const onGone = vi.fn();
       const parent = document.body.appendChild(document.createElement('div'));
       const context = createRoot();
-      _renderElement(parent, context, null, 'x-mount-probe', [], [{ name: 'gone', handler: onGone }], [], [], [], [], null);
+      _renderElement(parent, context, null, { tagName: 'x-mount-probe', events: [{ name: 'gone', handler: onGone }] });
 
       context.clear();
 
@@ -1056,9 +1302,18 @@ describe('_renderElement', () => {
       const onReady = vi.fn();
       const onConditionalReady = vi.fn();
       const parent = document.body.appendChild(document.createElement('div'));
-      _renderElement(parent, createRoot(), null, 'x-mount-probe', [{ name: 'data-static', value: 'a', setter: _setProperty }] as never, [{ name: 'ready', handler: onReady }], [{
-        branches: [{ condition: () => true, attributes: [{ name: 'data-conditional', value: 'b', setter: _setProperty, unbind: _removeAttribute }], events: [{ name: 'ready', handler: onConditionalReady }], conditionalBindings: [], directives: [] }]
-      }] as never, [], [], [], null);
+      _renderElement(parent, createRoot(), null, {
+        tagName: 'x-mount-probe',
+        attributes: [{ name: 'data-static', value: 'a', setter: _setProperty }],
+        events: [{ name: 'ready', handler: onReady }],
+        conditionalBindings: [{
+          branches: [{
+            condition: () => true,
+            attributes: [{ name: 'data-conditional', value: 'b', setter: _setProperty, unbind: _removeAttribute }],
+            events: [{ name: 'ready', handler: onConditionalReady }]
+          }]
+        }]
+      });
 
       expect((parent.firstChild as MountProbe).found).toEqual(['a', 'b']);
       expect(onReady).toHaveBeenCalledOnce();
@@ -1067,9 +1322,9 @@ describe('_renderElement', () => {
     });
 
     it('connects the directives, including the ones of a conditional binding selected on creation, once the element is mounted', () => {
-      const directive = { selector: 'label', attributes: [], events: [], conditionalBindings: [] };
+      const directive: RenderElementDirective = { selector: 'label' };
       render(document.createElement('div'), createRoot(), {
-        conditionalBindings: [{ branches: [{ condition: () => true, attributes: [], events: [], conditionalBindings: [], directives: [directive] }] }],
+        conditionalBindings: [{ branches: [{ condition: () => true, directives: [directive] }] }],
         directives: [directive]
       });
 
@@ -1078,9 +1333,8 @@ describe('_renderElement', () => {
   });
 
   describe('directives', () => {
-    const directive = (overrides: Record<string, unknown> = {}) => ({ selector: 'label', attributes: [], events: [], conditionalBindings: [], ...overrides });
-    const branch = (overrides: Record<string, unknown> = {}) => ({ attributes: [], events: [], conditionalBindings: [], ...overrides });
-    const label = (value: string) => ({ name: 'label', value, setter: _setInput, unbind: _resetProperty });
+    const directive = (overrides: Partial<RenderElementDirective> = {}): RenderElementDirective => Object.assign({ selector: 'label' }, overrides);
+    const label = (value: string): RenderElementAttribute => ({ name: 'label', value, setter: _setInput, unbind: _resetProperty });
     const lastInstance = () => LabelDirective.instances.at(-1)!;
 
     it('instantiates the directive registered for the selector on the element', () => {
@@ -1094,7 +1348,7 @@ describe('_renderElement', () => {
       Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { hostDirectives: [LabelDirective] } });
       customElements.define('host-el', klass);
 
-      expect(() => _renderElement(document.createElement('div'), createRoot(), null, 'host-el', [], [], [], [directive()], [], [], null))
+      expect(() => _renderElement(document.createElement('div'), createRoot(), null, { tagName: 'host-el', directives: [directive()] }))
         .toThrow('Directive "label" is applied more than once on <host-el>: it is already a host directive of the component');
     });
 
@@ -1119,10 +1373,21 @@ describe('_renderElement', () => {
       expect(lastInstance().seen).toEqual(['first', 'second']);
     });
 
+    it('resets the directive properties declaring an unbind when the context is destroyed', () => {
+      const context = createRoot();
+      render(document.createElement('div'), context, { directives: [directive({ attributes: [label('bound')] })] });
+      const instance = lastInstance();
+      expect(instance.label()).toBe('bound');
+
+      context.clear();
+
+      expect(instance.label()).toBe('initial');
+    });
+
     it('listens to the directive events on the element', () => {
       const onChange = vi.fn();
       render(document.createElement('div'), createRoot(), {
-        directives: [directive({ events: [{ name: 'change', handler: ($event: Event) => onChange($event.type) }] })]
+        directives: [directive({ events: [{ name: 'change', handler: (_context, $event) => onChange($event.type) }] })]
       });
 
       lastInstance().dispatchEvent(new CustomEvent('change'));
@@ -1156,9 +1421,7 @@ describe('_renderElement', () => {
       const enabled = signal(false);
       render(document.createElement('div'), createRoot(), {
         directives: [directive({
-          conditionalBindings: [{
-            branches: [branch({ condition: () => enabled(), attributes: [label('conditional')] })]
-          }]
+          conditionalBindings: [{ branches: [{ condition: () => enabled(), attributes: [label('conditional')] }] }]
         })]
       });
       const instance = lastInstance();
@@ -1177,7 +1440,7 @@ describe('_renderElement', () => {
     it('binds the properties of a conditional binding already true before reacting to changes', () => {
       render(document.createElement('div'), createRoot(), {
         directives: [directive({
-          conditionalBindings: [{ branches: [branch({ condition: () => true, attributes: [{ name: 'label', value: 'conditional', setter: _setInput }] })] }]
+          conditionalBindings: [{ branches: [{ condition: () => true, attributes: [{ name: 'label', value: 'conditional', setter: _setInput }] }] }]
         })]
       });
 
@@ -1190,8 +1453,8 @@ describe('_renderElement', () => {
         directives: [directive({
           conditionalBindings: [{
             branches: [
-              branch({ condition: () => enabled(), attributes: [label('if')] }),
-              branch({ attributes: [label('else')] })
+              { condition: () => enabled(), attributes: [label('if')] },
+              { attributes: [label('else')] }
             ]
           }]
         })]
@@ -1216,8 +1479,8 @@ describe('_renderElement', () => {
           conditionalBindings: [{
             expression: () => mode(),
             branches: [
-              branch({ condition: [1, 2], attributes: [label('case')] }),
-              branch({ condition: null, attributes: [label('default')] })
+              { condition: [1, 2], attributes: [label('case')] },
+              { condition: null, attributes: [label('default')] }
             ]
           }]
         })]
@@ -1236,11 +1499,11 @@ describe('_renderElement', () => {
       render(document.createElement('div'), createRoot(), {
         directives: [directive({
           conditionalBindings: [{
-            branches: [branch({
+            branches: [{
               condition: () => enabled(),
               events: [{ name: 'change', handler: onChange }],
-              conditionalBindings: [{ branches: [branch({ condition: () => true, events: [{ name: 'nested', handler: onChange }] })] }]
-            })]
+              conditionalBindings: [{ branches: [{ condition: () => true, events: [{ name: 'nested', handler: onChange }] }] }]
+            }]
           }]
         })]
       });
@@ -1271,7 +1534,7 @@ describe('_renderElement', () => {
     });
 
     it('throws when a directive given by its class is a structural directive', () => {
-      expect(() => render(document.createElement('div'), createRoot(), { directives: [directive({ selector: VisibleDirective })] })).toThrow('Directive VisibleDirective is not a CustomDirective');
+      expect(() => render(document.createElement('div'), createRoot(), { directives: [directive({ selector: VisibleDirective as never })] })).toThrow('Directive VisibleDirective is not a CustomDirective');
     });
 
     it('names a directive given by its class when the component already declares it as a host directive', () => {
@@ -1279,7 +1542,7 @@ describe('_renderElement', () => {
       Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { hostDirectives: [LabelDirective] } });
       customElements.define('host-class-el', klass);
 
-      expect(() => _renderElement(document.createElement('div'), createRoot(), null, 'host-class-el', [], [], [], [directive({ selector: LabelDirective })], [], [], null))
+      expect(() => _renderElement(document.createElement('div'), createRoot(), null, { tagName: 'host-class-el', directives: [directive({ selector: LabelDirective })] }))
         .toThrow('Directive LabelDirective is applied more than once on <host-class-el>: it is already a host directive of the component');
     });
   });
@@ -1287,12 +1550,12 @@ describe('_renderElement', () => {
   describe('structural directives', () => {
     const renderStructural = (
       parent: Element,
-      context: InstanceType<typeof _Context>,
-      { structuralDirectives = [], structuralConditionalBindings = [], children = null, anchor = null }: { structuralDirectives?: unknown[], structuralConditionalBindings?: unknown[], children?: Children | null, anchor?: Comment | null } = {}
-    ) => _renderElement(parent, context, anchor, 'div', [{ name: 'id', value: 'target', setter: _setProperty }] as never, [], [], [], structuralDirectives as never, structuralConditionalBindings as never, children);
-    const structural = (selector = 'visible', attributes: unknown[] = []) => ({ selector, attributes });
-    const visible = (value: () => boolean) => ({ name: 'visible', value, setter: _setReactiveInput });
-    const branch = (overrides: Record<string, unknown> = {}) => ({ structuralDirectives: [], conditionalBindings: [], ...overrides });
+      context: Context,
+      element: Pick<RenderElement, 'structuralDirectives' | 'structuralConditionalBindings' | 'children'>,
+      anchor: Comment | null = null
+    ) => _renderElement(parent, context, anchor, Object.assign({ tagName: 'div', attributes: [{ name: 'id', value: 'target', setter: _setProperty }] }, element));
+    const structural = (selector = 'visible', attributes?: RenderElementAttribute[]): RenderElementStructuralDirective => ({ selector, attributes });
+    const visible = (value: () => boolean): RenderElementAttribute => ({ name: 'visible', value, setter: _setReactiveInput });
     const target = (parent: Element) => parent.querySelector('#target');
     const lastInstance = () => VisibleDirective.instances.at(-1)!;
 
@@ -1330,7 +1593,7 @@ describe('_renderElement', () => {
       const shown = signal(true);
       const parent = document.createElement('section');
       const sibling = parent.appendChild(document.createComment('sibling'));
-      renderStructural(parent, createRoot(), { structuralDirectives: [structural('visible', [visible(() => shown())])], anchor: sibling });
+      renderStructural(parent, createRoot(), { structuralDirectives: [structural('visible', [visible(() => shown())])] }, sibling);
 
       shown.set(false);
       await settle();
@@ -1393,7 +1656,7 @@ describe('_renderElement', () => {
     it('renders the children each time the element is created, destroying them together with the element', async () => {
       const shown = signal(true);
       const unlisten = vi.fn();
-      const children = vi.fn<Children>((element, parentContext) => {
+      const children = vi.fn<RenderChildren>((element, parentContext) => {
         element.appendChild(document.createElement('span'));
         const childrenContext = new _Context(parentContext);
         childrenContext.addUnlistener(unlisten);
@@ -1438,7 +1701,7 @@ describe('_renderElement', () => {
         const parent = document.createElement('section');
         renderStructural(parent, createRoot(), {
           structuralConditionalBindings: [{
-            branches: [branch({ condition: () => false, structuralDirectives: [structural('visible', [visible(() => false)])] })]
+            branches: [{ condition: () => false, structuralDirectives: [structural('visible', [visible(() => false)])] }]
           }]
         });
 
@@ -1451,7 +1714,7 @@ describe('_renderElement', () => {
         renderStructural(parent, createRoot(), {
           structuralDirectives: [structural(), structural()],
           structuralConditionalBindings: [{
-            branches: [branch({ condition: () => enabled(), structuralDirectives: [structural('visible', [visible(() => false)])] })]
+            branches: [{ condition: () => enabled(), structuralDirectives: [structural('visible', [visible(() => false)])] }]
           }]
         });
         expect(target(parent)).toBeNull();
@@ -1472,8 +1735,8 @@ describe('_renderElement', () => {
           structuralConditionalBindings: [{
             expression: () => mode(),
             branches: [
-              branch({ condition: ['hidden'], structuralDirectives: [structural('visible', [visible(() => false)])] }),
-              branch({ condition: null })
+              { condition: ['hidden'], structuralDirectives: [structural('visible', [visible(() => false)])] },
+              { condition: null }
             ]
           }]
         });
@@ -1490,12 +1753,12 @@ describe('_renderElement', () => {
         const parent = document.createElement('section');
         renderStructural(parent, createRoot(), {
           structuralConditionalBindings: [{
-            branches: [branch({
+            branches: [{
               condition: () => outer(),
               conditionalBindings: [{
-                branches: [branch({ condition: () => inner(), structuralDirectives: [structural('visible', [visible(() => false)])] })]
+                branches: [{ condition: () => inner(), structuralDirectives: [structural('visible', [visible(() => false)])] }]
               }]
-            })]
+            }]
           }]
         });
         expect(target(parent)).not.toBeNull();
@@ -1517,8 +1780,8 @@ describe('_renderElement', () => {
         renderStructural(document.createElement('section'), context, {
           structuralConditionalBindings: [{
             branches: [
-              branch({ condition: () => first(), structuralDirectives: [structural('visible', [visible(() => false)])] }),
-              branch({ structuralDirectives: [structural('visible', [visible(() => !hidden())]), structural()] })
+              { condition: () => first(), structuralDirectives: [structural('visible', [visible(() => false)])] },
+              { structuralDirectives: [structural('visible', [visible(() => !hidden())]), structural()] }
             ]
           }]
         });
@@ -1541,8 +1804,8 @@ describe('_renderElement', () => {
         const createElement = vi.spyOn(context, 'createElement');
         renderStructural(document.createElement('section'), context, {
           structuralConditionalBindings: [
-            { branches: [branch({ condition: () => swapped(), structuralDirectives: [structural('visible', [visible(() => false)])] })] },
-            { branches: [branch({ condition: () => !swapped(), structuralDirectives: [structural('visible', [visible(() => false)])] })] }
+            { branches: [{ condition: () => swapped(), structuralDirectives: [structural('visible', [visible(() => false)])] }] },
+            { branches: [{ condition: () => !swapped(), structuralDirectives: [structural('visible', [visible(() => false)])] }] }
           ]
         });
 
@@ -1582,7 +1845,7 @@ describe('_renderElement', () => {
         const parent = document.createElement('section');
         renderStructural(parent, createRoot(), {
           structuralConditionalBindings: [{
-            branches: [branch({ condition: () => enabled(), structuralDirectives: [structural('asyncVisible')] })]
+            branches: [{ condition: () => enabled(), structuralDirectives: [structural('asyncVisible')] }]
           }]
         });
         const element = target(parent);

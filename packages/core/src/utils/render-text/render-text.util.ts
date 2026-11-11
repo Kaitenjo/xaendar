@@ -1,10 +1,11 @@
-import { NoArgsFunction } from '@xaendar/types';
 import { _bindEffect } from '../../signals/effect/effect';
+import type { TemplateExpression } from '../../types/template-expression.type';
 import { _Context } from '../context/context.util';
 
 /**
  * Renders a text node holding the value of an expression, kept in sync with the signals and the variables of the
- * template it reads (see `_bindEffect`).
+ * template it reads (see `_bindEffect`). The expression is a function of the module of the template, called with the
+ * component and the context, which the binding keeps instead of a closure (see `TemplateExpression`).
  *
  * The node is got through the strategy of the context: created, or adopted from the HTML rendered on the server. Its
  * text is written only when it differs from the one the node holds: the first run of an adopted node writes nothing,
@@ -13,15 +14,15 @@ import { _Context } from '../context/context.util';
  *
  * @param parentNode - The node to render the text into.
  * @param context - The current template execution scope.
- * @param textFn - Returns the value of the text.
+ * @param value - The expression computing the value of the text.
  * @param referenceNode - The node to insert the text before, `null` to append it.
  * @param separated - Whether the server wrote `<!---->` before the text, as it does before each interpolation where the
  *   parser does not read the content of the element as text.
  * @param reads - The names of the variables of the template the expression reads, omitted when it reads none.
  */
-export function _renderText(parentNode: HTMLElement, context: _Context, textFn: NoArgsFunction<unknown>, referenceNode: Comment | null, separated = false, reads?: readonly string[]): void {
+export function _renderText(parentNode: HTMLElement, context: _Context, value: TemplateExpression<unknown>, referenceNode: Comment | null, separated = false, reads?: readonly string[]): void {
   const node = context.nodeStrategy.text(context, parentNode, referenceNode, '', separated);
-  _bindEffect(context, updateText, node, textFn, undefined, reads);
+  _bindEffect(context, updateText, node, value, context, reads);
 }
 
 /**
@@ -29,10 +30,11 @@ export function _renderText(parentNode: HTMLElement, context: _Context, textFn: 
  * callback of the binding of {@link _renderText}, shared by every text.
  *
  * @param node - The text node.
- * @param textFn - Returns the value of the text.
+ * @param expression - The expression computing the value of the text.
+ * @param context - The context the text is rendered in, which the expression reads.
  */
-function updateText(node: Text, textFn: NoArgsFunction<unknown>): void {
-  const value = textFn();
+function updateText(node: Text, expression: TemplateExpression<unknown>, context: _Context): void {
+  const value = expression.call(context.component, context);
   const text = value === null || value === undefined ? '' : `${value}`;
   if (node.data !== text) {
     node.data = text;

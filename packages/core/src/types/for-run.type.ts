@@ -1,9 +1,6 @@
-import type { Function, NoArgsFunction } from '@xaendar/types';
 import type { _Context } from '../utils/context/context.util';
-import type { IterationVariables } from './iteration-variables.type';
+import type { ForConfig } from './for-config.type';
 import type { NodeBlock } from './node-block.type';
-import type { NodeStrategy } from './node-strategy.type';
-import type { TrackExpression } from './track-expression.type';
 
 /**
  * A `@for` while it is rendered (see `_for`): where it is, how its items are got and rendered, and the ones it renders,
@@ -27,21 +24,9 @@ export type ForRun = {
    */
   readonly nodeBlock: NodeBlock;
   /**
-   * Returns the items: an array, or a number `n`, iterated as `0, 1, ..., n - 1`.
+   * The `@for`, a constant of the module of the template: the items, their keys, the body and the variables it reads.
    */
-  readonly condition: NoArgsFunction<unknown[] | number>;
-  /**
-   * Returns the key of an item.
-   */
-  readonly trackExpression: TrackExpression;
-  /**
-   * Renders a new item, returning the context of its body.
-   */
-  readonly forFn: Function<[HTMLElement, _Context, unknown[], number, Node | null, NodeStrategy], _Context>;
-  /**
-   * The variables the body reads, declared in the context of each item: `undefined` when the body reads none.
-   */
-  readonly variables: IterationVariables | undefined;
+  readonly config: ForConfig;
   /**
    * The contexts of the items of each key, in the order of the items: a key repeated in the items has a context per
    * occurrence. `null` until the first render.

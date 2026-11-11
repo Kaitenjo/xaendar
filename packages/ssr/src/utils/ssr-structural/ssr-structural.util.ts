@@ -1,6 +1,6 @@
 import { _Context, _getComponentRuntime, _resolveDirective, _selectBranch, _SSR_MARKERS, StructuralDirective, type RenderElementStructuralDirective, type RenderElementStructuralDirectiveConditionalBinding } from '@xaendar/core';
-import type { VoidFunction } from '@xaendar/types';
 import type { ServerOutput } from '../../types/server-output.type';
+import type { ServerStructuralConfig } from '../../types/server-structural-config.type';
 import { _runOnServer } from '../server-runtime/server-runtime.util';
 
 /**
@@ -32,20 +32,15 @@ const CLOSE = `<!--/${_SSR_MARKERS.structural}-->`;
  *
  * @param out - The output.
  * @param context - The runtime context the structural directives are applied in.
- * @param structuralDirectives - The structural directives applied directly.
- * @param structuralConditionalBindings - The conditional bindings applying structural directives.
- * @param render - Writes the element in the given output, in the given runtime context, a child of `context`.
+ * @param config - The element, a constant of the module of the template: the structural directives applied directly,
+ *   the conditional bindings applying structural directives, and the function of the module writing the element in the
+ *   given output, in the given runtime context, a child of `context`, called with the component as `this`.
  * @throws When no structural directive is registered for a selector.
  */
-export function _ssrStructural(
-  out: ServerOutput,
-  context: _Context,
-  structuralDirectives: RenderElementStructuralDirective[],
-  structuralConditionalBindings: RenderElementStructuralDirectiveConditionalBinding[],
-  render: VoidFunction<[out: ServerOutput, context: _Context]>
-): void {
+export function _ssrStructural(out: ServerOutput, context: _Context, config: ServerStructuralConfig): void {
+  const { render } = config;
   const outcomes = new Array<boolean | Promise<boolean>>();
-  collectOutcomes(context, structuralDirectives, structuralConditionalBindings, outcomes);
+  collectOutcomes(context, config.structuralDirectives, config.structuralConditionalBindings, outcomes);
 
   let rendered = true;
   const pending = new Array<Promise<boolean>>();
@@ -67,7 +62,7 @@ export function _ssrStructural(
   const elementContext = new _Context(context);
   if (!pending.length) {
     out.push(RENDERED);
-    render(out, elementContext);
+    render.call(context.component, out, elementContext);
     out.push(CLOSE);
     return;
   }
@@ -80,7 +75,7 @@ export function _ssrStructural(
     }
 
     const output: ServerOutput = [RENDERED];
-    _runOnServer(runtime, () => render(output, elementContext));
+    _runOnServer(runtime, () => render.call(context.component, output, elementContext));
     return output;
   }), CLOSE);
 }
@@ -88,29 +83,35 @@ export function _ssrStructural(
 /**
  * Creates the structural directives, sets their properties and evaluates them.
  *
- * @param context - The runtime context the structural directives are applied in.
- * @param structuralDirectives - The structural directives applied directly.
- * @param conditionalBindings - The conditional bindings applying structural directives.
+ * @param context - The runtime context the structural directives are applied in, which their properties read.
+ * @param structuralDirectives - The structural directives applied directly, if any.
+ * @param conditionalBindings - The conditional bindings applying structural directives, if any.
  * @param outcomes - Collects the outcome of each one of them, in order.
  * @throws When no structural directive is registered for a selector.
  */
-function collectOutcomes(context: _Context, structuralDirectives: RenderElementStructuralDirective[], conditionalBindings: RenderElementStructuralDirectiveConditionalBinding[], outcomes: Array<boolean | Promise<boolean>>): void {
-  for (let i = 0; i < structuralDirectives.length; i++) {
-    const { selector, attributes } = structuralDirectives[i];
-    const Directive = _resolveDirective(selector, StructuralDirective);
-    const directive = new Directive();
-    for (let j = 0; j < attributes.length; j++) {
-      const { name, value, setter } = attributes[j];
-      setter(context, directive, name, value);
-    }
+function collectOutcomes(context: _Context, structuralDirectives: readonly RenderElementStructuralDirective[] | undefined, conditionalBindings: readonly RenderElementStructuralDirectiveConditionalBinding[] | undefined, outcomes: Array<boolean | Promise<boolean>>): void {
+  if (structuralDirectives?.length) {
+    for (let i = 0; i < structuralDirectives.length; i++) {
+      const { selector, attributes } = structuralDirectives[i];
+      const Directive = _resolveDirective(selector, StructuralDirective);
+      const directive = new Directive();
+      if (attributes?.length) {
+        for (let j = 0; j < attributes.length; j++) {
+          const attribute = attributes[j];
+          attribute.setter(context, directive, attribute);
+        }
+      }
 
-    outcomes.push(directive.shouldRender());
+      outcomes.push(directive.shouldRender());
+    }
   }
 
-  for (let i = 0; i < conditionalBindings.length; i++) {
-    const branch = _selectBranch(conditionalBindings[i]);
-    if (branch) {
-      collectOutcomes(context, branch.structuralDirectives, branch.conditionalBindings, outcomes);
+  if (conditionalBindings?.length) {
+    for (let i = 0; i < conditionalBindings.length; i++) {
+      const branch = _selectBranch(conditionalBindings[i], context);
+      if (branch) {
+        collectOutcomes(context, branch.structuralDirectives, branch.conditionalBindings, outcomes);
+      }
     }
   }
 }

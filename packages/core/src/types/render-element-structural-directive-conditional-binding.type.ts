@@ -9,11 +9,13 @@ import type { RenderConditionalBinding } from './render-conditional-binding.type
  */
 export type RenderElementStructuralDirectiveConditionalBinding = RenderConditionalBinding<{
   /**
-   * The list of structural directives deciding whether the element is rendered while the branch is selected.
+   * The list of structural directives deciding whether the element is rendered while the branch is selected, left out
+   * when the branch applies none.
    */
-  structuralDirectives: RenderElementStructuralDirective[],
+  readonly structuralDirectives?: readonly RenderElementStructuralDirective[];
   /**
-   * The list of nested conditional bindings applying structural directives while the branch is selected.
+   * The list of nested conditional bindings applying structural directives while the branch is selected, left out when
+   * the branch declares none.
    */
-  conditionalBindings: RenderElementStructuralDirectiveConditionalBinding[]
-}>
+  readonly conditionalBindings?: readonly RenderElementStructuralDirectiveConditionalBinding[];
+}>;

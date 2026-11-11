@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
+import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -14,13 +15,33 @@ const { _removeClass, _setExpressionClass, _setReactiveClass } = await import('.
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 const createContext = () => new _Context({ createElement: _createElement } as never);
 
+/**
+ * Describes a class binding the way the module of a template does.
+ */
+const classBinding = (name: string, value: RenderElementAttribute['value'], reads?: readonly string[]): RenderElementAttribute => ({ name, value, setter: _setReactiveClass, unbind: _removeClass, reads });
+
 describe('class bindings', () => {
   it('_setExpressionClass toggles the class once, by whether the value is truthy', () => {
     const element = document.createElement('div');
 
-    _setExpressionClass(createContext(), element, 'on', () => 'yes');
-    _setExpressionClass(createContext(), element, 'off', () => 0);
+    _setExpressionClass(createContext(), element, classBinding('on', () => 'yes'));
+    _setExpressionClass(createContext(), element, classBinding('off', () => 0));
 
+    expect(element.className).toBe('on');
+  });
+
+  it('_setExpressionClass calls the expression with the component of the context as this and the context', () => {
+    const element = document.createElement('div');
+    const component = { active: true };
+    const context = new _Context(createContext(), undefined, 0, component);
+    const expression = vi.fn(function (this: typeof component, _context: InstanceType<typeof _Context>) {
+      return this.active;
+    });
+
+    _setExpressionClass(context, element, classBinding('on', expression));
+
+    expect(expression).toHaveBeenCalledExactlyOnceWith(context);
+    expect(expression.mock.contexts).toEqual([component]);
     expect(element.className).toBe('on');
   });
 
@@ -29,7 +50,7 @@ describe('class bindings', () => {
     const active = signal(1);
     const context = createContext();
 
-    _setReactiveClass(context, element, 'on', () => active());
+    _setReactiveClass(context, element, classBinding('on', () => active()));
     await flush();
     expect(element.className).toBe('on');
 
@@ -43,11 +64,25 @@ describe('class bindings', () => {
     expect(element.className).toBe('');
   });
 
+  it('_setReactiveClass toggles the class again when a variable of the template it reads changes', () => {
+    const element = document.createElement('div');
+    const context = createContext();
+    context.addIdentifier('active', false);
+
+    _setReactiveClass(context, element, classBinding('on', scope => scope.get('active'), ['active']));
+    expect(element.className).toBe('');
+
+    context.update('active', true);
+    context.refresh(['active']);
+
+    expect(element.className).toBe('on');
+  });
+
   it('_removeClass removes the class', () => {
     const element = document.createElement('div');
-    _setExpressionClass(createContext(), element, 'on', () => true);
+    _setExpressionClass(createContext(), element, classBinding('on', () => true));
 
-    _removeClass(createContext(), element, 'on');
+    _removeClass(createContext(), element, classBinding('on', () => true));
 
     expect(element.className).toBe('');
   });

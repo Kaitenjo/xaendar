@@ -46,7 +46,7 @@ describe('_ssrStartTag', () => {
   it('writes the start tag with the attributes and the classes applied in order through the setters of the client', () => {
     const out: ServerOutput = [];
 
-    _ssrStartTag(out, context, 'div', [literal('class', 'a'), expression('title', '"x" & <y>'), classBinding('on', 1)], []);
+    _ssrStartTag(out, context, { tagName: 'div', attributes: [literal('class', 'a'), expression('title', '"x" & <y>'), classBinding('on', 1)] });
 
     expect(out).toEqual(['<div class="a on" title="&quot;x&quot; &amp; &lt;y&gt;">']);
   });
@@ -56,23 +56,23 @@ describe('_ssrStartTag', () => {
     const conditionalBindings: RenderConditionalBinding[] = [
       {
         branches: [
-          { condition: () => false, attributes: [literal('title', 'no')], conditionalBindings: [] },
+          { condition: () => false, attributes: [literal('title', 'no')] },
           {
             attributes: [literal('title', 'else')],
             conditionalBindings: [{
               expression: () => 2,
               branches: [
-                { condition: [1], attributes: [literal('lang', 'one')], conditionalBindings: [] },
-                { condition: null, attributes: [literal('lang', 'other')], conditionalBindings: [] }
+                { condition: [1], attributes: [literal('lang', 'one')] },
+                { condition: null, attributes: [literal('lang', 'other')] }
               ]
             }]
           }
         ]
       },
-      { branches: [{ condition: () => false, attributes: [literal('id', 'never')], conditionalBindings: [] }] }
+      { branches: [{ condition: () => false, attributes: [literal('id', 'never')] }] }
     ];
 
-    _ssrStartTag(out, context, 'p', [], conditionalBindings);
+    _ssrStartTag(out, context, { tagName: 'p', conditionalBindings });
 
     expect(out).toEqual(['<p title="else" lang="other">']);
   });
@@ -86,7 +86,7 @@ describe('_ssrClientComponent', () => {
     const read = vi.fn();
     const input = { name: 'centre', value: read, setter: _setExpressionInput } as unknown as ServerAttribute;
 
-    _ssrClientComponent(out, context, 'x-map', [literal('title', 'Map'), input, classBinding('zoom', 1)], [], options);
+    _ssrClientComponent(out, context, { tagName: 'x-map', attributes: [literal('title', 'Map'), input, classBinding('zoom', 1)] }, options);
 
     expect(out).toEqual(['<x-map title="Map" class="zoom" data-xd-client="">']);
     expect(read).not.toHaveBeenCalled();
@@ -97,14 +97,14 @@ describe('_ssrClientComponent', () => {
     const conditionalBindings: RenderConditionalBinding[] = [
       {
         branches: [
-          { condition: () => false, attributes: [literalInput('zoom', 'no')], conditionalBindings: [] },
-          { condition: () => true, attributes: [literal('title', 'Map')], conditionalBindings: [{ branches: [{ attributes: [expressionInput('zoom', 3)], conditionalBindings: [] }] }] }
+          { condition: () => false, attributes: [literalInput('zoom', 'no')] },
+          { condition: () => true, attributes: [literal('title', 'Map')], conditionalBindings: [{ branches: [{ attributes: [expressionInput('zoom', 3)] }] }] }
         ]
       },
-      { branches: [{ condition: () => false, attributes: [], conditionalBindings: [] }] }
+      { branches: [{ condition: () => false, attributes: [] }] }
     ];
 
-    _ssrClientComponent(out, context, 'x-map', [literalInput('centre', 'Rome')], conditionalBindings, { ...options, island: true, hydrate: 'visible' });
+    _ssrClientComponent(out, context, { tagName: 'x-map', attributes: [literalInput('centre', 'Rome')], conditionalBindings }, { ...options, island: true, hydrate: 'visible' });
 
     expect(out).toHaveLength(1);
     expect(out[0]).toContain('<x-map title="Map" data-xd-client="" data-xd-hydrate="visible" data-xd-inputs="');
@@ -116,7 +116,7 @@ describe('_ssrClientComponent', () => {
   it('writes no trigger for load, which is the default', () => {
     const out: ServerOutput = [];
 
-    _ssrClientComponent(out, context, 'x-map', [], [], { ...options, hydrate: 'load' });
+    _ssrClientComponent(out, context, { tagName: 'x-map' }, { ...options, hydrate: 'load' });
 
     expect(out).toEqual(['<x-map data-xd-client="">']);
   });
@@ -130,13 +130,13 @@ describe('_ssrComponent', () => {
     _defineServerRender(Outside, render);
     const out: ServerOutput = [];
 
-    expect(() => _ssrComponent(out, context, 'x-outside', [], [])).not.toThrow();
+    expect(() => _ssrComponent(out, context, { tagName: 'x-outside' })).not.toThrow();
   });
 
   it('writes a custom element whose class is not defined as an element without shadow root', () => {
     const out: ServerOutput = [];
 
-    _ssrComponent(out, context, 'not-defined', [literal('title', 'x')], []);
+    _ssrComponent(out, context, { tagName: 'not-defined', attributes: [literal('title', 'x')] });
 
     expect(out).toEqual(['<not-defined title="x">']);
   });
@@ -152,7 +152,7 @@ describe('_ssrComponent', () => {
     customElements.define('client-only', ClientOnlyElement);
     const out: ServerOutput = [];
 
-    _ssrComponent(out, context, 'client-only', [literal('title', 'x')], []);
+    _ssrComponent(out, context, { tagName: 'client-only', attributes: [literal('title', 'x')] });
 
     expect(out).toEqual(['<client-only title="x">']);
     expect(constructed).not.toHaveBeenCalled();
@@ -182,7 +182,7 @@ describe('_ssrComponent', () => {
     }, ':host { color: red } </style>');
     const out: ServerOutput = [];
 
-    _ssrComponent(out, context, 'ssr-card', [expressionInput('label', 'Ada'), literal('title', 'x')], []);
+    _ssrComponent(out, context, { tagName: 'ssr-card', attributes: [expressionInput('label', 'Ada'), literal('title', 'x')] });
 
     expect(out).toEqual([
       '<ssr-card title="x" role="note">',
@@ -202,7 +202,7 @@ describe('_ssrComponent', () => {
     });
     const out: ServerOutput = [];
 
-    _ssrComponent(out, context, 'ssr-plain', [], []);
+    _ssrComponent(out, context, { tagName: 'ssr-plain' });
 
     expect(out).toEqual(['<ssr-plain>', '<template shadowrootmode="open">', 'x', '</template>']);
   });
@@ -218,8 +218,8 @@ describe('_ssrComponent', () => {
     define('ssr-load', 'load');
     const out: ServerOutput = [];
 
-    _ssrComponent(out, context, 'ssr-visible', [], []);
-    _ssrComponent(out, context, 'ssr-load', [], []);
+    _ssrComponent(out, context, { tagName: 'ssr-visible' });
+    _ssrComponent(out, context, { tagName: 'ssr-load' });
 
     expect(out.filter(html => typeof html === 'string' && !html.startsWith('<template') && html !== '</template>')).toEqual(['<ssr-visible data-xd-hydrate="visible">', '<ssr-load>']);
   });

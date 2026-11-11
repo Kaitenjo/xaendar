@@ -41,11 +41,6 @@ export type GeneratorTransitionFunctionReturnType = {
        */
       precode?: string;
       /**
-       * Code written at module level, right before the function, if any: a constant the function reads, created once
-       * per template instead of at every call (e.g. the variables the body of a `@for` reads).
-       */
-      declaration?: string;
-      /**
        * Se presente, indica che la funzione generata è un branch di
        * `_if`/`_for`/`_switch` (cioè un `block`/`forFn`) e che questo è il nome
        * della variabile `anchor` disponibile nel suo scope. Le chiamate di

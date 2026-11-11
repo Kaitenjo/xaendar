@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { _EVENT_CONTRACT_KEY } from '../../costants';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 
@@ -24,9 +25,9 @@ const createRoot = (nodeStrategy?: NodeStrategy) => new _Context({ createElement
 /**
  * A block rendering an element, with its listeners, through the strategy it receives.
  */
-const block = (tagName: string, events: RenderElementEvent[] = []) => vi.fn((parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
+const block = (tagName: string, events?: RenderElementEvent[]) => vi.fn((parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
   const context = new _Context(parentContext, nodeStrategy);
-  _renderElement(parentNode, context, anchor as Comment | null, tagName, [], events, [], [], [], [], null);
+  _renderElement(parentNode, context, anchor as Comment | null, { tagName, events });
   return context;
 });
 
@@ -109,10 +110,10 @@ describe('_hydrate', () => {
       const button = parent.querySelector('button')!;
       const clicks = new Array<Event>();
       const root = createRoot(new ClaimNodes('x-host'));
-      _renderElement(parent, root, null, 'p', [], [], [], [], [], [], null);
+      _renderElement(parent, root, null, { tagName: 'p' });
 
-      _hydrate(parent, root, null, { triggers: ['idle'], content: block('button', [{ name: 'click', handler: event => clicks.push(event) }]) });
-      _renderElement(parent, root, null, 'i', [], [], [], [], [], [], null);
+      _hydrate(parent, root, null, { triggers: ['idle'], content: block('button', [{ name: 'click', handler: (_context, event) => clicks.push(event) }]) });
+      _renderElement(parent, root, null, { tagName: 'i' });
       button.click();
       expect(clicks).toHaveLength(0);
       await new Promise(resolve => setTimeout(resolve, 20));
@@ -158,6 +159,23 @@ describe('_hydrate', () => {
       await flush();
 
       expect(clicks).toHaveBeenCalledTimes(2);
+    });
+
+    it('hydrates for an interaction the event contract recorded before the runtime was there, replaying it', async () => {
+      const parent = parse('<!--xd-h--><button>x</button><!--/xd-h-->');
+      const button = parent.querySelector('button')!;
+      const clicks = vi.fn();
+      const stop = vi.fn();
+      window[_EVENT_CONTRACT_KEY] = { events: [{ event: new MouseEvent('click', { bubbles: true }), target: button, path: [button, parent, document.body, document, window] }], stops: [stop] };
+      const content = block('button', [{ name: 'click', handler: clicks }]);
+
+      _hydrate(parent, createRoot(new ClaimNodes('x-host')), null, { triggers: ['interaction'], content });
+      expect(stop).toHaveBeenCalledOnce();
+      expect(content).not.toHaveBeenCalled();
+      await flush();
+
+      expect(content).toHaveBeenCalledOnce();
+      expect(clicks).toHaveBeenCalledOnce();
     });
 
     it('hydrates when the pointer moves over the content', async () => {
@@ -259,7 +277,7 @@ describe('_hydrate', () => {
       const content = block('a');
 
       _hydrate(parent, root, null, { triggers: ['never'], load, content });
-      _renderElement(parent, root, null, 'i', [], [], [], [], [], [], null);
+      _renderElement(parent, root, null, { tagName: 'i' });
       link.click();
       await new Promise(resolve => setTimeout(resolve, 20));
 

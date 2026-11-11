@@ -40,8 +40,10 @@ describe('compileServer', () => {
     const cache = { getImport: vi.fn(async (imported: string) => exportsByName[imported]) } as unknown as ContextCache;
     const code = await compileServer('@import { Map } from \'./map\';\n@import { Card } from \'./card\';\n@import { Tip } from \'./tip\';\n<x-map></x-map><x-card></x-card>', { signals: [], templateDir: '/src', cache });
 
-    expect(code).toContain('_ssrClientComponent(out, context, \'x-map\'');
-    expect(code).toContain('_ssrComponent(out, context, \'x-card\'');
+    expect(code).toContain('const x_map3$element = { tagName: \'x-map\' };');
+    expect(code).toContain('_ssrClientComponent(out, context, x_map3$element, x_map3$client);');
+    expect(code).toContain('const x_card4$element = { tagName: \'x-card\' };');
+    expect(code).toContain('_ssrComponent(out, context, x_card4$element);');
   });
 
   it('reads every name from the component without the directory of the template', async () => {

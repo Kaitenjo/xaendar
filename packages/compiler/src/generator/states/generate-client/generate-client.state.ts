@@ -4,8 +4,8 @@ import { GeneratorTransitionFunctionReturnType } from '../../types/generator-tra
 import { getBlockIdentifier } from '../../utils/generator/generator.utils';
 
 /**
- * Generates the code of a `@client` block: a `_client(...)` call receiving the function rendering its content, a scope
- * of its own, rendered before the anchor it receives. The `@placeholder` has no code: only the server renders it.
+ * Generates the code of a `@client` block: a `_client(...)` call receiving the function rendering its content, a function
+ * of the module the runtime calls as it is, a scope of its own, rendered before the anchor it receives. The `@placeholder` has no code: only the server renders it.
  *
  * @param node - The client node.
  * @param parentNode - Variable name of the parent DOM node.
@@ -18,7 +18,7 @@ export async function generateClient(node: ClientNode, parentNode: string, index
   const key = getBlockIdentifier('client', parentNode, index);
 
   return {
-    code: [`_client(${parentNode}, context, ${anchor}, ${key}.bind(this));`],
+    code: [`_client(${parentNode}, context, ${anchor}, ${key});`],
     functionsToProcess: new Map([[key, {
       fn: { node, parentNode: key, context: new GeneratorContext(generatorContext), anchor: 'anchor' },
       args: [key, 'parentContext', 'anchor', 'nodeStrategy']

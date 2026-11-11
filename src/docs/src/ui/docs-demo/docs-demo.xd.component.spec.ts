@@ -20,8 +20,8 @@ function mount(name: string): DocsDemoComponent {
   }
 
   const context = new _Context({} as never);
-  _setExpressionInput(context, element, 'name', () => name);
-  _setExpressionInput(context, element, 'heading', () => 'A demo');
+  _setExpressionInput(context, element, { name: 'name', value: () => name, setter: _setExpressionInput });
+  _setExpressionInput(context, element, { name: 'heading', value: () => 'A demo', setter: _setExpressionInput });
   document.body.append(element);
 
   return element;
@@ -36,7 +36,7 @@ function create(name: string): DocsDemoComponent {
     throw new Error('docs-demo is not defined');
   }
 
-  _setExpressionInput(new _Context({} as never), element, 'name', () => name);
+  _setExpressionInput(new _Context({} as never), element, { name: 'name', value: () => name, setter: _setExpressionInput });
   return element;
 }
 

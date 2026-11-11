@@ -5,21 +5,28 @@ import { GeneratorTransitionFunctionReturnType } from '../../types/generator-tra
 import type { GeneratorFunctionToProcess } from '../../types/generator-function-to-process.type';
 import { getReadForVariables, writeIterationVariables } from '../../utils/for-reads/for-reads.utils';
 import { getBlockIdentifier, getTextIdentifier, joinVariables, resolveExpression } from '../../utils/generator/generator.utils';
+import { declareExpression, toObjectLiteral } from '../../utils/module-code/module-code.utils';
 
 /**
  * Generates code for a `@for` iteration node.
  *
- * Emits a call of `_for`, and the function rendering the body of an item, which declares the item and the implicit
- * variables the body reads (see {@link getReadForVariables}) as values, by `_iterationVariables`, and returns the context
- * of the item. The variables are the same for every item: they are declared once, as a constant of the module written
- * before the function (see {@link writeIterationVariables}), which `_for` and the function read. The body reads them from
- * its context, by name, without calling them:
+ * Emits a call of `_for` receiving a constant of the module (`for0$for`, see `ForConfig` of the runtime): the functions
+ * of the module computing the items and the key of an item, which the runtime calls with the component and the context,
+ * and the function rendering the body of an item, which declares the item and the implicit variables the body reads (see
+ * {@link getReadForVariables}) as values, by `_iterationVariables`, and returns the context of the item. The variables
+ * are the same for every item: they are declared once, as a constant of the module (see
+ * {@link writeIterationVariables}), which the constant of the `@for` and the function read. The body reads them from its
+ * context, by name, without calling them:
  *
  * ```javascript
  * // @for (row of rows(); track row.id; i = $index) { <td>{ i } { row.name }</td> }
- * _for(parent, context, null, () => this.rows(), (row, i, $first, $last, $even, $odd) => row.id, for0.bind(this), for0Variables);
- *
  * const for0Variables = { used: ['item', '$index'], names: ['row', 'i'] };
+ * const for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables };
+ *
+ * _for(parent, context, null, for0$for);
+ *
+ * function for0$items(context) { return this.rows(); }
+ * function for0$track(context, row, i, $first, $last, $even, $odd) { return row.id; }
  *
  * function for0(for0, parentContext, items0, i0, anchor, nodeStrategy) {
  *   const context = new _Context(parentContext, nodeStrategy, 2);
@@ -29,15 +36,16 @@ import { getBlockIdentifier, getTextIdentifier, joinVariables, resolveExpression
  * }
  * ```
  *
- * A body reading no variable has no constant: `_iterationVariables` is not called, and `_for` is called without it.
+ * A body reading no variable has no constant of its variables: `_iterationVariables` is not called, and the constant of
+ * the `@for` lists none.
  *
  * The iterable expression is resolved through the active {@link GeneratorContext}
  * like any other template expression. A numeric iterable `n` is turned into
  * `0, 1, ..., n - 1` at runtime by `_for`. When the `item of` part is omitted
  * no item alias is declared, and the item parameter of the track function is `_`.
- * The track function takes the item and every implicit variable, as values, whether the body reads them or not. When the
- * iterable or the track expression read variables of the enclosing scopes, `_for` receives their names, so that it runs
- * again when they change.
+ * The track function takes the context of the `@for`, then the item and every implicit variable, as values, whether the
+ * body reads them or not; its context is `__context` when the item or an alias is named `context`. When the iterable or the track expression read variables of the enclosing scopes, the constant
+ * of the `@for` lists their names, so that it runs again when they change.
  *
  * @param node - The `ForNode` to process.
  * @param parentNode - Variable name of the parent DOM node.
@@ -77,7 +85,7 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
     forContext.addIdentifier(readNames[i], 'variable');
   }
 
-  // The variables, the same for every item, are a constant of the module, passed to _for and to _iterationVariables
+  // The variables, the same for every item, are a constant of the module, read by the @for and by _iterationVariables
   const forKey = getBlockIdentifier('for', parentNode, index);
   const fn: GeneratorFunctionToProcess['fn'] = {
     node,
@@ -85,9 +93,11 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
     context: forContext,
     anchor: 'anchor'
   };
+  const members = new Array<string>();
   if (read.length) {
-    fn.precode = `_iterationVariables(context, ${itemsName}, ${counterName}, ${forKey}Variables);`;
-    fn.declaration = `const ${forKey}Variables = ${writeIterationVariables(node, read)};`;
+    const variables = generatorContext.declareConstant(`${forKey}Variables`, writeIterationVariables(node, read));
+    fn.precode = `_iterationVariables(context, ${itemsName}, ${counterName}, ${variables});`;
+    members.push(`variables: ${variables}`);
   }
 
   retVal.functionsToProcess!.set(forKey, { fn, args: [forKey, 'parentContext', itemsName, counterName, 'anchor', 'nodeStrategy'] });
@@ -107,9 +117,21 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
 
   const track = resolveExpression(node.trackExpression, trackContext);
   const reads = generatorContext.getReads(joinVariables(iterable.variables, track.variables));
-  const variables = read.length ? `, ${forKey}Variables` : reads ? ', undefined' : '';
-  const trackParameters = [itemName, ...identifiers].join(', ');
-  retVal.code.push(`_for(${parentNode}, context, ${anchor}, () => ${iterable.expression}, (${trackParameters}) => ${track.expression}, ${forKey}.bind(this)${variables}${reads ? `, ${reads}` : ''});`);
+  // An item or an alias named `context` takes the name of the parameter of the context, as it did when the track was a
+  // closure in the function of the block: a duplicate parameter would not parse in a module
+  const contextParameter = itemName === 'context' || identifiers.includes('context') ? '__context' : 'context';
+  const trackParameters = [contextParameter, itemName, ...identifiers].join(', ');
+  members.unshift(
+    `items: ${declareExpression(generatorContext, `${forKey}$items`, iterable.expression)}`,
+    `track: ${declareExpression(generatorContext, `${forKey}$track`, track.expression, trackParameters)}`,
+    `block: ${forKey}`
+  );
+  if (reads) {
+    members.push(`reads: ${reads}`);
+  }
+
+  const config = generatorContext.declareConstant(`${forKey}$for`, toObjectLiteral(members));
+  retVal.code.push(`_for(${parentNode}, context, ${anchor}, ${config});`);
 
   return retVal
 }

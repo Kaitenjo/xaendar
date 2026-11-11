@@ -1,15 +1,16 @@
-import type { Function } from '@xaendar/types'
+import type { TemplateHandler } from './template-handler.type';
 
 /**
- * Describes a single DOM event listener to be attached to a rendered element.
+ * Describes a single DOM event listener to be attached to a rendered element: a constant of the module of the template,
+ * shared by every element it describes (see `TemplateListener`).
  */
 export type RenderElementEvent = {
   /**
    * The DOM event name (e.g. `click`, `input`).
    */
-  name: string,
+  readonly name: string;
   /**
-   * The listener: makes the call written in the template, receiving the event as `$event`.
+   * The handler: makes the call written in the template, receiving the event as `$event` (see `TemplateHandler`).
    */
-  handler: Function<[$event: Event], unknown>
-}
+  readonly handler: TemplateHandler;
+};

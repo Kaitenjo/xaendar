@@ -285,6 +285,14 @@ describe('_Context', () => {
 
       expect(childClear).toHaveBeenCalledOnce();
     });
+
+    it('ignores any context when it holds no child', () => {
+      const root = createRoot();
+
+      root.removeChild(createRoot());
+
+      expect(root.getChildren()).toBeNull();
+    });
   });
 
   describe('nodes', () => {
@@ -341,6 +349,15 @@ describe('_Context', () => {
       expect(order).toEqual(['first', 'dispose', 'last']);
       expect(disposable.dispose).toHaveBeenCalledOnce();
     });
+
+    it('adds the cleanups registered later to the ones registered before', () => {
+      const root = createRoot();
+      const [first, second] = [vi.fn(), vi.fn()];
+      root.addUnlistener(first);
+      root.addUnlistener(second);
+
+      expect(root.getUnlistenFns()).toEqual([first, second]);
+    });
   });
 
   describe('removeUnlistener', () => {
@@ -356,6 +373,14 @@ describe('_Context', () => {
       expect(first).not.toHaveBeenCalled();
       expect(second).toHaveBeenCalledOnce();
       expect(third).not.toHaveBeenCalled();
+    });
+
+    it('does nothing for a context without cleanups', () => {
+      const root = createRoot();
+
+      root.removeUnlistener(vi.fn<() => void>());
+
+      expect(root.getUnlistenFns()).toBeNull();
     });
   });
 
@@ -449,6 +474,61 @@ describe('_Context', () => {
 
       expect(scope.contexts).toEqual([child]);
     });
+
+    it('gives the root context of a render the component it renders, which the contexts it holds inherit', () => {
+      const component = { name: 'component' };
+      const root = new _Context(createRoot(), undefined, 0, component);
+      const child = new _Context(root);
+
+      expect(createRoot().component).toBeUndefined();
+      expect(root.component).toBe(component);
+      expect(child.component).toBe(component);
+      expect(child.addChild().component).toBe(component);
+    });
+  });
+
+  describe('ownerOf', () => {
+    it('returns the context itself when it declares the variable, initialized or not', () => {
+      const context = new _Context(createRoot(), undefined, 2);
+      context.addIdentifier('row', 1);
+      context.declare('ref');
+
+      expect(context.ownerOf('row')).toBe(context);
+      expect(context.ownerOf('ref')).toBe(context);
+    });
+
+    it('returns the nearest ancestor declaring the variable, through scopes keeping theirs in an array or in a Map', () => {
+      const root = createRoot();
+      root.addIdentifier('row', 'outer');
+      const middle = new _Context(root, undefined, 17);
+      middle.addIdentifier('row', 'inner');
+      middle.addIdentifier('other', 1);
+      const scope = new _Context(middle, undefined, 1);
+      scope.addIdentifier('own', 2);
+
+      expect(scope.ownerOf('row')).toBe(middle);
+      expect(scope.ownerOf('other')).toBe(middle);
+      expect(new _Context(scope).ownerOf('own')).toBe(scope);
+    });
+
+    it('finds the variables of a scope declaring more than 16 of them, kept in a Map', () => {
+      const context = new _Context(createRoot(), undefined, 17);
+      for (let i = 0; i < 17; i++) {
+        context.addIdentifier(`v${i}`, i);
+      }
+
+      expect(new _Context(context).ownerOf('v16')).toBe(context);
+      expect(() => context.ownerOf('missing')).toThrow(ReferenceError);
+    });
+
+    it('throws a ReferenceError when no scope declares the variable, up to the plain parent of the root', () => {
+      const root = createRoot();
+      root.addIdentifier('other', 1);
+      const scope = new _Context(root);
+
+      expect(() => scope.ownerOf('row')).toThrow(new ReferenceError('"row" is not declared in this scope'));
+      expect(() => createRoot().ownerOf('row')).toThrow(new ReferenceError('"row" is not declared in this scope'));
+    });
   });
 
   describe('setNodeStrategy', () => {
@@ -495,6 +575,18 @@ describe('_Context', () => {
       expect(target.getChildren()).toEqual([child]);
       expect(target.getUnlistenFns()).toBeNull();
       expect(staging.getChildren()).toBeNull();
+    });
+
+    it('moves the cleanups of a context without children', () => {
+      const staging = createRoot();
+      const target = createRoot();
+      const cleanup = vi.fn();
+      staging.addUnlistener(cleanup);
+
+      staging.moveTo(target);
+
+      expect(target.getUnlistenFns()).toEqual([cleanup]);
+      expect(target.getChildren()).toBeNull();
     });
   });
 

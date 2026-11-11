@@ -18,19 +18,20 @@ const toTemplateFunction = vi.fn<TemplateFunctionFactory>((template, key, _names
 }));
 
 describe('declareScope', () => {
-  it('declares the element refs, the templates and the @let of the scope, the @let last, and writes the templates with the given factory, without their parameters', () => {
+  it('declares the element refs, the templates and the @let of the scope, the @let last, and writes the templates on the server as the functions rendering them, without their parameters', () => {
     const source = '@let total = count();<input #field /><template row(item: string)><b>{ item }</b></template>';
     const context = new GeneratorContext(cache);
     context.addSignalClassField('count');
     const key = `template_row_${source.indexOf('<template')}`;
 
-    const declarations = declareScope(parseTemplate(source), context, toTemplateFunction, '_ssrTemplate', false);
+    const declarations = declareScope(parseTemplate(source), context, toTemplateFunction, true);
 
     expect(declarations?.code).toEqual([
       'context.declare(\'field\');',
-      `context.addIdentifier('row', _ssrTemplate(context, ${key}.bind(this)));`,
+      `context.addIdentifier('row', ${key});`,
       'context.declare(\'total\', \'let\');'
     ]);
+    expect(context.constantDeclarations).toEqual([]);
     expect([...declarations!.functionsToProcess.keys()]).toEqual([key]);
     expect(toTemplateFunction).toHaveBeenCalledWith(expect.objectContaining({ type: ASTNodeType.Template }), key, 'html', context);
     expect(context.getIdentifierKind('field')).toBe('value');
@@ -39,11 +40,20 @@ describe('declareScope', () => {
     expect(context.getIdentifierKind('total')).toBe('variable');
   });
 
-  it('writes the templates with _template and the names of their parameters by default, and declares a literal @let as a value', () => {
+  it('writes the templates by default as constants of the module naming the function rendering them and their parameters, and declares a literal @let as a value', () => {
     const context = new GeneratorContext(cache);
-    const declarations = declareScope(parseTemplate('<template row()>x</template>@let label = \'x\';'), context, toTemplateFunction);
+    const declarations = declareScope(parseTemplate('<template row()>x</template><template cell(item: string, index: number)>y</template>@let label = \'x\';'), context, toTemplateFunction);
+    const cellKey = 'template_cell_28';
 
-    expect(declarations?.code[0]).toContain('_template(context, template_row_0.bind(this), template_row_0Parameters)');
+    expect(declarations?.code).toEqual([
+      'context.addIdentifier(\'row\', template_row_0$template);',
+      `context.addIdentifier('cell', ${cellKey}$template);`,
+      'context.declare(\'label\', \'let\');'
+    ]);
+    expect(context.constantDeclarations).toEqual([
+      'const template_row_0$template = { render: template_row_0, parameters: [] };',
+      `const ${cellKey}$template = { render: ${cellKey}, parameters: ['item', 'index'] };`
+    ]);
     expect(context.getIdentifierKind('label')).toBe('value');
   });
 
@@ -76,31 +86,39 @@ describe('declareTemplateParameters', () => {
     parent.addSignalClassField('suffix');
     const context = new GeneratorContext(parent);
 
-    const lines = declareTemplateParameters(parseParameters('item: Item, label = item.name + suffix(), count?: number, unit = suffix()'), context);
+    const lines = declareTemplateParameters(parseParameters('item: Item, label = item.name + suffix(), count?: number, unit = suffix()'), 'template_row_12', context);
 
     expect(lines).toEqual([
       'context.addIdentifier(\'item\', params[0]);',
-      '_parameter(context, params, 1, \'label\', () => context.get(\'item\').name + this.suffix(), _reads0);',
+      '_parameter(context, params, 1, \'label\', template_row_12$label, _reads0);',
       'context.addIdentifier(\'count\', params[2]);',
-      '_parameter(context, params, 3, \'unit\', () => this.suffix());'
+      '_parameter(context, params, 3, \'unit\', template_row_12$unit);'
     ]);
     expect(parent.readsDeclarations).toEqual(['const _reads0 = [\'item\'];']);
+    expect(parent.functionDeclarations).toEqual([
+      'function template_row_12$label(context) {\n  return context.get(\'item\').name + this.suffix();\n}',
+      'function template_row_12$unit(context) {\n  return this.suffix();\n}'
+    ]);
     expect(context.getIdentifierKind('label')).toBe('variable');
   });
 
   it('writes the default values as expressions on the server, which reads every value once', () => {
-    const lines = declareTemplateParameters(parseParameters('item: Item, label = item.name'), new GeneratorContext(cache), undefined, true);
+    const context = new GeneratorContext(cache);
+    const lines = declareTemplateParameters(parseParameters('item: Item, label = item.name'), 'template_row_0', context, undefined, true);
 
     expect(lines).toEqual([
       'context.addIdentifier(\'item\', params[0]);',
       'context.addIdentifier(\'label\', 1 < params.length ? params[1] : (context.get(\'item\').name));'
     ]);
+    expect(context.functionDeclarations).toEqual([]);
   });
 
   it('resolves the default values with the given options', () => {
-    const lines = declareTemplateParameters(parseParameters('width = innerWidth'), new GeneratorContext(cache), { browserGlobals: 'globalThis' });
+    const context = new GeneratorContext(cache);
+    const lines = declareTemplateParameters(parseParameters('width = innerWidth'), 'template_row_0', context, { browserGlobals: 'globalThis' });
 
-    expect(lines).toEqual(['_parameter(context, params, 0, \'width\', () => globalThis.innerWidth);']);
+    expect(lines).toEqual(['_parameter(context, params, 0, \'width\', template_row_0$width);']);
+    expect(context.functionDeclarations).toEqual(['function template_row_0$width(context) {\n  return globalThis.innerWidth;\n}']);
   });
 });
 
@@ -110,5 +128,10 @@ describe('createContext', () => {
     expect(createContext('parentContext', undefined, 2)).toBe('new _Context(parentContext, undefined, 2)');
     expect(createContext('parentContext', 'nodeStrategy', 0)).toBe('new _Context(parentContext, nodeStrategy)');
     expect(createContext('parentContext', undefined, 0)).toBe('new _Context(parentContext)');
+  });
+
+  it('passes the component of the root context of a render after the number of its variables, whatever their number', () => {
+    expect(createContext('_ROOT_PARENT_CONTEXT', 'nodeStrategy', 1, 'this')).toBe('new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 1, this)');
+    expect(createContext('_ROOT_PARENT_CONTEXT', undefined, 0, 'this')).toBe('new _Context(_ROOT_PARENT_CONTEXT, undefined, 0, this)');
   });
 });

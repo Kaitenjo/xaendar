@@ -1,5 +1,5 @@
 import { keys } from '@xaendar/common';
-import type { Constructor, NoArgsFunction } from '@xaendar/types';
+import type { Constructor, Function, NoArgsFunction } from '@xaendar/types';
 import type { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { CustomElement } from '../../models/custom-element/custom-element';
 import { untracked } from '../../signals/untracked';
@@ -14,6 +14,7 @@ import { _assertRequiredInputs } from '../required-inputs/required-inputs.util';
 import { _toPropertyName } from '../input-names/input-names.util';
 import { _createElement, _renderElement, _resetProperty, _setReactiveInput } from '../render-element/render-element.util';
 import type { Bindings } from '../../types/create-component/bindings.type';
+import type { TemplateHandler } from '../../types/template-handler.type';
 
 /**
  * What binds the inputs of a component `createComponent` creates, for the error of a required input left out.
@@ -51,7 +52,7 @@ export function _createComponent<
       const entry = entries[i];
       if (typeof entry === 'function') {
         _assertRequiredInputs(entry, undefined, REQUIRED_INPUTS_BINDER);
-        bindings.directives.push({ selector: entry, attributes: [], events: [], conditionalBindings: [] });
+        bindings.directives.push({ selector: entry });
         continue;
       }
 
@@ -75,7 +76,7 @@ export function _createComponent<
   owner().addChild(context);
   const { attributes, events, conditionalBindings, directives } = bindings;
   const element = untracked(() => {
-    _renderElement(options.target, context, null, selector, attributes, events, conditionalBindings, directives, [], [], null);
+    _renderElement(options.target, context, null, { tagName: selector, attributes, events, conditionalBindings, directives });
     // The element is the first node tracked by the context, the only one rendered in it
     const element = context.getNodes()![0] as Component;
     // Appended once the directives are applied, as a template renders the children of a tag: they are not tracked, so they stay in the element
@@ -154,16 +155,25 @@ function collectBindings<Target extends CustomElement | CustomDirective>(target:
       for (let j = 0; j < names.length; j++) {
         const name = names[j];
         if (name !== 'condition' && typeof name === 'string' && group[name]) {
-          listeners.push({
-            name, 
-            handler: group[name] as typeof listeners[number]['handler']
-          });
+          listeners.push({ name, handler: toTemplateHandler(group[name] as Function<[event: Event], unknown>) });
         }
       }
     }
   }
 
   return bindings;
+}
+
+/**
+ * Adapts a listener given to `createComponent`, which receives the event, to the handler of a template, which receives
+ * the context first (see `TemplateHandler`): the listener is called with the element as `this`, as `addEventListener`
+ * calls it.
+ *
+ * @param listener - The listener.
+ * @returns The handler.
+ */
+function toTemplateHandler(listener: Function<[event: Event], unknown>): TemplateHandler {
+  return (_context, event) => listener.call(event.currentTarget, event);
 }
 
 /**

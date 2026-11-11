@@ -77,6 +77,99 @@ describe('GeneratorContext', () => {
     });
   });
 
+  describe('getReads', () => {
+    it('returns no constant for a binding reading no variable', () => {
+      const context = new GeneratorContext(cache);
+
+      expect(context.getReads(undefined)).toBeUndefined();
+      expect(context.getReads([])).toBeUndefined();
+      expect(context.readsDeclarations).toEqual([]);
+    });
+
+    it('shares in the root scope one constant per list of variables, whatever their order', () => {
+      const root = new GeneratorContext(cache);
+      const scope = new GeneratorContext(root);
+
+      expect(scope.getReads(['row', 'col'])).toBe('_reads0');
+      expect(root.getReads(['col', 'row'])).toBe('_reads0');
+      expect(root.getReads(['row'])).toBe('_reads1');
+      expect(root.readsDeclarations).toEqual(['const _reads0 = [\'col\', \'row\'];', 'const _reads1 = [\'row\'];']);
+    });
+  });
+
+  describe('declareConstant', () => {
+    it('declares a constant of the module under the name it is given, returning that name', () => {
+      const context = new GeneratorContext(cache);
+
+      expect(context.declareConstant('td0$element', '{ tagName: \'td\' }')).toBe('td0$element');
+      expect(context.constantDeclarations).toEqual(['const td0$element = { tagName: \'td\' };']);
+    });
+
+    it('appends to a name already taken the first number not taken', () => {
+      const context = new GeneratorContext(cache);
+      context.declareConstant('div0$if', '1');
+      context.declareConstant('div0$if', '2');
+
+      expect(context.declareConstant('div0$if', '3')).toBe('div0$if2');
+      expect(context.constantDeclarations).toEqual(['const div0$if = 1;', 'const div0$if1 = 2;', 'const div0$if2 = 3;']);
+    });
+
+    it('holds the constants of every scope in the root one, in the order they are declared', () => {
+      const root = new GeneratorContext(cache);
+      const scope = new GeneratorContext(new GeneratorContext(root));
+      root.declareConstant('a$element', '1');
+      expect(scope.declareConstant('a$element', '2')).toBe('a$element1');
+      root.declareConstant('b$element', '3');
+
+      expect(root.constantDeclarations).toEqual(['const a$element = 1;', 'const a$element1 = 2;', 'const b$element = 3;']);
+      expect(scope.constantDeclarations).toEqual([]);
+    });
+  });
+
+  describe('declareFunction', () => {
+    it('declares a function of the module with its parameters and its body indented, returning its name', () => {
+      const context = new GeneratorContext(cache);
+
+      expect(context.declareFunction('td0$on_click', 'context, $event', ['const row = context.get(\'row\');', 'this.select(row, $event);'])).toBe('td0$on_click');
+      expect(context.functionDeclarations).toEqual([[
+        'function td0$on_click(context, $event) {',
+        '  const row = context.get(\'row\');',
+        '  this.select(row, $event);',
+        '}'
+      ].join('\n')]);
+    });
+
+    it('declares a function without a body', () => {
+      const context = new GeneratorContext(cache);
+      context.declareFunction('div0$noop', 'context', []);
+
+      expect(context.functionDeclarations).toEqual(['function div0$noop(context) {\n}']);
+    });
+
+    it('shares the names of the module with the constants, appending a number to a name already taken', () => {
+      const context = new GeneratorContext(cache);
+      context.declareConstant('div0$if', '{}');
+
+      expect(context.declareFunction('div0$if', 'context', ['return 1;'])).toBe('div0$if1');
+      expect(context.declareFunction('div0$if', 'context', ['return 2;'])).toBe('div0$if2');
+    });
+
+    it('holds the functions of every scope in the root one, in the order they are declared', () => {
+      const root = new GeneratorContext(cache);
+      const scope = new GeneratorContext(root);
+      scope.declareFunction('a$text0', 'context', ['return 1;']);
+      root.declareFunction('b$text0', 'context', ['return 2;']);
+      expect(scope.declareFunction('a$text0', 'context', ['return 3;'])).toBe('a$text01');
+
+      expect(root.functionDeclarations).toEqual([
+        'function a$text0(context) {\n  return 1;\n}',
+        'function b$text0(context) {\n  return 2;\n}',
+        'function a$text01(context) {\n  return 3;\n}'
+      ]);
+      expect(scope.functionDeclarations).toEqual([]);
+    });
+  });
+
   describe('getImportedMetadata', () => {
     it('finds the components by tag name and the directives by @@selector, in the scope and in its ancestors', () => {
       const parent = new GeneratorContext(cache);

@@ -15,30 +15,54 @@ const parse = (template: string) => new Parser(template, new Lexer(template).tok
  */
 const contextWith = (...identifiers: string[]) => {
   const context = new GeneratorContext(cache);
-  identifiers.forEach(identifier => context.addIdentifier(identifier));
+  for (let i = 0; i < identifiers.length; i++) {
+    context.addIdentifier(identifiers[i]);
+  }
+
   return context;
 };
 
+/**
+ * Returns the declaration of a constant of the module, found by its name.
+ */
+const constantOf = (context: GeneratorContext, name: string) => context.constantDeclarations.find(declaration => declaration.startsWith(`const ${name} = `));
+
+/**
+ * Returns the declaration of a function of the module, found by its name.
+ */
+const functionOf = (context: GeneratorContext, name: string) => context.functionDeclarations.find(declaration => declaration.startsWith(`function ${name}(`));
+
 describe('generateFor', () => {
   it('generates the _for call and registers the loop body function', async () => {
-    const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item.id) { <li>{ item } { $index } { $first } { $last } { $even } { $odd }</li> }'), 'root', '0', new GeneratorContext(cache), null);
+    const context = new GeneratorContext(cache);
+    const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item.id) { <li>{ item } { $index } { $first } { $last } { $even } { $odd }</li> }'), 'root', '0', context, null);
 
-    expect(code).toEqual(['_for(root, context, null, () => this.items, (item, $index, $first, $last, $even, $odd) => item.id, for0.bind(this), for0Variables);']);
+    expect(code).toEqual(['_for(root, context, null, for0$for);']);
+    expect(context.constantDeclarations).toEqual([
+      'const for0Variables = { used: [\'item\', \'$index\', \'$first\', \'$last\', \'$even\', \'$odd\'], names: [\'item\', \'$index\', \'$first\', \'$last\', \'$even\', \'$odd\'] };',
+      'const for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables };'
+    ]);
+    expect(context.functionDeclarations).toEqual([
+      'function for0$items(context) {\n  return this.items;\n}',
+      'function for0$track(context, item, $index, $first, $last, $even, $odd) {\n  return item.id;\n}'
+    ]);
 
     const body = functionsToProcess?.get('for0');
     expect(body?.args).toEqual(['for0', 'parentContext', 'items0', 'i0', 'anchor', 'nodeStrategy']);
     expect(body?.fn).toMatchObject({ parentNode: 'for0', anchor: 'anchor' });
-    expect(body?.fn.declaration).toBe('const for0Variables = { used: [\'item\', \'$index\', \'$first\', \'$last\', \'$even\', \'$odd\'], names: [\'item\', \'$index\', \'$first\', \'$last\', \'$even\', \'$odd\'] };');
     expect(body?.fn.precode).toBe('_iterationVariables(context, items0, i0, for0Variables);');
   });
 
-  it('names the constant of the variables after the function of the body, unique in the module', async () => {
-    const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item.id) { { item } }'), 'tr0', '1', new GeneratorContext(cache), 'anchor');
+  it('names the constants and the functions after the function of the body, unique in the module', async () => {
+    const context = new GeneratorContext(cache);
+    context.declareConstant('tr0__for1Variables', '{}');
+    const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item.id) { { item } }'), 'tr0', '1', context, 'anchor');
     const { fn } = functionsToProcess!.get('tr0__for1')!;
 
-    expect(code[0]).toMatch(/, tr0__for1\.bind\(this\), tr0__for1Variables\);$/);
-    expect(fn.declaration).toBe('const tr0__for1Variables = { used: [\'item\'], names: [\'item\'] };');
-    expect(fn.precode).toBe('_iterationVariables(context, tr0__items1, tr0__i1, tr0__for1Variables);');
+    expect(code).toEqual(['_for(tr0, context, anchor, tr0__for1$for);']);
+    expect(constantOf(context, 'tr0__for1Variables1')).toBe('const tr0__for1Variables1 = { used: [\'item\'], names: [\'item\'] };');
+    expect(constantOf(context, 'tr0__for1$for')).toBe('const tr0__for1$for = { items: tr0__for1$items, track: tr0__for1$track, block: tr0__for1, variables: tr0__for1Variables1 };');
+    expect(fn.precode).toBe('_iterationVariables(context, tr0__items1, tr0__i1, tr0__for1Variables1);');
   });
 
   it('declares the item and the implicit variables the body reads as variables of the body', async () => {
@@ -49,34 +73,50 @@ describe('generateFor', () => {
     expect(context.getIdentifierKind('i')).toBe('variable');
   });
 
-  it('passes the names of the variables of the enclosing scopes the iterable and the track expression read, after the variables of the body', async () => {
+  it('lists the variables of the enclosing scopes the iterable and the track expression read in the configuration, after the variables of the body', async () => {
     const context = new GeneratorContext(cache);
     context.addIdentifier('row', 'variable');
     context.addIdentifier('prefix', 'variable');
-    const withBody = await generateFor(parse('@for (cell of row.cells; track prefix + cell) { { cell } }'), 'root', '0', context, null);
-    const withoutBody = await generateFor(parse('@for (cell of row.cells; track cell) { x }'), 'root', '1', context, null);
+    await generateFor(parse('@for (cell of row.cells; track prefix + cell) { { cell } }'), 'root', '0', context, null);
+    await generateFor(parse('@for (cell of row.cells; track cell) { x }'), 'root', '1', context, null);
 
-    expect(withBody.code[0]).toMatch(/, for0\.bind\(this\), for0Variables, _reads0\);$/);
-    expect(withoutBody.code[0]).toMatch(/, for1\.bind\(this\), undefined, _reads1\);$/);
+    expect(constantOf(context, 'for0$for')).toBe('const for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables, reads: _reads0 };');
+    expect(constantOf(context, 'for1$for')).toBe('const for1$for = { items: for1$items, track: for1$track, block: for1, reads: _reads1 };');
+    expect(functionOf(context, 'for0$track')).toBe('function for0$track(context, cell, $index, $first, $last, $even, $odd) {\n  return context.get(\'prefix\') + cell;\n}');
     expect(context.readsDeclarations).toEqual(['const _reads0 = [\'prefix\', \'row\'];', 'const _reads1 = [\'row\'];']);
   });
 
   it('reads the iterable from the context when it is declared in scope', async () => {
-    const { code } = await generateFor(parse('@for (item of items; track item) { <li></li> }'), 'root', '0', contextWith('items'), 'anchor');
-    expect(code[0]).toContain('_for(root, context, anchor, () => context.get(\'items\'),');
+    const context = contextWith('items');
+    await generateFor(parse('@for (item of items; track item) { <li></li> }'), 'root', '0', context, 'anchor');
+
+    expect(functionOf(context, 'for0$items')).toBe('function for0$items(context) {\n  return context.get(\'items\');\n}');
   });
 
   it('resolves every identifier of the iterable expression', async () => {
-    const { code } = await generateFor(parse('@for (child of item.children(); track child) { <li></li> }'), 'root', '0', contextWith('item'), null);
-    expect(code[0]).toContain('() => context.get(\'item\').children(),');
+    const context = contextWith('item');
+    await generateFor(parse('@for (child of item.children(); track child) { <li></li> }'), 'root', '0', context, null);
+
+    expect(functionOf(context, 'for0$items')).toBe('function for0$items(context) {\n  return context.get(\'item\').children();\n}');
   });
 
   it('reads the item and the implicit variables as the parameters of the track function, resolving the members, the imports and the variables of the enclosing scopes', async () => {
     const context = contextWith('prefix');
     context.addImportedIdentifier('keyOf', '__keyOf');
-    const { code } = await generateFor(parse('@for (item of items; track keyOf(item) + prefix + separator + $index) { <li></li> }'), 'root', '0', context, null);
+    await generateFor(parse('@for (item of items; track keyOf(item) + prefix + separator + $index) { <li></li> }'), 'root', '0', context, null);
 
-    expect(code[0]).toContain('(item, $index, $first, $last, $even, $odd) => __keyOf(item) + context.get(\'prefix\') + this.separator + $index, for0.bind(this));');
+    expect(functionOf(context, 'for0$track')).toBe('function for0$track(context, item, $index, $first, $last, $even, $odd) {\n  return __keyOf(item) + context.get(\'prefix\') + this.separator + $index;\n}');
+  });
+
+  it('names the context of the track function __context when the item or an alias is named context, which would repeat a parameter', async () => {
+    const context = new GeneratorContext(cache);
+    await generateFor(parse('@for (context of items; track context.id) { x }'), 'root', '0', context, null);
+    await generateFor(parse('@for (item of items; track context; context = $index) { x }'), 'root', '1', context, null);
+    const track = functionOf(context, 'for0$track')!;
+
+    expect(track).toBe('function for0$track(__context, context, $index, $first, $last, $even, $odd) {\n  return context.id;\n}');
+    expect(functionOf(context, 'for1$track')).toBe('function for1$track(__context, item, context, $first, $last, $even, $odd) {\n  return context;\n}');
+    expect(new Function(`'use strict';\n${track}\nreturn for0$track;`)()(null, { id: 7 })).toBe(7);
   });
 
   it.each([
@@ -84,19 +124,25 @@ describe('generateFor', () => {
     ['numbers', 'this.numbers'],
     ['numbers()', 'this.numbers()']
   ])('generates a loop without item alias over %s', async (iterable, expected) => {
-    const { code, functionsToProcess } = await generateFor(parse(`@for (${iterable}; track $index) { <li></li> }`), 'root', '0', new GeneratorContext(cache), null);
+    const context = new GeneratorContext(cache);
+    const { code, functionsToProcess } = await generateFor(parse(`@for (${iterable}; track $index) { <li></li> }`), 'root', '0', context, null);
 
-    expect(code).toEqual([`_for(root, context, null, () => ${expected}, (_, $index, $first, $last, $even, $odd) => $index, for0.bind(this));`]);
+    expect(code).toEqual(['_for(root, context, null, for0$for);']);
+    expect(context.constantDeclarations).toEqual(['const for0$for = { items: for0$items, track: for0$track, block: for0 };']);
+    expect(context.functionDeclarations).toEqual([
+      `function for0$items(context) {\n  return ${expected};\n}`,
+      'function for0$track(context, _, $index, $first, $last, $even, $odd) {\n  return $index;\n}'
+    ]);
     expect(functionsToProcess?.get('for0')?.fn.precode).toBeUndefined();
-    expect(functionsToProcess?.get('for0')?.fn.declaration).toBeUndefined();
   });
 
   it('applies the aliases declared for implicit variables, reading a variable by the name the template writes', async () => {
-    const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item; i = $index) { <li>{ i }</li> }'), 'root', '0', new GeneratorContext(cache), null);
-    const { declaration, context } = functionsToProcess!.get('for0')!.fn;
+    const generatorContext = new GeneratorContext(cache);
+    const { functionsToProcess } = await generateFor(parse('@for (item of items; track item; i = $index) { <li>{ i }</li> }'), 'root', '0', generatorContext, null);
+    const { context } = functionsToProcess!.get('for0')!.fn;
 
-    expect(code[0]).toContain('(item, i, $first, $last, $even, $odd) => item, for0.bind(this), for0Variables);');
-    expect(declaration).toBe('const for0Variables = { used: [\'$index\'], names: [\'i\'] };');
+    expect(functionOf(generatorContext, 'for0$track')).toBe('function for0$track(context, item, i, $first, $last, $even, $odd) {\n  return item;\n}');
+    expect(constantOf(generatorContext, 'for0Variables')).toBe('const for0Variables = { used: [\'$index\'], names: [\'i\'] };');
     expect(context.getIdentifierKind('i')).toBe('variable');
     expect(context.getIdentifierKind('$index')).toBeUndefined();
   });
@@ -106,8 +152,9 @@ describe('generateFor', () => {
      * Generates a @for and returns the variables the function of its body creates, its precode and its context.
      */
     const generateBody = async (template: string) => {
-      const { fn } = (await generateFor(parse(template), 'root', '0', new GeneratorContext(cache), null)).functionsToProcess!.get('for0')!;
-      const declaration = fn.declaration ?? '';
+      const generatorContext = new GeneratorContext(cache);
+      const { fn } = (await generateFor(parse(template), 'root', '0', generatorContext, null)).functionsToProcess!.get('for0')!;
+      const declaration = constantOf(generatorContext, 'for0Variables') ?? '';
       return { created: /used: \[(.*?)\]/.exec(declaration)?.[1] ?? '', names: /names: \[(.*?)\]/.exec(declaration)?.[1], precode: fn.precode!, context: fn.context };
     };
 

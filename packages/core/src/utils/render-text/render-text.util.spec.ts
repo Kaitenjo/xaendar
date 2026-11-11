@@ -23,6 +23,33 @@ describe('_renderText', () => {
     expect(parent.textContent).toBe('hello');
   });
 
+  it('calls the expression with the component of the context as this and the context', () => {
+    const component = { name: 'world' };
+    const context = new _Context(createRoot(), undefined, 0, component);
+    const value = vi.fn(function (this: typeof component, _context: InstanceType<typeof _Context>) {
+      return `hello ${this.name}`;
+    });
+    const parent = document.createElement('div');
+
+    _renderText(parent, context, value, null);
+
+    expect(parent.textContent).toBe('hello world');
+    expect(value.mock.contexts[0]).toBe(component);
+    expect(value.mock.calls[0][0]).toBe(context);
+  });
+
+  it('keeps the text in sync with a variable of the template it reads when the scope is refreshed with it', () => {
+    const context = new _Context(createRoot(), undefined, 1);
+    context.addIdentifier('name', 'a');
+    const parent = document.createElement('div');
+    _renderText(parent, context, scope => `hi ${scope.get('name')}`, null, false, ['name']);
+
+    context.update('name', 'b');
+    context.refresh(['name']);
+
+    expect(parent.textContent).toBe('hi b');
+  });
+
   it('keeps the text in sync with the signals it reads', async () => {
     const parent = document.createElement('div');
     const name = signal('a');

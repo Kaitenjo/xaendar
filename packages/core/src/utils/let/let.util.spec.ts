@@ -43,6 +43,21 @@ describe('_let', () => {
     expect(context.get('total')).toBe(6);
   });
 
+  it('calls the expression with the component of the context as this and the context', () => {
+    const component = { price: 4 };
+    const context = new _Context({} as never, undefined, 1, component);
+    context.declare('total', 'let');
+    const compute = vi.fn(function (this: typeof component, _context: Context) {
+      return this.price * 2;
+    });
+
+    _let(context, 'total', compute);
+
+    expect(context.get('total')).toBe(8);
+    expect(compute.mock.contexts[0]).toBe(component);
+    expect(compute.mock.calls[0][0]).toBe(context);
+  });
+
   it('computes the value again once a signal it reads changes, refreshing the scope with its name', async () => {
     const price = signal(2);
     const context = declareLet('total');

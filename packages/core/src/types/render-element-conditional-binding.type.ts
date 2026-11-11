@@ -4,23 +4,24 @@ import type { RenderElementEvent } from './render-element-event.type';
 import type { RenderConditionalBinding } from './render-conditional-binding.type';
 
 /**
- * Describes a single conditional binding to be attached to a rendered element.
+ * Describes a single conditional binding to be attached to a rendered element. The lists a branch does not declare are
+ * left out.
  */
 export type RenderElementConditionalBinding = RenderConditionalBinding<{
   /**
    * The list of attributes to be applied to the element while the branch is selected.
    */
-  attributes: RenderElementAttribute[],
+  readonly attributes?: readonly RenderElementAttribute[];
   /**
    * The list of event listeners to be attached to the element while the branch is selected.
    */
-  events: RenderElementEvent[],
+  readonly events?: readonly RenderElementEvent[];
   /**
    * The list of nested conditional bindings to be attached to the element while the branch is selected.
    */
-  conditionalBindings: RenderElementConditionalBinding[],
+  readonly conditionalBindings?: readonly RenderElementConditionalBinding[];
   /**
    * The list of directives to be applied to the element while the branch is selected.
    */
-  directives: RenderElementDirective[]
-}>
+  readonly directives?: readonly RenderElementDirective[];
+}>;

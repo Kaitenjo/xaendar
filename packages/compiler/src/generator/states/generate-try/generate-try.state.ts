@@ -2,10 +2,12 @@ import type { TryNode } from '../../../parser/types/nodes/try-node.type';
 import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getBlockIdentifier } from '../../utils/generator/generator.utils';
+import { toObjectLiteral } from '../../utils/module-code/module-code.utils';
 
 /**
- * Generates the code of a `@try` block: a `_try(...)` call receiving the function rendering its content and the one
- * rendering its `@catch`, each one a scope of its own rendered before the anchor it receives. The function of the
+ * Generates the code of a `@try` block: a `_try(...)` call receiving a constant of the module (`div0__try0$try`) naming
+ * the function rendering its content and the one rendering its `@catch`, functions of the module the runtime calls as
+ * they are, each one a scope of its own rendered before the anchor it receives. The function of the
  * `@catch` takes the error too, declared in its scope as a value under the name the `@catch` gives it, if any.
  *
  * @param node - The try node.
@@ -26,7 +28,7 @@ export async function generateTry(node: TryNode, parentNode: string, index: stri
   }
 
   return {
-    code: [`_try(${parentNode}, context, ${anchor}, { content: ${contentKey}.bind(this), catch: ${catchKey}.bind(this) });`],
+    code: [`_try(${parentNode}, context, ${anchor}, ${generatorContext.declareConstant(`${contentKey}$try`, toObjectLiteral([`content: ${contentKey}`, `catch: ${catchKey}`]))});`],
     functionsToProcess: new Map([
       [contentKey, {
         fn: { node, parentNode: contentKey, context: new GeneratorContext(generatorContext), anchor: 'anchor' },

@@ -10,7 +10,7 @@ describe('generateServerTry', () => {
 
     const { pieces, functionsToProcess } = generateServerTry(node, { id: 'ul0', tag: 'ul' }, '2', new GeneratorContext(cache));
 
-    expect(pieces).toEqual([{ statement: '_ssrTry(out, output => ul0__try2.call(this, output, context), (output, error) => ul0__catch2.call(this, output, context, error));' }]);
+    expect(pieces).toEqual([{ statement: '_ssrTry(out, context, ul0__try2, ul0__catch2);' }]);
     expect([...functionsToProcess!.keys()]).toEqual(['ul0__try2', 'ul0__catch2']);
     expect(functionsToProcess!.get('ul0__try2')).toMatchObject({ fn: { node, parent: { id: 'ul0__try2', tag: 'ul' } }, args: ['out', 'parentContext'] });
 

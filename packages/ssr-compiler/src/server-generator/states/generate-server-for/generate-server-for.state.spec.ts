@@ -16,18 +16,18 @@ describe('generateServerFor', () => {
       statement: [
         '{',
         '  const items = _ssrItems(this.users());',
-        '  const track = (user, i, $first, $last, $even, $odd) => user.id;',
         '  out.push(\'<!--xd-for-->\');',
         '  for (let index = 0; index < items.length; index++) {',
-        '    out.push(_ssrItemMarker(track(items[index], index, index === 0, index === items.length - 1, index % 2 === 0, index % 2 !== 0)));',
+        '    out.push(_ssrItemMarker(ul0__for1$track.call(this, context, items[index], index, index === 0, index === items.length - 1, index % 2 === 0, index % 2 !== 0)));',
         '    ul0__for1.call(this, out, context, items, index);',
         '  }',
         '  out.push(\'<!--/xd-for-->\');',
         '}'
       ].join('\n')
     }]);
+    expect(context.functionDeclarations).toEqual(['function ul0__for1$track(context, user, i, $first, $last, $even, $odd) {\n  return user.id;\n}']);
     const { fn, args } = functionsToProcess!.get('ul0__for1')!;
-    expect(fn.declaration).toBe('const ul0__for1Variables = { used: [\'item\', \'$index\'], names: [\'user\', \'i\'] };');
+    expect(context.constantDeclarations).toEqual(['const ul0__for1Variables = { used: [\'item\', \'$index\'], names: [\'user\', \'i\'] };']);
     expect(fn.precode).toBe('_iterationVariables(context, items, index, ul0__for1Variables);');
     expect(fn.parent).toEqual({ id: 'ul0__for1', tag: 'ul' });
     expect(args).toEqual(['out', 'parentContext', 'items', 'index']);
@@ -39,19 +39,35 @@ describe('generateServerFor', () => {
   it('creates no variable when the body reads none', () => {
     const node = parseTemplate('@for (user of users(); track user.id) { x }')[0] as ForNode;
 
-    const { fn } = generateServerFor(node, { id: 'root' }, '0', new GeneratorContext(cache)).functionsToProcess!.get('for0')!;
+    const context = new GeneratorContext(cache);
+    const { fn } = generateServerFor(node, { id: 'root' }, '0', context).functionsToProcess!.get('for0')!;
 
     expect(fn.precode).toBeUndefined();
-    expect(fn.declaration).toBeUndefined();
+    expect(context.constantDeclarations).toEqual([]);
     expect(fn.context.getIdentifierKind('user')).toBeUndefined();
   });
 
   it('declares no item when the @for names none', () => {
     const node = parseTemplate('@for (3; track $index) { { $index } }')[0] as ForNode;
+    const context = new GeneratorContext(cache);
 
-    const { pieces, functionsToProcess } = generateServerFor(node, { id: 'root' }, '0', new GeneratorContext(cache));
+    const { pieces, functionsToProcess } = generateServerFor(node, { id: 'root' }, '0', context);
 
-    expect((pieces[0] as { statement: string }).statement).toContain('const track = (_, $index, $first, $last, $even, $odd) => $index;');
-    expect(functionsToProcess!.get('for0')!.fn.declaration).toBe('const for0Variables = { used: [\'$index\'], names: [\'$index\'] };');
+    expect((pieces[0] as { statement: string }).statement).toContain('out.push(_ssrItemMarker(for0$track.call(this, context, items[index], index,');
+    expect(context.functionDeclarations).toEqual(['function for0$track(context, _, $index, $first, $last, $even, $odd) {\n  return $index;\n}']);
+    expect(functionsToProcess!.get('for0')!.fn.precode).toBe('_iterationVariables(context, items, index, for0Variables);');
+    expect(context.constantDeclarations).toEqual(['const for0Variables = { used: [\'$index\'], names: [\'$index\'] };']);
+  });
+
+  it('names the context of the track __context when the item or an alias is named context', () => {
+    const context = new GeneratorContext(cache);
+
+    generateServerFor(parseTemplate('@for (context of items(); track context.id) { x }')[0] as ForNode, { id: 'root' }, '0', context);
+    generateServerFor(parseTemplate('@for (item of items(); track context; context = $index) { x }')[0] as ForNode, { id: 'root' }, '1', context);
+
+    expect(context.functionDeclarations).toEqual([
+      'function for0$track(__context, context, $index, $first, $last, $even, $odd) {\n  return context.id;\n}',
+      'function for1$track(__context, item, context, $first, $last, $even, $odd) {\n  return context;\n}'
+    ]);
   });
 });

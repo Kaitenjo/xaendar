@@ -49,6 +49,20 @@ export class GeneratorContext extends CompilerContext {
    * names they list, joined: held by the root scope.
    */
   private readonly _reads = new Map<string, string>();
+  /**
+   * The declarations of the constants of the module (see {@link declareConstant}), in the order they are declared: held
+   * by the root scope.
+   */
+  private readonly _constants = new Array<string>();
+  /**
+   * The declarations of the functions of the module computing the expressions of the template (see
+   * {@link declareFunction}), in the order they are declared: held by the root scope.
+   */
+  private readonly _functions = new Array<string>();
+  /**
+   * The names of the constants and of the functions declared, which no other declaration takes: held by the root scope.
+   */
+  private readonly _moduleNames = new Set<string>();
 
   /**
    * The events the template listens to, read from the root scope.
@@ -72,6 +86,26 @@ export class GeneratorContext extends CompilerContext {
     }
 
     return declarations;
+  }
+
+  /**
+   * The declarations of the constants of the module (see {@link declareConstant}), read from the root scope, to write
+   * before the functions, once the ones of `readsDeclarations`, which they read.
+   *
+   * @returns The declarations, in the order they were declared.
+   */
+  public get constantDeclarations(): readonly string[] {
+    return this._constants;
+  }
+
+  /**
+   * The declarations of the functions of the module computing the expressions of the template (see
+   * {@link declareFunction}), read from the root scope, to write after the functions rendering the blocks.
+   *
+   * @returns The declarations, in the order they were declared.
+   */
+  public get functionDeclarations(): readonly string[] {
+    return this._functions;
   }
 
   /**
@@ -191,6 +225,61 @@ export class GeneratorContext extends CompilerContext {
   }
 
   /**
+   * Declares a constant of the module, held by the root scope and written before the functions (see
+   * {@link constantDeclarations}): the configuration of an element or of a block, the variables of a `@for`, a template,
+   * which the runtime receives at every render of the template and only reads.
+   *
+   * N.B. Deliberate, to save memory: what does not change from an instance of the template to another is declared once in
+   * the module, instead of an array or an object literal written in the render code, which would allocate it at each
+   * render, in every row of a table. Do not inline it.
+   *
+   * @param name - The name of the constant, derived from the one of the element or of the block it describes, followed by
+   *   `$` and its role (`td0$element`, `div0__if0$if`): a name already declared gets a number after it.
+   * @param value - The code of its value, the first line on the line of its name.
+   * @returns The name the constant is declared with.
+   */
+  public declareConstant(name: string, value: string): string {
+    if (this.parent) {
+      return this.parent.declareConstant(name, value);
+    }
+
+    const unique = this._uniqueName(name);
+    this._constants.push(`const ${unique} = ${value};`);
+    return unique;
+  }
+
+  /**
+   * Declares a function of the module computing an expression of the template, held by the root scope and written after
+   * the functions rendering the blocks (see {@link functionDeclarations}): the runtime calls it with the component as
+   * `this` and the parameters it lists, the context first, so it reads nothing else.
+   *
+   * N.B. Deliberate, to save memory: an expression is a function declared once in the module, instead of an arrow
+   * function written in the render code, which would create a closure at each render, in every row of a table. Do not
+   * write expressions as closures.
+   *
+   * @param name - The name of the function, derived from the one of the element or of the block holding the expression,
+   *   followed by `$` and its role (`tr0$class`, `table0__for0$track`): a name already declared gets a number after it.
+   * @param parameters - The parameters of the function (`context`, `context, $event`).
+   * @param body - The lines of its body.
+   * @returns The name the function is declared with.
+   */
+  public declareFunction(name: string, parameters: string, body: readonly string[]): string {
+    if (this.parent) {
+      return this.parent.declareFunction(name, parameters, body);
+    }
+
+    const unique = this._uniqueName(name);
+    const lines = [`function ${unique}(${parameters}) {`];
+    for (let i = 0; i < body.length; i++) {
+      lines.push(`  ${body[i]}`);
+    }
+
+    lines.push('}');
+    this._functions.push(lines.join('\n'));
+    return unique;
+  }
+
+  /**
    * Returns the metadata of a component or of a directive the template imports, registered in this scope or any of its
    * ancestor scopes.
    *
@@ -199,5 +288,24 @@ export class GeneratorContext extends CompilerContext {
    */
   public getImportedMetadata(key: string): ComponentOrDirectiveMetadata | undefined {
     return this._importedMetadata.get(key) ?? this.parent?.getImportedMetadata(key);
+  }
+
+  /**
+   * Returns a name of the module no declaration takes yet, and takes it: the name given, or, when it is taken, the name
+   * followed by the first number not taken (`td0$on_click1`). A name declared is the one of an element or of a block,
+   * ending with its index, then `$` and a role: the names of the module the generator writes otherwise (the functions
+   * rendering the blocks, `render`, `_reads0`) never take that form.
+   *
+   * @param name - The name wanted.
+   * @returns The name to declare.
+   */
+  private _uniqueName(name: string): string {
+    let unique = name;
+    for (let i = 1; this._moduleNames.has(unique); i++) {
+      unique = `${name}${i}`;
+    }
+
+    this._moduleNames.add(unique);
+    return unique;
   }
 }

@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
+import type { ForConfig } from '../../types/for-config.type';
 import type { IterationVariables } from '../../types/iteration-variables.type';
 
 await vi.hoisted(async () => {
@@ -25,6 +26,21 @@ const moveBefore = vi.fn(function (this: Element, node: Node, child: Node | null
 Object.assign(Element.prototype, { moveBefore });
 
 type Context = InstanceType<typeof _Context>;
+
+/**
+ * Freezes an object and every object it holds, functions excluded, so that a write into it throws in strict mode.
+ */
+function deepFreeze<Value extends object>(value: Value): Value {
+  const members = Object.values(value);
+  for (let i = 0; i < members.length; i++) {
+    const member: unknown = members[i];
+    if (member && typeof member === 'object') {
+      deepFreeze(member);
+    }
+  }
+
+  return Object.freeze(value);
+}
 
 function createRoot() {
   return new _Context({ createElement: (tag: string) => document.createElement(tag) } as never);
@@ -55,14 +71,16 @@ const renderItem: Body = (parentNode, itemContext, text, reference) => {
  */
 function nestedIf(depth: number, body: Body = renderItem, condition = () => true): Body {
   return depth === 0 ? body : (parentNode, itemContext, text, reference) => {
-    _if(parentNode, itemContext, reference as Comment | null, [{
-      condition,
-      block: (blockParent, blockContext, blockReference) => {
-        const branchContext = new _Context(blockContext);
-        nestedIf(depth - 1, body, condition)(blockParent, branchContext, text, blockReference);
-        return branchContext;
-      }
-    }]);
+    _if(parentNode, itemContext, reference as Comment | null, {
+      branches: [{
+        condition,
+        block: (blockParent, blockContext, blockReference) => {
+          const branchContext = new _Context(blockContext);
+          nestedIf(depth - 1, body, condition)(blockParent, branchContext, text, blockReference);
+          return branchContext;
+        }
+      }]
+    });
   };
 }
 
@@ -95,7 +113,7 @@ function setup(initial: string[], { withNodes = true, variables = ALL_VARIABLES,
     return itemContext;
   });
 
-  _for(parent, context, null, () => items(), item => item as string, forFn as never, variables ?? undefined);
+  _for(parent, context, null, { items: () => items(), track: (_context, item) => item as string, block: forFn, variables: variables ?? undefined });
 
   const texts = () => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
   const change = async (next: string[]) => {
@@ -128,12 +146,15 @@ describe('_for', () => {
 
   it('passes the item, the index and the implicit variables to the track expression, as values', () => {
     const keys = new Array<unknown[]>();
-    const track = (...variables: unknown[]) => {
+    const context = createRoot();
+    const track = vi.fn((_scope: Context, ...variables: unknown[]) => {
       keys.push(variables);
       return variables.join();
-    };
+    });
 
-    _for(document.createElement('ul'), createRoot(), null, () => ['a', 'b', 'c'], track as never, () => new _Context(createRoot()));
+    _for(document.createElement('ul'), context, null, { items: () => ['a', 'b', 'c'], track, block: () => new _Context(createRoot()) });
+
+    expect(track.mock.calls.map(call => call[0] === context)).toEqual([true, true, true]);
 
     expect(keys).toEqual([
       ['a', 0, true, false, true, false],
@@ -233,12 +254,17 @@ describe('_for', () => {
     const items = signal([{ id: 1, name: 'old' }]);
     const entries = new Array<Context>();
     const variables: IterationVariables = { used: ['item'], names: ['row'] };
-    _for(parent, createRoot(), null, () => items(), item => (item as { id: number }).id, (_parentNode, parentContext, list, index) => {
-      const itemContext = new _Context(parentContext);
-      _iterationVariables(itemContext, list, index, variables);
-      entries.push(itemContext);
-      return itemContext;
-    }, variables);
+    _for(parent, createRoot(), null, {
+      items: () => items(),
+      track: (_context, item) => (item as { id: number }).id,
+      block: (_parentNode, parentContext, list, index) => {
+        const itemContext = new _Context(parentContext);
+        _iterationVariables(itemContext, list, index, variables);
+        entries.push(itemContext);
+        return itemContext;
+      },
+      variables
+    });
     const refresh = vi.spyOn(entries[0], 'refresh');
 
     items.set([{ id: 1, name: 'new' }]);
@@ -271,15 +297,23 @@ describe('_for', () => {
       renderItem(blockParent, branchContext, `${text}${(branchContext.get('row') as { id: number }).id}`, blockReference);
       return branchContext;
     };
-    _for(parent, createRoot(), null, () => items(), item => (item as { id: number }).id, (parentNode, parentContext, list, index, reference) => {
-      const itemContext = new _Context(parentContext);
-      _iterationVariables(itemContext, list, index, variables);
-      _if(parentNode, itemContext, reference as Comment | null, [
-        { condition: () => (itemContext.get('row') as { done: boolean }).done, block: render('done ') },
-        { block: render('todo ') }
-      ], ['row']);
-      return itemContext;
-    }, variables);
+    _for(parent, createRoot(), null, {
+      items: () => items(),
+      track: (_context, item) => (item as { id: number }).id,
+      block: (parentNode, parentContext, list, index, reference) => {
+        const itemContext = new _Context(parentContext);
+        _iterationVariables(itemContext, list, index, variables);
+        _if(parentNode, itemContext, reference as Comment | null, {
+          branches: [
+            { condition: scope => (scope.get('row') as { done: boolean }).done, block: render('done ') },
+            { block: render('todo ') }
+          ],
+          reads: ['row']
+        });
+        return itemContext;
+      },
+      variables
+    });
 
     items.set([{ id: 2, done: true }, { id: 1, done: false }]);
     await flush();
@@ -409,7 +443,7 @@ describe('_for', () => {
     });
     const texts = () => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
 
-    _for(parent, createRoot(), null, () => count(), (_item, index) => index, forFn as never);
+    _for(parent, createRoot(), null, { items: () => count(), track: (_context, _item, index) => index, block: forFn });
     expect(texts()).toEqual(['0', '1', '2']);
 
     count.set(5);
@@ -433,7 +467,7 @@ describe('_for', () => {
     });
     const texts = () => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
 
-    _for(parent, rowContext, null, () => (rowContext.get('row') as { cells: string[] }).cells, item => item as string, forFn as never, undefined, ['row']);
+    _for(parent, rowContext, null, { items: scope => (scope.get('row') as { cells: string[] }).cells, track: (_context, item) => item as string, block: forFn, reads: ['row'] });
     expect(texts()).toEqual(['a', 'b']);
 
     rowContext.update('row', { cells: ['b', 'c'] });
@@ -451,6 +485,64 @@ describe('_for', () => {
 
     expect(parent.childNodes.length).toBe(0);
     expect(forFn).toHaveBeenCalledOnce();
+  });
+
+  it('calls the items and the track expression with the component of the context as this and the context', () => {
+    const component = { rows: [{ id: 1 }, { id: 2 }] };
+    const context = new _Context(createRoot(), undefined, 0, component);
+    const items = vi.fn(function (this: typeof component, _context: Context) {
+      return this.rows;
+    });
+    const track = vi.fn(function (this: typeof component, _scope: Context, item: unknown) {
+      return (item as { id: number }).id;
+    });
+
+    _for(document.createElement('ul'), context, null, { items, track, block: (_parentNode, parentContext) => new _Context(parentContext) });
+
+    expect(items).toHaveBeenCalledOnce();
+    expect(items.mock.contexts[0]).toBe(component);
+    expect(items.mock.calls[0][0]).toBe(context);
+    expect(track).toHaveBeenCalledTimes(2);
+    expect(track.mock.contexts).toEqual([component, component]);
+    expect(track.mock.calls.map(call => call[0] === context)).toEqual([true, true]);
+  });
+
+  it('shares the same config and the same functions between two instances of the @for, each reading its own context, without writing into the config', () => {
+    const variables: IterationVariables = { used: ['item'], names: ['cell'] };
+    const items = vi.fn((scope: Context) => scope.get('cells') as string[]);
+    const track = vi.fn((_scope: Context, item: unknown) => item as string);
+    const block = vi.fn((parentNode: HTMLElement, parentContext: Context, list: unknown[], index: number, reference: Node | null) => {
+      const itemContext = new _Context(parentContext);
+      _iterationVariables(itemContext, list, index, variables);
+      renderItem(parentNode, itemContext, String(list[index]), reference);
+      return itemContext;
+    });
+    const config = deepFreeze<ForConfig>({ items, track, block, variables, reads: ['cells'] });
+    const first = new _Context(createRoot(), undefined, 1);
+    const second = new _Context(createRoot(), undefined, 1);
+    first.addIdentifier('cells', ['a', 'b']);
+    second.addIdentifier('cells', ['c']);
+    const firstParent = document.createElement('ul');
+    const secondParent = document.createElement('ul');
+    const texts = (parent: HTMLElement) => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
+
+    _for(firstParent, first, null, config);
+    _for(secondParent, second, null, config);
+
+    expect(texts(firstParent)).toEqual(['a', 'b']);
+    expect(texts(secondParent)).toEqual(['c']);
+
+    second.update('cells', ['d', 'c']);
+    second.refresh(['cells']);
+    first.update('cells', ['b', 'a']);
+    first.refresh(['cells']);
+
+    const scopes = new Map([[first, 'first'], [second, 'second']]);
+    expect(texts(firstParent)).toEqual(['b', 'a']);
+    expect(texts(secondParent)).toEqual(['d', 'c']);
+    expect(items.mock.calls.map(call => scopes.get(call[0]))).toEqual(['first', 'second', 'second', 'first']);
+    expect(track.mock.calls.map(call => scopes.get(call[0]))).toEqual(['first', 'first', 'second', 'second', 'second', 'first', 'first']);
+    expect(block.mock.calls.map(call => scopes.get(call[1]))).toEqual(['first', 'first', 'second', 'second']);
   });
 });
 

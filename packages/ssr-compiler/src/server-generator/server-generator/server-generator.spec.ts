@@ -26,9 +26,9 @@ describe('ServerGenerator', () => {
   it('writes the imports of the runtime helpers, then render creating the root context and writing the template', () => {
     expect(generate('<p>{ title() }</p>', ['title'])).toBe([
       'import { _Context, _ROOT_PARENT_CONTEXT, _iterationVariables, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
-      'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTemplate, _ssrTry } from \'@xaendar/ssr\';',
+      'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTry } from \'@xaendar/ssr\';',
       'function render(out) {',
-      '  const context = new _Context(_ROOT_PARENT_CONTEXT);',
+      '  const context = new _Context(_ROOT_PARENT_CONTEXT, undefined, 0, this);',
       '  out.push(\'<p><!---->\' + _escapeText(this.title()) + \'</p>\');',
       '}'
     ].join('\n'));
@@ -39,12 +39,44 @@ describe('ServerGenerator', () => {
     const metadata = { type: 'component', selector: 'x-map', clientOnly: { hydrate: 'idle' }, properties: new Map([['center', { name: 'centre', exposed: false }], ['hint', { name: 'tip', exposed: true }]]) } as unknown as ComponentMetadata;
     const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], [], [], [], new Set(['x-map']), [metadata]);
 
-    expect(code.match(/_ssrClientComponent\(out/g)).toHaveLength(2);
-    expect(code.match(/_ssrComponent\(out/g)).toHaveLength(1);
-    expect(code).toContain('{ name: \'centre\', value: () => this.here, setter: _setExpressionInput },');
-    expect(code).toContain('{ name: \'hint\', value: \'h\', setter: _setInput },');
-    expect(code).toContain('{ name: \'title\', value: \'t\', setter: _setProperty },');
-    expect(code).toContain('{"island":true,"hydrate":"idle"});');
+    expect(code.split('\n').slice(2)).toEqual([
+      'const x_map0$element = {',
+      '  tagName: \'x-map\',',
+      '  attributes: [',
+      '    { name: \'centre\', value: x_map0$centre, setter: _setExpressionInput },',
+      '    { name: \'hint\', value: \'h\', setter: _setInput },',
+      '    { name: \'title\', value: \'t\', setter: _setProperty }',
+      '  ]',
+      '};',
+      'const x_map0$client = {"island":true,"hydrate":"idle"};',
+      'const x_card2$element = { tagName: \'x-card\' };',
+      'const if1__x_map0$element = { tagName: \'x-map\' };',
+      'const if1__x_map0$client = {"island":true,"hydrate":"idle"};',
+      'function render(out) {',
+      '  const context = new _Context(_ROOT_PARENT_CONTEXT, undefined, 0, this);',
+      '  _ssrClientComponent(out, context, x_map0$element, x_map0$client);',
+      '  out.push(\'</x-map>\');',
+      '  if (globalThis.open) {',
+      '    out.push(\'<!--xd-if:0-->\');',
+      '    if1.call(this, out, context);',
+      '  } else {',
+      '    out.push(\'<!--xd-if-->\');',
+      '  }',
+      '  out.push(\'<!--/xd-if-->\');',
+      '  _ssrComponent(out, context, x_card2$element);',
+      '  out.push(\'</x-card>\');',
+      '}',
+      '',
+      'function if1(out, parentContext) {',
+      '  const context = new _Context(parentContext);',
+      '  _ssrClientComponent(out, context, if1__x_map0$element, if1__x_map0$client);',
+      '  out.push(\'</x-map>\');',
+      '}',
+      '',
+      'function x_map0$centre(context) {',
+      '  return this.here;',
+      '}'
+    ]);
   });
 
   it('tells _ssrClientComponent a component is not an island and has no trigger', () => {
@@ -52,21 +84,25 @@ describe('ServerGenerator', () => {
     const metadata = { type: 'component', selector: 'x-map', clientOnly: {}, properties: new Map() } as unknown as ComponentMetadata;
     const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], [], [], [], undefined, [metadata]);
 
-    expect(code).toContain('{"island":false});');
+    expect(code).toContain('const x_map0$client = {"island":false};');
+    expect(code).toContain('_ssrClientComponent(out, context, x_map0$element, x_map0$client);');
   });
 
   it('sets the inputs of the components and of the directives the template imports by the name of their property, in their conditional bindings too', () => {
-    const source = '<x-card label="a"></x-card><x-card @if (on) { label="b" }></x-card><p @@tip(hint="c")></p><p @if (on) { @@tip(hint="d") }></p><p *only(role="e")></p>';
+    const source = '<x-card label="a"></x-card><x-card @if (on) { label="b" }></x-card><p @@tip(hint="c")></p><p @if (on) { @@tip(hint="d") }></p><p *only(role="e")></p><p @@tip(hint="{ on }")></p>';
     const card = { type: 'component', selector: 'x-card', properties: new Map([['label', { name: 'text' }]]) } as unknown as ComponentMetadata;
     const tip = { type: 'directive', selector: 'tip', properties: new Map([['hint', { name: 'message' }]]) } as unknown as DirectiveMetadata;
     const only = { type: 'directive', selector: 'only', properties: new Map([['role', { name: 'role' }]]) } as unknown as DirectiveMetadata;
     const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], [], [], [], undefined, [card, tip, only]);
 
-    expect(code).toContain('{ name: \'text\', value: \'a\', setter: _setInput },');
-    expect(code).toContain('{ name: \'text\', value: \'b\', setter: _setInput },');
-    expect(code).toContain('{ name: \'message\', value: \'c\', setter: _setInput },');
-    expect(code).toContain('{ name: \'message\', value: \'d\', setter: _setInput },');
-    expect(code).toContain('{ name: \'role\', value: \'e\', setter: _setInput },');
+    expect(code).toContain('{ name: \'text\', value: \'a\', setter: _setInput }');
+    expect(code).toContain('{ name: \'text\', value: \'b\', setter: _setInput }');
+    expect(code).toContain('{ name: \'message\', value: \'c\', setter: _setInput }');
+    expect(code).toContain('{ name: \'message\', value: \'d\', setter: _setInput }');
+    expect(code).toContain('{ name: \'role\', value: \'e\', setter: _setInput }');
+    // The function of the value of an input of a directive is named after the element, the directive and the property
+    expect(code).toContain('{ name: \'message\', value: p5$tip_message, setter: _setExpressionInput }');
+    expect(code).toContain('function p5$tip_message(context) {\n  return this.on;\n}');
   });
 
   it('throws when a directive the template imports does not declare an attribute bound to it', () => {
@@ -94,7 +130,7 @@ describe('ServerGenerator', () => {
     const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], []);
 
     expect(code).toContain('<form data-xd-submit="">');
-    expect(code).toContain('{ name: \'data-xd-submit\', value: \'\', setter: _setProperty },');
+    expect(code).toContain('{ name: \'data-xd-submit\', value: \'\', setter: _setProperty }');
     expect(code.match(/data-xd-submit/g)).toHaveLength(2);
   });
 
@@ -117,13 +153,14 @@ describe('ServerGenerator', () => {
   it('declares the element refs, the templates and the @let of each scope, and writes the functions it calls after render', () => {
     const source = '<input #field /><template row(item: string)><b>{ item }</b></template>@if (visible) { @let n = 1; @for (user of users(); track user) { @render row(user) } }';
     const code = generate(source, ['users']);
+    expect(code).toContain('const if2__for1Variables = { used: [\'item\'], names: [\'user\'] };');
     const key = `template_row_${source.indexOf('<template')}`;
 
     expect(code).toContain([
       'function render(out) {',
-      '  const context = new _Context(_ROOT_PARENT_CONTEXT, undefined, 2);',
+      '  const context = new _Context(_ROOT_PARENT_CONTEXT, undefined, 2, this);',
       '  context.declare(\'field\');',
-      `  context.addIdentifier('row', _ssrTemplate(context, ${key}.bind(this)));`,
+      `  context.addIdentifier('row', ${key});`,
       '  context.set(\'field\', undefined);',
       '  out.push(\'<input>\');',
       '  if (this.visible) {',
@@ -150,14 +187,18 @@ describe('ServerGenerator', () => {
       '  {'
     ].join('\n'));
     expect(code).toContain([
-      'const if2__for1Variables = { used: [\'item\'], names: [\'user\'] };',
-      '',
       'function if2__for1(out, parentContext, items, index) {',
       '  const context = new _Context(parentContext, undefined, 1);',
       '  _iterationVariables(context, items, index, if2__for1Variables);',
-      '  _ssrRenderTemplate(out, context, context.get(\'row\'), [context.get(\'user\')]);',
+      '  _ssrRenderTemplate(out, context, \'row\', [context.get(\'user\')]);',
+      '}',
+      '',
+      'function if2__for1$track(context, user, $index, $first, $last, $even, $odd) {',
+      '  return user;',
       '}'
     ].join('\n'));
+    // The functions of the module computing the expressions close it, after the ones rendering the blocks
+    expect(code.endsWith('function if2__for1$track(context, user, $index, $first, $last, $even, $odd) {\n  return user;\n}')).toBe(true);
   });
 
   it('declares the scope of the content of an element a structural directive is applied to, and not the one of any other element', () => {
@@ -192,7 +233,7 @@ describe('ServerGenerator', () => {
       '  out.push(\'a<!---->\' + _escapeText(this.x()) + \'<!---->b\');',
       '  context.set(\'n\', 1);',
       '  out.push(\'<!---->c<i></i>d<!---->\');',
-      '  _ssrRenderTemplate(out, context, context.get(\'t\'), []);',
+      '  _ssrRenderTemplate(out, context, \'t\', []);',
       '  out.push(\'<!---->e\');'
     ].join('\n'));
   });

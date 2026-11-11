@@ -52,7 +52,8 @@ describe('compile', () => {
     const { javascript, typescript } = await compile(template, { baseDir: '/base', signals: ['title'], cache: createCache() });
 
     expect(javascript).not.toContain(' as ');
-    expect(javascript).toContain('handler: ($event) => this.pick($event)');
+    expect(javascript).toContain('function p0$on_click(context, $event) {\n  this.pick($event);\n}');
+    expect(javascript).toContain('function p0$title(context) {\n  return this.title();\n}');
     expect(typescript.text).toContain('((root.title()) as string);');
     expect(typescript.text).toContain('root.pick((($event) as MouseEvent));');
     expect(typescript.text).toContain('((root.count) as number);');
@@ -63,7 +64,8 @@ describe('compile', () => {
     const { javascript, typescript } = await compile(template, { baseDir: '/base', signals: ['selected'], cache: createCache() });
 
     expect(javascript).not.toContain(' as ');
-    expect(javascript).toContain('[() => this.selected()]');
+    expect(javascript).toContain('function render1$args(context) {\n  return [this.selected()];\n}');
+    expect(javascript).toContain('function p2$text0(context) {\n  return this.format(this.count);\n}');
     expect(typescript.text).toContain('__render(row, 1)(root.selected() as Row);');
     expect(typescript.text).toContain('root.format(root.count as number);');
   });
@@ -71,7 +73,7 @@ describe('compile', () => {
   it('generates both outputs when base directory and signals are provided', async () => {
     const result = await compile('{count}', { baseDir: '/base', signals: ['count'], cache: createCache() });
 
-    expect(result).toMatchObject({ javascript: expect.stringContaining('() => this.count'), typescript: { text: expect.stringContaining('root.count;') } });
+    expect(result).toMatchObject({ javascript: expect.stringContaining('function root$text0(context) {\n  return this.count;\n}'), typescript: { text: expect.stringContaining('root.count;') } });
   });
 
   it('rejects the blocks of the rendering on the server only when the project does not render there, in the type-check', async () => {
@@ -96,8 +98,9 @@ describe('compile', () => {
 
     const { javascript, typescript } = await compile(template, { baseDir: '/base', signals: ['ready'], cache });
 
-    expect(javascript).toContain('load: () => Promise.all([import("/base/c-d.ts")]),');
-    expect(javascript).toContain('when: () => this.ready(),');
+    expect(javascript).toContain('const hydrate2$hydrate = { triggers: [\'idle\'], when: hydrate2$when, load: hydrate2$load, content: hydrate2 };');
+    expect(javascript).toContain('function hydrate2$load() {\n  return Promise.all([import("/base/c-d.ts")]);\n}');
+    expect(javascript).toContain('function hydrate2$when(context) {\n  return this.ready();\n}');
     expect(typescript.text).toContain('if (root.ready()) { }');
   });
 
@@ -105,11 +108,11 @@ describe('compile', () => {
     const template = '<p title="{ `t ${count}` }">{ `a` + count } { \'}\' } { "{" } { `x ${ `y ${count}` }` }</p>';
     const { javascript, typescript } = await compile(template, { baseDir: '/base', signals: ['count'], cache: createCache() });
 
-    expect(javascript).toContain('value: () => `t ${this.count}`,');
-    expect(javascript).toContain('() => `a` + this.count,');
-    expect(javascript).toContain('() => \'}\',');
-    expect(javascript).toContain('() => "{",');
-    expect(javascript).toContain('() => `x ${ `y ${this.count}` }`,');
+    expect(javascript).toContain('function p0$title(context) {\n  return `t ${this.count}`;\n}');
+    expect(javascript).toContain('function p0$text0(context) {\n  return `a` + this.count;\n}');
+    expect(javascript).toContain('function p0$text2(context) {\n  return \'}\';\n}');
+    expect(javascript).toContain('function p0$text4(context) {\n  return "{";\n}');
+    expect(javascript).toContain('function p0$text6(context) {\n  return `x ${ `y ${this.count}` }`;\n}');
     expect(typescript.text).toContain('`x ${ `y ${root.count}` }`;');
   });
 
@@ -129,7 +132,7 @@ describe('compile', () => {
   it('compiles an event handler named like a reserved word, calling it on the component', async () => {
     const { javascript, typescript } = await compile('<button (click)="delete()">x</button>', { baseDir: '/base', signals: [], cache: createCache() });
 
-    expect(javascript).toContain('handler: () => this.delete()');
+    expect(javascript).toContain('function button0$on_click(context) {\n  this.delete();\n}');
     expect(typescript.text).toContain('root.delete();');
   });
 
@@ -137,10 +140,11 @@ describe('compile', () => {
     const template = '<p title="{ {count} }">{ {count} } { { a: count }.a }</p>\n@if ({ count }.count) {\n  <i>x</i>\n}';
     const { javascript, typescript } = await compile(template, { baseDir: '/base', signals: ['count'], cache: createCache() });
 
-    expect(javascript).toContain('value: () => ({count: this.count}),');
-    expect(javascript).toContain('_renderText(p0, context, () => ({count: this.count}), null, true);');
-    expect(javascript).toContain('_renderText(p0, context, () => ({ a: this.count }.a), null, true);');
-    expect(javascript).toContain('condition: () => ({ count: this.count }.count),');
+    expect(javascript).toContain('function p0$title(context) {\n  return ({count: this.count});\n}');
+    expect(javascript).toContain('_renderText(p0, context, p0$text0, null, true);');
+    expect(javascript).toContain('function p0$text0(context) {\n  return ({count: this.count});\n}');
+    expect(javascript).toContain('function p0$text2(context) {\n  return ({ a: this.count }.a);\n}');
+    expect(javascript).toContain('function if1$condition(context) {\n  return ({ count: this.count }.count);\n}');
     expect(typescript.text).toContain('({count: root.count});');
     expect(typescript.text).toContain('if (({ count: root.count }.count)) {');
   });
@@ -153,7 +157,7 @@ describe('compile', () => {
 
     expect(multiLine.javascript).toBe(singleLine.javascript);
     expect(multiLine.typescript.text).toBe(singleLine.typescript.text);
-    expect(multiLine.javascript).toContain('name: \'class\',');
+    expect(multiLine.javascript).toContain('name: \'class\'');
     expect(multiLine.typescript.text).toContain('if (root.dark) {');
   });
 
@@ -236,11 +240,13 @@ describe('compile imported symbols', () => {
     // A type is not a value at runtime
     expect(javascript).not.toContain('Row');
     // An expression reading a name is a binding, which the runtime keeps as an effect when it reads a signal
-    expect(javascript).toContain('value: () => __import_formatDate(this.d),\n        setter: _setReactiveProperty');
-    expect(javascript).toContain('value: () => __import_count(),\n        setter: _setReactiveProperty');
-    expect(javascript).toContain('handler: ($event) => __import_track($event)');
-    expect(javascript).toContain('() => __import_Status.Active');
-    expect(javascript).toContain('() => __import_utils.x');
+    expect(javascript).toContain('{ name: \'title\', value: p1$title, setter: _setReactiveProperty }');
+    expect(javascript).toContain('{ name: \'data-count\', value: p1$data_count, setter: _setReactiveProperty }');
+    expect(javascript).toContain('function p1$title(context) {\n  return __import_formatDate(this.d);\n}');
+    expect(javascript).toContain('function p1$data_count(context) {\n  return __import_count();\n}');
+    expect(javascript).toContain('function p1$on_click(context, $event) {\n  __import_track($event);\n}');
+    expect(javascript).toContain('function p1$text0(context) {\n  return __import_Status.Active;\n}');
+    expect(javascript).toContain('function p1$text2(context) {\n  return __import_utils.x;\n}');
   });
 
   it('imports every symbol in the type-check code under its own name, mapped onto the template, and reads it as written', async () => {
@@ -270,14 +276,14 @@ describe('compile imported symbols', () => {
 
     expect(javascript).toContain('context.get(\'item\')');
     expect(javascript).not.toContain('__import_item');
-    expect(javascript).toContain('() => __import_Map.size');
+    expect(javascript).toContain('function root$text2(context) {\n  return __import_Map.size;\n}');
   });
 
   it('resolves the imports of the JavaScript code against templateDir, and leaves them unresolved without it', async () => {
     const source = '@import { formatDate } from \'./utils\'\n{ formatDate(d) }';
 
-    await expect(compile(source, { signals: [], templateDir: '/base', cache: createSymbolCache() })).resolves.toContain('() => __import_formatDate(this.d)');
-    await expect(compile(source, { signals: [], cache: createSymbolCache() })).resolves.toContain('() => this.formatDate(this.d)');
+    await expect(compile(source, { signals: [], templateDir: '/base', cache: createSymbolCache() })).resolves.toContain('return __import_formatDate(this.d);');
+    await expect(compile(source, { signals: [], cache: createSymbolCache() })).resolves.toContain('return this.formatDate(this.d);');
   });
 
   it.each(['root', '$event', '__probe'])('rejects a symbol imported as %s, a name the generated code reserves', async name => {

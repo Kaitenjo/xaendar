@@ -11,7 +11,7 @@ describe('generateServerRender', () => {
     context.addTemplate('row', 'html');
 
     expect(generateServerRender(parseTemplate('@render row(item, 1)')[0] as RenderNode, { id: 'root' }, '0', context)).toEqual({
-      pieces: [{ statement: '_ssrRenderTemplate(out, context, context.get(\'row\'), [this.item, 1]);' }]
+      pieces: [{ statement: '_ssrRenderTemplate(out, context, \'row\', [this.item, 1]);' }]
     });
   });
 

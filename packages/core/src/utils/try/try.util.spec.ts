@@ -147,7 +147,7 @@ describe('_try', () => {
           const context = new _Context(parentContext);
           const element = document.createElement('x-failing-child');
           trackNode(element, parentNode, context);
-          connectChild(() => parentNode.insertBefore(element, anchor));
+          connectChild(CREATE_NODES, element, parentNode, anchor as Comment | null);
           return context;
         },
         catch: rescue

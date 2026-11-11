@@ -9,7 +9,8 @@ import { SERVER_RESOLVE_OPTIONS, toBlockFunction } from '../../utils/server-code
 /**
  * Generates the code of a `@switch`, selecting the block as the client does: the one of the first `@case` one of whose
  * values is strictly equal to the value of the expression, evaluated once, or else the one of the `@default`, wherever
- * it is declared. The values of a `@case` are written as declared, in an array literal, as the client writes them.
+ * it is declared. The values of a `@case`, literals written as declared, are a constant of the module (`case0_1$values`),
+ * compared strictly with the value, as the client compares them, without allocating anything.
  *
  * The block is written between the markers of the browser: `<!--xd-switch:i-->`, `i` the position of the block among the
  * `@case`s and the `@default` as they are declared, the index the client gives it, or `<!--xd-switch-->` when no block
@@ -19,7 +20,7 @@ import { SERVER_RESOLVE_OPTIONS, toBlockFunction } from '../../utils/server-code
  * // @switch (kind()) { @default { … } @case ('a', 'b') { … } }
  * {
  *   const __value = this.kind();
- *   if (['a', 'b'].some(candidate => candidate === __value)) {
+ *   if (case0_1$values.indexOf(__value) !== -1) {   // const case0_1$values = ['a', 'b'];
  *     out.push('<!--xd-switch:1-->');
  *     case0_1.call(this, out, context);
  *   } else {
@@ -48,7 +49,9 @@ export function generateServerSwitch(node: SwitchNode, parent: ServerParent, ind
     functionsToProcess.set(key, toBlockFunction(caseNode, key, parent, generatorContext));
     const render = [`out.push(${toStringLiteral(`<!--${SSR_MARKERS.switch}:${i}-->`)});`, `${key}.call(this, out, context);`];
     if (condition) {
-      body.push(`${opening} ([${condition.join(', ')}].some(candidate => candidate === __value)) {`, ...indent(render));
+      // The values, literals, are a constant of the module: indexOf compares them strictly, as the client does
+      const values = generatorContext.declareConstant(`${key}$values`, `[${condition.join(', ')}]`);
+      body.push(`${opening} (${values}.indexOf(__value) !== -1) {`, ...indent(render));
       opening = '} else if';
     } else {
       selectDefault = render;

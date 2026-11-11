@@ -88,9 +88,9 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
   run.prefetchInteraction = !!prefetch?.includes('interaction');
 
   // An interaction fires through the events recorded
-  run.disarms.push(armTriggers(run.interaction ? triggers.filter(trigger => trigger !== 'interaction') : triggers, elements, () => fire(run)));
+  run.disarms.push(armTriggers(run.interaction ? triggers.filter(trigger => trigger !== 'interaction') : triggers, elements, () => fire(run), run.parentContext));
   if (prefetch) {
-    run.disarms.push(armTriggers(run.prefetchInteraction ? prefetch.filter(trigger => trigger !== 'interaction') : prefetch, elements, () => prefetchModules(run)));
+    run.disarms.push(armTriggers(run.prefetchInteraction ? prefetch.filter(trigger => trigger !== 'interaction') : prefetch, elements, () => prefetchModules(run), run.parentContext));
   }
 
   if (block.prefetchWhen) {
@@ -121,7 +121,7 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
  * @param run - The block, whose `when` is defined.
  */
 function checkWhen(run: HydrateRun): void {
-  if (!run.fired && run.block.when!()) {
+  if (!run.fired && run.block.when!.call(run.parentContext.component, run.parentContext)) {
     queueMicrotask(() => run.active && fire(run));
   }
 }
@@ -134,7 +134,7 @@ function checkWhen(run: HydrateRun): void {
  * @param run - The block, whose `prefetchWhen` is defined.
  */
 function checkPrefetchWhen(run: HydrateRun): void {
-  if (!run.fired && run.block.prefetchWhen!()) {
+  if (!run.fired && run.block.prefetchWhen!.call(run.parentContext.component, run.parentContext)) {
     queueMicrotask(() => run.active && !run.fired && prefetchModules(run));
   }
 }

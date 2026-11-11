@@ -1,4 +1,4 @@
-import { GeneratorContext, getBlockIdentifier, getReadForVariables, resolveExpression, toStringLiteral, writeIterationVariables, type ForImplicitVariables, type ForNode } from '@xaendar/compiler';
+import { declareExpression, GeneratorContext, getBlockIdentifier, getReadForVariables, resolveExpression, toStringLiteral, writeIterationVariables, type ForImplicitVariables, type ForNode } from '@xaendar/compiler';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
 import type { ServerParent } from '../../types/server-parent.type';
 import type { ServerTransitionResult } from '../../types/server-transition-result.type';
@@ -60,15 +60,15 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
   const fn: ServerFunctionToProcess['fn'] = { node, context, parent: { id: key, tag: parent.tag } };
   // The variables, the same for every item, are a constant of the module, as the client declares them
   if (read.length) {
-    fn.declaration = `const ${key}Variables = ${writeIterationVariables(node, read)};`;
-    fn.precode = `_iterationVariables(context, items, index, ${key}Variables);`;
+    const variables = generatorContext.declareConstant(`${key}Variables`, writeIterationVariables(node, read));
+    fn.precode = `_iterationVariables(context, items, index, ${variables});`;
   }
 
   const functionsToProcess = new Map<string, ServerFunctionToProcess>([[key, { fn, args: ['out', 'parentContext', 'items', 'index'] }]]);
 
   /*
-    The track expression is written as the client writes it: a function outside of the context of the items, whose
-    parameters are the item and the implicit variables, read as written
+    The track expression is written as the client writes it: a function of the module, outside of the context of the
+    items, whose parameters are the context of the @for, then the item and the implicit variables, read as written
   */
   const trackContext = new GeneratorContext(generatorContext);
   if (itemAlias) {
@@ -77,15 +77,14 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
   for (let i = 0; i < names.length; i++) {
     trackContext.addUnresolvableIdentifier(names[i]);
   }
-  const track = resolveExpression(node.trackExpression, trackContext, SERVER_RESOLVE_OPTIONS).expression;
+  const track = declareExpression(generatorContext, `${key}$track`, resolveExpression(node.trackExpression, trackContext, SERVER_RESOLVE_OPTIONS).expression, [itemAlias === 'context' || names.includes('context') ? '__context' : 'context', itemAlias ?? '_', ...names].join(', '));
 
   const statement = [
     '{',
     `  const items = _ssrItems(${iterable});`,
-    `  const track = (${[itemAlias ?? '_', ...names].join(', ')}) => ${track};`,
     `  out.push(${toStringLiteral(`<!--${SSR_MARKERS.for}-->`)});`,
     '  for (let index = 0; index < items.length; index++) {',
-    '    out.push(_ssrItemMarker(track(items[index], index, index === 0, index === items.length - 1, index % 2 === 0, index % 2 !== 0)));',
+    `    out.push(_ssrItemMarker(${track}.call(this, context, items[index], index, index === 0, index === items.length - 1, index % 2 === 0, index % 2 !== 0)));`,
     `    ${key}.call(this, out, context, items, index);`,
     '  }',
     `  out.push(${toStringLiteral(`<!--/${SSR_MARKERS.for}-->`)});`,

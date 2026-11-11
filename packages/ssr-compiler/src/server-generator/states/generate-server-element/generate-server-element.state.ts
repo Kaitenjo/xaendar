@@ -1,12 +1,12 @@
-import { dropsLeadingNewline, escapeAttribute, indent, isValidCustomElementName, isVoidElement } from '@xaendar/common';
-import { ASTNodeType, GeneratorContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toStringLiteral, type AttributeNode, type ClassBindingNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
+import { dropsLeadingNewline, escapeAttribute, isValidCustomElementName, isVoidElement } from '@xaendar/common';
+import { ASTNodeType, declareExpression, GeneratorContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ClassBindingNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
 import type { Function } from '@xaendar/types';
 import type { ServerCodePiece } from '../../types/server-code-piece.type';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
 import type { ServerParent } from '../../types/server-parent.type';
 import type { GenerateChildren } from '../../types/generate-children.type';
 import type { ServerTransitionResult } from '../../types/server-transition-result.type';
-import { SERVER_RESOLVE_OPTIONS, toArrayLiteral, toStatements } from '../../utils/server-code/server-code.utils';
+import { SERVER_RESOLVE_OPTIONS, toStatements } from '../../utils/server-code/server-code.utils';
 import { SUBMIT_ATTRIBUTE } from '../../../costants/ssr-markers.constants';
 
 /**
@@ -16,12 +16,14 @@ import { SUBMIT_ATTRIBUTE } from '../../../costants/ssr-markers.constants';
  * bound to an expression written when it is rendered by `_ssrAttribute`, which escapes its value and leaves it out for
  * `null` and `undefined`, as the client removes it. An element toggling classes, with conditional bindings or applying custom
  * directives writes its start tag through `_ssrStartTag`, which applies the bindings and the directives as the client
- * applies them, and a component through
+ * applies them, receiving a constant of the module describing the element (`div0$element`), whose expressions are
+ * functions of the module named after the element and called with the component and the context, and a component through
  * `_ssrComponent`, which renders it, `_ssrIsland` for an interactive one a static template renders, or
  * `_ssrClientComponent` for one rendering only in the browser, whose class may not be there. The children of the element are written in the same function, since they are not
  * a scope of their own, except for the content of an element a structural directive is applied to: that element is
- * written by the function `_ssrStructural` calls when every structural directive allows it, and its content by a function
- * of its own, named like the one of the client.
+ * written by the function of the module `_ssrStructural` calls when every structural directive allows it (`div0$render`,
+ * named by the constant `div0$structural` with the structural directives), and its content by a function of its own,
+ * named like the one of the client.
  *
  * The events are left out: the server writes HTML, the client listens to them. The custom directives of a native
  * element, its own and the ones of its conditional bindings, are applied by `_ssrStartTag` without their events: their
@@ -46,11 +48,12 @@ export function generateServerElement(node: ElementNode, parent: ServerParent, i
   if (!isStructuralElement(node)) {
     const childrenContext = childrenNamespace !== generatorContext.namespace ? new GeneratorContext(generatorContext, childrenNamespace) : generatorContext;
     const children = generateChildren(node.children, childrenParent, childrenContext);
-    return { pieces: writeElement(node, generatorContext, children.pieces), functionsToProcess: children.functionsToProcess };
+    return { pieces: writeElement(node, id, generatorContext, children.pieces), functionsToProcess: children.functionsToProcess };
   }
 
-  const structuralDirectives = mapStructuralDirectives(node.structuralDirectives, generatorContext);
-  const structuralConditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, generatorContext, branch => !appliesStructuralDirectives(branch), (branch, condition) => mapStructuralBranch(branch, condition, generatorContext));
+  const owner: DescriptorOwner = { name: id, generatorContext };
+  const structuralDirectives = mapStructuralDirectives(node.structuralDirectives, owner);
+  const structuralConditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, owner, branch => !appliesStructuralDirectives(branch), (branch, condition) => mapStructuralBranch(branch, condition, owner));
   const functionsToProcess = new Map<string, ServerFunctionToProcess>();
   const children = new Array<ServerCodePiece>();
   if (node.children.length) {
@@ -59,9 +62,12 @@ export function generateServerElement(node: ElementNode, parent: ServerParent, i
     children.push({ statement: `${key}.call(this, out, context);` });
   }
 
-  const render = ['(out, context) => {', ...indent(toStatements(writeElement(node, generatorContext, children))), '}'];
+  const members = new Array<string>();
+  appendList(members, 'structuralDirectives', structuralDirectives);
+  appendList(members, 'structuralConditionalBindings', structuralConditionalBindings);
+  members.push(`render: ${generatorContext.declareFunction(`${id}$render`, 'out, context', toStatements(writeElement(node, id, generatorContext, children)))}`);
   return {
-    pieces: [{ statement: toCall('_ssrStructural', 'out, context', [toArrayLiteral(structuralDirectives), toArrayLiteral(structuralConditionalBindings), render]) }],
+    pieces: [{ statement: `_ssrStructural(out, context, ${generatorContext.declareConstant(`${id}$structural`, toObjectLiteral(members))});` }],
     functionsToProcess
   };
 }
@@ -71,18 +77,21 @@ export function generateServerElement(node: ElementNode, parent: ServerParent, i
  * an element whose leading one the parser drops, its children, and its end tag, unless it is a void element.
  *
  * @param node - The element node.
+ * @param id - The name of the element in the generated code, which the constant describing it and the functions of its
+ *   expressions are named after.
  * @param generatorContext - The generator context of the node.
  * @param children - The code of the children.
  * @returns The code of the element.
  */
-function writeElement(node: ElementNode, generatorContext: GeneratorContext, children: readonly ServerCodePiece[]): ServerCodePiece[] {
+function writeElement(node: ElementNode, id: string, generatorContext: GeneratorContext, children: readonly ServerCodePiece[]): ServerCodePiece[] {
   const { tagName, attributes, classBindings, ref } = node;
+  const owner: DescriptorOwner = { name: id, generatorContext };
   const isHtml = getElementNamespace(tagName, generatorContext.namespace) === 'html';
   const isComponent = isValidCustomElementName(tagName, false) && !generatorContext.isForeignElement(tagName);
   // Only a native element applies its custom directives on the server
   const withDirectives = !isComponent;
-  const conditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, generatorContext, branch => isEmptyBranch(branch, withDirectives), (branch, condition) => mapBranch(branch, condition, isComponent ? tagName : undefined, generatorContext));
-  const directives = withDirectives ? mapDirectives(node.directives, generatorContext) : undefined;
+  const conditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, owner, branch => isEmptyBranch(branch, withDirectives), (branch, condition) => mapBranch(branch, condition, isComponent ? tagName : undefined, owner));
+  const directives = withDirectives ? mapDirectives(node.directives, owner) : undefined;
   const pieces = new Array<ServerCodePiece>();
   if (ref) {
     pieces.push({ statement: `context.set('${ref.name}', undefined);` });
@@ -91,18 +100,20 @@ function writeElement(node: ElementNode, generatorContext: GeneratorContext, chi
   registerEvents(node, generatorContext);
 
   if (isComponent || classBindings.length || conditionalBindings.length || directives?.length) {
-    const descriptors = mapAttributes(attributes, generatorContext, isComponent ? tagName : undefined);
+    const descriptors = mapAttributes(attributes, owner, isComponent ? tagName : undefined);
     appendSubmitMark(descriptors, node);
-    appendClassBindings(descriptors, classBindings, generatorContext);
-    const args = [toArrayLiteral(descriptors), toArrayLiteral(conditionalBindings)];
+    appendClassBindings(descriptors, classBindings, owner);
+    const members = [`tagName: '${tagName}'`];
+    appendList(members, 'attributes', descriptors);
+    appendList(members, 'conditionalBindings', conditionalBindings);
     const clientComponent = isComponent ? generatorContext.getClientComponent(tagName) : undefined;
-    if (clientComponent) {
-      args.push([toClientOptions(clientComponent, generatorContext)]);
-    } else if (directives?.length) {
-      args.push(toArrayLiteral(directives));
+    if (!clientComponent && directives?.length) {
+      appendList(members, 'directives', directives);
     }
 
-    pieces.push({ statement: toCall(getStartTagWriter(tagName, isComponent, generatorContext), `out, context, '${tagName}'`, args) });
+    const element = generatorContext.declareConstant(`${id}$element`, toObjectLiteral(members));
+    const options = clientComponent ? `, ${generatorContext.declareConstant(`${id}$client`, toClientOptions(clientComponent, generatorContext))}` : '';
+    pieces.push({ statement: `${getStartTagWriter(tagName, isComponent, generatorContext)}(out, context, ${element}${options});` });
   } else {
     pieces.push({ html: `<${tagName}` });
     for (let i = 0; i < attributes.length; i++) {
@@ -167,12 +178,12 @@ function listensToSubmit({ events }: Pick<ConditionalBindingBranchNode, 'events'
  * Appends to the descriptors of the attributes the mark of an element listening to `submit`: in a branch of a conditional
  * binding, the mark depends on the branch selected, as the listener does.
  *
- * @param descriptors - The lines of the descriptors of the attributes.
+ * @param descriptors - The code of the descriptors of the attributes.
  * @param bindings - The element or the branch.
  */
 function appendSubmitMark(descriptors: string[], bindings: Pick<ConditionalBindingBranchNode, 'events'>): void {
   if (listensToSubmit(bindings)) {
-    descriptors.push(`{ name: '${SUBMIT_ATTRIBUTE}', value: '', setter: _setProperty },`);
+    descriptors.push(`{ name: '${SUBMIT_ATTRIBUTE}', value: '', setter: _setProperty }`);
   }
 }
 
@@ -212,41 +223,46 @@ function toClientOptions({ selector, clientOnly }: ComponentMetadata, generatorC
  * Maps attribute nodes to the descriptors the runtime applies, with the setters of the client reading the value once:
  * an input of a component or of a directive the template imports is set by the name of its property, never by its
  * alias, the one it is exposed with for an input of a host directive, through the setters of the inputs, as the client
- * does.
+ * does. The value of an expression is a function of the module named after the element and the attribute, as on the
+ * client.
  *
  * @param attributes - The attribute nodes.
- * @param generatorContext - The generator context of the attributes.
- * @param owner - The tag name of the component, or the selector of the directive as applied in templates
+ * @param owner - The element, which the functions of the expressions are named after.
+ * @param target - The tag name of the component, or the selector of the directive as applied in templates
  *   (`@@selector`), the attributes are bound to, `undefined` for a native element.
- * @returns The lines of the descriptors, one per attribute.
+ * @returns The code of the descriptors, one per attribute.
  * @throws When a directive the template imports does not declare an attribute bound to it.
  */
-function mapAttributes(attributes: AttributeNode[], generatorContext: GeneratorContext, owner: string | undefined): string[] {
-  const metadata = owner && attributes.length ? generatorContext.getImportedMetadata(owner) : undefined;
+function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, target: string | undefined): string[] {
+  const { generatorContext } = owner;
+  const metadata = target && attributes.length ? generatorContext.getImportedMetadata(target) : undefined;
   return attributes.map(({ name, value, span }) => {
     const input = metadata?.properties.get(name);
     if (metadata?.type === 'directive' && !input) {
-      throw new Error(`Unable to resolve the metadata of property "${name}" of ${owner}`, { cause: span });
+      throw new Error(`Unable to resolve the metadata of property "${name}" of ${target}`, { cause: span });
     }
 
-    const target = toStringLiteral(input && !input.exposed ? input.name : name);
-    return typeof value === 'string'
-      ? `{ name: ${target}, value: ${toStringLiteral(value)}, setter: ${input ? '_setInput' : '_setProperty'} },`
-      : `{ name: ${target}, value: () => ${resolve(value.expression, generatorContext)}, setter: ${input ? '_setExpressionInput' : '_setExpressionProperty'} },`;
+    const property = input && !input.exposed ? input.name : name;
+    if (typeof value === 'string') {
+      return toObjectLiteral([`name: ${toStringLiteral(property)}`, `value: ${toStringLiteral(value)}`, `setter: ${input ? '_setInput' : '_setProperty'}`]);
+    }
+
+    const role = metadata?.type === 'directive' ? `${toRoleName(target!.slice(2))}_${toRoleName(property)}` : toRoleName(property);
+    return toObjectLiteral([`name: ${toStringLiteral(property)}`, `value: ${declareElementExpression(owner, role, value.expression)}`, `setter: ${input ? '_setExpressionInput' : '_setExpressionProperty'}`]);
   });
 }
 
 /**
  * Appends to the descriptors of the attributes the ones of the classes the element toggles, as the client does.
  *
- * @param descriptors - The lines of the descriptors of the attributes.
+ * @param descriptors - The code of the descriptors of the attributes.
  * @param classBindings - The class binding nodes.
- * @param generatorContext - The generator context of the class bindings.
+ * @param owner - The element, which the functions of the expressions are named after.
  */
-function appendClassBindings(descriptors: string[], classBindings: ClassBindingNode[], generatorContext: GeneratorContext): void {
+function appendClassBindings(descriptors: string[], classBindings: ClassBindingNode[], owner: DescriptorOwner): void {
   for (let i = 0; i < classBindings.length; i++) {
     const { className, value } = classBindings[i];
-    descriptors.push(`{ name: ${toStringLiteral(className)}, value: () => ${resolve(value.expression, generatorContext)}, setter: _setExpressionClass },`);
+    descriptors.push(toObjectLiteral([`name: ${toStringLiteral(className)}`, `value: ${declareElementExpression(owner, `class_${toRoleName(className)}`, value.expression)}`, 'setter: _setExpressionClass']));
   }
 }
 
@@ -255,19 +271,19 @@ function appendClassBindings(descriptors: string[], classBindings: ClassBindingN
  * `mapBranch`, and, for a `@switch`, the expression whose value selects the branch.
  *
  * @param conditionalBindings - The conditional binding nodes.
- * @param generatorContext - The generator context of the conditional bindings.
+ * @param owner - The element, which the functions of the expressions are named after.
  * @param isEmpty - Tells whether a branch has nothing to apply: a conditional binding whose branches all have nothing
  *   to apply is skipped.
- * @param mapBranch - Maps a branch, given the lines declaring its condition, to its descriptor.
- * @returns The lines of the descriptors, one per conditional binding.
+ * @param mapBranch - Maps a branch, given the member declaring its condition, if any, to its descriptor.
+ * @returns The code of the descriptors, one per conditional binding.
  */
 function mapConditionalBindingDescriptors(
   conditionalBindings: ConditionalBindingNode[],
-  generatorContext: GeneratorContext,
+  owner: DescriptorOwner,
   isEmpty: Function<[branch: ConditionalBindingBranchNode], boolean>,
-  mapBranch: Function<[branch: ConditionalBindingBranchNode, condition: string[]], string[]>
+  mapBranch: Function<[branch: ConditionalBindingBranchNode, condition: string | undefined], string>
 ): string[] {
-  const lines = new Array<string>();
+  const descriptors = new Array<string>();
   for (let i = 0; i < conditionalBindings.length; i++) {
     const conditionalBinding = conditionalBindings[i];
     const { branches } = conditionalBinding;
@@ -277,17 +293,19 @@ function mapConditionalBindingDescriptors(
 
     const mappedBranches = new Array<string>();
     for (let j = 0; j < branches.length; j++) {
-      mappedBranches.push(...mapBranch(branches[j], mapCondition(conditionalBinding, j, generatorContext)));
+      mappedBranches.push(mapBranch(branches[j], mapCondition(conditionalBinding, j, owner)));
     }
 
-    lines.push('{');
+    const members = new Array<string>();
     if (conditionalBinding.type === ASTNodeType.SwitchBinding) {
-      lines.push(indent(`expression: () => ${resolve(conditionalBinding.expression, generatorContext)},`));
+      members.push(`expression: ${declareElementExpression(owner, 'switch', conditionalBinding.expression)}`);
     }
-    lines.push(...indent(['branches: [', ...indent(mappedBranches), ']']), '},');
+
+    members.push(`branches: ${toArrayLiteral(mappedBranches)}`);
+    descriptors.push(toObjectLiteral(members));
   }
 
-  return lines;
+  return descriptors;
 }
 
 /**
@@ -297,17 +315,17 @@ function mapConditionalBindingDescriptors(
  *
  * @param conditionalBinding - The conditional binding node.
  * @param index - The position of the branch.
- * @param generatorContext - The generator context of the conditional binding.
- * @returns The lines declaring the condition of the branch, if any.
+ * @param owner - The element, which the functions of the conditions are named after.
+ * @returns The member declaring the condition of the branch, `undefined` for an `@else`.
  */
-function mapCondition(conditionalBinding: ConditionalBindingNode, index: number, generatorContext: GeneratorContext): string[] {
+function mapCondition(conditionalBinding: ConditionalBindingNode, index: number, owner: DescriptorOwner): string | undefined {
   if (conditionalBinding.type === ASTNodeType.SwitchBinding) {
     const { condition } = conditionalBinding.branches[index];
-    return [`condition: ${condition ? `[${condition.join(', ')}]` : 'null'},`];
+    return `condition: ${condition ? `[${condition.join(', ')}]` : 'null'}`;
   }
 
   const { condition } = conditionalBinding.branches[index];
-  return condition ? [`condition: () => ${resolve(condition, generatorContext)},`] : [];
+  return condition ? `condition: ${declareElementExpression(owner, 'if', condition)}` : undefined;
 }
 
 /**
@@ -315,24 +333,25 @@ function mapCondition(conditionalBinding: ConditionalBindingNode, index: number,
  * custom directives it applies, if any and if the element applies them, and of its nested conditional bindings.
  *
  * @param branch - The branch node.
- * @param condition - The lines declaring the condition of the branch.
+ * @param condition - The member declaring the condition of the branch, if any.
  * @param component - The tag name of the element when it is a component, whose inputs the attributes may bind,
  *   `undefined` for a native element, which applies its custom directives on the server.
- * @param generatorContext - The generator context of the branch.
- * @returns The lines of the descriptor.
+ * @param owner - The element, which the functions of the expressions are named after.
+ * @returns The code of the descriptor.
  */
-function mapBranch(branch: ConditionalBindingBranchNode, condition: string[], component: string | undefined, generatorContext: GeneratorContext): string[] {
+function mapBranch(branch: ConditionalBindingBranchNode, condition: string | undefined, component: string | undefined, owner: DescriptorOwner): string {
   const withDirectives = !component;
-  const attributes = mapAttributes(branch.attributes, generatorContext, component);
+  const attributes = mapAttributes(branch.attributes, owner, component);
   appendSubmitMark(attributes, branch);
-  appendClassBindings(attributes, branch.classBindings, generatorContext);
-  const conditionalBindings = mapConditionalBindingDescriptors(branch.conditionalBindings, generatorContext, nested => isEmptyBranch(nested, withDirectives), (nested, nestedCondition) => mapBranch(nested, nestedCondition, component, generatorContext));
-  const lines = condition.concat(toProperty('attributes', attributes, ','));
-  if (withDirectives && branch.directives.length) {
-    lines.push(...toProperty('directives', mapDirectives(branch.directives, generatorContext), ','));
+  appendClassBindings(attributes, branch.classBindings, owner);
+  const members = condition ? [condition] : new Array<string>();
+  appendList(members, 'attributes', attributes);
+  if (withDirectives) {
+    appendList(members, 'directives', mapDirectives(branch.directives, owner));
   }
 
-  return ['{', ...indent(lines.concat(toProperty('conditionalBindings', conditionalBindings, ''))), '},'];
+  appendList(members, 'conditionalBindings', mapConditionalBindingDescriptors(branch.conditionalBindings, owner, nested => isEmptyBranch(nested, withDirectives), (nested, nestedCondition) => mapBranch(nested, nestedCondition, component, owner)));
+  return toObjectLiteral(members);
 }
 
 /**
@@ -340,15 +359,15 @@ function mapBranch(branch: ConditionalBindingBranchNode, condition: string[], co
  * conditional bindings applying them.
  *
  * @param branch - The branch node.
- * @param condition - The lines declaring the condition of the branch.
- * @param generatorContext - The generator context of the branch.
- * @returns The lines of the descriptor.
+ * @param condition - The member declaring the condition of the branch, if any.
+ * @param owner - The element, which the functions of the expressions are named after.
+ * @returns The code of the descriptor.
  */
-function mapStructuralBranch(branch: ConditionalBindingBranchNode, condition: string[], generatorContext: GeneratorContext): string[] {
-  const structuralDirectives = mapStructuralDirectives(branch.structuralDirectives, generatorContext);
-  const conditionalBindings = mapConditionalBindingDescriptors(branch.conditionalBindings, generatorContext, nested => !appliesStructuralDirectives(nested), (nested, nestedCondition) => mapStructuralBranch(nested, nestedCondition, generatorContext));
-
-  return ['{', ...indent(condition.concat(toProperty('structuralDirectives', structuralDirectives, ','), toProperty('conditionalBindings', conditionalBindings, ''))), '},'];
+function mapStructuralBranch(branch: ConditionalBindingBranchNode, condition: string | undefined, owner: DescriptorOwner): string {
+  const members = condition ? [condition] : new Array<string>();
+  appendList(members, 'structuralDirectives', mapStructuralDirectives(branch.structuralDirectives, owner));
+  appendList(members, 'conditionalBindings', mapConditionalBindingDescriptors(branch.conditionalBindings, owner, nested => !appliesStructuralDirectives(nested), (nested, nestedCondition) => mapStructuralBranch(nested, nestedCondition, owner)));
+  return toObjectLiteral(members);
 }
 
 /**
@@ -356,34 +375,36 @@ function mapStructuralBranch(branch: ConditionalBindingBranchNode, condition: st
  * and their conditional bindings are left out, as the events of the element: the server listens to nothing.
  *
  * @param directives - The custom directive nodes.
- * @param generatorContext - The generator context of the directives.
- * @returns The lines of the descriptors, one per directive.
+ * @param owner - The element, which the functions of the expressions are named after.
+ * @returns The code of the descriptors, one per directive.
  */
-function mapDirectives(directives: DirectiveNode[], generatorContext: GeneratorContext): string[] {
-  const lines = new Array<string>();
-  for (let i = 0; i < directives.length; i++) {
-    const { selector, attributes } = directives[i];
-    lines.push('{', ...indent([`selector: ${toStringLiteral(selector)},`].concat(toProperty('attributes', mapAttributes(attributes, generatorContext, `@@${selector}`), ''))), '},');
-  }
-
-  return lines;
+function mapDirectives(directives: DirectiveNode[], owner: DescriptorOwner): string[] {
+  return directives.map(({ selector, attributes }) => toDirectiveDescriptor(selector, attributes, owner));
 }
 
 /**
  * Maps structural directive nodes to the descriptors the runtime evaluates: the selector and the properties.
  *
  * @param structuralDirectives - The structural directive nodes.
- * @param generatorContext - The generator context of the structural directives.
- * @returns The lines of the descriptors, one per structural directive.
+ * @param owner - The element, which the functions of the expressions are named after.
+ * @returns The code of the descriptors, one per structural directive.
  */
-function mapStructuralDirectives(structuralDirectives: StructuralDirectiveNode[], generatorContext: GeneratorContext): string[] {
-  const lines = new Array<string>();
-  for (let i = 0; i < structuralDirectives.length; i++) {
-    const { selector, attributes } = structuralDirectives[i];
-    lines.push('{', ...indent([`selector: ${toStringLiteral(selector)},`].concat(toProperty('attributes', mapAttributes(attributes, generatorContext, `@@${selector}`), ''))), '},');
-  }
+function mapStructuralDirectives(structuralDirectives: StructuralDirectiveNode[], owner: DescriptorOwner): string[] {
+  return structuralDirectives.map(({ selector, attributes }) => toDirectiveDescriptor(selector, attributes, owner));
+}
 
-  return lines;
+/**
+ * Writes the descriptor of a directive: its selector and its properties, left out when it binds none.
+ *
+ * @param selector - The selector of the directive.
+ * @param attributes - The attribute nodes binding its properties.
+ * @param owner - The element, which the functions of the expressions are named after.
+ * @returns The code of the descriptor.
+ */
+function toDirectiveDescriptor(selector: string, attributes: AttributeNode[], owner: DescriptorOwner): string {
+  const members = [`selector: ${toStringLiteral(selector)}`];
+  appendList(members, 'attributes', mapAttributes(attributes, owner, `@@${selector}`));
+  return toObjectLiteral(members);
 }
 
 /**
@@ -412,40 +433,31 @@ function appliesStructuralDirectives({ structuralDirectives, conditionalBindings
 }
 
 /**
- * Writes a property of a descriptor holding an array literal.
+ * Appends a list member of the descriptor of an element, a directive or a branch, unless the list is empty: the runtime
+ * reads a list left out as empty.
  *
- * @param name - The name of the property.
- * @param lines - The lines of the items.
- * @param separator - What follows the property.
- * @returns The lines of the property.
+ * @param members - The members of the object literal being written.
+ * @param name - The name of the member.
+ * @param items - The code of the items of the list.
  */
-function toProperty(name: string, lines: string[], separator: ',' | ''): string[] {
-  const array = toArrayLiteral(lines);
-  array[0] = `${name}: ${array[0]}`;
-  array[array.length - 1] = `${array[array.length - 1]}${separator}`;
-  return array;
+function appendList(members: string[], name: string, items: readonly string[]): void {
+  if (items.length) {
+    members.push(`${name}: ${toArrayLiteral(items)}`);
+  }
 }
 
 /**
- * Writes the call of a runtime helper whose last arguments span several lines, each one following the previous one.
+ * Declares the function of the module computing the value of an expression of an element, read once, as the server reads
+ * every value (see `declareExpression`): named after the element and the role of the expression (`div0$title`), it is
+ * called by the runtime with the component and the context. An expression reading no name is the same.
  *
- * @param callee - The name of the helper.
- * @param inlineArgs - The first arguments, written on the line of the call.
- * @param blockArgs - The lines of each one of the following arguments.
- * @returns The statement.
+ * @param owner - The element.
+ * @param role - What the expression is, the part of the name of the function after `$`.
+ * @param expression - The expression.
+ * @returns The name of the function.
  */
-function toCall(callee: string, inlineArgs: string, blockArgs: string[][]): string {
-  const lines = [`${callee}(${inlineArgs}`];
-  for (let i = 0; i < blockArgs.length; i++) {
-    const arg = blockArgs[i];
-    lines[lines.length - 1] = `${lines[lines.length - 1]}, ${arg[0]}`;
-    for (let j = 1; j < arg.length; j++) {
-      lines.push(arg[j]);
-    }
-  }
-
-  lines[lines.length - 1] = `${lines[lines.length - 1]});`;
-  return lines.join('\n');
+function declareElementExpression(owner: DescriptorOwner, role: string, expression: Parameters<typeof resolveExpression>[0]): string {
+  return declareExpression(owner.generatorContext, `${owner.name}$${role}`, resolve(expression, owner.generatorContext));
 }
 
 /**

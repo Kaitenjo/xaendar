@@ -1,5 +1,6 @@
 import type { NoArgsVoidFunction } from '@xaendar/types';
 import type { ChildConnection } from '../../types/child-connection.type';
+import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { TryScope } from '../../types/try-scope.type';
 import type { _Context } from '../context/context.util';
 
@@ -58,16 +59,22 @@ export function captureContext(context: _Context): void {
 }
 
 /**
- * Mounts the element of a template. Inside a `@try`, the error of the component the element is, connected by the
- * insertion, is thrown here once the element is inserted: the browser reports it instead of throwing it, since it is
- * the one calling the component.
+ * Mounts the element of a template with the strategy getting its nodes. Inside a `@try`, the error of the component
+ * the element is, connected by the insertion, is thrown here once the element is inserted: the browser reports it
+ * instead of throwing it, since it is the one calling the component.
  *
- * @param mount - Mounts the element.
+ * N.B. Deliberate, to save memory: it receives what mounting needs, instead of an arrow mounting the element, which every
+ * element of a template would create. Do not pass a closure.
+ *
+ * @param nodeStrategy - The strategy the element was got with, which mounts it.
+ * @param element - The element.
+ * @param parentNode - The node the element is inserted into.
+ * @param anchor - The node the element is inserted before, `null` to append it.
  * @throws The error of the connection of the component, inside a `@try`.
  */
-export function connectChild(mount: NoArgsVoidFunction): void {
+export function connectChild(nodeStrategy: NodeStrategy, element: Element, parentNode: Element, anchor: Comment | null): void {
   if (!current) {
-    mount();
+    nodeStrategy.mount(element, parentNode, anchor);
     return;
   }
 
@@ -75,7 +82,7 @@ export function connectChild(mount: NoArgsVoidFunction): void {
   const connection: ChildConnection = { failure: undefined };
   pending = connection;
   try {
-    mount();
+    nodeStrategy.mount(element, parentNode, anchor);
   } finally {
     pending = outer;
   }

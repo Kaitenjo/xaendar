@@ -15,7 +15,7 @@ describe('generateClient', () => {
     const context = new GeneratorContext(cache);
     const { code, functionsToProcess } = await generateClient(parse('@client { <b></b> }'), 'root', '0', context, null);
 
-    expect(code).toEqual(['_client(root, context, null, client0.bind(this));']);
+    expect(code).toEqual(['_client(root, context, null, client0);']);
     expect([...functionsToProcess!.keys()]).toEqual(['client0']);
     expect(functionsToProcess!.get('client0')).toMatchObject({
       fn: { parentNode: 'client0', anchor: 'anchor' },
@@ -27,7 +27,7 @@ describe('generateClient', () => {
   it('renders the block before the anchor of the code, and generates nothing for the placeholder', async () => {
     const { code, functionsToProcess } = await generateClient(parse('@client { <b></b> } @placeholder { <i></i> }'), 'root', '1', new GeneratorContext(cache), 'anchor');
 
-    expect(code).toEqual(['_client(root, context, anchor, client1.bind(this));']);
+    expect(code).toEqual(['_client(root, context, anchor, client1);']);
     expect([...functionsToProcess!.keys()]).toEqual(['client1']);
   });
 });

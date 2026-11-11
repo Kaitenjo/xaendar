@@ -458,7 +458,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** @for over something that is neither an array nor a number: a Set, a Map, a string.
 - **Fix:** Convert it to an array, for instance in a computed signal.
 
-$1
+### `Property '$count' does not exist on type 'XList'.`
+
+- **Cause:** $count is not one of the variables of @for.
+- **Fix:** Read the length of the list.
+
 ### `'task' is a template variable, not a signal: remove the parentheses and read it as task, since the variables of a template (@for, @let, parameters of a template) hold their values`
 
 - **Cause:** A variable of @for, a @let or a parameter of a template called as a function, here in the track expression: they hold values, not signals.

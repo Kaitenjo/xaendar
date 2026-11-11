@@ -1,5 +1,4 @@
-import { _SSR_MARKERS } from '@xaendar/core';
-import type { Function } from '@xaendar/types';
+import { _SSR_MARKERS, type _Context } from '@xaendar/core';
 import type { ServerOutput } from '../../types/server-output.type';
 
 /**
@@ -19,20 +18,25 @@ const CATCH = '1';
  * throws, the code of the components it renders included. The error of the `@catch` goes through; a promise of an
  * asynchronous structural directive rejecting later is not caught.
  *
+ * The content and the `@catch` are functions of the module of the template, called with the component as `this`, the
+ * output and the context of the scope holding the block, and, for the `@catch`, the error.
+ *
  * @param out - The output.
+ * @param context - The runtime context of the scope holding the block.
  * @param content - Renders the content into an output.
  * @param fallback - Renders the `@catch` into an output, with the error the content threw.
  * @throws The error of the `@catch`.
  */
-export function _ssrTry(out: ServerOutput, content: Function<[output: ServerOutput], void>, fallback: Function<[output: ServerOutput, error: unknown], void>): void {
+export function _ssrTry(out: ServerOutput, context: _Context, content: (this: unknown, output: ServerOutput, context: _Context) => void, fallback: (this: unknown, output: ServerOutput, context: _Context, error: unknown) => void): void {
+  const { component } = context;
   let output: ServerOutput = [];
   let detail = CONTENT;
   try {
-    content(output);
+    content.call(component, output, context);
   } catch (error) {
     output = [];
     detail = CATCH;
-    fallback(output, error);
+    fallback.call(component, output, context, error);
   }
 
   out.push(`<!--${_SSR_MARKERS.try}:${detail}-->`);

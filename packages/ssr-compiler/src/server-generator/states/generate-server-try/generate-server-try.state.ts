@@ -25,7 +25,7 @@ export function generateServerTry(node: TryNode, parent: ServerParent, index: st
   }
 
   return {
-    pieces: [{ statement: `_ssrTry(out, output => ${contentKey}.call(this, output, context), (output, error) => ${catchKey}.call(this, output, context, error));` }],
+    pieces: [{ statement: `_ssrTry(out, context, ${contentKey}, ${catchKey});` }],
     functionsToProcess: new Map([
       [contentKey, toBlockFunction(node, contentKey, parent, generatorContext)],
       [catchKey, {

@@ -62,9 +62,9 @@ const createRoot = (nodeStrategy?: NodeStrategy) => new _Context({ createElement
 /**
  * A part rendering an element, with its listeners, through the strategy it receives.
  */
-const part = (tagName: string, events: RenderElementEvent[] = []) => vi.fn((parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
+const part = (tagName: string, events?: RenderElementEvent[]) => vi.fn((parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
   const context = new _Context(parentContext, nodeStrategy);
-  _renderElement(parentNode, context, anchor as Comment | null, tagName, [], events, [], [], [], [], null);
+  _renderElement(parentNode, context, anchor as Comment | null, { tagName, events });
   return context;
 });
 

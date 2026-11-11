@@ -26,7 +26,7 @@ import { SSR_MARKERS } from '../../costants/ssr-markers.constants';
  */
 const RUNTIME_IMPORTS: readonly string[] = [
   'import { _Context, _ROOT_PARENT_CONTEXT, _iterationVariables, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
-  'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTemplate, _ssrTry } from \'@xaendar/ssr\';'
+  'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTry } from \'@xaendar/ssr\';'
 ];
 
 /**
@@ -152,11 +152,13 @@ export class ServerGenerator {
       const code = ['function render(out) {', ...indent(root), '}'];
       for (const [key, { fn, args }] of this._functions) {
         const body = this._writeBody(fn.node.children, fn.parent, fn.context, 'parentContext', fn.precode);
-        if (fn.declaration) {
-          code.push('', fn.declaration);
-        }
-
         code.push('', `function ${key}(${args.join(', ')}) {`, ...indent(body), '}');
+      }
+
+      // The functions of the module computing the expressions follow the ones rendering the blocks
+      const expressions = generatorContext.functionDeclarations;
+      for (let i = 0; i < expressions.length; i++) {
+        code.push('', expressions[i]);
       }
 
       // Read by the event contract of the page: a template without listeners adds nothing
@@ -166,7 +168,7 @@ export class ServerGenerator {
 
       // Only the symbols an expression reads are imported: a type, or a name only a type argument uses, is not a value at runtime
       const symbolImports = symbols.filter(({ local }) => generatorContext.getImportedIdentifier(local)!.used).map(toRuntimeImport);
-      return RUNTIME_IMPORTS.concat(symbolImports, code).join('\n');
+      return RUNTIME_IMPORTS.concat(symbolImports, generatorContext.constantDeclarations, code).join('\n');
     } catch (error) {
       throw formatErrorWithPrefix('Server generator', this._input, error);
     }
@@ -190,8 +192,10 @@ export class ServerGenerator {
    */
   private _writeBody(nodes: readonly ASTNode[], parent: ServerParent, generatorContext: GeneratorContext, parentContext: string, precode?: string): string[] {
     // Declared first, so that the context is created for the variables of the scope
-    const declarations = declareScope(nodes, generatorContext, toTemplateFunction, '_ssrTemplate', false);
-    const lines = [`const context = ${createContext(parentContext, undefined, generatorContext.identifierCount)};`];
+    const declarations = declareScope(nodes, generatorContext, toTemplateFunction, true);
+    // The root context receives the component, which the functions of the module computing the expressions are called with
+    const component = parentContext === '_ROOT_PARENT_CONTEXT' ? 'this' : undefined;
+    const lines = [`const context = ${createContext(parentContext, undefined, generatorContext.identifierCount, component)};`];
     if (precode) {
       lines.push(...precode.split('\n'));
     }
@@ -286,7 +290,7 @@ function skipNode(): undefined {
 function toTemplateFunction(template: TemplateNode, key: string, namespace: ElementNamespace, generatorContext: GeneratorContext): GeneratorFunctionToProcess {
   const context = new GeneratorContext(generatorContext, namespace);
   return {
-    fn: { node: template, parentNode: key, context, precode: declareTemplateParameters(template, context, SERVER_RESOLVE_OPTIONS, true).join('\n') },
+    fn: { node: template, parentNode: key, context, precode: declareTemplateParameters(template, key, context, SERVER_RESOLVE_OPTIONS, true).join('\n') },
     args: ['out', 'parentContext', 'params']
   };
 }

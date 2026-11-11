@@ -1,11 +1,12 @@
 import { escapeAttribute, escapeRawText } from '@xaendar/common';
-import { _applyHostProperties, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type RenderConditionalBinding, type WebComponentOptions } from '@xaendar/core';
+import { _applyHostProperties, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
 import type { Constructor, Dictionary, Function } from '@xaendar/types';
 import { ServerElement } from '../../dom/server-element/server-element';
 import type { ClientComponentOptions } from '../../types/client-component-options.type';
 import type { ServerBindings } from '../../types/server-bindings.type';
 import type { ServerDirective } from '../../types/server-directive.type';
 import type { ServerAttribute } from '../../types/server-attribute.type';
+import type { ServerElementConfig } from '../../types/server-element-config.type';
 import type { ServerOutput } from '../../types/server-output.type';
 import { _getServerRender } from '../server-render-registry/server-render-registry.util';
 import type { ServerRenderDefinition } from '../../types/server-render-definition.type';
@@ -22,18 +23,17 @@ import type { ServerRuntime } from '../../types/server-runtime.type';
  *
  * @param out - The output.
  * @param context - The runtime context of the element.
- * @param tagName - The tag name of the element.
- * @param attributes - The attributes and the classes of the element.
- * @param conditionalBindings - The conditional bindings of the element.
- * @param directives - The custom directives of the element, if any.
+ * @param config - The element, a constant of the module of the template: its tag name, its attributes and its classes,
+ *   its conditional bindings and its custom directives.
  * @throws When no custom directive is registered for the selector of a directive.
  */
-export function _ssrStartTag(out: ServerOutput, context: _Context, tagName: string, attributes: ServerAttribute[], conditionalBindings: RenderConditionalBinding<ServerBindings>[], directives?: ServerDirective[]): void {
+export function _ssrStartTag(out: ServerOutput, context: _Context, config: ServerElementConfig): void {
+  const { tagName, directives } = config;
   const element = new ServerElement();
   element.localName = tagName;
   // The directives of the selected branches, applied once every binding of the element is, as the client does
-  const branchDirectives = conditionalBindings.length ? new Array<ServerDirective[]>() : undefined;
-  applyBindings(element as unknown as Element, context, attributes, conditionalBindings, undefined, branchDirectives);
+  const branchDirectives = config.conditionalBindings?.length ? new Array<readonly ServerDirective[]>() : undefined;
+  applyBindings(element as unknown as Element, context, config, undefined, branchDirectives);
   if (directives?.length) {
     applyDirectives(element, context, directives);
   }
@@ -59,13 +59,12 @@ export function _ssrStartTag(out: ServerOutput, context: _Context, tagName: stri
  *
  * @param out - The output.
  * @param context - The runtime context of the element.
- * @param tagName - The tag name of the component.
- * @param attributes - The attributes and the classes of the element.
- * @param conditionalBindings - The conditional bindings of the element.
+ * @param config - The element, a constant of the module of the template: its tag name, its attributes and its classes,
+ *   and its conditional bindings.
  */
-export function _ssrComponent(out: ServerOutput, context: _Context, tagName: string, attributes: ServerAttribute[], conditionalBindings: RenderConditionalBinding<ServerBindings>[]): void {
-  renderOrWriteComponent(out, context, tagName, attributes, conditionalBindings, element => {
-    applyBindings(element, context, attributes, conditionalBindings);
+export function _ssrComponent(out: ServerOutput, context: _Context, config: ServerElementConfig): void {
+  renderOrWriteComponent(out, context, config, element => {
+    applyBindings(element, context, config);
     return undefined;
   });
 }
@@ -77,16 +76,15 @@ export function _ssrComponent(out: ServerOutput, context: _Context, tagName: str
  *
  * @param out - The output.
  * @param context - The runtime context of the element.
- * @param tagName - The tag name of the component.
- * @param attributes - The attributes and the classes of the element.
- * @param conditionalBindings - The conditional bindings of the element.
+ * @param config - The element, a constant of the module of the template: its tag name, its attributes and its classes,
+ *   and its conditional bindings.
  * @throws When a value of an input cannot be written into the HTML.
  */
-export function _ssrIsland(out: ServerOutput, context: _Context, tagName: string, attributes: ServerAttribute[], conditionalBindings: RenderConditionalBinding<ServerBindings>[]): void {
-  renderOrWriteComponent(out, context, tagName, attributes, conditionalBindings, element => {
+export function _ssrIsland(out: ServerOutput, context: _Context, config: ServerElementConfig): void {
+  renderOrWriteComponent(out, context, config, element => {
     const inputs: Dictionary<string, unknown> = {};
-    applyBindings(element, context, attributes, conditionalBindings, inputs);
-    return _stringifyState(inputs, `<${tagName}>`);
+    applyBindings(element, context, config, inputs);
+    return _stringifyState(inputs, `<${config.tagName}>`);
   });
 }
 
@@ -99,17 +97,17 @@ export function _ssrIsland(out: ServerOutput, context: _Context, tagName: string
  *
  * @param out - The output.
  * @param context - The runtime context of the element.
- * @param tagName - The tag name of the component.
- * @param attributes - The attributes and the classes of the element.
- * @param conditionalBindings - The conditional bindings of the element.
- * @param options - What the compiler knows of the component.
+ * @param config - The element, a constant of the module of the template: its tag name, its attributes and its classes,
+ *   and its conditional bindings.
+ * @param options - What the compiler knows of the component, a constant of the module of the template.
  * @throws When a value of an input cannot be written into the HTML.
  */
-export function _ssrClientComponent(out: ServerOutput, context: _Context, tagName: string, attributes: ServerAttribute[], conditionalBindings: RenderConditionalBinding<ServerBindings>[], options: ClientComponentOptions): void {
+export function _ssrClientComponent(out: ServerOutput, context: _Context, config: ServerElementConfig, options: ClientComponentOptions): void {
+  const { tagName } = config;
   const element = new ServerElement();
   element.localName = tagName;
   const inputs: Dictionary<string, unknown> = {};
-  applyClientBindings(element as unknown as Element, context, attributes, conditionalBindings, options, inputs);
+  applyClientBindings(element as unknown as Element, context, config, options, inputs);
   writeClientComponent(out, tagName, element as unknown as Element, options.island ? _stringifyState(inputs, `<${tagName}>`) : undefined, options.hydrate);
 }
 
@@ -174,16 +172,15 @@ function getSsrMetadata(Component: Constructor<CustomElement>): WebComponentOpti
  *
  * @param out - The output.
  * @param context - The runtime context of the element.
- * @param tagName - The tag name of the element.
- * @param attributes - The attributes and the classes of the element.
- * @param conditionalBindings - The conditional bindings of the element.
+ * @param config - The element: its tag name and its bindings.
  * @param bind - Binds the component (see {@link _renderComponent}).
  */
-function renderOrWriteComponent(out: ServerOutput, context: _Context, tagName: string, attributes: ServerAttribute[], conditionalBindings: RenderConditionalBinding<ServerBindings>[], bind: Function<[element: CustomElement], string | undefined>): void {
+function renderOrWriteComponent(out: ServerOutput, context: _Context, config: ServerElementConfig, bind: Function<[element: CustomElement], string | undefined>): void {
+  const { tagName } = config;
   const Component = customElements.get(tagName) as Constructor<CustomElement> | undefined;
   const definition = Component && _getServerRender(Component);
   if (!Component || !definition) {
-    _ssrStartTag(out, context, tagName, attributes, conditionalBindings);
+    _ssrStartTag(out, context, config);
     return;
   }
 
@@ -262,35 +259,51 @@ function collectEvents(Component: Constructor<CustomElement>, { render }: Server
 }
 
 /**
- * Applies the bindings of an element: the attributes and the classes in order, then the ones of the branch each
- * conditional binding selects, nested ones included.
+ * Applies the bindings of an element: the attributes and the classes in order, through their setters, then the ones of
+ * the branch each conditional binding selects, nested ones included.
  *
  * @param element - The element.
- * @param context - The runtime context of the element.
- * @param attributes - The attributes and the classes.
- * @param conditionalBindings - The conditional bindings.
+ * @param context - The runtime context of the element, which the expressions read.
+ * @param bindings - The bindings of the element, or of a branch.
  * @param inputs - Collects the values bound to the inputs of a component, by the name of their property, if they are
  *   needed.
  * @param directives - Collects the custom directives of the selected branches, if they are applied.
  */
-function applyBindings(element: Element, context: _Context, attributes: ServerAttribute[], conditionalBindings: RenderConditionalBinding<ServerBindings>[], inputs?: Dictionary<string, unknown>, directives?: ServerDirective[][]): void {
-  for (let i = 0; i < attributes.length; i++) {
-    const { name, value, setter } = attributes[i];
-    setter(context, element, name, value);
-    if (inputs && isInputSetter(setter)) {
-      inputs[name] = typeof value === 'function' ? value() : value;
-    }
-  }
-
-  for (let i = 0; i < conditionalBindings.length; i++) {
-    const branch = _selectBranch(conditionalBindings[i]);
-    if (branch) {
-      applyBindings(element, context, branch.attributes, branch.conditionalBindings, inputs, directives);
-      if (directives && branch.directives?.length) {
-        directives.push(branch.directives);
+function applyBindings(element: Element, context: _Context, bindings: ServerBindings, inputs?: Dictionary<string, unknown>, directives?: Array<readonly ServerDirective[]>): void {
+  const { attributes, conditionalBindings } = bindings;
+  if (attributes?.length) {
+    for (let i = 0; i < attributes.length; i++) {
+      const attribute = attributes[i];
+      attribute.setter(context, element, attribute);
+      if (inputs && isInputSetter(attribute.setter)) {
+        inputs[attribute.name] = valueOf(attribute, context);
       }
     }
   }
+
+  if (conditionalBindings?.length) {
+    for (let i = 0; i < conditionalBindings.length; i++) {
+      const branch = _selectBranch(conditionalBindings[i], context);
+      if (branch) {
+        applyBindings(element, context, branch, inputs, directives);
+        if (directives && branch.directives?.length) {
+          directives.push(branch.directives);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Computes the value of a binding: the literal, or the value of its expression, a function of the module of the
+ * template called with the component and the context.
+ *
+ * @param attribute - The binding.
+ * @param context - The runtime context of the element.
+ * @returns The value.
+ */
+function valueOf({ value }: ServerAttribute, context: _Context): unknown {
+  return typeof value === 'function' ? value.call(context.component, context) : value;
 }
 
 /**
@@ -303,15 +316,17 @@ function applyBindings(element: Element, context: _Context, attributes: ServerAt
  * @param directives - The directives.
  * @throws When no custom directive is registered for the selector of a directive.
  */
-function applyDirectives(element: ServerElement, context: _Context, directives: ServerDirective[]): void {
+function applyDirectives(element: ServerElement, context: _Context, directives: readonly ServerDirective[]): void {
   for (let i = 0; i < directives.length; i++) {
     const { selector, attributes } = directives[i];
     const Directive = _resolveDirective(selector, CustomDirective);
     const directive = new Directive();
     directive[_SET_DIRECTIVE_ELEMENT] = element as unknown as Element;
-    for (let j = 0; j < attributes.length; j++) {
-      const { name, value, setter } = attributes[j];
-      setter(context, directive, name, value);
+    if (attributes?.length) {
+      for (let j = 0; j < attributes.length; j++) {
+        const attribute = attributes[j];
+        attribute.setter(context, directive, attribute);
+      }
     }
 
     directive.onInit?.();
@@ -324,26 +339,30 @@ function applyDirectives(element: ServerElement, context: _Context, directives: 
  * {@link applyBindings} does, the inputs collected only when no template sets them in the browser.
  *
  * @param element - The element.
- * @param context - The runtime context of the element.
- * @param attributes - The attributes and the classes.
- * @param conditionalBindings - The conditional bindings.
+ * @param context - The runtime context of the element, which the expressions read.
+ * @param bindings - The bindings of the element, or of a branch.
  * @param options - What the compiler knows of the component.
  * @param inputs - Collects the values bound to the inputs, by the name of their property.
  */
-function applyClientBindings(element: Element, context: _Context, attributes: ServerAttribute[], conditionalBindings: RenderConditionalBinding<ServerBindings>[], options: ClientComponentOptions, inputs: Dictionary<string, unknown>): void {
-  for (let i = 0; i < attributes.length; i++) {
-    const { name, value, setter } = attributes[i];
-    if (!isInputSetter(setter)) {
-      setter(context, element, name, value);
-    } else if (options.island) {
-      inputs[name] = typeof value === 'function' ? value() : value;
+function applyClientBindings(element: Element, context: _Context, bindings: ServerBindings, options: ClientComponentOptions, inputs: Dictionary<string, unknown>): void {
+  const { attributes, conditionalBindings } = bindings;
+  if (attributes?.length) {
+    for (let i = 0; i < attributes.length; i++) {
+      const attribute = attributes[i];
+      if (!isInputSetter(attribute.setter)) {
+        attribute.setter(context, element, attribute);
+      } else if (options.island) {
+        inputs[attribute.name] = valueOf(attribute, context);
+      }
     }
   }
 
-  for (let i = 0; i < conditionalBindings.length; i++) {
-    const branch = _selectBranch(conditionalBindings[i]);
-    if (branch) {
-      applyClientBindings(element, context, branch.attributes, branch.conditionalBindings, options, inputs);
+  if (conditionalBindings?.length) {
+    for (let i = 0; i < conditionalBindings.length; i++) {
+      const branch = _selectBranch(conditionalBindings[i], context);
+      if (branch) {
+        applyClientBindings(element, context, branch, options, inputs);
+      }
     }
   }
 }

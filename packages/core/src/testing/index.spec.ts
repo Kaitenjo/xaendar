@@ -19,7 +19,7 @@ type Context = InstanceType<typeof _Context>;
  */
 const part = (tagName: string) => (parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
   const context = new _Context(parentContext, nodeStrategy);
-  _renderElement(parentNode, context, anchor as Comment | null, tagName, [], [], [], [], [], [], null);
+  _renderElement(parentNode, context, anchor as Comment | null, { tagName });
   return context;
 };
 

@@ -12,21 +12,29 @@ const cache = {} as ContextCache;
 const generateChildren = vi.fn<GenerateChildren>((nodes, parent) => ({ pieces: nodes.length ? [{ html: `{children of ${parent.id}}` }] : [] }));
 
 /**
- * Generates the code of the first element of a template, returning its lines and the functions it calls.
+ * Generates the code of the first element of a template, returning its lines, the functions it calls, and the
+ * constants and the functions it declares in the module.
  */
 const generate = (source: string, context = new GeneratorContext(cache)) => {
   context.addSignalClassField('on');
   context.addSignalClassField('mode');
   const { pieces, functionsToProcess } = generateServerElement(parseTemplate(source)[0] as ElementNode, { id: 'root' }, '0', context, generateChildren);
-  return { code: toStatements(pieces), functionsToProcess };
+  return { code: toStatements(pieces), functionsToProcess, constants: context.constantDeclarations, functions: context.functionDeclarations };
 };
+
+/**
+ * Writes the declaration of a function of the module returning the value of an expression.
+ */
+const expressionFunction = (name: string, expression: string) => `function ${name}(context) {\n  return ${expression};\n}`;
 
 describe('generateServerElement', () => {
   it('writes a native element with static and expression attributes as HTML, escaping the values of the expressions when rendered', () => {
-    const { code, functionsToProcess } = generate('<a href="/x?a=1&amp;b=&quot;2&quot;" title="{ on() }">t</a>');
+    const { code, functionsToProcess, constants, functions } = generate('<a href="/x?a=1&amp;b=&quot;2&quot;" title="{ on() }">t</a>');
 
     expect(code).toEqual(['out.push(\'<a href="/x?a=1&amp;b=&quot;2&quot;"\' + _ssrAttribute(\'title\', this.on()) + \'>{children of a0}</a>\');']);
     expect(functionsToProcess).toBeUndefined();
+    expect(constants).toEqual([]);
+    expect(functions).toEqual([]);
   });
 
   it('writes no end tag for a void element, and a line feed after the start tag of an element dropping it', () => {
@@ -45,14 +53,20 @@ describe('generateServerElement', () => {
     expect(generate('<input #field />').code).toEqual(['context.set(\'field\', undefined);', 'out.push(\'<input>\');']);
   });
 
-  it('writes the start tag of a component through _ssrComponent, and its light DOM and end tag after it', () => {
-    expect(generate('<user-card name="x" label="{ on() }">light</user-card>').code).toEqual([
-      '_ssrComponent(out, context, \'user-card\', [',
-      '  { name: \'name\', value: \'x\', setter: _setProperty },',
-      '  { name: \'label\', value: () => this.on(), setter: _setExpressionProperty },',
-      '], []);',
-      'out.push(\'{children of user_card0}</user-card>\');'
-    ]);
+  it('writes the start tag of a component through _ssrComponent with the constant describing it, and its light DOM and end tag after it', () => {
+    const { code, constants, functions } = generate('<user-card name="x" label="{ on() }">light</user-card>');
+
+    expect(code).toEqual(['_ssrComponent(out, context, user_card0$element);', 'out.push(\'{children of user_card0}</user-card>\');']);
+    expect(constants).toEqual([[
+      'const user_card0$element = {',
+      '  tagName: \'user-card\',',
+      '  attributes: [',
+      '    { name: \'name\', value: \'x\', setter: _setProperty },',
+      '    { name: \'label\', value: user_card0$label, setter: _setExpressionProperty }',
+      '  ]',
+      '};'
+    ].join('\n')]);
+    expect(functions).toEqual([expressionFunction('user_card0$label', 'this.on()')]);
   });
 
   it('writes a custom element of another library like a native element', () => {
@@ -63,17 +77,23 @@ describe('generateServerElement', () => {
   });
 
   it('writes the start tag of an element toggling classes through _ssrStartTag, the classes after the attributes', () => {
-    expect(generate('<div class="a" [class.is-on]="{ on() }"></div>').code).toEqual([
-      '_ssrStartTag(out, context, \'div\', [',
-      '  { name: \'class\', value: \'a\', setter: _setProperty },',
-      '  { name: \'is-on\', value: () => this.on(), setter: _setExpressionClass },',
-      '], []);',
-      'out.push(\'</div>\');'
-    ]);
+    const { code, constants, functions } = generate('<div class="a" [class.is-on]="{ on() }"></div>');
+
+    expect(code).toEqual(['_ssrStartTag(out, context, div0$element);', 'out.push(\'</div>\');']);
+    expect(constants).toEqual([[
+      'const div0$element = {',
+      '  tagName: \'div\',',
+      '  attributes: [',
+      '    { name: \'class\', value: \'a\', setter: _setProperty },',
+      '    { name: \'is-on\', value: div0$class_is_on, setter: _setExpressionClass }',
+      '  ]',
+      '};'
+    ].join('\n')]);
+    expect(functions).toEqual([expressionFunction('div0$class_is_on', 'this.on()')]);
   });
 
   it('describes the conditional bindings writing attributes or classes, nested ones included, leaving out the ones writing nothing', () => {
-    const { code } = generate([
+    const { code, constants, functions } = generate([
       '<div',
       '  @if (on()) { title="x" @if (inner) { id="y" } } @else if (other) { [class.on]="{ 1 }" } @else { title="z" }',
       '  @switch (mode()) { @case (\'a\') @case (\'b\') { lang="x" } @default { lang="y" } }',
@@ -81,156 +101,146 @@ describe('generateServerElement', () => {
       '></div>'
     ].join(' '));
 
-    expect(code).toEqual([
-      '_ssrStartTag(out, context, \'div\', [], [',
-      '  {',
-      '    branches: [',
-      '      {',
-      '        condition: () => this.on(),',
-      '        attributes: [',
-      '          { name: \'title\', value: \'x\', setter: _setProperty },',
-      '        ],',
-      '        conditionalBindings: [',
-      '          {',
-      '            branches: [',
-      '              {',
-      '                condition: () => this.inner,',
-      '                attributes: [',
-      '                  { name: \'id\', value: \'y\', setter: _setProperty },',
-      '                ],',
-      '                conditionalBindings: []',
-      '              },',
-      '            ]',
-      '          },',
-      '        ]',
-      '      },',
-      '      {',
-      '        condition: () => this.other,',
-      '        attributes: [',
-      '          { name: \'on\', value: () => 1, setter: _setExpressionClass },',
-      '        ],',
-      '        conditionalBindings: []',
-      '      },',
-      '      {',
-      '        attributes: [',
-      '          { name: \'title\', value: \'z\', setter: _setProperty },',
-      '        ],',
-      '        conditionalBindings: []',
-      '      },',
-      '    ]',
-      '  },',
-      '  {',
-      '    expression: () => this.mode(),',
-      '    branches: [',
-      '      {',
-      '        condition: [\'a\', \'b\'],',
-      '        attributes: [',
-      '          { name: \'lang\', value: \'x\', setter: _setProperty },',
-      '        ],',
-      '        conditionalBindings: []',
-      '      },',
-      '      {',
-      '        condition: null,',
-      '        attributes: [',
-      '          { name: \'lang\', value: \'y\', setter: _setProperty },',
-      '        ],',
-      '        conditionalBindings: []',
-      '      },',
-      '    ]',
-      '  },',
-      ']);',
-      'out.push(\'</div>\');'
+    expect(code).toEqual(['_ssrStartTag(out, context, div0$element);', 'out.push(\'</div>\');']);
+    expect(constants).toEqual([[
+      'const div0$element = {',
+      '  tagName: \'div\',',
+      '  conditionalBindings: [',
+      '    {',
+      '      branches: [',
+      '        {',
+      '          condition: div0$if,',
+      '          attributes: [{ name: \'title\', value: \'x\', setter: _setProperty }],',
+      '          conditionalBindings: [',
+      '            {',
+      '              branches: [{ condition: div0$if1, attributes: [{ name: \'id\', value: \'y\', setter: _setProperty }] }]',
+      '            }',
+      '          ]',
+      '        },',
+      '        {',
+      '          condition: div0$if2,',
+      '          attributes: [{ name: \'on\', value: div0$class_on, setter: _setExpressionClass }]',
+      '        },',
+      '        { attributes: [{ name: \'title\', value: \'z\', setter: _setProperty }] }',
+      '      ]',
+      '    },',
+      '    {',
+      '      expression: div0$switch,',
+      '      branches: [',
+      '        { condition: [\'a\', \'b\'], attributes: [{ name: \'lang\', value: \'x\', setter: _setProperty }] },',
+      '        { condition: null, attributes: [{ name: \'lang\', value: \'y\', setter: _setProperty }] }',
+      '      ]',
+      '    }',
+      '  ]',
+      '};'
+    ].join('\n')]);
+    expect(functions).toEqual([
+      expressionFunction('div0$if', 'this.on()'),
+      expressionFunction('div0$if1', 'this.inner'),
+      expressionFunction('div0$if2', 'this.other'),
+      expressionFunction('div0$class_on', '1'),
+      expressionFunction('div0$switch', 'this.mode()')
     ]);
+  });
+
+  it('marks an element listening to submit, in the branch of a conditional binding listening to it too', () => {
+    expect(generate('<form (submit)="f()"></form>').code).toEqual(['out.push(\'<form data-xd-submit=""></form>\');']);
+
+    const { constants } = generate('<form @if (on()) { (submit)="f()" }></form>');
+
+    expect(constants).toEqual([[
+      'const form0$element = {',
+      '  tagName: \'form\',',
+      '  conditionalBindings: [',
+      '    {',
+      '      branches: [{ condition: form0$if, attributes: [{ name: \'data-xd-submit\', value: \'\', setter: _setProperty }] }]',
+      '    }',
+      '  ]',
+      '};'
+    ].join('\n')]);
   });
 
   it('writes the start tag of a native element applying custom directives through _ssrStartTag, with their properties and without their events', () => {
-    expect(generate('<p title="t" @@tip(text="a" level="{ on() }" (shown)="f()") @@mark>x</p>').code).toEqual([
-      '_ssrStartTag(out, context, \'p\', [',
-      '  { name: \'title\', value: \'t\', setter: _setProperty },',
-      '], [], [',
-      '  {',
-      '    selector: \'tip\',',
-      '    attributes: [',
-      '      { name: \'text\', value: \'a\', setter: _setProperty },',
-      '      { name: \'level\', value: () => this.on(), setter: _setExpressionProperty },',
-      '    ]',
-      '  },',
-      '  {',
-      '    selector: \'mark\',',
-      '    attributes: []',
-      '  },',
-      ']);',
-      'out.push(\'{children of p0}</p>\');'
-    ]);
+    const { code, constants, functions } = generate('<p title="t" @@tip(text="a" level="{ on() }" (shown)="f()") @@mark>x</p>');
+
+    expect(code).toEqual(['_ssrStartTag(out, context, p0$element);', 'out.push(\'{children of p0}</p>\');']);
+    expect(constants).toEqual([[
+      'const p0$element = {',
+      '  tagName: \'p\',',
+      '  attributes: [{ name: \'title\', value: \'t\', setter: _setProperty }],',
+      '  directives: [',
+      '    {',
+      '      selector: \'tip\',',
+      '      attributes: [',
+      '        { name: \'text\', value: \'a\', setter: _setProperty },',
+      '        { name: \'level\', value: p0$level, setter: _setExpressionProperty }',
+      '      ]',
+      '    },',
+      '    { selector: \'mark\' }',
+      '  ]',
+      '};'
+    ].join('\n')]);
+    expect(functions).toEqual([expressionFunction('p0$level', 'this.on()')]);
   });
 
   it('describes the custom directives of the conditional bindings of a native element, nested ones included', () => {
-    expect(generate('<p @if (on()) { @@tip @if (inner) { @@mark } }></p>').code).toEqual([
-      '_ssrStartTag(out, context, \'p\', [], [',
-      '  {',
-      '    branches: [',
-      '      {',
-      '        condition: () => this.on(),',
-      '        attributes: [],',
-      '        directives: [',
-      '          {',
-      '            selector: \'tip\',',
-      '            attributes: []',
-      '          },',
-      '        ],',
-      '        conditionalBindings: [',
-      '          {',
-      '            branches: [',
-      '              {',
-      '                condition: () => this.inner,',
-      '                attributes: [],',
-      '                directives: [',
-      '                  {',
-      '                    selector: \'mark\',',
-      '                    attributes: []',
-      '                  },',
-      '                ],',
-      '                conditionalBindings: []',
-      '              },',
-      '            ]',
-      '          },',
-      '        ]',
-      '      },',
-      '    ]',
-      '  },',
-      ']);',
-      'out.push(\'</p>\');'
-    ]);
+    const { code, constants } = generate('<p @if (on()) { @@tip @if (inner) { @@mark } }></p>');
+
+    expect(code).toEqual(['_ssrStartTag(out, context, p0$element);', 'out.push(\'</p>\');']);
+    expect(constants).toEqual([[
+      'const p0$element = {',
+      '  tagName: \'p\',',
+      '  conditionalBindings: [',
+      '    {',
+      '      branches: [',
+      '        {',
+      '          condition: p0$if,',
+      '          directives: [{ selector: \'tip\' }],',
+      '          conditionalBindings: [{ branches: [{ condition: p0$if1, directives: [{ selector: \'mark\' }] }] }]',
+      '        }',
+      '      ]',
+      '    }',
+      '  ]',
+      '};'
+    ].join('\n')]);
   });
 
   it('leaves out the custom directives of a component, its own and the ones of its conditional bindings', () => {
-    expect(generate('<user-card @@tip @if (on()) { @@mark }></user-card>').code).toEqual([
-      '_ssrComponent(out, context, \'user-card\', [], []);',
-      'out.push(\'</user-card>\');'
-    ]);
+    const { code, constants, functions } = generate('<user-card @@tip @if (on()) { @@mark }></user-card>');
+
+    expect(code).toEqual(['_ssrComponent(out, context, user_card0$element);', 'out.push(\'</user-card>\');']);
+    expect(constants).toEqual(['const user_card0$element = { tagName: \'user-card\' };']);
+    expect(functions).toEqual([]);
   });
 
-  it('writes an element its structural directives allow through _ssrStructural, its content rendered by a function of its own', () => {
-    const { code, functionsToProcess } = generate('<div *first *second(role="admin" level="{ on() }") class="x">text</div>');
+  it('writes an element its structural directives allow through _ssrStructural, written by a function of the module and its content by a function of its own', () => {
+    const { code, functionsToProcess, constants, functions } = generate('<div *first *second(role="admin" level="{ on() }") class="x">text</div>');
 
-    expect(code).toEqual([
-      '_ssrStructural(out, context, [',
-      '  {',
-      '    selector: \'first\',',
-      '    attributes: []',
-      '  },',
-      '  {',
-      '    selector: \'second\',',
-      '    attributes: [',
-      '      { name: \'role\', value: \'admin\', setter: _setProperty },',
-      '      { name: \'level\', value: () => this.on(), setter: _setExpressionProperty },',
-      '    ]',
-      '  },',
-      '], [], (out, context) => {',
-      '  out.push(\'<div class="x">\');',
-      '  div0Children.call(this, out, context);',
-      '  out.push(\'</div>\');',
-      '});'
+    expect(code).toEqual(['_ssrStructural(out, context, div0$structural);']);
+    expect(constants).toEqual([[
+      'const div0$structural = {',
+      '  structuralDirectives: [',
+      '    { selector: \'first\' },',
+      '    {',
+      '      selector: \'second\',',
+      '      attributes: [',
+      '        { name: \'role\', value: \'admin\', setter: _setProperty },',
+      '        { name: \'level\', value: div0$level, setter: _setExpressionProperty }',
+      '      ]',
+      '    }',
+      '  ],',
+      '  render: div0$render',
+      '};'
+    ].join('\n')]);
+    expect(functions).toEqual([
+      expressionFunction('div0$level', 'this.on()'),
+      [
+        'function div0$render(out, context) {',
+        '  out.push(\'<div class="x">\');',
+        '  div0Children.call(this, out, context);',
+        '  out.push(\'</div>\');',
+        '}'
+      ].join('\n')
     ]);
     const { fn, args } = functionsToProcess!.get('div0Children')!;
     expect(fn.parent).toEqual({ id: 'div0', tag: 'div' });
@@ -239,69 +249,54 @@ describe('generateServerElement', () => {
   });
 
   it('writes an element without content its structural directives allow, calling no function', () => {
-    const { code, functionsToProcess } = generate('<input *first />');
+    const { constants, functions, functionsToProcess } = generate('<input *first />');
 
-    expect(code.slice(-3)).toEqual(['], [], (out, context) => {', '  out.push(\'<input>\');', '});']);
+    expect(constants).toEqual(['const input0$structural = { structuralDirectives: [{ selector: \'first\' }], render: input0$render };']);
+    expect(functions).toEqual(['function input0$render(out, context) {\n  out.push(\'<input>\');\n}']);
     expect(functionsToProcess!.size).toBe(0);
   });
 
   it('describes the conditional bindings applying structural directives, nested ones included, leaving out the ones applying none', () => {
-    const { code } = generate('<p @if (on()) { title="x" *first } @else { *second } @if (other) { @if (inner) { *third } } @if (skipped) { lang="y" }></p>');
-    const structural = code.join('\n');
+    const { code, constants, functions } = generate('<p @if (on()) { title="x" *first } @else { *second } @if (other) { @if (inner) { *third } } @if (skipped) { lang="y" }></p>');
 
-    expect(structural).toContain([
-      '_ssrStructural(out, context, [], [',
-      '  {',
-      '    branches: [',
-      '      {',
-      '        condition: () => this.on(),',
-      '        structuralDirectives: [',
-      '          {',
-      '            selector: \'first\',',
-      '            attributes: []',
-      '          },',
-      '        ],',
-      '        conditionalBindings: []',
-      '      },',
-      '      {',
-      '        structuralDirectives: [',
-      '          {',
-      '            selector: \'second\',',
-      '            attributes: []',
-      '          },',
-      '        ],',
-      '        conditionalBindings: []',
-      '      },',
-      '    ]',
-      '  },',
-      '  {',
-      '    branches: [',
-      '      {',
-      '        condition: () => this.other,',
-      '        structuralDirectives: [],',
-      '        conditionalBindings: [',
-      '          {',
-      '            branches: [',
-      '              {',
-      '                condition: () => this.inner,',
-      '                structuralDirectives: [',
-      '                  {',
-      '                    selector: \'third\',',
-      '                    attributes: []',
-      '                  },',
-      '                ],',
-      '                conditionalBindings: []',
-      '              },',
-      '            ]',
-      '          },',
-      '        ]',
-      '      },',
-      '    ]',
-      '  },',
-      '], (out, context) => {'
-    ].join('\n'));
-    // The element writes the attributes of the conditional bindings writing any
-    expect(structural).toContain('condition: () => this.skipped,');
-    expect(structural).not.toContain('condition: () => this.other,\n            attributes');
+    expect(code).toEqual(['_ssrStructural(out, context, p0$structural);']);
+    expect(constants).toEqual([
+      // The element writes the attributes of the conditional bindings writing any, a branch writing none kept in its place
+      [
+        'const p0$element = {',
+        '  tagName: \'p\',',
+        '  conditionalBindings: [',
+        '    {',
+        '      branches: [{ condition: p0$if3, attributes: [{ name: \'title\', value: \'x\', setter: _setProperty }] }, {}]',
+        '    },',
+        '    {',
+        '      branches: [{ condition: p0$if4, attributes: [{ name: \'lang\', value: \'y\', setter: _setProperty }] }]',
+        '    }',
+        '  ]',
+        '};'
+      ].join('\n'),
+      [
+        'const p0$structural = {',
+        '  structuralConditionalBindings: [',
+        '    {',
+        '      branches: [',
+        '        { condition: p0$if, structuralDirectives: [{ selector: \'first\' }] },',
+        '        { structuralDirectives: [{ selector: \'second\' }] }',
+        '      ]',
+        '    },',
+        '    {',
+        '      branches: [',
+        '        {',
+        '          condition: p0$if1,',
+        '          conditionalBindings: [{ branches: [{ condition: p0$if2, structuralDirectives: [{ selector: \'third\' }] }] }]',
+        '        }',
+        '      ]',
+        '    }',
+        '  ],',
+        '  render: p0$render',
+        '};'
+      ].join('\n')
+    ]);
+    expect(functions.at(-1)).toBe('function p0$render(out, context) {\n  _ssrStartTag(out, context, p0$element);\n  out.push(\'</p>\');\n}');
   });
 });

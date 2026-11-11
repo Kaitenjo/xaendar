@@ -60,6 +60,16 @@ export class _Context {
    */
   public nodeStrategy: NodeStrategy;
   /**
+   * The component whose template the context renders: the expressions of the template, functions of its module, are
+   * called with it as `this` (see `TemplateExpression`). Inherited from the parent context; the root context of a
+   * render receives it from the render, called with the component as `this`.
+   *
+   * N.B. Deliberate, to save memory: one field per context, which every binding reaches through the context it keeps,
+   * instead of a closure per binding capturing the component, or a field of every binding and effect holding it. Do not
+   * move it into the bindings.
+   */
+  public readonly component: unknown;
+  /**
    * The value of a variable declared before it is initialized (see {@link declare}), by what declares it.
    */
   private static readonly _uninitialized: Readonly<Record<_DeclarationKind, symbol>> = {
@@ -118,10 +128,13 @@ export class _Context {
    * @param variableCount - The number of variables the scope declares, which the compiled code knows: up to
    *   {@link VARIABLES_LIMIT} they are kept in an array of that size, beyond in a `Map`. Without it the variables are
    *   still accepted, the array growing with each of them (see {@link addIdentifier}).
+   * @param component - The component whose template the context renders. Defaults to the one of the parent: only the
+   *   root context of a render passes it.
    */
-  constructor(private _parent: _Context, nodeStrategy?: NodeStrategy, variableCount = 0) {
+  constructor(private _parent: _Context, nodeStrategy?: NodeStrategy, variableCount = 0, component: unknown = _parent.component) {
     this.createElement = this._parent.createElement;
     this.nodeStrategy = nodeStrategy ?? this._parent.nodeStrategy ?? CREATE_NODES;
+    this.component = component;
     this._variables = variableCount > VARIABLES_LIMIT ? new Map() : variableCount ? new Array(2 * variableCount) : null;
     // Created by a refresh running, the context renders with the values already changed
     this._pass = currentPass;
@@ -263,6 +276,27 @@ export class _Context {
         variables[index + 1] = undefined;
       }
     }
+  }
+
+  /**
+   * Returns the context declaring a variable: this scope, or the nearest ancestor scope declaring it, the one
+   * {@link get} reads it from. A `@render` renders the instance of a template as a child of the scope declaring the
+   * template, whose names its content reads.
+   *
+   * @param name - The name of the variable.
+   * @returns The context declaring it.
+   * @throws A `ReferenceError` when no scope of the chain declares it.
+   */
+  public ownerOf(name: string): _Context {
+    // The parent of a root context is a shared object with no variables, nor a parent
+    for (let context: _Context | undefined = this; context; context = context._parent) {
+      const variables = context._variables;
+      if (variables && (variables instanceof Map ? variables.has(name) : indexOfVariable(variables, name) !== -1)) {
+        return context;
+      }
+    }
+
+    throw new ReferenceError(`"${name}" is not declared in this scope`);
   }
 
   /**
