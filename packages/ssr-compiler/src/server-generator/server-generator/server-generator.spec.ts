@@ -169,7 +169,6 @@ describe('ServerGenerator', () => {
       '  } else {',
       '    out.push(\'<!--xd-if-->\');',
       '  }',
-      '  out.push(\'<!--/xd-if-->\');',
       '}'
     ].join('\n'));
     expect(code).toContain([
@@ -199,6 +198,60 @@ describe('ServerGenerator', () => {
     ].join('\n'));
     // The functions of the module computing the expressions close it, after the ones rendering the blocks
     expect(code.endsWith('function if2__for1$track(context, user, $index, $first, $last, $even, $odd) {\n  return user;\n}')).toBe(true);
+  });
+
+  describe('the last block of its parent', () => {
+    it('writes no closing marker for the last block of the root and of the children of an element', () => {
+      const code = generate('<td>@if (x) { a }</td>@switch (m) { @default { b } }');
+
+      expect(code).not.toContain('<!--/xd-if-->');
+      expect(code).not.toContain('<!--/xd-switch-->');
+      expect(code).toContain('<!--xd-if:0-->');
+      expect(code).toContain('<!--xd-switch:0-->');
+    });
+
+    it('writes the closing marker of a block followed by a rendered sibling, and none when only @let and <template> follow it', () => {
+      const code = generate('<p>@if (x) { a } text</p><div>@for (i of items; track i) { b }@let n = 1;<template t() /></div>');
+
+      expect(code.match(/<!--\/xd-if-->/g)).toHaveLength(1);
+      expect(code).not.toContain('<!--/xd-for-->');
+    });
+
+    it('makes the last block of the content of a last block last too, at any depth', () => {
+      const code = generate('@if (x) { <b></b>@switch (x) { @case (1) { @hydrate { @client { c } } } } } @else { @try { t } @catch { @defer { d } @placeholder { @if (y) { p } } } }');
+
+      expect(code).not.toMatch(/<!--\/xd-(if|switch|hydrate|client|t|d)-->/);
+      expect(code).toContain('_ssrTry(out, context, else0__try0, else0__catch0, true);');
+    });
+
+    it('writes the closing marker of the blocks of the body of a @for, whose items move, and of the content of a template', () => {
+      const code = generate('<ul>@for (row of rows; track row) { <li>@if (row) { r }</li>@if (row) { i } }</ul><template t()>@if (x) { a }</template>@render t()');
+
+      expect(code).not.toContain('<!--/xd-for-->');
+      // The @if of the body and the one of the template
+      expect(code.match(/<!--\/xd-if-->/g)).toHaveLength(2);
+      expect(code).toContain([
+        'function ul0__for0(out, parentContext, items, index) {',
+        '  const context = new _Context(parentContext, undefined, 1);',
+        '  _iterationVariables(context, items, index, ul0__for0Variables);',
+        '  out.push(\'<li>\');',
+        '  if (context.get(\'row\')) {',
+        '    out.push(\'<!--xd-if:0-->\');',
+        '    ul0__for0__li0__if0.call(this, out, context);',
+        '  } else {',
+        '    out.push(\'<!--xd-if-->\');',
+        '  }',
+        '  out.push(\'</li>\');',
+        '  if (context.get(\'row\')) {',
+        '    out.push(\'<!--xd-if:0-->\');',
+        '    ul0__for0__if1.call(this, out, context);',
+        '  } else {',
+        '    out.push(\'<!--xd-if-->\');',
+        '  }',
+        '  out.push(\'<!--/xd-if-->\');',
+        '}'
+      ].join('\n'));
+    });
   });
 
   it('declares the scope of the content of an element a structural directive is applied to, and not the one of any other element', () => {

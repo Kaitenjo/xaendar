@@ -33,7 +33,7 @@ describe('generateServerIf', () => {
       { html: '<!--/xd-if-->' }
     ]);
     expect([...functionsToProcess!.keys()]).toEqual(['ul0__if2', 'ul0__elseIf2_0', 'ul0__elseIf2_1', 'ul0__else2']);
-    expect(functionsToProcess!.get('ul0__else2')!.fn.parent).toEqual({ id: 'ul0__else2', tag: 'ul' });
+    expect(functionsToProcess!.get('ul0__else2')!.fn.parent).toEqual({ id: 'ul0__else2', tag: 'ul', end: false });
   });
 
   it('writes the markers of no branch without an @else when no condition holds', () => {
@@ -45,5 +45,17 @@ describe('generateServerIf', () => {
       { statement: 'if (this.visible) {\n  out.push(\'<!--xd-if:0-->\');\n  if0.call(this, out, context);\n} else {\n  out.push(\'<!--xd-if-->\');\n}' },
       { html: '<!--/xd-if-->' }
     ]);
+  });
+
+  it('writes no closing marker for the last node of its parent, whose branches end where the parent does', () => {
+    const node = parseTemplate('@if (visible) { 1 } @else { 2 }')[0] as IfNode;
+
+    const { pieces, functionsToProcess } = generateServerIf(node, { id: 'td0', tag: 'td', end: true }, '0', new GeneratorContext(cache), undefined, true);
+
+    expect(pieces).toEqual([
+      { statement: 'if (this.visible) {\n  out.push(\'<!--xd-if:0-->\');\n  td0__if0.call(this, out, context);\n} else {\n  out.push(\'<!--xd-if:1-->\');\n  td0__else0.call(this, out, context);\n}' }
+    ]);
+    expect(functionsToProcess!.get('td0__if0')!.fn.parent).toEqual({ id: 'td0__if0', tag: 'td', end: true });
+    expect(functionsToProcess!.get('td0__else0')!.fn.parent).toEqual({ id: 'td0__else0', tag: 'td', end: true });
   });
 });

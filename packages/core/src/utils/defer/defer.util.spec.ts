@@ -312,6 +312,35 @@ describe('_defer', () => {
       expect(console.error).toHaveBeenCalledWith(failure);
     });
 
+    it('renders the last block of its parent without anchor, each part replacing the previous one at the end of the parent', async () => {
+      const element = parent('<p></p>');
+      const root = createRoot();
+      const block = vi.spyOn(CREATE_NODES, 'block');
+      const content = part('b');
+      let loaded!: () => void;
+
+      _defer(element, root, null, { triggers: ['interaction'], load: () => new Promise<void>(resolve => loaded = resolve), content, placeholder: part('button'), loading: part('progress'), last: true });
+      expect(block).toHaveBeenCalledExactlyOnceWith(root, element, null, 'defer', 'xd-d', true);
+      expect(element.innerHTML).toBe('<p></p><button></button>');
+      await armed();
+      element.querySelector('button')!.click();
+      expect(element.innerHTML).toBe('<p></p><progress></progress>');
+      loaded();
+      await flush();
+
+      expect(element.innerHTML).toBe('<p></p><b></b>');
+      expect(content.mock.calls[0][2]).toBeNull();
+    });
+
+    it('renders the @error of the last block of its parent at the end of the parent', async () => {
+      const element = parent('<p></p>');
+
+      _defer(element, createRoot(), null, { triggers: ['load'], load: () => Promise.reject(new Error('offline')), content: part('b'), error: part('s'), last: true });
+      await flush();
+
+      expect(element.innerHTML).toBe('<p></p><s></s>');
+    });
+
     it('does nothing once its context is destroyed, before a trigger fires or while the modules load', async () => {
       const root = createRoot();
       const content = part('b');
@@ -605,6 +634,26 @@ describe('_defer', () => {
 
       expect(element.innerHTML).toBe('<!--/xd-d-->');
       expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> <i> the browser does not render, which it removes along with what follows it');
+    });
+
+    it('adopts the @placeholder of the last block of its parent, which the server closes with no marker, and replaces it with the content at the end of the parent', async () => {
+      const element = parent('<p></p><!--xd-d--><button>Load</button>');
+      const button = element.querySelector('button')!;
+      const strategy = new ClaimNodes('x-host');
+      const context = createRoot(strategy);
+      const placeholder = part('button');
+      strategy.element(context, element, 'p');
+
+      _defer(element, context, null, { triggers: ['interaction'], content: part('b'), placeholder, last: true });
+      expect(placeholder.mock.calls[0][2]).toBeNull();
+      expect(placeholder.mock.calls[0][3]).toBe(strategy);
+      expect(element.querySelector('button')).toBe(button);
+      expect(element.innerHTML).toBe('<p></p><button>Load</button>');
+      await armed();
+      button.click();
+
+      expect(element.innerHTML).toBe('<p></p><b></b>');
+      expect(console.warn).not.toHaveBeenCalled();
     });
   });
 });

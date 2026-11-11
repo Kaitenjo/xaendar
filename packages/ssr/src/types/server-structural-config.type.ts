@@ -21,4 +21,9 @@ export type ServerStructuralConfig = {
    * @param context - The context of the element.
    */
   readonly render: (this: unknown, out: ServerOutput, context: _Context) => void;
+  /**
+   * Whether the element is the last node of its parent, written without the marker closing it, as the client renders it
+   * without anchor. Left out when it is not.
+   */
+  readonly last?: true;
 };

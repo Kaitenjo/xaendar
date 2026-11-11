@@ -63,12 +63,36 @@ describe('_if', () => {
 
     _if(parent, context, null, { branches: [] });
     _if(parent, context, null, { branches: [] }, _SSR_MARKERS.switch);
+    _if(parent, context, null, { branches: [], last: true });
 
     expect(block.mock.calls).toEqual([
-      [context, parent, null, 'if', _SSR_MARKERS.if],
-      [context, parent, null, 'if', _SSR_MARKERS.switch]
+      [context, parent, null, 'if', _SSR_MARKERS.if, undefined],
+      [context, parent, null, 'if', _SSR_MARKERS.switch, undefined],
+      [context, parent, null, 'if', _SSR_MARKERS.if, true]
     ]);
     block.mockRestore();
+  });
+
+  it('renders the last block of its parent without anchor, appending every branch it switches to at the end of the parent', async () => {
+    const parent = document.createElement('div');
+    parent.appendChild(document.createElement('i')).textContent = 'i';
+    const value = signal(1);
+    const nodes = () => Array.from(parent.childNodes).map(node => `${node.nodeName}:${node.textContent}`);
+    _if(parent, createRoot(), null, { branches: [branch('a', () => value() === 1), branch('b', () => value() === 2)], last: true });
+
+    expect(nodes()).toEqual(['I:i', 'SPAN:a']);
+
+    value.set(2);
+    await flush();
+    expect(nodes()).toEqual(['I:i', 'SPAN:b']);
+
+    value.set(9);
+    await flush();
+    expect(nodes()).toEqual(['I:i']);
+
+    value.set(1);
+    await flush();
+    expect(nodes()).toEqual(['I:i', 'SPAN:a']);
   });
 
   describe('single branch', () => {

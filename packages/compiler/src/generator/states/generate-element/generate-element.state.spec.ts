@@ -756,6 +756,28 @@ describe('generateElement', () => {
       expectValidJavascript(result);
     });
 
+    it('declares an element applying structural directives last when it is the last node of its parent, a block without anchor', async () => {
+      const context = new GeneratorContext(cache);
+      const { code } = await generateElement(parse('<div *first></div>'), 'td0', '0', context, null, false, true);
+
+      expect(code).toEqual(['_renderElement(td0, context, null, td0__div0$element);']);
+      expect(context.constantDeclarations).toEqual(['const td0__div0$element = { tagName: \'div\', structuralDirectives: [{ selector: \'first\' }], last: true };']);
+    });
+
+    it('declares last an element applying structural directives only through a conditional binding', async () => {
+      const context = new GeneratorContext(cache);
+      await generateElement(parse('<div @if (cond()) { *first }></div>'), 'td0', '0', context, null, false, true);
+
+      expect(context.constantDeclarations[0]).toMatch(/structuralConditionalBindings: [\s\S]*,\n {2}last: true\n\};$/);
+    });
+
+    it('ignores the position of an element applying no structural directive, which is no block', async () => {
+      const context = new GeneratorContext(cache);
+      await generateElement(parse('<div title="x"></div>'), 'td0', '0', context, null, false, true);
+
+      expect(context.constantDeclarations).toEqual(['const td0__div0$element = { tagName: \'div\', attributes: [{ name: \'title\', value: \'x\', setter: _setProperty }] };']);
+    });
+
     it('names the function rendering the children, each time the element is created, after the structural directives', async () => {
       const { constants, functionsToProcess } = await run('<div *first><span></span></div>');
 

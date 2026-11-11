@@ -20134,7 +20134,7 @@ function getWellformedEdit(textEdit) {
 }
 
 // ../packages/language-server/src/lib/server/server.ts
-var import_node38 = __toESM(require_main3(), 1);
+var import_node39 = __toESM(require_main3(), 1);
 
 // ../packages/common/src/models/stack/stack.ts
 var Stack = class {
@@ -31740,7 +31740,7 @@ var import_typescript34 = require("typescript");
 
 // ../packages/language-server/src/lib/server-handlers/server-handlers.ts
 var import_node_path13 = require("path");
-var import_node37 = __toESM(require_main3(), 1);
+var import_node38 = __toESM(require_main3(), 1);
 
 // ../packages/language-server/src/lib/template-registry/template-registry.ts
 var import_fast_glob = __toESM(require_out4(), 1);
@@ -31883,7 +31883,7 @@ var Debouncer = class {
 
 // ../packages/language-server/src/lib/utils/lsp/lsp.utils.ts
 var import_typescript36 = require("typescript");
-var import_node36 = __toESM(require_main3(), 1);
+var import_node37 = __toESM(require_main3(), 1);
 
 // ../node_modules/vscode-uri/lib/esm/index.mjs
 var t = { 975(t2) {
@@ -32234,13 +32234,13 @@ function getDocument(fileName, getOpenDocument) {
 function toSeverity(category) {
   switch (category) {
     case import_typescript36.DiagnosticCategory.Error:
-      return import_node36.DiagnosticSeverity.Error;
+      return import_node37.DiagnosticSeverity.Error;
     case import_typescript36.DiagnosticCategory.Warning:
-      return import_node36.DiagnosticSeverity.Warning;
+      return import_node37.DiagnosticSeverity.Warning;
     case import_typescript36.DiagnosticCategory.Suggestion:
-      return import_node36.DiagnosticSeverity.Hint;
+      return import_node37.DiagnosticSeverity.Hint;
     default:
-      return import_node36.DiagnosticSeverity.Information;
+      return import_node37.DiagnosticSeverity.Information;
   }
 }
 function toCompletionItemKind(kind) {
@@ -32248,30 +32248,30 @@ function toCompletionItemKind(kind) {
     case import_typescript36.ScriptElementKind.memberVariableElement:
     case import_typescript36.ScriptElementKind.memberGetAccessorElement:
     case import_typescript36.ScriptElementKind.memberSetAccessorElement:
-      return import_node36.CompletionItemKind.Field;
+      return import_node37.CompletionItemKind.Field;
     case import_typescript36.ScriptElementKind.memberFunctionElement:
-      return import_node36.CompletionItemKind.Method;
+      return import_node37.CompletionItemKind.Method;
     case import_typescript36.ScriptElementKind.functionElement:
-      return import_node36.CompletionItemKind.Function;
+      return import_node37.CompletionItemKind.Function;
     case import_typescript36.ScriptElementKind.variableElement:
     case import_typescript36.ScriptElementKind.letElement:
     case import_typescript36.ScriptElementKind.constElement:
-      return import_node36.CompletionItemKind.Variable;
+      return import_node37.CompletionItemKind.Variable;
     case import_typescript36.ScriptElementKind.classElement:
-      return import_node36.CompletionItemKind.Class;
+      return import_node37.CompletionItemKind.Class;
     case import_typescript36.ScriptElementKind.directory:
-      return import_node36.CompletionItemKind.Folder;
+      return import_node37.CompletionItemKind.Folder;
     case import_typescript36.ScriptElementKind.scriptElement:
-      return import_node36.CompletionItemKind.File;
+      return import_node37.CompletionItemKind.File;
     case "event":
-      return import_node36.CompletionItemKind.Event;
+      return import_node37.CompletionItemKind.Event;
     case "component":
-      return import_node36.CompletionItemKind.Class;
+      return import_node37.CompletionItemKind.Class;
     case "directive":
     case import_typescript36.ScriptElementKind.keyword:
-      return import_node36.CompletionItemKind.Keyword;
+      return import_node37.CompletionItemKind.Keyword;
     default:
-      return import_node36.CompletionItemKind.Text;
+      return import_node37.CompletionItemKind.Text;
   }
 }
 
@@ -32346,11 +32346,11 @@ var XaendarLanguageServer = class {
     this._hasConfiguration = !!capabilities?.workspace?.configuration;
     return {
       capabilities: {
-        textDocumentSync: import_node37.TextDocumentSyncKind.Incremental,
+        textDocumentSync: import_node38.TextDocumentSyncKind.Incremental,
         definitionProvider: true,
         hoverProvider: true,
         completionProvider: { triggerCharacters: [".", "(", "<", "@", "*", "/"] },
-        codeActionProvider: { codeActionKinds: [import_node37.CodeActionKind.QuickFix, import_node37.CodeActionKind.SourceOrganizeImports] },
+        codeActionProvider: { codeActionKinds: [import_node38.CodeActionKind.QuickFix, import_node38.CodeActionKind.SourceOrganizeImports] },
         documentFormattingProvider: true,
         semanticTokensProvider: {
           legend: { tokenTypes: [...TEMPLATE_SEMANTIC_TOKEN_TYPES], tokenModifiers: [...TEMPLATE_SEMANTIC_TOKEN_MODIFIERS] },
@@ -32419,7 +32419,7 @@ var XaendarLanguageServer = class {
         this._scheduleOpenComponentsValidation();
         continue;
       }
-      if (type === import_node37.FileChangeType.Deleted) {
+      if (type === import_node38.FileChangeType.Deleted) {
         this._registry.remove(fileName);
       }
       await this._onTypeScriptFileChanged(fileName);
@@ -32458,7 +32458,7 @@ var XaendarLanguageServer = class {
     }
     const analysis = await this._getCurrentAnalysis(document);
     const hover = analysis && getTemplateHover(analysis, document.offsetAt(position));
-    return hover ? { contents: { kind: import_node37.MarkupKind.Markdown, value: hover.contents }, range: toRange(document, hover.span) } : null;
+    return hover ? { contents: { kind: import_node38.MarkupKind.Markdown, value: hover.contents }, range: toRange(document, hover.span) } : null;
   }
   /**
    * Proposes the changes of the imports of a template: removing the unused import under the cursor (quick fix), and
@@ -32477,19 +32477,19 @@ var XaendarLanguageServer = class {
     const source = document.getText();
     const analysis = (await this._getAnalysis(document))?.analysis;
     const actions = new Array();
-    const unused = analysis?.source === source && isWantedKind(import_node37.CodeActionKind.QuickFix, only) ? findUnusedImports(analysis) : void 0;
+    const unused = analysis?.source === source && isWantedKind(import_node38.CodeActionKind.QuickFix, only) ? findUnusedImports(analysis) : void 0;
     if (unused) {
       const [start, end] = [document.offsetAt(range.start), document.offsetAt(range.end)];
       for (let i2 = 0; i2 < unused.length; i2++) {
         const change = start <= unused[i2].span.end && end >= unused[i2].span.start ? removeTemplateImport(source, unused[i2]) : void 0;
         if (change) {
-          actions.push({ title: `Remove unused import '${unused[i2].name}'`, kind: import_node37.CodeActionKind.QuickFix, isPreferred: true, edit: { changes: { [document.uri]: [{ range: toRange(document, change.span), newText: change.newText }] } } });
+          actions.push({ title: `Remove unused import '${unused[i2].name}'`, kind: import_node38.CodeActionKind.QuickFix, isPreferred: true, edit: { changes: { [document.uri]: [{ range: toRange(document, change.span), newText: change.newText }] } } });
         }
       }
     }
-    const organization = isWantedKind(import_node37.CodeActionKind.SourceOrganizeImports, only) ? organizeTemplateImports(source, analysis) : void 0;
+    const organization = isWantedKind(import_node38.CodeActionKind.SourceOrganizeImports, only) ? organizeTemplateImports(source, analysis) : void 0;
     if (organization) {
-      actions.push({ title: "Organize imports", kind: import_node37.CodeActionKind.SourceOrganizeImports, edit: { changes: { [document.uri]: [{ range: toRange(document, organization.span), newText: organization.newText }] } } });
+      actions.push({ title: "Organize imports", kind: import_node38.CodeActionKind.SourceOrganizeImports, edit: { changes: { [document.uri]: [{ range: toRange(document, organization.span), newText: organization.newText }] } } });
     }
     return actions;
   }
@@ -32534,7 +32534,7 @@ var XaendarLanguageServer = class {
    * @returns The semantic tokens, encoded.
    */
   async onSemanticTokens({ textDocument }) {
-    const builder = new import_node37.SemanticTokensBuilder();
+    const builder = new import_node38.SemanticTokensBuilder();
     const document = this._documents.get(textDocument.uri);
     const analysis = document && await this._getCurrentAnalysis(document);
     const tokens = analysis ? getTemplateSemanticTokens(analysis) : [];
@@ -32610,7 +32610,7 @@ var XaendarLanguageServer = class {
       diagnostics: getTemplateDiagnostics(result).map(({ span, message, category, code, unnecessary }) => {
         const diagnostic = { range: toRange(document, span), message, severity: toSeverity(category), code, source: "xaendar" };
         if (unnecessary) {
-          diagnostic.tags = [import_node37.DiagnosticTag.Unnecessary];
+          diagnostic.tags = [import_node38.DiagnosticTag.Unnecessary];
         }
         return diagnostic;
       })
@@ -32634,7 +32634,7 @@ var XaendarLanguageServer = class {
     await this._connection.sendDiagnostics({
       uri,
       version,
-      diagnostics: diagnostics.map(({ span, message }) => ({ range: toRange(document, span), message, severity: import_node37.DiagnosticSeverity.Error, source: "xaendar" }))
+      diagnostics: diagnostics.map(({ span, message }) => ({ range: toRange(document, span), message, severity: import_node38.DiagnosticSeverity.Error, source: "xaendar" }))
     });
   }
   /**
@@ -32694,7 +32694,7 @@ var XaendarLanguageServer = class {
         item.textEdit = { range: toRange(document, replacementSpan), newText: snippet ?? name };
       }
       if (snippet) {
-        item.insertTextFormat = import_node37.InsertTextFormat.Snippet;
+        item.insertTextFormat = import_node38.InsertTextFormat.Snippet;
       }
       if (retrigger) {
         item.command = { title: "Suggest", command: "editor.action.triggerSuggest" };
@@ -32774,7 +32774,7 @@ function isWantedKind(kind, only) {
 }
 
 // ../packages/language-server/src/lib/server/server.ts
-new XaendarLanguageServer((0, import_node38.createConnection)(import_node38.ProposedFeatures.all), new import_node38.TextDocuments(TextDocument)).listen();
+new XaendarLanguageServer((0, import_node39.createConnection)(import_node39.ProposedFeatures.all), new import_node39.TextDocuments(TextDocument)).listen();
 /*! Bundled license information:
 
 is-extglob/index.js:

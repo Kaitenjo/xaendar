@@ -75,4 +75,32 @@ describe('generateIf', () => {
       expect(functionsToProcess?.get(key)?.args).toEqual([key, 'parentContext', 'anchor', 'nodeStrategy']);
     }
   });
+
+  it('declares the last node of its parent last, its branches forwarding no anchor', async () => {
+    const context = new GeneratorContext(cache);
+    const { code, functionsToProcess } = await generateIf(parse('@if (a) { <b></b> } @else if (b) { <i></i> } @else { <s></s> }'), 'td0', '0', context, null, false, true);
+
+    expect(code).toEqual(['_if(td0, context, null, td0__if0$if);']);
+    expect(context.constantDeclarations).toEqual([[
+      'const td0__if0$if = {',
+      '  branches: [',
+      '    { condition: td0__if0$condition, block: td0__if0 },',
+      '    { condition: td0__elseIf0_0$condition, block: td0__elseIf0_0 },',
+      '    { block: td0__else0 }',
+      '  ],',
+      '  last: true',
+      '};'
+    ].join('\n')]);
+    for (const { fn } of functionsToProcess!.values()) {
+      expect(fn).toHaveProperty('anchor', undefined);
+    }
+  });
+
+  it('forwards the anchor to the branches of a block that is not last', async () => {
+    const { functionsToProcess } = await generateIf(parse('@if (a) { <b></b> } @else { <s></s> }'), 'td0', '0', new GeneratorContext(cache), null, false, false);
+
+    for (const { fn } of functionsToProcess!.values()) {
+      expect(fn.anchor).toBe('anchor');
+    }
+  });
 });

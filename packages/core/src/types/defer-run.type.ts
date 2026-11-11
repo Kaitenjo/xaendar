@@ -18,7 +18,7 @@ export type DeferRun = {
   /**
    * The comment the parts of the block are inserted before.
    */
-  readonly anchor: Comment;
+  readonly anchor: Comment | null;
   /**
    * The triggers, the content and the blocks following it.
    */

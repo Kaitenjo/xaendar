@@ -1,5 +1,5 @@
 import { indent } from '@xaendar/common';
-import { assertImportableSymbol, ASTNodeType, createContext, GeneratorContext, declareScope, declareTemplateParameters, formatErrorWithPrefix, getRuntimeAlias, getTextSeparators, ROOT_NODE, toRuntimeImport, type ASTNode, type ComponentOrDirectiveMetadata, type ContextCache, type ElementNamespace, type GeneratorFunctionToProcess, type SymbolImport, type TemplateNode } from '@xaendar/compiler';
+import { assertImportableSymbol, ASTNodeType, createContext, GeneratorContext, declareScope, declareTemplateParameters, formatErrorWithPrefix, getRuntimeAlias, getTextSeparators, isLastRenderedChild, ROOT_NODE, toRuntimeImport, type ASTNode, type ComponentOrDirectiveMetadata, type ContextCache, type ElementNamespace, type GeneratorFunctionToProcess, type SymbolImport, type TemplateNode } from '@xaendar/compiler';
 import { generateServerClient } from '../states/generate-server-client/generate-server-client.state';
 import { generateServerTry } from '../states/generate-server-try/generate-server-try.state';
 import { generateServerDefer } from '../states/generate-server-defer/generate-server-defer.state';
@@ -148,7 +148,7 @@ export class ServerGenerator {
         generatorContext.addImportedIdentifier(symbol.local, getRuntimeAlias(symbol.local), symbol.reactive ? 'signal' : 'value');
       }
 
-      const root = this._writeBody(this._ast, { id: ROOT_NODE }, generatorContext, '_ROOT_PARENT_CONTEXT');
+      const root = this._writeBody(this._ast, { id: ROOT_NODE, end: true }, generatorContext, '_ROOT_PARENT_CONTEXT');
       const code = ['function render(out) {', ...indent(root), '}'];
       for (const [key, { fn, args }] of this._functions) {
         const body = this._writeBody(fn.node.children, fn.parent, fn.context, 'parentContext', fn.precode);
@@ -245,7 +245,8 @@ export class ServerGenerator {
         pieces.push({ html: TEXT_MARKER });
       }
 
-      const result = state(node as never, parent, i.toString(), generatorContext, this._generateChildren);
+      // The last block of nodes ending where their parent does is closed by no marker, as the client renders it without anchor
+      const result = state(node as never, parent, i.toString(), generatorContext, this._generateChildren, !!parent.end && isLastRenderedChild(nodes, i));
       if (!result) {
         continue;
       }

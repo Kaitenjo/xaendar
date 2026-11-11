@@ -28,7 +28,8 @@ const CLOSE = `<!--/${_SSR_MARKERS.structural}-->`;
  * a rejected one renders nothing, like a `false`. A synchronous `false` renders nothing without waiting.
  *
  * The element is written between the markers of the browser, `<!--xd-s:1-->` and `<!--/xd-s-->`, the place of the anchor
- * of the element; when it is not rendered, the markers are `<!--xd-s:0--><!--/xd-s-->`.
+ * of the element; when it is not rendered, the markers are `<!--xd-s:0--><!--/xd-s-->`. The last node of its parent
+ * (`last`) has no closing marker.
  *
  * @param out - The output.
  * @param context - The runtime context the structural directives are applied in.
@@ -55,29 +56,29 @@ export function _ssrStructural(out: ServerOutput, context: _Context, config: Ser
   }
 
   if (!rendered) {
-    out.push(NOT_RENDERED, CLOSE);
-    return;
-  }
-
-  const elementContext = new _Context(context);
-  if (!pending.length) {
+    out.push(NOT_RENDERED);
+  } else if (!pending.length) {
     out.push(RENDERED);
-    render.call(context.component, out, elementContext);
-    out.push(CLOSE);
-    return;
+    render.call(context.component, out, new _Context(context));
+  } else {
+    // The element is rendered once the promises settle, out of the synchronous segment running with the runtime of the page
+    const runtime = _getComponentRuntime();
+    const elementContext = new _Context(context);
+    out.push(Promise.all(pending).then(values => {
+      if (!values.every(value => value)) {
+        return [NOT_RENDERED];
+      }
+
+      const output: ServerOutput = [RENDERED];
+      _runOnServer(runtime, () => render.call(context.component, output, elementContext));
+      return output;
+    }));
   }
 
-  // The element is rendered once the promises settle, out of the synchronous segment running with the runtime of the page
-  const runtime = _getComponentRuntime();
-  out.push(Promise.all(pending).then(values => {
-    if (!values.every(value => value)) {
-      return [NOT_RENDERED];
-    }
-
-    const output: ServerOutput = [RENDERED];
-    _runOnServer(runtime, () => render.call(context.component, output, elementContext));
-    return output;
-  }), CLOSE);
+  // The last node of its parent is closed by no marker, as the client renders it without anchor
+  if (!config.last) {
+    out.push(CLOSE);
+  }
 }
 
 /**

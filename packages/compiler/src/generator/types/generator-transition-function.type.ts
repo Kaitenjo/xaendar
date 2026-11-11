@@ -30,5 +30,6 @@ export type GeneratorTransitionFunction<T extends ASTNode = ASTNode> = AsyncFunc
   index: string,
   generatorContext: GeneratorContext,
   anchor: string | null,
-  separated: boolean
+  separated: boolean,
+  last: boolean
 ], GeneratorTransitionFunctionReturnType | undefined>

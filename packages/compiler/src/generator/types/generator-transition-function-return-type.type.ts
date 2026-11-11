@@ -41,12 +41,11 @@ export type GeneratorTransitionFunctionReturnType = {
        */
       precode?: string;
       /**
-       * Se presente, indica che la funzione generata è un branch di
-       * `_if`/`_for`/`_switch` (cioè un `block`/`forFn`) e che questo è il nome
-       * della variabile `anchor` disponibile nel suo scope. Le chiamate di
-       * rendering dirette nel suo corpo devono inoltrare questo valore.
-       * Se `undefined`, la funzione non ha un anchor (es. un helper `*Children`)
-       * e le sue chiamate di rendering dirette devono usare `null`.
+       * The name of the variable holding the node the function renders before (`anchor`), which its direct rendering
+       * calls forward: the one of a branch of a block, of the body of a `@for`, of the content of a template.
+       * `undefined` when the function renders at the end of the node it renders into, its calls passing `null`: the
+       * children of an element, and the content of the last block of its parent (see `getContentAnchor`), whose own last
+       * block then needs no anchor either.
        */
       anchor?: string;
     };

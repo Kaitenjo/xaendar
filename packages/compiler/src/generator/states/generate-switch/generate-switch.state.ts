@@ -1,6 +1,7 @@
 import { SwitchNode } from '../../../parser/types/nodes/switch-node.type';
 import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
+import { appendBlockPosition, getContentAnchor } from '../../utils/block-position/block-position.utils';
 import { getBlockIdentifier, resolveExpression } from '../../utils/generator/generator.utils';
 import { declareExpression, toArrayLiteral, toObjectLiteral } from '../../utils/module-code/module-code.utils';
 
@@ -25,9 +26,12 @@ import { declareExpression, toArrayLiteral, toObjectLiteral } from '../../utils/
  * @param index - The index of the node among its siblings.
  * @param generatorContext - Current render scope context.
  * @param anchor - The name of the anchor variable the block is rendered before, or `null` to append it.
+ * @param _separated - Unused: a block is never separated from a text.
+ * @param last - Whether the block is the last node of its parent, which needs no anchor (see `isLastRenderedChild`).
  * @returns The generated code, and the functions of the cases.
  */
-export async function generateSwitch(node: SwitchNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
+export async function generateSwitch(node: SwitchNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null, _separated = false, last = false): Promise<GeneratorTransitionFunctionReturnType> {
+  const contentAnchor = getContentAnchor(last);
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],
     functionsToProcess: new Map()
@@ -41,7 +45,7 @@ export async function generateSwitch(node: SwitchNode, parentNode: string, index
     const caseNode = children[i];
     const caseKey = caseNode.condition ? getBlockIdentifier('case', parentNode, `${index}_${i}`) : getBlockIdentifier('default', parentNode, index);
     retVal.functionsToProcess!.set(caseKey, {
-      fn: { node: caseNode, parentNode: caseKey, context: new GeneratorContext(generatorContext), anchor: 'anchor' },
+      fn: { node: caseNode, parentNode: caseKey, context: new GeneratorContext(generatorContext), anchor: contentAnchor },
       args: [caseKey, 'parentContext', 'anchor', 'nodeStrategy']
     });
 
@@ -57,6 +61,7 @@ export async function generateSwitch(node: SwitchNode, parentNode: string, index
     members.push(`reads: ${reads}`);
   }
 
+  appendBlockPosition(members, last);
   const config = generatorContext.declareConstant(`${switchKey}$switch`, toObjectLiteral(members));
   retVal.code.push(`_switch(${parentNode}, context, ${anchor}, ${config});`);
   return retVal;

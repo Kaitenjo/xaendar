@@ -5,6 +5,7 @@ import { GeneratorTransitionFunctionReturnType } from '../../types/generator-tra
 import type { GeneratorFunctionToProcess } from '../../types/generator-function-to-process.type';
 import { getReadForVariables, writeIterationVariables } from '../../utils/for-reads/for-reads.utils';
 import { getBlockIdentifier, getTextIdentifier, joinVariables, resolveExpression } from '../../utils/generator/generator.utils';
+import { appendBlockPosition } from '../../utils/block-position/block-position.utils';
 import { declareExpression, toObjectLiteral } from '../../utils/module-code/module-code.utils';
 
 /**
@@ -53,9 +54,12 @@ import { declareExpression, toObjectLiteral } from '../../utils/module-code/modu
  *   to produce a unique loop counter identifier.
  * @param generatorContext - The enclosing scope context.
  * @param anchor - The node the items are inserted before, `null` to append them.
+ * @param _separated - Unused: a block is never separated from a text.
+ * @param last - Whether the block is the last node of its parent, which needs no anchor (see `isLastRenderedChild`). The body of an item keeps
+ *   its anchor whatever its position: the items move, the last one becoming another.
  * @returns The `_for` call, and the function rendering the body of an item to generate.
  */
-export async function generateFor(node: ForNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
+export async function generateFor(node: ForNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null, _separated = false, last = false): Promise<GeneratorTransitionFunctionReturnType> {
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],
     functionsToProcess: new Map()
@@ -130,6 +134,7 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
     members.push(`reads: ${reads}`);
   }
 
+  appendBlockPosition(members, last);
   const config = generatorContext.declareConstant(`${forKey}$for`, toObjectLiteral(members));
   retVal.code.push(`_for(${parentNode}, context, ${anchor}, ${config});`);
 

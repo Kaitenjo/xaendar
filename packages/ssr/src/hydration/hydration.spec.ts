@@ -690,6 +690,171 @@ describe('hydration', () => {
     expect(console.warn).not.toHaveBeenCalled();
   });
 
+  describe('the last block of its parent', () => {
+    /**
+     * A shelf whose blocks are the last nodes of their elements, but the one of the paragraph.
+     */
+    class Shelf extends CustomElement {
+      public show = signal(true);
+      public kind = signal('a');
+      public items = signal(['a', 'b', 'c']);
+      public rows = signal([{ id: 1, on: true }, { id: 2, on: false }]);
+    }
+
+    const shelfTemplate = () => [
+      '<section>@if (show()) {<b>yes</b>@switch (kind()) { @case (\'a\') {<i>a</i>} @default {<i>other</i>} }} @else {<s>no</s>}</section>',
+      '<ul>@for (item of items(); track item) {<li>{ item }</li>}</ul>',
+      '<ol>@for (row of rows(); track row.id) {<li><span>@if (row.on) {<b>on</b>} @else {<s>off</s>}</span></li>}</ol>',
+      '<p>@if (show()) {<i>a</i>} tail</p>'
+    ].join('');
+
+    /**
+     * Lists the comments left in a tree.
+     */
+    const comments = (root: Node) => {
+      const found = new Array<string>();
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        found.push((node as Comment).data);
+      }
+
+      return found;
+    };
+
+    it('is written without closing marker, adopted without anchor and without warnings, and renders its updates where it is', async () => {
+      const shelf = await register('shelf', Shelf, shelfTemplate, ['show', 'kind', 'items', 'rows']);
+      const html = await renderToString(shelf.Server);
+      const host = load(html) as Shelf;
+      const root = host.shadowRoot!;
+
+      expect(html).toContain('<section><!--xd-if:0--><b>yes</b><!--xd-switch:0--><i>a</i></section>');
+      expect(html).not.toContain('<!--/xd-for-->');
+      expect(html).toContain('<span><!--xd-if:1--><s>off</s></span>');
+      expect(html).toContain('<p><!--xd-if:0--><i>a</i><!--/xd-if--> tail</p>');
+
+      shelf.define();
+      const [a, b, c] = Array.from(root.querySelectorAll('ul > li'));
+      const [first, second] = Array.from(root.querySelectorAll('ol > li'));
+
+      expect(console.warn).not.toHaveBeenCalled();
+      // The block of the paragraph, followed by a text, keeps its anchor
+      expect(comments(root)).toEqual(['/xd-if']);
+      expect(root.innerHTML).toBe('<section><b>yes</b><i>a</i></section><ul><li>a</li><li>b</li><li>c</li></ul><ol><li><span><b>on</b></span></li><li><span><s>off</s></span></li></ol><p><i>a</i><!--/xd-if--> tail</p>');
+
+      host.kind.set('z');
+      await flush();
+      expect(root.querySelector('section')!.innerHTML).toBe('<b>yes</b><i>other</i>');
+
+      host.show.set(false);
+      await flush();
+      expect(root.querySelector('section')!.innerHTML).toBe('<s>no</s>');
+      expect(root.querySelector('p')!.innerHTML).toBe('<!--/xd-if--> tail');
+
+      host.show.set(true);
+      await flush();
+      expect(root.querySelector('section')!.innerHTML).toBe('<b>yes</b><i>other</i>');
+      expect(root.querySelector('p')!.innerHTML).toBe('<i>a</i><!--/xd-if--> tail');
+
+      // happy-dom has no moveBefore: it moves the node as insertBefore does
+      Object.assign(Element.prototype, { moveBefore: Node.prototype.insertBefore });
+      host.items.set(['c', 'a', 'd']);
+      await flush();
+      const items = Array.from(root.querySelectorAll('ul > li'));
+      expect(items.map(item => item.textContent)).toEqual(['c', 'a', 'd']);
+      expect(items[0]).toBe(c);
+      expect(items[1]).toBe(a);
+      expect(items).not.toContain(b);
+
+      host.items.set([]);
+      await flush();
+      expect(root.querySelector('ul')!.innerHTML).toBe('');
+      host.items.set(['x', 'y']);
+      await flush();
+      expect(root.querySelector('ul')!.innerHTML).toBe('<li>x</li><li>y</li>');
+
+      // The rows move with the block of their cell, which has no anchor of its own
+      host.rows.set([{ id: 2, on: true }, { id: 1, on: false }]);
+      await flush();
+      const rows = Array.from(root.querySelectorAll('ol > li'));
+      expect(rows).toEqual([second, first]);
+      expect(root.querySelector('ol')!.innerHTML).toBe('<li><span><b>on</b></span></li><li><span><s>off</s></span></li>');
+      expect(comments(root)).toEqual(['/xd-if']);
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    it('has no anchor in a page rendered in the browser either', async () => {
+      const shelf = await register('shelf', Shelf, shelfTemplate, ['show', 'kind', 'items', 'rows']);
+      shelf.define();
+
+      const host = document.body.appendChild(document.createElement(tag('client', 'shelf'))) as Shelf;
+
+      expect(host.shadowRoot!.innerHTML).toBe('<section><b>yes</b><i>a</i></section><ul><li>a</li><li>b</li><li>c</li></ul><ol><li><span><b>on</b></span></li><li><span><s>off</s></span></li></ol><p><i>a</i><!--if--> tail</p>');
+      host.show.set(false);
+      await flush();
+      expect(host.shadowRoot!.querySelector('section')!.innerHTML).toBe('<s>no</s>');
+    });
+
+    /**
+     * Widgets whose every block is the last node of its element.
+     */
+    class Widgets extends CustomElement {
+      public hits = signal(0);
+      public allow = signal(true);
+
+      public risky(): string {
+        return 'ok';
+      }
+
+      public hit(): void {
+        this.hits.update(hits => hits + 1);
+      }
+    }
+
+    const widgetsTemplate = () => [
+      '<div>@try {<b>{ risky() }</b>} @catch (error) {<i>{ error.message }</i>}</div>',
+      '<div>@defer (interaction) {<b>content</b>} @placeholder {<button>load</button>}</div>',
+      '<div>@hydrate (interaction) {<button (click)="hit()">{ hits() }</button>}</div>',
+      '<div>@client {<b>client</b>} @placeholder {<i>wait</i>}</div>',
+      '<div><b *later(allow="{ allow() }")>late</b></div>'
+    ].join('');
+
+    it('closes no @try, @defer, @hydrate, @client and structural element with a marker, and adopts them without anchor', async () => {
+      const widgets = await register('widgets', Widgets, widgetsTemplate, ['hits', 'allow']);
+      const html = await renderToString(widgets.Server);
+      const host = load(html) as Widgets;
+      const root = host.shadowRoot!;
+      const [, deferred, hydrated, , structural] = Array.from(root.children);
+
+      expect(html).not.toMatch(/<!--\/xd-/);
+      const button = hydrated.querySelector('button')!;
+
+      widgets.define();
+      await flush();
+
+      expect(console.warn).not.toHaveBeenCalled();
+      // The content of the @hydrate, inert until its trigger fires, keeps the separator of its text
+      expect(root.innerHTML).toBe('<div><b>ok</b></div><div><button>load</button></div><div><button><!---->0</button></div><div><b>client</b></div><div><b>late</b></div>');
+
+      deferred.querySelector('button')!.click();
+      expect(deferred.innerHTML).toBe('<b>content</b>');
+
+      button.click();
+      expect(hydrated.querySelector('button')).toBe(button);
+      expect(host.hits()).toBe(1);
+      await flush();
+      expect(hydrated.innerHTML).toBe('<button>1</button>');
+
+      host.allow.set(false);
+      await flush();
+      expect(structural.innerHTML).toBe('');
+      host.allow.set(true);
+      await flush();
+      expect(structural.innerHTML).toBe('<b>late</b>');
+      expect(comments(root)).toEqual([]);
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+  });
+
   describe('@hydrate', () => {
     /**
      * A shop whose buying part hydrates at the first interaction.
@@ -1020,7 +1185,8 @@ describe('hydration', () => {
       const noPlaceholder = await register('bare', Alert, () => '<h2>Bare</h2>@client {<button></button>}');
 
       expect(await renderToString(alert.Server)).toContain('<h2>Alert</h2><!--xd-c--><p>Wait</p>text<!--/xd-c--><footer>end</footer>');
-      expect(await renderToString(noPlaceholder.Server)).toContain('<h2>Bare</h2><!--xd-c--><!--/xd-c-->');
+      // The last node of the shadow root has no closing marker
+      expect(await renderToString(noPlaceholder.Server)).toContain('<h2>Bare</h2><!--xd-c--></template>');
     });
 
     it('creates the content while the component hydrates, in place of the placeholder, adopting what surrounds it without warnings', async () => {
@@ -1057,7 +1223,7 @@ describe('hydration', () => {
       const host = load(await renderToString(alert.Server)) as Alert;
       const root = host.shadowRoot!;
       alert.define();
-      expect(root.innerHTML).toBe('<button>Ring</button><!--/xd-c--><!--/xd-if-->');
+      expect(root.innerHTML).toBe('<button>Ring</button>');
 
       host.open.set(false);
       await flush();
@@ -1528,7 +1694,7 @@ describe('hydration', () => {
       page.define();
       await flush();
 
-      expect(host.shadowRoot!.innerHTML).toBe('<p>0</p><!--/xd-d-->');
+      expect(host.shadowRoot!.innerHTML).toBe('<p>0</p>');
     });
 
     it('fires the interaction trigger of a component, adopted by its parent, replaying the event', async () => {

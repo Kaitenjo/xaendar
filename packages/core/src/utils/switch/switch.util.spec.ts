@@ -89,7 +89,33 @@ describe('_switch', () => {
 
     _switch(parent, context, null, switchOf(() => 1, cases));
 
-    expect(blockOf).toHaveBeenCalledExactlyOnceWith(context, parent, null, 'if', _SSR_MARKERS.switch);
+    expect(blockOf).toHaveBeenCalledExactlyOnceWith(context, parent, null, 'if', _SSR_MARKERS.switch, undefined);
+    blockOf.mockRestore();
+  });
+
+  it('renders the last block of its parent without anchor, appending every case it switches to at the end of the parent', async () => {
+    const blockOf = vi.spyOn(CREATE_NODES, 'block');
+    const context = createRoot();
+    const parent = document.createElement('div');
+    parent.appendChild(document.createElement('i')).textContent = 'i';
+    const value = signal(1);
+    const nodes = () => Array.from(parent.childNodes).map(node => `${node.nodeName}:${node.textContent}`);
+    _switch(parent, context, null, { expression: () => value(), branches: cases.slice(0, 2), last: true });
+
+    expect(blockOf).toHaveBeenCalledExactlyOnceWith(context, parent, null, 'if', _SSR_MARKERS.switch, true);
+    expect(nodes()).toEqual(['I:i', 'SPAN:one']);
+
+    value.set(2);
+    await flush();
+    expect(nodes()).toEqual(['I:i', 'SPAN:two-three']);
+
+    value.set(9);
+    await flush();
+    expect(nodes()).toEqual(['I:i']);
+
+    value.set(1);
+    await flush();
+    expect(nodes()).toEqual(['I:i', 'SPAN:one']);
     blockOf.mockRestore();
   });
 

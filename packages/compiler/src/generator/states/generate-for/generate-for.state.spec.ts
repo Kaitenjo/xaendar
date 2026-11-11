@@ -53,6 +53,15 @@ describe('generateFor', () => {
     expect(body?.fn.precode).toBe('_iterationVariables(context, items0, i0, for0Variables);');
   });
 
+  it('declares the last node of its parent last, its body keeping the anchor of the items, which move', async () => {
+    const context = new GeneratorContext(cache);
+    const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item.id) { <li></li> }'), 'ul0', '0', context, null, false, true);
+
+    expect(code).toEqual(['_for(ul0, context, null, ul0__for0$for);']);
+    expect(constantOf(context, 'ul0__for0$for')).toBe('const ul0__for0$for = { items: ul0__for0$items, track: ul0__for0$track, block: ul0__for0, last: true };');
+    expect(functionsToProcess!.get('ul0__for0')!.fn.anchor).toBe('anchor');
+  });
+
   it('names the constants and the functions after the function of the body, unique in the module', async () => {
     const context = new GeneratorContext(cache);
     context.declareConstant('tr0__for1Variables', '{}');

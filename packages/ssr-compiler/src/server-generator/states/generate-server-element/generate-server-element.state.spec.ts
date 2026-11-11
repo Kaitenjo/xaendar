@@ -243,9 +243,26 @@ describe('generateServerElement', () => {
       ].join('\n')
     ]);
     const { fn, args } = functionsToProcess!.get('div0Children')!;
-    expect(fn.parent).toEqual({ id: 'div0', tag: 'div' });
+    expect(fn.parent).toEqual({ id: 'div0', tag: 'div', end: true });
     expect(fn.context.namespace).toBe('html');
     expect(args).toEqual(['out', 'parentContext']);
+  });
+
+  it('tells _ssrStructural an element applying structural directives is the last node of its parent', () => {
+    const context = new GeneratorContext(cache);
+    generateServerElement(parseTemplate('<input *first />')[0] as ElementNode, { id: 'td0', tag: 'td', end: true }, '0', context, generateChildren, true);
+
+    expect(context.constantDeclarations).toEqual(['const td0__input0$structural = { structuralDirectives: [{ selector: \'first\' }], last: true, render: td0__input0$render };']);
+  });
+
+  it('ignores the position of an element applying no structural directive, its children ending where it does', () => {
+    generateChildren.mockClear();
+    const context = new GeneratorContext(cache);
+    const { pieces } = generateServerElement(parseTemplate('<p>t</p>')[0] as ElementNode, { id: 'td0', tag: 'td', end: true }, '0', context, generateChildren, true);
+
+    expect(toStatements(pieces)).toEqual(['out.push(\'<p>{children of td0__p0}</p>\');']);
+    expect(context.constantDeclarations).toEqual([]);
+    expect(generateChildren).toHaveBeenCalledWith(expect.anything(), { id: 'td0__p0', tag: 'p', end: true }, context);
   });
 
   it('writes an element without content its structural directives allow, calling no function', () => {

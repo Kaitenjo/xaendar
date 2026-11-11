@@ -17,6 +17,7 @@ const { MATHML_NS, SVG_NS } = await import('../../costants');
 const { input } = await import('../../signals/input/input');
 const { _Context } = await import('../context/context.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
+const { ClaimNodes } = await import('../claim-nodes/claim-nodes.util');
 const {
   _createElement,
   _createMATHMLElement,
@@ -1551,7 +1552,7 @@ describe('_renderElement', () => {
     const renderStructural = (
       parent: Element,
       context: Context,
-      element: Pick<RenderElement, 'structuralDirectives' | 'structuralConditionalBindings' | 'children'>,
+      element: Pick<RenderElement, 'structuralDirectives' | 'structuralConditionalBindings' | 'children' | 'last'>,
       anchor: Comment | null = null
     ) => _renderElement(parent, context, anchor, Object.assign({ tagName: 'div', attributes: [{ name: 'id', value: 'target', setter: _setProperty }] }, element));
     const structural = (selector = 'visible', attributes?: RenderElementAttribute[]): RenderElementStructuralDirective => ({ selector, attributes });
@@ -1602,6 +1603,39 @@ describe('_renderElement', () => {
       await settle();
 
       expect([...parent.childNodes].map(node => node.nodeName)).toEqual(['DIV', '#comment', 'SPAN', '#comment']);
+    });
+
+    it('renders the last element of its parent without anchor, appending it to the parent each time it is created', async () => {
+      const shown = signal(true);
+      const parent = document.createElement('section');
+      parent.appendChild(document.createElement('span'));
+      const context = createRoot();
+      const block = vi.spyOn(CREATE_NODES, 'block');
+      renderStructural(parent, context, { structuralDirectives: [structural('visible', [visible(() => shown())])], last: true });
+
+      expect(block).toHaveBeenCalledExactlyOnceWith(context, parent, null, 'structural', 'xd-s', true);
+      expect([...parent.childNodes].map(node => node.nodeName)).toEqual(['SPAN', 'DIV']);
+
+      shown.set(false);
+      await settle();
+      expect([...parent.childNodes].map(node => node.nodeName)).toEqual(['SPAN']);
+
+      shown.set(true);
+      await settle();
+      expect([...parent.childNodes].map(node => node.nodeName)).toEqual(['SPAN', 'DIV']);
+      block.mockRestore();
+    });
+
+    it('adopts the last element of its parent the server rendered, which it closes with no marker', () => {
+      const parent = document.createElement('section');
+      parent.innerHTML = '<!--xd-s:1--><div id="target"></div>';
+      const element = parent.lastChild;
+      const context = new _Context({ createElement: _createElement } as never, new ClaimNodes('x-host'));
+
+      renderStructural(parent, context, { structuralDirectives: [structural()], last: true });
+
+      expect(parent.innerHTML).toBe('<div id="target"></div>');
+      expect(parent.firstChild).toBe(element);
     });
 
     it('creates and destroys the element as the outcome of its structural directive changes', async () => {

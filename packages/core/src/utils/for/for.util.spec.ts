@@ -47,7 +47,7 @@ function createRoot() {
 }
 
 type Body = (parentNode: HTMLElement, itemContext: Context, text: string, reference: Node | null) => void;
-type Options = { withNodes?: boolean, variables?: IterationVariables | null, body?: Body };
+type Options = { withNodes?: boolean, variables?: IterationVariables | null, body?: Body, last?: true };
 
 /**
  * Every variable of a `@for`, declared by its own name.
@@ -95,8 +95,13 @@ const renderItemWithChildren: Body = (parentNode, itemContext, text, reference) 
 
 const nodeTexts =(parent: HTMLElement) => Array.from(parent.childNodes).map(node => node.textContent);
 
-function setup(initial: string[], { withNodes = true, variables = ALL_VARIABLES, body = renderItem }: Options = {}) {
+function setup(initial: string[], { withNodes = true, variables = ALL_VARIABLES, body = renderItem, last }: Options = {}) {
   const parent = document.createElement('ul');
+  if (last) {
+    // The @for follows another node of its parent, which the items are appended after
+    parent.appendChild(document.createElement('i')).textContent = 'i';
+  }
+
   const context = createRoot();
   const items = signal(initial);
   // The contexts of the items created, in order of creation
@@ -113,7 +118,7 @@ function setup(initial: string[], { withNodes = true, variables = ALL_VARIABLES,
     return itemContext;
   });
 
-  _for(parent, context, null, { items: () => items(), track: (_context, item) => item as string, block: forFn, variables: variables ?? undefined });
+  _for(parent, context, null, { items: () => items(), track: (_context, item) => item as string, block: forFn, variables: variables ?? undefined, last });
 
   const texts = () => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
   const change = async (next: string[]) => {
@@ -430,6 +435,65 @@ describe('_for', () => {
     it('falls back to the last anchor when the nested context does not own any node', () => {
       const { parent } = setup(['a', 'b'], { body: nestedIf(2, () => {}) });
       expect(nodeTexts(parent)).toEqual(['if', 'if', 'if', 'if', 'for']);
+    });
+  });
+
+  describe('as the last node of its parent', () => {
+    it('renders its items without anchor, appended to the parent', () => {
+      const { parent, forFn } = setup(['a', 'b'], { last: true });
+
+      expect(nodeTexts(parent)).toEqual(['i', 'a', 'b']);
+      expect(forFn.mock.calls.map(call => call[4])).toEqual([null, null]);
+    });
+
+    it('renders nothing but the other nodes of the parent for an empty list', () => {
+      const { parent } = setup([], { last: true });
+      expect(nodeTexts(parent)).toEqual(['i']);
+    });
+
+    it('appends the items added, and inserts the ones before the existing ones', async () => {
+      const { parent, forFn, change } = setup(['b', 'd'], { last: true });
+
+      await change(['a', 'b', 'c', 'd', 'e']);
+
+      expect(nodeTexts(parent)).toEqual(['i', 'a', 'b', 'c', 'd', 'e']);
+      expect(forFn).toHaveBeenCalledTimes(5);
+      expect(forFn.mock.calls[2][4]).toBeNull();
+    });
+
+    it('removes the items that disappeared', async () => {
+      const { parent, change } = setup(['a', 'b', 'c'], { last: true });
+
+      await change(['b']);
+      expect(nodeTexts(parent)).toEqual(['i', 'b']);
+
+      await change([]);
+      expect(nodeTexts(parent)).toEqual(['i']);
+    });
+
+    it('reorders the items, moving the last one to the end of the parent, reusing their nodes', async () => {
+      const { parent, change } = setup(['a', 'b', 'c'], { last: true });
+      const [a, b, c] = Array.from(parent.querySelectorAll('li'));
+      moveBefore.mockClear();
+
+      await change(['c', 'a', 'b']);
+
+      expect(nodeTexts(parent)).toEqual(['i', 'c', 'a', 'b']);
+      expect(Array.from(parent.querySelectorAll('li'))).toEqual([c, a, b]);
+
+      await change(['b', 'c', 'a']);
+
+      expect(nodeTexts(parent)).toEqual(['i', 'b', 'c', 'a']);
+      expect(moveBefore.mock.calls.some(call => call[1] === null)).toBe(true);
+    });
+
+    it('keeps the order of items rendered by nested contexts', async () => {
+      const { parent, texts, change } = setup(['a', 'b', 'c'], { body: nestedIf(1), last: true });
+
+      await change(['c', 'a', 'd', 'b']);
+
+      expect(texts()).toEqual(['c', 'a', 'd', 'b']);
+      expect(nodeTexts(parent)).toEqual(['i', 'c', 'if', 'a', 'if', 'd', 'if', 'b', 'if']);
     });
   });
 

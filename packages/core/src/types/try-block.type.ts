@@ -1,12 +1,13 @@
 import type { Function } from '@xaendar/types';
 import type { _Context } from '../utils/context/context.util';
+import type { BlockPosition } from './block-position.type';
 import type { Block } from './if/block.type';
 import type { NodeStrategy } from './node-strategy.type';
 
 /**
  * The content of a `@try` and of its `@catch` (see `_try`).
  */
-export type TryBlock = {
+export type TryBlock = BlockPosition & {
   /**
    * Renders the content before the anchor, getting its nodes with the given strategy, and returns the context owning
    * them.

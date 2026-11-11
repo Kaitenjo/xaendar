@@ -1,5 +1,5 @@
 import { dropsLeadingNewline, escapeAttribute, isValidCustomElementName, isVoidElement } from '@xaendar/common';
-import { ASTNodeType, declareExpression, GeneratorContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ClassBindingNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
+import { appendBlockPosition, ASTNodeType, declareExpression, GeneratorContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ClassBindingNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
 import type { Function } from '@xaendar/types';
 import type { ServerCodePiece } from '../../types/server-code-piece.type';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
@@ -38,13 +38,15 @@ import { SUBMIT_ATTRIBUTE } from '../../../costants/ssr-markers.constants';
  * @param index - The position of the node among its siblings.
  * @param generatorContext - The generator context of the node.
  * @param generateChildren - Generates the code of the children of the element, in the function being written.
+ * @param last - Whether the element is the last node of its parent: applying structural directives, it is a block,
+ *   written without the marker closing it, as the client renders it without anchor (see `isLastRenderedChild`).
  * @returns The code of the element, and the functions it calls.
  */
-export function generateServerElement(node: ElementNode, parent: ServerParent, index: string, generatorContext: GeneratorContext, generateChildren: GenerateChildren): ServerTransitionResult {
+export function generateServerElement(node: ElementNode, parent: ServerParent, index: string, generatorContext: GeneratorContext, generateChildren: GenerateChildren, last = false): ServerTransitionResult {
   const { tagName } = node;
   const id = getElementIdentifier(node, parent.id, index);
   const childrenNamespace = getChildrenNamespace(tagName, getElementNamespace(tagName, generatorContext.namespace));
-  const childrenParent: ServerParent = { id, tag: tagName };
+  const childrenParent: ServerParent = { id, tag: tagName, end: true };
   if (!isStructuralElement(node)) {
     const childrenContext = childrenNamespace !== generatorContext.namespace ? new GeneratorContext(generatorContext, childrenNamespace) : generatorContext;
     const children = generateChildren(node.children, childrenParent, childrenContext);
@@ -65,6 +67,7 @@ export function generateServerElement(node: ElementNode, parent: ServerParent, i
   const members = new Array<string>();
   appendList(members, 'structuralDirectives', structuralDirectives);
   appendList(members, 'structuralConditionalBindings', structuralConditionalBindings);
+  appendBlockPosition(members, last);
   members.push(`render: ${generatorContext.declareFunction(`${id}$render`, 'out, context', toStatements(writeElement(node, id, generatorContext, children)))}`);
   return {
     pieces: [{ statement: `_ssrStructural(out, context, ${generatorContext.declareConstant(`${id}$structural`, toObjectLiteral(members))});` }],

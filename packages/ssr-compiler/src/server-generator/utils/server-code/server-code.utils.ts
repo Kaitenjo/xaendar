@@ -62,11 +62,12 @@ export function toArrayLiteral(lines: string[]): string[] {
  * @param key - The name of the function.
  * @param parent - Where the control flow is rendered.
  * @param generatorContext - The generator context of the control flow.
+ * @param last - Whether the control flow is the last node of its parent: its content ends where the parent does.
  * @returns The function, taking the output and the runtime context of the control flow.
  */
-export function toBlockFunction(node: Extract<ASTNode, { children: ASTNode[] }>, key: string, parent: ServerParent, generatorContext: GeneratorContext): ServerFunctionToProcess {
+export function toBlockFunction(node: Extract<ASTNode, { children: ASTNode[] }>, key: string, parent: ServerParent, generatorContext: GeneratorContext, last: boolean): ServerFunctionToProcess {
   return {
-    fn: { node, context: new GeneratorContext(generatorContext), parent: { id: key, tag: parent.tag } },
+    fn: { node, context: new GeneratorContext(generatorContext), parent: { id: key, tag: parent.tag, end: last } },
     args: ['out', 'parentContext']
   };
 }

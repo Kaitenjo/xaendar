@@ -34,7 +34,7 @@ import type { ForRun } from '../../types/for-run.type';
  *   the variables of the template the items and their keys read (see `ForConfig`).
  */
 export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, config: ForConfig): void {
-  const nodeBlock = parentContext.nodeStrategy.block(parentContext, parentNode, referenceNode, 'for', _SSR_MARKERS.for);
+  const nodeBlock = parentContext.nodeStrategy.block(parentContext, parentNode, referenceNode, 'for', _SSR_MARKERS.for, config.last);
   const run: ForRun = {
     parentNode, parentContext,
     nodeBlock,
@@ -119,7 +119,7 @@ function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
     }
   }
 
-  let nextReference: Node = run.nodeBlock.anchor;
+  let nextReference: Node | null = run.nodeBlock.anchor;
 
   for (let i = items.length - 1; i >= 0; i--) {
     const key = newKeys[i];

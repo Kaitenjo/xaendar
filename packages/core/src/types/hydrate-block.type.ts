@@ -1,4 +1,5 @@
 import type { NoArgsFunction } from '@xaendar/types';
+import type { BlockPosition } from './block-position.type';
 import type { Block } from './if/block.type';
 import type { TemplateExpression } from './template-expression.type';
 import type { Trigger } from './triggers/trigger.type';
@@ -9,7 +10,7 @@ import type { Trigger } from './triggers/trigger.type';
  * shared by every instance of the block: its functions are the ones of the module, the expressions called with the
  * component and the context of the scope holding the block.
  */
-export type HydrateBlock = {
+export type HydrateBlock = BlockPosition & {
   /**
    * The triggers written by name or with their arguments, any of which hydrates the content.
    */

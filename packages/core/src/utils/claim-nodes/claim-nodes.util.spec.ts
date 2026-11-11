@@ -131,6 +131,25 @@ describe('ClaimNodes', () => {
 
       expect(nodeStrategy.element(context, parent, 'p')).toBe(parent.childNodes[1]);
     });
+
+    it('passes over the content of the last block of its parent to the end of the parent, nothing left to adopt', () => {
+      const parent = parse('<!--xd-h--><p></p>a');
+      const [, p, text] = Array.from(parent.childNodes);
+      const block = nodeStrategy.block(context, parent, null, 'hydrate', 'xd-h', true);
+
+      expect(nodeStrategy.skip(parent, block)).toEqual([p, text]);
+      nodeStrategy.element(context, parent, 'b');
+      expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> nothing where the browser renders <b>, which it creates');
+    });
+
+    it('starts at the end of the parent the content of a block that has no node and closes its parent', () => {
+      const parent = parse('<i></i>');
+
+      nodeStrategy.startAt(parent, null);
+      nodeStrategy.element(context, parent, 'p');
+
+      expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> nothing where the browser renders <p>, which it creates');
+    });
   });
 
   describe('@client', () => {
@@ -152,6 +171,19 @@ describe('ClaimNodes', () => {
 
       expect(nodeStrategy.replace(parent, block)).toBe(CREATE_NODES);
       expect(nodeStrategy.element(context, parent, 'p')).toBe(p);
+    });
+
+    it('removes what the server rendered in the last block of its parent, to the end of the parent', () => {
+      const parent = parse('<p></p><!--xd-c--><i></i>text');
+      nodeStrategy.element(context, parent, 'p');
+      const block = nodeStrategy.block(context, parent, null, 'client', 'xd-c', true);
+
+      expect(nodeStrategy.replace(parent, block)).toBe(CREATE_NODES);
+
+      expect(parent.innerHTML).toBe('<p></p>');
+      expect(console.warn).not.toHaveBeenCalled();
+      nodeStrategy.element(context, parent, 'b');
+      expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> nothing where the browser renders <b>, which it creates');
     });
   });
 
@@ -194,7 +226,7 @@ describe('ClaimNodes', () => {
 
       const block = nodeStrategy.block(context, parent, null, 'if', 'xd-if');
 
-      expect(block).toEqual({ anchor, marker: '1' });
+      expect(block).toEqual({ anchor, marker: '1', kind: 'xd-if' });
       expect(context.getNodes()).toEqual([anchor]);
       expect(nodeStrategy.adopt(parent, block, '1')).toBe(nodeStrategy);
       nodeStrategy.element(context, parent, 'p');
@@ -208,7 +240,72 @@ describe('ClaimNodes', () => {
 
       const block = nodeStrategy.block(context, parent, null, 'if', 'xd-if');
 
-      expect(block).toEqual({ anchor: parent.lastChild, marker: '' });
+      expect(block).toEqual({ anchor: parent.lastChild, marker: '', kind: 'xd-if' });
+    });
+
+    it('adopts the last block of its parent without a marker closing it: removes the opening one, keeps no anchor and tracks nothing', () => {
+      const parent = parse('<!--xd-if:1--><p></p>');
+      const p = parent.firstElementChild;
+
+      const block = nodeStrategy.block(context, parent, null, 'if', 'xd-if', true);
+
+      expect(block).toEqual({ anchor: null, marker: '1', kind: 'xd-if' });
+      expect(parent.innerHTML).toBe('<p></p>');
+      expect(context.getNodes()).toBeNull();
+      expect(nodeStrategy.adopt(parent, block, '1')).toBe(nodeStrategy);
+      expect(nodeStrategy.element(context, parent, 'p')).toBe(p);
+      nodeStrategy.close(parent, block);
+      expect(parent.innerHTML).toBe('<p></p>');
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    it('creates the last block of its parent where the server rendered another node, emptying the parent from there to its end, with a warning', () => {
+      const parent = parse('<p></p><b></b>text<i></i>');
+      nodeStrategy.element(context, parent, 'p');
+
+      const block = nodeStrategy.block(context, parent, null, 'if', 'xd-if', true);
+
+      expect(block).toBe(CREATE_NODES.block(context, parent, null, 'if', 'xd-if', true));
+      expect(block).toEqual({ anchor: null, marker: undefined });
+      expect(parent.innerHTML).toBe('<p></p>');
+      expect(context.getNodes()).toBeNull();
+      expect(nodeStrategy.adopt(parent, block, '0')).toBe(CREATE_NODES);
+      expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> <b> where the browser renders <!--xd-if-->, which it creates');
+      expect(console.warn).toHaveBeenCalledOnce();
+    });
+
+    it('creates the last block of its parent where the server rendered nothing, with a warning', () => {
+      const parent = parse('');
+
+      const block = nodeStrategy.block(context, parent, null, 'if', 'xd-if', true);
+
+      expect(block).toEqual({ anchor: null, marker: undefined });
+      expect(parent.childNodes.length).toBe(0);
+      expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> nothing where the browser renders <!--xd-if-->, which it creates');
+    });
+
+    it('names the last block of its parent by its kind, emptying it to the end of the parent, when the server rendered it differently', () => {
+      const parent = parse('<!--xd-sw:0--><p></p>text');
+      const block = nodeStrategy.block(context, parent, null, 'switch', 'xd-sw', true);
+
+      expect(nodeStrategy.adopt(parent, block, '1')).toBe(CREATE_NODES);
+
+      expect(parent.childNodes.length).toBe(0);
+      expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> <!--xd-sw:0--> where the browser renders <!--xd-sw:1-->, which it renders again');
+    });
+
+    it('removes, closing the last block of its parent, what the server rendered in it to the end of the parent, with a warning', () => {
+      const parent = parse('<!--xd-s:1--><p></p><i></i>text');
+      const block = nodeStrategy.block(context, parent, null, 'structural', 'xd-s', true);
+
+      nodeStrategy.element(context, parent, 'p');
+      nodeStrategy.close(parent, block);
+
+      expect(parent.innerHTML).toBe('<p></p>');
+      expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> <i> the browser does not render, which it removes along with what follows it');
+      expect(console.warn).toHaveBeenCalledOnce();
+      nodeStrategy.element(context, parent, 'b');
+      expect(console.warn).toHaveBeenLastCalledWith('Xaendar: the server rendered in <x-host> nothing where the browser renders <b>, which it creates');
     });
 
     it('empties a block the server rendered differently, with a warning, its content created', () => {
@@ -269,6 +366,31 @@ describe('ClaimNodes', () => {
       const block = nodeStrategy.block(context, parent, null, 'for', 'xd-for');
 
       expect(nodeStrategy.adoptItems(parent, block, [])).toBe(nodeStrategy);
+    });
+
+    it('adopts the items of the last @for of its parent, to the end of the parent', () => {
+      const parent = parse('<!--xd-for--><!--xd-item:n1--><b></b><!--xd-for--><!--xd-item:n9--><!--/xd-for--><!--xd-item:n2--><i></i>');
+      const block = nodeStrategy.block(context, parent, null, 'for', 'xd-for', true);
+
+      expect(nodeStrategy.adoptItems(parent, block, [1, 2])).toBe(nodeStrategy);
+      expect(parent.innerHTML).toBe('<b></b><!--xd-for--><!--xd-item:n9--><!--/xd-for--><i></i>');
+      expect(nodeStrategy.element(context, parent, 'b')).toBe(parent.firstChild);
+    });
+
+    it('adopts the last @for of its parent without items, nothing following its opening marker', () => {
+      const parent = parse('<!--xd-for-->');
+      const block = nodeStrategy.block(context, parent, null, 'for', 'xd-for', true);
+
+      expect(nodeStrategy.adoptItems(parent, block, [])).toBe(nodeStrategy);
+      expect(parent.childNodes.length).toBe(0);
+    });
+
+    it('empties the last @for of its parent to the end of the parent when the server rendered other keys', () => {
+      const parent = parse('<!--xd-for--><!--xd-item:n1--><b></b>');
+      const block = nodeStrategy.block(context, parent, null, 'for', 'xd-for', true);
+
+      expect(nodeStrategy.adoptItems(parent, block, [2])).toBe(CREATE_NODES);
+      expect(parent.childNodes.length).toBe(0);
     });
 
     it('empties a @for the server rendered with other keys, with a warning, its items created', () => {

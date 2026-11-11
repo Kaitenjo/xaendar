@@ -40,6 +40,19 @@ describe('_ssrTry', () => {
     expect(errors).toEqual([failure]);
   });
 
+  it('writes no marker closing the last block of its parent, after its content or its @catch', () => {
+    const out: ServerOutput = [];
+    const failed: ServerOutput = [];
+
+    _ssrTry(out, context, output => output.push('<b></b>'), output => output.push('<i></i>'), true);
+    _ssrTry(failed, context, () => {
+      throw new Error('broken');
+    }, output => output.push('<i></i>'), true);
+
+    expect(out).toEqual(['<!--xd-t:0-->', '<b></b>']);
+    expect(failed).toEqual(['<!--xd-t:1-->', '<i></i>']);
+  });
+
   it('calls the content and the @catch with the component as this and the context of the scope holding the block', () => {
     const component = { name: 'card' };
     const componentContext = new _Context(context, undefined, 0, component);

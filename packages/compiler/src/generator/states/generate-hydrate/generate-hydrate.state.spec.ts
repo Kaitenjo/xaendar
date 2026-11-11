@@ -52,4 +52,13 @@ describe('generateHydrate', () => {
 
     expect(context.constantDeclarations).toEqual(['const hydrate0$hydrate = { triggers: [], when: hydrate0$when, content: hydrate0 };']);
   });
+
+  it('declares the last node of its parent last, its content forwarding no anchor', async () => {
+    const context = new GeneratorContext(cache);
+    const { code, functionsToProcess } = await generateHydrate(parse('@hydrate (idle) { <b></b> }'), 'td0', '0', context, null, false, true);
+
+    expect(code).toEqual(['_hydrate(td0, context, null, td0__hydrate0$hydrate);']);
+    expect(context.constantDeclarations).toEqual(['const td0__hydrate0$hydrate = { triggers: [\'idle\'], content: td0__hydrate0, last: true };']);
+    expect(functionsToProcess!.get('td0__hydrate0')!.fn).toHaveProperty('anchor', undefined);
+  });
 });

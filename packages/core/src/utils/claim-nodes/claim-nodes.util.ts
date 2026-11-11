@@ -160,31 +160,43 @@ export class ClaimNodes implements NodeStrategy {
   }
 
   /**
-   * Adopts the block at the position: removes the marker opening it, and takes the one closing it as its anchor. When
-   * the node there does not open a block of this kind, the block is created, with a warning.
+   * Adopts the block at the position: removes the marker opening it, and takes the one closing it as its anchor. The last
+   * block of its parent has no marker closing it: its content reaches the end of the parent, and it keeps no anchor.
+   * When the node there does not open a block of this kind, the block is created, with a warning, what the server
+   * rendered from the position on removed for the last block of its parent, which all of it belongs to.
    *
    * @param context - The context owning the block.
    * @param parentNode - The node the block is rendered into.
    * @param _referenceNode - Unused: the block is adopted, or created, at the position.
    * @param label - The text of an anchor created.
    * @param kind - The marker of the block.
+   * @param last - Whether the block is the last node of its parent, which needs no anchor.
    * @returns The block.
    */
-  public block(context: _Context, parentNode: Node, _referenceNode: Node | null, label: string, kind: string): NodeBlock {
+  public block(context: _Context, parentNode: Node, _referenceNode: Node | null, label: string, kind: string, last = false): NodeBlock {
     const open = this._next(parentNode);
-    const close = isMarker(open, kind) || isMarker(open, `${kind}:`, true) ? findClose(open!, kind) : null;
-    if (!close) {
-      this._warn(`${describe(open)} where the browser renders <!--${kind}-->, which it creates`);
-      const anchor = document.createComment(label);
-      trackNode(anchor, parentNode, context);
-      parentNode.insertBefore(anchor, open);
-      return { anchor, marker: undefined };
+    const opens = isMarker(open, kind) || isMarker(open, `${kind}:`, true);
+    const close = opens && !last ? findClose(open!, kind) : null;
+    if (opens && (last || close)) {
+      const marker = (open as Comment).data.slice(kind.length + 1);
+      this._remove(parentNode, open!);
+      if (close) {
+        trackNode(close, parentNode, context);
+      }
+
+      return { anchor: close, marker, kind };
     }
 
-    const marker = (open as Comment).data.slice(kind.length + 1);
-    this._remove(parentNode, open!);
-    trackNode(close, parentNode, context);
-    return { anchor: close, marker };
+    this._warn(`${describe(open)} where the browser renders <!--${kind}-->, which it creates`);
+    if (last) {
+      this._empty(parentNode, null);
+      return CREATE_NODES.block(context, parentNode, null, label, kind, true);
+    }
+
+    const anchor = document.createComment(label);
+    trackNode(anchor, parentNode, context);
+    parentNode.insertBefore(anchor, open);
+    return { anchor, marker: undefined };
   }
 
   /**
@@ -223,7 +235,7 @@ export class ClaimNodes implements NodeStrategy {
       return CREATE_NODES;
     }
 
-    const markers = findItemMarkers(this._next(parentNode)!, block.anchor);
+    const markers = findItemMarkers(this._next(parentNode), block.anchor);
     let matches = markers.length === keys.length;
     for (let i = 0; matches && i < keys.length; i++) {
       matches = markers[i].data === `${_SSR_MARKERS.item}:${_encodeTrackKey(keys[i])}`;
@@ -257,7 +269,7 @@ export class ClaimNodes implements NodeStrategy {
       nodes.push(node);
     }
 
-    this._positions.set(parentNode, block.anchor.nextSibling);
+    this._positions.set(parentNode, block.anchor?.nextSibling ?? null);
     return nodes;
   }
 
@@ -272,7 +284,7 @@ export class ClaimNodes implements NodeStrategy {
   public replace(parentNode: Node, block: NodeBlock): NodeStrategy {
     if (block.marker !== undefined) {
       this._empty(parentNode, block.anchor);
-      this._positions.set(parentNode, block.anchor.nextSibling);
+      this._positions.set(parentNode, block.anchor?.nextSibling ?? null);
     }
 
     return CREATE_NODES;
@@ -283,9 +295,9 @@ export class ClaimNodes implements NodeStrategy {
    * a trigger fires.
    *
    * @param parentNode - The node.
-   * @param node - The node to adopt next.
+   * @param node - The node to adopt next, `null` when the content has no node and closes its parent.
    */
-  public startAt(parentNode: Node, node: Node): void {
+  public startAt(parentNode: Node, node: Node | null): void {
     this._positions.set(parentNode, node);
   }
 
@@ -299,7 +311,7 @@ export class ClaimNodes implements NodeStrategy {
   public close(parentNode: Node, block: NodeBlock): void {
     if (block.marker !== undefined) {
       this._removeRest(parentNode, block.anchor);
-      this._positions.set(parentNode, block.anchor.nextSibling);
+      this._positions.set(parentNode, block.anchor?.nextSibling ?? null);
     }
   }
 
@@ -461,11 +473,11 @@ function findClose(open: Node, kind: string): Comment | null {
  * Finds the markers of the items of a `@for` between its first node and its anchor, skipping the ones of the `@for`s it
  * holds.
  *
- * @param first - The first node of the `@for`.
- * @param anchor - Its anchor.
+ * @param first - The first node of the `@for`, `null` when the last node of its parent renders no item.
+ * @param anchor - Its anchor, `null` when it is the last node of its parent.
  * @returns The markers of its items, in order.
  */
-function findItemMarkers(first: Node, anchor: Node): Comment[] {
+function findItemMarkers(first: Node | null, anchor: Node | null): Comment[] {
   const markers = new Array<Comment>();
   let depth = 0;
   for (let node: Node | null = first; node !== anchor; node = node!.nextSibling) {
@@ -484,12 +496,12 @@ function findItemMarkers(first: Node, anchor: Node): Comment[] {
 /**
  * Describes a block by its marker, as the warnings name it.
  *
- * @param block - The block.
+ * @param block - The block, adopted.
  * @param detail - The detail of the marker.
  * @returns The marker, as the server writes it.
  */
 function blockName(block: NodeBlock, detail: string): string {
-  const kind = block.anchor.data.slice(1);
+  const { kind } = block;
   return detail ? `<!--${kind}:${detail}-->` : `<!--${kind}-->`;
 }
 

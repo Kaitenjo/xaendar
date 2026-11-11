@@ -13,18 +13,21 @@ import { toBlockFunction } from '../../utils/server-code/server-code.utils';
  * @param parent - Where the block is rendered.
  * @param index - The index of the node among its siblings.
  * @param generatorContext - The generator context of the node.
+ * @param _generateChildren - Unused: the content of the block is written by functions of its own.
+ * @param last - Whether the block is the last node of its parent, written without the marker closing it, as the client
+ *   renders it without anchor (see `isLastRenderedChild`).
  * @returns The code of the block, and the function rendering its placeholder.
  */
-export function generateServerDefer({ placeholder }: DeferNode, parent: ServerParent, index: string, generatorContext: GeneratorContext): ServerTransitionResult {
-  const open = { html: `<!--${SSR_MARKERS.defer}-->` };
-  const close = { html: `<!--/${SSR_MARKERS.defer}-->` };
-  if (!placeholder) {
-    return { pieces: [open, close] };
+export function generateServerDefer({ placeholder }: DeferNode, parent: ServerParent, index: string, generatorContext: GeneratorContext, _generateChildren?: unknown, last = false): ServerTransitionResult {
+  const pieces: ServerTransitionResult['pieces'] = [{ html: `<!--${SSR_MARKERS.defer}-->` }];
+  const key = getBlockIdentifier('placeholder', parent.id, index);
+  if (placeholder) {
+    pieces.push({ statement: `${key}.call(this, out, context);` });
   }
 
-  const key = getBlockIdentifier('placeholder', parent.id, index);
-  return {
-    pieces: [open, { statement: `${key}.call(this, out, context);` }, close],
-    functionsToProcess: new Map([[key, toBlockFunction(placeholder, key, parent, generatorContext)]])
-  };
+  if (!last) {
+    pieces.push({ html: `<!--/${SSR_MARKERS.defer}-->` });
+  }
+
+  return placeholder ? { pieces, functionsToProcess: new Map([[key, toBlockFunction(placeholder, key, parent, generatorContext, last)]]) } : { pieces };
 }

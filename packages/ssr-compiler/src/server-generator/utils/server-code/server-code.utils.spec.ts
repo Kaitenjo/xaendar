@@ -41,12 +41,18 @@ describe('toBlockFunction', () => {
     const node = parseTemplate('@if (x) { a }')[0] as IfNode;
     const generatorContext = new GeneratorContext(cache);
 
-    const { fn, args } = toBlockFunction(node, 'if0', { id: 'root', tag: 'ul' }, generatorContext);
+    const { fn, args } = toBlockFunction(node, 'if0', { id: 'root', tag: 'ul' }, generatorContext, false);
 
     expect(fn.node).toBe(node);
-    expect(fn.parent).toEqual({ id: 'if0', tag: 'ul' });
+    expect(fn.parent).toStrictEqual({ id: 'if0', tag: 'ul', end: false });
     expect(fn.context).not.toBe(generatorContext);
     expect(args).toEqual(['out', 'parentContext']);
+  });
+
+  it('ends the content of the last block of its parent where the parent ends', () => {
+    const node = parseTemplate('@if (x) { a }')[0] as IfNode;
+
+    expect(toBlockFunction(node, 'if0', { id: 'root', tag: 'ul', end: true }, new GeneratorContext(cache), true).fn.parent).toStrictEqual({ id: 'if0', tag: 'ul', end: true });
   });
 });
 

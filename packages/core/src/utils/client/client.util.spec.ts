@@ -79,6 +79,34 @@ describe('_client', () => {
     expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> <p> where the browser renders <!--xd-c-->, which it creates');
   });
 
+  it('renders the last block of its parent without anchor, appending the content, in a page rendered in the browser', () => {
+    const parent = parse('<i></i>');
+    const context = createRoot();
+    const block = vi.spyOn(CREATE_NODES, 'block');
+    const render = content('b');
+
+    _client(parent, context, null, render, true);
+
+    expect(block).toHaveBeenCalledExactlyOnceWith(context, parent, null, 'client', 'xd-c', true);
+    expect(parent.innerHTML).toBe('<i></i><b></b>');
+    expect(render.mock.calls[0][2]).toBeNull();
+  });
+
+  it('removes the placeholder of the server of the last block of its parent, to the end of the parent, creating the content there', () => {
+    const parent = parse('<p></p><!--xd-c--><i>wait</i>text');
+    const strategy = new ClaimNodes('x-host');
+    const context = createRoot(strategy);
+    const render = content('b');
+    strategy.element(context, parent, 'p');
+
+    _client(parent, context, null, render, true);
+
+    expect(parent.innerHTML).toBe('<p></p><b></b>');
+    expect(render.mock.calls[0][2]).toBeNull();
+    expect(render.mock.calls[0][3]).toBe(CREATE_NODES);
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+
   it('owns the context of the content, which it removes when destroyed', () => {
     const parent = document.createElement('div');
     const context = createRoot();

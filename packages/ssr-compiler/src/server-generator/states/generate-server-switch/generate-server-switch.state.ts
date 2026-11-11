@@ -34,9 +34,12 @@ import { SERVER_RESOLVE_OPTIONS, toBlockFunction } from '../../utils/server-code
  * @param parent - Where the blocks are rendered.
  * @param index - The position of the node among its siblings.
  * @param generatorContext - The generator context of the node.
+ * @param _generateChildren - Unused: the content of the block is written by functions of its own.
+ * @param last - Whether the block is the last node of its parent, written without the marker closing it, as the client
+ *   renders it without anchor (see `isLastRenderedChild`).
  * @returns The code of the node, and the functions rendering its blocks.
  */
-export function generateServerSwitch(node: SwitchNode, parent: ServerParent, index: string, generatorContext: GeneratorContext): ServerTransitionResult {
+export function generateServerSwitch(node: SwitchNode, parent: ServerParent, index: string, generatorContext: GeneratorContext, _generateChildren?: unknown, last = false): ServerTransitionResult {
   const body = [`const __value = ${resolveExpression(node.expression, generatorContext, SERVER_RESOLVE_OPTIONS).expression};`];
   const functionsToProcess = new Map<string, ServerFunctionToProcess>();
   let selectDefault = [`out.push(${toStringLiteral(`<!--${SSR_MARKERS.switch}-->`)});`];
@@ -46,7 +49,7 @@ export function generateServerSwitch(node: SwitchNode, parent: ServerParent, ind
     const caseNode = node.children[i];
     const { condition } = caseNode;
     const key = condition ? getBlockIdentifier('case', parent.id, `${index}_${i}`) : getBlockIdentifier('default', parent.id, index);
-    functionsToProcess.set(key, toBlockFunction(caseNode, key, parent, generatorContext));
+    functionsToProcess.set(key, toBlockFunction(caseNode, key, parent, generatorContext, last));
     const render = [`out.push(${toStringLiteral(`<!--${SSR_MARKERS.switch}:${i}-->`)});`, `${key}.call(this, out, context);`];
     if (condition) {
       // The values, literals, are a constant of the module: indexOf compares them strictly, as the client does
@@ -65,5 +68,10 @@ export function generateServerSwitch(node: SwitchNode, parent: ServerParent, ind
     body.push(...selectDefault);
   }
 
-  return { pieces: [{ statement: ['{', ...indent(body), '}'].join('\n') }, { html: `<!--/${SSR_MARKERS.switch}-->` }], functionsToProcess };
+  const pieces: ServerTransitionResult['pieces'] = [{ statement: ['{', ...indent(body), '}'].join('\n') }];
+  if (!last) {
+    pieces.push({ html: `<!--/${SSR_MARKERS.switch}-->` });
+  }
+
+  return { pieces, functionsToProcess };
 }

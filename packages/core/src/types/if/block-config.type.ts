@@ -1,3 +1,4 @@
+import type { BlockPosition } from '../block-position.type';
 import type { RenderConditionalBinding } from '../render-conditional-binding.type';
 import type { Block } from './block.type';
 
@@ -11,4 +12,4 @@ import type { Block } from './block.type';
  * per branch created at each render. The runtime never writes it: the branch rendered is kept by the block (see `IfRun`).
  * Do not build it in the render code.
  */
-export type BlockConfig = RenderConditionalBinding<Block>;
+export type BlockConfig = RenderConditionalBinding<Block> & BlockPosition;

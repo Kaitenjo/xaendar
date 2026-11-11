@@ -27,4 +27,21 @@ describe('generateServerTry', () => {
     expect([...functionsToProcess!.keys()]).toEqual(['try0', 'catch0']);
     expect(functionsToProcess!.get('catch0')!.fn.precode).toBeUndefined();
   });
+
+  it('tells _ssrTry the last node of its parent, written without closing marker, its content and its @catch ending where the parent does', () => {
+    const node = parseTemplate('@try { a } @catch { b }')[0] as TryNode;
+
+    const { pieces, functionsToProcess } = generateServerTry(node, { id: 'td0', tag: 'td', end: true }, '0', new GeneratorContext(cache), undefined, true);
+
+    expect(pieces).toEqual([{ statement: '_ssrTry(out, context, td0__try0, td0__catch0, true);' }]);
+    expect(functionsToProcess!.get('td0__try0')!.fn.parent).toEqual({ id: 'td0__try0', tag: 'td', end: true });
+    expect(functionsToProcess!.get('td0__catch0')!.fn.parent).toEqual({ id: 'td0__catch0', tag: 'td', end: true });
+  });
+
+  it('gives the content and the @catch of a block that is not last no end', () => {
+    const { functionsToProcess } = generateServerTry(parseTemplate('@try { a } @catch { b }')[0] as TryNode, { id: 'td0', tag: 'td', end: true }, '0', new GeneratorContext(cache), undefined, false);
+
+    expect(functionsToProcess!.get('td0__try0')!.fn.parent).toEqual({ id: 'td0__try0', tag: 'td', end: false });
+    expect(functionsToProcess!.get('td0__catch0')!.fn.parent).toEqual({ id: 'td0__catch0', tag: 'td', end: false });
+  });
 });

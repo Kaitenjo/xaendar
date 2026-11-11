@@ -409,7 +409,7 @@ function bindDirectives(element: Element, context: _Context, directives: readonl
 function renderStructuralElement(parentNode: Element, context: _Context, anchor: Comment | null, config: RenderElement): void {
   const { nodeStrategy } = context;
   const { structuralDirectives, structuralConditionalBindings } = config;
-  const block = nodeStrategy.block(context, parentNode, anchor, 'structural', _SSR_MARKERS.structural);
+  const block = nodeStrategy.block(context, parentNode, anchor, 'structural', _SSR_MARKERS.structural, config.last);
   const elementContext = context.addChild();
   const flags = signal(new Array<SignalType<boolean | undefined>>());
   const collector: StructuralCollector = {

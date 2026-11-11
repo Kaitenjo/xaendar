@@ -89,4 +89,27 @@ describe('generateDefer', () => {
 
     expect(functionsToProcess!.get('error0')!.fn.precode).toBeUndefined();
   });
+
+  it('declares the last node of its parent last, its content and the blocks following it forwarding no anchor', async () => {
+    const context = new GeneratorContext(cache);
+    const node = parse('@defer (idle) { a } @placeholder { p } @loading { l } @error (failure) { e }');
+    const { code, functionsToProcess } = await generateDefer(node, 'td0', '0', context, null, false, true);
+
+    expect(code).toEqual(['_defer(td0, context, null, td0__defer0$defer);']);
+    expect(context.constantDeclarations).toEqual([[
+      'const td0__defer0$defer = {',
+      '  triggers: [\'idle\'],',
+      '  content: td0__defer0,',
+      '  placeholder: td0__placeholder0,',
+      '  loading: td0__loading0,',
+      '  error: td0__error0,',
+      '  last: true',
+      '};'
+    ].join('\n')]);
+    expect([...functionsToProcess!.keys()]).toEqual(['td0__defer0', 'td0__placeholder0', 'td0__loading0', 'td0__error0']);
+    for (const { fn } of functionsToProcess!.values()) {
+      expect(fn).toHaveProperty('anchor', undefined);
+    }
+    expect(functionsToProcess!.get('td0__error0')!.fn.precode).toBe('context.addIdentifier(\'failure\', error);');
+  });
 });

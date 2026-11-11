@@ -14,4 +14,4 @@ import type { GenerateChildren } from './generate-children.type';
  * @param generateChildren - Generates the code of the children of an element, in the function being written.
  * @returns The code of the node, `undefined` for a node rendering nothing.
  */
-export type ServerTransitionFunction<Node extends ASTNode = ASTNode> = Function<[node: Node, parent: ServerParent, index: string, generatorContext: GeneratorContext, generateChildren: GenerateChildren], ServerTransitionResult | undefined>;
+export type ServerTransitionFunction<Node extends ASTNode = ASTNode> = Function<[node: Node, parent: ServerParent, index: string, generatorContext: GeneratorContext, generateChildren: GenerateChildren, last: boolean], ServerTransitionResult | undefined>;

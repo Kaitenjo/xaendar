@@ -45,4 +45,14 @@ describe('generateTry', () => {
     expect(context.constantDeclarations).toEqual(['const try2$try = { content: try2, catch: catch2 };']);
     expect(functionsToProcess!.get('catch2')!.fn.precode).toBeUndefined();
   });
+
+  it('declares the last node of its parent last, its content and its @catch forwarding no anchor', async () => {
+    const context = new GeneratorContext(cache);
+    const { code, functionsToProcess } = await generateTry(parse('@try { a } @catch (failure) { b }'), 'td0', '0', context, null, false, true);
+
+    expect(code).toEqual(['_try(td0, context, null, td0__try0$try);']);
+    expect(context.constantDeclarations).toEqual(['const td0__try0$try = { content: td0__try0, catch: td0__catch0, last: true };']);
+    expect(functionsToProcess!.get('td0__try0')!.fn).toHaveProperty('anchor', undefined);
+    expect(functionsToProcess!.get('td0__catch0')!.fn).toMatchObject({ precode: 'context.addIdentifier(\'failure\', error);', anchor: undefined });
+  });
 });

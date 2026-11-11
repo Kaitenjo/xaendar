@@ -75,4 +75,15 @@ describe('generateServerSwitch', () => {
       CLOSE
     ]);
   });
+
+  it('writes no closing marker for the last node of its parent, whose blocks end where the parent does', () => {
+    const context = new GeneratorContext(cache);
+    context.addSignalClassField('kind');
+    const { pieces, functionsToProcess } = generateServerSwitch(parseTemplate('@switch (kind()) { @case (1) { one } @default { d } }')[0] as SwitchNode, { id: 'td0', tag: 'td', end: true }, '0', context, undefined, true);
+
+    expect(pieces).toHaveLength(1);
+    expect(pieces).not.toContainEqual(CLOSE);
+    expect(functionsToProcess!.get('td0__case0_0')!.fn.parent).toEqual({ id: 'td0__case0_0', tag: 'td', end: true });
+    expect(functionsToProcess!.get('td0__default0')!.fn.parent).toEqual({ id: 'td0__default0', tag: 'td', end: true });
+  });
 });

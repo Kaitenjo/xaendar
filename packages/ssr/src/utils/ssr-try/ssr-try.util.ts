@@ -14,7 +14,7 @@ const CATCH = '1';
 /**
  * Renders a `@try` block on the server: its content, or, when it throws, its `@catch` with the error, as in JavaScript,
  * between the markers the browser finds the block by, `<!--xd-t:0-->…<!--/xd-t-->` for the content and
- * `<!--xd-t:1-->…<!--/xd-t-->` for the `@catch`. The content is rendered into an output of its own, dropped when it
+ * `<!--xd-t:1-->…<!--/xd-t-->` for the `@catch`, the closing one left out for the last node of its parent. The content is rendered into an output of its own, dropped when it
  * throws, the code of the components it renders included. The error of the `@catch` goes through; a promise of an
  * asynchronous structural directive rejecting later is not caught.
  *
@@ -25,9 +25,11 @@ const CATCH = '1';
  * @param context - The runtime context of the scope holding the block.
  * @param content - Renders the content into an output.
  * @param fallback - Renders the `@catch` into an output, with the error the content threw.
+ * @param last - Whether the block is the last node of its parent, written without the marker closing it, as the client
+ *   renders it without anchor.
  * @throws The error of the `@catch`.
  */
-export function _ssrTry(out: ServerOutput, context: _Context, content: (this: unknown, output: ServerOutput, context: _Context) => void, fallback: (this: unknown, output: ServerOutput, context: _Context, error: unknown) => void): void {
+export function _ssrTry(out: ServerOutput, context: _Context, content: (this: unknown, output: ServerOutput, context: _Context) => void, fallback: (this: unknown, output: ServerOutput, context: _Context, error: unknown) => void, last = false): void {
   const { component } = context;
   let output: ServerOutput = [];
   let detail = CONTENT;
@@ -44,5 +46,7 @@ export function _ssrTry(out: ServerOutput, context: _Context, content: (this: un
     out.push(output[i]);
   }
 
-  out.push(`<!--/${_SSR_MARKERS.try}-->`);
+  if (!last) {
+    out.push(`<!--/${_SSR_MARKERS.try}-->`);
+  }
 }

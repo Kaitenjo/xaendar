@@ -54,16 +54,18 @@ export type NodeStrategy = {
   separator(parentNode: Node, separated: boolean): void;
   /**
    * Opens a block: creates its anchor, or adopts the markers of the block the server rendered, whose content follows.
-   * The anchor is tracked by the context.
+   * The anchor is tracked by the context. The last block of its parent has none: its content reaches the end of the
+   * parent, where the server writes no marker closing it (see `BlockPosition`).
    *
    * @param context - The context owning the block.
    * @param parentNode - The node the block is rendered into.
    * @param referenceNode - The node the anchor is inserted before, `null` to append it.
    * @param label - The text of an anchor created.
    * @param kind - The marker of the block (see `_SSR_MARKERS`).
+   * @param last - Whether the block is the last node of its parent, which needs no anchor.
    * @returns The block.
    */
-  block(context: _Context, parentNode: Node, referenceNode: Node | null, label: string, kind: string): NodeBlock;
+  block(context: _Context, parentNode: Node, referenceNode: Node | null, label: string, kind: string, last?: boolean): NodeBlock;
   /**
    * Returns the strategy of the first render of a block, given what the browser renders in it: the adopting one when
    * the server rendered the same, after which the content is adopted, the creating one otherwise. A block the server

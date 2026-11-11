@@ -102,9 +102,55 @@ describe('_hydrate', () => {
 
       expect(parent.innerHTML).toBe('');
     });
+
+    it('renders the last block of its parent without anchor, appending the content', () => {
+      const parent = document.createElement('div');
+      parent.appendChild(document.createElement('i'));
+      const root = createRoot();
+      const nodeBlock = vi.spyOn(CREATE_NODES, 'block');
+      const content = block('b');
+
+      _hydrate(parent, root, null, { triggers: ['interaction'], content, last: true });
+
+      expect(nodeBlock).toHaveBeenCalledExactlyOnceWith(root, parent, null, 'hydrate', 'xd-h', true);
+      expect(parent.innerHTML).toBe('<i></i><b></b>');
+      expect(content.mock.calls[0][2]).toBeNull();
+    });
   });
 
   describe('in a page rendered on the server', () => {
+    it('adopts the content of the last block of its parent, which the server closes with no marker, once a trigger fires', async () => {
+      const parent = parse('<p></p><!--xd-h--><button>x</button>');
+      const button = parent.querySelector('button')!;
+      const clicks = vi.fn();
+      const root = createRoot(new ClaimNodes('x-host'));
+      const content = block('button', [{ name: 'click', handler: clicks }]);
+      _renderElement(parent, root, null, { tagName: 'p' });
+
+      _hydrate(parent, root, null, { triggers: ['interaction'], content, last: true });
+      expect(parent.innerHTML).toBe('<p></p><button>x</button>');
+      button.click();
+      await flush();
+
+      expect(content.mock.calls[0][2]).toBeNull();
+      expect(parent.querySelector('button')).toBe(button);
+      expect(clicks).toHaveBeenCalledOnce();
+      expect(parent.innerHTML).toBe('<p></p><button>x</button>');
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    it('creates the content of the last block of its parent at the end of the parent when the server rendered it empty', async () => {
+      const parent = parse('<p></p><!--xd-h-->');
+      const root = createRoot(new ClaimNodes('x-host'));
+      _renderElement(parent, root, null, { tagName: 'p' });
+
+      _hydrate(parent, root, null, { triggers: ['load'], content: block('b'), last: true });
+      await flush();
+
+      expect(parent.innerHTML).toBe('<p></p><b></b>');
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
     it('leaves the content inert, recording the events on it, until a trigger fires, then adopts its nodes and replays the events', async () => {
       const parent = parse('<p></p><!--xd-h--><button>x</button><!--/xd-h--><i></i>');
       const button = parent.querySelector('button')!;

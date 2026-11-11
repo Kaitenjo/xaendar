@@ -1,5 +1,6 @@
 import type { Function } from '@xaendar/types';
 import type { _Context } from '../utils/context/context.util';
+import type { BlockPosition } from './block-position.type';
 import type { IterationVariables } from './iteration-variables.type';
 import type { NodeStrategy } from './node-strategy.type';
 import type { TemplateExpression } from './template-expression.type';
@@ -13,7 +14,7 @@ import type { TrackExpression } from './track-expression.type';
  * create at each render, in every row of an outer `@for`. The runtime never writes it: the rows rendered are kept by the
  * `@for` (see `ForRun`). Do not build it in the render code.
  */
-export type ForConfig = {
+export type ForConfig = BlockPosition & {
   /**
    * Computes the items to iterate: an array, or a number `n`, iterated as `0, 1, ..., n - 1`. A function of the module,
    * called with the component and the context of the scope holding the `@for`.

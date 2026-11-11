@@ -41,7 +41,7 @@ import { armTriggers, disarmAll, watchedTriggers } from '../hydration-triggers/h
  */
 export function _defer(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, block: DeferBlock): void {
   const { nodeStrategy } = parentContext;
-  const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'defer', _SSR_MARKERS.defer);
+  const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'defer', _SSR_MARKERS.defer, block.last);
   const run: DeferRun = {
     parentNode,
     parentContext,

@@ -3,6 +3,7 @@ import { ASTNode } from '../../parser/types/ast.type.js';
 import { ASTNodeType } from '../../parser/types/node.enum.js';
 import type { TemplateNode } from '../../parser/types/nodes/template-node.type.js';
 import { isStructuralElement } from '../../parser/utils/scope-declarations/scope-declarations.utils.js';
+import { isLastRenderedChild } from '../utils/block-position/block-position.utils.js';
 import { ContextCache } from '../../types/context-cache.type.js';
 import type { ElementNamespace } from '../../types/element-namespace.type.js';
 import type { SymbolImport } from '../../types/symbol-import.type.js';
@@ -127,7 +128,7 @@ export class Generator {
 
       const rootSeparators = getTextSeparators(this._ast, undefined, generatorContext.namespace);
       for (let i = 0; i < this._ast.length; i++) {
-        const result = await this._processNode(this._ast[i], ROOT_NODE, i.toString(), generatorContext, null, rootSeparators[i]);
+        const result = await this._processNode(this._ast[i], ROOT_NODE, i.toString(), generatorContext, null, rootSeparators[i], isLastRenderedChild(this._ast, i));
         if (result) {
           const { code, functionsToProcess } = result;
           this._processFunctions(parentTags, functionsToProcess);
@@ -179,7 +180,12 @@ export class Generator {
         const functionBody = new Array<string>;
         for (let i = 0; i < node.children.length; i++) {
           const child = node.children[i];
-          const result = await this._processNode(child, parentNode, i.toString(), context, anchor ?? null, separators[i]);
+          /*
+            A function without anchor renders at the end of the node it renders into (the children of an element, the
+            content of a block without anchor): its last block needs none either
+          */
+          const last = !anchor && isLastRenderedChild(node.children, i);
+          const result = await this._processNode(child, parentNode, i.toString(), context, anchor ?? null, separators[i], last);
           if (result) {
             const { code, functionsToProcess } = result;
             this._processFunctions(parentTags, functionsToProcess, parentTag);
@@ -250,15 +256,17 @@ export class Generator {
    * @param generatorContext The context object containing compiler-related information.
    * @param anchor The anchor point for inserting the generated code, if applicable.
    * @param separated Whether the server writes `<!---->` before the node (see `getTextSeparators`).
+   * @param last Whether the node is the last one of the node it is rendered into, where a block needs no anchor (see
+   *   `isLastRenderedChild`).
    * @returns The result of processing the node, including generated code and functions to process, or undefined if no code is generated.
    */
-  private async _processNode(node: ASTNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null, separated: boolean): Promise<GeneratorTransitionFunctionReturnType | undefined> {
+  private async _processNode(node: ASTNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null, separated: boolean, last: boolean): Promise<GeneratorTransitionFunctionReturnType | undefined> {
     const state = this._states[node.type];
     if (!state) {
       throw new Error(`No transition function for ASTNode of type ${ASTNodeType[node.type]}`, { cause: node.span });
     }
 
-    return await state(node as never, parentNode, index, generatorContext, anchor, separated);
+    return await state(node as never, parentNode, index, generatorContext, anchor, separated, last);
   }
 }
 

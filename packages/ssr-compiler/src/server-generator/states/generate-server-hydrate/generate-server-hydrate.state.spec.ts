@@ -16,6 +16,15 @@ describe('generateServerHydrate', () => {
       { html: '<!--/xd-h-->' }
     ]);
     expect([...functionsToProcess!.keys()]).toEqual(['ul0__hydrate2']);
-    expect(functionsToProcess!.get('ul0__hydrate2')!.fn).toMatchObject({ node, parent: { id: 'ul0__hydrate2', tag: 'ul' } });
+    expect(functionsToProcess!.get('ul0__hydrate2')!.fn).toMatchObject({ node, parent: { id: 'ul0__hydrate2', tag: 'ul', end: false } });
+  });
+
+  it('writes no closing marker for the last node of its parent, its content ending where the parent does', () => {
+    const node = parseTemplate('@hydrate (idle) { <b></b> }')[0] as HydrateNode;
+
+    const { pieces, functionsToProcess } = generateServerHydrate(node, { id: 'ul0', tag: 'ul', end: true }, '2', new GeneratorContext(cache), undefined, true);
+
+    expect(pieces).toEqual([{ html: '<!--xd-h-->' }, { statement: 'ul0__hydrate2.call(this, out, context);' }]);
+    expect(functionsToProcess!.get('ul0__hydrate2')!.fn.parent).toEqual({ id: 'ul0__hydrate2', tag: 'ul', end: true });
   });
 });

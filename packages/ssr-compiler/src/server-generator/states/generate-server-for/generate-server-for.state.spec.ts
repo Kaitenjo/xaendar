@@ -36,6 +36,26 @@ describe('generateServerFor', () => {
     expect(fn.context.getIdentifierKind('$first')).toBeUndefined();
   });
 
+  it('writes no closing marker for the last node of its parent, its body, whose items move, still not ending there', () => {
+    const node = parseTemplate('@for (user of users; track user) { x }')[0] as ForNode;
+
+    const { pieces, functionsToProcess } = generateServerFor(node, { id: 'ul0', tag: 'ul', end: true }, '0', new GeneratorContext(cache), undefined, true);
+
+    expect(pieces).toEqual([{
+      statement: [
+        '{',
+        '  const items = _ssrItems(this.users);',
+        '  out.push(\'<!--xd-for-->\');',
+        '  for (let index = 0; index < items.length; index++) {',
+        '    out.push(_ssrItemMarker(ul0__for0$track.call(this, context, items[index], index, index === 0, index === items.length - 1, index % 2 === 0, index % 2 !== 0)));',
+        '    ul0__for0.call(this, out, context, items, index);',
+        '  }',
+        '}'
+      ].join('\n')
+    }]);
+    expect(functionsToProcess!.get('ul0__for0')!.fn.parent).toEqual({ id: 'ul0__for0', tag: 'ul' });
+  });
+
   it('creates no variable when the body reads none', () => {
     const node = parseTemplate('@for (user of users(); track user.id) { x }')[0] as ForNode;
 

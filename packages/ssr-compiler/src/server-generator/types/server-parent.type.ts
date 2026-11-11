@@ -12,4 +12,11 @@ export type ServerParent = {
    * `undefined` for the root of the component and for the content of a template, rendered where a `@render` is.
    */
   readonly tag?: string;
+  /**
+   * Whether the nodes end where the node they are rendered into does: the root of the component, the children of an
+   * element, the content of the last block of its parent. Their own last block is closed by no marker, as the client
+   * renders it without anchor (see `isLastRenderedChild`). Left out for the body of a `@for`, whose items move, and
+   * for the content of a template, rendered where a `@render` is.
+   */
+  readonly end?: boolean;
 };

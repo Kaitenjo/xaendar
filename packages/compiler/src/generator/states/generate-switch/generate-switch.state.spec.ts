@@ -62,4 +62,22 @@ describe('generateSwitch', () => {
 
     expect(code).toEqual(['_switch(if0, context, anchor, if0__switch0$switch);']);
   });
+
+  it('declares the last node of its parent last, its cases forwarding no anchor', async () => {
+    const context = new GeneratorContext(cache);
+    const { code, functionsToProcess } = await generateSwitch(parse('@switch (x) { @case (1) { <a></a> } @default { <c></c> } }'), 'td0', '0', context, null, false, true);
+
+    expect(code).toEqual(['_switch(td0, context, null, td0__switch0$switch);']);
+    expect(context.constantDeclarations).toEqual([[
+      'const td0__switch0$switch = {',
+      '  expression: td0__switch0$expression,',
+      '  branches: [{ condition: [1], block: td0__case0_0 }, { condition: null, block: td0__default0 }],',
+      '  last: true',
+      '};'
+    ].join('\n')]);
+    expect([...functionsToProcess!.keys()]).toEqual(['td0__case0_0', 'td0__default0']);
+    for (const { fn } of functionsToProcess!.values()) {
+      expect(fn).toHaveProperty('anchor', undefined);
+    }
+  });
 });

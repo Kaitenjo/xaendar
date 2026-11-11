@@ -18,6 +18,7 @@ import { GeneratorContext } from '../../context/context';
 import type { DescriptorOwner } from '../../types/descriptor-owner.type';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getElementIdentifier, isConstantExpression, joinVariables, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
+import { appendBlockPosition } from '../../utils/block-position/block-position.utils';
 import { declareExpression, toArrayLiteral, toObjectLiteral, toRoleName } from '../../utils/module-code/module-code.utils';
 
 /**
@@ -45,9 +46,12 @@ import { declareExpression, toArrayLiteral, toObjectLiteral, toRoleName } from '
  * @param index - The position of the element among its siblings.
  * @param generatorContext - Current render scope context.
  * @param anchor - The node the element is rendered before, `null` to append it.
+ * @param _separated - Unused: an element is never separated from a text.
+ * @param last - Whether the element is the last node of its parent: applying structural directives, it is a block
+ *   rendered without anchor (see `isLastRenderedChild`).
  * @returns The generated code and the function rendering the children, if any.
  */
-export async function generateElement(node: ElementNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
+export async function generateElement(node: ElementNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null, _separated = false, last = false): Promise<GeneratorTransitionFunctionReturnType> {
   const tagName = node.tagName;
   const nodeName = getElementIdentifier(node, parentNode, index);
   // A custom element of another library has no metadata: it is generated like a native element
@@ -89,6 +93,9 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   if (node.ref) {
     members.push(`ref: '${node.ref.name}'`);
   }
+
+  // Only an element applying structural directives is a block
+  appendBlockPosition(members, last && !!(structuralDirectives.length || structuralConditionalBindings.length));
 
   const element = generatorContext.declareConstant(`${nodeName}$element`, toObjectLiteral(members));
   retVal.code.push(`_renderElement(${parentNode}, context, ${anchor}, ${element});`);

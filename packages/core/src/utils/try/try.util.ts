@@ -34,7 +34,7 @@ const CATCH = '1';
  */
 export function _try(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, block: TryBlock): void {
   const { nodeStrategy } = parentContext;
-  const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'try', _SSR_MARKERS.try);
+  const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'try', _SSR_MARKERS.try, block.last);
   const replaced = nodeBlock.marker === CATCH;
   const strategy = replaced ? nodeStrategy.replace(parentNode, nodeBlock) : nodeStrategy.adopt(parentNode, nodeBlock, CONTENT);
   const holder = new _Context(parentContext);

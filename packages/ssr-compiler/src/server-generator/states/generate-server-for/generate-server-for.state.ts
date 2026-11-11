@@ -34,9 +34,12 @@ import { SERVER_RESOLVE_OPTIONS } from '../../utils/server-code/server-code.util
  * @param parent - Where the body is rendered.
  * @param index - The position of the node among its siblings.
  * @param generatorContext - The generator context of the node.
+ * @param _generateChildren - Unused: the content of the block is written by functions of its own.
+ * @param last - Whether the block is the last node of its parent, written without the marker closing it, as the client
+ *   renders it without anchor (see `isLastRenderedChild`).
  * @returns The code of the node, and the function rendering its body.
  */
-export function generateServerFor(node: ForNode, parent: ServerParent, index: string, generatorContext: GeneratorContext): ServerTransitionResult {
+export function generateServerFor(node: ForNode, parent: ServerParent, index: string, generatorContext: GeneratorContext, _generateChildren?: unknown, last = false): ServerTransitionResult {
   const { itemAlias } = node;
   const iterable = resolveExpression(node.iterableExpression, generatorContext, SERVER_RESOLVE_OPTIONS).expression;
   const implicitNames: Readonly<Record<ForImplicitVariables, string>> = {
@@ -79,19 +82,22 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
   }
   const track = declareExpression(generatorContext, `${key}$track`, resolveExpression(node.trackExpression, trackContext, SERVER_RESOLVE_OPTIONS).expression, [itemAlias === 'context' || names.includes('context') ? '__context' : 'context', itemAlias ?? '_', ...names].join(', '));
 
-  const statement = [
+  const lines = [
     '{',
     `  const items = _ssrItems(${iterable});`,
     `  out.push(${toStringLiteral(`<!--${SSR_MARKERS.for}-->`)});`,
     '  for (let index = 0; index < items.length; index++) {',
     `    out.push(_ssrItemMarker(${track}.call(this, context, items[index], index, index === 0, index === items.length - 1, index % 2 === 0, index % 2 !== 0)));`,
     `    ${key}.call(this, out, context, items, index);`,
-    '  }',
-    `  out.push(${toStringLiteral(`<!--/${SSR_MARKERS.for}-->`)});`,
-    '}'
-  ].join('\n');
+    '  }'
+  ];
+  // The last node of its parent is closed by no marker, as the client renders it without anchor
+  if (!last) {
+    lines.push(`  out.push(${toStringLiteral(`<!--/${SSR_MARKERS.for}-->`)});`);
+  }
 
-  return { pieces: [{ statement }], functionsToProcess };
+  lines.push('}');
+  return { pieces: [{ statement: lines.join('\n') }], functionsToProcess };
 }
 
 /**

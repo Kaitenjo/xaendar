@@ -97,6 +97,30 @@ describe('_ssrStructural', () => {
     expect(denied[1]).toBe('<!--/xd-s-->');
   });
 
+  it('writes no marker closing the last element of its parent, rendered or not', () => {
+    const rendered: ServerOutput = [];
+    const hidden: ServerOutput = [];
+
+    _ssrStructural(rendered, context, { structuralDirectives: [guard(true)], render, last: true });
+    _ssrStructural(hidden, context, { structuralDirectives: [guard(false)], render, last: true });
+
+    expect(rendered.join('')).toBe('<!--xd-s:1--><p></p>');
+    expect(hidden.join('')).toBe('<!--xd-s:0-->');
+  });
+
+  it('writes no marker closing the last element of its parent after the promise of its output, when an outcome is asynchronous', async () => {
+    const allowed: ServerOutput = [];
+    const denied: ServerOutput = [];
+
+    _ssrStructural(allowed, context, { structuralDirectives: [guard(Promise.resolve(true))], render, last: true });
+    _ssrStructural(denied, context, { structuralDirectives: [guard(Promise.resolve(false))], render, last: true });
+
+    expect(allowed.slice(1).join('')).toBe('');
+    expect(denied.slice(1).join('')).toBe('');
+    await expect(allowed[0]).resolves.toEqual(['<!--xd-s:1-->', '<p></p>']);
+    await expect(denied[0]).resolves.toEqual(['<!--xd-s:0-->']);
+  });
+
   it('evaluates the structural directives of the branches the conditional bindings select, nested ones included', () => {
     const out: ServerOutput = [];
     const conditionalBindings: StructuralConditionalBinding[] = [

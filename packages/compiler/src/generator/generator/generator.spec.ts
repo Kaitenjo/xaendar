@@ -32,7 +32,7 @@ describe('Generator', () => {
     expect(code).toBe([
       'const _reads0 = [\'item\'];',
       'const for0Variables = { used: [\'item\'], names: [\'item\'] };',
-      'const for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables };',
+      'const for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables, last: true };',
       'const for0__p0$element = {',
       '  tagName: \'p\',',
       '  attributes: [{ name: \'title\', value: for0__p0$title, setter: _setReactiveProperty, reads: _reads0 }],',
@@ -115,7 +115,7 @@ describe('Generator', () => {
     it('declares the variables a @for body reads once, as a constant of the module, which the configuration of _for and the body read', async () => {
       const code = await generate('@for (item of items; track item; i = $index) { { i } { item } }');
 
-      expect(code).toContain('const for0Variables = { used: [\'item\', \'$index\'], names: [\'item\', \'i\'] };\nconst for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables };');
+      expect(code).toContain('const for0Variables = { used: [\'item\', \'$index\'], names: [\'item\', \'i\'] };\nconst for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables, last: true };');
       expect(code.match(/const for0Variables/g)).toHaveLength(1);
       expect(code).toContain('_for(root, context, null, for0$for);');
       expect(code).toMatch(/_iterationVariables\(context, items0, i0, for0Variables\);[\s\S]*return context;\n\}/);
@@ -221,7 +221,7 @@ describe('Generator', () => {
     });
 
     it('registers the templates of a block in the function rendering it, forwarding its anchor to the @render', async () => {
-      const code = await generate('@if (a) { <template row() />@render row() }');
+      const code = await generate('@if (a) { <template row() />@render row() }<p></p>');
 
       expect(code).toMatch(/function if0\(if0, parentContext, anchor, nodeStrategy\) \{\n {2}const context = new _Context\(parentContext, nodeStrategy, 1\);\n {2}context\.addIdentifier\('row', template_row_\d+\$template\);/);
       expect(code).toContain('const if0__render1$render = { template: \'row\' };');
@@ -294,7 +294,7 @@ describe('Generator', () => {
     expect(code).toContain('function if1(if1, parentContext, anchor, nodeStrategy) {');
     expect(code).toContain('const if1$if = { branches: [{ condition: if1$condition, block: if1 }] };');
     expect(code).toContain('function for2(for2, parentContext, items2, i2, anchor, nodeStrategy) {');
-    expect(code).toContain('const for2$for = { items: for2$items, track: for2$track, block: for2 };');
+    expect(code).toContain('const for2$for = { items: for2$items, track: for2$track, block: for2, last: true };');
     expect(code).not.toContain('.bind(this)');
     expect(code).not.toMatch(/this\.(render|div0Children|if1|for2)\b/);
   });
@@ -311,7 +311,7 @@ describe('Generator', () => {
   });
 
   it('names the branches of an @if nested directly in an @else after the outer branch', async () => {
-    const code = await generate('@if (a) { <b></b> } @else { @if (c) { <i></i> } @else { <u></u> } }');
+    const code = await generate('@if (a) { <b></b> } @else { @if (c) { <i></i> } @else { <u></u> } }<p></p>');
 
     expect(code).toContain('_if(else0, context, anchor, else0__if0$if);');
     expect(code).toContain('const else0__if0$if = { branches: [{ condition: else0__if0$condition, block: else0__if0 }, { block: else0__else0 }] };');
@@ -322,13 +322,71 @@ describe('Generator', () => {
   });
 
   it('names the content of the @else if and @else branches after their own branch', async () => {
-    const code = await generate('<p></p>@if (a) { <b>x</b> } @else if (c) { <b>y</b> } @else { <b>z</b> }');
+    const code = await generate('<p></p>@if (a) { <b>x</b> } @else if (c) { <b>y</b> } @else { <b>z</b> }<p></p>');
 
     expect(code).toContain('_renderElement(elseIf1_0, context, anchor, elseIf1_0__b0$element);');
     expect(code).toContain('_renderElement(else1, context, anchor, else1__b0$element);');
     expect(code).toContain('_renderLiteralText(if1__b0, context, \'x\', null);');
     expect(code).toContain('_renderLiteralText(elseIf1_0__b0, context, \'y\', null);');
     expect(code).toContain('_renderLiteralText(else1__b0, context, \'z\', null);');
+  });
+
+  describe('the last block of its parent', () => {
+    it('is rendered without anchor at the root and among the children of an element, its content appended', async () => {
+      const code = await generate('<td>@if (x) { <b></b> }</td>@switch (m) { @default { <i></i> } }');
+
+      expect(code).toContain('const td0__if0$if = { branches: [{ condition: td0__if0$condition, block: td0__if0 }], last: true };');
+      expect(code).toContain('_if(td0, context, null, td0__if0$if);');
+      expect(code).toContain('_renderElement(td0__if0, context, null, td0__if0__b0$element);');
+      expect(code).toContain('const switch1$switch = { expression: switch1$expression, branches: [{ condition: null, block: default1 }], last: true };');
+      expect(code).toContain('_renderElement(default1, context, null, default1__i0$element);');
+    });
+
+    it('makes the last block of the content of a last block last too, at any depth', async () => {
+      const code = await generate('@if (x) { <b></b>@switch (x) { @case (1) { @for (i of items; track i) { <li></li> } } } } @else { @try { <u></u> } @catch { <s></s> } }');
+
+      expect(code).toContain('const if0$if = { branches: [{ condition: if0$condition, block: if0 }, { block: else0 }], last: true };');
+      expect(code).toContain('  branches: [{ condition: [1], block: if0__case1_0 }],\n  last: true\n};');
+      expect(code).toContain('_switch(if0, context, null, if0__switch1$switch);');
+      expect(code).toContain('  block: if0__case1_0__for0,\n  last: true\n};');
+      expect(code).toContain('_for(if0__case1_0, context, null, if0__case1_0__for0$for);');
+      // The body of the @for keeps its anchor
+      expect(code).toContain('_renderElement(if0__case1_0__for0, context, anchor, if0__case1_0__for0__li0$element);');
+      expect(code).toContain('const else0__try0$try = { content: else0__try0, catch: else0__catch0, last: true };');
+      expect(code).toContain('_renderElement(else0__try0, context, null, else0__try0__u0$element);');
+      expect(code).toContain('_renderElement(else0__catch0, context, null, else0__catch0__s0$element);');
+    });
+
+    it('is not last when a rendered sibling follows it, and is when only @let and <template> do', async () => {
+      const code = await generate('<p>@if (x) { a } text</p><div>@if (y) { b }@let z = 1;<template t() /></div>');
+
+      expect(code).toContain('const p0__if0$if = { branches: [{ condition: p0__if0$condition, block: p0__if0 }] };');
+      expect(code).toContain('_renderLiteralText(p0__if0, context, \' a \', anchor);');
+      expect(code).toContain('const div1__if0$if = { branches: [{ condition: div1__if0$condition, block: div1__if0 }], last: true };');
+      expect(code).toContain('_renderLiteralText(div1__if0, context, \' b \', null);');
+    });
+
+    it('is never in the body of a @for, whose items move, but is in the elements of the body', async () => {
+      const code = await generate('<ul>@for (row of rows; track row) { <li>@if (row) { r }</li>@if (row) { i } }</ul>');
+
+      expect(code).toContain('  variables: ul0__for0Variables,\n  last: true\n};');
+      expect(code).toContain('_for(ul0, context, null, ul0__for0$for);');
+      expect(code).toContain('  reads: _reads0,\n  last: true\n};');
+      expect(code).toContain('_if(ul0__for0__li0, context, null, ul0__for0__li0__if0$if);');
+      expect(code).toContain('_renderLiteralText(ul0__for0__li0__if0, context, \' r \', null);');
+      expect(code).toMatch(/const ul0__for0__if1\$if = \{ branches: \[\{ condition: ul0__for0__if1\$condition, block: ul0__for0__if1 \}\], reads: _reads0 \};/);
+      expect(code.match(/last: true/g)).toHaveLength(2);
+      expect(code).toContain('_if(ul0__for0, context, anchor, ul0__for0__if1$if);');
+      expect(code).toContain('_renderLiteralText(ul0__for0__if1, context, \' i \', anchor);');
+    });
+
+    it('is never in the content of a template, rendered where a @render is', async () => {
+      const code = await generate('<template t()>@if (x) { a }</template>@render t()');
+
+      expect(code).not.toContain('last: true');
+      expect(code).toContain('_if(template_t_0, context, anchor, template_t_0__if0$if);');
+      expect(code).toContain('_renderLiteralText(template_t_0__if0, context, \' a \', anchor);');
+    });
   });
 
   it('skips nodes that generate no code', async () => {
@@ -365,7 +423,7 @@ describe('Generator', () => {
   it('separates nothing in a block rendered where the parser reads the content of the element as text', async () => {
     const code = await generate('<textarea>@if (a) { { x } }</textarea>');
 
-    expect(code).toContain('_renderText(textarea0__if0, context, textarea0__if0$text0, anchor);');
+    expect(code).toContain('_renderText(textarea0__if0, context, textarea0__if0$text0, null);');
   });
 
   it('writes the expressions only as functions of the module receiving the context, and the configurations as constants, without closures nor bindings', async () => {
@@ -390,7 +448,8 @@ describe('Generator', () => {
       '    { condition: [\'c\', \'d\'], block: for0__td0__case1_2 },',
       '    { condition: null, block: for0__td0__default1 }',
       '  ],',
-      '  reads: _reads0',
+      '  reads: _reads0,',
+      '  last: true',
       '};'
     ].join('\n'));
     expect(code.match(/const for0__td0__switch1\$switch/g)).toHaveLength(1);

@@ -1,6 +1,7 @@
 import type { TryNode } from '../../../parser/types/nodes/try-node.type';
 import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
+import { appendBlockPosition, getContentAnchor } from '../../utils/block-position/block-position.utils';
 import { getBlockIdentifier } from '../../utils/generator/generator.utils';
 import { toObjectLiteral } from '../../utils/module-code/module-code.utils';
 
@@ -15,9 +16,12 @@ import { toObjectLiteral } from '../../utils/module-code/module-code.utils';
  * @param index - The index of the node among its siblings.
  * @param generatorContext - Current render scope context.
  * @param anchor - The name of the anchor variable the block is rendered before, or `null` to append it.
+ * @param _separated - Unused: a block is never separated from a text.
+ * @param last - Whether the block is the last node of its parent, which needs no anchor (see `isLastRenderedChild`).
  * @returns The generated code, and the functions of the content and of the `@catch`.
  */
-export async function generateTry(node: TryNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null): Promise<GeneratorTransitionFunctionReturnType> {
+export async function generateTry(node: TryNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null, _separated = false, last = false): Promise<GeneratorTransitionFunctionReturnType> {
+  const contentAnchor = getContentAnchor(last);
   const contentKey = getBlockIdentifier('try', parentNode, index);
   const catchKey = getBlockIdentifier('catch', parentNode, index);
 
@@ -27,15 +31,17 @@ export async function generateTry(node: TryNode, parentNode: string, index: stri
     catchContext.addIdentifier(name, 'value');
   }
 
+  const members = [`content: ${contentKey}`, `catch: ${catchKey}`];
+  appendBlockPosition(members, last);
   return {
-    code: [`_try(${parentNode}, context, ${anchor}, ${generatorContext.declareConstant(`${contentKey}$try`, toObjectLiteral([`content: ${contentKey}`, `catch: ${catchKey}`]))});`],
+    code: [`_try(${parentNode}, context, ${anchor}, ${generatorContext.declareConstant(`${contentKey}$try`, toObjectLiteral(members))});`],
     functionsToProcess: new Map([
       [contentKey, {
-        fn: { node, parentNode: contentKey, context: new GeneratorContext(generatorContext), anchor: 'anchor' },
+        fn: { node, parentNode: contentKey, context: new GeneratorContext(generatorContext), anchor: contentAnchor },
         args: [contentKey, 'parentContext', 'anchor', 'nodeStrategy']
       }],
       [catchKey, {
-        fn: { node: node.catch, parentNode: catchKey, context: catchContext, precode: name ? `context.addIdentifier('${name}', error);` : undefined, anchor: 'anchor' },
+        fn: { node: node.catch, parentNode: catchKey, context: catchContext, precode: name ? `context.addIdentifier('${name}', error);` : undefined, anchor: contentAnchor },
         args: [catchKey, 'parentContext', 'anchor', 'nodeStrategy', 'error']
       }]
     ])

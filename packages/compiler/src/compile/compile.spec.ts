@@ -98,7 +98,7 @@ describe('compile', () => {
 
     const { javascript, typescript } = await compile(template, { baseDir: '/base', signals: ['ready'], cache });
 
-    expect(javascript).toContain('const hydrate2$hydrate = { triggers: [\'idle\'], when: hydrate2$when, load: hydrate2$load, content: hydrate2 };');
+    expect(javascript).toContain('const hydrate2$hydrate = { triggers: [\'idle\'], when: hydrate2$when, load: hydrate2$load, content: hydrate2, last: true };');
     expect(javascript).toContain('function hydrate2$load() {\n  return Promise.all([import("/base/c-d.ts")]);\n}');
     expect(javascript).toContain('function hydrate2$when(context) {\n  return this.ready();\n}');
     expect(typescript.text).toContain('if (root.ready()) { }');

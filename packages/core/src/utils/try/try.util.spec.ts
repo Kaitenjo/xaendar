@@ -192,6 +192,26 @@ describe('_try', () => {
       expect(parent.innerHTML).toBe('<s></s><!--try-->');
       expect((outerRescue.mock.calls[0][4] as Error).message).toBe('rethrown');
     });
+
+    it('renders the last block of its parent without anchor, appending the content, or the @catch when the content throws', () => {
+      const parent = parse('<p></p>');
+      const root = createRoot();
+      const block = vi.spyOn(CREATE_NODES, 'block');
+      const render = content('b');
+
+      _try(parent, root, null, { content: render, catch: fallback('i'), last: true });
+
+      expect(block).toHaveBeenCalledExactlyOnceWith(root, parent, null, 'try', 'xd-t', true);
+      expect(parent.innerHTML).toBe('<p></p><b></b>');
+      expect(render.mock.calls[0][2]).toBeNull();
+
+      const failing = parse('<p></p>');
+      const rescue = fallback('i');
+      _try(failing, createRoot(), null, { content: content('b', new Error('broken')), catch: rescue, last: true });
+
+      expect(failing.innerHTML).toBe('<p></p><i></i>');
+      expect(rescue.mock.calls[0][2]).toBeNull();
+    });
   });
 
   describe('in a page rendered on the server', () => {
@@ -246,6 +266,50 @@ describe('_try', () => {
       expect(rescue.mock.calls[0][3]).toBe(CREATE_NODES);
       expect(console.warn).not.toHaveBeenCalled();
       expect(strategy.element(context, parent, 'p')).toBe(p);
+    });
+
+    it('adopts the content of the last block of its parent, which the server closes with no marker', () => {
+      const parent = parse('<p></p><!--xd-t:0--><b></b>');
+      const b = parent.lastElementChild;
+      const strategy = new ClaimNodes('x-host');
+      const context = createRoot(strategy);
+      const render = content('b');
+      strategy.element(context, parent, 'p');
+
+      _try(parent, context, null, { content: render, catch: fallback('i'), last: true });
+
+      expect(render.mock.calls[0][2]).toBeNull();
+      expect(render.mock.calls[0][3]).toBe(strategy);
+      expect(parent.innerHTML).toBe('<p></p><b></b>');
+      expect(parent.lastElementChild).toBe(b);
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    it('removes the rest of the content of the last block of its parent, to the end of the parent, when the browser throws, and appends the @catch', () => {
+      const parent = parse('<!--xd-t:0--><b></b><em></em>text');
+      const strategy = new ClaimNodes('x-host');
+      const rescue = fallback('i');
+
+      _try(parent, createRoot(strategy), null, { content: content('b', new Error('browser')), catch: rescue, last: true });
+
+      expect(parent.innerHTML).toBe('<i></i>');
+      expect(rescue.mock.calls[0][2]).toBeNull();
+      expect(rescue.mock.calls[0][3]).toBe(CREATE_NODES);
+      expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> <!--xd-t:0--> where the browser renders <!--xd-t:1-->, which it renders again');
+    });
+
+    it('removes the @catch of the server of the last block of its parent without warnings, appending the content rendered from scratch', () => {
+      const parent = parse('<p></p><!--xd-t:1--><i>server</i>');
+      const strategy = new ClaimNodes('x-host');
+      const context = createRoot(strategy);
+      const render = content('b');
+      strategy.element(context, parent, 'p');
+
+      _try(parent, context, null, { content: render, catch: fallback('i'), last: true });
+
+      expect(parent.innerHTML).toBe('<p></p><b></b>');
+      expect(render.mock.calls[0][3]).toBe(CREATE_NODES);
+      expect(console.warn).not.toHaveBeenCalled();
     });
   });
 });

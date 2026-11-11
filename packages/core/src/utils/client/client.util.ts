@@ -14,9 +14,10 @@ import type { _Context } from '../context/context.util';
  * @param parentContext - The context owning the block.
  * @param referenceNode - The node to insert the block before, `null` to append it.
  * @param content - Renders the content.
+ * @param last - Whether the block is the last node of its parent, which needs no anchor (see `BlockPosition`).
  */
-export function _client(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, content: Block['block']): void {
+export function _client(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, content: Block['block'], last = false): void {
   const { nodeStrategy } = parentContext;
-  const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'client', _SSR_MARKERS.client);
+  const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'client', _SSR_MARKERS.client, last);
   parentContext.addChild(content(parentNode, parentContext, nodeBlock.anchor, nodeStrategy.replace(parentNode, nodeBlock)));
 }

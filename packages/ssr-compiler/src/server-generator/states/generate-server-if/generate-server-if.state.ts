@@ -28,9 +28,12 @@ import { SERVER_RESOLVE_OPTIONS, toBlockFunction } from '../../utils/server-code
  * @param parent - Where the blocks are rendered.
  * @param index - The position of the node among its siblings.
  * @param generatorContext - The generator context of the node.
+ * @param _generateChildren - Unused: the content of the block is written by functions of its own.
+ * @param last - Whether the block is the last node of its parent, written without the marker closing it, as the client
+ *   renders it without anchor (see `isLastRenderedChild`).
  * @returns The code of the node, and the functions rendering its blocks.
  */
-export function generateServerIf(node: IfNode, parent: ServerParent, index: string, generatorContext: GeneratorContext): ServerTransitionResult {
+export function generateServerIf(node: IfNode, parent: ServerParent, index: string, generatorContext: GeneratorContext, _generateChildren?: unknown, last = false): ServerTransitionResult {
   // The opening of each branch, the name of the function rendering it and its node
   const branches: Array<[string, string, ServerFunctionToProcess['fn']['node']]> = [
     [`if (${resolveCondition(node.conditionNode, generatorContext)})`, getBlockIdentifier('if', parent.id, index), node]
@@ -53,7 +56,7 @@ export function generateServerIf(node: IfNode, parent: ServerParent, index: stri
   for (let branch = 0; branch < branches.length; branch++) {
     const [opening, key, block] = branches[branch];
     lines.push(`${opening} {`, indent(`out.push(${toStringLiteral(`<!--${SSR_MARKERS.if}:${branch}-->`)});`), indent(`${key}.call(this, out, context);`));
-    functionsToProcess.set(key, toBlockFunction(block, key, parent, generatorContext));
+    functionsToProcess.set(key, toBlockFunction(block, key, parent, generatorContext, last));
   }
 
   if (!alternate) {
@@ -61,7 +64,12 @@ export function generateServerIf(node: IfNode, parent: ServerParent, index: stri
   }
 
   lines.push('}');
-  return { pieces: [{ statement: lines.join('\n') }, { html: `<!--/${SSR_MARKERS.if}-->` }], functionsToProcess };
+  const pieces: ServerTransitionResult['pieces'] = [{ statement: lines.join('\n') }];
+  if (!last) {
+    pieces.push({ html: `<!--/${SSR_MARKERS.if}-->` });
+  }
+
+  return { pieces, functionsToProcess };
 }
 
 /**

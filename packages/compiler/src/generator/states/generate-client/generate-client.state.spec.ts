@@ -30,4 +30,11 @@ describe('generateClient', () => {
     expect(code).toEqual(['_client(root, context, anchor, client1);']);
     expect([...functionsToProcess!.keys()]).toEqual(['client1']);
   });
+
+  it('passes true for the last node of its parent, its content forwarding no anchor', async () => {
+    const { code, functionsToProcess } = await generateClient(parse('@client { <b></b> } @placeholder { <i></i> }'), 'td0', '0', new GeneratorContext(cache), null, false, true);
+
+    expect(code).toEqual(['_client(td0, context, null, td0__client0, true);']);
+    expect(functionsToProcess!.get('td0__client0')!.fn).toHaveProperty('anchor', undefined);
+  });
 });

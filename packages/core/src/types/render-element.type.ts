@@ -1,3 +1,4 @@
+import type { BlockPosition } from './block-position.type';
 import type { RenderChildren } from './render-children.type';
 import type { RenderElementAttribute } from './render-element-attribute.type';
 import type { RenderElementConditionalBinding } from './render-element-conditional-binding.type';
@@ -8,14 +9,15 @@ import type { RenderElementStructuralDirective } from './render-element-structur
 
 /**
  * Describes an element of a template, which `_renderElement` renders: its tag, its bindings, its directives and its
- * children. The lists the element does not declare are left out.
+ * children. The lists the element does not declare are left out. An element applying structural directives is a block,
+ * `last` when it is the last node of its parent (see `BlockPosition`).
  *
  * N.B. Deliberate, to save memory: a constant of the module of the template, written once by the compiler and read by
  * every element it describes, instead of the arrays and the descriptors an element would create at each render, in every
  * row of a table. The runtime never writes it: the state of an element lives in its context and its bindings. Do not
  * build it in the render code, nor keep state in it.
  */
-export type RenderElement = {
+export type RenderElement = BlockPosition & {
   /**
    * The tag name of the element.
    */

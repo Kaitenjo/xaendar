@@ -36,7 +36,7 @@ import { trackNode } from '../track-node/track-node.util';
  */
 export function _hydrate(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, block: HydrateBlock): void {
   const { nodeStrategy } = parentContext;
-  const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'hydrate', _SSR_MARKERS.hydrate);
+  const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'hydrate', _SSR_MARKERS.hydrate, block.last);
   const run: HydrateRun = {
     parentNode,
     parentContext,

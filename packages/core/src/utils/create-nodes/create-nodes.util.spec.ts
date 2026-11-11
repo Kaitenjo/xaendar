@@ -52,4 +52,18 @@ describe('CREATE_NODES', () => {
 
     expect(parent.innerHTML).toBe('<!--if-->');
   });
+
+  it('creates the last block of its parent without anchor, the same frozen block every time, inserting and tracking nothing', () => {
+    const parent = document.createElement('div');
+    const text = parent.appendChild(document.createTextNode('a'));
+    const context = createContext();
+
+    const block = CREATE_NODES.block(context, parent, null, 'if', 'xd-if', true);
+
+    expect(block).toEqual({ anchor: null, marker: undefined });
+    expect(Object.isFrozen(block)).toBe(true);
+    expect(CREATE_NODES.block(createContext(), document.createElement('p'), text, 'for', 'xd-for', true)).toBe(block);
+    expect(parent.childNodes.length).toBe(1);
+    expect(context.getNodes()).toBeNull();
+  });
 });

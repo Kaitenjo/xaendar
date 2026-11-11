@@ -31,7 +31,7 @@ import { _selectBranchIndex } from '../select-branch/select-branch.util';
  *   through it.
  */
 export function _if(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, config: BlockConfig, kind: string = _SSR_MARKERS.if): void {
-  const nodeBlock = parentContext.nodeStrategy.block(parentContext, parentNode, referenceNode, 'if', kind);
+  const nodeBlock = parentContext.nodeStrategy.block(parentContext, parentNode, referenceNode, 'if', kind, config.last);
   const run: IfRun = {
     parentNode, parentContext,
     nodeBlock, config,
@@ -80,14 +80,14 @@ function showBranch(run: IfRun, selected: number | null): void {
  *
  * @param parentNode - The parent HTML element the branch is rendered into.
  * @param parentContext - The context owning the block.
- * @param anchor - The node to insert the branch before.
+ * @param anchor - The node to insert the branch before, `null` to append it.
  * @param config - The branches.
  * @param state - The active branch, `undefined` when none is.
  * @param selected - The index of the branch to render, `null` to render none.
  * @param nodeStrategy - The strategy the branch gets its nodes with.
  * @returns The branch rendered, `undefined` when none is.
  */
-function renderBranch(parentNode: HTMLElement, parentContext: _Context, anchor: Comment, config: BlockConfig, state: State | undefined, selected: number | null, nodeStrategy: NodeStrategy): State | undefined {
+function renderBranch(parentNode: HTMLElement, parentContext: _Context, anchor: Comment | null, config: BlockConfig, state: State | undefined, selected: number | null, nodeStrategy: NodeStrategy): State | undefined {
   if (state) {
     state.context.clear();
     parentContext.removeChild(state.context);

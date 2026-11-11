@@ -8,6 +8,7 @@ export type * from './generator/types/identifier-kind.type';
 export type * from './generator/types/imported-identifier.type';
 export type * from './generator/types/resolve-expresion-options.type';
 export type * from './generator/types/template-function-factory.type';
+export * from './generator/utils/block-position/block-position.utils';
 export * from './generator/utils/for-reads/for-reads.utils';
 export * from './generator/utils/generator/generator.utils';
 export * from './generator/utils/module-code/module-code.utils';

@@ -12,9 +12,12 @@ import { toBlockFunction } from '../../utils/server-code/server-code.utils';
  * @param parent - Where the block is rendered.
  * @param index - The index of the node among its siblings.
  * @param generatorContext - The generator context of the node.
+ * @param _generateChildren - Unused: the content of the block is written by functions of its own.
+ * @param last - Whether the block is the last node of its parent, written without the marker closing it, as the client
+ *   renders it without anchor (see `isLastRenderedChild`).
  * @returns The code of the block, and the functions rendering its content and its `@catch`.
  */
-export function generateServerTry(node: TryNode, parent: ServerParent, index: string, generatorContext: GeneratorContext): ServerTransitionResult {
+export function generateServerTry(node: TryNode, parent: ServerParent, index: string, generatorContext: GeneratorContext, _generateChildren?: unknown, last = false): ServerTransitionResult {
   const contentKey = getBlockIdentifier('try', parent.id, index);
   const catchKey = getBlockIdentifier('catch', parent.id, index);
 
@@ -25,11 +28,11 @@ export function generateServerTry(node: TryNode, parent: ServerParent, index: st
   }
 
   return {
-    pieces: [{ statement: `_ssrTry(out, context, ${contentKey}, ${catchKey});` }],
+    pieces: [{ statement: `_ssrTry(out, context, ${contentKey}, ${catchKey}${last ? ', true' : ''});` }],
     functionsToProcess: new Map([
-      [contentKey, toBlockFunction(node, contentKey, parent, generatorContext)],
+      [contentKey, toBlockFunction(node, contentKey, parent, generatorContext, last)],
       [catchKey, {
-        fn: { node: node.catch, context: catchContext, parent: { id: catchKey, tag: parent.tag }, precode: name ? `context.addIdentifier('${name}', error);` : undefined },
+        fn: { node: node.catch, context: catchContext, parent: { id: catchKey, tag: parent.tag, end: last }, precode: name ? `context.addIdentifier('${name}', error);` : undefined },
         args: ['out', 'parentContext', 'error']
       }]
     ])
