@@ -45,7 +45,7 @@
 
 ## What works differently
 
-- Bindings on native elements call `setAttribute`: `disabled="{false}"` still disables (bind `null`, which removes the attribute as `[attr.name]` does, or use a conditional binding), and `value`/`checked` are only the initial state.
+- Bindings on native elements call `setAttribute`: a boolean adds the attribute empty or removes it (`disabled="{busy()}"` works), except on `aria-*` and enumerated attributes (`draggable`, `spellcheck`, `contenteditable`), which get `"true"`/`"false"`; `null` removes the attribute as `[attr.name]` does; `value`/`checked` are only the initial state.
 - A removed element is destroyed, and rendered again as a new instance: never move or reattach elements with the DOM APIs.
 - Inputs are never written by attributes set from outside the templates, and the hooks run at every connection, not once.
 - Expressions cannot assign, create objects with `new`, or declare functions: logic belongs in the class.

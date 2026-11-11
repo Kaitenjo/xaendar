@@ -319,7 +319,7 @@ describe('ClaimNodes', () => {
 
       expect(nodeStrategy.adopt(parent, block, '1')).toBe(CREATE_NODES);
       nodeStrategy.close(parent, block);
-      expect(nodeStrategy.adopt(parent, nodeStrategy.block(context, parse('<!--xd-if-->x<!--/xd-if-->'), null, 'if', 'xd-if'), '0')).toBe(CREATE_NODES);
+      expect(nodeStrategy.adopt(parent, nodeStrategy.block(createContext(), parse('<!--xd-if-->x<!--/xd-if-->'), null, 'if', 'xd-if'), '0')).toBe(CREATE_NODES);
 
       expect(parent.innerHTML).toBe('<!--/xd-if-->');
       expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> <!--xd-if:0--> where the browser renders <!--xd-if:1-->, which it renders again');
@@ -329,13 +329,15 @@ describe('ClaimNodes', () => {
     it('creates a block where the server rendered none, or no marker closing it, with a warning, its content created', () => {
       const parent = parse('<b></b>');
       const unclosed = parse('<!--xd-if:0--><p></p>');
+      const otherContext = createContext();
 
       const block = nodeStrategy.block(context, parent, null, 'if', 'xd-if');
-      const other = nodeStrategy.block(context, unclosed, null, 'if', 'xd-if');
+      const other = nodeStrategy.block(otherContext, unclosed, null, 'if', 'xd-if');
 
       expect(block.marker).toBeUndefined();
       expect(parent.innerHTML).toBe('<!--if--><b></b>');
-      expect(nodesOf(context)).toEqual([block.anchor, other.anchor]);
+      expect(nodesOf(context)).toEqual([block.anchor]);
+      expect(nodesOf(otherContext)).toEqual([other.anchor]);
       expect(nodeStrategy.adopt(parent, block, '')).toBe(CREATE_NODES);
       expect(nodeStrategy.adoptItems(parent, block, [])).toBe(CREATE_NODES);
       nodeStrategy.close(parent, block);
@@ -403,7 +405,7 @@ describe('ClaimNodes', () => {
       const fewer = parse('<!--xd-for--><!--xd-item:n1--><!--/xd-for-->');
 
       expect(nodeStrategy.adoptItems(parent, nodeStrategy.block(context, parent, null, 'for', 'xd-for'), ['1'])).toBe(CREATE_NODES);
-      expect(nodeStrategy.adoptItems(fewer, nodeStrategy.block(context, fewer, null, 'for', 'xd-for'), [1, 2])).toBe(CREATE_NODES);
+      expect(nodeStrategy.adoptItems(fewer, nodeStrategy.block(createContext(), fewer, null, 'for', 'xd-for'), [1, 2])).toBe(CREATE_NODES);
 
       expect(parent.innerHTML).toBe('<!--/xd-for-->');
       expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> other items in a <!--xd-for--> than the browser renders, which it renders again');

@@ -8,6 +8,20 @@ import type { ForConfig } from '../../types/for-config.type';
 import type { ForRun } from '../../types/for-run.type';
 
 /**
+ * The first node, in DOM order, of the item whose bounds {@link findItemBounds} found last, `null` when it renders none.
+ *
+ * N.B. Deliberate, to save memory: rendering is synchronous, so the bounds of an item travel through two variables of
+ * the module, read right after they are found, instead of an array of the nodes of the item, allocated for every item
+ * at every run, or an object holding the two nodes. Do not collect the nodes into an array again.
+ */
+let firstNode: Node | null = null;
+
+/**
+ * The last node, in DOM order, of the item whose bounds {@link findItemBounds} found last, `null` when it renders none.
+ */
+let lastNode: Node | null = null;
+
+/**
  * Reactively iterates over a list of items. Items are matched across re-runs
  * by the key produced by the track expression of the `@for`:
  * - key sopravvive → il Context e l'intero sottoalbero (stato, subscription,
@@ -127,37 +141,29 @@ function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
     const existing = entries.get(key)?.[occurrence];
 
     let entry: _Context;
-    let nodes: Node[];
 
     if (existing) {
       if (variables) {
         updateIterationVariables(existing, variables, items, i);
       }
 
-      nodes = getItemNodes(parentNode, existing);
-      const lastNode = nodes[nodes.length - 1];
-      if (lastNode?.nextSibling !== nextReference) {
-        /*
-          moveBefore keeps the nodes in the document: the components of the row are not disconnected, so they
-          keep their render, their state and their effects. insertBefore would destroy and render them again
-        */
-        for (let j = 0; j < nodes.length; j++) {
-          parentNode.moveBefore(nodes[j], nextReference);
-        }
+      findItemBounds(parentNode, existing);
+      if (lastNode && lastNode.nextSibling !== nextReference) {
+        moveItem(parentNode, firstNode!, lastNode, nextReference);
       }
 
       entry = existing;
     } else {
       const created = config.block(parentNode, parentContext, items, i, nextReference, parentContext.nodeStrategy);
       parentContext.addChild(created);
-      nodes = getItemNodes(parentNode, created);
+      findItemBounds(parentNode, created);
       entry = created;
     }
 
     const keyEntries = newEntries.get(key) ?? new Array<_Context>(occurrences.counts.get(key)!);
     keyEntries[occurrence] = entry;
     newEntries.set(key, keyEntries);
-    nextReference = nodes[0] ?? nextReference;
+    nextReference = firstNode ?? nextReference;
   }
 
   run.entries = newEntries;
@@ -181,53 +187,30 @@ function countOccurrences(keys: Array<string | number>): { indexes: number[], co
 }
 
 /**
- * Returns, in DOM order, the nodes an item renders directly into `parentNode`: not only the ones owned
- * by its context, but also the ones owned by its descendant contexts (e.g. the content of a nested
- * `@if`/`@for`, which lives before its anchor). An item always occupies a contiguous range of
- * `parentNode`, so the nodes are the ones going from the first to the last of them.
+ * Finds the first and the last node, in DOM order, an item renders directly into `parentNode` (see {@link firstNode}
+ * and {@link lastNode}): not only the ones owned by its context, but also the ones owned by its descendant contexts
+ * (e.g. the content of a nested `@if`/`@for`, which lives before its anchor). An item always occupies a contiguous
+ * range of `parentNode`, so its nodes are the ones going from the first to the last of them.
  *
  * @param parentNode - The element the item is rendered into.
  * @param context - The context of the item.
- * @returns The nodes of the item, in DOM order, or an empty array if it does not render any.
  */
-function getItemNodes(parentNode: Node, context: _Context): Node[] {
-  const owned = new Array<Node>();
-  collectNodes(parentNode, context, owned);
-
-  if (!owned.length) {
-    return owned;
-  }
-
-  let first = owned[0];
-  let last = owned[0];
-  for (let i = 1; i < owned.length; i++) {
-    const node = owned[i];
-    if (node.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING) {
-      first = node;
-    } else if (node.compareDocumentPosition(last) & Node.DOCUMENT_POSITION_PRECEDING) {
-      last = node;
-    }
-  }
-
-  const nodes = [first];
-  for (let node = first; node !== last; node = node.nextSibling!) {
-    nodes.push(node.nextSibling!);
-  }
-
-  return nodes;
+function findItemBounds(parentNode: Node, context: _Context): void {
+  firstNode = null;
+  lastNode = null;
+  collectBounds(parentNode, context);
 }
 
 /**
- * Collects the nodes owned by `context` and by its descendants that are rendered into `parentNode`.
- * Since all the nodes of a context are rendered into the same element, a context whose nodes are
- * rendered elsewhere (e.g. the children of an element) is skipped along with its descendants:
- * their nodes are moved together with the element containing them.
+ * Widens the bounds of an item (see {@link findItemBounds}) to the nodes owned by `context` and by its descendants that
+ * are rendered into `parentNode`. Since all the nodes of a context are rendered into the same element, a context whose
+ * nodes are rendered elsewhere (e.g. the children of an element) is skipped along with its descendants: their nodes are
+ * moved together with the element containing them.
  *
  * @param parentNode - The element the nodes have to be rendered into.
- * @param context - The context to collect the nodes from.
- * @param nodes - The array the collected nodes are pushed into.
+ * @param context - The context to read the nodes of.
  */
-function collectNodes(parentNode: Node, context: _Context, nodes: Node[]): void {
+function collectBounds(parentNode: Node, context: _Context): void {
   const count = context.getNodeCount();
   if (count) {
     if (context.getNode(0).parentNode !== parentNode) {
@@ -235,12 +218,43 @@ function collectNodes(parentNode: Node, context: _Context, nodes: Node[]): void 
     }
 
     for (let i = 0; i < count; i++) {
-      nodes.push(context.getNode(i));
+      const node = context.getNode(i);
+      if (!firstNode) {
+        firstNode = lastNode = node;
+      } else if (node.compareDocumentPosition(firstNode) & Node.DOCUMENT_POSITION_FOLLOWING) {
+        firstNode = node;
+      } else if (node.compareDocumentPosition(lastNode!) & Node.DOCUMENT_POSITION_PRECEDING) {
+        lastNode = node;
+      }
     }
   }
 
   for (let i = 0; i < context.getChildCount(); i++) {
-    collectNodes(parentNode, context.getChild(i), nodes);
+    collectBounds(parentNode, context.getChild(i));
+  }
+}
+
+/**
+ * Moves the nodes of an item, from its first to its last one, before a node, keeping their order: from the last one
+ * back, each one before the one moved after it.
+ *
+ * moveBefore keeps the nodes in the document: the components of the row are not disconnected, so they keep their
+ * render, their state and their effects. insertBefore would destroy and render them again.
+ *
+ * @param parentNode - The element the item is rendered into.
+ * @param first - The first node of the item.
+ * @param last - The last node of the item.
+ * @param reference - The node to move the item before, `null` to move it to the end.
+ */
+function moveItem(parentNode: Element, first: Node, last: Node, reference: Node | null): void {
+  let node = last;
+  let previous = node.previousSibling;
+  parentNode.moveBefore(node, reference);
+  while (node !== first) {
+    const moved: Node = previous!;
+    previous = moved.previousSibling;
+    parentNode.moveBefore(moved, node);
+    node = moved;
   }
 }
 

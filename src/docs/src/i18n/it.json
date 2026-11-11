@@ -687,7 +687,7 @@
         },
         "values": {
           "title": "Dai valori agli attributi",
-          "p1": "<code>null</code>, <code>undefined</code> e <code>false</code> rimuovono l’attributo, <code>true</code> lo scrive vuoto, e ogni altro valore viene scritto come stringa. Va bene per gli attributi booleani come <code>hidden</code>, ma non per gli stati ARIA, che richiedono il testo <code>false</code>: per loro restituisci <code>String(value)</code>, come fa l’interruttore per <code>aria-checked</code>."
+          "p1": "<code>null</code> e <code>undefined</code> rimuovono l’attributo, e ogni valore che non sia un booleano viene scritto come stringa. Un booleano aggiunge l’attributo vuoto per <code>true</code> e lo rimuove per <code>false</code>, come serve a un attributo booleano quale <code>hidden</code>, tranne sugli attributi <code>aria-*</code> e su quelli enumerati che accettano <code>false</code> (<code>draggable</code>, <code>spellcheck</code>, <code>contenteditable</code>), che ricevono il testo <code>\"true\"</code> o <code>\"false\"</code>: l’interruttore restituisce il suo stato così com’è per <code>aria-checked</code>. I binding dei template seguono la stessa regola."
         },
         "timing": {
           "title": "Quando vengono applicati",
@@ -705,8 +705,8 @@
             "p1": "L’effetto vede solo i signal che il membro legge mentre viene eseguito: un getter che restituisce la lunghezza di un array semplice, o un campo a cui in seguito viene assegnato un altro valore semplice, non viene mai riscritto. Tieni nei signal lo stato che l’host mostra."
           },
           "callout2": {
-            "heading": "false rimuove l’attributo",
-            "p1": "<code>aria-checked</code>, <code>aria-expanded</code> e gli altri stati ARIA leggono il testo <code>false</code>, che <code>false</code> rimuoverebbe: restituisci <code>String(value)</code>. Per uno screen reader un <code>aria-checked</code> assente non significa non selezionato."
+            "heading": "false rimuove un attributo che non è uno stato ARIA",
+            "p1": "<code>false</code> rimuove un attributo booleano, e qualsiasi altro fuori da <code>aria-*</code> e dagli attributi enumerati: un <code>data-*</code> o un <code>title</code> che vale <code>false</code> sparisce. Restituisci <code>String(value)</code> quando il testo <code>false</code> deve restare. <code>aria-checked</code>, <code>aria-expanded</code> e gli altri stati ARIA lo mantengono: per uno screen reader un <code>aria-checked</code> assente non significa non selezionato."
           },
           "callout3": {
             "heading": "Il padre lega lo stesso attributo",
@@ -725,7 +725,7 @@
           "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
-          "td1": "Scrive il valore di un campo, di un getter o di un accessor in un attributo dell’host: rimosso per <code>null</code>, <code>undefined</code> e <code>false</code>, vuoto per <code>true</code>.",
+          "td1": "Scrive il valore di un campo, di un getter o di un accessor in un attributo dell’host: rimosso per <code>null</code> e <code>undefined</code>; un booleano lo aggiunge vuoto o lo rimuove, oppure viene scritto come <code>\"true\"</code> o <code>\"false\"</code> sugli attributi <code>aria-*</code> ed enumerati.",
           "td2": "Attiva una classe dell’host finché il valore è truthy.",
           "td3": "Ascolta un evento dell’host con un metodo, che riceve l’evento."
         }
@@ -1481,7 +1481,7 @@
           },
           "callout2": {
             "heading": "Checkbox",
-            "p1": "<code>checked</code> è un attributo booleano: legato a <code>false</code>, spunta comunque la casella. E, come <code>value</code>, è solo lo stato iniziale."
+            "p1": "<code>checked</code> è un attributo booleano: legato a un booleano, viene aggiunto per <code>true</code> e rimosso per <code>false</code>. Ma, come <code>value</code>, è solo lo stato iniziale: una volta che l’utente clicca la casella, l’attributo non la cambia più."
           }
         },
         "summary": {
@@ -1695,7 +1695,7 @@
         },
         "whatWorksDifferently": {
           "title": "Cosa funziona diversamente",
-          "li2": "<strong>I binding impostano attributi.</strong> Sugli elementi nativi un binding chiama <code>setAttribute</code>: un <code>value</code> smette di contare quando l’utente digita, e <code>disabled=\"{ false }\"</code> disabilita comunque, mentre <code>null</code> rimuove l’attributo, come con <code>[attr.name]</code>. Vedi <a href=\"#/it/templates/binding\">Binding</a> e <a href=\"#/it/patterns/forms\">Form</a>.",
+          "li2": "<strong>I binding impostano attributi.</strong> Sugli elementi nativi un binding chiama <code>setAttribute</code>: un <code>value</code> smette di contare quando l’utente digita. Un booleano aggiunge o rimuove l’attributo, quindi <code>disabled=\"{ busy() }\"</code> funziona, tranne sugli attributi <code>aria-*</code> ed enumerati, che ricevono <code>\"true\"</code> o <code>\"false\"</code>, e <code>null</code> rimuove l’attributo, come con <code>[attr.name]</code>. Vedi <a href=\"#/it/templates/binding\">Binding</a> e <a href=\"#/it/patterns/forms\">Form</a>.",
           "li3": "<strong>Un elemento rimosso viene distrutto.</strong> Quando un template rimuove un elemento, la sua istanza è persa, e renderizzarlo di nuovo ne crea una nuova. Spostare o riattaccare elementi con le API del DOM non è supportato. Vedi <a href=\"#/it/components/lifecycle\">Ciclo di vita</a>.",
           "li4": "<strong>I template sono rigorosi.</strong> I listener chiamano un solo metodo, le espressioni non possono assegnare né creare oggetti, e alcuni caratteri vanno trattati con l’escape. Vedi <a href=\"#/it/reference/template-syntax\">il prontuario</a>.",
           "callout1": {
@@ -2111,8 +2111,8 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "example1": "disabled legato a false",
-          "p1": "Un attributo booleano conta per la sua presenza, non per il suo valore: <code>disabled=\"false\"</code> disabilita comunque il pulsante, quindi il primo è sempre disabilitato. Legalo a <code>null</code> o <code>undefined</code> quando deve mancare, come fa il secondo, oppure usa un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a>, che aggiunge e rimuove l’attributo, come fa il terzo.",
+          "example1": "Un booleano legato a un attributo",
+          "p1": "Un attributo booleano conta per la sua presenza, non per il suo valore, e un binding scrive un booleano in questo modo: <code>true</code> aggiunge l’attributo vuoto, <code>false</code> lo rimuove. Il primo pulsante è disabilitato solo finché è bloccato, come il secondo, che usa un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a>. Un attributo <code>aria-*</code>, o uno enumerato che accetta <code>false</code> (<code>draggable</code>, <code>spellcheck</code>, <code>contenteditable</code>), riceve invece il testo: <code>aria-pressed</code> vale <code>\"true\"</code> o <code>\"false\"</code>. Un valore statico è una stringa: <code>disabled=\"false\"</code> disabilita comunque.",
           "example2": "L’attributo value e la proprietà value",
           "p2": "Scrivi in entrambi i campi, poi resetta. Un binding imposta l’attributo <code>value</code>, che è solo il valore iniziale del campo: dopo che l’utente ha scritto, il campo mostra la sua proprietà <code>value</code>, e il primo campo non si svuota. Il secondo campo imposta la proprietà da un effect. Il pattern <a href=\"#/it/patterns/forms\">Form</a> lo racchiude in una direttiva.",
           "callout1": {
@@ -2121,7 +2121,7 @@
           },
           "callout2": {
             "heading": "null e undefined",
-            "body": "Un attributo legato a <code>null</code> o <code>undefined</code> viene rimosso, e il server non lo scrive: <code>aria-describedby=\"{ error() ? 'hint' : null }\"</code> c’è solo finché c’è un errore. Viene riscritto appena il valore è un altro. <code>false</code> e <code>0</code> sono valori come gli altri, scritti come il testo <code>\"false\"</code> e <code>\"0\"</code>."
+            "body": "Un attributo legato a <code>null</code> o <code>undefined</code> viene rimosso, e il server non lo scrive: <code>aria-describedby=\"{ error() ? 'hint' : null }\"</code> c’è solo finché c’è un errore. Viene riscritto appena il valore è un altro. <code>0</code> è un valore come gli altri, scritto come il testo <code>\"0\"</code>; un booleano segue la regola vista sopra."
           },
           "callout3": {
             "heading": "Un attributo legato due volte",
@@ -2145,7 +2145,7 @@
           "th1": "Sintassi",
           "th2": "Risultato",
           "td1": "Un attributo statico.",
-          "td2": "Un attributo impostato con <code>String(value)</code>, rimosso per <code>null</code> e <code>undefined</code>, di nuovo a ogni cambiamento di un signal che ha letto.",
+          "td2": "Un attributo impostato con <code>String(value)</code>, rimosso per <code>null</code> e <code>undefined</code>, aggiunto vuoto o rimosso per un booleano (scritto come testo sugli attributi <code>aria-*</code> ed enumerati), di nuovo a ogni cambiamento di un signal che ha letto.",
           "td3": "Lo stesso, con del testo intorno al valore.",
           "td4": "Un attributo presente solo finché vale la condizione.",
           "td5": "<code>input=\"{ expression }\"</code> su un componente",
@@ -2160,7 +2160,7 @@
         "attributesAndListeners": {
           "title": "Attributi e listener",
           "example1": "Un pulsante, tre condizioni",
-          "p1": "Blocca il task: il pulsante riceve <code>disabled</code> e un nuovo <code>title</code>; sbloccalo ed entrambi vengono sostituiti dagli attributi del ramo <code>@else</code>. Disattiva la modifica: il listener viene rimosso, e i clic non vengono più contati. Scegli una priorità: <code>data-priority</code> viene impostato, cambiato o rimosso, e il foglio di stile fa il resto. Gli attributi booleani come <code>disabled</code> sono l’uso principale: contano per la loro presenza, quindi non si possono legare a <code>false</code>, come spiegato in <a href=\"#/it/templates/binding\">Binding</a>.",
+          "p1": "Blocca il task: il pulsante riceve <code>disabled</code> e un nuovo <code>title</code>; sbloccalo ed entrambi vengono sostituiti dagli attributi del ramo <code>@else</code>. Disattiva la modifica: il listener viene rimosso, e i clic non vengono più contati. Scegli una priorità: <code>data-priority</code> viene impostato, cambiato o rimosso, e il foglio di stile fa il resto. Una condizione è adatta ad attributi e listener che compaiono e spariscono insieme: un singolo attributo booleano come <code>disabled</code> si può anche legare a un booleano, come spiegato in <a href=\"#/it/templates/binding\">Binding</a>.",
           "p2": "Le condizioni sono reattive, come quelle dei blocchi, e i binding condizionali si possono annidare. Un ramo può contenere le stesse cose di un tag: attributi statici e legati, listener e direttive. Le direttive applicate in modo condizionale hanno una pagina dedicata: <a href=\"#/it/directives/conditional\">Direttive condizionali</a>."
         },
         "inputsOfComponents": {

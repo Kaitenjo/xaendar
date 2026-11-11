@@ -312,6 +312,11 @@ export class Computed<T = any> {
    * up through `#sources`, building the live dependency chain that enables
    * push-based invalidation.
    *
+   * A `Computed` sink is `~checked~` once this Signal is not `~clean~`, as it
+   * would be had it been notified: a Signal leaving `~clean~` notifies its
+   * sinks once, and a later change of its sources, finding it already stale,
+   * notifies nobody. A `Watcher` sink finds it in `getPending`.
+   *
    * @param sink - The dependent node to register.
    * @param symbol - Private access symbol; rejects calls from outside the library.
    * @internal
@@ -328,6 +333,15 @@ export class Computed<T = any> {
         source.addSink(this, PRIVATE);
       }
     }
+
+    /*
+      The sink read the value this Signal had: left ~clean~ on a stale Signal, it would keep that value, never told of the
+      next changes, which stop here (a computed read, then written by the code its reader runs before being watched)
+    */
+    if (this.#state !== 'clean' && sink instanceof Computed && sink.#state === 'clean') {
+      sink.setState('checked', PRIVATE);
+    }
+
     this.#sinks = addToSmallSet(this.#sinks, sink);
   }
 

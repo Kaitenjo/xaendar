@@ -140,7 +140,7 @@
       },
       "values": {
         "title": "From the value to the attribute",
-        "body": "<p><code>null</code>, <code>undefined</code> and <code>false</code> remove the attribute, <code>true</code> writes it empty, as a boolean attribute such as <code>hidden</code>, and any other value is written with <code>String(value)</code>. ARIA states such as <code>aria-checked</code> and <code>aria-expanded</code> need the text <code>false</code>, which <code>false</code> would remove: return <code>String(value)</code> there. A <code>class.</code> binding only looks at whether the value is truthy, and its class survives the writes of the <code>class</code> attribute, made by a binding of the parent or by a <code>@HostProperty('class')</code>.</p>"
+        "body": "<p><code>null</code> and <code>undefined</code> remove the attribute. A boolean adds it empty for <code>true</code> and removes it for <code>false</code>, as a boolean attribute such as <code>hidden</code> needs, except on the <code>aria-*</code> attributes and on the enumerated ones that take <code>false</code> (<code>draggable</code>, <code>spellcheck</code>, <code>contenteditable</code>, <code>writingsuggestions</code>), which get the text <code>\"true\"</code> or <code>\"false\"</code>: <code>aria-expanded</code> takes the boolean as it is. Any other value is written with <code>String(value)</code>. The bindings of the templates write the same. A <code>class.</code> binding only looks at whether the value is truthy, and its class survives the writes of the <code>class</code> attribute, made by a binding of the parent or by a <code>@HostProperty('class')</code>.</p>"
       },
       "timing": {
         "title": "When the attributes are written",

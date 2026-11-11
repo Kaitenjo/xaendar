@@ -37,24 +37,23 @@ export class ToggleComponent extends CustomElement {
   public readonly hostRole = 'switch';
 
   /**
-   * The state of the switch for assistive technologies. `false` would remove the attribute, so the state is written as
-   * a string.
+   * The state of the switch for assistive technologies: an `aria-*` attribute writes a boolean as `'true'` or `'false'`.
    *
-   * @returns `'true'` while the switch is on, otherwise `'false'`.
+   * @returns Whether the switch is on.
    */
   @HostProperty('aria-checked')
-  public get checkedState(): string {
-    return String(this.on());
+  public get checkedState(): boolean {
+    return this.on();
   }
 
   /**
    * Whether the switch is locked, for assistive technologies.
    *
-   * @returns `'true'` while the switch is locked, otherwise `'false'`.
+   * @returns Whether the switch is locked.
    */
   @HostProperty('aria-disabled')
-  public get lockedState(): string {
-    return String(this.locked());
+  public get lockedState(): boolean {
+    return this.locked();
   }
 
   /**

@@ -80,6 +80,12 @@ export const HYDRATE = Symbol('Hydrate');
  */
 export const WAITS_FOR_HYDRATION = Symbol('WaitsForHydration');
 /**
+ * Key marking the parent of the root context of every render of a template (`_ROOT_PARENT_CONTEXT`), which tells the
+ * root context apart: it keeps none of the nodes it renders, which stay in the shadow root of the component, removed
+ * with it (see `_Context.addNode`).
+ */
+export const ROOT_PARENT = Symbol('RootParent');
+/**
  * Key of the brand marking the options `Property.required` passes to the decorator it creates, which tells them apart
  * from a default value (see `Property`).
  */

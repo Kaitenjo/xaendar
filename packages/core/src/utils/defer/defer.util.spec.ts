@@ -343,14 +343,15 @@ describe('_defer', () => {
 
     it('does nothing once its context is destroyed, before a trigger fires or while the modules load', async () => {
       const root = createRoot();
+      const element = parent();
       const content = part('b');
       const ready = signal(false);
       let loaded!: () => void;
       let failed!: (error: Error) => void;
-      _defer(parent(), root, null, { triggers: ['load'], content });
-      _defer(parent(), root, null, { triggers: [], when: () => ready(), content });
-      _defer(parent(), root, null, { triggers: ['interaction'], load: () => new Promise<void>(resolve => loaded = resolve), content, placeholder: part('button') });
-      _defer(parent(), root, null, { triggers: ['interaction'], load: () => new Promise<void>((_resolve, reject) => failed = reject), content, placeholder: part('button') });
+      _defer(element, root, null, { triggers: ['load'], content });
+      _defer(element, root, null, { triggers: [], when: () => ready(), content });
+      _defer(element, root, null, { triggers: ['interaction'], load: () => new Promise<void>(resolve => loaded = resolve), content, placeholder: part('button') });
+      _defer(element, root, null, { triggers: ['interaction'], load: () => new Promise<void>((_resolve, reject) => failed = reject), content, placeholder: part('button') });
       await armed();
       const buttons = document.querySelectorAll('button');
       buttons[0].click();

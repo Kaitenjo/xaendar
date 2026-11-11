@@ -3,10 +3,7 @@
   locked: { locked() }
 </label>
 <p>
-  <button disabled="{locked()}">disabled="{ '{ locked() }' }"</button>
-</p>
-<p>
-  <button disabled="{locked() || null}">disabled="{ '{ locked() || null }' }"</button>
+  <button disabled="{locked()}" aria-pressed="{locked()}">disabled="{ '{ locked() }' }" aria-pressed="{ '{ locked() }' }"</button>
 </p>
 <p>
   <button

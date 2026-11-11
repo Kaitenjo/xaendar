@@ -300,11 +300,16 @@ describe('property setters', () => {
     expect(element.getAttributeNames()).toEqual([]);
   });
 
-  it('_setExpressionProperty writes false and 0 as text, as any value but null and undefined', () => {
+  it('_setExpressionProperty writes a boolean as @HostProperty does, and 0 as text', () => {
     const element = document.createElement('div');
+    element.setAttribute('title', 'a');
     _setExpressionProperty(createRoot(), element, attributeOf('title', () => false));
+    _setExpressionProperty(createRoot(), element, attributeOf('hidden', () => true));
+    _setExpressionProperty(createRoot(), element, attributeOf('aria-busy', () => false));
     _setExpressionProperty(createRoot(), element, attributeOf('tabindex', () => 0));
-    expect(element.getAttribute('title')).toBe('false');
+    expect(element.hasAttribute('title')).toBe(false);
+    expect(element.getAttribute('hidden')).toBe('');
+    expect(element.getAttribute('aria-busy')).toBe('false');
     expect(element.getAttribute('tabindex')).toBe('0');
   });
 

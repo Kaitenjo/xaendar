@@ -519,6 +519,45 @@ describe('Computed', () => {
       expect(callback).toHaveBeenCalledTimes(2);
     });
 
+    it('is checked, once watched, when a source it read became stale meanwhile, and follows the next changes', () => {
+      const state = new State('a');
+      let writes = 0;
+      const other = new State(0);
+      const inner = new Computed(() => state.get());
+      const outerCallback = vi.fn(() => {
+        const value = inner.get();
+        // Written after the inner Computed is read, as the content an effect renders does
+        other.set(++writes);
+        return value;
+      });
+      const outer = new Computed(outerCallback);
+      const notify = vi.fn();
+      const watcher = new Watcher(notify);
+      outer.get();
+
+      watcher.watch(outer);
+      expect(outer.getState(PRIVATE)).toBe('checked');
+      expect(watcher.getPending()).toEqual([outer]);
+      expect(outer.get()).toBe('a');
+      expect(outerCallback).toHaveBeenCalledOnce();
+
+      state.set('b');
+      expect(notify).toHaveBeenCalledOnce();
+      expect(outer.get()).toBe('b');
+    });
+
+    it('leaves a sink that is not clean as it is when it is stale', () => {
+      const state = new State(1);
+      const inner = new Computed(() => state.get());
+      inner.get();
+      state.set(2);
+      const outer = new Computed<unknown>(() => inner.get());
+
+      inner.addSink(outer, PRIVATE);
+      expect(inner.getState(PRIVATE)).toBe('dirty');
+      expect(outer.getState(PRIVATE)).toBe('dirty');
+    });
+
     it('keeps its value, once watched, when no State changed since it was evaluated without sinks', () => {
       const state = new State(1);
       const callback = vi.fn(() => state.get());

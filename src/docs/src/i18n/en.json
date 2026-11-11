@@ -687,7 +687,7 @@
         },
         "values": {
           "title": "From values to attributes",
-          "p1": "<code>null</code>, <code>undefined</code> and <code>false</code> remove the attribute, <code>true</code> writes it empty, and any other value is written as a string. That suits boolean attributes such as <code>hidden</code>, but not ARIA states, which need the text <code>false</code>: return <code>String(value)</code> for them, as the switch does for <code>aria-checked</code>."
+          "p1": "<code>null</code> and <code>undefined</code> remove the attribute, and any value other than a boolean is written as a string. A boolean adds the attribute empty for <code>true</code> and removes it for <code>false</code>, as a boolean attribute such as <code>hidden</code> needs, except on the <code>aria-*</code> attributes and on the enumerated ones that take <code>false</code> (<code>draggable</code>, <code>spellcheck</code>, <code>contenteditable</code>), which get the text <code>\"true\"</code> or <code>\"false\"</code>: the switch returns its state as it is for <code>aria-checked</code>. The bindings of the templates follow the same rule."
         },
         "timing": {
           "title": "When they are applied",
@@ -705,8 +705,8 @@
             "p1": "The effect sees only the signals the member reads while it runs: a getter returning the length of a plain array, or a field later assigned another plain value, is never written again. Keep the state the host shows in signals."
           },
           "callout2": {
-            "heading": "false removes the attribute",
-            "p1": "<code>aria-checked</code>, <code>aria-expanded</code> and the other ARIA states read the text <code>false</code>, which <code>false</code> would remove: return <code>String(value)</code>. To a screen reader a missing <code>aria-checked</code> does not mean unchecked."
+            "heading": "false removes an attribute that is not an ARIA state",
+            "p1": "<code>false</code> removes a boolean attribute, and any other one outside <code>aria-*</code> and the enumerated attributes: a <code>data-*</code> or a <code>title</code> holding <code>false</code> disappears. Return <code>String(value)</code> when the text <code>false</code> must stay. <code>aria-checked</code>, <code>aria-expanded</code> and the other ARIA states keep it: to a screen reader a missing <code>aria-checked</code> does not mean unchecked."
           },
           "callout3": {
             "heading": "The parent binds the same attribute",
@@ -725,7 +725,7 @@
           "title": "Summary",
           "th1": "API",
           "th2": "Description",
-          "td1": "Writes the value of a field, a getter or an accessor in an attribute of the host: removed for <code>null</code>, <code>undefined</code> and <code>false</code>, empty for <code>true</code>.",
+          "td1": "Writes the value of a field, a getter or an accessor in an attribute of the host: removed for <code>null</code> and <code>undefined</code>; a boolean adds it empty or removes it, or is written as <code>\"true\"</code> or <code>\"false\"</code> on the <code>aria-*</code> and enumerated attributes.",
           "td2": "Toggles a class of the host while the value is truthy.",
           "td3": "Listens to an event of the host with a method, which receives the event."
         }
@@ -1481,7 +1481,7 @@
           },
           "callout2": {
             "heading": "Checkboxes",
-            "p1": "<code>checked</code> is a boolean attribute: bound to <code>false</code>, it still checks the box. And, like <code>value</code>, it is only the initial state."
+            "p1": "<code>checked</code> is a boolean attribute: bound to a boolean, it is added for <code>true</code> and removed for <code>false</code>. But, like <code>value</code>, it is only the initial state: once the user clicks the box, the attribute no longer changes it."
           }
         },
         "summary": {
@@ -1695,7 +1695,7 @@
         },
         "whatWorksDifferently": {
           "title": "What works differently",
-          "li2": "<strong>Bindings set attributes.</strong> On native elements a binding calls <code>setAttribute</code>: a <code>value</code> stops mattering once the user types, and <code>disabled=\"{ false }\"</code> still disables, while <code>null</code> removes the attribute, as with <code>[attr.name]</code>. See <a href=\"#/en/templates/binding\">Binding</a> and <a href=\"#/en/patterns/forms\">Forms</a>.",
+          "li2": "<strong>Bindings set attributes.</strong> On native elements a binding calls <code>setAttribute</code>: a <code>value</code> stops mattering once the user types. A boolean adds the attribute or removes it, so <code>disabled=\"{ busy() }\"</code> works, except on the <code>aria-*</code> and enumerated attributes, which get <code>\"true\"</code> or <code>\"false\"</code>, and <code>null</code> removes the attribute, as with <code>[attr.name]</code>. See <a href=\"#/en/templates/binding\">Binding</a> and <a href=\"#/en/patterns/forms\">Forms</a>.",
           "li3": "<strong>A removed element is destroyed.</strong> When a template removes an element, its instance is gone, and rendering it again creates a new one. Moving or reattaching elements with the DOM APIs is not supported. See <a href=\"#/en/components/lifecycle\">Lifecycle</a>.",
           "li4": "<strong>Templates are strict.</strong> Listeners call one method, expressions cannot assign or create objects, and a few characters must be escaped. See <a href=\"#/en/reference/template-syntax\">the cheat sheet</a>.",
           "callout1": {
@@ -2111,8 +2111,8 @@
         },
         "edgeCases": {
           "title": "Edge cases",
-          "example1": "disabled bound to false",
-          "p1": "A boolean attribute counts by its presence, not its value: <code>disabled=\"false\"</code> still disables the button, so the first one is always disabled. Bind it to <code>null</code> or <code>undefined</code> when it must be absent, as the second one does, or use a <a href=\"#/en/templates/conditional-bindings\">conditional binding</a>, which adds and removes the attribute, as the third one does.",
+          "example1": "A boolean bound to an attribute",
+          "p1": "A boolean attribute counts by its presence, not by its value, and a binding writes a boolean that way: <code>true</code> adds the attribute empty, <code>false</code> removes it. The first button is disabled only while it is locked, as the second one, which uses a <a href=\"#/en/templates/conditional-bindings\">conditional binding</a>. An <code>aria-*</code> attribute, or an enumerated one that takes <code>false</code> (<code>draggable</code>, <code>spellcheck</code>, <code>contenteditable</code>), gets the text instead: <code>aria-pressed</code> reads <code>\"true\"</code> or <code>\"false\"</code>. A static value is a string: <code>disabled=\"false\"</code> still disables.",
           "example2": "The value attribute and the value property",
           "p2": "Type in both fields, then reset. A binding sets the <code>value</code> attribute, which is only the initial value of the field: once the user has typed, the field shows its <code>value</code> property, and the first field is not cleared. The second field sets the property from an effect. The <a href=\"#/en/patterns/forms\">Forms</a> pattern wraps this in a directive.",
           "callout1": {
@@ -2121,7 +2121,7 @@
           },
           "callout2": {
             "heading": "null and undefined",
-            "body": "An attribute bound to <code>null</code> or <code>undefined</code> is removed, and the server does not write it: <code>aria-describedby=\"{ error() ? 'hint' : null }\"</code> is there only while there is an error. It is written again as soon as the value is another one. <code>false</code> and <code>0</code> are values like any other, written as the text <code>\"false\"</code> and <code>\"0\"</code>."
+            "body": "An attribute bound to <code>null</code> or <code>undefined</code> is removed, and the server does not write it: <code>aria-describedby=\"{ error() ? 'hint' : null }\"</code> is there only while there is an error. It is written again as soon as the value is another one. <code>0</code> is a value like any other, written as the text <code>\"0\"</code>; a boolean follows the rule above."
           },
           "callout3": {
             "heading": "An attribute bound twice",
@@ -2145,7 +2145,7 @@
           "th1": "Syntax",
           "th2": "Result",
           "td1": "A static attribute.",
-          "td2": "An attribute set with <code>String(value)</code>, removed for <code>null</code> and <code>undefined</code>, again whenever a signal it read changes.",
+          "td2": "An attribute set with <code>String(value)</code>, removed for <code>null</code> and <code>undefined</code>, added empty or removed for a boolean (written as text on the <code>aria-*</code> and enumerated attributes), again whenever a signal it read changes.",
           "td3": "The same, with text around the value.",
           "td4": "An attribute present only while the condition holds.",
           "td5": "<code>input=\"{ expression }\"</code> on a component",
@@ -2160,7 +2160,7 @@
         "attributesAndListeners": {
           "title": "Attributes and listeners",
           "example1": "One button, three conditions",
-          "p1": "Lock the task: the button gets <code>disabled</code> and a new <code>title</code>; unlock it and both are replaced by the attributes of the <code>@else</code> branch. Turn editing off: the listener is removed, and clicks are no longer counted. Pick a priority: <code>data-priority</code> is set, changed or removed, and the stylesheet does the rest. Boolean attributes such as <code>disabled</code> are the main use: they count by their presence, so they cannot be bound to <code>false</code>, as explained in <a href=\"#/en/templates/binding\">Binding</a>.",
+          "p1": "Lock the task: the button gets <code>disabled</code> and a new <code>title</code>; unlock it and both are replaced by the attributes of the <code>@else</code> branch. Turn editing off: the listener is removed, and clicks are no longer counted. Pick a priority: <code>data-priority</code> is set, changed or removed, and the stylesheet does the rest. A condition suits attributes and listeners that come and go together: a single boolean attribute such as <code>disabled</code> can also be bound to a boolean, as explained in <a href=\"#/en/templates/binding\">Binding</a>.",
           "p2": "Conditions are reactive, like those of the blocks, and conditional bindings can be nested. A branch can hold the same things a tag can: static and bound attributes, listeners and directives. The directives applied conditionally have a page of their own: <a href=\"#/en/directives/conditional\">Conditional directives</a>."
         },
         "inputsOfComponents": {

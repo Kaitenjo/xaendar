@@ -1,4 +1,4 @@
-import { _SSR_MARKERS, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, MATHML_NS, SET_DIRECTIVE_ELEMENT, SVG_NS } from '../../costants';
+import { _SSR_MARKERS, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, MATHML_NS, ROOT_PARENT, SET_DIRECTIVE_ELEMENT, SVG_NS } from '../../costants';
 import { AttributeUnbinding } from '../../models/attribute-unbinding/attribute-unbinding';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
@@ -27,13 +27,14 @@ import type { RenderElement } from '../../types/render-element.type';
 import type { StructuralCollector } from '../../types/structural-collector.type';
 import type { TemplateExpression } from '../../types/template-expression.type';
 import { _addAppliedDirective, _removeAppliedDirective } from '../applied-directives/applied-directives.util';
-import { restoreToggledClasses, updateAttribute } from '../class-toggle/class-toggle.util';
+import { restoreToggledClasses } from '../class-toggle/class-toggle.util';
 import { _Context } from '../context/context.util';
 import { _setElementRef } from '../element-refs/element-refs.util';
 import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { _selectBranch } from '../select-branch/select-branch.util';
 import { renderChildren, trackNode } from '../track-node/track-node.util';
 import { connectChild, isInTryScope } from '../try-scope/try-scope.util';
+import { writeAttribute } from '../write-attribute/write-attribute.util';
 
 /**
  * Creates a DOM element, applies attributes and event listeners, appends it
@@ -555,13 +556,14 @@ export function _createElement(tagName: string): HTMLElement {
 /**
  * The parent of the root context of every render of a template, written by the generated code as
  * `new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, count, this)`: the root creates its elements with
- * {@link _createElement}, and a name no scope declares reads `undefined`.
+ * {@link _createElement}, a name no scope declares reads `undefined`, and {@link ROOT_PARENT} tells the root context it
+ * keeps no node (see `_Context.addNode`).
  *
  * N.B. Deliberate, to save memory: a single object shared by every render, instead of an object literal and a function
  * the generated code would create at each one. Its members are never written: the root context copies the factory, and
  * changes its own one.
  */
-export const _ROOT_PARENT_CONTEXT = { createElement: _createElement, get: readUndeclared } as unknown as _Context;
+export const _ROOT_PARENT_CONTEXT = { createElement: _createElement, get: readUndeclared, [ROOT_PARENT]: true } as unknown as _Context;
 
 /**
  * Reads a name no scope of a template declares, as the parent of the root context of a render does.
@@ -767,8 +769,8 @@ function updateInput(target: Element | BindingHost, name: string, newValue: unkn
 
 /**
  * Updates an attribute of an HTML element, only when the value differs from the one the element holds, as an element
- * adopted from the HTML of the server does: `null` and `undefined` remove it. Writing `class` keeps the classes toggled
- * by class bindings.
+ * adopted from the HTML of the server does: the value is written as `@HostProperty` writes it (see `_attributeValue`),
+ * `null` and `undefined` removing it. Writing `class` keeps the classes toggled by class bindings.
  *
  * An input is never written by it: the compiler binds the inputs it knows through the setters of the inputs, so an
  * input found here is one it did not recognize, e.g. the name of the property of an input declaring an alias.
@@ -782,7 +784,7 @@ function updateProperty(target: Element | BindingHost, name: string, newValue: u
     throw new Error(`"${name}" is an input of ${target.constructor.name}, bound as an attribute: an input declaring an alias is bound by its alias`);
   }
 
-  updateAttribute(target as Element, name, newValue === null || newValue === undefined ? null : String(newValue));
+  writeAttribute(target as Element, name, newValue);
 }
 
 /**

@@ -24,11 +24,12 @@ let childrenContext: _Context | null = null;
  * of the element (see {@link renderChildren}), is removed along with the element.
  *
  * @param node - The node to track.
- * @param parentNode - The node the node is inserted into: an element, or the shadow root of a component. `null` for a
- *   node the context does not remove, as the nodes of the server a `@hydrate` holds until its content adopts them.
+ * @param parentNode - The node the node is inserted into: an element, or the shadow root of a component, the same for
+ *   every node a context tracks.
  * @param context - The current template execution scope that owns the node's lifecycle.
+ * @throws In development, when the context tracks nodes inserted into another node (see `_Context.addNode`).
  */
-export function trackNode(node: Node, parentNode: Node | null, context: _Context): void {
+export function trackNode(node: Node, parentNode: Node, context: _Context): void {
   if (context !== childrenContext) {
     context.addNode(node, parentNode);
   }

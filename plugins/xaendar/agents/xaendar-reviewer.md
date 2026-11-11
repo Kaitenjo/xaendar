@@ -19,7 +19,7 @@ Check at least the following:
 **Bugs that compile**
 - Members holding the value of a signal instead of the signal (`level = readLevel()()`, a field initialized with `this.price() * 2`): read once, so the bindings reading them never change. Keep the signal, or a `computed`.
 - Mixed static text and `{ }` in one attribute value. It renders literally.
-- Boolean attributes bound to a boolean (`disabled="{x()}"`, `checked="{…}"`): `false` is written as `"false"`, which still disables. Bind `null`/`undefined` when the attribute must be absent (`disabled="{ x() || null }"`), or use a conditional binding.
+- An attribute that must keep the text `"false"` bound to a boolean: `false` removes every attribute but `aria-*` and the enumerated ones (`draggable`, `spellcheck`, `contenteditable`, `writingsuggestions`), so `data-open="{open()}"` disappears when closed: bind `String(x())`. A static `disabled="false"` still disables.
 - `value`/`checked` bindings on inputs that the user edits. Only the initial state is applied.
 - Whitespace between elements on separate lines that is expected to render. It is dropped.
 - `track $index`, or keys that repeat or can be edited, on lists whose rows hold state (fields, focus) and get inserted, sorted or prepended items.
@@ -38,7 +38,7 @@ Check at least the following:
 - Static components, in a project with `"staticComponents": true` in the `ssr` of `xaendar.json`: a script, `customElements.whenDefined()` or `:defined` relying on a component the build leaves out (it needs `ssr: { static: false }`), `onInit` used only to derive data (a `computed` keeps the component static), and sensitive values passed to an interactive component a static one renders (they reach the HTML).
 - `createComponent`: an input in two groups, a structural directive in `directives`, a conditional group expected to keep its last value (it resets to the default), an element removed with the DOM APIs instead of `ref.destroy()` (its bindings stay alive). `document.createElement` + `append` used for a component that needs inputs.
 - Elements moved, removed or reattached with the DOM APIs, and classes added with `classList` to an element whose `class` is bound.
-- `@HostProperty` returning `false` for an ARIA state (it removes the attribute: use `String(value)`).
+- `@HostProperty` returning `false` for an attribute that must keep the text `"false"` and is neither `aria-*` nor enumerated (it removes it: use `String(value)`).
 - In a project rendering on the server (`ssr` in `xaendar.json`): a constructor, a field initializer or an `onInit` reading `document`, `window` or another API of the page without a `typeof` check (it throws on the server, and the page is not rendered there); the state of a request written into module signals (shared by every request the server renders); elements nested in ways the HTML parser changes (a block element inside `<p>`, a `<tr>` right inside a `<table>`), which give the HTML of the server another tree; an entry of the server importing `@xaendar/ssr` or the components statically, so they are evaluated before `loadServerDom()`.
 
 **Problems the build does not report**

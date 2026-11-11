@@ -7,7 +7,9 @@ import { CONNECTED_HOOKS, DISCONNECTED_HOOKS, HYDRATE } from '../../costants';
 import { HostProperty } from '../../decorators/host-property/host-property.decorator';
 import { effect } from '../../signals/effect/effect';
 import { ClaimNodes } from '../../utils/claim-nodes/claim-nodes.util';
-import { _Context } from '../../utils/context/context.util';
+import { _bindEffect } from '../../signals/effect/effect';
+import { _Context, mountNode } from '../../utils/context/context.util';
+import { _ROOT_PARENT_CONTEXT } from '../../utils/render-element/render-element.util';
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { _stringifyState } from '../../utils/state-serialization/state-serialization.util';
@@ -367,6 +369,128 @@ describe('CustomElement', () => {
       element.remove();
 
       expect(calls).toEqual(['onDestroy', 'clear', 'dispose']);
+    });
+  });
+
+  describe('disconnection', () => {
+    /**
+     * Defines a component whose template renders a paragraph with a listener, a block beside it, a text bound to a
+     * signal and the given component, as the generated code does.
+     */
+    function defineTemplate(source: Signal.State<string>, clicked: NoArgsVoidFunction, nested?: string) {
+      const name = `x-base-${counter++}`;
+      const render = vi.fn(function (this: CustomElement, nodeStrategy: NodeStrategy) {
+        const root = this.shadowRoot!;
+        const context = new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 0, this);
+        const paragraph = document.createElement('p');
+        mountNode(paragraph, root, context);
+        paragraph.addEventListener('click', clicked);
+        context.addUnlistener(() => paragraph.removeEventListener('click', clicked));
+        _bindEffect(context, (node: HTMLElement) => { node.textContent = source.get(); }, paragraph);
+        const block = context.addChild();
+        mountNode(document.createElement('b'), root, block);
+        if (nested) {
+          mountNode(document.createElement(nested), root, context);
+        }
+
+        return context;
+      });
+      const klass = class extends CustomElement { };
+      _defineRender(klass, render);
+      customElements.define(name, klass);
+      return { element: document.createElement(name) as unknown as TestElement, render };
+    }
+
+    /**
+     * Defines a component recording its hooks, whose template renders an italic.
+     */
+    function defineNested() {
+      const name = `x-base-${counter++}`;
+      const hooks = { onInit: vi.fn(), onDestroy: vi.fn() };
+      const klass = class extends CustomElement {
+        public onInit = hooks.onInit;
+        public onDestroy = hooks.onDestroy;
+      };
+      _defineRender(klass, function (this: CustomElement, nodeStrategy: NodeStrategy) {
+        const context = new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 0, this);
+        mountNode(document.createElement('i'), this.shadowRoot!, context);
+        return context;
+      });
+      customElements.define(name, klass);
+      return { name, hooks };
+    }
+
+    it('disposes the effects and the listeners of its template, removing none of its nodes, which go with it', async () => {
+      const source = new Signal.State('a');
+      const clicked = vi.fn();
+      const { element } = defineTemplate(source, clicked);
+      document.body.appendChild(element);
+      const root = element.shadowRoot!;
+      const removeChild = vi.spyOn(root, 'removeChild');
+      const paragraph = root.querySelector('p')!;
+      expect(paragraph.textContent).toBe('a');
+
+      element.remove();
+      source.set('b');
+      await flush();
+      paragraph.click();
+
+      expect(root.innerHTML).toBe('<p>a</p><b></b>');
+      expect(removeChild).not.toHaveBeenCalled();
+      expect(clicked).not.toHaveBeenCalled();
+      expect(Signal.subtle.hasSinks(source)).toBe(false);
+    });
+
+    it('renders again, its shadow root emptied first, when code outside Xaendar moves it with insertBefore', () => {
+      const source = new Signal.State('a');
+      const { name, hooks } = defineNested();
+      const { element, render } = defineTemplate(source, vi.fn(), name);
+      const [before, after] = [document.createElement('div'), document.createElement('div')];
+      document.body.append(before, after);
+      before.appendChild(element);
+      const nested = element.shadowRoot!.querySelector(name)!;
+
+      after.insertBefore(element, null);
+
+      const root = element.shadowRoot!;
+      expect(render).toHaveBeenCalledTimes(2);
+      expect(root.querySelectorAll('p')).toHaveLength(1);
+      expect(root.querySelectorAll('b')).toHaveLength(1);
+      expect(root.querySelectorAll(name)).toHaveLength(1);
+      expect(root.querySelector(name)).not.toBe(nested);
+      expect(nested.isConnected).toBe(false);
+      expect(root.querySelector(name)!.shadowRoot!.innerHTML).toBe('<i></i>');
+      // Every component rendered is destroyed once (happy-dom connects the components inside a shadow root before its host)
+      expect(hooks.onDestroy).toHaveBeenCalledTimes(hooks.onInit.mock.calls.length - 1);
+      element.remove();
+    });
+
+    it('ignores the connection and the disconnection the browser runs for a component destroyed and removed meanwhile', () => {
+      const { name, hooks } = defineNested();
+      const nested = document.createElement(name) as unknown as TestElement;
+      document.body.appendChild(nested);
+      nested.remove();
+      const removeChild = vi.spyOn(nested.shadowRoot!, 'replaceChildren');
+
+      nested.connectedCallback();
+      (nested as unknown as { disconnectedCallback(): void }).disconnectedCallback();
+
+      expect(hooks.onInit).toHaveBeenCalledOnce();
+      expect(hooks.onDestroy).toHaveBeenCalledOnce();
+      expect(removeChild).not.toHaveBeenCalled();
+    });
+
+    it('renders again, its shadow root emptied first, when it is inserted again', () => {
+      const { name, hooks } = defineNested();
+      const nested = document.createElement(name) as unknown as TestElement;
+      document.body.appendChild(nested);
+      nested.remove();
+
+      document.body.appendChild(nested);
+
+      expect(nested.shadowRoot!.innerHTML).toBe('<i></i>');
+      expect(hooks.onInit).toHaveBeenCalledTimes(2);
+      nested.remove();
     });
   });
 

@@ -140,7 +140,7 @@
       },
       "values": {
         "title": "Dal valore all’attributo",
-        "body": "<p><code>null</code>, <code>undefined</code> e <code>false</code> rimuovono l’attributo, <code>true</code> lo scrive vuoto, come un attributo booleano quale <code>hidden</code>, e ogni altro valore viene scritto con <code>String(value)</code>. Gli stati ARIA come <code>aria-checked</code> e <code>aria-expanded</code> richiedono il testo <code>false</code>, che <code>false</code> rimuoverebbe: lì restituisci <code>String(value)</code>. Un binding <code>class.</code> guarda solo se il valore è truthy, e la sua classe resiste alle scritture dell’attributo <code>class</code>, fatte da un binding del padre o da un <code>@HostProperty('class')</code>.</p>"
+        "body": "<p><code>null</code> e <code>undefined</code> rimuovono l’attributo. Un booleano lo aggiunge vuoto per <code>true</code> e lo rimuove per <code>false</code>, come serve a un attributo booleano quale <code>hidden</code>, tranne sugli attributi <code>aria-*</code> e su quelli enumerati che accettano <code>false</code> (<code>draggable</code>, <code>spellcheck</code>, <code>contenteditable</code>, <code>writingsuggestions</code>), che ricevono il testo <code>\"true\"</code> o <code>\"false\"</code>: <code>aria-expanded</code> riceve il booleano così com’è. Ogni altro valore viene scritto con <code>String(value)</code>. I binding dei template scrivono lo stesso. Un binding <code>class.</code> guarda solo se il valore è truthy, e la sua classe resiste alle scritture dell’attributo <code>class</code>, fatte da un binding del padre o da un <code>@HostProperty('class')</code>.</p>"
       },
       "timing": {
         "title": "Quando vengono scritti gli attributi",

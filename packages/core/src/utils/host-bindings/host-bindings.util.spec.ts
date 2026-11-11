@@ -82,12 +82,12 @@ describe('_bindHost', () => {
     const checked = signal(false);
     const owner = createOwner({ checked, get label() { return checked() ? 'On' : 'Off'; } }, { checked: 'aria-checked', label: 'aria-label' });
     const { element } = bind(owner);
-    expect(element.hasAttribute('aria-checked')).toBe(false);
+    expect(element.getAttribute('aria-checked')).toBe('false');
     expect(element.getAttribute('aria-label')).toBe('Off');
 
     checked.set(true);
     await flush();
-    expect(element.getAttribute('aria-checked')).toBe('');
+    expect(element.getAttribute('aria-checked')).toBe('true');
     expect(element.getAttribute('aria-label')).toBe('On');
   });
 

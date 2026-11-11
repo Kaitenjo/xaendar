@@ -154,11 +154,16 @@ function defineEffectClass() {
     /**
      * Runs the effect a first time, synchronously, without watching it, then watches it when the run has read a signal.
      *
-     * The computed signal is watched after its evaluation: becoming live, it subscribes to the signals the run read,
-     * which did not change meanwhile, so a change of any of them notifies it.
+     * The computed signal is watched after its evaluation: becoming live, it subscribes to the signals the run read.
+     * One of them may have changed after the run read it, as a signal written by the content the run renders (the input
+     * of a component in the branch of an `@if`): becoming live, the computed signal finds it stale, and is not clean
+     * either, though nothing notified the watcher. It is read again at once: the stale sources are evaluated again, and
+     * the callback runs again only when one of them holds another value. Left stale, the effect would never run again,
+     * since a later change of the source, finding it stale already, notifies nobody.
      *
      * @returns `true` when the effect is watched, `false` when the run read no signal.
-     * @throws The exception thrown by the run.
+     * @throws The exception thrown by the run, or by the one bringing the effect up to date: the effect is no longer
+     *   watched.
      */
     public track(): boolean {
       this.get();
@@ -166,8 +171,16 @@ function defineEffectClass() {
         return false;
       }
 
-      this._watcher = new Signal.subtle.Watcher(queueWatcher);
-      this._watcher.watch(this);
+      const watcher = this._watcher = new Signal.subtle.Watcher(queueWatcher);
+      watcher.watch(this);
+      try {
+        // Returns at once when the effect is clean
+        this.get();
+      } catch (error) {
+        watcher.unwatch(this);
+        throw error;
+      }
+
       return true;
     }
 

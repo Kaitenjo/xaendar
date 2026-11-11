@@ -3,7 +3,8 @@ import { _bindEffect } from '../../signals/effect/effect';
 import type { EventHost } from '../../types/event/event-host.type';
 import type { HostPropertyBinding } from '../../types/host/host-property-binding.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
-import { toggleClass, untoggleClass, updateAttribute } from '../class-toggle/class-toggle.util';
+import { toggleClass, untoggleClass } from '../class-toggle/class-toggle.util';
+import { writeAttribute } from '../write-attribute/write-attribute.util';
 import type { _Context } from '../context/context.util';
 
 /**
@@ -101,26 +102,3 @@ function applyProperty(owner: EventHost, element: Element, { name, isClass, read
   isClass ? toggleClass(element, name, Boolean(value)) : writeAttribute(element, name, value);
 }
 
-/**
- * Writes an attribute of the host element: `null`, `undefined` and `false` remove it, `true` writes it empty, any
- * other value is written as a string. The attribute is written only when it differs from the one the element holds,
- * as an element adopted from the HTML of the server does, and writing `class` keeps the classes toggled by class bindings.
- *
- * @param element - The host element.
- * @param name - The name of the attribute.
- * @param value - The value.
- */
-function writeAttribute(element: Element, name: string, value: unknown): void {
-  switch (value) {
-    case null:
-    case undefined:
-    case false:
-      updateAttribute(element, name, null);
-      break;
-    case true:
-      updateAttribute(element, name, '');
-      break;
-    default:
-      updateAttribute(element, name, String(value));
-  }
-}

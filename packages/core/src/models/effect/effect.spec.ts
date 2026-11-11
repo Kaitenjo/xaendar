@@ -379,6 +379,50 @@ describe('_runBinding', () => {
     expect(Signal.subtle.hasSinks(state)).toBe(false);
   });
 
+  it('runs again when a computed signal it read changes, also when the run writes a signal after reading it', async () => {
+    const ready = new Signal.State('a');
+    const page = new Signal.Computed(() => ready.get());
+    const rendered = new Signal.State(0);
+    const seen = new Array<string>();
+    // The run reads the computed signal, then writes another signal, as the input of a component rendered by a @switch
+    const effect = _runBinding((source: Signal.Computed<string>) => {
+      seen.push(source.get());
+      rendered.set(rendered.get() + 1);
+    }, page);
+
+    expect(seen).toEqual(['a']);
+    ready.set('b');
+    await flush();
+    expect(seen).toEqual(['a', 'b']);
+    effect!.dispose();
+  });
+
+  it('runs again at once when a source it read changes value during the run', () => {
+    const ready = new Signal.State('a');
+    const page = new Signal.Computed(() => ready.get());
+    const seen = new Array<string>();
+    const effect = _runBinding((source: Signal.Computed<string>) => {
+      seen.push(source.get());
+      Signal.subtle.untrack(() => ready.set('b'));
+    }, page);
+
+    expect(seen).toEqual(['a', 'b']);
+    effect!.dispose();
+  });
+
+  it('rethrows the exception of the run bringing it up to date, watching nothing', () => {
+    const ready = new Signal.State('a');
+    const page = new Signal.Computed(() => ready.get());
+    expect(() => _runBinding((source: Signal.Computed<string>) => {
+      if (source.get() === 'b') {
+        throw new Error('boom');
+      }
+
+      Signal.subtle.untrack(() => ready.set('b'));
+    }, page)).toThrow('boom');
+    expect(Signal.subtle.hasSinks(ready)).toBe(false);
+  });
+
   it('is not a dependency of a computation running around it', async () => {
     const inner = new Signal.State(0);
     const outer = vi.fn();

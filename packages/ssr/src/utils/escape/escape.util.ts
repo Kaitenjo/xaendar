@@ -1,4 +1,5 @@
 import { escapeAttribute, escapeRawText, escapeText } from '@xaendar/common';
+import { _attributeValue } from '@xaendar/core';
 
 /**
  * Escapes the value of an interpolation written as text, converted to a string as the browser converts it (see
@@ -23,16 +24,17 @@ export function _escapeAttribute(value: unknown): string {
 }
 
 /**
- * Writes an attribute bound by a template in a start tag, as the client renders it: left out when its value is `null` or
- * `undefined`, which remove the attribute in the browser, and written with its value escaped otherwise (see
- * {@link _escapeAttribute}).
+ * Writes an attribute bound by a template in a start tag, as the client renders it (see `_attributeValue`): left out
+ * when the browser removes it (`null`, `undefined`, and `false` on an attribute that is neither `aria-*` nor
+ * enumerated), and written with its text escaped otherwise.
  *
  * @param name - The name of the attribute.
  * @param value - The value.
  * @returns The attribute, preceded by a space, or an empty string.
  */
 export function _ssrAttribute(name: string, value: unknown): string {
-  return value === null || value === undefined ? '' : ` ${name}="${_escapeAttribute(value)}"`;
+  const text = _attributeValue(name, value);
+  return text === null ? '' : ` ${name}="${escapeAttribute(text)}"`;
 }
 
 /**

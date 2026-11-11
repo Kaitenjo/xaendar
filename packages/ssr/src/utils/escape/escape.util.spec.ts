@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { _escapeAttribute, _escapeRawText, _escapeText, _ssrAttribute } from './escape.util';
+import { describe, expect, it, vi } from 'vitest';
+
+await vi.hoisted(async () => {
+  const { loadServerDom } = await import('@xaendar/ssr/dom');
+  loadServerDom();
+});
+
+const { _escapeAttribute, _escapeRawText, _escapeText, _ssrAttribute } = await import('./escape.util');
 
 describe('escape helpers', () => {
   it('converts the value of an interpolation as the browser renders it, and escapes it', () => {
@@ -17,10 +23,17 @@ describe('escape helpers', () => {
 
   it('writes a bound attribute with its value escaped, and leaves it out for null and undefined, as the client removes it', () => {
     expect(_ssrAttribute('title', '"a" & <b>')).toBe(' title="&quot;a&quot; &amp; &lt;b&gt;"');
-    expect(_ssrAttribute('title', false)).toBe(' title="false"');
     expect(_ssrAttribute('tabindex', 0)).toBe(' tabindex="0"');
     expect(_ssrAttribute('title', null)).toBe('');
     expect(_ssrAttribute('title', undefined)).toBe('');
+  });
+
+  it('writes a boolean as the client does: empty or left out on an attribute, its text on an aria-* or enumerated one', () => {
+    expect(_ssrAttribute('disabled', true)).toBe(' disabled=""');
+    expect(_ssrAttribute('disabled', false)).toBe('');
+    expect(_ssrAttribute('aria-expanded', true)).toBe(' aria-expanded="true"');
+    expect(_ssrAttribute('aria-expanded', false)).toBe(' aria-expanded="false"');
+    expect(_ssrAttribute('draggable', false)).toBe(' draggable="false"');
   });
 
   it('writes the value of an interpolation in a raw text element as it is, except for its end tag', () => {

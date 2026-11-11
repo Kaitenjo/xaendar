@@ -78,11 +78,12 @@ describe('_hydrate', () => {
 
     it('does nothing once its context is destroyed while its modules load', async () => {
       const root = createRoot();
+      const element = document.createElement('div');
       const content = block('b');
       let loaded!: () => void;
       let failed!: (error: Error) => void;
-      _hydrate(document.createElement('div'), root, null, { triggers: ['load'], load: () => new Promise<void>(resolve => loaded = resolve), content });
-      _hydrate(document.createElement('div'), root, null, { triggers: ['load'], load: () => new Promise<void>((_resolve, reject) => failed = reject), content });
+      _hydrate(element, root, null, { triggers: ['load'], load: () => new Promise<void>(resolve => loaded = resolve), content });
+      _hydrate(element, root, null, { triggers: ['load'], load: () => new Promise<void>((_resolve, reject) => failed = reject), content });
 
       root.clear();
       loaded();

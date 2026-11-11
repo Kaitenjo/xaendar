@@ -1,4 +1,5 @@
 import { Function } from '@xaendar/types';
+import { ROOT_PARENT } from '../../costants';
 import { _runBinding } from '../../models/effect/effect';
 import { trackNode } from '../track-node/track-node.util';
 import type { Binding } from '../../types/binding.type';
@@ -7,6 +8,7 @@ import type { Effect } from '../../types/effect.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { Unlistener } from '../../types/unlistener.type';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
+import { DEV_MODE } from '../dev-mode/dev-mode.util';
 import { captureContext } from '../try-scope/try-scope.util';
 
 /**
@@ -94,21 +96,28 @@ export class _Context {
    */
   private _variables: unknown[] | Map<string, unknown> | null;
   /**
-   * DOM nodes directly mounted into this scope via {@link mountNode} or {@link trackNode} (does not
-   * include nodes owned by child contexts), each one followed by the node it is inserted into, which {@link clear}
-   * removes it from (`[node, parentNode, node, parentNode]`): `null` for a node tracked without one, which the context
-   * does not remove. Used to determine, for a given context, which DOM nodes belong to it — for example so `_for`'s keyed
-   * diffing can move a reused item's nodes to a new position without recreating them. Only the nodes at the top of the
-   * block are tracked, all rendered into the same node: the ones rendered into an element of the template are removed
-   * with it (see `trackNode`). `null` while the context tracks no node. Read through {@link getNodeCount} and
-   * {@link getNode}.
+   * The node the nodes of this context are inserted into (see {@link _nodes}), which {@link clear} removes them from:
+   * the same for all of them, since only the nodes at the top of the block are tracked. Set by the first node tracked,
+   * `null` before. The root context of a render keeps none (see {@link addNode}).
    *
-   * N.B. Deliberate, to save memory: one array alternating the nodes and the nodes they are inserted into, instead of
-   * two parallel arrays, which cost one more array per context tracking a node, that is nearly every context. The
-   * callers read the nodes through {@link getNode} instead of an array of the nodes alone, which would be allocated at
-   * every read. Do not split it into two arrays again, nor return the nodes as a new array.
+   * N.B. Deliberate, to save memory: one field per context, instead of the node beside each of its nodes, which cost an
+   * array per context, the one holding a single node included. Do not keep it per node again.
    */
-  private _nodes: Array<Node | null> | null = null;
+  private _parentNode: Node | null = null;
+  /**
+   * DOM nodes directly mounted into this scope via {@link mountNode} or {@link trackNode} (does not include nodes owned
+   * by child contexts), all inserted into {@link _parentNode}. Used to determine, for a given context, which DOM nodes
+   * belong to it — for example so `_for`'s keyed diffing can move a reused item's nodes to a new position without
+   * recreating them. Only the nodes at the top of the block are tracked: the ones rendered into an element of the
+   * template are removed with it (see `trackNode`). The node itself while there is one, an array of exactly the nodes
+   * from the second, `null` while the context tracks none. Read through {@link getNodeCount} and {@link getNode}.
+   *
+   * N.B. Deliberate, to save memory: most contexts track a single node (the `<tr>` of a row of a `@for`, the element of a
+   * branch), and the node itself costs nothing, where the array `[node]` costs a `JSArray` and its backing store per
+   * context. The callers read the nodes through {@link getNode} instead of an array of the nodes, which would be
+   * allocated at every read. Do not go back to an array for a single node, nor return the nodes as a new array.
+   */
+  private _nodes: Node | Node[] | null = null;
   /**
    * Cleanup functions registered via {@link addUnlistener}.
    * Called when this context is destroyed to remove DOM nodes,
@@ -416,28 +425,51 @@ export class _Context {
    * Registers a DOM node as directly owned by this context: when the context is cleared, the node is removed from the
    * node it is inserted into, if it is still there.
    *
+   * The root context of a render keeps none: its nodes are the ones of the shadow root of its component, which they are
+   * never removed from, since a component removed from the DOM is destroyed and its shadow root with it (see `clear`).
+   *
    * @param node - The DOM node to track.
-   * @param parentNode - The node the node is inserted into, or `null` for a node the context does not remove, as the
-   *   nodes of the server a `@hydrate` holds until its content adopts them.
+   * @param parentNode - The node the node is inserted into: the same for every node of the context, the node of its block.
+   * @throws In development, when the node is inserted into another node than the ones tracked before (see
+   *   {@link _parentNode}).
    */
-  public addNode(node: Node, parentNode: Node | null = null): void {
-    // The first node gets an array of exactly its two items: a push into an empty array would reserve room for many more
-    this._nodes ? this._nodes.push(node, parentNode) : this._nodes = [node, parentNode];
+  public addNode(node: Node, parentNode: Node): void {
+    if (ROOT_PARENT in this._parent) {
+      return;
+    }
+
+    const current = this._parentNode;
+    if (current === null) {
+      this._parentNode = parentNode;
+    } else if (DEV_MODE && current !== parentNode) {
+      throw new Error('A context tracks the nodes inserted into a single node: this one is inserted into another node');
+    }
+
+    const nodes = this._nodes;
+    if (nodes === null) {
+      this._nodes = node;
+    } else if (Array.isArray(nodes)) {
+      nodes.push(node);
+    } else {
+      // The second node gets an array of exactly two items: a push into an empty array would reserve room for many more
+      this._nodes = [nodes, node];
+    }
   }
 
   /**
-   * Removes a tracked DOM node from this context, along with the node it is inserted into.
+   * Removes a tracked DOM node from this context, without removing it from the DOM.
    *
    * @param nodeToRemove - The DOM node to untrack.
    */
   public removeNode(nodeToRemove: Node): void {
     const nodes = this._nodes;
-    if (nodes) {
-      for (let i = 0; i < nodes.length; i += 2) {
-        if (nodes[i] === nodeToRemove) {
-          nodes.length === 2 ? this._nodes = null : nodes.splice(i, 2);
-          return;
-        }
+    if (nodes === nodeToRemove) {
+      this._nodes = null;
+    } else if (Array.isArray(nodes)) {
+      const index = nodes.indexOf(nodeToRemove);
+      if (index !== -1) {
+        // The last node left is kept as it is, as the first one is
+        nodes.length === 2 ? this._nodes = nodes[1 - index] : nodes.splice(index, 1);
       }
     }
   }
@@ -449,7 +481,8 @@ export class _Context {
    * @returns The number of nodes.
    */
   public getNodeCount(): number {
-    return this._nodes ? this._nodes.length / 2 : 0;
+    const nodes = this._nodes;
+    return Array.isArray(nodes) ? nodes.length : nodes ? 1 : 0;
   }
 
   /**
@@ -460,7 +493,8 @@ export class _Context {
    * @returns The node.
    */
   public getNode(index: number): Node {
-    return this._nodes![2 * index]!;
+    const nodes = this._nodes!;
+    return Array.isArray(nodes) ? nodes[index] : nodes;
   }
 
   /**
@@ -580,6 +614,72 @@ export class _Context {
   }
 
   /**
+   * Clear this context by removing its nodes from the DOM, invoking all registered cleanup functions,
+   * recursively destroying child contexts, and clearing internal state.
+   *
+   * The nodes are removed first, from the last to the first, only from the node they were inserted into and only if they
+   * are still there: a node moved elsewhere, or never inserted, is left where it is. A context told not to remove them
+   * leaves the DOM as it is: its nodes are inside a node removed already, or in the shadow root of a component removed
+   * from the DOM, which goes with the component (see `CustomElement`).
+   *
+   * Each child context is cleared after the cleanup functions, removing its own nodes when nothing removes them already
+   * (see {@link _childDetaches}): only the highest context cleared removes the nodes at its top, and the child contexts
+   * whose nodes are beside them, while the nodes inside them go with them.
+   *
+   * After calling `Clear`, this context and its entire subtree are
+   * considered disposed and should no longer be used.
+   *
+   * @param detach - Whether the nodes are removed from the DOM. Defaults to `true`.
+   */
+  public clear(detach = true): void {
+    /*
+      Nodes are removed before unlistenFns to let events fired on
+      onDestroy actually works. UnlistenFns remove the listener on the node
+      preventing the parent to listen the event emitted on the destruction of the
+      element when is removed
+    */
+    const parentNode = this._parentNode;
+    const nodes = this._nodes;
+    if (detach && nodes) {
+      if (Array.isArray(nodes)) {
+        for (let i = nodes.length - 1; i >= 0; i--) {
+          detachNode(nodes[i], parentNode!);
+        }
+      } else {
+        detachNode(nodes, parentNode!);
+      }
+    }
+
+    if (this._unlistenFns) {
+      for (let i = 0; i < this._unlistenFns.length; i++) {
+        const unlistener = this._unlistenFns[i];
+        typeof unlistener === 'function' ? unlistener() : unlistener.dispose();
+      }
+    }
+
+    const bindings = this._bindings;
+    if (Array.isArray(bindings)) {
+      for (let i = 0; i < bindings.length; i++) {
+        bindings[i].effect?.dispose();
+      }
+    } else {
+      bindings?.effect?.dispose();
+    }
+
+    for (let i = 0; i < this.getChildCount(); i++) {
+      const child = this.getChild(i);
+      child.clear(this._childDetaches(child, detach));
+    }
+
+    this._unlistenFns = null;
+    this._bindings = null;
+    this._children = null;
+    this._parentNode = null;
+    this._nodes = null;
+    this._variables = null;
+  }
+
+  /**
    * Runs again the bindings of this context reading a variable changed in the refresh running, then refreshes the
    * contexts inside it it has not refreshed yet (see {@link refresh}). The names a `@let` of this scope adds while it
    * runs (see {@link propagate}) are dropped once the context is done: the scopes beside it cannot read it.
@@ -608,58 +708,42 @@ export class _Context {
   }
 
   /**
-   * Clear this context by removing its nodes from the DOM, invoking all registered cleanup functions,
-   * recursively destroying child contexts, and clearing internal state.
+   * Tells whether a child context, cleared along with this one, removes its nodes from the DOM: when this context removes
+   * its own, the child removes the ones beside them, in the same node, but not the ones inside them, which go with them;
+   * when it does not, nothing of its subtree does. A child tracking no node, or under a context tracking none, removes
+   * its nodes, if any, since nothing tells where they are.
    *
-   * The nodes are removed first, from the last to the first, each one only from the node it was inserted into and only
-   * if it is still there: a node moved elsewhere, or never inserted, is left where it is.
+   * A child whose parent is no context, as the one of a component `createComponent` creates, renders its element into
+   * its target, wherever it is: it always removes it.
    *
-   * After calling `Clear`, this context and its entire subtree are
-   * considered disposed and should no longer be used.
+   * N.B. Deliberate, to save time and memory: deciding by the node the nodes of the child are inserted into, which every
+   * context keeps (see {@link _parentNode}), instead of a flag the compiler would write for every block, or of a context
+   * removing every node of its subtree one by one. Do not remove the nodes of the children unconditionally again: clearing
+   * a row of a `@for` would remove every node of its cells, and disconnecting a component every node of its template.
+   *
+   * @param child - The child context.
+   * @param detach - Whether this context removes its nodes.
+   * @returns `true` when the child removes its nodes.
    */
-  public clear(): void {
-    /*
-      Nodes are removed before unlistenFns to let events fired on
-      onDestroy actually works. UnlistenFns remove the listener on the node
-      preventing the parent to listen the event emitted on the destruction of the
-      element when is removed
-    */
-    const nodes = this._nodes;
-    if (nodes) {
-      for (let i = nodes.length - 2; i >= 0; i -= 2) {
-        const node = nodes[i]!;
-        const parentNode = nodes[i + 1];
-        if (parentNode && node.parentNode === parentNode) {
-          parentNode.removeChild(node);
-        }
-      }
+  private _childDetaches(child: _Context, detach: boolean): boolean {
+    if (!(child._parent instanceof _Context)) {
+      return true;
     }
 
-    if (this._unlistenFns) {
-      for (let i = 0; i < this._unlistenFns.length; i++) {
-        const unlistener = this._unlistenFns[i];
-        typeof unlistener === 'function' ? unlistener() : unlistener.dispose();
-      }
-    }
+    const parentNode = child._parentNode;
+    return detach && (parentNode === null || this._parentNode === null || parentNode === this._parentNode);
+  }
+}
 
-    const bindings = this._bindings;
-    if (Array.isArray(bindings)) {
-      for (let i = 0; i < bindings.length; i++) {
-        bindings[i].effect?.dispose();
-      }
-    } else {
-      bindings?.effect?.dispose();
-    }
-
-    for (let i = 0; i < this.getChildCount(); i++) {
-      this.getChild(i).clear();
-    }
-
-    this._unlistenFns = null;
-    this._bindings = null;
-    this._children = null;
-    this._nodes = null;
-    this._variables = null;
+/**
+ * Removes a node of a context from the node it was inserted into, if it is still there.
+ *
+ * @param node - The node.
+ * @param parentNode - The node it was inserted into.
+ */
+function detachNode(node: Node, parentNode: Node): void {
+  if (node.parentNode === parentNode) {
+    parentNode.removeChild(node);
   }
 }
 

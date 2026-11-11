@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
+import { ROOT_PARENT } from '../../costants';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { _bindEffect } from '../../signals/effect/effect';
 import { closeTryScope, openTryScope } from '../try-scope/try-scope.util';
@@ -347,25 +348,29 @@ describe('_Context', () => {
   });
 
   describe('nodes', () => {
-    it('tracks and untracks nodes', () => {
+    it('keeps a single node, then the nodes in mount order from the second, and a single node again when one is left', () => {
       const context = createRoot();
-      const a = document.createElement('a');
-      const b = document.createElement('b');
+      const parent = document.createElement('div');
+      const [a, b] = [document.createElement('a'), document.createElement('b')];
 
-      context.addNode(a);
-      context.addNode(b);
+      context.addNode(a, parent);
+      expect(nodesOf(context)).toEqual([a]);
+      context.addNode(b, parent);
       expect(nodesOf(context)).toEqual([a, b]);
 
       context.removeNode(a);
       expect(nodesOf(context)).toEqual([b]);
+      context.removeNode(b);
+      expect(nodesOf(context)).toEqual([]);
     });
 
     it('removes a node in the middle, keeping the others in mount order, and untracks the last one', () => {
       const context = createRoot();
+      const parent = document.createElement('div');
       const [a, b, c] = [document.createElement('a'), document.createElement('b'), document.createElement('i')];
-      context.addNode(a);
-      context.addNode(b);
-      context.addNode(c);
+      context.addNode(a, parent);
+      context.addNode(b, parent);
+      context.addNode(c, parent);
       expect(context.getNodeCount()).toBe(3);
 
       context.removeNode(b);
@@ -373,39 +378,48 @@ describe('_Context', () => {
       expect(context.getNode(0)).toBe(a);
       expect(context.getNode(1)).toBe(c);
 
-      context.removeNode(a);
       context.removeNode(c);
+      context.removeNode(a);
       expect(context.getNodeCount()).toBe(0);
 
-      context.addNode(b);
+      context.addNode(b, parent);
       expect(nodesOf(context)).toEqual([b]);
     });
 
     it('ignores a node it does not track', () => {
       const context = createRoot();
-      const a = document.createElement('a');
+      const parent = document.createElement('div');
+      const [a, b] = [document.createElement('a'), document.createElement('b')];
       context.removeNode(a);
       expect(nodesOf(context)).toEqual([]);
 
-      context.addNode(a);
-      context.removeNode(document.createElement('b'));
+      context.addNode(a, parent);
+      context.removeNode(b);
       expect(nodesOf(context)).toEqual([a]);
+
+      context.addNode(b, parent);
+      context.removeNode(document.createElement('i'));
+      expect(nodesOf(context)).toEqual([a, b]);
     });
 
-    it('keeps the node each node is inserted into at the index of the node when one is removed', () => {
+    it('throws in development when a node is inserted into another node than the ones it tracks', () => {
       const context = createRoot();
-      const [first, second, third] = [document.createElement('div'), document.createElement('div'), document.createElement('div')];
-      const [a, b, c] = [first.appendChild(document.createElement('a')), second.appendChild(document.createElement('b')), third.appendChild(document.createElement('i'))];
-      context.addNode(a, first);
-      context.addNode(b, second);
-      context.addNode(c, third);
+      context.addNode(document.createElement('a'), document.createElement('div'));
 
-      context.removeNode(b);
-      context.clear();
+      expect(() => context.addNode(document.createElement('b'), document.createElement('div'))).toThrow('A context tracks the nodes inserted into a single node');
+    });
 
-      expect(a.parentNode).toBeNull();
-      expect(b.parentNode).toBe(second);
-      expect(c.parentNode).toBeNull();
+    it('keeps no node in the root context of a render, which leaves them in the shadow root of its component', () => {
+      const root = new _Context({ [ROOT_PARENT]: true, createElement: (tagName: string) => document.createElement(tagName) } as never);
+      const shadowRoot = document.createElement('div').attachShadow({ mode: 'open' });
+      const node = shadowRoot.appendChild(document.createElement('p'));
+
+      root.addNode(node, shadowRoot);
+      root.addNode(document.createElement('b'), document.createElement('div'));
+      expect(nodesOf(root)).toEqual([]);
+
+      root.clear();
+      expect(node.parentNode).toBe(shadowRoot);
     });
   });
 
@@ -465,7 +479,7 @@ describe('_Context', () => {
       const second = vi.fn();
       root.addUnlistener(first, second);
       root.addIdentifier('name', 1);
-      root.addNode(document.createElement('div'));
+      root.addNode(document.createElement('div'), document.createElement('section'));
 
       root.clear();
 
@@ -524,15 +538,89 @@ describe('_Context', () => {
       expect(node.parentNode).toBeNull();
     });
 
-    it('leaves a node tracked without the node it is inserted into, as the nodes of the server a @hydrate holds', () => {
+    it('leaves the DOM as it is when told not to remove its nodes, running the cleanups and destroying the children', () => {
       const root = createRoot();
       const parent = document.createElement('div');
       const node = parent.appendChild(document.createElement('p'));
-      root.addNode(node);
+      root.addNode(node, parent);
+      const child = root.addChild();
+      const childNode = parent.appendChild(document.createElement('b'));
+      child.addNode(childNode, parent);
+      const cleanup = vi.fn();
+      child.addUnlistener(cleanup);
+
+      root.clear(false);
+
+      expect(node.parentNode).toBe(parent);
+      expect(childNode.parentNode).toBe(parent);
+      expect(cleanup).toHaveBeenCalledOnce();
+      expect(nodesOf(root)).toEqual([]);
+    });
+
+    it('removes the nodes of a child beside its own, and leaves the ones of a child inside one of its elements, which go with it', () => {
+      const root = createRoot();
+      const parent = document.createElement('div');
+      const element = parent.appendChild(document.createElement('ul'));
+      root.addNode(element, parent);
+      // A block at the top of the context, beside its nodes
+      const beside = root.addChild();
+      const besideNode = parent.appendChild(document.createElement('p'));
+      beside.addNode(besideNode, parent);
+      // A block inside the element, holding a block of its own
+      const inside = root.addChild();
+      const insideNode = element.appendChild(document.createElement('li'));
+      inside.addNode(insideNode, element);
+      const nested = inside.addChild();
+      const nestedNode = element.appendChild(document.createElement('li'));
+      nested.addNode(nestedNode, element);
+      const removeChild = vi.spyOn(element, 'removeChild');
+      const cleanup = vi.fn();
+      nested.addUnlistener(cleanup);
 
       root.clear();
 
-      expect(node.parentNode).toBe(parent);
+      expect(element.parentNode).toBeNull();
+      expect(besideNode.parentNode).toBeNull();
+      expect(insideNode.parentNode).toBe(element);
+      expect(nestedNode.parentNode).toBe(element);
+      expect(removeChild).not.toHaveBeenCalled();
+      expect(cleanup).toHaveBeenCalledOnce();
+    });
+
+    it('removes the nodes of the blocks a child tracking no node holds, beside its own', () => {
+      const root = createRoot();
+      const parent = document.createElement('div');
+      root.addNode(parent.appendChild(document.createElement('p')), parent);
+      // A branch whose content is a block alone, the last of its parent, which has no anchor
+      const branch = root.addChild();
+      const block = branch.addChild();
+      const node = parent.appendChild(document.createElement('b'));
+      block.addNode(node, parent);
+      // A context tracking no node, holding the block of a branch tracking none either
+      const empty = createRoot();
+      const emptyBlock = empty.addChild();
+      const emptyNode = parent.appendChild(document.createElement('i'));
+      emptyBlock.addNode(emptyNode, parent);
+
+      root.clear();
+      empty.clear();
+
+      expect(node.parentNode).toBeNull();
+      expect(emptyNode.parentNode).toBeNull();
+    });
+
+    it('removes the element of a component created in code, whose context has no context as parent, also when told not to remove its nodes', () => {
+      const root = createRoot();
+      const parent = document.createElement('div');
+      root.addNode(parent.appendChild(document.createElement('p')), parent);
+      const target = document.createElement('section');
+      const created = root.addChild(createRoot());
+      const element = target.appendChild(document.createElement('x-toast'));
+      created.addNode(element, target);
+
+      root.clear(false);
+
+      expect(element.parentNode).toBeNull();
     });
   });
 

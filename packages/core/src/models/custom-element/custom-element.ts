@@ -52,11 +52,16 @@ export class CustomElement extends HTMLElement {
    */
   private _hostDirectivesContext: _Context | null = null;
   /**
-   * Whether the element was written by the server and not rendered in the browser yet, so it waits for its first render:
-   * its declarative shadow root holds the HTML of the server, or the component renders only in the browser (see
-   * {@link _CLIENT_ATTRIBUTE}).
+   * Where the element is in its life:
+   * - `hydrating`: written by the server and not rendered in the browser yet, so it waits for its first render: its
+   *   declarative shadow root holds the HTML of the server, or the component renders only in the browser (see
+   *   {@link _CLIENT_ATTRIBUTE});
+   * - `idle`: any other element not rendered yet;
+   * - `rendered`: from its render to its removal from the DOM;
+   * - `destroyed`: removed from the DOM, its effects and listeners disposed, its shadow root holding what it rendered
+   *   until it is inserted again, if ever (see {@link connectedCallback}).
    */
-  private _hydrating = this.shadowRoot !== null || this.hasAttribute(_CLIENT_ATTRIBUTE);
+  private _state: 'hydrating' | 'idle' | 'rendered' | 'destroyed' = this.shadowRoot !== null || this.hasAttribute(_CLIENT_ATTRIBUTE) ? 'hydrating' : 'idle';
   /**
    * Whether the element has a declarative shadow root, whose nodes its first render adopts instead of creating them (the
    * hydration).
@@ -157,7 +162,7 @@ export class CustomElement extends HTMLElement {
    * the browser. Does nothing once the element is rendered.
    */
   public [HYDRATE](): void {
-    if (this._hydrating && this.isConnected) {
+    if (this._state === 'hydrating' && this.isConnected) {
       this.connectedCallback();
     }
   }
@@ -169,7 +174,7 @@ export class CustomElement extends HTMLElement {
    * @returns `true` when it waits.
    */
   public [WAITS_FOR_HYDRATION](): boolean {
-    return this._hydrating && this.getAttribute(_HYDRATE_ATTRIBUTE) !== 'never';
+    return this._state === 'hydrating' && this.getAttribute(_HYDRATE_ATTRIBUTE) !== 'never';
   }
 
   /**
@@ -192,40 +197,55 @@ export class CustomElement extends HTMLElement {
    * Mounted by a template inside a `@try`, its error is thrown by the template, which the `@try` catches (see
    * `runConnection`).
    *
+   * An element inserted again after its removal renders again, its shadow root emptied of what it rendered before. A
+   * component of that content does not: the browser connects it along with the element holding it, after the element
+   * has emptied its shadow root, so it is no longer in the DOM, and stays destroyed.
+   *
    * @throws When no render function is registered for this component class, and the error of the code of the component,
    *   unless a template mounts it inside a `@try`.
    */
   private connectedCallback(): void {
-    runConnection(() => this._connect());
+    if (this._state !== 'destroyed' || this.isConnected) {
+      runConnection(() => this._connect());
+    }
   }
 
   /**
    * Called by the browser engine each time the element is removed from the DOM.
    *
    * Invokes `onDestroy`, if declared, then invokes `context.clear()` to dispose the effects
-   * created via {@link effect} and all the other active signal subscriptions, detach event listeners,
-   * and remove tracked DOM nodes so the component can be cleanly re-rendered if it is re-inserted,
+   * created via {@link effect} and all the other active signal subscriptions and detach event listeners,
    * and finally invokes the internal disconnected hooks.
    *
+   * The nodes of the template are not removed: a component removed from the DOM is destroyed, and its shadow root goes
+   * with it. When code outside Xaendar inserts it again, as a library moving it with `insertBefore` does, it renders
+   * again, emptying its shadow root first (see {@link connectedCallback}).
+   *
    * An element rendered on the server removed before hydrating, as the ones of a `@placeholder`, never started: only what
-   * its constructor created is disposed.
+   * its constructor created is disposed. A component already destroyed, disconnected again by the element holding it
+   * as that element empties its shadow root, has nothing left to dispose.
    */
   private disconnectedCallback(): void {
-    if (this._hydrating) {
-      this._context.clear();
-      this._hostDirectivesContext?.clear();
-      return;
+    switch (this._state) {
+      case 'hydrating':
+        this._context.clear(false);
+        this._hostDirectivesContext?.clear(false);
+        return;
+
+      case 'destroyed':
+        return;
     }
 
+    this._state = 'destroyed';
     this.onDestroy?.();
-    this._context.clear();
+    this._context.clear(false);
 
     // The host directives are stopped after the component, then their effects are disposed
     for (const directive of this.hostDirectives.values()) {
       directive[DIRECTIVE_DISCONNECT]();
     }
 
-    this._hostDirectivesContext?.clear();
+    this._hostDirectivesContext?.clear(false);
 
     const disconnectedHooks = this[DISCONNECTED_HOOKS];
     if (disconnectedHooks) {
@@ -250,7 +270,8 @@ export class CustomElement extends HTMLElement {
    * @throws When no render function is registered for this component class, and the error of the code of the component.
    */
   private _connect(): void {
-    const hydrating = this._hydrating;
+    const state = this._state;
+    const hydrating = state === 'hydrating';
     if (hydrating && this._waitsForHydration()) {
       return;
     }
@@ -270,9 +291,14 @@ export class CustomElement extends HTMLElement {
       this._root.adoptedStyleSheets = [styleSheet];
     }
 
+    // Destroyed, its shadow root holds what it rendered before its removal, moved along with it by code outside Xaendar
+    if (state === 'destroyed' && this._root.firstChild) {
+      this._root.replaceChildren();
+    }
+
     // The first render of an element rendered on the server adopts its nodes, any other one creates them
     const nodeStrategy = hydrating && this._hasServerRoot ? claimShadowRoot(this._root, !!styleSheet) : CREATE_NODES;
-    this._hydrating = false;
+    this._state = 'rendered';
 
     /*
       The host directives are started before the component, so its `onInit` finds them ready

@@ -61,20 +61,14 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
     return;
   }
 
-  // The nodes the server rendered stay, owned by the context until the content adopts them: in an element, by the element
+  /*
+    The nodes the server rendered stay, owned by the context until the content adopts them, which removes them as its
+    own: in an element, by the element
+  */
   const serverNodes = run.serverNodes = nodeStrategy.skip(parentNode, nodeBlock);
   for (let i = 0; i < serverNodes.length; i++) {
-    trackNode(serverNodes[i], null, parentContext);
+    trackNode(serverNodes[i], parentNode, parentContext);
   }
-
-  parentContext.addUnlistener(() => {
-    let i = 0;
-    while (!run.hydrated && i < serverNodes.length) {
-      parentContext.removeNode(serverNodes[i]);
-      serverNodes[i].parentNode?.removeChild(serverNodes[i]);
-      i++;
-    }
-  });
 
   // Recording its events would stop them for good: the content stays plain HTML, and its modules are never loaded
   if (block.triggers.includes('never')) {

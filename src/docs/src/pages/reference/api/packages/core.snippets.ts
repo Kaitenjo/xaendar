@@ -340,13 +340,13 @@ public get collapsed(): boolean {
 }
 
 /**
- * ARIA states want the text "false", which false would remove: write the string.
+ * An aria-* attribute writes a boolean as the text "true" or "false".
  *
- * @returns 'true' or 'false'.
+ * @returns Whether the content is expanded.
  */
 @HostProperty('aria-expanded')
-public get expandedState(): string {
-  return String(this.open());
+public get expandedState(): boolean {
+  return this.open();
 }
 
 /**

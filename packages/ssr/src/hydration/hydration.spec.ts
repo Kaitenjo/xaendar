@@ -1905,8 +1905,8 @@ describe('the contexts of the elements', () => {
     const host = document.body.appendChild(document.createElement(tag('client', 'grid'))) as unknown as Grid & Element;
     const root = host.shadowRoot!;
 
-    // The section, the three rows, the six cells and the <i> of each cell
-    expect(trackedNodes(host).map(node => (node as Element).localName)).toEqual(['section', 'p', 'span', 'i', 'span', 'i', 'p', 'span', 'i', 'span', 'i', 'p', 'span', 'i', 'span', 'i']);
+    // The three rows, the six cells and the <i> of each cell: the root context keeps none of its nodes, as the section
+    expect(trackedNodes(host).map(node => (node as Element).localName)).toEqual(['p', 'span', 'i', 'span', 'i', 'p', 'span', 'i', 'span', 'i', 'p', 'span', 'i', 'span', 'i']);
     const [first, second, third] = Array.from(root.querySelectorAll('p'));
 
     host.rows.set([host.rows()[2], host.rows()[0]]);
@@ -1923,7 +1923,7 @@ describe('the contexts of the elements', () => {
     await flush();
 
     expect(cells(root)).toEqual([['x3!', 'y3!']]);
-    expect(trackedNodes(host)).toHaveLength(6);
+    expect(trackedNodes(host)).toHaveLength(5);
   });
 
   it('adopts the children of the elements in their contexts, and renders in a context of their own the children of an element created in place of a node of the server', async () => {

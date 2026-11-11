@@ -12,7 +12,7 @@ const { _Context, mountNode } = await import('../context/context.util');
 const { _switch } = await import('./switch.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _SSR_MARKERS } = await import('../../costants');
-const { signal } = await import('../../signals');
+const { computed, signal } = await import('../../signals');
 
 type Context = InstanceType<typeof _Context>;
 type Case = { readonly condition: readonly unknown[] | null, readonly block: BlockConfig['branches'][number]['block'] };
@@ -272,5 +272,31 @@ describe('_switch', () => {
     expect(text(firstParent)).toEqual(['default']);
     expect(text(secondParent)).toEqual(['one']);
     expect(expression.mock.calls.map(call => scopes.get(call[0]))).toEqual(['first', 'second', 'second', 'first']);
+  });
+
+  it('follows a computed signal its expression reads when the case it renders writes a signal, as the outlet of a router', async () => {
+    // The path whose page is loaded, the page displaying it, and an input of the component a case renders
+    const ready = signal('home');
+    const page = computed(() => ready());
+    const input = signal(0);
+    const render = (label: string) => (parent: HTMLElement, parentContext: Context, reference: Node | null) => {
+      const context = block(label)(parent, parentContext, reference);
+      input.set(input() + 1);
+      return context;
+    };
+    const parent = document.createElement('div');
+    _switch(parent, createRoot(), null, switchOf(() => page(), [
+      { condition: ['home'], block: render('home') },
+      { condition: ['docs'], block: render('docs') }
+    ]));
+    expect(text(parent)).toEqual(['home']);
+
+    ready.set('docs');
+    await flush();
+    expect(text(parent)).toEqual(['docs']);
+
+    ready.set('home');
+    await flush();
+    expect(text(parent)).toEqual(['home']);
   });
 });

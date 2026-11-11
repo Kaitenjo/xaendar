@@ -57,16 +57,11 @@ describe('trackNode', () => {
     expect(nodesOf(context)).toEqual([]);
   });
 
-  it('tracks a node the context does not remove, without the node it is inserted into', () => {
-    const parent = document.createElement('div');
-    const node = parent.appendChild(document.createElement('p'));
+  it('throws in development for a node inserted into another node than the ones the context tracks', () => {
     const context = createContext();
+    trackNode(document.createElement('p'), document.createElement('div'), context);
 
-    trackNode(node, null, context);
-    context.clear();
-
-    expect(nodesOf(context)).toEqual([]);
-    expect(node.parentNode).toBe(parent);
+    expect(() => trackNode(document.createElement('p'), document.createElement('div'), context)).toThrow('A context tracks the nodes inserted into a single node');
   });
 
   it('leaves the node where it is when it was moved into another node', () => {
