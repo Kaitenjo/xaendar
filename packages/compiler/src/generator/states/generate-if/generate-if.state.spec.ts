@@ -13,10 +13,10 @@ const parse = (template: string) => new Parser(template, new Lexer(template).tok
 describe('generateIf', () => {
   it('generates a single conditional block', async () => {
     const context = new GeneratorContext(cache);
-    const { code, functionsToProcess } = await generateIf(parse('@if (a) { <b></b> }'), 'root', '0', context, null);
+    const { code, functionsToProcess } = await generateIf(parse('@if (a) { <b #ref></b> }'), 'root', '0', context, null);
 
     expect(code).toEqual(['_if(root, context, null, if0$if);']);
-    expect(context.constantDeclarations).toEqual(['const if0$if = { branches: [{ condition: if0$condition, block: if0 }] };']);
+    expect(context.constantDeclarations).toEqual(['const if0$if = { update: _runIf, effect: 0, branches: [{ condition: if0$condition, block: if0 }] };']);
     expect(context.functionDeclarations).toEqual(['function if0$condition(context) {\n  return this.a;\n}']);
     expect([...functionsToProcess!.keys()]).toEqual(['if0']);
     expect(functionsToProcess!.get('if0')!.args).toEqual(['if0', 'parentContext', 'anchor', 'nodeStrategy']);
@@ -24,12 +24,14 @@ describe('generateIf', () => {
 
   it('generates else-if and else branches', async () => {
     const context = new GeneratorContext(cache);
-    const template = '@if (a) { <b></b> } @else if (b) { <i></i> } @else if (c) { <u></u> } @else { <s></s> }';
+    const template = '@if (a) { <b #ref></b> } @else if (b) { <i #ref></i> } @else if (c) { <u #ref></u> } @else { <s #ref></s> }';
     const { code, functionsToProcess } = await generateIf(parse(template), 'root', '0', context, 'anchor');
 
     expect(code).toEqual(['_if(root, context, anchor, if0$if);']);
     expect(context.constantDeclarations).toEqual([[
       'const if0$if = {',
+      '  update: _runIf,',
+      '  effect: 0,',
       '  branches: [',
       '    { condition: if0$condition, block: if0 },',
       '    { condition: elseIf0_0$condition, block: elseIf0_0 },',
@@ -50,15 +52,17 @@ describe('generateIf', () => {
     const context = new GeneratorContext(cache);
     context.addIdentifier('row', 'variable');
     context.addIdentifier('col', 'variable');
-    await generateIf(parse('@if (row.done) { a } @else if (col.done) { b }'), 'div0', '0', context, null);
+    await generateIf(parse('@if (row.done) { <b #ref></b> } @else if (col.done) { <i #ref></i> }'), 'div0', '0', context, null);
 
     expect(context.constantDeclarations).toEqual([[
       'const div0__if0$if = {',
+      '  reads: _reads0,',
+      '  update: _runIf,',
+      '  effect: 0,',
       '  branches: [',
       '    { condition: div0__if0$condition, block: div0__if0 },',
       '    { condition: div0__elseIf0_0$condition, block: div0__elseIf0_0 }',
-      '  ],',
-      '  reads: _reads0',
+      '  ]',
       '};'
     ].join('\n')]);
     expect(context.readsDeclarations).toEqual(['const _reads0 = [0, 1];']);
@@ -78,17 +82,19 @@ describe('generateIf', () => {
 
   it('declares the last node of its parent last, its branches forwarding no anchor', async () => {
     const context = new GeneratorContext(cache);
-    const { code, functionsToProcess } = await generateIf(parse('@if (a) { <b></b> } @else if (b) { <i></i> } @else { <s></s> }'), 'td0', '0', context, null, false, true);
+    const { code, functionsToProcess } = await generateIf(parse('@if (a) { <b #ref></b> } @else if (b) { <i #ref></i> } @else { <s #ref></s> }'), 'td0', '0', context, null, false, true);
 
     expect(code).toEqual(['_if(td0, context, null, td0__if0$if);']);
     expect(context.constantDeclarations).toEqual([[
       'const td0__if0$if = {',
+      '  last: true,',
+      '  update: _runIf,',
+      '  effect: 0,',
       '  branches: [',
       '    { condition: td0__if0$condition, block: td0__if0 },',
       '    { condition: td0__elseIf0_0$condition, block: td0__elseIf0_0 },',
       '    { block: td0__else0 }',
-      '  ],',
-      '  last: true',
+      '  ]',
       '};'
     ].join('\n')]);
     for (const { fn } of functionsToProcess!.values()) {

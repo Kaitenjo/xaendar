@@ -21,7 +21,7 @@ function createRoot() {
 describe('_renderText', () => {
   it('renders the initial text', () => {
     const parent = document.createElement('div');
-    _renderText(parent, createRoot(), () => 'hello', null);
+    _renderText(parent, createRoot(), { value: () => 'hello' }, null);
     expect(parent.textContent).toBe('hello');
   });
 
@@ -33,7 +33,7 @@ describe('_renderText', () => {
     });
     const parent = document.createElement('div');
 
-    _renderText(parent, context, value, null);
+    _renderText(parent, context, { value }, null);
 
     expect(parent.textContent).toBe('hello world');
     expect(value.mock.contexts[0]).toBe(component);
@@ -44,7 +44,7 @@ describe('_renderText', () => {
     const context = _scope(createRoot(), { size: HEADER + 2, nodes: HEADER + 1, variables: ['name'] });
     context[HEADER] = 'a';
     const parent = document.createElement('div');
-    _renderText(parent, context, scope => `hi ${String(scope[HEADER])}`, null, false, [0], HEADER + 1);
+    _renderText(parent, context, { value: scope => `hi ${String(scope[HEADER])}`, reads: [0] }, null, false, HEADER + 1);
 
     update(context, HEADER, 'b');
     refresh(context, [0]);
@@ -57,7 +57,7 @@ describe('_renderText', () => {
   it('keeps the text in sync with the signals it reads', async () => {
     const parent = document.createElement('div');
     const name = signal('a');
-    _renderText(parent, createRoot(), () => `hi ${name()}`, null);
+    _renderText(parent, createRoot(), { value: () => `hi ${name()}` }, null);
 
     name.set('b');
     await flush();
@@ -68,7 +68,7 @@ describe('_renderText', () => {
   it('renders null and undefined as an empty text, as textContent does, and any other value as its string', async () => {
     const parent = document.createElement('div');
     const value = signal<unknown>(null);
-    _renderText(parent, createRoot(), () => value(), null);
+    _renderText(parent, createRoot(), { value: () => value() }, null);
     const node = parent.firstChild as Text;
 
     expect(node.data).toBe('');
@@ -87,7 +87,7 @@ describe('_renderText', () => {
     const parent = document.createElement('div');
     const context = createRoot();
     const name = signal('a');
-    _renderText(parent, context, () => name(), null, false, undefined, HEADER);
+    _renderText(parent, context, { value: () => name() }, null, false, HEADER);
 
     clear(context);
     name.set('b');
@@ -101,7 +101,7 @@ describe('_renderText', () => {
     const anchor = document.createComment('anchor');
     parent.appendChild(anchor);
 
-    _renderText(parent, createRoot(), () => 'x', anchor);
+    _renderText(parent, createRoot(), { value: () => 'x' }, anchor);
 
     expect(anchor.previousSibling?.textContent).toBe('x');
   });

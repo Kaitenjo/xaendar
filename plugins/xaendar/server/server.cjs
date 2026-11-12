@@ -20315,75 +20315,8 @@ function appliesStructuralDirectives({ branches }) {
   return branches.some(isStructuralElement);
 }
 
-// ../packages/compiler/src/models/template-error/template-error.model.ts
-var TemplateError = class extends Error {
-  /**
-   * Creates a template error.
-   *
-   * @param message - The formatted message: the stage prefix, the position and the excerpt of the template.
-   * @param span - The span of the template the error refers to.
-   * @param detail - The description of the error alone, without prefix, position and excerpt.
-   */
-  constructor(message, span, detail) {
-    super(message);
-    this.span = span;
-    this.detail = detail;
-    this.name = "TemplateError";
-    this.stack = "";
-  }
-  span;
-  detail;
-  /**
-   * Returns the formatted message, so that interpolating the error prints exactly what a thrown string would.
-   *
-   * @returns The formatted message.
-   */
-  toString() {
-    return this.message;
-  }
-};
-
-// ../packages/compiler/src/utils/span/span.utils.ts
-function isSpan(value) {
-  return !!value && typeof value === "object" && "start" in value && "end" in value;
-}
-function findSpan(input, text, from) {
-  const start = input.indexOf(text, from);
-  return start === -1 ? { start: from, end: from } : { start, end: start + text.length };
-}
-
-// ../packages/compiler/src/utils/catch-error-generation/catch-error-generation.utils.ts
-function formatErrorWithPrefix(prefix, input, err) {
-  if (err instanceof Error) {
-    const { message, cause, stack } = err;
-    if (isSpan(cause)) {
-      return new TemplateError(`[${prefix}] ${message}
-----> ${slice(input, cause.start, cause.end)}`, { start: cause.start, end: cause.end }, message);
-    }
-    const error = new Error(`[${prefix}] ${message}`);
-    error.stack = stack;
-    return error;
-  } else {
-    return new Error(`[${prefix}] ${err}`);
-  }
-}
-function catchErrorWithPrefix(prefix, input, err) {
-  throw formatErrorWithPrefix(prefix, input, err);
-}
-
-// ../packages/compiler/src/utils/symbol-imports/symbol-imports.utils.ts
-var RESERVED_NAMES = /* @__PURE__ */ new Set(["root", "$event"]);
-function assertImportableSymbol({ local, localSpan }) {
-  if (RESERVED_NAMES.has(local) || local.startsWith("__")) {
-    throw new Error(`"${local}" is reserved in templates: import it under another name (\u2026 as name).`, { cause: localSpan });
-  }
-}
-function toTypeCheckModuleSpecifier({ modulePath, importPath }) {
-  return importPath ?? modulePath.replace(/(?:\.d)?\.[cm]?tsx?$/, "");
-}
-
 // ../packages/compiler/src/costants/scope-header.costant.ts
-var SCOPE_HEADER = 7;
+var SCOPE_HEADER = 5;
 
 // ../packages/compiler/src/models/compiler-context/compiler-context.model.ts
 var CompilerContext = class {
@@ -20470,7 +20403,24 @@ var CompilerContext = class {
    * @returns `true` when it does.
    */
   get opensScope() {
-    return this._scopeKind === "scope" || this._variables.length > 0;
+    return this._scopeKind === "scope" || this._scopeKind === "runtime" || this._variables.length > 0;
+  }
+  /**
+   * Whether this scope stands for a branch rendered inline into the runtime scope holding its block (see `ScopeKind`).
+   *
+   * @returns `true` when it does.
+   */
+  get inlineBranch() {
+    return this._scopeKind === "inline";
+  }
+  /**
+   * Whether this scope stands for a scope the runtime creates with a layout of its own (see `ScopeKind`), where the
+   * compiler reserves no slot.
+   *
+   * @returns `true` when it does.
+   */
+  get runtimeScope() {
+    return this._scopeKind === "runtime";
   }
   /**
    * The namespace the elements declared in this scope are created in, looking in this scope first and then in the
@@ -20759,6 +20709,73 @@ var CompilerContext = class {
     return this.parent ? this.parent._nextId() : this._idCount++;
   }
 };
+
+// ../packages/compiler/src/models/template-error/template-error.model.ts
+var TemplateError = class extends Error {
+  /**
+   * Creates a template error.
+   *
+   * @param message - The formatted message: the stage prefix, the position and the excerpt of the template.
+   * @param span - The span of the template the error refers to.
+   * @param detail - The description of the error alone, without prefix, position and excerpt.
+   */
+  constructor(message, span, detail) {
+    super(message);
+    this.span = span;
+    this.detail = detail;
+    this.name = "TemplateError";
+    this.stack = "";
+  }
+  span;
+  detail;
+  /**
+   * Returns the formatted message, so that interpolating the error prints exactly what a thrown string would.
+   *
+   * @returns The formatted message.
+   */
+  toString() {
+    return this.message;
+  }
+};
+
+// ../packages/compiler/src/utils/span/span.utils.ts
+function isSpan(value) {
+  return !!value && typeof value === "object" && "start" in value && "end" in value;
+}
+function findSpan(input, text, from) {
+  const start = input.indexOf(text, from);
+  return start === -1 ? { start: from, end: from } : { start, end: start + text.length };
+}
+
+// ../packages/compiler/src/utils/catch-error-generation/catch-error-generation.utils.ts
+function formatErrorWithPrefix(prefix, input, err) {
+  if (err instanceof Error) {
+    const { message, cause, stack } = err;
+    if (isSpan(cause)) {
+      return new TemplateError(`[${prefix}] ${message}
+----> ${slice(input, cause.start, cause.end)}`, { start: cause.start, end: cause.end }, message);
+    }
+    const error = new Error(`[${prefix}] ${message}`);
+    error.stack = stack;
+    return error;
+  } else {
+    return new Error(`[${prefix}] ${err}`);
+  }
+}
+function catchErrorWithPrefix(prefix, input, err) {
+  throw formatErrorWithPrefix(prefix, input, err);
+}
+
+// ../packages/compiler/src/utils/symbol-imports/symbol-imports.utils.ts
+var RESERVED_NAMES = /* @__PURE__ */ new Set(["root", "$event"]);
+function assertImportableSymbol({ local, localSpan }) {
+  if (RESERVED_NAMES.has(local) || local.startsWith("__")) {
+    throw new Error(`"${local}" is reserved in templates: import it under another name (\u2026 as name).`, { cause: localSpan });
+  }
+}
+function toTypeCheckModuleSpecifier({ modulePath, importPath }) {
+  return importPath ?? modulePath.replace(/(?:\.d)?\.[cm]?tsx?$/, "");
+}
 
 // ../packages/compiler/src/generator/states/generate-element/generate-element.state.ts
 var import_typescript6 = require("typescript");

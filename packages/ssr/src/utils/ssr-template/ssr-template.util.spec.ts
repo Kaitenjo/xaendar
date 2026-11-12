@@ -13,9 +13,9 @@ const { _scope } = await import('@xaendar/core');
 const { _ssrRenderTemplate } = await import('./ssr-template.util');
 
 /**
- * The layout of a scope holding its header alone, whose 8 slots the runtime reserves.
+ * The layout of a scope holding its header alone, whose 5 slots the runtime reserves.
  */
-const EMPTY_LAYOUT: _ScopeLayout = { size: 8, nodes: 8 };
+const EMPTY_LAYOUT: _ScopeLayout = { size: 5, nodes: 5 };
 
 describe('_ssrRenderTemplate', () => {
   it('renders an instance with the component as this, in the scope declaring the template, some scopes up, the value of each argument the one of its parameter', () => {

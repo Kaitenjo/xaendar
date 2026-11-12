@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { BlockConfig } from '../../types/if/block-config.type';
 import type { TemplateExpression } from '../../types/template-expression.type';
-import { HEADER } from '../../costants';
+import { CONTAINER_SLOTS, HEADER } from '../../costants';
 import type { _Context } from '../../types/context.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 
@@ -11,7 +11,7 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { _scope, STRUCTURAL_LAYOUT, ELEMENT_LAYOUT, EMPTY_LAYOUT, mountNode, refresh, update } = await import('../context/context.util');
+const { _scope, STRUCTURAL_LAYOUT, ELEMENT_LAYOUT, mountNode, refresh, update } = await import('../context/context.util');
 const { _switch } = await import('./switch.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _SSR_MARKERS } = await import('../../costants');
@@ -27,9 +27,9 @@ function createRoot() {
 }
 
 /**
- * The layout of a scope declaring some variables.
+ * The layout of a scope declaring some variables, then holding a block.
  */
-const layoutOf = (count: number): _ScopeLayout => ({ size: HEADER + count, nodes: HEADER + count });
+const layoutOf = (count: number): _ScopeLayout => ({ size: HEADER + count + CONTAINER_SLOTS, nodes: HEADER + count, containers: HEADER + count });
 
 function block(label: string) {
   return (parent: HTMLElement, parentContext: Context, reference: Node | null) => {
@@ -227,7 +227,7 @@ describe('_switch', () => {
 
   it('calls the expression with the component of the context as this and the context', () => {
     const component = { mode: 2 };
-    const context = _scope(createRoot(), EMPTY_LAYOUT, undefined, component);
+    const context = _scope(createRoot(), layoutOf(0), undefined, component);
     const expression = vi.fn(function (this: typeof component, _context: Context) {
       return this.mode;
     });

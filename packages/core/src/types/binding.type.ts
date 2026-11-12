@@ -6,13 +6,18 @@ import type { Effect } from './effect.type';
  * variables it reads changes (see `refresh` of `utils/context`). While its last run read a signal, it is an effect too,
  * running again whenever that signal changes.
  *
- * N.B. Deliberate, to save memory: a binding reading only variables of the template, most of the bindings of a large
- * table, is this record, with neither a computed signal nor a watcher. It holds only what runs it again (the callback,
- * declared once at module level, and its three arguments, as an effect holds them), the identifiers of the variables it reads, a constant of
- * the module shared by every binding of the same place of the template, and its effect, only while it reads a signal. The
- * last value is the one its target holds (the text of the node, the attribute, the input, the branch rendered), which the
- * callback compares, so it is not copied here. Do not turn every binding into an effect again, nor add a closure, the
- * last value or a field per variable.
+ * Only the bindings the runtime renders in a scope of its own are kept this way, among the cleanups of the scope: the
+ * branches of the conditional bindings, the element structural directives are applied to and its content when it
+ * declares nothing, the bindings `createComponent` builds. The bindings of a compiled template live in the slots of their
+ * scope instead (see `BindingSite`).
+ *
+ * N.B. Deliberate, to save memory: a binding reading only variables of the template is this record, with neither a
+ * computed signal nor a watcher. It holds only what runs it again (the callback, declared once at module level, and its
+ * three arguments, as an effect holds them), the identifiers of the variables it reads, a constant of the module shared
+ * by every binding of the same place of the template, and its effect, only while it reads a signal. The last value is
+ * the one its target holds (the text of the node, the attribute, the input, the branch rendered), which the callback
+ * compares, so it is not copied here. Do not turn every binding into an effect again, nor add a closure, the last value
+ * or a field per variable.
  */
 export type Binding = {
   /**

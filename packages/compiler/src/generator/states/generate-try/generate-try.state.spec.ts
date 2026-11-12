@@ -24,7 +24,7 @@ describe('generateTry', () => {
       args: ['try0', 'parentContext', 'anchor', 'nodeStrategy']
     });
     expect(functionsToProcess!.get('catch0')).toMatchObject({
-      fn: { node: node.catch, parentNode: 'catch0', precode: 'context[7] = error;', anchor: 'anchor' },
+      fn: { node: node.catch, parentNode: 'catch0', precode: 'context[5] = error;', anchor: 'anchor' },
       args: ['catch0', 'parentContext', 'anchor', 'nodeStrategy', 'error']
     });
     expect(functionsToProcess!.get('try0')!.fn.context).not.toBe(context);
@@ -53,6 +53,6 @@ describe('generateTry', () => {
     expect(code).toEqual(['_try(td0, context, null, td0__try0$try);']);
     expect(context.constantDeclarations).toEqual(['const td0__try0$try = { content: td0__try0, catch: td0__catch0, last: true };']);
     expect(functionsToProcess!.get('td0__try0')!.fn).toHaveProperty('anchor', undefined);
-    expect(functionsToProcess!.get('td0__catch0')!.fn).toMatchObject({ precode: 'context[7] = error;', anchor: undefined });
+    expect(functionsToProcess!.get('td0__catch0')!.fn).toMatchObject({ precode: 'context[5] = error;', anchor: undefined });
   });
 });

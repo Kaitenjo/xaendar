@@ -1,3 +1,4 @@
+import type { BindingSite } from './binding-site.type';
 import type { Function } from '@xaendar/types';
 import type { _Context } from './context.type';
 import type { BlockPosition } from './block-position.type';
@@ -14,7 +15,7 @@ import type { TrackExpression } from './track-expression.type';
  * create at each render, in every row of an outer `@for`. The runtime never writes it: the rows rendered are kept by the
  * `@for` (see `ForRun`). Do not build it in the render code.
  */
-export type ForConfig = BlockPosition & {
+export type ForConfig = BindingSite & BlockPosition & {
   /**
    * Computes the items to iterate: an array, or a number `n`, iterated as `0, 1, ..., n - 1`. A function of the module,
    * called with the component and the context of the scope holding the `@for`.
@@ -33,8 +34,4 @@ export type ForConfig = BlockPosition & {
    * The variables the body reads, left out when it reads none.
    */
   readonly variables?: IterationVariables;
-  /**
-   * The identifiers of the variables of the template the items and their keys read, left out when they read none.
-   */
-  readonly reads?: readonly number[];
 };

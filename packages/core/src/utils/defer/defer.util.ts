@@ -7,7 +7,8 @@ import type { DeferBlockFixture } from '../../types/defer-testing/defer-block-fi
 import type { DeferBlockState } from '../../types/defer-testing/defer-block-state.type';
 import type { DeferRun } from '../../types/defer-run.type';
 import type { _Context } from '../../types/context.type';
-import { addCleanup, clear, containerSlot, forEachChild, getNodeStrategy, nodesEnd } from '../context/context.util';
+import type { InlineBranch } from '../../types/inline-branch.type';
+import { addCleanup, clear, containerSlot, forEachChild, forEachInline, getNodeStrategy, nodesEnd } from '../context/context.util';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { registerDeferBlock } from '../defer-testing/defer-testing.util';
 import { armTriggers, disarmAll, watchedTriggers } from '../hydration-triggers/hydration-triggers.util';
@@ -336,11 +337,36 @@ function elementsOf(context: _Context | null, parentNode: Node): Element[] {
  */
 function collectElements(context: _Context, elements: Element[]): void {
   for (let i = context[LAYOUT].nodes; i < nodesEnd(context); i++) {
-    const node = context[i] as Node | null | undefined;
-    if (node?.nodeType === Node.ELEMENT_NODE && node.parentNode === watchedNode) {
-      elements.push(node as Element);
-    }
+    collectElement(context[i] as Node | null | undefined, elements);
   }
 
+  forEachInline(context, collectInlineElements, elements);
   forEachChild(context, collectElements, elements);
+}
+
+/**
+ * Collects the elements a branch rendered inline into a context renders into the node of the block (see
+ * {@link elementsOf}).
+ *
+ * @param context - The context the branch is rendered into.
+ * @param branch - The branch.
+ * @param elements - The elements, filled as they are found.
+ */
+function collectInlineElements(context: _Context, branch: InlineBranch, elements: Element[]): void {
+  const { base, nodes } = branch;
+  for (let i = 0; i < nodes.length; i++) {
+    collectElement(context[base + nodes[i]] as Node | null | undefined, elements);
+  }
+}
+
+/**
+ * Collects a node when it is an element rendered into the node of the block (see {@link elementsOf}).
+ *
+ * @param node - The node, nothing for an empty slot.
+ * @param elements - The elements, filled as they are found.
+ */
+function collectElement(node: Node | null | undefined, elements: Element[]): void {
+  if (node?.nodeType === Node.ELEMENT_NODE && node.parentNode === watchedNode) {
+    elements.push(node as Element);
+  }
 }

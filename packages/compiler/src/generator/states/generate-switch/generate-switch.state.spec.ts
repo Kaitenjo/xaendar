@@ -12,7 +12,7 @@ const parse = (template: string) => new Parser(template, new Lexer(template).tok
 
 describe('generateSwitch', () => {
   it('generates cases, grouped cases and default', async () => {
-    const template = '@switch (x) { @case (1) { <a></a> } @case (2) @case (3) { <b></b> } @default { <c></c> } }';
+    const template = '@switch (x) { @case (1) { <a #ref></a> } @case (2) @case (3) { <b #ref></b> } @default { <c #ref></c> } }';
     const context = new GeneratorContext(cache);
     const { code, functionsToProcess } = await generateSwitch(parse(template), 'root', '0', context, null);
 
@@ -20,6 +20,8 @@ describe('generateSwitch', () => {
     expect(context.constantDeclarations).toEqual([[
       'const switch0$switch = {',
       '  expression: switch0$expression,',
+      '  update: _runIf,',
+      '  effect: 0,',
       '  branches: [',
       '    { condition: [1], block: case0_0 },',
       '    { condition: [2, 3], block: case0_1 },',
@@ -34,16 +36,18 @@ describe('generateSwitch', () => {
   it('lists the variables of the template the expression reads in the configuration', async () => {
     const context = new GeneratorContext(cache);
     context.addIdentifier('col', 'variable');
-    await generateSwitch(parse('@switch (col.type) { @case (\'text\') { a } }'), 'td0', '0', context, null);
+    await generateSwitch(parse('@switch (col.type) { @case (\'text\') { <b #ref></b> } }'), 'td0', '0', context, null);
 
     expect(context.constantDeclarations).toEqual([[
       'const td0__switch0$switch = {',
       '  expression: td0__switch0$expression,',
-      '  branches: [{ condition: [\'text\'], block: td0__case0_0 }],',
-      '  reads: _reads0',
+      '  reads: _reads0,',
+      '  update: _runIf,',
+      '  effect: 0,',
+      '  branches: [{ condition: [\'text\'], block: td0__case0_0 }]',
       '};'
     ].join('\n')]);
-    expect(context.functionDeclarations).toEqual(['function td0__switch0$expression(context) {\n  return _read(context, 0, 7).type;\n}']);
+    expect(context.functionDeclarations).toEqual(['function td0__switch0$expression(context) {\n  return _read(context, 0, 5).type;\n}']);
     expect(context.readsDeclarations).toEqual(['const _reads0 = [0];']);
   });
 
@@ -65,14 +69,16 @@ describe('generateSwitch', () => {
 
   it('declares the last node of its parent last, its cases forwarding no anchor', async () => {
     const context = new GeneratorContext(cache);
-    const { code, functionsToProcess } = await generateSwitch(parse('@switch (x) { @case (1) { <a></a> } @default { <c></c> } }'), 'td0', '0', context, null, false, true);
+    const { code, functionsToProcess } = await generateSwitch(parse('@switch (x) { @case (1) { <a #ref></a> } @default { <c #ref></c> } }'), 'td0', '0', context, null, false, true);
 
     expect(code).toEqual(['_switch(td0, context, null, td0__switch0$switch);']);
     expect(context.constantDeclarations).toEqual([[
       'const td0__switch0$switch = {',
       '  expression: td0__switch0$expression,',
-      '  branches: [{ condition: [1], block: td0__case0_0 }, { condition: null, block: td0__default0 }],',
-      '  last: true',
+      '  last: true,',
+      '  update: _runIf,',
+      '  effect: 0,',
+      '  branches: [{ condition: [1], block: td0__case0_0 }, { condition: null, block: td0__default0 }]',
       '};'
     ].join('\n')]);
     expect([...functionsToProcess!.keys()]).toEqual(['td0__case0_0', 'td0__default0']);

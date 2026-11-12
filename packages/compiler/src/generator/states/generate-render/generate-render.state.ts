@@ -4,7 +4,7 @@ import { assertRenderTarget } from '../../../utils/render-target/render-target.u
 import { GeneratorContext } from '../../context/context';
 import type { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getBlockIdentifier, joinVariables, resolveExpression } from '../../utils/generator/generator.utils';
-import { declareExpression, toObjectLiteral } from '../../utils/module-code/module-code.utils';
+import { declareExpression } from '../../utils/module-code/module-code.utils';
 
 /**
  * Generates the code rendering an instance of a template, e.g. `@render row(item, $index)`: a `_renderTemplate(...)`
@@ -17,10 +17,10 @@ import { declareExpression, toObjectLiteral } from '../../utils/module-code/modu
  *
  * @example
  * // @render row(item, $index)
- * const div0__render1$render = { template: template_row_12$template, depth: 1, args: div0__render1$args, reads: _reads0 };
+ * const div0__render1$render = { template: template_row_12$template, depth: 1, args: div0__render1$args, reads: _reads0, update: _runRender, effect: 0 };
  * _renderTemplate(div0, context, null, div0__render1$render);
  *
- * function div0__render1$args(context) { return [_read(context, 0, 8), _read(context, 0, 9)]; }
+ * function div0__render1$args(context) { return [_read(context, 0, 6), _read(context, 0, 7)]; }
  *
  * @param node - The `RenderNode` to process.
  * @param parentNode - Variable name of the parent DOM node.
@@ -66,6 +66,6 @@ export async function generateRender(node: RenderNode, parentNode: string, index
   }
 
   appendContainer(members, generatorContext);
-  const config = generatorContext.declareConstant(`${renderKey}$render`, toObjectLiteral(members));
+  const config = generatorContext.declareBinding(`${renderKey}$render`, members, '_runRender', false)!;
   return { code: [`_renderTemplate(${parentNode}, context, ${anchor}, ${config});`] };
 }

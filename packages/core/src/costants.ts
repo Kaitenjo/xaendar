@@ -97,43 +97,75 @@ export const PARENT = 0;
  */
 export const PARENT_NODE = 1;
 /**
- * The slot of a scope holding the last refresh that brought it up to date.
- */
-export const STATE = 2;
-/**
  * The slot of a scope holding the component whose template it renders, `this` of its expressions.
- */
-export const COMPONENT = 3;
-/**
- * The slot of a scope holding the strategy getting its nodes, `null` for `CREATE_NODES`.
  *
- * N.B. Deliberate, to save memory: `null` for the strategy of nearly every scope, so that the slot points to nothing,
- * a strategy of a hydration only while it runs. Do not write `CREATE_NODES` in it.
+ * N.B. Deliberate, to save memory and time: the header holds only what every scope needs at every render (`PARENT`,
+ * `PARENT_NODE`, `COMPONENT`, `CLEANUP`, `LAYOUT`), read by every expression and every helper without a lookup. The
+ * strategy getting the nodes of a scope differs from creating them only while a hydration runs, so the scopes adopting
+ * nodes keep it in a map of the module (see `getNodeStrategy`), and the pass of the refresh running only while it runs,
+ * so the scopes it brought up to date are in a set of the module (see `refresh`): two slots fewer for every scope, a
+ * row of a table included. Do not add them back to the header, nor move a slot read at every render out of it.
  */
-export const STRATEGY = 4;
+export const COMPONENT = 2;
 /**
- * The slot of a scope holding what it runs or disposes when it is cleared, the bindings reading variables included.
+ * The slot of a scope holding what it runs or disposes when it is cleared that the compiler does not know: the
+ * listeners, the directives, the components created by code, the scopes held outside of the containers, and the
+ * bindings the runtime renders in a scope of its own (see `Binding`). The bindings of a compiled template are not here:
+ * their scope keeps them in slots of its own (see `BindingSite`).
  *
- * N.B. Deliberate, to save memory: the cleanup functions and the bindings share one slot, the item itself while there is
- * one, an array from the second, `null` while there is none, instead of two lists, which cost an array per scope as soon
- * as it has both a listener and a binding. Do not split them again, nor make an array of a single item.
+ * N.B. Deliberate, to save memory: the cleanup functions and the bindings of the runtime share one slot, the item itself
+ * while there is one, an array from the second, `null` while there is none, instead of two lists, which cost an array per
+ * scope as soon as it has both a listener and a binding. Do not split them again, nor make an array of a single item.
  */
-export const CLEANUP = 5;
+export const CLEANUP = 3;
 /**
- * The slot of a scope holding its layout (see `_ScopeLayout`), shared by every instance of its block: where its nodes
- * and its containers start, and the names of its variables for the errors.
+ * The slot of a scope holding its layout (see `_ScopeLayout`), shared by every instance of its block: where its nodes,
+ * its bindings and its containers start, and the names of its variables for the errors.
  *
  * N.B. Deliberate: the one slot telling where the nodes start, since the variables before them vary from a block to
  * another, and the runtime clears and moves the nodes of scopes whose block it does not know. Do not encode it in
- * `STATE`: the number of the refresh grows without bound, and the two together would leave the small integers V8 keeps
- * in a slot without allocating, costing a number per scope.
+ * another slot: a slot holding a small integer (a smi) or a reference costs nothing more, an encoded value would cost
+ * a decoding at every read.
  */
-export const LAYOUT = 6;
+export const LAYOUT = 4;
 /**
  * The number of slots of the header of a scope: the slot of its first variable. The compiler writes the same number
  * (`SCOPE_HEADER` of `@xaendar/compiler`): change both together.
  */
-export const HEADER = 7;
+export const HEADER = 5;
+/**
+ * The number of slots of a container (see `_ScopeLayout`): the one holding what the block shows ({@link CONTENT}), the
+ * one holding its state ({@link BRANCH}, {@link KEYS}), and the one telling where it renders ({@link POSITION}). The
+ * compiler writes the same number (`CONTAINER_SLOTS` of `@xaendar/compiler`): change both together.
+ *
+ * N.B. Deliberate, to save memory: the state of a block lives in a few slots of the scope holding it, the same number
+ * for every block, so that the runtime finds the containers without a list, instead of an object per block (where it
+ * renders, the scope holding it, its configuration, its branch, whether it ran) and one more for its anchor, which a
+ * large table paid for every `@if` and `@switch` of every cell. The blocks rendered rarely (`@defer`, `@try`,
+ * `@hydrate`, `@client`, the element structural directives are applied to) leave the other two slots empty. Do not
+ * give a block an object of its own again.
+ */
+export const CONTAINER_SLOTS = 3;
+/**
+ * The slot of a container, from its first one, holding what the block shows: the scope of its content, `null`, the
+ * rows of a `@for`, the branch of an `@if` or of a `@switch` rendered inline (see `InlineBranch`).
+ */
+export const CONTENT = 0;
+/**
+ * The slot of the container of an `@if` or of a `@switch` holding the index of the branch rendered: `null` when it
+ * renders none, `-1` before its first run, which adopts the nodes of the server.
+ */
+export const BRANCH = 1;
+/**
+ * The slot of the container of a `@for` holding the keys of its rows, in their order, an array of their exact number:
+ * the slot of {@link BRANCH}, which tells the two apart.
+ */
+export const KEYS = 1;
+/**
+ * The slot of a container telling where the block renders: its anchor, which the content is inserted before, or, for
+ * the last block of its parent, which has none, the parent itself, which the content is appended to.
+ */
+export const POSITION = 2;
 /**
  * Key of the brand marking the options `Property.required` passes to the decorator it creates, which tells them apart
  * from a default value (see `Property`).

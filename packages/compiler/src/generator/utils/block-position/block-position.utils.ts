@@ -1,8 +1,14 @@
 import { ASTNodeType } from '../../../parser/types/node.enum';
-import type { GeneratorContext } from '../../context/context';
+import { GeneratorContext } from '../../context/context';
+import type { BlockBranch } from '../../types/block-branch.type';
+import type { GeneratorFunctionToProcess } from '../../types/generator-function-to-process.type';
+import type { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import type { ASTNode } from '../../../parser/types/ast.type';
+import type { CaseNode } from '../../../parser/types/nodes/case-node.type';
+import type { ElseIfNode } from '../../../parser/types/nodes/else-if-node.type';
+import type { ElseNode } from '../../../parser/types/nodes/else-node.type';
+import type { IfNode } from '../../../parser/types/nodes/if-node.type';
 import { isStructuralElement } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
-
 /**
  * Tells whether a node is the last one its parent renders: every sibling following it renders nothing (an `@import`, a
  * `<template>` declaration, a `@let`). A block in this position, when its parent ends where the node it is rendered into
@@ -89,6 +95,73 @@ export function appendContainer(members: string[], generatorContext: GeneratorCo
   const container = generatorContext.allocateContainer();
   if (container) {
     members.push(`container: ${container}`);
+  }
+}
+
+/**
+ * Tells whether the content of a branch of an `@if` or of a `@switch` can be rendered inline into the runtime scope
+ * holding the block, without a scope of its own (see `InlineBranch` of the runtime): it holds only texts, interpolations
+ * and elements, its elements included, and declares no variable (no element ref, no `@let`, no template), renders no
+ * block and applies no directive nor conditional binding, which keep their state in a scope or among its cleanups.
+ *
+ * @param nodes - The nodes of the branch.
+ * @returns `true` when the branch can be rendered inline.
+ */
+export function rendersInline(nodes: readonly ASTNode[]): boolean {
+  return nodes.every(rendersNodeInline);
+}
+
+/**
+ * Describes a branch of an `@if` or of a `@switch` (see `GeneratorContext.declareBlock`) and the function rendering it:
+ * a branch that can be rendered inline (see {@link rendersInline}) is generated in a context of kind `inline`, any other
+ * one in a scope of its own.
+ *
+ * @param node - The node of the branch.
+ * @param key - The name of the function rendering it.
+ * @param members - What selects the branch (`condition: …`), if anything.
+ * @param generatorContext - The scope rendering the block.
+ * @param anchor - The name of the anchor the content is rendered before, `undefined` to append it.
+ * @returns The description of the branch, and the function to generate.
+ */
+export function describeBranch(node: IfNode | ElseIfNode | ElseNode | CaseNode, key: string, members: string[], generatorContext: GeneratorContext, anchor: string | undefined): { branch: BlockBranch, fn: GeneratorFunctionToProcess } {
+  members.push(`block: ${key}`);
+  const inline = rendersInline(node.children);
+  const context = new GeneratorContext(generatorContext, undefined, inline ? 'inline' : 'scope');
+  return {
+    branch: inline ? { members, context } : { members },
+    fn: { fn: { node, parentNode: key, context, anchor }, args: [key, 'parentContext', 'anchor', 'nodeStrategy'] }
+  };
+}
+
+/**
+ * Adds a branch described by {@link describeBranch} to the ones of its block, and its function to the ones to generate.
+ *
+ * @param result - The result of the state generating the block, collecting the functions to generate.
+ * @param branches - The branches of the block, in order.
+ * @param described - The branch and its function.
+ */
+export function addBranch(result: GeneratorTransitionFunctionReturnType, branches: BlockBranch[], { branch, fn }: { branch: BlockBranch, fn: GeneratorFunctionToProcess }): void {
+  branches.push(branch);
+  result.functionsToProcess!.set(fn.args![0], fn);
+}
+
+/**
+ * Tells whether a node of a branch can be rendered inline (see {@link rendersInline}).
+ *
+ * @param node - The node.
+ * @returns `true` when it can.
+ */
+function rendersNodeInline(node: ASTNode): boolean {
+  switch (node.type) {
+    case ASTNodeType.Text:
+    case ASTNodeType.Interpolation:
+      return true;
+
+    case ASTNodeType.Element:
+      return !node.ref && !node.directives.length && !node.conditionalBindings.length && !isStructuralElement(node) && rendersInline(node.children);
+
+    default:
+      return false;
   }
 }
 

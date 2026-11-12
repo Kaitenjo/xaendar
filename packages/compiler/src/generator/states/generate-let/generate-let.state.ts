@@ -2,23 +2,25 @@ import type { LetNode } from '../../../parser/types/nodes/let-node.type';
 import { GeneratorContext } from '../../context/context';
 import type { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { isConstantExpression, resolveExpression } from '../../utils/generator/generator.utils';
-import { declareExpression, toRoleName } from '../../utils/module-code/module-code.utils';
+import { declareLetBinding, toRoleName } from '../../utils/module-code/module-code.utils';
 
 /**
  * Generates the code initializing a `@let`, declared at the start of its scope, once the render reaches it: a literal is
  * written once, any other value by `_let`, which computes it again when a signal or a variable of the template it reads
- * changes, receiving its slot, its identifier and the identifiers of the variables it reads. The expressions reading the
- * `@let` read its value, as any variable. The
- * expression is a function of the module named after the parent node and the `@let` (`div0$let_total`), which the
- * runtime calls with the component and the context.
+ * changes, receiving its binding (see `declareLetBinding`): the expression, a function of the module named after the
+ * parent node and the `@let` (`div0$let_total`), which the runtime calls with the component and the context, the slot and
+ * the identifier of the `@let`, and the identifiers of the variables it reads. The expressions reading the `@let` read
+ * its value, as any variable.
  *
  * @example
  * // @let total = price() * quantity();
- * _let(context, 8, 0, div0$let_total);    // function div0$let_total(context) { return this.price() * this.quantity(); }
+ * const div0$let_total$binding = { value: div0$let_total, variable: 6, id: 0, update: _runLet, effect: 0 };
+ * _let(context, div0$let_total$binding); // function div0$let_total(context) { return this.price() * this.quantity(); }
  * // @let name = row.name;
- * _let(context, 9, 1, div0$let_name, _reads0); // function div0$let_name(context) { return _read(context, 1, 8).name; }
+ * const div0$let_name$binding = { value: div0$let_name, variable: 7, id: 1, reads: _reads0, update: _runLet, effect: 1 };
+ * _let(context, div0$let_name$binding); // function div0$let_name(context) { return _read(context, 1, 6).name; }
  * // @let size = 10;
- * context[10] = 10;
+ * context[8] = 10;
  *
  * @param node - The `LetNode` to process.
  * @param parentNode - The variable name of the parent DOM node, which names the function of the expression.
@@ -35,7 +37,6 @@ export async function generateLet(node: LetNode, parentNode: string, _index: str
     return { code: [`context[${slot}] = ${expression};`] };
   }
 
-  const reads = generatorContext.getReads(variables);
-  const compute = declareExpression(generatorContext, `${parentNode}$let_${toRoleName(node.name)}`, expression);
-  return { code: [`_let(context, ${slot}, ${id}, ${compute}${reads ? `, ${reads}` : ''});`] };
+  const name = `${parentNode}$let_${toRoleName(node.name)}`;
+  return { code: [`_let(context, ${declareLetBinding(generatorContext, name, expression, slot, id, variables)});`] };
 }

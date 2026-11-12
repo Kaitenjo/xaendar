@@ -201,6 +201,63 @@ describe('subtle', () => {
     });
   });
 
+  describe('introspection of one, two and three items', () => {
+    it('lists the sinks of a State and the signals of a Watcher, in order, from none to three and back to none', () => {
+      const state = new State(0);
+      const watchers = [new Watcher(() => undefined), new Watcher(() => undefined), new Watcher(() => undefined)];
+      const sizes = new Array<number>();
+      for (let i = 0; i < watchers.length; i++) {
+        sizes.push(introspectSinks(state).length);
+        watchers[i].watch(state);
+      }
+      expect(introspectSinks(state)).toEqual(watchers);
+      expect(introspectSinks(state)).not.toBe(introspectSinks(state));
+
+      for (let i = 0; i < watchers.length; i++) {
+        watchers[i].unwatch(state);
+        sizes.push(introspectSinks(state).length);
+      }
+
+      expect(sizes).toEqual([0, 1, 2, 2, 1, 0]);
+      expect(hasSinks(state)).toBe(false);
+
+      const states = [new State(1), new State(2), new State(3)];
+      const watcher = new Watcher(() => undefined);
+      watcher.watch(states[0]);
+      expect(introspectSources(watcher)).toEqual([states[0]]);
+      watcher.watch(states[1], states[2]);
+      expect(introspectSources(watcher)).toEqual(states);
+      watcher.unwatch(states[1]);
+      expect(introspectSources(watcher)).toEqual([states[0], states[2]]);
+    });
+
+    it('follows the sources of a Computed reading one, two, then three States, notifying it through each one', () => {
+      const states = [new State(1), new State(2), new State(3)];
+      const count = new State(1);
+      const computed = new Computed(() => {
+        let sum = 0;
+        for (let i = 0; i < count.get(); i++) {
+          sum += states[i].get();
+        }
+
+        return sum;
+      });
+      const notify = vi.fn();
+      new Watcher(notify).watch(computed);
+      const seen = new Array<number>();
+      for (let i = 1; i <= 3; i++) {
+        count.set(i);
+        seen.push(computed.get(), introspectSources(computed).length);
+      }
+
+      states[2].set(10);
+      expect(computed.get()).toBe(13);
+      expect(seen).toEqual([1, 2, 3, 3, 6, 4]);
+      expect(introspectSinks(states[2])).toEqual([computed]);
+      expect(notify).toHaveBeenCalled();
+    });
+  });
+
   describe('hasSinks()', () => {
     it('returns false for a State with no dependents', () => {
       expect(hasSinks(new State(0))).toBe(false);

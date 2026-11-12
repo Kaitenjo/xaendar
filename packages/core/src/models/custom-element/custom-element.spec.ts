@@ -3,7 +3,7 @@ import { EffectOptions } from '@xaendar/core/signals';
 import { loadSignals } from '@xaendar/signals';
 import { Constructor, NoArgsVoidFunction } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { CONNECTED_HOOKS, DISCONNECTED_HOOKS, HEADER, HYDRATE } from '../../costants';
+import { CLEANUP, CONNECTED_HOOKS, DISCONNECTED_HOOKS, HEADER, HYDRATE } from '../../costants';
 import { HostProperty } from '../../decorators/host-property/host-property.decorator';
 import { effect } from '../../signals/effect/effect';
 import { ClaimNodes } from '../../utils/claim-nodes/claim-nodes.util';
@@ -24,7 +24,7 @@ import { CustomElement } from './custom-element';
 function childrenOf(context: _Context): _Context[] {
   const children = new Array<_Context>();
   forEachChild(context, (child, list) => list.push(child), children);
-  const cleanup = context[5];
+  const cleanup = context[CLEANUP];
   const cleanups = Array.isArray(cleanup) ? cleanup : cleanup ? [cleanup] : [];
   for (let i = 0; i < cleanups.length; i++) {
     const item = cleanups[i];

@@ -141,7 +141,7 @@ describe('compile', () => {
     const { javascript, typescript } = await compile(template, { baseDir: '/base', signals: ['count'], cache: createCache() });
 
     expect(javascript).toContain('function p0$title(context) {\n  return ({count: this.count});\n}');
-    expect(javascript).toContain('_renderText(p0, context, p0$text0, null, true);');
+    expect(javascript).toContain('_renderText(p0, context, p0$text0$binding, null, true);');
     expect(javascript).toContain('function p0$text0(context) {\n  return ({count: this.count});\n}');
     expect(javascript).toContain('function p0$text2(context) {\n  return ({ a: this.count }.a);\n}');
     expect(javascript).toContain('function if1$condition(context) {\n  return ({ count: this.count }.count);\n}');
@@ -240,8 +240,8 @@ describe('compile imported symbols', () => {
     // A type is not a value at runtime
     expect(javascript).not.toContain('Row');
     // An expression reading a name is a binding, which the runtime keeps as an effect when it reads a signal
-    expect(javascript).toContain('{ name: \'title\', value: p1$title, setter: _setReactiveProperty }');
-    expect(javascript).toContain('{ name: \'data-count\', value: p1$data_count, setter: _setReactiveProperty }');
+    expect(javascript).toContain('const p1$title$binding = {\n  name: \'title\',\n  value: p1$title,\n  setter: _setReactiveProperty,\n  update: _setExpressionProperty,\n  effect: 0\n};');
+    expect(javascript).toContain('const p1$data_count$binding = {\n  name: \'data-count\',\n  value: p1$data_count,\n  setter: _setReactiveProperty,\n  update: _setExpressionProperty,\n  effect: 1\n};');
     expect(javascript).toContain('function p1$title(context) {\n  return __import_formatDate(this.d);\n}');
     expect(javascript).toContain('function p1$data_count(context) {\n  return __import_count();\n}');
     expect(javascript).toContain('function p1$on_click(context, $event) {\n  __import_track($event);\n}');
@@ -274,7 +274,7 @@ describe('compile imported symbols', () => {
     const source = '@import { item, Map } from \'./utils\'\n@for (item of items; track item) { {item} } { Map.size }';
     const { javascript } = await compile(source, { baseDir: '/base', signals: [], cache: createSymbolCache() });
 
-    expect(javascript).toContain('_read(context, 0, 7)');
+    expect(javascript).toContain('_read(context, 0, 5)');
     expect(javascript).not.toContain('__import_item');
     expect(javascript).toContain('function root$text2(context) {\n  return __import_Map.size;\n}');
   });

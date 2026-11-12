@@ -1,12 +1,11 @@
-import { _bindEffect } from '../../signals/effect/effect';
+import { _bindSite } from '../../signals/effect/effect';
 import { untracked } from '../../signals/untracked';
-import type { RenderRun } from '../../types/render-run.type';
+import type { LetBinding } from '../../types/let-binding.type';
 import type { RenderTemplateConfig } from '../../types/render-template-config.type';
-import type { TemplateExpression } from '../../types/template-expression.type';
 import type { _Template } from '../../types/template.type';
-import { COMPONENT, HEADER, PARENT } from '../../costants';
+import { COMPONENT, CONTENT, HEADER, PARENT, POSITION } from '../../costants';
 import type { _Context } from '../../types/context.type';
-import { _declare, containerSlot, getNodeStrategy, refresh, update } from '../context/context.util';
+import { _declare, blockAnchor, blockParent, containerSlot, getNodeStrategy, refresh, update } from '../context/context.util';
 import { _let } from '../let/let.util';
 
 /**
@@ -23,21 +22,20 @@ const NO_ARGUMENTS: readonly unknown[] = Object.freeze([]);
  *
  * @param context - The context of the instance.
  * @param params - The values of the arguments the `@render` passes, in the order of the parameters.
- * @param index - The position of the parameter, whose slot follows the header of the context.
- * @param id - The identifier of the parameter, unique in its template.
- * @param initializer - The expression computing the default value of the parameter, reading the parameters before it in
- *   the context of the instance: a function of the module of the template (see `TemplateExpression`).
- * @param reads - The identifiers of the variables of the template the default value reads, omitted when it reads none.
+ * @param binding - The binding of the default value: the expression computing it, reading the parameters before it in
+ *   the context of the instance, the slot of the parameter, whose position it tells, since the parameters are the first
+ *   variables of the context, and its identifier (see `LetBinding`).
  */
-export function _parameter(context: _Context, params: readonly unknown[], index: number, id: number, initializer: TemplateExpression<unknown>, reads?: readonly number[]): void {
-  const slot = HEADER + index;
+export function _parameter(context: _Context, params: readonly unknown[], binding: LetBinding): void {
+  const slot = binding.variable;
+  const index = slot - HEADER;
   if (index < params.length) {
     context[slot] = params[index];
     return;
   }
 
   _declare(context, slot, 'let');
-  _let(context, slot, id, initializer, reads);
+  _let(context, binding);
 }
 
 /**
@@ -49,7 +47,7 @@ export function _parameter(context: _Context, params: readonly unknown[], index:
  * (e.g. with the row of a `@for`). Its nodes are got with the strategy of the context rendering it: in the hydration of
  * a component, the ones the server rendered there are adopted.
  *
- * The arguments are a binding (see `_bindEffect`): they are computed again whenever a signal, or a variable of the
+ * The arguments are a binding (see `_bindSite`): they are computed again whenever a signal, or a variable of the
  * template, they read changes. The first run renders the instance, whose parameters are the values of the arguments; a
  * later one writes the values that changed into the context of the instance and refreshes it with their identifiers (see
  * `refresh`): the instance is rendered once, and only the bindings reading a parameter run again.
@@ -60,45 +58,52 @@ export function _parameter(context: _Context, params: readonly unknown[], index:
  * @param config - The `@render`, a constant of the module of the template.
  */
 export function _renderTemplate(parentNode: Element, parentContext: _Context, referenceNode: Comment | null, config: RenderTemplateConfig): void {
-  let owner = parentContext;
-  for (let i = 0; i < (config.depth ?? 0); i++) {
-    owner = owner[PARENT]!;
-  }
-
-  const run: RenderRun = { parentNode, parentContext, referenceNode, config, owner, slot: containerSlot(parentContext, config.container) };
-  _bindEffect(parentContext, runRender, run, undefined, undefined, config.reads);
+  // The instance renders before the node, or at the end of the element when there is none
+  parentContext[containerSlot(parentContext, config.container) + POSITION] = referenceNode ?? parentNode;
+  _bindSite(parentContext, config, undefined, _runRender);
 }
 
 /**
  * Computes the arguments of a `@render`, then renders its instance, or updates it: the callback of the binding of
- * {@link _renderTemplate}, shared by every `@render`. Only the arguments are tracked.
+ * {@link _renderTemplate}, shared by every `@render`, which the compiler names in the binding. Only the arguments are
+ * tracked. The instance, and where it renders, live in the container of the `@render` (see `CONTAINER_SLOTS`).
  *
- * @param run - The `@render`.
+ * @param context - The context rendering the instance.
+ * @param _target - Unused: the `@render` keeps its state in its container.
+ * @param config - The `@render`.
  */
-function runRender(run: RenderRun): void {
-  const { args } = run.config;
-  const { parentContext } = run;
-  const values = args ? args.call(parentContext[COMPONENT], parentContext) : NO_ARGUMENTS;
+export function _runRender(context: _Context, _target: unknown, config: RenderTemplateConfig): void {
+  const { args } = config;
+  const values = args ? args.call(context[COMPONENT], context) : NO_ARGUMENTS;
+  const container = containerSlot(context, config.container);
 
   // The signals read while rendering or refreshing the instance are not dependencies of the arguments
-  const instance = parentContext[run.slot] as _Context | null;
-  untracked(() => instance ? updateInstance(instance, run.config.template.parameters, values) : renderInstance(run, values));
+  const instance = context[container + CONTENT] as _Context | undefined;
+  untracked(() => instance ? updateInstance(instance, config.template.parameters, values) : renderInstance(context, config, container, values));
 }
 
 /**
  * Renders the instance of a `@render`, getting its nodes with the strategy of the context rendering it, after the
- * `<!---->` the server wrote before it, if any.
+ * `<!---->` the server wrote before it, if any. The parent of its context is the scope declaring the template, `depth`
+ * scopes up the chain of the context rendering it.
  *
- * @param run - The `@render`.
+ * @param context - The context rendering the instance.
+ * @param config - The `@render`.
+ * @param container - The first slot of the container of the `@render`.
  * @param values - The values of the arguments.
  */
-function renderInstance(run: RenderRun, values: readonly unknown[]): void {
-  const { parentNode, parentContext, config } = run;
-  const nodeStrategy = getNodeStrategy(parentContext);
-  nodeStrategy.separator(parentNode, !!config.separated);
-  parentContext[run.slot] = config.template.render(parentNode, run.owner, run.referenceNode, values, nodeStrategy);
-}
+function renderInstance(context: _Context, config: RenderTemplateConfig, container: number, values: readonly unknown[]): void {
+  let owner = context;
+  for (let i = 0; i < (config.depth ?? 0); i++) {
+    owner = owner[PARENT]!;
+  }
 
+  const position = context[container + POSITION] as Node;
+  const parentNode = blockParent(position) as Element;
+  const nodeStrategy = getNodeStrategy(context);
+  nodeStrategy.separator(parentNode, !!config.separated);
+  context[container + CONTENT] = config.template.render(parentNode, owner, blockAnchor(position), values, nodeStrategy);
+}
 /**
  * Writes the new values of the arguments into the parameters of an instance, the slots following its header, then
  * refreshes it with the identifiers of the ones that changed, if any.

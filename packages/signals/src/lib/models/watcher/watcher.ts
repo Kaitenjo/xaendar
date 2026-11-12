@@ -5,7 +5,7 @@ import { State } from '../state/state';
 import { WatcherState } from '../../types/watcher-state.type';
 import { Computed } from '../computed/computed';
 import { isDevMode } from '../../utils/dev-mode/dev-mode';
-import { addToSmallSet, deleteFromSmallSet, emptySmallSet, SmallSet, smallSetHas, smallSetSize } from '@xaendar/common';
+import { addToSmallSet, deleteFromSmallSet, emptySmallSet, forEachInSmallSet, SmallSet, smallSetHas, smallSetSize, smallSetToArray } from '@xaendar/common';
 
 /**
  * A `Watcher` observes a set of Signals and fires a `notify` callback
@@ -47,7 +47,7 @@ export class Watcher {
    */
   public getSources(symbol: symbol): (State<unknown> | Computed<unknown>)[] {
     assertPrivateContext(symbol);
-    return [...this.#signals];
+    return smallSetToArray(this.#signals);
   }
   /**
    * The callback invoked synchronously when a watched Signal (or one of its
@@ -93,18 +93,7 @@ export class Watcher {
    */
   public getPending(): Computed<unknown>[] {
     const filteredSignals = new Array<Computed<unknown>>();
-
-    for (const signal of this.#signals) {
-      if (!(signal instanceof Computed)) {
-        continue;
-      }
-
-      const state = signal.getState(PRIVATE);
-      if (state === 'dirty' || state === 'checked') {
-        filteredSignals.push(signal);
-      }
-    }
-
+    forEachInSmallSet(this.#signals, collectPending, filteredSignals);
     return filteredSignals;
   }
 
@@ -257,6 +246,22 @@ export class Watcher {
         return to === 'pending' || to === 'waiting';
       case 'pending':
         return to === 'waiting';
+    }
+  }
+}
+
+/**
+ * Collects a watched Signal that may hold a stale value: a `Computed` in a `~dirty~` or `~checked~` state (see
+ * `Watcher.getPending`).
+ *
+ * @param signal - The watched Signal.
+ * @param pending - The Signals collected.
+ */
+function collectPending(signal: State<unknown> | Computed<unknown>, pending: Computed<unknown>[]): void {
+  if (signal instanceof Computed) {
+    const state = signal.getState(PRIVATE);
+    if (state === 'dirty' || state === 'checked') {
+      pending.push(signal);
     }
   }
 }

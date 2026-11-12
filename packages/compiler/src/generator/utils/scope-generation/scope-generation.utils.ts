@@ -8,7 +8,7 @@ import type { GeneratorTransitionFunctionReturnType } from '../../types/generato
 import type { ResolveExpressionOptions } from '../../types/resolve-expresion-options.type';
 import { isConstantExpression, resolveExpression } from '../generator/generator.utils';
 import type { TemplateFunctionFactory } from '../../types/template-function-factory.type';
-import { declareExpression, toArrayLiteral, toObjectLiteral, toRoleName } from '../module-code/module-code.utils';
+import { declareLetBinding, toArrayLiteral, toObjectLiteral, toRoleName } from '../module-code/module-code.utils';
 
 /**
  * Declares the element refs, the templates and the `@let` of a scope: registers them in its generator context, so
@@ -111,9 +111,7 @@ export function declareTemplateParameters({ parameters }: TemplateNode, key: str
       continue;
     }
 
-    const reads = context.getReads(variables);
-    const initial = declareExpression(context, `${key}$${toRoleName(name)}`, expression);
-    lines.push(`_parameter(context, params, ${i}, ${id}, ${initial}${reads ? `, ${reads}` : ''});`);
+    lines.push(`_parameter(context, params, ${declareLetBinding(context, `${key}$${toRoleName(name)}`, expression, slot, id, variables)});`);
   }
 
   return lines;

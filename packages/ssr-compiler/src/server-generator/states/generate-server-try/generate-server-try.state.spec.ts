@@ -15,7 +15,7 @@ describe('generateServerTry', () => {
     expect(functionsToProcess!.get('ul0__try2')).toMatchObject({ fn: { node, parent: { id: 'ul0__try2', tag: 'ul' } }, args: ['out', 'parentContext'] });
 
     const fallback = functionsToProcess!.get('ul0__catch2')!;
-    expect(fallback).toMatchObject({ fn: { node: node.catch, parent: { id: 'ul0__catch2', tag: 'ul' }, precode: 'context[7] = error;' }, args: ['out', 'parentContext', 'error'] });
+    expect(fallback).toMatchObject({ fn: { node: node.catch, parent: { id: 'ul0__catch2', tag: 'ul' }, precode: 'context[5] = error;' }, args: ['out', 'parentContext', 'error'] });
     expect(fallback.fn.context.getIdentifierKind('failure')).toBe('value');
   });
 

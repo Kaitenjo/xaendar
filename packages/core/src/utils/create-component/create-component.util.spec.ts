@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { CLEANUP } from '../../costants';
 import type { Constructor } from '@xaendar/types';
 import type { Aliased } from '../../signals/types/aliased.type';
 import type { InputSignal } from '../../signals/types/input-signal.type';
@@ -27,7 +28,7 @@ const { _createComponent } = await import('./create-component.util');
 function childrenOf(context: _Context): _Context[] {
   const children = new Array<_Context>();
   forEachChild(context, (child, list) => list.push(child), children);
-  const cleanup = context[5];
+  const cleanup = context[CLEANUP];
   const cleanups = Array.isArray(cleanup) ? cleanup : cleanup ? [cleanup] : [];
   for (let i = 0; i < cleanups.length; i++) {
     const item = cleanups[i];

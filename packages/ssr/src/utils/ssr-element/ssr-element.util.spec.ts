@@ -14,9 +14,9 @@ await vi.hoisted(async () => {
 const { _scope, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty, CustomElement, HostProperty, Property } = await import('@xaendar/core');
 
 /**
- * The layout of a scope holding its header alone, whose 8 slots the runtime reserves.
+ * The layout of a scope holding its header alone, whose 5 slots the runtime reserves.
  */
-const EMPTY_LAYOUT: _ScopeLayout = { size: 8, nodes: 8 };
+const EMPTY_LAYOUT: _ScopeLayout = { size: 5, nodes: 5 };
 type RenderConditionalBinding = import('@xaendar/core').RenderConditionalBinding<ServerBindings>;
 const { _defineServerRender } = await import('../server-render-registry/server-render-registry.util');
 const { _ssrClientComponent, _ssrComponent, _ssrStartTag } = await import('./ssr-element.util');

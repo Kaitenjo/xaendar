@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { HEADER, LAYOUT } from '../../costants';
+import { CLEANUP, HEADER, LAYOUT } from '../../costants';
 import type { _Context } from '../../types/context.type';
 import type { RenderTemplateConfig } from '../../types/render-template-config.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
@@ -29,7 +29,7 @@ const nodesOf = (context: _Context): Node[] => context.slice(context[LAYOUT].nod
 function childrenOf(context: _Context): _Context[] {
   const children = new Array<_Context>();
   forEachChild(context, (child, list) => list.push(child), children);
-  const cleanup = context[5];
+  const cleanup = context[CLEANUP];
   const cleanups = Array.isArray(cleanup) ? cleanup : cleanup ? [cleanup] : [];
   for (let i = 0; i < cleanups.length; i++) {
     const item = cleanups[i];
@@ -101,8 +101,8 @@ function createTemplate() {
 describe('_parameter', () => {
   it('writes the value of the argument when the @render passes it, also as undefined, in the slot of the parameter', () => {
     const context = _scope(null, layoutOf('first', 'second'));
-    _parameter(context, ['a', undefined], 0, 0, () => 'default');
-    _parameter(context, ['a', undefined], 1, 1, () => 'default');
+    _parameter(context, ['a', undefined], { variable: HEADER, id: 0, value: () => 'default' });
+    _parameter(context, ['a', undefined], { variable: HEADER + 1, id: 1, value: () => 'default' });
 
     expect(context[HEADER]).toBe('a');
     expect(context[HEADER + 1]).toBeUndefined();
@@ -111,7 +111,7 @@ describe('_parameter', () => {
   it('declares the default value when the @render leaves the argument out, computed again when a parameter it reads changes', () => {
     const context = _scope(null, layoutOf('item', 'label'));
     context[HEADER] = 'a';
-    _parameter(context, ['a'], 1, 1, scope => `${String(scope[HEADER])}!`, [0]);
+    _parameter(context, ['a'], { variable: HEADER + 1, id: 1, value: scope => `${String(scope[HEADER])}!`, reads: [0] });
     expect(context[HEADER + 1]).toBe('a!');
 
     update(context, HEADER, 'b');
@@ -123,7 +123,7 @@ describe('_parameter', () => {
   it('computes the default value again when a signal it reads changes', async () => {
     const suffix = signal('!');
     const context = _scope(null, layoutOf('label'));
-    _parameter(context, [], 0, 0, () => `a${suffix()}`);
+    _parameter(context, [], { variable: HEADER, id: 0, value: () => `a${suffix()}` });
 
     suffix.set('?');
     await flush();

@@ -6,7 +6,7 @@ import type { GeneratorFunctionToProcess } from '../../types/generator-function-
 import { getReadForVariables, writeIterationVariables } from '../../utils/for-reads/for-reads.utils';
 import { getBlockIdentifier, getTextIdentifier, joinVariables, resolveExpression } from '../../utils/generator/generator.utils';
 import { allocateBlockSlot, appendBlockPosition, appendContainer } from '../../utils/block-position/block-position.utils';
-import { declareExpression, toObjectLiteral } from '../../utils/module-code/module-code.utils';
+import { declareExpression } from '../../utils/module-code/module-code.utils';
 
 /**
  * Generates code for a `@for` iteration node.
@@ -22,7 +22,7 @@ import { declareExpression, toObjectLiteral } from '../../utils/module-code/modu
  * ```javascript
  * // @for (row of rows(); track row.id; i = $index) { <td>{ i } { row.name }</td> }
  * const for0Variables = { used: ['item', '$index'], ids: [0, 1] };
- * const for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables };
+ * const for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables, update: _runFor, effect: 0 };
  *
  * _for(parent, context, null, for0$for);
  *
@@ -32,7 +32,7 @@ import { declareExpression, toObjectLiteral } from '../../utils/module-code/modu
  * function for0(for0, parentContext, items0, i0, anchor, nodeStrategy) {
  *   const context = _scope(parentContext, _layout0, nodeStrategy);
  *   _iterationVariables(context, items0, i0, for0Variables);
- *   // ... child nodes, reading _read(context, 0, 9) and _read(context, 0, 8)
+ *   // ... child nodes, reading _read(context, 0, 6) and _read(context, 0, 5)
  *   return context;
  * }
  * ```
@@ -137,7 +137,7 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
 
   appendBlockPosition(members, last, allocateBlockSlot(generatorContext, last));
   appendContainer(members, generatorContext);
-  const config = generatorContext.declareConstant(`${forKey}$for`, toObjectLiteral(members));
+  const config = generatorContext.declareBinding(`${forKey}$for`, members, '_runFor', false)!;
   retVal.code.push(`_for(${parentNode}, context, ${anchor}, ${config});`);
 
   return retVal

@@ -1,11 +1,14 @@
-import { CLEANUP, COMPONENT, HEADER, LAYOUT, PARENT, PARENT_NODE, STATE, STRATEGY } from '../../costants';
+import { CLEANUP, COMPONENT, CONTAINER_SLOTS, CONTENT, HEADER, KEYS, LAYOUT, PARENT, PARENT_NODE } from '../../costants';
 import { _runBinding } from '../../models/effect/effect';
 import type { Binding } from '../../types/binding.type';
+import type { BindingSite } from '../../types/binding-site.type';
 import type { Cleanup } from '../../types/cleanup.type';
 import type { Container } from '../../types/container.type';
 import type { _Context } from '../../types/context.type';
 import type { _DeclarationKind } from '../../types/declaration-kind.type';
 import type { Effect } from '../../types/effect.type';
+import type { Branch } from '../../types/if/branch.type';
+import type { InlineBranch } from '../../types/inline-branch.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
@@ -36,7 +39,7 @@ export const ELEMENT_LAYOUT: _ScopeLayout = Object.freeze({ size: HEADER + 1, no
  * The layout of the scope of an element structural directives are applied to: the element, then the container of the
  * scope its content creates, when it declares names or renders blocks (see `renderElementChildren`).
  */
-export const STRUCTURAL_LAYOUT: _ScopeLayout = Object.freeze({ size: HEADER + 2, nodes: HEADER, containers: HEADER + 1 });
+export const STRUCTURAL_LAYOUT: _ScopeLayout = Object.freeze({ size: HEADER + 1 + CONTAINER_SLOTS, nodes: HEADER, containers: HEADER + 1 });
 
 /**
  * The identifiers of the variables changed in the refresh running (see {@link refresh}), the ones of the scopes
@@ -48,15 +51,58 @@ export const STRUCTURAL_LAYOUT: _ScopeLayout = Object.freeze({ size: HEADER + 2,
 let changedIds: readonly number[] | null = null;
 
 /**
- * The refresh running (see {@link refresh}): the scopes refreshed by it, and the ones it creates, which render with the
- * values already changed, are marked with it, so that none is refreshed twice. `0` while none runs.
+ * Whether a refresh is running (see {@link refresh}): the scopes it creates join {@link refreshedScopes}.
  */
-let currentPass = 0;
+let refreshing = false;
 
 /**
- * The number of refreshes run so far, numbering the next one.
+ * The scopes the refresh running refreshed, and the ones it created, which render with the values already changed: none
+ * is refreshed twice. Emptied once the outermost refresh is done.
+ *
+ * N.B. Deliberate, to save memory: a set of the module, alive only while a refresh runs, instead of a slot of every scope
+ * holding the number of the last refresh, which every scope paid, the rows of a table included, though only a refresh
+ * reads it. Do not give the scopes a slot for it again.
  */
-let passCount = 0;
+const refreshedScopes = new Set<_Context>();
+
+/**
+ * The strategies getting the nodes of the scopes adopting the nodes of the server (see {@link getNodeStrategy}): a scope
+ * creating its nodes, nearly every scope and every scope once the hydration ends, has none.
+ *
+ * N.B. Deliberate, to save memory: a strategy other than creating the nodes lives only while a hydration runs, so it is
+ * kept by a map of the module, weak, so that a scope dropped meanwhile is not kept alive, instead of a slot of every
+ * scope, which every scope paid for the whole life of the page. Do not give the scopes a slot for it again.
+ */
+const strategies = new WeakMap<_Context, NodeStrategy>();
+
+/**
+ * The number of scopes {@link strategies} holds a strategy for, as far as it was told: `0` once every hydration has
+ * ended, so that a scope gets its strategy without a lookup. A scope dropped without being cleared keeps it above `0`,
+ * which costs a lookup, never a wrong strategy.
+ */
+let strategyCount = 0;
+
+/**
+ * The scope a branch is being rendered inline into (see {@link renderInline}), `null` while none is: the nodes, the
+ * bindings and the cleanups rendered into it go to the slots of the branch, and its nodes are got with the strategy of
+ * the branch.
+ *
+ * N.B. Deliberate, to save memory: rendering is synchronous, so the branch being rendered travels through three
+ * variables of the module, checked against the scope every helper receives, instead of an argument every helper and
+ * every function of the template would take, or a scope of its own for the branch. A component rendered by the branch
+ * renders into scopes of its own, which are never this one. Do not pass the branch down the calls.
+ */
+let inlineScope: _Context | null = null;
+
+/**
+ * The branch being rendered inline into {@link inlineScope}.
+ */
+let inlineBranch: InlineBranch | null = null;
+
+/**
+ * The strategy getting the nodes of the branch being rendered inline into {@link inlineScope}.
+ */
+let inlineStrategy: NodeStrategy = CREATE_NODES;
 
 /**
  * Creates the scope of an instance of a block: an array of the exact length of its layout, holding its header, then
@@ -76,12 +122,20 @@ export function _scope(parent: _Context | null, layout: _ScopeLayout, nodeStrate
   const scope = new Array(layout.size) as _Context;
   scope[PARENT] = parent;
   scope[PARENT_NODE] = null;
-  // Created by a refresh running, the scope renders with the values already changed
-  scope[STATE] = currentPass;
   scope[COMPONENT] = component === undefined ? parent?.[COMPONENT] : component;
-  scope[STRATEGY] = nodeStrategy === undefined ? parent?.[STRATEGY] ?? null : toStrategySlot(nodeStrategy);
   scope[CLEANUP] = null;
   scope[LAYOUT] = layout;
+  // A strategy other than creating the nodes is the one of a hydration, inherited by the scopes created while it runs
+  const strategy = nodeStrategy ?? (strategyCount && parent ? strategies.get(parent) : undefined);
+  if (strategy) {
+    setStrategy(scope, strategy);
+  }
+
+  // Created by a refresh running, the scope renders with the values already changed
+  if (refreshing) {
+    refreshedScopes.add(scope);
+  }
+
   captureContext(scope);
   return scope;
 }
@@ -184,14 +238,18 @@ export function propagate(scope: _Context, id: number): void {
  */
 export function refresh(scope: _Context, ids: readonly number[]): void {
   const outerIds = changedIds;
-  const outerPass = currentPass;
+  const outer = refreshing;
   changedIds = outerIds ? outerIds.concat(ids) : ids;
-  currentPass = outerPass || ++passCount;
+  refreshing = true;
   try {
     refreshScope(scope);
   } finally {
     changedIds = outerIds;
-    currentPass = outerPass;
+    refreshing = outer;
+    // The outermost refresh is done: the next one refreshes every scope again
+    if (!outer) {
+      refreshedScopes.clear();
+    }
   }
 }
 
@@ -204,7 +262,124 @@ export function refresh(scope: _Context, ids: readonly number[]): void {
  * @returns The slot.
  */
 export function containerSlot(scope: _Context, container = 0): number {
-  return scope[LAYOUT].containers! + container;
+  return scope[LAYOUT].containers! + CONTAINER_SLOTS * container;
+}
+
+/**
+ * Returns the node a block renders into, from the slot of its container telling where it renders (see `POSITION`).
+ *
+ * @param position - The anchor of the block, or the node it renders into, for the last block of its parent.
+ * @returns The node.
+ */
+export function blockParent(position: Node): Node {
+  return position.nodeType === Node.COMMENT_NODE ? position.parentNode! : position;
+}
+
+/**
+ * Returns the node the content of a block is inserted before, from the slot of its container telling where it renders
+ * (see `POSITION`).
+ *
+ * @param position - The anchor of the block, or the node it renders into, for the last block of its parent.
+ * @returns The anchor, `null` for the last block of its parent, whose content is appended to it.
+ */
+export function blockAnchor(position: Node): Comment | null {
+  return position.nodeType === Node.COMMENT_NODE ? position as Comment : null;
+}
+
+/**
+ * Renders a branch of an `@if` or of a `@switch` inline into the scope holding the block (see `InlineBranch`): while it
+ * renders, the nodes at its top, its bindings and its cleanups go to the slots of the branch, and its nodes are got with
+ * the given strategy.
+ *
+ * @param scope - The scope holding the block.
+ * @param branch - The branch.
+ * @param parentNode - The node the block renders into.
+ * @param anchor - The node the branch is inserted before, `null` to append it.
+ * @param nodeStrategy - The strategy getting the nodes of the branch.
+ * @throws The error of the render of the branch.
+ */
+export function renderInline(scope: _Context, branch: Branch & InlineBranch, parentNode: HTMLElement, anchor: Node | null, nodeStrategy: NodeStrategy): void {
+  const previousScope = inlineScope;
+  const previousBranch = inlineBranch;
+  const previousStrategy = inlineStrategy;
+  inlineScope = scope;
+  inlineBranch = branch;
+  inlineStrategy = nodeStrategy;
+  try {
+    branch.block(parentNode, scope, anchor, nodeStrategy);
+  } finally {
+    inlineScope = previousScope;
+    inlineBranch = previousBranch;
+    inlineStrategy = previousStrategy;
+  }
+}
+
+/**
+ * Returns the slot the slots of the bindings rendered into a scope are counted from (see `BindingSite`): the first slot
+ * of the bindings of its layout, or the first slot of the branch being rendered inline into it.
+ *
+ * @param scope - The scope.
+ * @returns The slot.
+ */
+export function bindingsBase(scope: _Context): number {
+  return scope === inlineScope ? inlineBranch!.base : scope[LAYOUT].bindings!;
+}
+
+/**
+ * Empties the slots of a branch rendered inline (see `InlineBranch`), as {@link clear} empties a scope: removes its
+ * nodes from the node they are inserted into, from the last to the first, disposes the effects of its bindings, then
+ * runs its cleanups.
+ *
+ * @param scope - The scope holding the block.
+ * @param branch - The branch.
+ * @param detach - Whether the nodes are removed from the DOM.
+ * @param parentNode - The node the nodes are removed from, only if they are still there: `null` to remove them from the
+ *   one they are inserted into, as a scope tracking no node does.
+ */
+export function clearInline(scope: _Context, branch: InlineBranch, detach: boolean, parentNode: Node | null): void {
+  const { base, nodes, sites, cleanup } = branch;
+  if (detach) {
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const node = scope[base + nodes[i]] as Node | null | undefined;
+      const current = node?.parentNode;
+      if (current && (parentNode === null || current === parentNode)) {
+        current.removeChild(node!);
+      }
+    }
+  }
+
+  if (sites) {
+    disposeSites(scope, sites, base);
+  }
+
+  if (cleanup !== undefined) {
+    runCleanups(scope[base + cleanup] as Cleanup | Cleanup[] | undefined);
+  }
+
+  // Emptied as created: a binding not bound yet is passed over by a refresh
+  scope.fill(undefined, base, base + branch.size);
+}
+
+/**
+ * Visits the branches rendered inline into a scope (see `InlineBranch`), in the order of the containers of their blocks.
+ *
+ * @template Argument - What the visit receives besides the scope and the branch.
+ * @param scope - The scope.
+ * @param visit - The visit, a function of a module, never a closure.
+ * @param argument - What the visit receives besides the scope and the branch.
+ */
+export function forEachInline<Argument>(scope: _Context, visit: (scope: _Context, branch: InlineBranch, argument: Argument) => void, argument: Argument): void {
+  const { containers } = scope[LAYOUT];
+  if (containers === undefined) {
+    return;
+  }
+
+  for (let i = containers; i < scope.length; i += CONTAINER_SLOTS) {
+    const content = scope[i + CONTENT] as Container;
+    if (isInline(content)) {
+      visit(scope, content, argument);
+    }
+  }
 }
 
 /**
@@ -222,27 +397,30 @@ export function forEachChild<Argument>(scope: _Context, visit: (child: _Context,
     return;
   }
 
-  for (let i = containers; i < scope.length; i++) {
-    const container = scope[i] as Container;
-    if (isScope(container)) {
-      visit(container, argument);
-    } else if (container?.rows) {
-      const { rows } = container;
+  for (let i = containers; i < scope.length; i += CONTAINER_SLOTS) {
+    const content = scope[i + CONTENT] as Container;
+    // The keys tell a @for, whose content is the list of its rows, from a block showing a scope
+    if (Array.isArray(scope[i + KEYS])) {
+      const rows = content as readonly _Context[];
       for (let j = 0; j < rows.length; j++) {
         visit(rows[j], argument);
       }
+    } else if (Array.isArray(content)) {
+      visit(content as _Context, argument);
     }
   }
 }
 
 /**
- * Returns the slot after the last node at the top of the block of a scope: the first container, or the end of the scope.
+ * Returns the slot after the last node at the top of the block of a scope: the first binding, the first container, or
+ * the end of the scope.
  *
  * @param scope - The scope.
  * @returns The slot.
  */
 export function nodesEnd(scope: _Context): number {
-  return scope[LAYOUT].containers ?? scope.length;
+  const layout = scope[LAYOUT];
+  return layout.bindings ?? layout.containers ?? scope.length;
 }
 
 /**
@@ -258,11 +436,19 @@ export function nodesEnd(scope: _Context): number {
  * @param node - The node to track.
  * @param parentNode - The node the node is inserted into: the same for every node a scope tracks.
  * @param scope - The scope owning the node.
+ * A node at the top of a branch rendered inline (see {@link renderInline}) is kept in the slot of the branch, counted
+ * from its first one: it is inserted into the node of the block, not the one of the scope.
+ *
  * @param slot - The slot of the node in the scope, `undefined` for a node no scope tracks.
  * @throws In development, when the scope tracks nodes inserted into another node.
  */
 export function trackNode(node: Node, parentNode: Node, scope: _Context, slot: number | undefined): void {
-  if (!slot) {
+  if (slot === undefined) {
+    return;
+  }
+
+  if (scope === inlineScope) {
+    scope[inlineBranch!.base + slot] = node;
     return;
   }
 
@@ -280,18 +466,19 @@ export function trackNode(node: Node, parentNode: Node, scope: _Context, slot: n
  * Registers what a scope runs or disposes when it is cleared: a function is called, an object, as an effect, is disposed
  * with its `dispose()`, so that it is registered without a closure calling it, and a binding reading variables of the
  * template has its effect, if any, disposed, and runs again when the scope is refreshed with one of them (see
- * {@link refresh}).
+ * {@link refresh}). The cleanups of a branch rendered inline (see {@link renderInline}) go to the slot of the branch.
  *
  * @param scope - The scope.
  * @param cleanup - The cleanup to register.
  */
 export function addCleanup(scope: _Context, cleanup: Cleanup): void {
-  const current = scope[CLEANUP];
+  const slot = scope === inlineScope ? inlineBranch!.base + inlineBranch!.cleanup! : CLEANUP;
+  const current = scope[slot] as Cleanup | Cleanup[] | null | undefined;
   if (Array.isArray(current)) {
     current.push(cleanup);
   } else {
     // The second cleanup gets an array of exactly two items: a push into an empty array would reserve room for many more
-    scope[CLEANUP] = current ? [current, cleanup] : cleanup;
+    scope[slot] = current ? [current, cleanup] : cleanup;
   }
 }
 
@@ -315,13 +502,19 @@ export function removeCleanup(scope: _Context, cleanup: Cleanup): void {
 }
 
 /**
- * Returns how the nodes rendered in a scope are got.
+ * Returns how the nodes rendered in a scope are got: the strategy of the branch, while one is rendered inline into it
+ * (see {@link renderInline}).
  *
  * @param scope - The scope.
  * @returns The strategy.
  */
 export function getNodeStrategy(scope: _Context): NodeStrategy {
-  return scope[STRATEGY] ?? CREATE_NODES;
+  if (scope === inlineScope) {
+    return inlineStrategy;
+  }
+
+  // No hydration running: every scope creates its nodes
+  return strategyCount ? strategies.get(scope) ?? CREATE_NODES : CREATE_NODES;
 }
 
 /**
@@ -332,7 +525,7 @@ export function getNodeStrategy(scope: _Context): NodeStrategy {
  * @param nodeStrategy - The strategy.
  */
 export function setNodeStrategy(scope: _Context, nodeStrategy: NodeStrategy): void {
-  scope[STRATEGY] = toStrategySlot(nodeStrategy);
+  setStrategy(scope, nodeStrategy);
   const cleanup = scope[CLEANUP];
   if (Array.isArray(cleanup)) {
     for (let i = 0; i < cleanup.length; i++) {
@@ -353,7 +546,11 @@ export function setNodeStrategy(scope: _Context, nodeStrategy: NodeStrategy): vo
  * @param nodeStrategy - The strategy.
  */
 export function swapNodeStrategy(scope: _Context, nodeStrategy: NodeStrategy): void {
-  scope[STRATEGY] = toStrategySlot(nodeStrategy);
+  if (scope === inlineScope) {
+    inlineStrategy = nodeStrategy;
+  } else {
+    setStrategy(scope, nodeStrategy);
+  }
 }
 
 /**
@@ -389,7 +586,9 @@ export function moveTo(scope: _Context, target: _Context): void {
  * The scopes of its containers are cleared after the cleanups, the ones of a `@for` in the order of their rows, each one
  * removing its own nodes when nothing removes them already (see {@link clearChild}): only the highest scope cleared
  * removes the nodes at its top, and the child scopes whose nodes are beside them, while the nodes inside them go with
- * them. The scopes its cleanups hold (see `ScopeHolder`) are cleared with the cleanups.
+ * them. The scopes its cleanups hold (see `ScopeHolder`) are cleared with the cleanups. The branches rendered inline
+ * into it are emptied with the scopes of the containers, as the scopes of their own they stand for were: their nodes
+ * are removed when they are beside the ones of the scope, or when it tracks none.
  *
  * @param scope - The scope.
  * @param detach - Whether the nodes are removed from the DOM. Defaults to `true`.
@@ -409,19 +608,34 @@ export function clear(scope: _Context, detach = true): void {
     }
   }
 
-  const cleanup = scope[CLEANUP];
-  if (Array.isArray(cleanup)) {
-    for (let i = 0; i < cleanup.length; i++) {
-      runCleanup(cleanup[i]);
-    }
-  } else if (cleanup) {
-    runCleanup(cleanup);
+  const { sites, bindings, containers } = scope[LAYOUT];
+  if (sites) {
+    disposeSites(scope, sites, bindings!);
   }
 
-  forEachChild(scope, clearChild, detach ? scope : null);
+  runCleanups(scope[CLEANUP]);
+  if (containers !== undefined) {
+    const holder = detach ? scope : null;
+    for (let i = containers; i < scope.length; i += CONTAINER_SLOTS) {
+      const content = scope[i + CONTENT] as Container;
+      if (Array.isArray(scope[i + KEYS])) {
+        const rows = content as readonly _Context[];
+        for (let j = 0; j < rows.length; j++) {
+          clearChild(rows[j], holder);
+        }
+      } else if (Array.isArray(content)) {
+        clearChild(content as _Context, holder);
+      } else if (isInline(content)) {
+        clearInline(scope, content, detach, parentNode);
+      }
+    }
+  }
+
   scope[PARENT_NODE] = null;
   scope[CLEANUP] = null;
   scope.fill(null, HEADER);
+  // A scope adopting nodes, cleared while the hydration runs, is not kept by the map of the strategies
+  setStrategy(scope, CREATE_NODES);
 }
 
 /**
@@ -463,13 +677,59 @@ export function createAnchor(label: string, parentNode: Node, scope: _Context, r
 }
 
 /**
- * Tells whether a container holds a scope, an array, rather than the run of a `@for` or nothing.
+ * Tells whether a container holds a branch rendered inline, an object, rather than a scope, the rows of a `@for`, which
+ * are arrays, or nothing.
  *
- * @param container - The container.
- * @returns `true` for a scope.
+ * @param content - What the container holds.
+ * @returns `true` for a branch rendered inline.
  */
-function isScope(container: Container): container is _Context {
-  return Array.isArray(container);
+function isInline(content: Container): content is InlineBranch {
+  return !!content && !Array.isArray(content);
+}
+
+/**
+ * Disposes the effects of the bindings a scope keeps in its slots (see `BindingSite`).
+ *
+ * @param scope - The scope.
+ * @param sites - The bindings.
+ * @param base - The slot their slots are counted from.
+ */
+function disposeSites(scope: _Context, sites: readonly BindingSite[], base: number): void {
+  for (let i = 0; i < sites.length; i++) {
+    (scope[base + sites[i].effect!] as Effect | null | undefined)?.dispose();
+  }
+}
+
+/**
+ * Runs the cleanups of a slot holding them (see {@link addCleanup}).
+ *
+ * @param cleanup - What the slot holds: a single cleanup, an array of them from the second, nothing.
+ */
+function runCleanups(cleanup: Cleanup | Cleanup[] | null | undefined): void {
+  if (Array.isArray(cleanup)) {
+    for (let i = 0; i < cleanup.length; i++) {
+      runCleanup(cleanup[i]);
+    }
+  } else if (cleanup) {
+    runCleanup(cleanup);
+  }
+}
+
+/**
+ * Runs again the bindings a scope keeps in its slots reading a variable changed in the refresh running, reading the
+ * identifiers at each binding: the ones a `@let` adds while the scope runs reach the bindings after it.
+ *
+ * @param scope - The scope.
+ * @param sites - The bindings, in the order they were rendered.
+ * @param base - The slot their slots are counted from.
+ */
+function refreshSites(scope: _Context, sites: readonly BindingSite[], base: number): void {
+  for (let i = 0; i < sites.length; i++) {
+    const site = sites[i];
+    if (site.reads && readsAny(site.reads, changedIds!)) {
+      rerunSite(scope, site, base);
+    }
+  }
 }
 
 /**
@@ -504,13 +764,22 @@ function throwUninitialized(scope: _Context, slot: number, value: unknown): neve
 }
 
 /**
- * Turns a strategy into the value of the slot holding it: `null` for `CREATE_NODES`.
+ * Keeps the strategy of a scope (see {@link strategies}): a strategy other than creating the nodes is kept, creating the
+ * nodes drops the one kept, if any.
  *
+ * @param scope - The scope.
  * @param nodeStrategy - The strategy.
- * @returns The value of the slot.
  */
-function toStrategySlot(nodeStrategy: NodeStrategy): NodeStrategy | null {
-  return nodeStrategy === CREATE_NODES ? null : nodeStrategy;
+function setStrategy(scope: _Context, nodeStrategy: NodeStrategy): void {
+  if (nodeStrategy !== CREATE_NODES) {
+    if (!strategies.has(scope)) {
+      strategyCount++;
+    }
+
+    strategies.set(scope, nodeStrategy);
+  } else if (strategies.delete(scope)) {
+    strategyCount--;
+  }
 }
 
 /**
@@ -552,7 +821,12 @@ function setHeldNodeStrategy(cleanup: Cleanup, nodeStrategy: NodeStrategy): void
  */
 function refreshScope(scope: _Context): void {
   const ids = changedIds!;
-  scope[STATE] = currentPass;
+  refreshedScopes.add(scope);
+  const { sites, bindings, containers } = scope[LAYOUT];
+  if (sites) {
+    refreshSites(scope, sites, bindings!);
+  }
+
   const cleanup = scope[CLEANUP];
   if (Array.isArray(cleanup)) {
     for (let i = 0; i < cleanup.length; i++) {
@@ -563,7 +837,22 @@ function refreshScope(scope: _Context): void {
   }
 
   // The containers are read when their turn comes: a binding run again may have shown another branch, or other rows
-  forEachChild(scope, refreshChild, undefined);
+  if (containers !== undefined) {
+    for (let i = containers; i < scope.length; i += CONTAINER_SLOTS) {
+      const content = scope[i + CONTENT] as Container;
+      if (Array.isArray(scope[i + KEYS])) {
+        const rows = content as readonly _Context[];
+        for (let j = 0; j < rows.length; j++) {
+          refreshChild(rows[j]);
+        }
+      } else if (Array.isArray(content)) {
+        refreshChild(content as _Context);
+      } else if (isInline(content) && content.sites) {
+        refreshSites(scope, content.sites, content.base);
+      }
+    }
+  }
+
   changedIds = ids;
 }
 
@@ -573,7 +862,7 @@ function refreshScope(scope: _Context): void {
  * @param child - The scope.
  */
 function refreshChild(child: _Context): void {
-  if (child[STATE] !== currentPass) {
+  if (!refreshedScopes.has(child)) {
     refreshScope(child);
   }
 }
@@ -654,4 +943,34 @@ function rerunBinding(binding: Binding): void {
 
   binding.effect?.dispose();
   binding.effect = effect;
+}
+
+/**
+ * Runs again a binding a scope keeps in its slots (see `BindingSite`), with its target and the current values of the
+ * variables, as {@link rerunBinding} does: its previous effect, if any, is disposed. A binding not bound yet, whose
+ * effect slot is still empty, is passed over: its first run reads the current values.
+ *
+ * @param scope - The scope.
+ * @param site - The binding.
+ * @param base - The first slot of the bindings of the scope.
+ */
+function rerunSite(scope: _Context, site: BindingSite, base: number): void {
+  const slot = base + site.effect!;
+  const previous = scope[slot] as Effect | null | undefined;
+  if (previous === undefined) {
+    return;
+  }
+
+  let effect: Effect | null;
+  try {
+    effect = _runBinding(site.update!, scope, site.target === undefined ? undefined : scope[base + site.target], site);
+  } catch (error) {
+    queueMicrotask(() => {
+      throw error;
+    });
+    return;
+  }
+
+  previous?.dispose();
+  scope[slot] = effect;
 }

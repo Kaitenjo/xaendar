@@ -429,6 +429,39 @@ describe('hydration', () => {
     expect(console.warn).toHaveBeenCalledWith(`Xaendar: the server rendered in <${tag('client', 'panel')}> <!--xd-if:0--> where the browser renders <!--xd-if:1-->, which it renders again`);
   });
 
+  it('adopts the nodes of a branch rendered inline, which creates no context, and keeps them reactive, or renders it again where the server rendered another one', async () => {
+    /**
+     * A list whose rows show a branch rendered inline, another one in the browser for the second row.
+     */
+    class Flags extends CustomElement {
+      public rows = signal([{ id: 1, on: true, label: 'a' }, { id: 2, on: onServer, label: 'b' }]);
+      public mark = signal('!');
+    }
+    const flags = await register('flags', Flags, () => '<ul>@for (row of rows(); track row.id) {<li>@if (row.on) {<b title="{ mark() }">{ row.label }</b>} @else {<i>{ row.label }{ mark() }</i>}</li>}</ul>', ['rows', 'mark']);
+    const host = load(await renderToString(flags.Server));
+    const root = host.shadowRoot!;
+    const [first, second] = Array.from(root.querySelectorAll('li > *'));
+
+    onServer = false;
+    flags.define();
+
+    // The first row adopts its branch, the second one renders the other branch again
+    const items = Array.from(root.querySelectorAll('li'));
+    expect(items[0].firstChild).toBe(first);
+    expect(items[0].innerHTML).toBe('<b title="!">a</b>');
+    expect(items[1].firstChild).not.toBe(second);
+    expect(items[1].innerHTML).toBe('<i>b!</i>');
+    expect(console.warn).toHaveBeenCalledOnce();
+    expect(console.warn).toHaveBeenCalledWith(`Xaendar: the server rendered in <${tag('client', 'flags')}> <!--xd-if:0--> where the browser renders <!--xd-if:1-->, which it renders again`);
+
+    const component = host as unknown as Flags;
+    component.mark.set('?');
+    component.rows.set([{ id: 1, on: false, label: 'c' }, { id: 2, on: false, label: 'b' }]);
+    await flush();
+
+    expect(Array.from(root.querySelectorAll('li')).map(item => item.innerHTML)).toEqual(['<i>c?</i>', '<i>b?</i>']);
+  });
+
   it('renders again the items of a @for whose keys the server rendered differently, with a warning', async () => {
     /**
      * A list with other items in the browser.
@@ -1847,17 +1880,18 @@ describe('the contexts of the elements', () => {
   type Context = _Context;
 
   /**
-   * The scopes a scope holds in its containers, the slots from the one its layout (slot `LAYOUT`, 6) gives to the end:
-   * a scope, `null`, or the run of a `@for`, holding the scopes of its rows.
+   * The scopes a scope holds in its containers, groups of three slots from the one its layout (slot `LAYOUT`, 4) gives
+   * to the end: the first one holds a scope, `null`, a branch rendered inline, or, for a `@for`, whose keys are in the
+   * second one, the scopes of its rows.
    */
   function childrenOf(context: _Context): _Context[] {
     const children = new Array<_Context>();
-    for (let i = context[6].containers ?? context.length; i < context.length; i++) {
-      const container = context[i] as _Context | { rows: _Context[] | null } | null;
-      if (Array.isArray(container)) {
-        children.push(container);
-      } else if (container?.rows) {
-        children.push(...container.rows);
+    for (let i = context[4].containers ?? context.length; i < context.length; i += 3) {
+      const content = context[i] as _Context | _Context[] | null;
+      if (Array.isArray(context[i + 1])) {
+        children.push(...content as _Context[]);
+      } else if (Array.isArray(content)) {
+        children.push(content as _Context);
       }
     }
 
@@ -1865,9 +1899,25 @@ describe('the contexts of the elements', () => {
   }
 
   /**
-   * The nodes a scope tracks, the slots from the one its layout (slot `LAYOUT`, 6) gives to its first container.
+   * The nodes a scope tracks, the slots from the one its layout (slot `LAYOUT`, 4) gives to its first container.
    */
-  const nodesOf = (context: _Context): Node[] => context.slice(context[6].nodes, context[6].containers).filter(Boolean) as Node[];
+  const nodesOf = (context: _Context): Node[] => context.slice(context[4].nodes, context[4].bindings ?? context[4].containers).filter(Boolean) as Node[];
+
+  /**
+   * The nodes of each branch rendered inline into a scope, which the first slot of the container of its block holds: the
+   * slots of the area of the branch its description lists.
+   */
+  function inlineNodesOf(context: _Context): Node[][] {
+    const branches = new Array<Node[]>();
+    for (let i = context[4].containers ?? context.length; i < context.length; i += 3) {
+      const content = context[i] as { base: number, nodes: number[] } | unknown[] | null;
+      if (content && !Array.isArray(content)) {
+        branches.push(content.nodes.map(slot => context[content.base + slot] as Node));
+      }
+    }
+
+    return branches;
+  }
 
   /**
    * A table of rows and columns, every cell an element reading its row.
@@ -1903,17 +1953,20 @@ describe('the contexts of the elements', () => {
   }
 
   /**
-   * Checks that every context tracks only the nodes at the top of its block, all in the same node, and returns them.
+   * Checks that every context, and every branch rendered inline into it, tracks only the nodes at the top of its block,
+   * all in the same node, and returns them: the ones of a context, then the ones of its branches.
    */
   function trackedNodes(host: Element): Node[] {
     const nodes = new Array<Node>();
     const contexts = collect((host as unknown as { _context: Context })._context);
     for (let i = 0; i < contexts.length; i++) {
-      const context = contexts[i];
-      const own = nodesOf(context);
-      for (let j = 0; j < own.length; j++) {
-        expect(own[j].parentNode).toBe(own[0].parentNode);
-        nodes.push(own[j]);
+      const groups = [nodesOf(contexts[i])].concat(inlineNodesOf(contexts[i]));
+      for (let j = 0; j < groups.length; j++) {
+        const own = groups[j];
+        for (let k = 0; k < own.length; k++) {
+          expect(own[k].parentNode).toBe(own[0].parentNode);
+          nodes.push(own[k]);
+        }
       }
     }
 

@@ -176,8 +176,16 @@ export class Generator {
           <foreignObject> too, their elements naming their namespace (see `generateElement`). Do not create one for every
           element, nor to change how the elements are created
         */
-        const createsContext = !isElement || (isScope && context.opensScope);
-        generatedCode.push(`\nfunction ${key}(${(createsContext ? fnData.args! : [fnData.args![0], 'context']).join(', ')}) {`);
+        // The function of a branch rendered inline, not the ones of the children of its elements, sharing its context
+        const inline = !isElement && context.inlineBranch;
+        const createsContext = !inline && (!isElement || (isScope && context.opensScope));
+        // A branch rendered inline renders into the context holding its block, before the anchor of the block
+        const args = createsContext ? fnData.args! : [fnData.args![0], 'context'];
+        if (inline && anchor) {
+          args.push(anchor);
+        }
+
+        generatedCode.push(`\nfunction ${key}(${args.join(', ')}) {`);
         // Written once the body is generated, which gives the nodes at its top their slots, its layout once every function is
         const scopeLine = createsContext ? generatedCode.push('') - 1 : -1;
 
@@ -192,7 +200,7 @@ export class Generator {
 
         const separators = getTextSeparators(node.children, parentTag, context.namespace);
         const functionBody = new Array<string>;
-        context.tracksNodes = createsContext;
+        context.tracksNodes = createsContext || inline;
         for (let i = 0; i < node.children.length; i++) {
           const child = node.children[i];
           /*

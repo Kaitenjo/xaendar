@@ -63,8 +63,8 @@ describe('CompilerContext', () => {
 
       expect(root.variableNames).toEqual(['a', 'b']);
       expect(root.identifierCount).toBe(2);
-      expect(root.addressOf('b')).toEqual({ depth: 0, slot: 8, id: 1 });
-      expect(child.addressOf('c')).toEqual({ depth: 0, slot: 7, id: 2 });
+      expect(root.addressOf('b')).toEqual({ depth: 0, slot: 6, id: 1 });
+      expect(child.addressOf('c')).toEqual({ depth: 0, slot: 5, id: 2 });
       expect(child.idOf('a')).toBe(0);
       expect(child.idOf('row')).toBeUndefined();
       expect(child.idOf('missing')).toBeUndefined();
@@ -82,9 +82,9 @@ describe('CompilerContext', () => {
 
       expect(children.opensScope).toBe(false);
       expect(scope.opensScope).toBe(true);
-      expect(children.readIdentifier('title')).toBe('_read(context, 0, 7)');
-      expect(scope.readIdentifier('title')).toBe('_read(context, 1, 7)');
-      expect(scope.readIdentifier('row')).toBe('_read(context, 2, 7)');
+      expect(children.readIdentifier('title')).toBe('_read(context, 0, 5)');
+      expect(scope.readIdentifier('title')).toBe('_read(context, 1, 5)');
+      expect(scope.readIdentifier('row')).toBe('_read(context, 2, 5)');
       expect(scope.addressOf('missing')).toBeUndefined();
     });
 

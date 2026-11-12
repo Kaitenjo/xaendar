@@ -228,23 +228,39 @@ const tagName = slice(source, 1, source.indexOf(' ')); // 'user-card'`
 export const SMALL_SET: SourceFile = {
   name: 'small-set.ts',
   lang: 'ts',
-  code: `import { addToSmallSet, deleteFromSmallSet, emptySmallSet, type SmallSet, smallSetHas, smallSetSize } from '@xaendar/common';
+  code: `import { addToSmallSet, deleteFromSmallSet, emptySmallSet, forEachInSmallSet, type SmallSet, smallSetHas, smallSetSize } from '@xaendar/common';
+
+/**
+ * A view reading a value.
+ */
+type View = { readonly name: string };
+
+/**
+ * Logs the name of a view.
+ *
+ * @param view - The view.
+ * @param prefix - What the name follows.
+ */
+function logView(view: View, prefix: string): void {
+  console.log(\`\${prefix}\${view.name}\`);
+}
+
+const cart: View = { name: 'cart' };
+const summary: View = { name: 'summary' };
 
 /**
  * The views reading the price: one, most of the times.
  */
-let readers: SmallSet<string> = emptySmallSet();
+let readers: SmallSet<View> = emptySmallSet();
 
-readers = addToSmallSet(readers, 'cart');    // ['cart'], an array of its own
-readers = addToSmallSet(readers, 'cart');    // the second 'cart' is ignored
-readers = addToSmallSet(readers, 'summary'); // pushed into the same array
-smallSetSize(readers);                       // 2
-smallSetHas(readers, 'summary');             // true
-readers = deleteFromSmallSet(readers, 'cart');
+readers = addToSmallSet(readers, cart);    // cart itself: no array for a single item
+readers = addToSmallSet(readers, cart);    // the second cart is ignored
+readers = addToSmallSet(readers, summary); // [cart, summary], an array of exactly two items
+smallSetSize(readers);                     // 2
+smallSetHas(readers, summary);             // true
+readers = deleteFromSmallSet(readers, cart); // summary itself again
 
-for (const reader of readers) {
-  // 'summary': an array or a Set, iterated in insertion order
-}`
+forEachInSmallSet(readers, logView, 'read by '); // 'read by summary', in insertion order`
 };
 
 /**

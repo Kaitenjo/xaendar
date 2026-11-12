@@ -1,13 +1,16 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { CLEANUP, COMPONENT, HEADER, LAYOUT, PARENT, PARENT_NODE, STATE, STRATEGY } from '../../costants';
-import { _bindEffect } from '../../signals/effect/effect';
+import { CLEANUP, COMPONENT, CONTAINER_SLOTS, HEADER, KEYS, LAYOUT, PARENT, PARENT_NODE, POSITION } from '../../costants';
+import { _bindEffect, _bindSite } from '../../signals/effect/effect';
+import type { BindingSite } from '../../types/binding-site.type';
 import type { _Context } from '../../types/context.type';
+import type { Branch } from '../../types/if/branch.type';
+import type { InlineBranch } from '../../types/inline-branch.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { closeTryScope, openTryScope } from '../try-scope/try-scope.util';
-import { _declare, _read, _scope, _set, addCleanup, clear, containerSlot, createAnchor, ELEMENT_LAYOUT, EMPTY_LAYOUT, forEachChild, getNodeStrategy, moveTo, mountNode, nodesEnd, propagate, refresh, removeCleanup, setNodeStrategy, STRUCTURAL_LAYOUT, swapNodeStrategy, trackNode, update } from './context.util';
+import { _declare, _read, _scope, _set, addCleanup, bindingsBase, clear, clearInline, containerSlot, createAnchor, ELEMENT_LAYOUT, EMPTY_LAYOUT, forEachChild, forEachInline, getNodeStrategy, moveTo, mountNode, nodesEnd, propagate, refresh, removeCleanup, renderInline, setNodeStrategy, STRUCTURAL_LAYOUT, swapNodeStrategy, trackNode, update } from './context.util';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -20,7 +23,7 @@ const flush = () => new Promise<void>(resolve => setTimeout(resolve));
  * The layout of a scope declaring the variables named, followed by some nodes and some containers.
  */
 function layoutOf(variables: string[], nodes = 0, containers = 0): _ScopeLayout {
-  const layout = { size: HEADER + variables.length + nodes + containers, nodes: HEADER + variables.length, variables };
+  const layout = { size: HEADER + variables.length + nodes + CONTAINER_SLOTS * containers, nodes: HEADER + variables.length, variables };
   return containers ? { ...layout, containers: layout.nodes + nodes } : layout;
 }
 
@@ -40,7 +43,7 @@ const ELEMENT_HOLDER = layoutOf([], 1, 3);
 function addChild(scope: _Context, child: _Context = _scope(scope, HOLDER)): _Context {
   let slot = containerSlot(scope);
   while (scope[slot]) {
-    slot++;
+    slot += CONTAINER_SLOTS;
   }
 
   scope[slot] = child;
@@ -78,16 +81,15 @@ function bindVariables(scope: _Context, slots: number[], ids: number[], signal?:
 }
 
 describe('_scope', () => {
-  it('creates an array of the size of its layout, its header holding the parent, the pass, the layout and nothing else', () => {
+  it('creates an array of the size of its layout, its header holding the parent, the node of its nodes, the component, the cleanups and the layout', () => {
     const layout = layoutOf(['row'], 2);
     const scope = _scope(null, layout);
 
+    expect(HEADER).toBe(5);
     expect(scope).toHaveLength(HEADER + 3);
     expect(scope[PARENT]).toBeNull();
     expect(scope[PARENT_NODE]).toBeNull();
-    expect(scope[STATE]).toBe(0);
     expect(scope[COMPONENT]).toBeUndefined();
-    expect(scope[STRATEGY]).toBeNull();
     expect(scope[CLEANUP]).toBeNull();
     expect(scope[LAYOUT]).toBe(layout);
     expect(scope.slice(HEADER)).toEqual([undefined, undefined, undefined]);
@@ -101,15 +103,23 @@ describe('_scope', () => {
     expect(_scope(root, EMPTY_LAYOUT)[COMPONENT]).toBe(component);
   });
 
-  it('keeps null for the strategy creating the nodes, and inherits the strategy of the parent when given none', () => {
+  it('keeps the strategy of a hydration outside of the scope, inherited by the scopes created in it, until it is the one creating the nodes', () => {
     const strategy = { name: 'claim' } as unknown as NodeStrategy;
     const parent = _scope(null, EMPTY_LAYOUT, strategy);
+    const inherited = _scope(parent, EMPTY_LAYOUT);
+    const creating = _scope(parent, EMPTY_LAYOUT, CREATE_NODES);
 
-    expect(parent[STRATEGY]).toBe(strategy);
+    expect(parent).toHaveLength(HEADER);
     expect(getNodeStrategy(parent)).toBe(strategy);
-    expect(_scope(parent, EMPTY_LAYOUT)[STRATEGY]).toBe(strategy);
-    expect(_scope(parent, EMPTY_LAYOUT, CREATE_NODES)[STRATEGY]).toBeNull();
-    expect(getNodeStrategy(_scope(parent, EMPTY_LAYOUT, CREATE_NODES))).toBe(CREATE_NODES);
+    expect(getNodeStrategy(inherited)).toBe(strategy);
+    expect(getNodeStrategy(creating)).toBe(CREATE_NODES);
+    expect(getNodeStrategy(_scope(creating, EMPTY_LAYOUT))).toBe(CREATE_NODES);
+
+    // Once every scope creates its nodes again, none is looked up
+    setNodeStrategy(parent, CREATE_NODES);
+    clear(inherited);
+    expect(getNodeStrategy(parent)).toBe(CREATE_NODES);
+    expect(getNodeStrategy(_scope(parent, EMPTY_LAYOUT))).toBe(CREATE_NODES);
   });
 
   it('is collected by the @try rendering its content, and by no other', () => {
@@ -185,10 +195,10 @@ describe('containers', () => {
     const scope = _scope(null, layoutOf(['row'], 2, 3));
 
     expect(containerSlot(scope)).toBe(HEADER + 3);
-    expect(containerSlot(scope, 2)).toBe(HEADER + 5);
+    expect(containerSlot(scope, 2)).toBe(HEADER + 3 + 2 * CONTAINER_SLOTS);
     expect(nodesEnd(scope)).toBe(HEADER + 3);
     expect(nodesEnd(_scope(null, layoutOf([], 2)))).toBe(HEADER + 2);
-    expect(STRUCTURAL_LAYOUT).toEqual({ size: HEADER + 2, nodes: HEADER, containers: HEADER + 1 });
+    expect(STRUCTURAL_LAYOUT).toEqual({ size: HEADER + 1 + CONTAINER_SLOTS, nodes: HEADER, containers: HEADER + 1 });
   });
 
   it('visits the scopes its containers hold in order, the rows of a @for in theirs, and skips the empty ones', () => {
@@ -196,8 +206,10 @@ describe('containers', () => {
     const [first, second, third] = [_scope(root, EMPTY_LAYOUT), _scope(root, EMPTY_LAYOUT), _scope(root, EMPTY_LAYOUT)];
     root[containerSlot(root)] = first;
     root[containerSlot(root, 1)] = null;
-    root[containerSlot(root, 2)] = { rows: [second, third] };
-    root[containerSlot(root, 3)] = { rows: null };
+    // The rows of a @for, its keys beside them, and a @for not run yet
+    root[containerSlot(root, 2)] = [second, third];
+    root[containerSlot(root, 2) + KEYS] = ['b', 'c'];
+    root[containerSlot(root, 3) + POSITION] = document.createComment('for');
 
     expect(childrenOf(root)).toEqual([first, second, third]);
     expect(childrenOf(_scope(null, EMPTY_LAYOUT))).toEqual([]);
@@ -290,11 +302,9 @@ describe('setNodeStrategy', () => {
     setNodeStrategy(scope, CREATE_NODES);
     setNodeStrategy(single, CREATE_NODES);
 
-    expect(root[STRATEGY]).toBe(strategy);
-    expect(scope[STRATEGY]).toBeNull();
-    expect(nested[STRATEGY]).toBeNull();
-    expect(held[STRATEGY]).toBeNull();
-    expect(heldAlone[STRATEGY]).toBeNull();
+    expect(getNodeStrategy(root)).toBe(strategy);
+    expect([scope, nested, held, heldAlone].map(getNodeStrategy)).toEqual([CREATE_NODES, CREATE_NODES, CREATE_NODES, CREATE_NODES]);
+    setNodeStrategy(root, CREATE_NODES);
   });
 
   it('swaps the strategy of the scope alone', () => {
@@ -304,8 +314,10 @@ describe('setNodeStrategy', () => {
 
     swapNodeStrategy(scope, strategy);
 
-    expect(scope[STRATEGY]).toBe(strategy);
-    expect(child[STRATEGY]).toBeNull();
+    expect(getNodeStrategy(scope)).toBe(strategy);
+    expect(getNodeStrategy(child)).toBe(CREATE_NODES);
+    swapNodeStrategy(scope, CREATE_NODES);
+    expect(getNodeStrategy(scope)).toBe(CREATE_NODES);
   });
 });
 
@@ -358,7 +370,7 @@ describe('clear', () => {
 
     expect(removed).toEqual([b, a]);
     expect(seen).toEqual(['cleanup 0', 'child 0']);
-    expect(scope.slice(HEADER)).toEqual([null, null, null, null]);
+    expect(scope.slice(HEADER)).toEqual([null, null, null, null, null, null]);
     expect(scope[PARENT_NODE]).toBeNull();
   });
 
@@ -648,6 +660,269 @@ describe('refresh', () => {
     signal.set(2);
     await flush();
     expect(failing).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('bindings in the slots of the scope', () => {
+  /**
+   * The layout of a scope declaring a variable, holding a node, then the slots of the bindings given, as the compiler
+   * writes it.
+   */
+  const siteLayout = (sites: BindingSite[], slots: number): _ScopeLayout => ({ size: HEADER + 2 + slots, nodes: HEADER + 1, bindings: HEADER + 2, sites, variables: ['row'] });
+
+  /**
+   * A binding writing the variable of the scope and the signal it reads, if any, into its target, an array.
+   */
+  const write = vi.fn((scope: _Context, target: unknown[], site: BindingSite & { signal?: Signal.State<number> }) => {
+    target.push(site.signal ? [scope[HEADER], site.signal.get()] : scope[HEADER]);
+  });
+
+  it('keeps in its slots the effect of a binding, null while it reads no signal, and the target of a binding reading variables', async () => {
+    const signal = new Signal.State(1);
+    const reading: BindingSite = { update: write, reads: [0], effect: 0, target: 1 };
+    const watching: BindingSite & { signal: Signal.State<number> } = { update: write, signal, effect: 2 };
+    const scope = _scope(null, siteLayout([reading, watching], 3));
+    scope[HEADER] = 'a';
+    const first = new Array<unknown>();
+    const second = new Array<unknown>();
+
+    _bindSite(scope, reading, first);
+    _bindSite(scope, watching, second);
+    expect(nodesEnd(scope)).toBe(HEADER + 2);
+    expect(scope.slice(HEADER + 2)).toEqual([null, first, expect.objectContaining({ dispose: expect.any(Function) })]);
+    expect(scope[CLEANUP]).toBeNull();
+
+    signal.set(2);
+    await flush();
+    expect(second).toEqual([['a', 1], ['a', 2]]);
+  });
+
+  it('runs again with its target, before the cleanups, a binding reading a variable changed, its effect taking the place of the previous one', async () => {
+    const signal = new Signal.State(1);
+    const site: BindingSite & { signal?: Signal.State<number> } = { update: write, reads: [0], effect: 0, target: 1 };
+    const scope = _scope(null, siteLayout([site], 2));
+    scope[HEADER] = 'a';
+    const target = new Array<unknown>();
+    const order = new Array<unknown>();
+    _bindSite(scope, site, target);
+    _bindEffect(scope, () => order.push(target.length), null, undefined, undefined, [0]);
+
+    // The new run reads a signal: it becomes an effect, the binding running again when the signal changes
+    Object.assign(site, { signal });
+    update(scope, HEADER, 'b');
+    refresh(scope, [0]);
+    expect(target).toEqual(['a', ['b', 1]]);
+    expect(order).toEqual([1, 2]);
+
+    signal.set(2);
+    await flush();
+    expect(target).toEqual(['a', ['b', 1], ['b', 2]]);
+
+    delete site.signal;
+    update(scope, HEADER, 'c');
+    refresh(scope, [0]);
+    expect(scope[HEADER + 2]).toBeNull();
+    expect(Signal.subtle.hasSinks(signal)).toBe(false);
+  });
+
+  it('passes over a binding of its layout not bound yet, and over the ones reading no variable changed', () => {
+    const update = vi.fn();
+    const pending: BindingSite = { update, reads: [0], effect: 0, target: 1 };
+    const other: BindingSite = { update, reads: [1], effect: 2, target: 3 };
+    const scope = _scope(null, siteLayout([pending, other], 4));
+    _bindSite(scope, other, null);
+    update.mockClear();
+
+    refresh(scope, [0]);
+
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('reports the error of a binding in its slots in a microtask, keeping its effect', async () => {
+    const signal = new Signal.State(1);
+    const failing = vi.fn((scope: _Context) => {
+      signal.get();
+      if (scope[HEADER] === 'b') {
+        throw new Error('boom');
+      }
+    });
+    const site: BindingSite = { update: failing, reads: [0], effect: 0, target: 1 };
+    const scope = _scope(null, siteLayout([site], 2));
+    scope[HEADER] = 'a';
+    _bindSite(scope, site, null);
+    const effect = scope[HEADER + 2];
+    const tasks = new Array<() => void>();
+    const queueMicrotask = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(task => { tasks.push(task); });
+
+    update(scope, HEADER, 'b');
+    refresh(scope, [0]);
+    queueMicrotask.mockRestore();
+
+    expect(() => tasks[0]()).toThrow('boom');
+    expect(scope[HEADER + 2]).toBe(effect);
+  });
+
+  it('disposes the effects of its bindings when it is cleared', async () => {
+    const signal = new Signal.State(1);
+    const site: BindingSite & { signal: Signal.State<number> } = { update: write, signal, effect: 0 };
+    const scope = _scope(null, siteLayout([site], 1));
+    const target = new Array<unknown>();
+    _bindSite(scope, site, target);
+
+    clear(scope);
+    signal.set(2);
+    await flush();
+
+    expect(target).toHaveLength(1);
+    expect(Signal.subtle.hasSinks(signal)).toBe(false);
+  });
+
+  it('keeps among the cleanups a binding without slots, rendered in a scope the runtime creates', () => {
+    const update = vi.fn();
+    const scope = _scope(null, layoutOf(['row']));
+    _bindSite(scope, { reads: [0] }, 'target', update);
+    expect(update).toHaveBeenCalledWith(scope, 'target', { reads: [0] });
+
+    refresh(scope, [0]);
+    expect(update).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('branches rendered inline', () => {
+  /**
+   * A scope holding a node, then the area of a block, of four slots, then its container.
+   */
+  const AREA_LAYOUT: _ScopeLayout = { size: HEADER + 5 + CONTAINER_SLOTS, nodes: HEADER, bindings: HEADER + 1, sites: [], containers: HEADER + 5 };
+
+  /**
+   * A branch filling the area: a node in its first slot, a binding in the second one and its cleanups in the fourth.
+   */
+  function branchOf(block: Branch['block'], site: BindingSite = { update: vi.fn(), reads: [0], effect: 1, target: 2 }): Branch & InlineBranch {
+    return { block, base: HEADER + 1, size: 4, nodes: [0], sites: [site], cleanup: 3 };
+  }
+
+  it('keeps in the slots of the branch its nodes, its bindings and its cleanups while it renders, its nodes got with its strategy', () => {
+    const scope = _scope(null, AREA_LAYOUT);
+    const parent = document.createElement('div');
+    const own = parent.appendChild(document.createElement('p'));
+    trackNode(own, parent, scope, HEADER);
+    const strategy = { ...CREATE_NODES };
+    const swapped = { ...CREATE_NODES };
+    const seen = new Array<unknown>();
+    const listener = vi.fn();
+    const branch = branchOf((parentNode, context) => {
+      const node = document.createElement('b');
+      mountNode(node, parentNode, context, null, 0);
+      _bindSite(context, branch.sites![0], node);
+      addCleanup(context, listener);
+      seen.push(getNodeStrategy(context), bindingsBase(context));
+      swapNodeStrategy(context, swapped);
+      seen.push(getNodeStrategy(context));
+      return undefined;
+    });
+
+    renderInline(scope, branch, parent, null, strategy);
+
+    expect(seen).toEqual([strategy, HEADER + 1, swapped]);
+    expect(scope.slice(HEADER + 1, HEADER + 5)).toEqual([parent.lastChild, null, parent.lastChild, listener]);
+    // Once it is rendered, the scope gets its nodes, its bindings and its cleanups again
+    expect(getNodeStrategy(scope)).toBe(CREATE_NODES);
+    expect(bindingsBase(scope)).toBe(HEADER + 1);
+    expect(scope[PARENT_NODE]).toBe(parent);
+    expect(scope[CLEANUP]).toBeNull();
+  });
+
+  it('gets the scope back when the branch throws', () => {
+    const scope = _scope(null, AREA_LAYOUT);
+    const branch = branchOf(() => {
+      throw new Error('boom');
+    });
+
+    expect(() => renderInline(scope, branch, document.createElement('div'), null, CREATE_NODES)).toThrow('boom');
+    addCleanup(scope, vi.fn<() => void>());
+    expect(scope[CLEANUP]).not.toBeNull();
+  });
+
+  it('empties its slots as clear empties a scope: its nodes from the last to the first, its effects, then its cleanups', async () => {
+    const scope = _scope(null, AREA_LAYOUT);
+    const parent = document.createElement('div');
+    const signal = new Signal.State(1);
+    const order = new Array<string>();
+    const site: BindingSite = { update: () => order.push(`run ${signal.get()}`), effect: 1 };
+    const branch: Branch & InlineBranch = {
+      block: (parentNode, context) => {
+        mountNode(document.createElement('a'), parentNode, context, null, 0);
+        mountNode(document.createElement('b'), parentNode, context, null, 2);
+        _bindSite(context, site);
+        addCleanup(context, () => order.push(`cleanup ${parent.childNodes.length}`));
+        addCleanup(context, () => order.push('second cleanup'));
+        return undefined;
+      },
+      base: HEADER + 1, size: 4, nodes: [0, 2], sites: [site], cleanup: 3
+    };
+    renderInline(scope, branch, parent, null, CREATE_NODES);
+    const removed = vi.spyOn(parent, 'removeChild');
+
+    clearInline(scope, branch, true, parent);
+    signal.set(2);
+    await flush();
+
+    expect(removed.mock.calls.map(([node]) => (node as Element).localName)).toEqual(['b', 'a']);
+    expect(order).toEqual(['run 1', 'cleanup 0', 'second cleanup']);
+    expect(scope.slice(HEADER + 1, HEADER + 5)).toEqual([undefined, undefined, undefined, undefined]);
+  });
+
+  it('removes the nodes of the branch only from the node they are inserted into, from any node when told none, and keeps them when told not to remove them', () => {
+    const scope = _scope(null, AREA_LAYOUT);
+    const parent = document.createElement('div');
+    const elsewhere = document.createElement('section');
+    const render = (parentNode: HTMLElement, context: _Context): undefined => {
+      mountNode(document.createElement('a'), parentNode, context, null, 0);
+      return undefined;
+    };
+    const branch: Branch & InlineBranch = { block: render, base: HEADER + 1, size: 1, nodes: [0] };
+
+    renderInline(scope, branch, parent, null, CREATE_NODES);
+    clearInline(scope, branch, true, elsewhere);
+    expect(parent.childNodes).toHaveLength(1);
+
+    renderInline(scope, branch, parent, null, CREATE_NODES);
+    clearInline(scope, branch, false, null);
+    expect(parent.childNodes).toHaveLength(2);
+
+    renderInline(scope, branch, parent, null, CREATE_NODES);
+    clearInline(scope, branch, true, null);
+    expect(parent.childNodes).toHaveLength(2);
+  });
+
+  it('is visited, refreshed and emptied with the scope holding its block, its nodes removed when they are beside the ones of the scope', () => {
+    const scope = _scope(null, { ...AREA_LAYOUT, variables: ['row'], size: HEADER + 6 + CONTAINER_SLOTS, nodes: HEADER + 1, bindings: HEADER + 2, containers: HEADER + 6 });
+    scope[HEADER] = 'a';
+    const parent = document.createElement('div');
+    trackNode(parent.appendChild(document.createElement('p')), parent, scope, HEADER + 1);
+    const runs = new Array<unknown>();
+    const site: BindingSite = { update: (context: _Context) => runs.push(context[HEADER]), reads: [0], effect: 1, target: 2 };
+    const branch: Branch & InlineBranch = {
+      block: (parentNode, context) => {
+        mountNode(document.createElement('b'), parentNode, context, null, 0);
+        _bindSite(context, site, null);
+        return undefined;
+      },
+      base: HEADER + 2, size: 3, nodes: [0], sites: [site]
+    };
+    renderInline(scope, branch, parent, null, CREATE_NODES);
+    scope[containerSlot(scope)] = branch;
+    const visited = new Array<unknown>();
+    forEachInline(scope, (context, inline, argument) => visited.push(context, inline, argument), 'argument');
+    forEachInline(_scope(null, EMPTY_LAYOUT), () => visited.push('none'), undefined);
+
+    update(scope, HEADER, 'b');
+    refresh(scope, [0]);
+    clear(scope);
+
+    expect(visited).toEqual([scope, branch, 'argument']);
+    expect(runs).toEqual(['a', 'b']);
+    expect(parent.childNodes).toHaveLength(0);
   });
 });
 

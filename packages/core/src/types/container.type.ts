@@ -1,12 +1,9 @@
 import type { _Context } from './context.type';
+import type { InlineBranch } from './inline-branch.type';
 
 /**
- * What a container of a scope holds (see `_ScopeLayout`): the scope a block shows, `null` while it shows none, or the
- * run of a `@for`, holding the scopes of its rows, in order.
+ * What the first slot of a container of a scope holds (see `CONTENT`): the scope a block shows, `null` (or `undefined`
+ * before its first run) while it shows none, the scopes of the rows of a `@for`, in order, or the branch of an `@if` or
+ * of a `@switch` rendered inline.
  */
-export type Container = _Context | {
-  /**
-   * The scopes of the rows of the `@for`, in order: `null` before its first render.
-   */
-  readonly rows: readonly _Context[] | null;
-} | null;
+export type Container = _Context | readonly _Context[] | InlineBranch | null | undefined;

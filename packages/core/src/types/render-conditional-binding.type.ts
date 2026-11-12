@@ -1,16 +1,18 @@
+import type { BindingSite } from './binding-site.type';
 import type { TemplateExpression } from './template-expression.type';
 
 /**
  * Describes a conditional binding: a list of mutually exclusive branches, each one holding
  * the bindings applied only while it is the selected one. A constant of the module of the template, which the runtime
- * only reads: the branch selected is kept by the binding (see `ConditionalBindingRun`).
+ * only reads: the branch selected is kept by the binding (see `ConditionalBindingRun`). Its selection is a binding (see
+ * `BindingSite`), the slots of the scope holding it keeping its effect and its run.
  *
  * The selected branch is the first one, in declaration order, whose condition holds. The branches of an
  * `@if` chain are selected through their own condition, the ones of a `@switch` through the value of its expression.
  *
  * @template Bindings - The bindings held by each branch.
  */
-export type RenderConditionalBinding<Bindings> = {
+export type RenderConditionalBinding<Bindings> = BindingSite & ({
   /**
    * The `@if`, `@else if` and `@else` branches of the chain.
    */
@@ -24,10 +26,6 @@ export type RenderConditionalBinding<Bindings> = {
    * Only a `@switch` declares an expression.
    */
   readonly expression?: never;
-  /**
-   * The identifiers of the variables of the template the conditions read (see `_bindEffect`), omitted when they read none.
-   */
-  readonly reads?: readonly number[];
 } | {
   /**
    * The `@case` and `@default` branches of the `@switch`.
@@ -43,8 +41,4 @@ export type RenderConditionalBinding<Bindings> = {
    * The expression whose value selects the branch.
    */
   readonly expression: TemplateExpression<unknown>;
-  /**
-   * The identifiers of the variables of the template the expression reads (see `_bindEffect`), omitted when it reads none.
-   */
-  readonly reads?: readonly number[];
-};
+});

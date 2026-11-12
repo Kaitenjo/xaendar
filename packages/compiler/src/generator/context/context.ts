@@ -1,3 +1,4 @@
+import { CONTAINER_SLOTS } from '../../costants/container-slots.costant';
 import { SCOPE_HEADER } from '../../costants/scope-header.costant';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import type { DeferNode } from '../../parser/types/nodes/defer-node.type';
@@ -6,7 +7,10 @@ import type { ComponentMetadata } from '../../types/component-metadata.type';
 import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
 import type { ContextCache } from '../../types/context-cache.type';
 import type { ElementNamespace } from '../../types/element-namespace.type';
+import type { BlockBranch } from '../types/block-branch.type';
+import type { PendingBlock } from '../types/pending-block.type';
 import type { ScopeKind } from '../types/scope-kind.type';
+import { toArrayLiteral, toObjectLiteral } from '../utils/module-code/module-code.utils';
 
 /**
  * Tracks identifier scope during render code generation.
@@ -72,6 +76,30 @@ export class GeneratorContext extends CompilerContext {
    */
   private _containerCount = 0;
   /**
+   * The number of slots reserved for the bindings of this scope (see {@link declareBinding}).
+   */
+  private _bindingSlots = 0;
+  /**
+   * The constants of the module describing the bindings of this scope given slots, in the order they are rendered,
+   * which its layout lists (see {@link declareLayout}).
+   */
+  private readonly _sites = new Array<string>();
+  /**
+   * The blocks of this scope rendering some branches inline, whose constants are declared with its layout (see
+   * {@link declareBlock}).
+   */
+  private readonly _pendingBlocks = new Array<PendingBlock>();
+  /**
+   * The slots of the nodes at the top of this branch rendered inline, counted from its first slot (see
+   * {@link allocateNodeSlot}).
+   */
+  private readonly _inlineNodes = new Array<number>();
+  /**
+   * The slot of this branch rendered inline holding its cleanups, counted from its first slot (see
+   * {@link reserveCleanup}), `undefined` while it has none.
+   */
+  private _cleanupSlot: number | undefined;
+  /**
    * The declarations of the constants of the module (see {@link declareConstant}), in the order they are declared: held
    * by the root scope.
    */
@@ -93,6 +121,16 @@ export class GeneratorContext extends CompilerContext {
    */
   public get eventNames(): ReadonlySet<string> {
     return this._eventNames;
+  }
+
+  /**
+   * The number of slots this branch rendered inline fills, from the first slot of the area of its block (see
+   * {@link describeInline}).
+   *
+   * @returns The number of slots.
+   */
+  public get inlineSlots(): number {
+    return this._bindingSlots;
   }
 
   /**
@@ -254,7 +292,29 @@ export class GeneratorContext extends CompilerContext {
    * @returns The slot, `undefined` for a node no runtime scope tracks.
    */
   public allocateNodeSlot(): number | undefined {
-    return this.tracksNodes ? SCOPE_HEADER + this.identifierCount + this._nodeCount++ : undefined;
+    if (!this.tracksNodes) {
+      return undefined;
+    }
+
+    // A branch rendered inline counts its nodes with its bindings, from its first slot
+    if (this.inlineBranch) {
+      const slot = this._bindingSlots++;
+      this._inlineNodes.push(slot);
+      return slot;
+    }
+
+    return SCOPE_HEADER + this.identifierCount + this._nodeCount++;
+  }
+
+  /**
+   * Reserves the slot holding the cleanups of the branch rendered inline this scope renders in, if any (see
+   * `InlineBranch` of the runtime), once: a scope of the runtime holds its cleanups in its header.
+   */
+  public reserveCleanup(): void {
+    const scope = this._scopeContext();
+    if (scope.inlineBranch) {
+      scope._cleanupSlot ??= scope._bindingSlots++;
+    }
   }
 
   /**
@@ -267,13 +327,70 @@ export class GeneratorContext extends CompilerContext {
    *   first one: the compiler counts the nodes as it generates them, so it does not know that slot yet.
    */
   public allocateContainer(): number {
-    // The children of an element opening a namespace are rendered in the runtime scope of the element
-    let context: GeneratorContext = this;
-    while (!context.opensScope) {
-      context = context.parent!;
+    return this._scopeContext()._containerCount++;
+  }
+
+  /**
+   * Declares the constant of the module describing a binding of this scope (see `BindingSite` of the runtime), and
+   * reserves its slots in the runtime scope rendering it, after the nodes at its top: the one of its effect, and, when it
+   * reads variables of the template and writes a target, the one of the target, with which the scope runs it again. The
+   * layout of the scope lists it (see {@link declareLayout}). A binding rendered in a scope the runtime creates with a
+   * layout of its own (see `ScopeKind`) gets no slot: the runtime keeps it among the cleanups of that scope.
+   *
+   * N.B. Deliberate, to save memory: the slots are counted from the first binding of the scope, which the layout gives,
+   * since the compiler counts the nodes as it generates them, so it does not know where the bindings start yet. The
+   * callback, the reads and the constant parameters of the binding stay in the module, so that an instance of the scope
+   * keeps one or two slots per binding instead of an object. Do not give a binding of a compiled scope an object again.
+   *
+   * @param name - The name of the constant (`span0$text0$binding`, `td0__if0$if`).
+   * @param members - The members of the constant, to which the callback and the slots are appended.
+   * @param update - The callback of the binding, a function of the runtime (`_updateText`, `_runIf`), which the scope
+   *   runs it again with: a binding without slots is run by the callback the runtime gives it.
+   * @param target - Whether the binding keeps its target: it writes one and reads variables of the template.
+   * @returns The name the constant is declared with, `undefined` when the binding gets no slot and nothing is declared.
+   */
+  public declareBinding(name: string, members: string[], update: string, target: boolean): string | undefined {
+    const scope = this._scopeContext();
+    if (scope.runtimeScope) {
+      return undefined;
     }
 
-    return context._containerCount++;
+    members.push(`update: ${update}`, `effect: ${scope._bindingSlots++}`);
+    if (target) {
+      members.push(`target: ${scope._bindingSlots++}`);
+    }
+
+    const constant = this.declareConstant(name, toObjectLiteral(members));
+    scope._sites.push(constant);
+    return constant;
+  }
+
+  /**
+   * Declares the constant of an `@if` or of a `@switch`, a binding of this scope (see {@link declareBinding}), its
+   * branches last. A block rendering a branch inline (see `ScopeKind`) is declared with the layout of the scope holding
+   * it (see {@link declareLayout}), which reserves an area of slots for its branches, as large as the largest one: the
+   * slots of a branch are known only once the functions rendering it, and the children of its elements, are generated.
+   *
+   * @param name - The name of the constant (`td0__switch0$switch`).
+   * @param members - The members of the constant before its branches.
+   * @param branches - The branches.
+   * @param update - The callback of the binding (`_runIf`).
+   * @returns The name the constant is declared with.
+   */
+  public declareBlock(name: string, members: string[], branches: readonly BlockBranch[], update: string): string {
+    const scope = this._scopeContext();
+    members.push(`update: ${update}`, `effect: ${scope._bindingSlots++}`);
+    const root = this._rootContext();
+    const constant = root._uniqueName(name);
+    scope._sites.push(constant);
+    const block: PendingBlock = { name: constant, members, branches };
+    if (branches.some(branch => branch.context)) {
+      scope._pendingBlocks.push(block);
+    } else {
+      root._constants.push(`const ${constant} = ${writeBlock(block, 0)};`);
+    }
+
+    return constant;
   }
 
   /**
@@ -285,8 +402,21 @@ export class GeneratorContext extends CompilerContext {
    */
   public declareLayout(): string {
     const nodes = SCOPE_HEADER + this.identifierCount;
-    const containers = nodes + this._nodeCount;
-    const members = [`size: ${containers + this._containerCount}`, `nodes: ${nodes}`];
+    const bindings = nodes + this._nodeCount;
+    // The areas of the branches rendered inline follow the bindings, one per block, as large as its largest branch
+    let containers = bindings + this._bindingSlots;
+    const root = this._rootContext();
+    for (let i = 0; i < this._pendingBlocks.length; i++) {
+      const block = this._pendingBlocks[i];
+      root._constants.push(`const ${block.name} = ${writeBlock(block, containers)};`);
+      containers += areaSize(block.branches);
+    }
+
+    const members = [`size: ${containers + CONTAINER_SLOTS * this._containerCount}`, `nodes: ${nodes}`];
+    if (this._sites.length) {
+      members.push(`bindings: ${bindings}`, `sites: ${toArrayLiteral(this._sites)}`);
+    }
+
     if (this._containerCount) {
       members.push(`containers: ${containers}`);
     }
@@ -295,7 +425,28 @@ export class GeneratorContext extends CompilerContext {
       members.push(`variables: [${this.variableNames.map(name => `'${name}'`).join(', ')}]`);
     }
 
-    return this._rootContext()._layout(`{ ${members.join(', ')} }`);
+    return root._layout(toObjectLiteral(members));
+  }
+
+  /**
+   * Describes a branch rendered inline once its slots are known (see `InlineBranch` of the runtime): the first slot of
+   * the area of its block, how many slots it fills, the slots of its nodes, its bindings and the slot of its cleanups,
+   * the ones it has.
+   *
+   * @param base - The first slot of the area of its block.
+   * @returns The members describing it.
+   */
+  public describeInline(base: number): string[] {
+    const members = [`base: ${base}`, `size: ${this._bindingSlots}`, `nodes: ${toArrayLiteral(this._inlineNodes.map(String))}`];
+    if (this._sites.length) {
+      members.push(`sites: ${toArrayLiteral(this._sites)}`);
+    }
+
+    if (this._cleanupSlot !== undefined) {
+      members.push(`cleanup: ${this._cleanupSlot}`);
+    }
+
+    return members;
   }
 
   /**
@@ -374,6 +525,22 @@ export class GeneratorContext extends CompilerContext {
   }
 
   /**
+   * Returns the scope standing for the runtime scope this one renders in: itself, or the closest ancestor opening one, as
+   * the children of an element opening a namespace are rendered in the runtime scope of the element.
+   *
+   * @returns The scope.
+   */
+  private _scopeContext(): GeneratorContext {
+    let context: GeneratorContext = this;
+    // A branch rendered inline holds the slots of what it renders, in the area of its block
+    while (!context.opensScope && !context.inlineBranch) {
+      context = context.parent!;
+    }
+
+    return context;
+  }
+
+  /**
    * Returns the constant of the module holding a layout, declaring it the first time.
    *
    * @param value - The code of the layout.
@@ -407,4 +574,37 @@ export class GeneratorContext extends CompilerContext {
     this._moduleNames.add(unique);
     return unique;
   }
+}
+
+/**
+ * Writes the constant of an `@if` or of a `@switch` (see `GeneratorContext.declareBlock`): its members, then its
+ * branches, each one rendered inline described with its slots.
+ *
+ * @param block - The block.
+ * @param base - The first slot of the area of the branches rendered inline.
+ * @returns The code of the constant.
+ */
+function writeBlock({ members, branches }: PendingBlock, base: number): string {
+  const described = new Array<string>(branches.length);
+  for (let i = 0; i < branches.length; i++) {
+    const { members: branch, context } = branches[i];
+    described[i] = toObjectLiteral(context ? branch.concat(context.describeInline(base)) : branch);
+  }
+
+  return toObjectLiteral(members.concat(`branches: ${toArrayLiteral(described)}`));
+}
+
+/**
+ * Returns the number of slots of the area of the branches of a block rendered inline: the slots of the largest one.
+ *
+ * @param branches - The branches.
+ * @returns The number of slots.
+ */
+function areaSize(branches: readonly BlockBranch[]): number {
+  let size = 0;
+  for (let i = 0; i < branches.length; i++) {
+    size = Math.max(size, branches[i].context?.inlineSlots ?? 0);
+  }
+
+  return size;
 }

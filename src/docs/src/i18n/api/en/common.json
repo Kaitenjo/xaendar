@@ -16,14 +16,18 @@
     }
   },
   "SmallSet": {
-    "summary": "A set kept in an array while it holds few items, and in a <code>Set</code> beyond 32: one or two items take far less memory.",
-    "description": "<p>A <code>Set</code> allocates a hash table even for one item, while most of the sets of a reactive graph hold one or two: a <code>SmallSet</code> is an array while it holds up to 32 items, and a <code>Set</code> from the 33rd, staying one when the items decrease. Every empty <code>SmallSet</code> is one shared frozen empty array, and the first item makes an array of exactly one element.</p><p>It is a plain value, not an object wrapping one: <code>addToSmallSet</code> and <code>deleteFromSmallSet</code> return the value to store in place of the one given, and it is read as it is, iterated and spread in insertion order like an array or a <code>Set</code>. The array is changed in place, so an item added while the set is iterated is visited, as with a <code>Set</code>.</p><p>The signals runtime of Xaendar keeps the sources and the sinks of its nodes in it.</p>",
+    "summary": "A set kept as the item itself while it holds one, in an array while it holds few items, and in a <code>Set</code> beyond 32: one or two items take far less memory.",
+    "description": "<p>A <code>Set</code> allocates a hash table even for one item, while most of the sets of a reactive graph hold one or two: a <code>SmallSet</code> is the item itself while it holds one, an array of exactly two items with the second one, an array while it holds up to 32 items, and a <code>Set</code> from the 33rd, staying one when the items decrease. Every empty <code>SmallSet</code> is one shared frozen empty array.</p><p>It is a plain value, not an object wrapping one: <code>addToSmallSet</code> and <code>deleteFromSmallSet</code> return the value to store in place of the one given, and it is read through <code>smallSetHas</code>, <code>smallSetSize</code>, <code>forEachInSmallSet</code>, <code>findInSmallSet</code> and <code>smallSetToArray</code>, in insertion order: an item alone is not iterable. Its items are objects that are neither arrays nor <code>Set</code>s (<code>SmallSetItem</code>), so that an item alone is never taken for a collection.</p><p>The signals runtime of Xaendar keeps the sources and the sinks of its nodes, and the signals of its watchers, in it.</p>",
     "usage": {
       "tracking": {
         "title": "Tracking the readers of a value",
-        "body": "<p>Most values have one or two readers: they stay in an array, and a value read by many moves them to a <code>Set</code>. Every change stores the value returned.</p>"
+        "body": "<p>Most values have one reader: it is kept as it is, two of them in an array of exactly two items, and a value read by many moves them to a <code>Set</code>. Every change stores the value returned.</p>"
       }
     }
+  },
+  "SmallSetItem": {
+    "summary": "What a <code>SmallSet</code> can hold: an object that is not iterable.",
+    "description": "<p>A <code>SmallSet</code> keeps an item alone as it is, and tells it apart from an array or a <code>Set</code> of items: a primitive, an array or a <code>Set</code> does not fit this type, which TypeScript rejects. The nodes and the watchers of the signals fit it.</p>"
   },
   "emptySmallSet": {
     "summary": "Returns an empty <code>SmallSet</code>: the shared frozen empty array, or a new <code>Set</code> when it is expected to hold more than 32 items.",
@@ -31,19 +35,31 @@
   },
   "addToSmallSet": {
     "summary": "Adds an item to a <code>SmallSet</code>, after the others, and returns the value to store.",
-    "description": "<p>An item the set holds already is ignored. On an empty set it returns a new array holding the item; on an array it pushes the item, in place, and on the 33rd item it returns a new <code>Set</code> holding all of them, in the same order.</p>"
+    "description": "<p>An item the set holds already is ignored. On an empty set it returns the item itself; on an item alone it returns a new array of exactly the two items; on an array it pushes the item, in place, and on the 33rd item it returns a new <code>Set</code> holding all of them, in the same order.</p>"
   },
   "deleteFromSmallSet": {
     "summary": "Removes an item from a <code>SmallSet</code>, keeping the order of the others, and returns the value to store.",
-    "description": "<p>An array loses the item in place, and the shared empty array is returned when the item was the last one. A <code>Set</code> stays a <code>Set</code>. The items are compared as a <code>Set</code> does: <code>NaN</code> is removed too.</p>"
+    "description": "<p>An array of three items or more loses the item in place; an array of two returns the item left, kept as it is; the shared empty array is returned when the item was the last one. A <code>Set</code> stays a <code>Set</code>.</p>"
   },
   "smallSetHas": {
     "summary": "Tells whether a <code>SmallSet</code> holds an item.",
-    "description": "<p>The items are compared as a <code>Set</code> does: <code>NaN</code> equals <code>NaN</code>.</p>"
+    "description": "<p>The items are compared by identity, as a <code>Set</code> compares objects.</p>"
   },
   "smallSetSize": {
     "summary": "Returns the number of items of a <code>SmallSet</code>.",
-    "description": "<p>The <code>length</code> of its array, or the <code>size</code> of its <code>Set</code>.</p>"
+    "description": "<p>1 for an item alone, the <code>length</code> of its array, or the <code>size</code> of its <code>Set</code>.</p>"
+  },
+  "forEachInSmallSet": {
+    "summary": "Visits the items of a <code>SmallSet</code>, in insertion order.",
+    "description": "<p>The visit receives each item and the argument given, so that a function declared once serves every visit, without a closure created for it.</p>"
+  },
+  "findInSmallSet": {
+    "summary": "Returns the first item of a <code>SmallSet</code>, in insertion order, satisfying a predicate.",
+    "description": "<p>The predicate receives each item and the argument given, until one satisfies it: <code>undefined</code> when none does.</p>"
+  },
+  "smallSetToArray": {
+    "summary": "Copies the items of a <code>SmallSet</code> into a new array, in insertion order.",
+    "description": "<p>The array is a copy: changing it changes nothing of the set.</p>"
   },
   "toPascalCase": {
     "summary": "Converts a kebab-case, snake_case, dot.case or camelCase string to PascalCase.",

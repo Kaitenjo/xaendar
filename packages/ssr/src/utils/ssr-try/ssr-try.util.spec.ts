@@ -12,9 +12,9 @@ await vi.hoisted(async () => {
 const { _scope } = await import('@xaendar/core');
 
 /**
- * The layout of a scope holding its header alone, whose 8 slots the runtime reserves.
+ * The layout of a scope holding its header alone, whose 5 slots the runtime reserves.
  */
-const EMPTY_LAYOUT: _ScopeLayout = { size: 8, nodes: 8 };
+const EMPTY_LAYOUT: _ScopeLayout = { size: 5, nodes: 5 };
 const { _ssrTry } = await import('./ssr-try.util');
 
 const context = _scope(null, EMPTY_LAYOUT);

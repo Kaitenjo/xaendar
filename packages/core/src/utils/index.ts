@@ -7,7 +7,7 @@ export type * from '../types/scope-layout.type';
 export { _createElement, _createMATHMLElement, _createSVGElement } from './create-element/create-element.util';
 export type * from '../types/declaration-kind.type';
 export * from './directive-registry/directive-registry.util';
-export * from './for/for.util';
+export { _for, _iterationVariables, _runFor } from './for/for.util';
 export { _client } from './client/client.util';
 export { _try } from './try/try.util';
 export { _defer } from './defer/defer.util';

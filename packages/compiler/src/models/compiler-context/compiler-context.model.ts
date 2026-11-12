@@ -82,7 +82,26 @@ export class CompilerContext {
    * @returns `true` when it does.
    */
   public get opensScope(): boolean {
-    return this._scopeKind === 'scope' || this._variables.length > 0;
+    return this._scopeKind === 'scope' || this._scopeKind === 'runtime' || this._variables.length > 0;
+  }
+
+  /**
+   * Whether this scope stands for a branch rendered inline into the runtime scope holding its block (see `ScopeKind`).
+   *
+   * @returns `true` when it does.
+   */
+  public get inlineBranch(): boolean {
+    return this._scopeKind === 'inline';
+  }
+
+  /**
+   * Whether this scope stands for a scope the runtime creates with a layout of its own (see `ScopeKind`), where the
+   * compiler reserves no slot.
+   *
+   * @returns `true` when it does.
+   */
+  public get runtimeScope(): boolean {
+    return this._scopeKind === 'runtime';
   }
 
   /**

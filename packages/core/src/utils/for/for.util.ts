@@ -1,12 +1,22 @@
-import { _SSR_MARKERS, COMPONENT, HEADER, LAYOUT, PARENT_NODE } from '../../costants';
+import { _SSR_MARKERS, COMPONENT, CONTENT, HEADER, KEYS, LAYOUT, PARENT_NODE, POSITION } from '../../costants';
 import { untracked } from '../../signals';
-import { _bindEffect } from '../../signals/effect/effect';
+import { _bindSite } from '../../signals/effect/effect';
 import type { IterationVariable } from '../../types/iteration-variable.type';
 import type { IterationVariables } from '../../types/iteration-variables.type';
 import type { _Context } from '../../types/context.type';
-import { clear, containerSlot, forEachChild, getNodeStrategy, nodesEnd, refresh, update } from '../context/context.util';
+import { blockAnchor, blockParent, clear, containerSlot, forEachChild, forEachInline, getNodeStrategy, nodesEnd, refresh, update } from '../context/context.util';
 import type { ForConfig } from '../../types/for-config.type';
-import type { ForRun } from '../../types/for-run.type';
+import type { InlineBranch } from '../../types/inline-branch.type';
+import type { NodeBlock } from '../../types/node-block.type';
+
+/**
+ * The block a `@for` opened, read by its first run, which adopts the items of the server (see `renderItems`).
+ *
+ * N.B. Deliberate, to save memory: the first run is synchronous, inside `_for`, so the block travels through a variable
+ * of the module, set by `_for` and read at once, instead of the state of the `@for`: what it says of the server is read
+ * only by the first run, and its anchor is kept in the container. Do not keep the block.
+ */
+let openedBlock: NodeBlock | null = null;
 
 /**
  * The first node, in DOM order, of the item whose bounds {@link findItemBounds} found last, `null` when it renders none.
@@ -14,13 +24,18 @@ import type { ForRun } from '../../types/for-run.type';
  * N.B. Deliberate, to save memory: rendering is synchronous, so the bounds of an item travel through two variables of
  * the module, read right after they are found, instead of an array of the nodes of the item, allocated for every item
  * at every run, or an object holding the two nodes. Do not collect the nodes into an array again.
+ *
+ * N.B. Deliberate: {@link updateItems} sets both back to `null` once its loop has read them. A node left there would
+ * keep alive, until another `@for` runs again, the whole DOM tree of its component, even once destroyed. Exported only
+ * so that the specs can check it: it is not part of the API of the package.
  */
-let firstNode: Node | null = null;
+export let firstNode: Node | null = null;
 
 /**
- * The last node, in DOM order, of the item whose bounds {@link findItemBounds} found last, `null` when it renders none.
+ * The last node, in DOM order, of the item whose bounds {@link findItemBounds} found last, `null` when it renders none
+ * (see {@link firstNode}).
  */
-let lastNode: Node | null = null;
+export let lastNode: Node | null = null;
 
 /**
  * Reactively iterates over a list of items. Items are matched across re-runs
@@ -33,7 +48,7 @@ let lastNode: Node | null = null;
  * - key sparita → il Context viene distrutto.
  * - key nuova → il Context viene creato.
  *
- * The items and their keys are read by a binding (see `_bindEffect`): the `@for` runs again whenever a signal, or a
+ * The items and their keys are read by a binding (see `_bindSite`): the `@for` runs again whenever a signal, or a
  * variable of the template, they read changes.
  *
  * The first run renders the items in order, getting their nodes with the strategy of the context: in the hydration of a
@@ -49,60 +64,64 @@ let lastNode: Node | null = null;
  *   the variables of the template the items and their keys read (see `ForConfig`).
  */
 export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, config: ForConfig): void {
-  const nodeBlock = getNodeStrategy(parentContext).block(parentContext, parentNode, referenceNode, 'for', _SSR_MARKERS.for, config.last, config.slot);
-  const run: ForRun = {
-    parentNode, parentContext,
-    nodeBlock,
-    config,
-    rows: null,
-    keys: null
-  };
-
-  parentContext[containerSlot(parentContext, config.container)] = run;
-  _bindEffect(parentContext, runFor, run, undefined, undefined, config.reads);
+  const block = getNodeStrategy(parentContext).block(parentContext, parentNode, referenceNode, 'for', _SSR_MARKERS.for, config.last, config.slot);
+  parentContext[containerSlot(parentContext, config.container) + POSITION] = block.anchor ?? parentNode;
+  openedBlock = block;
+  try {
+    _bindSite(parentContext, config, undefined, _runFor);
+  } finally {
+    openedBlock = null;
+  }
 }
 
 /**
  * Reads the items of a `@for` and their keys, then renders them: the callback of the binding of {@link _for}, shared by
- * every `@for`. Only the items and the track expression are tracked.
+ * every `@for`, which the compiler names in the binding. Only the items and the track expression are tracked. The rows
+ * and their keys live in the container of the `@for` (see `CONTAINER_SLOTS`), empty until the first run.
  *
- * @param run - The `@for`.
+ * @param context - The context holding the `@for`.
+ * @param _target - Unused: the `@for` keeps its state in its container.
+ * @param config - The `@for`.
  */
-function runFor(run: ForRun): void {
-  const { config, parentContext } = run;
-  const component = parentContext[COMPONENT];
-  const iterable = config.items.call(component, parentContext);
+export function _runFor(context: _Context, _target: unknown, config: ForConfig): void {
+  const component = context[COMPONENT];
+  const iterable = config.items.call(component, context);
   const items = typeof iterable === 'number' ? Array.from({ length: iterable }, (_, i) => i) : iterable;
   // The track expression reads the item, the index and the implicit variables as the body does: as values
   const last = items.length - 1;
   const newKeys = new Array<string | number>(items.length);
   for (let i = 0; i < items.length; i++) {
-    newKeys[i] = config.track.call(component, parentContext, items[i], i, i === 0, i === last, i % 2 === 0, i % 2 !== 0);
+    newKeys[i] = config.track.call(component, context, items[i], i, i === 0, i === last, i % 2 === 0, i % 2 !== 0);
   }
 
-  untracked(() => run.rows ? updateItems(run, items, newKeys) : renderItems(run, items, newKeys));
+  const container = containerSlot(context, config.container);
+  untracked(() => context[container + CONTENT] ? updateItems(context, config, container, items, newKeys) : renderItems(context, config, container, items, newKeys));
 }
 
 /**
  * Renders the items of the first run, run synchronously by {@link _for}, in order before the anchor, getting their nodes
  * with the strategy of the context: in a hydration, they are adopted when the server rendered the same keys.
  *
- * @param run - The `@for`.
+ * @param context - The context holding the `@for`.
+ * @param config - The `@for`.
+ * @param container - The first slot of the container of the `@for`.
  * @param items - The items.
  * @param newKeys - The key of each item.
  */
-function renderItems(run: ForRun, items: unknown[], newKeys: Array<string | number>): void {
-  const { parentNode, parentContext, nodeBlock, config } = run;
-  const nodeStrategy = getNodeStrategy(parentContext);
+function renderItems(context: _Context, config: ForConfig, container: number, items: unknown[], newKeys: Array<string | number>): void {
+  const block = openedBlock!;
+  openedBlock = null;
+  const parentNode = blockParent(context[container + POSITION] as Node) as HTMLElement;
+  const nodeStrategy = getNodeStrategy(context);
   const rows = new Array<_Context>(items.length);
-  const itemNodeStrategy = nodeStrategy.adoptItems(parentNode, nodeBlock, newKeys);
+  const itemNodeStrategy = nodeStrategy.adoptItems(parentNode, block, newKeys);
   for (let i = 0; i < items.length; i++) {
-    rows[i] = config.block(parentNode, parentContext, items, i, nodeBlock.anchor, itemNodeStrategy);
+    rows[i] = config.block(parentNode, context, items, i, block.anchor, itemNodeStrategy);
   }
 
-  run.rows = rows;
-  run.keys = newKeys;
-  nodeStrategy.close(parentNode, nodeBlock);
+  context[container + CONTENT] = rows;
+  context[container + KEYS] = newKeys;
+  nodeStrategy.close(parentNode, block);
 }
 
 /**
@@ -115,18 +134,21 @@ function renderItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
  *
  * N.B. Deliberate, to save memory: the rows to reuse are found through a `Map` of this run, by key, holding the first
  * occurrence of each key, and a second one, created only when a key repeats, holding the others: both are dropped once
- * the rows are reconciled, and the run keeps only the new rows and keys, arrays of their exact length. Do not keep a
- * `Map` in the run between two runs, nor build the arrays with `push`.
+ * the rows are reconciled, and the container keeps only the new rows and keys, arrays of their exact length. Do not keep
+ * a `Map` in the container between two runs, nor build the arrays with `push`.
  *
- * @param run - The `@for`, already rendered.
+ * @param parentContext - The context holding the `@for`.
+ * @param config - The `@for`.
+ * @param container - The first slot of the container of the `@for`, already rendered.
  * @param items - The items.
  * @param newKeys - The key of each item.
  */
-function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | number>): void {
-  const { parentNode, parentContext, config } = run;
+function updateItems(parentContext: _Context, config: ForConfig, container: number, items: unknown[], newKeys: Array<string | number>): void {
+  const position = parentContext[container + POSITION] as Node;
+  const parentNode = blockParent(position) as HTMLElement;
   const { variables } = config;
-  const oldRows = run.rows!;
-  const oldKeys = run.keys!;
+  const oldRows = parentContext[container + CONTENT] as _Context[];
+  const oldKeys = parentContext[container + KEYS] as Array<string | number>;
   const occurrences = countOccurrences(newKeys);
   const oldOccurrences = countOccurrences(oldKeys);
   // The rows kept, by key: the first occurrence of each key, then the following ones of a key repeated
@@ -149,7 +171,7 @@ function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
   }
 
   const rows = new Array<_Context>(items.length);
-  let nextReference: Node | null = run.nodeBlock.anchor;
+  let nextReference: Node | null = blockAnchor(position);
 
   for (let i = items.length - 1; i >= 0; i--) {
     const key = newKeys[i];
@@ -178,8 +200,11 @@ function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
     nextReference = firstNode ?? nextReference;
   }
 
-  run.rows = rows;
-  run.keys = newKeys;
+  // The bounds are read: they must not keep the nodes of the last item alive (see firstNode)
+  firstNode = null;
+  lastNode = null;
+  parentContext[container + CONTENT] = rows;
+  parentContext[container + KEYS] = newKeys;
 }
 
 /**
@@ -230,19 +255,48 @@ function collectBounds(context: _Context, parentNode: Node): void {
   }
 
   for (let i = context[LAYOUT].nodes; i < nodesEnd(context); i++) {
-    const node = context[i] as Node | null | undefined;
-    if (node) {
-      if (!firstNode) {
-        firstNode = lastNode = node;
-      } else if (node.compareDocumentPosition(firstNode) & Node.DOCUMENT_POSITION_FOLLOWING) {
-        firstNode = node;
-      } else if (node.compareDocumentPosition(lastNode!) & Node.DOCUMENT_POSITION_PRECEDING) {
-        lastNode = node;
-      }
-    }
+    widenBounds(context[i] as Node | null | undefined);
   }
 
+  forEachInline(context, collectInlineBounds, parentNode);
   forEachChild(context, collectBounds, parentNode);
+}
+
+/**
+ * Widens the bounds of an item (see {@link findItemBounds}) to the nodes of a branch rendered inline into one of its
+ * scopes (see `InlineBranch`) that are rendered into `parentNode`: the ones of a block at the top of the scope.
+ *
+ * @param context - The scope the branch is rendered into.
+ * @param branch - The branch.
+ * @param parentNode - The element the nodes have to be rendered into.
+ */
+function collectInlineBounds(context: _Context, branch: InlineBranch, parentNode: Node): void {
+  const { base, nodes } = branch;
+  for (let i = 0; i < nodes.length; i++) {
+    const node = context[base + nodes[i]] as Node | null | undefined;
+    if (node?.parentNode === parentNode) {
+      widenBounds(node);
+    }
+  }
+}
+
+/**
+ * Widens the bounds of an item (see {@link findItemBounds}) to a node.
+ *
+ * @param node - The node, nothing for an empty slot.
+ */
+function widenBounds(node: Node | null | undefined): void {
+  if (!node) {
+    return;
+  }
+
+  if (!firstNode) {
+    firstNode = lastNode = node;
+  } else if (node.compareDocumentPosition(firstNode) & Node.DOCUMENT_POSITION_FOLLOWING) {
+    firstNode = node;
+  } else if (node.compareDocumentPosition(lastNode!) & Node.DOCUMENT_POSITION_PRECEDING) {
+    lastNode = node;
+  }
 }
 
 /**

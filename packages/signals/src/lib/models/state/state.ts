@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { addToSmallSet, deleteFromSmallSet, emptySmallSet, type SmallSet, smallSetSize } from '@xaendar/common';
+import { addToSmallSet, deleteFromSmallSet, emptySmallSet, forEachInSmallSet, type SmallSet, smallSetSize, smallSetToArray } from '@xaendar/common';
 import { NoArgsVoidFunction } from '@xaendar/types';
 import { SignalEqual } from '../../types/signal-equal.type';
 import { SignalOptions } from '../../types/signal-options.type';
@@ -64,7 +64,7 @@ export class State<T = any> {
    * Should contain both `Computed` and `Watcher` instances, as both can be
    * direct dependents of a `State`.
    *
-   * A `SmallSet` (an array while it holds few items), since almost every Signal has one or two of them.
+   * A `SmallSet` (the item alone, an array while it holds few items), since almost every Signal has one or two of them.
    *
    * @internalSlot
    * @see Signal algorithms — 'Signal.State internal slots'
@@ -80,7 +80,7 @@ export class State<T = any> {
    */
   public getSinks(symbol: symbol): (Computed<unknown> | Watcher)[] {
     assertPrivateContext(symbol);
-    return [...this.#sinks];
+    return smallSetToArray(this.#sinks);
   }
 
   /**
@@ -154,9 +154,7 @@ export class State<T = any> {
     if (!this.#equals.call(this, this.#value, newValue)) {
       this.#value = newValue;
       GLOBAL_STATE.version++;
-      for (const sink of this.#sinks) {
-        sink instanceof Computed ? sink.setState('dirty', PRIVATE) : sink.notify(PRIVATE)
-      }
+      forEachInSmallSet(this.#sinks, markSinkDirty, undefined);
     }
   }
 
@@ -224,4 +222,13 @@ export class State<T = any> {
       }
     }
   }
+}
+
+/**
+ * Tells a sink of a State that its value changed: a `Computed` becomes `~dirty~`, a `Watcher` is notified.
+ *
+ * @param sink - The sink.
+ */
+function markSinkDirty(sink: Computed<unknown> | Watcher): void {
+  sink instanceof Computed ? sink.setState('dirty', PRIVATE) : sink.notify(PRIVATE);
 }

@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ForConfig } from '../../types/for-config.type';
 import type { IterationVariables } from '../../types/iteration-variables.type';
-import { HEADER, LAYOUT } from '../../costants';
+import { CONTAINER_SLOTS, HEADER, LAYOUT } from '../../costants';
 import type { _Context } from '../../types/context.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 
@@ -12,7 +12,9 @@ await vi.hoisted(async () => {
 });
 
 const { _read, _scope, clear, containerSlot, ELEMENT_LAYOUT, EMPTY_LAYOUT, mountNode, nodesEnd, refresh, update } = await import('../context/context.util');
-const { _for, _iterationVariables } = await import('./for.util');
+// The namespace of the module, whose members are live bindings, read by the spec of the bounds
+const forModule = await import('./for.util');
+const { _for, _iterationVariables } = forModule;
 const { _if } = await import('../if/if.util');
 const { _bindEffect } = await import('../../signals/effect/effect');
 const { signal } = await import('../../signals');
@@ -49,7 +51,7 @@ function deepFreeze<Value extends object>(value: Value): Value {
  * The layout of a scope declaring some variables, followed by some nodes and by the containers of some blocks.
  */
 function layoutOf(count: number, nodes = 0, containers = 0): _ScopeLayout {
-  const layout: _ScopeLayout = { size: HEADER + count + nodes + containers, nodes: HEADER + count };
+  const layout: _ScopeLayout = { size: HEADER + count + nodes + CONTAINER_SLOTS * containers, nodes: HEADER + count };
   return containers ? { ...layout, containers: HEADER + count + nodes } : layout;
 }
 
@@ -203,6 +205,16 @@ describe('_for', () => {
     await change(['a', 'b']);
     expect(texts()).toEqual(['a', 'b']);
     expect(forFn).toHaveBeenCalledTimes(4);
+  });
+
+  it('keeps no node of the items once a run has moved and created them', async () => {
+    const { texts, change } = setup(['a', 'b', 'c']);
+
+    // Moves two items and creates one: the bounds of each item are found, then dropped
+    await change(['c', 'a', 'd', 'b']);
+    expect(texts()).toEqual(['c', 'a', 'd', 'b']);
+    expect(forModule.firstNode).toBeNull();
+    expect(forModule.lastNode).toBeNull();
   });
 
   it('passes the item, the index and the implicit variables to the track expression, as values', () => {
@@ -576,7 +588,7 @@ describe('_for', () => {
 
   it('reconciles its items again when a variable of the enclosing scope they read changes', () => {
     const parent = document.createElement('ul');
-    const rowContext = _scope(createRoot(), layoutOf(1));
+    const rowContext = _scope(createRoot(), layoutOf(1, 0, 1));
     rowContext[HEADER] = { cells: ['a', 'b'] };
     const forFn = vi.fn((parentNode: HTMLElement, parentContext: Context, list: unknown[], index: number, reference: Node | null) => {
       const itemContext = itemScope(parentContext);
@@ -607,7 +619,7 @@ describe('_for', () => {
 
   it('calls the items and the track expression with the component of the context as this and the context', () => {
     const component = { rows: [{ id: 1 }, { id: 2 }] };
-    const context = _scope(createRoot(), EMPTY_LAYOUT, undefined, component);
+    const context = _scope(createRoot(), layoutOf(0, 0, 1), undefined, component);
     const items = vi.fn(function (this: typeof component, _context: Context) {
       return this.rows;
     });
@@ -636,8 +648,8 @@ describe('_for', () => {
       return itemContext;
     });
     const config = deepFreeze<ForConfig>({ items, track, block, variables, reads: [0] });
-    const first = _scope(createRoot(), layoutOf(1));
-    const second = _scope(createRoot(), layoutOf(1));
+    const first = _scope(createRoot(), layoutOf(1, 0, 1));
+    const second = _scope(createRoot(), layoutOf(1, 0, 1));
     first[HEADER] = ['a', 'b'];
     second[HEADER] = ['c'];
     const firstParent = document.createElement('ul');

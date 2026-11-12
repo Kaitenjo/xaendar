@@ -1,22 +1,24 @@
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import { IfNode } from '../../../parser/types/nodes/if-node.type';
 import { GeneratorContext } from '../../context/context';
+import type { BlockBranch } from '../../types/block-branch.type';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
-import { allocateBlockSlot, appendBlockPosition, appendContainer, getContentAnchor } from '../../utils/block-position/block-position.utils';
+import { addBranch, allocateBlockSlot, appendBlockPosition, appendContainer, describeBranch, getContentAnchor } from '../../utils/block-position/block-position.utils';
 import { getBlockIdentifier, joinVariables, resolveExpression } from '../../utils/generator/generator.utils';
-import { declareExpression, toArrayLiteral, toObjectLiteral } from '../../utils/module-code/module-code.utils';
+import { declareExpression } from '../../utils/module-code/module-code.utils';
 
 /**
  * Generates the code of an `@if` / `@else if` / `@else` chain: a `_if(...)` call receiving a constant of the module
  * (`div0__if0$if`, see `BlockConfig` of the runtime) listing a branch per block, the condition of the branch, if any,
- * a function of the module the runtime calls with the component and the context, and the function rendering it, a scope
- * of its own, rendered before the anchor it receives. When the conditions read variables of the enclosing scopes, the
+ * a function of the module the runtime calls with the component and the context, and the function rendering it before
+ * the anchor it receives, in a scope of its own or, when it declares nothing and renders no block, inline into the scope
+ * holding the block (see `describeBranch`), the constant then declared with the layout of that scope. When the conditions read variables of the enclosing scopes, the
  * constant lists their names, so that the chain selects the branch again when they change. The last node of its parent
  * is `last`, rendered without anchor, its branches at the end of the parent (see `isLastRenderedChild`).
  *
  * @example
  * // @if (row.done) { … } @else { … }
- * const div0__if0$if = { branches: [{ condition: div0__if0$condition, block: div0__if0 }, { block: div0__else0 }], reads: _reads0 };
+ * const div0__if0$if = { reads: _reads0, update: _runIf, effect: 0, branches: [{ condition: div0__if0$condition, block: div0__if0 }, { block: div0__else0 }] };
  * _if(div0, context, null, div0__if0$if);
  *
  * @param node - The `IfNode` to process.
@@ -36,14 +38,10 @@ export async function generateIf(node: IfNode, parentNode: string, index: string
   };
 
   const ifKey = getBlockIdentifier('if', parentNode, index);
-  const branches = new Array<string>();
+  const branches = new Array<BlockBranch>();
   const condition = resolveExpression(node.conditionNode, generatorContext);
   let variables: readonly number[] | undefined = condition.variables;
-  branches.push(toObjectLiteral([`condition: ${declareExpression(generatorContext, `${ifKey}$condition`, condition.expression)}`, `block: ${ifKey}`]));
-  retVal.functionsToProcess!.set(ifKey, {
-    fn: { node, parentNode: ifKey, context: new GeneratorContext(generatorContext), anchor: contentAnchor },
-    args: [ifKey, 'parentContext', 'anchor', 'nodeStrategy']
-  });
+  addBranch(retVal, branches, describeBranch(node, ifKey, [`condition: ${declareExpression(generatorContext, `${ifKey}$condition`, condition.expression)}`], generatorContext, contentAnchor));
 
   let alt = node.alternate;
   let i = 0;
@@ -51,25 +49,16 @@ export async function generateIf(node: IfNode, parentNode: string, index: string
     const elseIfKey = getBlockIdentifier('elseIf', parentNode, `${index}_${i}`);
     const elseIfCondition = resolveExpression(alt.conditionNode, generatorContext);
     variables = joinVariables(variables, elseIfCondition.variables);
-    branches.push(toObjectLiteral([`condition: ${declareExpression(generatorContext, `${elseIfKey}$condition`, elseIfCondition.expression)}`, `block: ${elseIfKey}`]));
-    retVal.functionsToProcess!.set(elseIfKey, {
-      fn: { node: alt, parentNode: elseIfKey, context: new GeneratorContext(generatorContext), anchor: contentAnchor },
-      args: [elseIfKey, 'parentContext', 'anchor', 'nodeStrategy']
-    });
+    addBranch(retVal, branches, describeBranch(alt, elseIfKey, [`condition: ${declareExpression(generatorContext, `${elseIfKey}$condition`, elseIfCondition.expression)}`], generatorContext, contentAnchor));
     alt = alt.alternate;
     i++;
   }
 
   if (alt) {
-    const elseKey = getBlockIdentifier('else', parentNode, index);
-    branches.push(toObjectLiteral([`block: ${elseKey}`]));
-    retVal.functionsToProcess!.set(elseKey, {
-      fn: { node: alt, parentNode: elseKey, context: new GeneratorContext(generatorContext), anchor: contentAnchor },
-      args: [elseKey, 'parentContext', 'anchor', 'nodeStrategy']
-    });
+    addBranch(retVal, branches, describeBranch(alt, getBlockIdentifier('else', parentNode, index), [], generatorContext, contentAnchor));
   }
 
-  const members = [`branches: ${toArrayLiteral(branches)}`];
+  const members = new Array<string>();
   const reads = generatorContext.getReads(variables);
   if (reads) {
     members.push(`reads: ${reads}`);
@@ -77,7 +66,7 @@ export async function generateIf(node: IfNode, parentNode: string, index: string
 
   appendBlockPosition(members, last, allocateBlockSlot(generatorContext, last));
   appendContainer(members, generatorContext);
-  const config = generatorContext.declareConstant(`${ifKey}$if`, toObjectLiteral(members));
+  const config = generatorContext.declareBlock(`${ifKey}$if`, members, branches, '_runIf');
   retVal.code.push(`_if(${parentNode}, context, ${anchor}, ${config});`);
   return retVal;
 }

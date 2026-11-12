@@ -3,7 +3,7 @@ import { ComputedState } from '../../types/computed-state.type';
 import { SignalEqual } from '../../types/signal-equal.type';
 import { SignalOptions } from '../../types/signal-options.type';
 import { isDevMode } from '../../utils/dev-mode/dev-mode';
-import { addToSmallSet, deleteFromSmallSet, emptySmallSet, type SmallSet, smallSetHas, smallSetSize } from '@xaendar/common';
+import { addToSmallSet, deleteFromSmallSet, emptySmallSet, findInSmallSet, forEachInSmallSet, type SmallSet, smallSetHas, smallSetSize, smallSetToArray } from '@xaendar/common';
 import { GLOBAL_STATE, popComputed, pushComputed } from '../../utils/globals/globals';
 import { PRIVATE, assertPrivateContext } from '../../utils/private-symbol/private-symbol';
 import { State } from '../state/state';
@@ -71,7 +71,7 @@ export class Computed<T = any> {
    *
    * May contain both `State` and `Computed` instances.
    *
-   * A `SmallSet` (an array while it holds few items), since almost every Signal has one or two of them.
+   * A `SmallSet` (the item alone, an array while it holds few items), since almost every Signal has one or two of them.
    *
    * @internalSlot
    * @see Signal algorithms — "Signal.Computed internal slots"
@@ -86,7 +86,7 @@ export class Computed<T = any> {
  */
   public getSources(symbol: symbol): (State<unknown> | Computed<unknown>)[] {
     assertPrivateContext(symbol);
-    return [...this.#sources];
+    return smallSetToArray(this.#sources);
   }
   /**
    * The set of Signals and Watchers that directly depend on this Signal.
@@ -95,7 +95,7 @@ export class Computed<T = any> {
    * `Watcher`. An un-watched `Computed` has an empty sinks set, which allows
    * it to be garbage-collected independently from the rest of the graph.
    *
-   * A `SmallSet` (an array while it holds few items), since almost every Signal has one or two of them.
+   * A `SmallSet` (the item alone, an array while it holds few items), since almost every Signal has one or two of them.
    *
    * @internalSlot
    * @see Signal algorithms — "Signal.Computed internal slots"
@@ -111,7 +111,7 @@ export class Computed<T = any> {
    */
   public getSinks(symbol: symbol): (Computed<unknown> | Watcher)[] {
     assertPrivateContext(symbol);
-    return [...this.#sinks];
+    return smallSetToArray(this.#sinks);
   }
   /**
    * The equality function used to determine whether a newly computed value
@@ -298,9 +298,7 @@ export class Computed<T = any> {
     this.#state = newState;
 
     if (this.#state === 'dirty' || this.#state === 'checked') {
-      for (const sink of this.#sinks) {
-        sink instanceof Computed ? sink.setState('checked', PRIVATE) : sink.notify(PRIVATE);
-      }
+      forEachInSmallSet(this.#sinks, Computed.#markSinkChecked, undefined);
     }
   }
 
@@ -329,9 +327,7 @@ export class Computed<T = any> {
         this.#state = 'dirty';
       }
 
-      for (const source of this.#sources) {
-        source.addSink(this, PRIVATE);
-      }
+      forEachInSmallSet(this.#sources, Computed.#linkSource, this);
     }
 
     /*
@@ -361,9 +357,7 @@ export class Computed<T = any> {
     this.#sinks = deleteFromSmallSet(this.#sinks, sink);
 
     if (smallSetSize(this.#sinks) === 0) {
-      for (const source of this.#sources) {
-        source.removeSink(this, PRIVATE);
-      }
+      forEachInSmallSet(this.#sources, Computed.#unlinkSource, this);
     }
   }
 
@@ -382,7 +376,7 @@ export class Computed<T = any> {
    *   its sources are stale.
    */
   #findDeepestStale(): Computed {
-    const unclearNode = [...this.#sources].find((source): source is Computed => source instanceof Computed && (source.#state === 'dirty' || source.#state === 'checked'));
+    const unclearNode = findInSmallSet(this.#sources, Computed.#isStale, undefined) as Computed | undefined;
     return unclearNode ? unclearNode.#findDeepestStale() : this;
   }
 
@@ -433,11 +427,7 @@ export class Computed<T = any> {
 
     // Only a live Signal is a sink of its sources: it stops being one of the sources it no longer reads
     if (smallSetSize(this.#sinks)) {
-      for (const source of previousSources) {
-        if (!smallSetHas(this.#sources, source)) {
-          source.removeSink(this, PRIVATE);
-        }
-      }
+      forEachInSmallSet(previousSources, Computed.#unlinkSourceNotRead, this);
     }
     this.#version = GLOBAL_STATE.version;
 
@@ -459,11 +449,7 @@ export class Computed<T = any> {
       notifying them again from a recalculation would schedule a run with nothing pending
     */
     if (outcome === 'dirty') {
-      for (const sink of this.#sinks) {
-        if (sink instanceof Computed) {
-          sink.setState('dirty', PRIVATE);
-        }
-      }
+      forEachInSmallSet(this.#sinks, Computed.#markSinkDirty, undefined);
     } else {
       this.#propagateClean();
     }
@@ -526,22 +512,96 @@ export class Computed<T = any> {
    * @see Signal algorithms — "Algorithm: recalculate dirty computed Signal"
    */
   #propagateClean(): void {
-    for (const sink of this.#sinks) {
-      if (sink instanceof Computed && sink.#state === 'checked') {
-        let allSourcesClean = true;
+    forEachInSmallSet(this.#sinks, Computed.#cleanSink, undefined);
+  }
 
-        for (const source of sink.#sources) {
-          if (source instanceof Computed && source.#state !== 'clean') {
-            allSourcesClean = false;
-            break;
-          }
-        }
+  /**
+   * Marks a sink `~checked~` whose immediate sources are all `~clean~` as `~clean~` too, then its own sinks (see
+   * {@link #propagateClean}). A Watcher is left as it is.
+   *
+   * @param sink - The sink.
+   */
+  static #cleanSink(sink: Computed<unknown> | Watcher): void {
+    if (sink instanceof Computed && sink.#state === 'checked' && !findInSmallSet(sink.#sources, Computed.#isNotClean, undefined)) {
+      sink.#state = 'clean';
+      sink.#propagateClean();
+    }
+  }
 
-        if (allSourcesClean) {
-          sink.#state = 'clean';
-          sink.#propagateClean();
-        }
-      }
+  /**
+   * Tells whether a source is a Computed not `~clean~`.
+   *
+   * @param source - The source.
+   * @returns `true` when it is.
+   */
+  static #isNotClean(source: State<unknown> | Computed<unknown>): boolean {
+    return source instanceof Computed && source.#state !== 'clean';
+  }
+
+  /**
+   * Tells whether a source is a Computed `~dirty~` or `~checked~` (see {@link #findDeepestStale}).
+   *
+   * @param source - The source.
+   * @returns `true` when it is.
+   */
+  static #isStale(source: State<unknown> | Computed<unknown>): boolean {
+    return source instanceof Computed && (source.#state === 'dirty' || source.#state === 'checked');
+  }
+
+  /**
+   * Tells a sink that a source it reads changed or may have changed: a Computed becomes `~checked~`, a Watcher is
+   * notified (see `setState`).
+   *
+   * @param sink - The sink.
+   */
+  static #markSinkChecked(sink: Computed<unknown> | Watcher): void {
+    sink instanceof Computed ? sink.setState('checked', PRIVATE) : sink.notify(PRIVATE);
+  }
+
+  /**
+   * Marks a Computed sink `~dirty~`, after a recalculation produced another value; a Watcher was already notified.
+   *
+   * @param sink - The sink.
+   */
+  static #markSinkDirty(sink: Computed<unknown> | Watcher): void {
+    if (sink instanceof Computed) {
+      sink.setState('dirty', PRIVATE);
+    }
+  }
+
+  /**
+   * Makes a Computed becoming live a sink of one of its sources (see `addSink`).
+   *
+   * @template Value - The type of the value of the Computed.
+   * @param source - The source.
+   * @param computed - The Computed.
+   */
+  static #linkSource<Value>(source: State<unknown> | Computed<unknown>, computed: Computed<Value>): void {
+    source.addSink(computed, PRIVATE);
+  }
+
+  /**
+   * Removes a Computed no longer live from the sinks of one of its sources (see `removeSink`).
+   *
+   * @template Value - The type of the value of the Computed.
+   * @param source - The source.
+   * @param computed - The Computed.
+   */
+  static #unlinkSource<Value>(source: State<unknown> | Computed<unknown>, computed: Computed<Value>): void {
+    source.removeSink(computed, PRIVATE);
+  }
+
+  /**
+   * Removes a live Computed from the sinks of a source of its previous evaluation it no longer reads (see
+   * `#computeValue`).
+   *
+   * @template Value - The type of the value of the Computed.
+   * @param source - The source of the previous evaluation.
+   * @param computed - The Computed.
+   */
+  static #unlinkSourceNotRead<Value>(source: State<unknown> | Computed<unknown>, computed: Computed<Value>): void {
+    if (!smallSetHas(computed.#sources, source)) {
+      source.removeSink(computed, PRIVATE);
     }
   }
 

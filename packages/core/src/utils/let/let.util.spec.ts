@@ -1,14 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import { HEADER } from '../../costants';
 import type { _Context } from '../../types/context.type';
+import type { LetBinding } from '../../types/let-binding.type';
+import type { TemplateExpression } from '../../types/template-expression.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
   loadSignals();
 });
 
-const { _let } = await import('./let.util');
-const { _declare, _scope, refresh, update } = await import('../context/context.util');
+const { _let, _runLet } = await import('./let.util');
+const { _declare, _scope, clear, refresh, update } = await import('../context/context.util');
 const { _bindEffect } = await import('../../signals/effect/effect');
 const { signal } = await import('../../signals');
 
@@ -29,6 +31,14 @@ function declareLet(name: string, ...names: string[]): _Context {
 }
 
 /**
+ * The binding of a `@let`, as the compiler writes it: the slot and the identifier of the variable, its expression and
+ * the identifiers of the variables it reads.
+ */
+function letOf(variable: number, id: number, value: TemplateExpression<unknown>, reads?: readonly number[]): LetBinding {
+  return reads ? { variable, id, value, reads } : { variable, id, value };
+}
+
+/**
  * Registers a binding reading a variable, by slot and identifier, recording its values.
  */
 function readVariable(context: _Context, slot: number, id: number): unknown[] {
@@ -40,7 +50,7 @@ function readVariable(context: _Context, slot: number, id: number): unknown[] {
 describe('_let', () => {
   it('writes the value into its slot, which the expressions read as a value', () => {
     const context = declareLet('total');
-    _let(context, HEADER, 0, () => 6);
+    _let(context, letOf(HEADER, 0, () => 6));
 
     expect(context[HEADER]).toBe(6);
   });
@@ -53,7 +63,7 @@ describe('_let', () => {
       return this.price * 2;
     });
 
-    _let(context, HEADER, 0, compute);
+    _let(context, letOf(HEADER, 0, compute));
 
     expect(context[HEADER]).toBe(8);
     expect(compute.mock.contexts[0]).toBe(component);
@@ -63,7 +73,7 @@ describe('_let', () => {
   it('computes the value again once a signal it reads changes, refreshing the scope with its identifier', async () => {
     const price = signal(2);
     const context = declareLet('total');
-    _let(context, HEADER, 0, () => price() * 3);
+    _let(context, letOf(HEADER, 0, () => price() * 3));
     const seen = readVariable(context, HEADER, 0);
 
     price.set(5);
@@ -76,7 +86,7 @@ describe('_let', () => {
   it('does not refresh the scope when a signal it reads changes without changing its value', async () => {
     const price = signal(2);
     const context = declareLet('even');
-    _let(context, HEADER, 0, () => price() % 2 === 0);
+    _let(context, letOf(HEADER, 0, () => price() % 2 === 0));
     const seen = readVariable(context, HEADER, 0);
 
     price.set(4);
@@ -87,7 +97,7 @@ describe('_let', () => {
 
   it('computes the value again when the scope is refreshed with a variable it reads, carrying its identifier on to the bindings after it', () => {
     const context = declareLet('label', 'row');
-    _let(context, HEADER, 0, () => `#${context[HEADER + 1] as number}`, [1]);
+    _let(context, letOf(HEADER, 0, () => `#${context[HEADER + 1] as number}`, [1]));
     const seen = readVariable(context, HEADER, 0);
 
     update(context, HEADER + 1, 7);
@@ -100,7 +110,7 @@ describe('_let', () => {
   it('is not computed again when the scope is refreshed with variables it does not read', () => {
     const context = declareLet('label', 'row', 'other');
     const compute = vi.fn(() => context[HEADER + 1]);
-    _let(context, HEADER, 0, compute, [1]);
+    _let(context, letOf(HEADER, 0, compute, [1]));
 
     update(context, HEADER + 2, 9);
     refresh(context, [2]);
@@ -112,7 +122,7 @@ describe('_let', () => {
     const price = signal(1);
     const tax = signal(10);
     const context = declareLet('total');
-    _let(context, HEADER, 0, () => price());
+    _let(context, letOf(HEADER, 0, () => price()));
     const runs = vi.fn();
     _bindEffect(context, (scope: _Context) => {
       runs();
@@ -129,15 +139,31 @@ describe('_let', () => {
     expect(runs).toHaveBeenCalledTimes(3);
   });
 
-  it('packs a slot and a large identifier without mixing them', async () => {
+  it('refreshes the scope with an identifier larger than any slot', async () => {
     const context = _scope(null, { size: HEADER + 1, nodes: HEADER + 1, variables: ['total'] });
     const price = signal(1);
-    _let(context, HEADER, 70000, () => price());
+    _let(context, letOf(HEADER, 70000, () => price()));
     const seen = readVariable(context, HEADER, 70000);
 
     price.set(2);
     await flush();
 
     expect(seen).toEqual([1, 2]);
+  });
+
+  it('keeps its effect in the slot the layout of a compiled scope reserves, disposed when the scope is cleared', async () => {
+    const price = signal(1);
+    const binding: LetBinding = { variable: HEADER, id: 0, value: () => price(), update: _runLet, effect: 0 };
+    const context = _scope(null, { size: HEADER + 2, nodes: HEADER + 1, bindings: HEADER + 1, sites: [binding], variables: ['total'] });
+    _declare(context, HEADER, 'let');
+    _let(context, binding);
+    expect(context[HEADER + 1]).not.toBeNull();
+
+    clear(context);
+    price.set(2);
+    await flush();
+
+    // A live effect would have written the new value
+    expect(context[HEADER]).toBeNull();
   });
 });

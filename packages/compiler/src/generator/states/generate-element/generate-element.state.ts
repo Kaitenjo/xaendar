@@ -66,7 +66,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
     clears with it: its bindings, its directives and its children are resolved in a generator context standing for it,
     while the structural directives are bound in the scope of the element
   */
-  const elementOwner: DescriptorOwner = structural ? { name: nodeName, generatorContext: new GeneratorContext(generatorContext) } : owner;
+  const elementOwner: DescriptorOwner = structural ? { name: nodeName, generatorContext: new GeneratorContext(generatorContext, undefined, 'runtime') } : owner;
   const attributes = mapClassBindings(node.classBindings, elementOwner, false).concat(await mapAttributes(node.attributes, elementOwner, tagName, isCustomElement, false, false));
   const events = mapEvents(node.events, elementOwner);
   const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, elementOwner, tagName, isCustomElement);
@@ -223,16 +223,25 @@ async function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner
 
     const property = input && !input.exposed ? input.name : name;
     const members = [`name: '${property}'`];
+    // The setter evaluating the expression once, which runs a binding again too: `undefined` for a descriptor written once
+    let update: string | undefined;
+    let role = '';
+    let reads: string | undefined;
     if (typeof value === 'string') {
       members.push(`value: ${toStringLiteral(value)}`, `setter: ${input ? '_setInput' : '_setProperty'}`);
     } else {
       const { expression, variables } = resolveExpression(value.expression, generatorContext);
-      const setter = isConstantExpression(value.expression)
-        ? input ? '_setExpressionInput' : '_setExpressionProperty'
-        : input ? '_setReactiveInput' : '_setReactiveProperty';
-      const role = isDirective ? `${toRoleName(target.slice(2))}_${toRoleName(property)}` : toRoleName(property);
-      members.push(`value: ${declareElementExpression(owner, role, expression)}`, `setter: ${setter}`);
-      appendReads(members, generatorContext.getReads(variables));
+      const once = input ? '_setExpressionInput' : '_setExpressionProperty';
+      role = isDirective ? `${toRoleName(target.slice(2))}_${toRoleName(property)}` : toRoleName(property);
+      members.push(`value: ${declareElementExpression(owner, role, expression)}`);
+      if (isConstantExpression(value.expression)) {
+        members.push(`setter: ${once}`);
+      } else {
+        update = once;
+        reads = generatorContext.getReads(variables);
+        members.push(`setter: ${input ? '_setReactiveInput' : '_setReactiveProperty'}`);
+        appendReads(members, reads);
+      }
     }
 
     if (conditional) {
@@ -248,10 +257,26 @@ async function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner
       }
     }
 
-    mappedAttributes.push(toObjectLiteral(members));
+    mappedAttributes.push(update ? declareAttribute(owner, role, update, members, reads) : toObjectLiteral(members));
   }
 
   return mappedAttributes;
+}
+
+/**
+ * Writes the descriptor of a binding of an element, an attribute or a class: rendered in a scope of the compiler, it is a
+ * constant of the module, named after the element and its role (`td0$class$binding`), which the layout of the scope lists
+ * (see `declareBinding`), otherwise an object literal of the list holding it.
+ *
+ * @param owner - The element.
+ * @param role - The role of the binding.
+ * @param update - The callback of the binding: the setter evaluating the expression once.
+ * @param members - The members of the descriptor.
+ * @param reads - The constant listing the variables of the template the binding reads, if any.
+ * @returns The code of the descriptor.
+ */
+function declareAttribute(owner: DescriptorOwner, role: string, update: string, members: string[], reads: string | undefined): string {
+  return owner.generatorContext.declareBinding(`${owner.name}$${role}$binding`, members, update, !!reads) ?? toObjectLiteral(members);
 }
 
 /**
@@ -272,17 +297,21 @@ function mapClassBindings(classBindings: ClassBindingNode[], owner: DescriptorOw
   for (let i = 0; i < classBindings.length; i++) {
     const { className, value } = classBindings[i];
     const { expression, variables } = resolveExpression(value.expression, owner.generatorContext);
+    const role = `class_${toRoleName(className)}`;
+    const constant = isConstantExpression(value.expression);
+    const reads = owner.generatorContext.getReads(variables);
     const members = [
       `name: ${toStringLiteral(className)}`,
-      `value: ${declareElementExpression(owner, `class_${toRoleName(className)}`, expression)}`,
-      `setter: ${isConstantExpression(value.expression) ? '_setExpressionClass' : '_setReactiveClass'}`
+      `value: ${declareElementExpression(owner, role, expression)}`,
+      `setter: ${constant ? '_setExpressionClass' : '_setReactiveClass'}`
     ];
-    appendReads(members, owner.generatorContext.getReads(variables));
+    appendReads(members, reads);
     if (conditional) {
       members.push('unbind: _removeClass');
     }
 
-    mappedAttributes.push(toObjectLiteral(members));
+    // A binding runs again through the setter evaluating the expression once
+    mappedAttributes.push(constant ? toObjectLiteral(members) : declareAttribute(owner, role, '_setExpressionClass', members, reads));
   }
 
   return mappedAttributes;
@@ -317,6 +346,11 @@ function appendReads(members: string[], reads: string | undefined): void {
  */
 function mapEvents(events: EventNode[], owner: DescriptorOwner, prefix = ''): string[] {
   const { generatorContext } = owner;
+  // The listeners of a branch rendered inline are kept by a slot of the branch
+  if (events.length) {
+    generatorContext.reserveCleanup();
+  }
+
   generatorContext.addUnresolvableIdentifier('$event');
 
   const mappedEvents = events.map(({ name, handler, parameters }) => {
@@ -419,7 +453,7 @@ async function mapConditionalBindingDescriptors(
       continue;
     }
 
-    const branchOwner: DescriptorOwner = { name: owner.name, generatorContext: new GeneratorContext(owner.generatorContext) };
+    const branchOwner: DescriptorOwner = { name: owner.name, generatorContext: new GeneratorContext(owner.generatorContext, undefined, 'runtime') };
     const mappedBranches = new Array<string>();
     const variables: { read?: readonly number[] } = {};
     for (let j = 0; j < branches.length; j++) {
@@ -434,8 +468,10 @@ async function mapConditionalBindingDescriptors(
     }
 
     members.push(`branches: ${toArrayLiteral(mappedBranches)}`);
-    appendReads(members, owner.generatorContext.getReads(variables.read));
-    mappedConditionalBindings.push(toObjectLiteral(members));
+    const reads = owner.generatorContext.getReads(variables.read);
+    appendReads(members, reads);
+    // The selection is a binding of the scope holding the conditional binding, writing the run applying the branches
+    mappedConditionalBindings.push(owner.generatorContext.declareBinding(`${owner.name}$conditional$binding`, members, '_runConditionalBinding', !!reads) ?? toObjectLiteral(members));
   }
 
   return mappedConditionalBindings;

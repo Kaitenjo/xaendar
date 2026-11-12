@@ -104,8 +104,8 @@ describe('GeneratorContext', () => {
 
       expect(scope.allocateNodeSlot()).toBeUndefined();
       scope.tracksNodes = true;
-      expect(scope.allocateNodeSlot()).toBe(8);
-      expect(scope.allocateNodeSlot()).toBe(9);
+      expect(scope.allocateNodeSlot()).toBe(6);
+      expect(scope.allocateNodeSlot()).toBe(7);
       expect(scope.declareLayout()).toBe('_layout0');
       expect(scope.constantDeclarations).toEqual([]);
     });
@@ -124,9 +124,9 @@ describe('GeneratorContext', () => {
       expect(new GeneratorContext(root).declareLayout()).toBe('_layout0');
       expect(second.declareLayout()).toBe('_layout2');
       expect(root.constantDeclarations).toEqual([
-        'const _layout0 = { size: 7, nodes: 7 };',
-        'const _layout1 = { size: 8, nodes: 8, variables: [\'row\'] };',
-        'const _layout2 = { size: 9, nodes: 8, variables: [\'row\'] };'
+        'const _layout0 = { size: 5, nodes: 5 };',
+        'const _layout1 = { size: 6, nodes: 6, variables: [\'row\'] };',
+        'const _layout2 = { size: 7, nodes: 6, variables: [\'row\'] };'
       ]);
     });
   });

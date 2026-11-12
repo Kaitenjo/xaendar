@@ -4,7 +4,7 @@ import { CustomDirective } from '../../models/custom-directive/custom-directive'
 import { CustomElement } from '../../models/custom-element/custom-element';
 import { StructuralDirective } from '../../models/structural-directive/structural-directive';
 import { TemplateListener } from '../../models/template-listener/template-listener';
-import { _bindEffect, effect } from '../../signals/effect/effect';
+import { _bindSite, effect } from '../../signals/effect/effect';
 import { isInputSignal } from '../../signals/input/input-instance.symbol';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
 import { signal } from '../../signals/signal/signal';
@@ -42,7 +42,7 @@ import { writeAttribute } from '../write-attribute/write-attribute.util';
  *
  * The element is described by a constant of the module of the template (see `RenderElement`), shared by every element
  * it describes: static (literal) attribute values are set once via `setAttribute`, dynamic ones are bindings, functions
- * of the module the runtime calls with the component and the context (see `_bindEffect`), which update the attribute
+ * of the module the runtime calls with the component and the context (see `_bindSite`), which update the attribute
  * whenever a signal or a variable of the template they read changes. Event listeners are attached as objects calling
  * the handler of the template (see `TemplateListener`), removed when the context is cleared. The children are rendered
  * in the context the element is rendered in, or in a child of it when they need one (see `renderElementChildren`), so
@@ -234,7 +234,7 @@ function bindEvents(element: Element, context: _Context, events: readonly Render
  * unbinding them, as soon as another branch, or none, is selected. The conditional bindings nested in a
  * branch are bound the same way while the branch is selected.
  *
- * The selection is a binding (see `_bindEffect`): it is selected again whenever a signal or a variable of the template
+ * The selection is a binding (see `_bindSite`): it is selected again whenever a signal or a variable of the template
  * its conditions read changes. Only the selection is tracked: a selection evaluated again without changing its outcome,
  * or a signal read while binding, never binds twice.
  *
@@ -250,7 +250,7 @@ function bindConditionalBindings<Target, Bindings extends { readonly conditional
   for (let i = 0; i < conditionalBindings.length; i++) {
     const conditionalBinding = conditionalBindings[i];
     const run: ConditionalBindingRun<Target, Bindings> = { conditionalBinding, scope: _scope(context, EMPTY_LAYOUT), target, bind, current: undefined };
-    _bindEffect(context, runConditionalBinding<Target, Bindings>, run, undefined, undefined, conditionalBinding.reads);
+    _bindSite(context, conditionalBinding, run, _runConditionalBinding);
     // Held after the binding selecting its branch, so that a refresh selects the branch before refreshing it
     addCleanup(context, run);
   }
@@ -258,14 +258,16 @@ function bindConditionalBindings<Target, Bindings extends { readonly conditional
 
 /**
  * Selects the branch of a conditional binding and applies it: the callback of the binding of
- * {@link bindConditionalBindings}, shared by every conditional binding. Only the selection is tracked. The conditions
- * read the variables through the context of the branch, which declares none, so they read the ones of the scope.
+ * {@link bindConditionalBindings}, shared by every conditional binding, which the compiler names in the binding. Only
+ * the selection is tracked. The conditions read the variables through the context of the branch, which declares none,
+ * so they read the ones of the scope.
  *
  * @template Target - What the branches bind.
  * @template Bindings - The bindings held by each branch.
+ * @param _context - The context holding the conditional binding.
  * @param run - The conditional binding.
  */
-function runConditionalBinding<Target, Bindings extends { readonly conditionalBindings?: ReadonlyArray<RenderConditionalBinding<Bindings>> }>(run: ConditionalBindingRun<Target, Bindings>): void {
+export function _runConditionalBinding<Target, Bindings extends { readonly conditionalBindings?: ReadonlyArray<RenderConditionalBinding<Bindings>> }>(_context: _Context, run: ConditionalBindingRun<Target, Bindings>): void {
   const selected = _selectBranch(run.conditionalBinding, run.scope);
   untracked(() => applyBranch(run, selected));
 }
@@ -567,7 +569,7 @@ export function _setProperty(_context: _Context, target: Element | BindingHost, 
 /**
  * Sets an attribute of an HTML element to the value of an expression reading nothing that can change, once: a literal,
  * e.g. `<div id="{ 'default' }"></div>`, `<div maxlength="{ 1 + 3 }"></div>`, or any expression on the server, which
- * reads every value once.
+ * reads every value once. It is the callback of the binding of {@link _setReactiveProperty} too.
  *
  * @param context - The current template execution scope, which the expression reads.
  * @param target - The element to set the attribute on, or the directive to set the property on.
@@ -580,7 +582,8 @@ export function _setExpressionProperty(context: _Context, target: Element | Bind
 
 /**
  * Sets an attribute of an HTML element to the value of an expression, again whenever a signal or a variable of the
- * template it reads changes (see `_bindEffect`). E.g., `<div id="{ mySignal() }"></div>`, `<td class="{ row.kind }"></td>`.
+ * template it reads changes (see `_bindSite`), its callback being {@link _setExpressionProperty}. E.g.,
+ * `<div id="{ mySignal() }"></div>`, `<td class="{ row.kind }"></td>`.
  *
  * @param context - The current template execution scope, which the expression reads and which disposes the binding.
  * @param target - The element to set the attribute on, or the directive to set the property on.
@@ -589,7 +592,7 @@ export function _setExpressionProperty(context: _Context, target: Element | Bind
  * @throws When the name is the one of an input of the target, or the target is a directive.
  */
 export function _setReactiveProperty(context: _Context, target: Element | BindingHost, attribute: RenderElementAttribute): void {
-  _bindEffect(context, updateReactiveProperty, target, attribute, context, attribute.reads);
+  _bindSite(context, attribute, target, _setExpressionProperty);
 }
 
 /**
@@ -607,7 +610,8 @@ export function _setInput(_context: _Context, target: Element | BindingHost, att
 
 /**
  * Sets an input of a component bound to an expression reading nothing that can change, once, by the name of its property
- * (see {@link _setInput}): a literal, or any expression on the server, which reads every value once.
+ * (see {@link _setInput}): a literal, or any expression on the server, which reads every value once. It is the callback
+ * of the binding of {@link _setReactiveInput} too.
  *
  * @param context - The current template execution scope, which the expression reads.
  * @param target - The element of the component.
@@ -620,7 +624,8 @@ export function _setExpressionInput(context: _Context, target: Element | Binding
 
 /**
  * Sets an input of a component bound to an expression, by the name of its property, again whenever a signal or a
- * variable of the template it reads changes (see {@link _setInput} and `_bindEffect`).
+ * variable of the template it reads changes (see {@link _setInput} and `_bindSite`), its callback being
+ * {@link _setExpressionInput}.
  *
  * @param context - The current template execution scope, which the expression reads and which disposes the binding.
  * @param target - The element of the component.
@@ -629,7 +634,7 @@ export function _setExpressionInput(context: _Context, target: Element | Binding
  * @throws When the target is a directive not declaring the property.
  */
 export function _setReactiveInput(context: _Context, target: Element | BindingHost, attribute: RenderElementAttribute): void {
-  _bindEffect(context, updateReactiveInput, target, attribute, context, attribute.reads);
+  _bindSite(context, attribute, target, _setExpressionInput);
 }
 
 /**
@@ -679,32 +684,6 @@ export function _resetProperty(_context: _Context, target: Element | BindingHost
  */
 function evaluate(attribute: RenderElementAttribute, context: _Context): unknown {
   return (attribute.value as TemplateExpression<unknown>).call(context[COMPONENT], context);
-}
-
-/**
- * Updates an input with the value of an expression: the callback of the binding of {@link _setReactiveInput}, shared by
- * every input binding.
- *
- * @param target - The element of the component, or the directive.
- * @param attribute - The input, whose value is the expression.
- * @param context - The context the binding lives in.
- * @throws When the target is a directive not declaring the property.
- */
-function updateReactiveInput(target: Element | BindingHost, attribute: RenderElementAttribute, context: _Context): void {
-  updateInput(target, attribute.name, evaluate(attribute, context));
-}
-
-/**
- * Updates an attribute with the value of an expression: the callback of the binding of {@link _setReactiveProperty},
- * shared by every attribute binding.
- *
- * @param target - The HTML element whose attribute is being updated.
- * @param attribute - The attribute, whose value is the expression.
- * @param context - The context the binding lives in.
- * @throws When the name is the one of an input of the target, or the target is a directive.
- */
-function updateReactiveProperty(target: Element | BindingHost, attribute: RenderElementAttribute, context: _Context): void {
-  updateProperty(target, attribute.name, evaluate(attribute, context));
 }
 
 /**

@@ -40,7 +40,16 @@ describe('generateFor', () => {
     expect(code).toEqual(['_for(root, context, null, for0$for);']);
     expect(context.constantDeclarations).toEqual([
       'const for0Variables = { used: [\'item\', \'$index\', \'$first\', \'$last\', \'$even\', \'$odd\'], ids: [0, 1, 2, 3, 4, 5] };',
-      'const for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables };'
+      [
+        'const for0$for = {',
+        '  items: for0$items,',
+        '  track: for0$track,',
+        '  block: for0,',
+        '  variables: for0Variables,',
+        '  update: _runFor,',
+        '  effect: 0',
+        '};'
+      ].join('\n')
     ]);
     expect(context.functionDeclarations).toEqual([
       'function for0$items(context) {\n  return this.items;\n}',
@@ -58,7 +67,16 @@ describe('generateFor', () => {
     const { code, functionsToProcess } = await generateFor(parse('@for (item of items; track item.id) { <li></li> }'), 'ul0', '0', context, null, false, true);
 
     expect(code).toEqual(['_for(ul0, context, null, ul0__for0$for);']);
-    expect(constantOf(context, 'ul0__for0$for')).toBe('const ul0__for0$for = { items: ul0__for0$items, track: ul0__for0$track, block: ul0__for0, last: true };');
+    expect(constantOf(context, 'ul0__for0$for')).toBe([
+      'const ul0__for0$for = {',
+      '  items: ul0__for0$items,',
+      '  track: ul0__for0$track,',
+      '  block: ul0__for0,',
+      '  last: true,',
+      '  update: _runFor,',
+      '  effect: 0',
+      '};'
+    ].join('\n'));
     expect(functionsToProcess!.get('ul0__for0')!.fn.anchor).toBe('anchor');
   });
 
@@ -70,7 +88,16 @@ describe('generateFor', () => {
 
     expect(code).toEqual(['_for(tr0, context, anchor, tr0__for1$for);']);
     expect(constantOf(context, 'tr0__for1Variables1')).toBe('const tr0__for1Variables1 = { used: [\'item\'], ids: [0] };');
-    expect(constantOf(context, 'tr0__for1$for')).toBe('const tr0__for1$for = { items: tr0__for1$items, track: tr0__for1$track, block: tr0__for1, variables: tr0__for1Variables1 };');
+    expect(constantOf(context, 'tr0__for1$for')).toBe([
+      'const tr0__for1$for = {',
+      '  items: tr0__for1$items,',
+      '  track: tr0__for1$track,',
+      '  block: tr0__for1,',
+      '  variables: tr0__for1Variables1,',
+      '  update: _runFor,',
+      '  effect: 0',
+      '};'
+    ].join('\n'));
     expect(fn.precode).toBe('_iterationVariables(context, tr0__items1, tr0__i1, tr0__for1Variables1);');
   });
 
@@ -89,9 +116,29 @@ describe('generateFor', () => {
     await generateFor(parse('@for (cell of row.cells; track prefix + cell) { { cell } }'), 'root', '0', context, null);
     await generateFor(parse('@for (cell of row.cells; track cell) { x }'), 'root', '1', context, null);
 
-    expect(constantOf(context, 'for0$for')).toBe('const for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables, reads: _reads0 };');
-    expect(constantOf(context, 'for1$for')).toBe('const for1$for = { items: for1$items, track: for1$track, block: for1, reads: _reads1, container: 1 };');
-    expect(functionOf(context, 'for0$track')).toBe('function for0$track(context, cell, $index, $first, $last, $even, $odd) {\n  return _read(context, 0, 8) + cell;\n}');
+    expect(constantOf(context, 'for0$for')).toBe([
+      'const for0$for = {',
+      '  items: for0$items,',
+      '  track: for0$track,',
+      '  block: for0,',
+      '  variables: for0Variables,',
+      '  reads: _reads0,',
+      '  update: _runFor,',
+      '  effect: 0',
+      '};'
+    ].join('\n'));
+    expect(constantOf(context, 'for1$for')).toBe([
+      'const for1$for = {',
+      '  items: for1$items,',
+      '  track: for1$track,',
+      '  block: for1,',
+      '  reads: _reads1,',
+      '  container: 1,',
+      '  update: _runFor,',
+      '  effect: 1',
+      '};'
+    ].join('\n'));
+    expect(functionOf(context, 'for0$track')).toBe('function for0$track(context, cell, $index, $first, $last, $even, $odd) {\n  return _read(context, 0, 6) + cell;\n}');
     expect(context.readsDeclarations).toEqual(['const _reads0 = [0, 1];', 'const _reads1 = [0];']);
   });
 
@@ -99,14 +146,14 @@ describe('generateFor', () => {
     const context = contextWith('items');
     await generateFor(parse('@for (item of items; track item) { <li></li> }'), 'root', '0', context, 'anchor');
 
-    expect(functionOf(context, 'for0$items')).toBe('function for0$items(context) {\n  return _read(context, 0, 7);\n}');
+    expect(functionOf(context, 'for0$items')).toBe('function for0$items(context) {\n  return _read(context, 0, 5);\n}');
   });
 
   it('resolves every identifier of the iterable expression', async () => {
     const context = contextWith('item');
     await generateFor(parse('@for (child of item.children(); track child) { <li></li> }'), 'root', '0', context, null);
 
-    expect(functionOf(context, 'for0$items')).toBe('function for0$items(context) {\n  return _read(context, 0, 7).children();\n}');
+    expect(functionOf(context, 'for0$items')).toBe('function for0$items(context) {\n  return _read(context, 0, 5).children();\n}');
   });
 
   it('reads the item and the implicit variables as the parameters of the track function, resolving the members, the imports and the variables of the enclosing scopes', async () => {
@@ -114,7 +161,7 @@ describe('generateFor', () => {
     context.addImportedIdentifier('keyOf', '__keyOf');
     await generateFor(parse('@for (item of items; track keyOf(item) + prefix + separator + $index) { <li></li> }'), 'root', '0', context, null);
 
-    expect(functionOf(context, 'for0$track')).toBe('function for0$track(context, item, $index, $first, $last, $even, $odd) {\n  return __keyOf(item) + _read(context, 0, 7) + this.separator + $index;\n}');
+    expect(functionOf(context, 'for0$track')).toBe('function for0$track(context, item, $index, $first, $last, $even, $odd) {\n  return __keyOf(item) + _read(context, 0, 5) + this.separator + $index;\n}');
   });
 
   it('names the context of the track function __context when the item or an alias is named context, which would repeat a parameter', async () => {
@@ -137,7 +184,7 @@ describe('generateFor', () => {
     const { code, functionsToProcess } = await generateFor(parse(`@for (${iterable}; track $index) { <li></li> }`), 'root', '0', context, null);
 
     expect(code).toEqual(['_for(root, context, null, for0$for);']);
-    expect(context.constantDeclarations).toEqual(['const for0$for = { items: for0$items, track: for0$track, block: for0 };']);
+    expect(context.constantDeclarations).toEqual(['const for0$for = { items: for0$items, track: for0$track, block: for0, update: _runFor, effect: 0 };']);
     expect(context.functionDeclarations).toEqual([
       `function for0$items(context) {\n  return ${expected};\n}`,
       'function for0$track(context, _, $index, $first, $last, $even, $odd) {\n  return $index;\n}'

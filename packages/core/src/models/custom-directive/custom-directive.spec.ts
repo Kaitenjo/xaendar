@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { loadSignals } from '@xaendar/signals';
 import { describe, expect, it, vi } from 'vitest';
-import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
+import { CLEANUP, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
 import { HostEvent } from '../../decorators/host-event/host-event.decorator';
 import { HostProperty } from '../../decorators/host-property/host-property.decorator';
 import { effect } from '../../signals/effect/effect';
@@ -18,7 +18,7 @@ import { CustomDirective } from './custom-directive';
 function childrenOf(context: _Context): _Context[] {
   const children = new Array<_Context>();
   forEachChild(context, (child, list) => list.push(child), children);
-  const cleanup = context[5];
+  const cleanup = context[CLEANUP];
   const cleanups = Array.isArray(cleanup) ? cleanup : cleanup ? [cleanup] : [];
   for (let i = 0; i < cleanups.length; i++) {
     const item = cleanups[i];

@@ -52,7 +52,7 @@ describe('generateServerElement', () => {
   it('initializes the element ref of the element as undefined before writing it', () => {
     const context = new GeneratorContext(cache);
     context.addIdentifier('field');
-    expect(generate('<input #field />', context).code).toEqual(['_set(context, 0, 7, undefined);', 'out.push(\'<input>\');']);
+    expect(generate('<input #field />', context).code).toEqual(['_set(context, 0, 5, undefined);', 'out.push(\'<input>\');']);
   });
 
   it('writes the start tag of a component through _ssrComponent with the constant describing it, and its light DOM and end tag after it', () => {

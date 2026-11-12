@@ -20,17 +20,18 @@ type ContextCache = import('@xaendar/compiler').ContextCache;
 const { CustomElement, _defineRender } = core;
 
 /**
- * The scopes a scope holds in its containers, the slots from the one its layout (slot `LAYOUT`, 6) gives to the end: a
- * scope, `null`, or the run of a `@for`, holding the scopes of its rows.
+ * The scopes a scope holds in its containers, groups of three slots from the one its layout (slot `LAYOUT`, 4) gives to
+ * the end: the first one holds a scope, `null`, a branch rendered inline, or, for a `@for`, whose keys are in the
+ * second one, the scopes of its rows.
  */
 function childrenOf(context: _Context): _Context[] {
   const children = new Array<_Context>();
-  for (let i = context[6].containers ?? context.length; i < context.length; i++) {
-    const container = context[i] as _Context | { rows: _Context[] | null } | null;
-    if (Array.isArray(container)) {
-      children.push(container);
-    } else if (container?.rows) {
-      children.push(...container.rows);
+  for (let i = context[4].containers ?? context.length; i < context.length; i += 3) {
+    const content = context[i] as _Context | _Context[] | null;
+    if (Array.isArray(context[i + 1])) {
+      children.push(...content as _Context[]);
+    } else if (Array.isArray(content)) {
+      children.push(content as _Context);
     }
   }
 
@@ -38,9 +39,25 @@ function childrenOf(context: _Context): _Context[] {
 }
 
 /**
- * The nodes a scope tracks, the slots from the one its layout (slot `LAYOUT`, 6) gives to its first container.
+ * The branches rendered inline into a scope, which the first slot of the container of their block holds: an object,
+ * where a scope or the rows of a `@for` are arrays.
  */
-const nodesOf = (context: _Context): Node[] => context.slice(context[6].nodes, context[6].containers).filter(Boolean) as Node[];
+function inlineOf(context: _Context): object[] {
+  const branches = new Array<object>();
+  for (let i = context[4].containers ?? context.length; i < context.length; i += 3) {
+    const content = context[i];
+    if (content && !Array.isArray(content)) {
+      branches.push(content);
+    }
+  }
+
+  return branches;
+}
+
+/**
+ * The nodes a scope tracks, the slots from the one its layout (slot `LAYOUT`, 4) gives to its first container.
+ */
+const nodesOf = (context: _Context): Node[] => context.slice(context[4].nodes, context[4].bindings ?? context[4].containers).filter(Boolean) as Node[];
 
 
 /*
@@ -179,16 +196,21 @@ describe('the variables of a template', () => {
     class Rows extends CustomElement {
       public rows = signal<Row[]>([{ id: 1, name: 'a' }, { id: 2, name: 'b' }]);
       public flag = signal('on');
+      public reads = 0;
+      public seen(row: Row): number {
+        this.reads++;
+        return row.id;
+      }
     }
-    const { element, root } = await mount('@for (row of rows(); track row.id) {<p>{ row.id === 2 ? flag() : row.name }</p>}', Rows, ['rows', 'flag']);
+    const { element, root } = await mount('@for (row of rows(); track row.id) {<p>{ row.id === 2 ? flag() : row.name }</p><i>{ seen(row) }</i>}', Rows, ['rows', 'flag']);
+    element.reads = 0;
 
     element.flag.set('off');
     await flush();
 
     expect(texts(root, 'p')).toEqual(['a', 'off']);
-    // A scope a refresh visits keeps its number in its slot `STATE` (2): none was ever refreshed
-    const rendered = (element as unknown as { _context: _Context })._context;
-    expect([rendered, ...childrenOf(rendered)].map(context => context[2])).toEqual([0, 0, 0]);
+    // A refresh of a row would run again the binding reading only its variables
+    expect(element.reads).toBe(0);
   });
 
   it('makes a binding an effect while a variable leads it to read a signal, and a plain binding again, without losing updates', async () => {
@@ -540,9 +562,11 @@ describe('the containers of the blocks', () => {
     expect(texts(root, 'p > *')).toEqual(['z']);
     expect(root.querySelector('p > b')).not.toBeNull();
     expect(texts(root, 's, u')).toEqual(['other']);
-    // The root holds the @for and the @switch, the row the branch of its @if
-    expect(childrenOf(scopeOf(element))).toHaveLength(2);
-    expect(childrenOf(childrenOf(scopeOf(element))[0])).toHaveLength(1);
+    // The root holds the row of the @for and, inline, the case of the @switch, the row the branch of its @if, inline
+    expect(childrenOf(scopeOf(element))).toHaveLength(1);
+    expect(inlineOf(scopeOf(element))).toHaveLength(1);
+    expect(childrenOf(childrenOf(scopeOf(element))[0])).toHaveLength(0);
+    expect(inlineOf(childrenOf(scopeOf(element))[0])).toHaveLength(1);
   });
 
   it('shows the content of a @defer in place of its @placeholder, in the container of the block', async () => {
@@ -598,5 +622,132 @@ describe('the containers of the blocks', () => {
 
     expect(root.querySelector('span')).toBeNull();
     expect(childrenOf(scopeOf(element))).toEqual([]);
+  });
+});
+
+describe('the branches rendered inline', () => {
+  /**
+   * The context of the render of a component.
+   */
+  const scopeOf = (element: unknown): _Context => (element as { _context: _Context })._context;
+
+  it('renders a branch declaring nothing without a context, and empties its slots at each change of branch, leaving no node, effect or listener behind', async () => {
+    class Toggle extends CustomElement {
+      public on = signal(true);
+      public label = signal('a');
+      public reads = 0;
+      public clicks = 0;
+      public text(): string {
+        this.reads++;
+        return this.label();
+      }
+      public hit(): void {
+        this.clicks++;
+      }
+    }
+    const { element, root } = await mount('<div>@if (on()) {<b (click)="hit()">{ text() }</b>} @else {<i title="{ label() }">{ text() }</i>}</div>', Toggle, ['on', 'label']);
+    const [shown] = inlineOf(scopeOf(element));
+    const removed = new Array<Element>();
+    for (let i = 0; i < 4; i++) {
+      removed.push(root.querySelector('b, i')!);
+      element.on.set(!element.on());
+      await flush();
+    }
+
+    // Back to the first branch: the same description, a node of its own, no context
+    expect(root.querySelector('div')!.innerHTML).toBe('<b>a</b>');
+    expect(inlineOf(scopeOf(element))).toEqual([shown]);
+    expect(childrenOf(scopeOf(element))).toEqual([]);
+
+    // Only the binding of the branch shown runs, only its listener fires
+    element.reads = 0;
+    element.label.set('z');
+    await flush();
+    expect(element.reads).toBe(1);
+    expect(texts(root, 'b')).toEqual(['z']);
+    for (let i = 0; i < removed.length; i++) {
+      (removed[i] as HTMLElement).click();
+    }
+    expect(element.clicks).toBe(0);
+    (root.querySelector('b') as HTMLElement).click();
+    expect(element.clicks).toBe(1);
+  });
+
+  it('renders a branch inline in a row reused and moved, its nodes moving with the row', async () => {
+    class Rows extends CustomElement {
+      public rows = signal<Row[]>([{ id: 1, name: 'a', done: true }, { id: 2, name: 'b', done: false }, { id: 3, name: 'c', done: true }]);
+    }
+    const { element, root } = await mount('<div>@for (row of rows(); track row.id) {@if (row.done) {<b>{ row.name }</b>} @else {<i>{ row.name }</i>}<hr />}</div>', Rows, ['rows']);
+    const before = Array.from(root.querySelectorAll('b, i'));
+    expect(root.querySelector('div')!.innerHTML).toBe('<b>a</b><!--if--><hr><i>b</i><!--if--><hr><b>c</b><!--if--><hr>');
+
+    // The rows move, the first one shows the other branch
+    element.rows.set([{ id: 3, name: 'c', done: true }, { id: 1, name: 'x', done: false }, { id: 2, name: 'b', done: false }]);
+    await flush();
+
+    expect(root.querySelector('div')!.innerHTML).toBe('<b>c</b><!--if--><hr><i>x</i><!--if--><hr><i>b</i><!--if--><hr>');
+    expect(root.querySelectorAll('b')[0]).toBe(before[2]);
+    expect(root.querySelectorAll('i')[1]).toBe(before[1]);
+    const rows = childrenOf(scopeOf(element));
+    for (let i = 0; i < rows.length; i++) {
+      expect(childrenOf(rows[i])).toEqual([]);
+      expect(inlineOf(rows[i])).toHaveLength(1);
+    }
+  });
+
+  it('reads in a branch rendered inline the item and the index of the @for holding it, through the scope holding the block', async () => {
+    class Grid extends CustomElement {
+      public rows = signal<Row[]>([{ id: 1, name: 'a' }, { id: 2, name: 'b' }]);
+      public cols = signal(['x', 'y']);
+    }
+    const { element, root } = await mount('<ul>@for (row of rows(); track row.id; r = $index) {<li>@for (col of cols(); track col) {@if (col) {<span>{ r }{ row.name }{ col }{ $index }</span>}}</li>}</ul>', Grid, ['rows', 'cols']);
+    // Each cell: the index of the row, its name, the column and the index of the column
+    expect(texts(root, 'li')).toEqual(['0ax00ay1', '1bx01by1']);
+
+    // The rows move and the first one takes another item: the cells of the reused rows follow both
+    element.rows.set([{ id: 2, name: 'b' }, { id: 1, name: 'c' }]);
+    await flush();
+
+    expect(texts(root, 'li')).toEqual(['0bx00by1', '1cx01cy1']);
+  });
+
+  it('renders the cases of a @switch inline or in a context of their own, as each one declares names or not', async () => {
+    class Modes extends CustomElement {
+      public mode = signal('a');
+      public label = signal('l');
+    }
+    const { element, root } = await mount('@switch (mode()) { @case (\'a\') {<b>a</b>} @case (\'b\') {@let value = label();<i>{ value }</i>} @default {<u>{ label() }</u>} }', Modes, ['mode', 'label']);
+    const shapes = new Array<string>();
+    const shape = () => `${texts(root, 'b, i, u').join()} ${childrenOf(scopeOf(element)).length} ${inlineOf(scopeOf(element)).length}`;
+    shapes.push(shape());
+    const modes = ['b', 'c', 'b', 'a'];
+    for (let i = 0; i < modes.length; i++) {
+      element.mode.set(modes[i]);
+      await flush();
+      shapes.push(shape());
+    }
+
+    expect(shapes).toEqual(['a 0 1', 'l 1 0', 'l 0 1', 'l 1 0', 'a 0 1']);
+    element.label.set('m');
+    element.mode.set('c');
+    await flush();
+    expect(texts(root, 'u')).toEqual(['m']);
+  });
+
+  it('watches the elements a branch of the @placeholder of a @defer renders inline, which the interaction fires it through', async () => {
+    class Lazy extends CustomElement {
+      public ready = signal(true);
+    }
+    const { root } = await mount('<div>@defer (interaction) {<b>content</b>} @placeholder {@if (ready()) {<button>load</button>}}</div>', Lazy, ['ready']);
+    await flush();
+    // Without an element to watch, the interaction would become idle, which fires on its own
+    await new Promise(resolve => setTimeout(resolve, 100));
+    expect(texts(root, 'b, button')).toEqual(['load']);
+
+    root.querySelector('button')!.click();
+    await flush();
+    await flush();
+
+    expect(texts(root, 'b, button')).toEqual(['content']);
   });
 });

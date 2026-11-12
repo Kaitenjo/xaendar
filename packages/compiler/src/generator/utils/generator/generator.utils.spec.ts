@@ -53,8 +53,8 @@ describe('resolveExpression', () => {
 
       const { expression, segments } = collect('{ item }', 0, context);
 
-      expect(expression).toBe('({ item: _read(context, 0, 7) })');
-      expect(columns(expression, segments)).toContainEqual(['item: _read(context, 0, 7)', 2, 6]);
+      expect(expression).toBe('({ item: _read(context, 0, 5) })');
+      expect(columns(expression, segments)).toContainEqual(['item: _read(context, 0, 5)', 2, 6]);
     });
 
     it('maps the read of a narrowed signal onto the call, keeping the mappings of the call', () => {
@@ -168,7 +168,7 @@ describe('resolveExpression', () => {
   ] as const)('resolves declared %s identifiers through the slot of the scope declaring them', (kind, reactive) => {
     const context = new GeneratorContext(cache);
     context.addIdentifier('item', kind);
-    expect(resolve('item', context)).toEqual({ expression: '_read(context, 0, 7)', reactive });
+    expect(resolve('item', context)).toEqual({ expression: '_read(context, 0, 5)', reactive });
   });
 
   it('resolves a template through the constant describing it, which reads no variable', () => {
@@ -185,7 +185,7 @@ describe('resolveExpression', () => {
     const eventContext = new GeneratorContext(context);
     eventContext.addUnresolvableIdentifier('count');
 
-    expect(resolve('count()', forContext)).toEqual({ expression: '_read(context, 0, 7)()', reactive: true });
+    expect(resolve('count()', forContext)).toEqual({ expression: '_read(context, 0, 5)()', reactive: true });
     expect(resolve('count', eventContext)).toEqual({ expression: 'count', reactive: false });
     expect(resolve('count()', context)).toEqual({ expression: 'this.count()', reactive: true });
   });
@@ -228,7 +228,7 @@ describe('resolveExpression', () => {
 
     const resolved = resolve('handler(row) + row.id + field.value', context);
 
-    expect(resolved.expression).toBe('_read(context, 0, 8)(_read(context, 0, 7)) + _read(context, 0, 7).id + _read(context, 0, 9).value');
+    expect(resolved.expression).toBe('_read(context, 0, 6)(_read(context, 0, 5)) + _read(context, 0, 5).id + _read(context, 0, 7).value');
     expect(resolved.variables).toEqual([1, 0]);
     expect(resolved.reactive).toBeFalsy();
   });
@@ -278,7 +278,7 @@ describe('resolveExpression', () => {
       blockContext.addIdentifier('location');
 
       expect(resolve('name + status() + location', blockContext, { browserGlobals: 'globalThis' })).toEqual({
-        expression: 'this.name + this.status() + _read(context, 0, 7)',
+        expression: 'this.name + this.status() + _read(context, 0, 5)',
         reactive: true
       });
     });

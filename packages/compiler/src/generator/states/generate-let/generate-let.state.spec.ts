@@ -29,10 +29,11 @@ describe('generateLet', () => {
     context.addSignalClassField('price');
 
     expect(await generateLet(parse('@let total = price() * item.quantity;'), 'root', '0', context, null)).toEqual({
-      code: ['_let(context, 8, 1, root$let_total, _reads0);']
+      code: ['_let(context, root$let_total$binding);']
     });
+    expect(context.constantDeclarations).toEqual(['const root$let_total$binding = { value: root$let_total, variable: 6, id: 1, reads: _reads0, update: _runLet, effect: 0 };']);
     expect(context.readsDeclarations).toEqual(['const _reads0 = [0];']);
-    expect(context.functionDeclarations).toEqual(['function root$let_total(context) {\n  return this.price() * _read(context, 0, 7).quantity;\n}']);
+    expect(context.functionDeclarations).toEqual(['function root$let_total(context) {\n  return this.price() * _read(context, 0, 5).quantity;\n}']);
   });
 
   it('initializes the @let with _let without identifiers when its value reads no variable of the template', async () => {
@@ -40,15 +41,16 @@ describe('generateLet', () => {
     context.addIdentifier('field');
 
     expect(await generateLet(parse('@let label = field.value + format(unit);'), 'root', '0', context, null)).toEqual({
-      code: ['_let(context, 7, 0, root$let_label);']
+      code: ['_let(context, root$let_label$binding);']
     });
+    expect(context.constantDeclarations).toEqual(['const root$let_label$binding = { value: root$let_label, variable: 5, id: 0, update: _runLet, effect: 0 };']);
     expect(context.readsDeclarations).toEqual([]);
-    expect(context.functionDeclarations).toEqual(['function root$let_label(context) {\n  return _read(context, 0, 8).value + this.format(this.unit);\n}']);
+    expect(context.functionDeclarations).toEqual(['function root$let_label(context) {\n  return _read(context, 0, 6).value + this.format(this.unit);\n}']);
   });
 
   it('initializes a literal @let with its value, once, in its slot', async () => {
     expect(await generateLet(parse('@let size = 10;'), 'root', '0', declare('size'), null)).toEqual({
-      code: ['context[7] = 10;']
+      code: ['context[5] = 10;']
     });
   });
 
@@ -56,7 +58,7 @@ describe('generateLet', () => {
     const context = declare('options');
     context.addSignalClassField('count');
 
-    expect((await generateLet(parse('@let options = { count: count() };'), 'root', '0', context, null)).code).toEqual(['_let(context, 7, 0, root$let_options);']);
+    expect((await generateLet(parse('@let options = { count: count() };'), 'root', '0', context, null)).code).toEqual(['_let(context, root$let_options$binding);']);
     expect(context.functionDeclarations).toEqual(['function root$let_options(context) {\n  return ({ count: this.count() });\n}']);
   });
 
@@ -64,7 +66,7 @@ describe('generateLet', () => {
     const context = declare('total');
     context.addSignalClassField('count');
 
-    expect((await generateLet(parse('@let total = count();'), 'div0', '0', context, null)).code).toEqual(['_let(context, 7, 0, div0$let_total);']);
-    expect((await generateLet(parse('@let total = count();'), 'div0', '1', context, null)).code).toEqual(['_let(context, 7, 0, div0$let_total1);']);
+    expect((await generateLet(parse('@let total = count();'), 'div0', '0', context, null)).code).toEqual(['_let(context, div0$let_total$binding);']);
+    expect((await generateLet(parse('@let total = count();'), 'div0', '1', context, null)).code).toEqual(['_let(context, div0$let_total$binding1);']);
   });
 });

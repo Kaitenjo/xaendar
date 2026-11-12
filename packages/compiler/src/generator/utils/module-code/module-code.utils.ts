@@ -54,6 +54,31 @@ export function declareExpression(generatorContext: GeneratorContext, name: stri
  * @param text - The text, e.g. the name of an attribute or of an event.
  * @returns The part of the name.
  */
+/**
+ * Declares the binding of a variable whose value the runtime computes, a `@let` or the default value of a parameter of
+ * a template (see `LetBinding` of the runtime): a constant of the module holding the function of the module computing
+ * the value, the slot and the identifier of the variable, and the variables of the template it reads, whose slots the
+ * scope declaring the variable reserves (see `GeneratorContext.declareBinding`).
+ *
+ * @param generatorContext - The scope declaring the variable.
+ * @param name - The name of the function computing the value, which the constant is named after (`div0$let_total`).
+ * @param expression - The resolved expression of the value.
+ * @param slot - The slot of the variable.
+ * @param id - The identifier of the variable, unique in its template.
+ * @param variables - The identifiers of the variables of the template the expression reads, if any.
+ * @returns The name of the constant.
+ */
+export function declareLetBinding(generatorContext: GeneratorContext, name: string, expression: string, slot: number, id: number, variables: readonly number[] | undefined): string {
+  const members = [`value: ${declareExpression(generatorContext, name, expression)}`, `variable: ${slot}`, `id: ${id}`];
+  const reads = generatorContext.getReads(variables);
+  if (reads) {
+    members.push(`reads: ${reads}`);
+  }
+
+  // The binding writes its scope: it keeps no target
+  return generatorContext.declareBinding(`${name}$binding`, members, '_runLet', false)!;
+}
+
 export function toRoleName(text: string): string {
   return text.replace(/[^\w$]/g, '_');
 }

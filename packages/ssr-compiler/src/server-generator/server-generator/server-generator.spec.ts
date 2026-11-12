@@ -27,7 +27,7 @@ describe('ServerGenerator', () => {
     expect(generate('<p>{ title() }</p>', ['title'])).toBe([
       'import { _declare, _iterationVariables, _read, _scope, _set, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
       'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTry } from \'@xaendar/ssr\';',
-      'const _layout0 = { size: 7, nodes: 7 };',
+      'const _layout0 = { size: 5, nodes: 5 };',
       'function render(out) {',
       '  const context = _scope(null, _layout0, undefined, this);',
       '  out.push(\'<p><!---->\' + _escapeText(this.title()) + \'</p>\');',
@@ -41,7 +41,7 @@ describe('ServerGenerator', () => {
     const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], [], [], [], new Set(['x-map']), [metadata]);
 
     expect(code.split('\n').slice(2)).toEqual([
-      'const _layout0 = { size: 7, nodes: 7 };',
+      'const _layout0 = { size: 5, nodes: 5 };',
       'const x_map0$element = {',
       '  tagName: \'x-map\',',
       '  attributes: [',
@@ -156,15 +156,15 @@ describe('ServerGenerator', () => {
     const source = '<input #field /><template row(item: string)><b>{ item }</b></template>@if (visible) { @let n = 1; @for (user of users(); track user) { @render row(user) } }';
     const code = generate(source, ['users']);
     expect(code).toContain('const if2__for1Variables = { used: [\'item\'], ids: [3] };');
-    expect(code).toContain('const _layout0 = { size: 8, nodes: 8, variables: [\'field\'] };');
+    expect(code).toContain('const _layout0 = { size: 6, nodes: 6, variables: [\'field\'] };');
     const key = `template_row_${source.indexOf('<template')}`;
 
     // The template takes no slot: it is read as the function rendering it
     expect(code).toContain([
       'function render(out) {',
       '  const context = _scope(null, _layout0, undefined, this);',
-      '  _declare(context, 7);',
-      '  _set(context, 0, 7, undefined);',
+      '  _declare(context, 5);',
+      '  _set(context, 0, 5, undefined);',
       '  out.push(\'<input>\');',
       '  if (this.visible) {',
       '    out.push(\'<!--xd-if:0-->\');',
@@ -177,15 +177,15 @@ describe('ServerGenerator', () => {
     expect(code).toContain([
       `function ${key}(out, parentContext, params) {`,
       '  const context = _scope(parentContext, _layout1);',
-      '  context[7] = params[0];',
-      '  out.push(\'<b><!---->\' + _escapeText(_read(context, 0, 7)) + \'</b>\');',
+      '  context[5] = params[0];',
+      '  out.push(\'<b><!---->\' + _escapeText(_read(context, 0, 5)) + \'</b>\');',
       '}'
     ].join('\n'));
     expect(code).toContain([
       'function if2(out, parentContext) {',
       '  const context = _scope(parentContext, _layout2);',
-      '  _declare(context, 7, \'let\');',
-      '  _set(context, 0, 7, 1);',
+      '  _declare(context, 5, \'let\');',
+      '  _set(context, 0, 5, 1);',
       '  {'
     ].join('\n'));
     expect(code).toContain([
@@ -193,7 +193,7 @@ describe('ServerGenerator', () => {
       '  const context = _scope(parentContext, _layout3);',
       '  _iterationVariables(context, items, index, if2__for1Variables);',
       // The template is declared two scopes up, by the root
-      `  _ssrRenderTemplate(out, context, ${key}, 2, [_read(context, 0, 7)]);`,
+      `  _ssrRenderTemplate(out, context, ${key}, 2, [_read(context, 0, 5)]);`,
       '}',
       '',
       'function if2__for1$track(context, user, $index, $first, $last, $even, $odd) {',
@@ -239,14 +239,14 @@ describe('ServerGenerator', () => {
         '  const context = _scope(parentContext, _layout1);',
         '  _iterationVariables(context, items, index, ul0__for0Variables);',
         '  out.push(\'<li>\');',
-        '  if (_read(context, 0, 7)) {',
+        '  if (_read(context, 0, 5)) {',
         '    out.push(\'<!--xd-if:0-->\');',
         '    ul0__for0__li0__if0.call(this, out, context);',
         '  } else {',
         '    out.push(\'<!--xd-if-->\');',
         '  }',
         '  out.push(\'</li>\');',
-        '  if (_read(context, 0, 7)) {',
+        '  if (_read(context, 0, 5)) {',
         '    out.push(\'<!--xd-if:0-->\');',
         '    ul0__for0__if1.call(this, out, context);',
         '  } else {',
@@ -261,9 +261,9 @@ describe('ServerGenerator', () => {
   it('declares the scope of the content of an element a structural directive is applied to, and not the one of any other element', () => {
     const code = generate('<div *guard><input #inner /></div><p><input #outer /></p>');
 
-    expect(code).toContain('function div0Children(out, parentContext) {\n  const context = _scope(parentContext, _layout1);\n  _declare(context, 7);');
-    expect(code).toContain('const _layout1 = { size: 8, nodes: 8, variables: [\'inner\'] };');
-    expect(code).toContain('  _declare(context, 7);\n  _ssrStructural(');
+    expect(code).toContain('function div0Children(out, parentContext) {\n  const context = _scope(parentContext, _layout1);\n  _declare(context, 5);');
+    expect(code).toContain('const _layout1 = { size: 6, nodes: 6, variables: [\'inner\'] };');
+    expect(code).toContain('  _declare(context, 5);\n  _ssrStructural(');
     // The element is written in the scope of the structural directives, which its children are a scope inside
     expect(code).toContain('function div0$render(out, context) {\n  out.push(\'<div>\');\n  div0Children.call(this, out, context);');
   });
@@ -291,7 +291,7 @@ describe('ServerGenerator', () => {
 
     expect(code).toContain([
       '  out.push(\'a<!---->\' + _escapeText(this.x()) + \'<!---->b\');',
-      '  _set(context, 0, 7, 1);',
+      '  _set(context, 0, 5, 1);',
       '  out.push(\'<!---->c<i></i>d<!---->\');',
       '  _ssrRenderTemplate(out, context, template_t_0, 0, []);',
       '  out.push(\'<!---->e\');'

@@ -1,5 +1,6 @@
 import type { _Context } from './context.type';
 import type { BindingHost } from './binding-host.type';
+import type { BindingSite } from './binding-site.type';
 import type { TemplateExpression } from './template-expression.type';
 
 /**
@@ -11,9 +12,11 @@ import type { TemplateExpression } from './template-expression.type';
  *
  * N.B. Deliberate, to save memory: a constant of the module of the template, shared by every element it describes and
  * passed whole to the setter and to the binding, which keep it instead of its name and value. Do not copy its members
- * per element.
+ * per element. A binding, a reactive attribute or class, is the binding itself (see `BindingSite`): the compiler writes
+ * its callback, the setter of the same kind evaluating the expression once (`_setExpressionProperty`,
+ * `_setExpressionInput`, `_setExpressionClass`), and the slots it reserved.
  */
-export type RenderElementAttribute = {
+export type RenderElementAttribute = BindingSite & {
   /**
    * The attribute name (e.g. `class`, `id`, `href`), or the name of the toggled class.
    */
@@ -43,9 +46,4 @@ export type RenderElementAttribute = {
    * @param attribute - This descriptor.
    */
   unbind?(context: _Context, target: Element | BindingHost, attribute: RenderElementAttribute): void;
-  /**
-   * The identifiers of the variables of the template the expression reads (see `_bindEffect`): a module constant of the
-   * compiled code, omitted when it reads none.
-   */
-  readonly reads?: readonly number[];
 };

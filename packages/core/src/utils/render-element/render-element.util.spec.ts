@@ -7,7 +7,7 @@ import type { RenderElementDirective } from '../../types/render-element-directiv
 import type { RenderElementStructuralDirective } from '../../types/render-element-structural-directive.type';
 import type { RenderElement } from '../../types/render-element.type';
 import type { TemplateExpression } from '../../types/template-expression.type';
-import { HEADER, LAYOUT, PARENT_NODE } from '../../costants';
+import { CLEANUP, HEADER, LAYOUT, PARENT_NODE } from '../../costants';
 import type { _Context } from '../../types/context.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 
@@ -34,7 +34,7 @@ const nodesOf = (context: Context): Node[] => context.slice(context[LAYOUT].node
 function childrenOf(context: Context): Context[] {
   const children = new Array<Context>();
   forEachChild(context, (child, list) => list.push(child), children);
-  const cleanup = context[5];
+  const cleanup = context[CLEANUP];
   const cleanups = Array.isArray(cleanup) ? cleanup : cleanup ? [cleanup] : [];
   for (let i = 0; i < cleanups.length; i++) {
     const item = cleanups[i];

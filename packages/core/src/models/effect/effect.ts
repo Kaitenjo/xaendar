@@ -77,12 +77,12 @@ export function _runBinding<First, Second, Third>(callback: EffectCallback<First
  * the modules of `@xaendar/core` do not need it until they create a signal.
  *
  * N.B. The three generics and the three arguments (`_first`, `_second`, `_third`) exist only for the bindings of the
- * templates (see `_bindEffect`), and are deliberate: do not replace them with a closure, a rest parameter or an object
+ * templates (see `_bindSite`), and are deliberate: do not replace them with a closure, a rest parameter or an object
  * of arguments. The bindings are tens of thousands in a large template, and each one passes its data (the node, the
  * expression, the name...) to a callback declared once at module level, instead of capturing it in an arrow created per
- * binding. Three is the most the bindings need (`toggleReactiveClass(element, name, value)`, `applyProperty(owner,
- * element, binding)`); `_if` and `_for` pass one, their `IfRun` / `ForRun`, and the public `effect()` none, leaving
- * them `undefined`. Three fixed fields give every instance the same shape and cost 8 bytes each when unused, while a
+ * binding. The bindings of a template pass their scope, their target and their binding, a constant of the module
+ * (`_setExpressionClass(context, element, binding)`), the host bindings their owner, element and binding
+ * (`applyProperty(owner, element, binding)`), and the public `effect()` none, leaving them `undefined`. Three fixed fields give every instance the same shape and cost 8 bytes each when unused, while a
  * closure costs ~60 bytes plus its context, and `...args` or `{ node, textFn }` an array or an object per effect.
  *
  * @returns The class.

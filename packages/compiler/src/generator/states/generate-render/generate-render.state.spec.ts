@@ -29,8 +29,8 @@ describe('generateRender', () => {
     expect(await generateRender(parse('@render row(item(), items().length)'), 'root', '0', context, null, false)).toEqual({
       code: ['_renderTemplate(root, context, null, render0$render);']
     });
-    expect(context.constantDeclarations).toEqual(['const render0$render = { template: template_row_0$template, args: render0$args };']);
-    expect(context.functionDeclarations).toEqual(['function render0$args(context) {\n  return [_read(context, 0, 7)(), this.items().length];\n}']);
+    expect(context.constantDeclarations).toEqual(['const render0$render = { template: template_row_0$template, args: render0$args, update: _runRender, effect: 0 };']);
+    expect(context.functionDeclarations).toEqual(['function render0$args(context) {\n  return [_read(context, 0, 5)(), this.items().length];\n}']);
     expect(context.readsDeclarations).toEqual([]);
   });
 
@@ -40,8 +40,16 @@ describe('generateRender', () => {
     context.addIdentifier('$index', 'variable');
 
     expect((await generateRender(parse('@render row(item, $index)'), 'div0', '1', context, null, false)).code).toEqual(['_renderTemplate(div0, context, null, div0__render1$render);']);
-    expect(context.constantDeclarations).toEqual(['const div0__render1$render = { template: template_row_0$template, args: div0__render1$args, reads: _reads0 };']);
-    expect(context.functionDeclarations).toEqual(['function div0__render1$args(context) {\n  return [_read(context, 0, 7), _read(context, 0, 8)];\n}']);
+    expect(context.constantDeclarations).toEqual([[
+      'const div0__render1$render = {',
+      '  template: template_row_0$template,',
+      '  args: div0__render1$args,',
+      '  reads: _reads0,',
+      '  update: _runRender,',
+      '  effect: 0',
+      '};'
+    ].join('\n')]);
+    expect(context.functionDeclarations).toEqual(['function div0__render1$args(context) {\n  return [_read(context, 0, 5), _read(context, 0, 6)];\n}']);
     expect(context.readsDeclarations).toEqual(['const _reads0 = [0, 1];']);
   });
 
@@ -50,7 +58,7 @@ describe('generateRender', () => {
     const { code } = await generateRender(parse('@render row()'), 'if0', '0', context, 'anchor', false);
 
     expect(code).toEqual(['_renderTemplate(if0, context, anchor, if0__render0$render);']);
-    expect(context.constantDeclarations).toEqual(['const if0__render0$render = { template: template_row_0$template };']);
+    expect(context.constantDeclarations).toEqual(['const if0__render0$render = { template: template_row_0$template, update: _runRender, effect: 0 };']);
     expect(context.functionDeclarations).toEqual([]);
   });
 
@@ -59,7 +67,7 @@ describe('generateRender', () => {
     const { code } = await generateRender(parse('@render row()'), 'root', '0', context, null, true);
 
     expect(code).toEqual(['_renderTemplate(root, context, null, render0$render);']);
-    expect(context.constantDeclarations).toEqual(['const render0$render = { template: template_row_0$template, separated: true };']);
+    expect(context.constantDeclarations).toEqual(['const render0$render = { template: template_row_0$template, separated: true, update: _runRender, effect: 0 };']);
   });
 
   it('tells how many scopes up the scope declaring the template is, counting only the scopes of the runtime', async () => {
@@ -68,7 +76,7 @@ describe('generateRender', () => {
     const context = new GeneratorContext(new GeneratorContext(declaring, 'html', 'declarations'));
     await generateRender(parse('@render row()'), 'if0', '0', context, null, false);
 
-    expect(declaring.constantDeclarations).toEqual(['const if0__render0$render = { template: template_row_0$template, depth: 1 };']);
+    expect(declaring.constantDeclarations).toEqual(['const if0__render0$render = { template: template_row_0$template, depth: 1, update: _runRender, effect: 0 };']);
   });
 
   it('throws for a name not referring to a template, pointing to it', async () => {

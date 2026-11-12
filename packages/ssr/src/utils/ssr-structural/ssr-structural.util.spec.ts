@@ -12,9 +12,9 @@ await vi.hoisted(async () => {
 const { _scope, _defineDirective, _getComponentRuntime, _setExpressionInput, Property, StructuralDirective } = await import('@xaendar/core');
 
 /**
- * The layout of a scope holding its header alone, whose 8 slots the runtime reserves.
+ * The layout of a scope holding its header alone, whose 5 slots the runtime reserves.
  */
-const EMPTY_LAYOUT: _ScopeLayout = { size: 8, nodes: 8 };
+const EMPTY_LAYOUT: _ScopeLayout = { size: 5, nodes: 5 };
 type StructuralDirectiveDescriptor = import('@xaendar/core').RenderElementStructuralDirective;
 type StructuralConditionalBinding = import('@xaendar/core').RenderElementStructuralDirectiveConditionalBinding;
 const { _ssrStructural } = await import('./ssr-structural.util');

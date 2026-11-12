@@ -53,12 +53,20 @@ describe('generateElement', () => {
     const result = await run('<div class="a" width="{1 + 2}" title="{heading}"></div>');
 
     expect(result.constants).toEqual([[
+      'const div0$title$binding = {',
+      '  name: \'title\',',
+      '  value: div0$title,',
+      '  setter: _setReactiveProperty,',
+      '  update: _setExpressionProperty,',
+      '  effect: 0',
+      '};'
+    ].join('\n'), [
       'const div0$element = {',
       '  tagName: \'div\',',
       '  attributes: [',
       '    { name: \'class\', value: \'a\', setter: _setProperty },',
       '    { name: \'width\', value: div0$width, setter: _setExpressionProperty },',
-      '    { name: \'title\', value: div0$title, setter: _setReactiveProperty }',
+      '    div0$title$binding',
       '  ]',
       '};'
     ].join('\n')]);
@@ -75,13 +83,28 @@ describe('generateElement', () => {
     context.addIdentifier('field', 'value');
     const result = await run('<div title="{row.name + field.value}" class="{field.value}"></div>', context);
 
-    expect(result.constants[0]).toContain([
-      '    { name: \'title\', value: div0$title, setter: _setReactiveProperty, reads: _reads0 },',
-      '    { name: \'class\', value: div0$class, setter: _setReactiveProperty }'
-    ].join('\n'));
+    expect(result.constants.slice(0, 2)).toEqual([[
+      'const div0$title$binding = {',
+      '  name: \'title\',',
+      '  value: div0$title,',
+      '  setter: _setReactiveProperty,',
+      '  reads: _reads0,',
+      '  update: _setExpressionProperty,',
+      '  effect: 0,',
+      '  target: 1',
+      '};'
+    ].join('\n'), [
+      'const div0$class$binding = {',
+      '  name: \'class\',',
+      '  value: div0$class,',
+      '  setter: _setReactiveProperty,',
+      '  update: _setExpressionProperty,',
+      '  effect: 2',
+      '};'
+    ].join('\n')]);
     expect(result.functions).toEqual([
-      'function div0$title(context) {\n  return _read(context, 0, 7).name + _read(context, 0, 8).value;\n}',
-      'function div0$class(context) {\n  return _read(context, 0, 8).value;\n}'
+      'function div0$title(context) {\n  return _read(context, 0, 5).name + _read(context, 0, 6).value;\n}',
+      'function div0$class(context) {\n  return _read(context, 0, 6).value;\n}'
     ]);
     expect(result.reads).toEqual(['const _reads0 = [0];']);
     expectValidJavascript(result);
@@ -102,12 +125,20 @@ describe('generateElement', () => {
 
       expect(result.code).toEqual(['_renderElement(root, context, null, my_el0$element);']);
       expect(result.constants).toEqual([[
+        'const my_el0$count$binding = {',
+        '  name: \'count\',',
+        '  value: my_el0$count,',
+        '  setter: _setReactiveInput,',
+        '  update: _setExpressionInput,',
+        '  effect: 0',
+        '};'
+      ].join('\n'), [
         'const my_el0$element = {',
         '  tagName: \'my-el\',',
         '  attributes: [',
         '    { name: \'userId\', value: \'u\', setter: _setInput },',
         '    { name: \'title\', value: my_el0$title, setter: _setExpressionInput },',
-        '    { name: \'count\', value: my_el0$count, setter: _setReactiveInput },',
+        '    my_el0$count$binding,',
         '    { name: \'tone\', value: \'dark\', setter: _setInput },',
         '    { name: \'id\', value: \'main\', setter: _setProperty }',
         '  ]',
@@ -226,7 +257,7 @@ describe('generateElement', () => {
     context.addIdentifier('panel');
     const { constants, functionsToProcess } = await run('<div #panel><span></span></div>', context);
 
-    expect(constants).toEqual(['const div0$element = { tagName: \'div\', children: div0Children, ref: \'panel\', refSlot: 7 };']);
+    expect(constants).toEqual(['const div0$element = { tagName: \'div\', children: div0Children, ref: \'panel\', refSlot: 5 };']);
     expect(functionsToProcess?.get('div0Children')?.fn.context).toBe(context);
   });
 
@@ -236,7 +267,7 @@ describe('generateElement', () => {
     // At the top of the block of a scope tracking its nodes, the element gets a slot after the variables
     context.tracksNodes = true;
     const { constants } = await run('<input #field />', context);
-    expect(constants).toEqual(['const input0$element = { tagName: \'input\', ref: \'field\', refSlot: 7, slot: 8 };']);
+    expect(constants).toEqual(['const input0$element = { tagName: \'input\', ref: \'field\', refSlot: 5, slot: 6 };']);
   });
 
   it('renders an element structural directives are applied to in a scope of its own, reading the variables one scope up, its anchor taking the slot', async () => {
@@ -246,8 +277,8 @@ describe('generateElement', () => {
     const { constants, functions, functionsToProcess } = await run('<input *guard title="{ row }" />', context);
 
     // The slot of its anchor, after the variable
-    expect(constants[0]).toContain('slot: 8');
-    expect(functions).toEqual(expect.arrayContaining(['function input0$title(context) {\n  return _read(context, 1, 7);\n}']));
+    expect(constants[0]).toContain('slot: 6');
+    expect(functions).toEqual(expect.arrayContaining(['function input0$title(context) {\n  return _read(context, 1, 5);\n}']));
     expect(functionsToProcess?.size).toBe(0);
   });
 
@@ -309,10 +340,18 @@ describe('generateElement', () => {
     const result = await run('<div [class.is-on]="{active()}" title="x" [class.big]="{2 > 1}"></div>', context);
 
     expect(result.constants).toEqual([[
+      'const div0$class_is_on$binding = {',
+      '  name: \'is-on\',',
+      '  value: div0$class_is_on,',
+      '  setter: _setReactiveClass,',
+      '  update: _setExpressionClass,',
+      '  effect: 0',
+      '};'
+    ].join('\n'), [
       'const div0$element = {',
       '  tagName: \'div\',',
       '  attributes: [',
-      '    { name: \'is-on\', value: div0$class_is_on, setter: _setReactiveClass },',
+      '    div0$class_is_on$binding,',
       '    { name: \'big\', value: div0$class_big, setter: _setExpressionClass },',
       '    { name: \'title\', value: \'x\', setter: _setProperty }',
       '  ]',
@@ -330,7 +369,17 @@ describe('generateElement', () => {
     context.addIdentifier('row', 'variable');
     const { constants, reads } = await run('<div [class.on]="{row.active}"></div>', context);
 
-    expect(constants[0]).toContain('{ name: \'on\', value: div0$class_on, setter: _setReactiveClass, reads: _reads0 }');
+    expect(constants[0]).toBe([
+      'const div0$class_on$binding = {',
+      '  name: \'on\',',
+      '  value: div0$class_on,',
+      '  setter: _setReactiveClass,',
+      '  reads: _reads0,',
+      '  update: _setExpressionClass,',
+      '  effect: 0,',
+      '  target: 1',
+      '};'
+    ].join('\n'));
     expect(reads).toEqual(['const _reads0 = [0];']);
   });
 
@@ -339,20 +388,17 @@ describe('generateElement', () => {
       const result = await run('<div @if (cond()) { [class.on]="{1}" }></div>');
 
       expect(result.constants).toEqual([[
-        'const div0$element = {',
-        '  tagName: \'div\',',
-        '  conditionalBindings: [',
+        'const div0$conditional$binding = {',
+        '  branches: [',
         '    {',
-        '      branches: [',
-        '        {',
-        '          condition: div0$if,',
-        '          attributes: [{ name: \'on\', value: div0$class_on, setter: _setExpressionClass, unbind: _removeClass }]',
-        '        }',
-        '      ]',
+        '      condition: div0$if,',
+        '      attributes: [{ name: \'on\', value: div0$class_on, setter: _setExpressionClass, unbind: _removeClass }]',
         '    }',
-        '  ]',
+        '  ],',
+        '  update: _runConditionalBinding,',
+        '  effect: 0',
         '};'
-      ].join('\n')]);
+      ].join('\n'), 'const div0$element = { tagName: \'div\', conditionalBindings: [div0$conditional$binding] };']);
       expect(result.functions).toEqual([
         'function div0$if(context) {\n  return this.cond();\n}',
         'function div0$class_on(context) {\n  return 1;\n}'
@@ -371,18 +417,15 @@ describe('generateElement', () => {
       const result = await run('<div @if (cond()) { } @else { title="x" }></div>');
 
       expect(result.constants).toEqual([[
-        'const div0$element = {',
-        '  tagName: \'div\',',
-        '  conditionalBindings: [',
-        '    {',
-        '      branches: [',
-        '        { condition: div0$if },',
-        '        { attributes: [{ name: \'title\', value: \'x\', setter: _setProperty, unbind: _removeAttribute }] }',
-        '      ]',
-        '    }',
-        '  ]',
+        'const div0$conditional$binding = {',
+        '  branches: [',
+        '    { condition: div0$if },',
+        '    { attributes: [{ name: \'title\', value: \'x\', setter: _setProperty, unbind: _removeAttribute }] }',
+        '  ],',
+        '  update: _runConditionalBinding,',
+        '  effect: 0',
         '};'
-      ].join('\n')]);
+      ].join('\n'), 'const div0$element = { tagName: \'div\', conditionalBindings: [div0$conditional$binding] };']);
       expectValidJavascript(result);
     });
 
@@ -390,31 +433,28 @@ describe('generateElement', () => {
       const result = await run('<div @if (cond()) { title="x" (click)="f()" @if (inner()) { id="y" } }></div>');
 
       expect(result.constants).toEqual([[
-        'const div0$element = {',
-        '  tagName: \'div\',',
-        '  conditionalBindings: [',
+        'const div0$conditional$binding = {',
+        '  branches: [',
         '    {',
-        '      branches: [',
+        '      condition: div0$if,',
+        '      attributes: [{ name: \'title\', value: \'x\', setter: _setProperty, unbind: _removeAttribute }],',
+        '      events: [{ name: \'click\', handler: div0$on_click }],',
+        '      conditionalBindings: [',
         '        {',
-        '          condition: div0$if,',
-        '          attributes: [{ name: \'title\', value: \'x\', setter: _setProperty, unbind: _removeAttribute }],',
-        '          events: [{ name: \'click\', handler: div0$on_click }],',
-        '          conditionalBindings: [',
+        '          branches: [',
         '            {',
-        '              branches: [',
-        '                {',
-        '                  condition: div0$if1,',
-        '                  attributes: [{ name: \'id\', value: \'y\', setter: _setProperty, unbind: _removeAttribute }]',
-        '                }',
-        '              ]',
+        '              condition: div0$if1,',
+        '              attributes: [{ name: \'id\', value: \'y\', setter: _setProperty, unbind: _removeAttribute }]',
         '            }',
         '          ]',
         '        }',
         '      ]',
         '    }',
-        '  ]',
+        '  ],',
+        '  update: _runConditionalBinding,',
+        '  effect: 0',
         '};'
-      ].join('\n')]);
+      ].join('\n'), 'const div0$element = { tagName: \'div\', conditionalBindings: [div0$conditional$binding] };']);
       expect(result.functions).toEqual([
         'function div0$if(context) {\n  return this.cond();\n}',
         'function div0$on_click(context) {\n  this.f();\n}',
@@ -427,7 +467,7 @@ describe('generateElement', () => {
       const result = await run('<div @if (cond()) { @if (inner()) { id="y" } }></div>');
       const [constant] = result.constants;
 
-      expect(constant).toContain('condition: div0$if,\n          conditionalBindings: [');
+      expect(constant).toContain('condition: div0$if,\n      conditionalBindings: [');
       expect(constant.match(/attributes:/g)).toHaveLength(1);
       expect(constant).not.toContain('events:');
       expect(constant).not.toContain('directives:');
@@ -438,25 +478,22 @@ describe('generateElement', () => {
       const result = await run('<div @if (a()) { title="x" } @else if (b()) { title="y" } @else { title="z" }></div>');
 
       expect(result.constants).toEqual([[
-        'const div0$element = {',
-        '  tagName: \'div\',',
-        '  conditionalBindings: [',
+        'const div0$conditional$binding = {',
+        '  branches: [',
         '    {',
-        '      branches: [',
-        '        {',
-        '          condition: div0$if,',
-        '          attributes: [{ name: \'title\', value: \'x\', setter: _setProperty, unbind: _removeAttribute }]',
-        '        },',
-        '        {',
-        '          condition: div0$if1,',
-        '          attributes: [{ name: \'title\', value: \'y\', setter: _setProperty, unbind: _removeAttribute }]',
-        '        },',
-        '        { attributes: [{ name: \'title\', value: \'z\', setter: _setProperty, unbind: _removeAttribute }] }',
-        '      ]',
-        '    }',
-        '  ]',
+        '      condition: div0$if,',
+        '      attributes: [{ name: \'title\', value: \'x\', setter: _setProperty, unbind: _removeAttribute }]',
+        '    },',
+        '    {',
+        '      condition: div0$if1,',
+        '      attributes: [{ name: \'title\', value: \'y\', setter: _setProperty, unbind: _removeAttribute }]',
+        '    },',
+        '    { attributes: [{ name: \'title\', value: \'z\', setter: _setProperty, unbind: _removeAttribute }] }',
+        '  ],',
+        '  update: _runConditionalBinding,',
+        '  effect: 0',
         '};'
-      ].join('\n')]);
+      ].join('\n'), 'const div0$element = { tagName: \'div\', conditionalBindings: [div0$conditional$binding] };']);
       expect(result.functions).toEqual([
         'function div0$if(context) {\n  return this.a();\n}',
         'function div0$if1(context) {\n  return this.b();\n}'
@@ -470,25 +507,22 @@ describe('generateElement', () => {
       const result = await run('<div @switch (mode()) { @case (\'a\') @case (\'b\') { title="x" } @default { id="y" } }></div>', context);
 
       expect(result.constants).toEqual([[
-        'const div0$element = {',
-        '  tagName: \'div\',',
-        '  conditionalBindings: [',
+        'const div0$conditional$binding = {',
+        '  expression: div0$switch,',
+        '  branches: [',
         '    {',
-        '      expression: div0$switch,',
-        '      branches: [',
-        '        {',
-        '          condition: [\'a\', \'b\'],',
-        '          attributes: [{ name: \'title\', value: \'x\', setter: _setProperty, unbind: _removeAttribute }]',
-        '        },',
-        '        {',
-        '          condition: null,',
-        '          attributes: [{ name: \'id\', value: \'y\', setter: _setProperty, unbind: _removeAttribute }]',
-        '        }',
-        '      ]',
+        '      condition: [\'a\', \'b\'],',
+        '      attributes: [{ name: \'title\', value: \'x\', setter: _setProperty, unbind: _removeAttribute }]',
+        '    },',
+        '    {',
+        '      condition: null,',
+        '      attributes: [{ name: \'id\', value: \'y\', setter: _setProperty, unbind: _removeAttribute }]',
         '    }',
-        '  ]',
+        '  ],',
+        '  update: _runConditionalBinding,',
+        '  effect: 0',
         '};'
-      ].join('\n')]);
+      ].join('\n'), 'const div0$element = { tagName: \'div\', conditionalBindings: [div0$conditional$binding] };']);
       expect(result.functions).toEqual(['function div0$switch(context) {\n  return this.mode();\n}']);
       expectValidJavascript(result);
     });
@@ -498,12 +532,12 @@ describe('generateElement', () => {
       context.addIdentifier('item', 'variable');
       const { constants, functions, reads } = await run('<div @if (item.active) { title="x" } @switch (item.kind) { @case (1) { id="y" } }></div>', context);
 
-      expect(constants[0].match(/reads: _reads0/g)).toHaveLength(2);
+      expect(constants.join('\n').match(/reads: _reads0/g)).toHaveLength(2);
       expect(reads).toEqual(['const _reads0 = [0];']);
       // Evaluated in the scope of the branch, inside the one of the element
       expect(functions).toEqual([
-        'function div0$if(context) {\n  return _read(context, 1, 7).active;\n}',
-        'function div0$switch(context) {\n  return _read(context, 1, 7).kind;\n}'
+        'function div0$if(context) {\n  return _read(context, 1, 5).active;\n}',
+        'function div0$switch(context) {\n  return _read(context, 1, 5).kind;\n}'
       ]);
     });
 
@@ -526,31 +560,28 @@ describe('generateElement', () => {
       const result = await run('<div @if (cond()) { title="x" @@first @if (inner()) { @@second(display="block") } }></div>', new GeneratorContext(cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false }) })));
 
       expect(result.constants).toEqual([[
-        'const div0$element = {',
-        '  tagName: \'div\',',
-        '  conditionalBindings: [',
+        'const div0$conditional$binding = {',
+        '  branches: [',
         '    {',
-        '      branches: [',
+        '      condition: div0$if,',
+        '      attributes: [{ name: \'title\', value: \'x\', setter: _setProperty, unbind: _removeAttribute }],',
+        '      conditionalBindings: [',
         '        {',
-        '          condition: div0$if,',
-        '          attributes: [{ name: \'title\', value: \'x\', setter: _setProperty, unbind: _removeAttribute }],',
-        '          conditionalBindings: [',
+        '          branches: [',
         '            {',
-        '              branches: [',
-        '                {',
-        '                  condition: div0$if1,',
-        '                  directives: [{ selector: \'second\', attributes: [{ name: \'display\', value: \'block\', setter: _setInput }] }]',
-        '                }',
-        '              ]',
+        '              condition: div0$if1,',
+        '              directives: [{ selector: \'second\', attributes: [{ name: \'display\', value: \'block\', setter: _setInput }] }]',
         '            }',
-        '          ],',
-        '          directives: [{ selector: \'first\' }]',
+        '          ]',
         '        }',
-        '      ]',
+        '      ],',
+        '      directives: [{ selector: \'first\' }]',
         '    }',
-        '  ]',
+        '  ],',
+        '  update: _runConditionalBinding,',
+        '  effect: 0',
         '};'
-      ].join('\n')]);
+      ].join('\n'), 'const div0$element = { tagName: \'div\', conditionalBindings: [div0$conditional$binding] };']);
       expectValidJavascript(result);
     });
 
@@ -565,7 +596,7 @@ describe('generateElement', () => {
     it('separates the descriptors of several conditional bindings', async () => {
       const result = await run('<div @if (first()) { title="x" } @if (second()) { id="y" } @switch (mode()) { @case (1) { lang="z" } }></div>');
 
-      expect(result.constants[0].match(/branches: \[/g)).toHaveLength(3);
+      expect(result.constants.join('\n').match(/branches: \[/g)).toHaveLength(3);
       expect(result.functions.map(declaration => declaration.split('(')[0])).toEqual(['function div0$if', 'function div0$if1', 'function div0$switch']);
       expectValidJavascript(result);
     });
@@ -579,24 +610,21 @@ describe('generateElement', () => {
       const result = await run('<my-el @if (cond()) { title="x" label="l" } @else { title="y" }></my-el>', context);
 
       expect(result.constants).toEqual([[
-        'const my_el0$element = {',
-        '  tagName: \'my-el\',',
-        '  conditionalBindings: [',
+        'const my_el0$conditional$binding = {',
+        '  branches: [',
         '    {',
-        '      branches: [',
-        '        {',
-        '          condition: my_el0$if,',
-        '          attributes: [',
-        '            { name: \'title\', value: \'x\', setter: _setInput },',
-        '            { name: \'label\', value: \'l\', setter: _setInput, unbind: _resetProperty }',
-        '          ]',
-        '        },',
-        '        { attributes: [{ name: \'title\', value: \'y\', setter: _setInput }] }',
+        '      condition: my_el0$if,',
+        '      attributes: [',
+        '        { name: \'title\', value: \'x\', setter: _setInput },',
+        '        { name: \'label\', value: \'l\', setter: _setInput, unbind: _resetProperty }',
         '      ]',
-        '    }',
-        '  ]',
+        '    },',
+        '    { attributes: [{ name: \'title\', value: \'y\', setter: _setInput }] }',
+        '  ],',
+        '  update: _runConditionalBinding,',
+        '  effect: 0',
         '};'
-      ].join('\n')]);
+      ].join('\n'), 'const my_el0$element = { tagName: \'my-el\', conditionalBindings: [my_el0$conditional$binding] };']);
       expectValidJavascript(result);
     });
   });
@@ -630,41 +658,43 @@ describe('generateElement', () => {
 
       expect(selectors).toEqual(['@@myDirective', '@@myDirective', '@@myDirective', '@@myDirective']);
       expect(result.constants).toEqual([[
+        'const div0$conditional$binding = {',
+        '  branches: [',
+        '    {',
+        '      condition: div0$if,',
+        '      attributes: [',
+        '        {',
+        '          name: \'display\',',
+        '          value: div0$myDirective_display,',
+        '          setter: _setReactiveInput,',
+        '          unbind: _resetProperty',
+        '        }',
+        '      ],',
+        '      events: [{ name: \'toggled\', handler: div0$myDirective_on_toggled }],',
+        '      conditionalBindings: [',
+        '        {',
+        '          branches: [',
+        '            {',
+        '              condition: div0$if1,',
+        '              attributes: [{ name: \'title\', value: \'z\', setter: _setInput, unbind: _resetProperty }]',
+        '            }',
+        '          ]',
+        '        }',
+        '      ]',
+        '    },',
+        '    { attributes: [{ name: \'display\', value: \'none\', setter: _setInput, unbind: _resetProperty }] }',
+        '  ],',
+        '  update: _runConditionalBinding,',
+        '  effect: 0',
+        '};'
+      ].join('\n'), [
         'const div0$element = {',
         '  tagName: \'div\',',
         '  directives: [',
         '    {',
         '      selector: \'myDirective\',',
         '      attributes: [{ name: \'label\', value: \'x\', setter: _setInput }],',
-        '      conditionalBindings: [',
-        '        {',
-        '          branches: [',
-        '            {',
-        '              condition: div0$if,',
-        '              attributes: [',
-        '                {',
-        '                  name: \'display\',',
-        '                  value: div0$myDirective_display,',
-        '                  setter: _setReactiveInput,',
-        '                  unbind: _resetProperty',
-        '                }',
-        '              ],',
-        '              events: [{ name: \'toggled\', handler: div0$myDirective_on_toggled }],',
-        '              conditionalBindings: [',
-        '                {',
-        '                  branches: [',
-        '                    {',
-        '                      condition: div0$if1,',
-        '                      attributes: [{ name: \'title\', value: \'z\', setter: _setInput, unbind: _resetProperty }]',
-        '                    }',
-        '                  ]',
-        '                }',
-        '              ]',
-        '            },',
-        '            { attributes: [{ name: \'display\', value: \'none\', setter: _setInput, unbind: _resetProperty }] }',
-        '          ]',
-        '        }',
-        '      ]',
+        '      conditionalBindings: [div0$conditional$binding]',
         '    }',
         '  ]',
         '};'
@@ -686,7 +716,7 @@ describe('generateElement', () => {
       expect(constant).toContain('expression: div0$switch,');
       expect(constant).toContain('condition: [1],');
       expect(constant).toContain('{ condition: null, events: [{ name: \'toggled\', handler: div0$myDirective_on_toggled }] }');
-      expect(constant.match(/directives:/g)).toHaveLength(1);
+      expect(result.constants.join('\n').match(/directives:/g)).toHaveLength(1);
       expect(result.functions).toEqual([
         'function div0$myDirective_on_toggled(context) {\n  this.onToggled();\n}',
         'function div0$switch(context) {\n  return this.mode();\n}'
@@ -715,15 +745,20 @@ describe('generateElement', () => {
       const result = await run('<my-el @@my-directive(display="block" mode="{mode}" (toggled)="onToggled($event)")></my-el>', context);
 
       expect(result.constants).toEqual([[
+        'const my_el0$my_directive_mode$binding = {',
+        '  name: \'mode\',',
+        '  value: my_el0$my_directive_mode,',
+        '  setter: _setReactiveInput,',
+        '  update: _setExpressionInput,',
+        '  effect: 0',
+        '};'
+      ].join('\n'), [
         'const my_el0$element = {',
         '  tagName: \'my-el\',',
         '  directives: [',
         '    {',
         '      selector: \'my-directive\',',
-        '      attributes: [',
-        '        { name: \'display\', value: \'block\', setter: _setInput },',
-        '        { name: \'mode\', value: my_el0$my_directive_mode, setter: _setReactiveInput }',
-        '      ],',
+        '      attributes: [{ name: \'display\', value: \'block\', setter: _setInput }, my_el0$my_directive_mode$binding],',
         '      events: [{ name: \'toggled\', handler: my_el0$my_directive_on_toggled }]',
         '    }',
         '  ]',
@@ -738,9 +773,10 @@ describe('generateElement', () => {
 
     it('passes the directives after the conditional bindings', async () => {
       const result = await run('<div class="a" @if (cond()) { title="x" } @@first @@second(display="block")></div>', new GeneratorContext(cacheWith({ display: new ComponentPropertyMetadata('display', 'string', { required: false }) })));
-      const [constant] = result.constants;
+      const [binding, constant] = result.constants;
 
-      expect(constant.indexOf('condition: div0$if')).toBeLessThan(constant.indexOf('selector: \'first\''));
+      expect(binding).toContain('condition: div0$if');
+      expect(constant.indexOf('conditionalBindings: [div0$conditional$binding]')).toBeLessThan(constant.indexOf('selector: \'first\''));
       expect(constant.indexOf('selector: \'first\'')).toBeLessThan(constant.indexOf('selector: \'second\''));
       expectValidJavascript(result);
     });
@@ -767,16 +803,21 @@ describe('generateElement', () => {
       const result = await run('<div *first *second(role="admin" level="{count()}")></div>', new GeneratorContext(cacheWith({ role: new ComponentPropertyMetadata('role', 'string', { required: false }), level: new ComponentPropertyMetadata('level', 'string', { required: false }) })));
 
       expect(result.constants).toEqual([[
+        'const div0$second_level$binding = {',
+        '  name: \'level\',',
+        '  value: div0$second_level,',
+        '  setter: _setReactiveInput,',
+        '  update: _setExpressionInput,',
+        '  effect: 0',
+        '};'
+      ].join('\n'), [
         'const div0$element = {',
         '  tagName: \'div\',',
         '  structuralDirectives: [',
         '    { selector: \'first\' },',
         '    {',
         '      selector: \'second\',',
-        '      attributes: [',
-        '        { name: \'role\', value: \'admin\', setter: _setInput },',
-        '        { name: \'level\', value: div0$second_level, setter: _setReactiveInput }',
-        '      ]',
+        '      attributes: [{ name: \'role\', value: \'admin\', setter: _setInput }, div0$second_level$binding]',
         '    }',
         '  ]',
         '};'
@@ -798,7 +839,7 @@ describe('generateElement', () => {
       const context = new GeneratorContext(cache);
       await generateElement(parse('<div @if (cond()) { *first }></div>'), 'td0', '0', context, null, false, true);
 
-      expect(context.constantDeclarations[0]).toMatch(/structuralConditionalBindings: [\s\S]*,\n {2}last: true\n\};$/);
+      expect(context.constantDeclarations[1]).toMatch(/structuralConditionalBindings: \[td0__div0\$conditional\$binding\], last: true \};$/);
     });
 
     it('ignores the position of an element applying no structural directive, which is no block', async () => {
@@ -822,6 +863,15 @@ describe('generateElement', () => {
       const result = await run('<div @if (cond()) { title="x" *first } @else { *second }></div>');
 
       expect(result.constants).toEqual([[
+        'const div0$conditional$binding = {',
+        '  branches: [',
+        '    { condition: div0$if1, structuralDirectives: [{ selector: \'first\' }] },',
+        '    { structuralDirectives: [{ selector: \'second\' }] }',
+        '  ],',
+        '  update: _runConditionalBinding,',
+        '  effect: 0',
+        '};'
+      ].join('\n'), [
         'const div0$element = {',
         '  tagName: \'div\',',
         '  conditionalBindings: [',
@@ -835,14 +885,7 @@ describe('generateElement', () => {
         '      ]',
         '    }',
         '  ],',
-        '  structuralConditionalBindings: [',
-        '    {',
-        '      branches: [',
-        '        { condition: div0$if1, structuralDirectives: [{ selector: \'first\' }] },',
-        '        { structuralDirectives: [{ selector: \'second\' }] }',
-        '      ]',
-        '    }',
-        '  ]',
+        '  structuralConditionalBindings: [div0$conditional$binding]',
         '};'
       ].join('\n')]);
       expect(result.functions).toEqual([
@@ -856,19 +899,26 @@ describe('generateElement', () => {
       const result = await run('<div @if (cond()) { *first } @if (other()) { @if (inner()) { *second } }></div>');
 
       expect(result.constants).toEqual([[
+        'const div0$conditional$binding = {',
+        '  branches: [{ condition: div0$if, structuralDirectives: [{ selector: \'first\' }] }],',
+        '  update: _runConditionalBinding,',
+        '  effect: 0',
+        '};'
+      ].join('\n'), [
+        'const div0$conditional$binding1 = {',
+        '  branches: [',
+        '    {',
+        '      condition: div0$if1,',
+        '      conditionalBindings: [{ branches: [{ condition: div0$if2, structuralDirectives: [{ selector: \'second\' }] }] }]',
+        '    }',
+        '  ],',
+        '  update: _runConditionalBinding,',
+        '  effect: 1',
+        '};'
+      ].join('\n'), [
         'const div0$element = {',
         '  tagName: \'div\',',
-        '  structuralConditionalBindings: [',
-        '    { branches: [{ condition: div0$if, structuralDirectives: [{ selector: \'first\' }] }] },',
-        '    {',
-        '      branches: [',
-        '        {',
-        '          condition: div0$if1,',
-        '          conditionalBindings: [{ branches: [{ condition: div0$if2, structuralDirectives: [{ selector: \'second\' }] }] }]',
-        '        }',
-        '      ]',
-        '    }',
-        '  ]',
+        '  structuralConditionalBindings: [div0$conditional$binding, div0$conditional$binding1]',
         '};'
       ].join('\n')]);
       expectValidJavascript(result);
@@ -876,8 +926,7 @@ describe('generateElement', () => {
 
     it('generates the nested conditional bindings applying structural directives, skipping the ones applying none', async () => {
       const result = await run('<div @switch (mode()) { @case (1) { @if (inner()) { *first } @if (skipped()) { title="x" } } @default { } }></div>');
-      const [constant] = result.constants;
-      const structural = constant.slice(constant.indexOf('structuralConditionalBindings'));
+      const [structural, constant] = result.constants;
 
       expect(constant).toContain('expression: div0$switch,');
       expect(structural).toContain('expression: div0$switch1,');
