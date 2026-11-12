@@ -43,6 +43,6 @@ describe('generateClient', () => {
     context.tracksNodes = true;
     const { code } = await generateClient(parse('@client { <b></b> }'), 'for0', '0', context, 'anchor');
 
-    expect(code).toEqual(['_client(for0, context, anchor, for0__client0, false, 8);']);
+    expect(code).toEqual(['_client(for0, context, anchor, for0__client0, false, 7);']);
   });
 });

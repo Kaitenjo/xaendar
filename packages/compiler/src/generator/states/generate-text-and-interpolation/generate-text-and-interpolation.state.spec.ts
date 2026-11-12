@@ -39,8 +39,8 @@ describe('generateTextAndInterpolation', () => {
     });
     expect(context.readsDeclarations).toEqual(['const _reads0 = [0];']);
     expect(context.functionDeclarations).toEqual([
-      'function td0$text0(context) {\n  return _read(context, 0, 8).name;\n}',
-      'function td1$text0(context) {\n  return _read(context, 0, 8).id;\n}'
+      'function td0$text0(context) {\n  return _read(context, 0, 7).name;\n}',
+      'function td1$text0(context) {\n  return _read(context, 0, 7).id;\n}'
     ]);
   });
 

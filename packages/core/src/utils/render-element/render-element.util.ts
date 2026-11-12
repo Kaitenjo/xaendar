@@ -29,7 +29,7 @@ import type { TemplateExpression } from '../../types/template-expression.type';
 import { _addAppliedDirective, _removeAppliedDirective } from '../applied-directives/applied-directives.util';
 import { restoreToggledClasses } from '../class-toggle/class-toggle.util';
 import type { _Context } from '../../types/context.type';
-import { _scope, addChild, addCleanup, clear, ELEMENT_LAYOUT, getNodeStrategy, swapNodeStrategy, trackNode } from '../context/context.util';
+import { _scope, addCleanup, clear, containerSlot, EMPTY_LAYOUT, getNodeStrategy, STRUCTURAL_LAYOUT, swapNodeStrategy, trackNode } from '../context/context.util';
 import { _setElementRef } from '../element-refs/element-refs.util';
 import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { _selectBranch } from '../select-branch/select-branch.util';
@@ -154,8 +154,8 @@ function applyPendingDirectives(binding: ElementBinding): void {
 /**
  * Renders the children of an element in the context the element is rendered in: in a hydration, the children of an
  * element created in place of a node of the server not matching it are created too, the context getting their strategy
- * while they render. The context the children create for themselves, if any, is registered as a child of the one they
- * are rendered in.
+ * while they render. The context the children create for themselves, if any, the content of an element structural
+ * directives are applied to, is held by the container of the scope of that element (see `STRUCTURAL_LAYOUT`).
  *
  * N.B. Deliberate, to save memory: the children are rendered in the context of the element, instead of one per element,
  * which a large table pays per cell, its strategy swapped while they render when theirs differs, instead of a context
@@ -183,8 +183,9 @@ function renderElementChildren(element: Element, context: _Context, nodeStrategy
     }
   }
 
+  // Only the content of an element structural directives are applied to creates one, held by the scope of the element
   if (ownContext) {
-    addChild(context, ownContext);
+    context[containerSlot(context)] = ownContext;
   }
 }
 
@@ -248,8 +249,10 @@ function bindEvents(element: Element, context: _Context, events: readonly Render
 function bindConditionalBindings<Target, Bindings extends { readonly conditionalBindings?: ReadonlyArray<RenderConditionalBinding<Bindings>> }>(context: _Context, conditionalBindings: ReadonlyArray<RenderConditionalBinding<Bindings>>, target: Target, bind: ConditionalBindingRun<Target, Bindings>['bind']): void {
   for (let i = 0; i < conditionalBindings.length; i++) {
     const conditionalBinding = conditionalBindings[i];
-    const run: ConditionalBindingRun<Target, Bindings> = { conditionalBinding, branchContext: addChild(context), target, bind, current: undefined };
+    const run: ConditionalBindingRun<Target, Bindings> = { conditionalBinding, scope: _scope(context, EMPTY_LAYOUT), target, bind, current: undefined };
     _bindEffect(context, runConditionalBinding<Target, Bindings>, run, undefined, undefined, conditionalBinding.reads);
+    // Held after the binding selecting its branch, so that a refresh selects the branch before refreshing it
+    addCleanup(context, run);
   }
 }
 
@@ -263,7 +266,7 @@ function bindConditionalBindings<Target, Bindings extends { readonly conditional
  * @param run - The conditional binding.
  */
 function runConditionalBinding<Target, Bindings extends { readonly conditionalBindings?: ReadonlyArray<RenderConditionalBinding<Bindings>> }>(run: ConditionalBindingRun<Target, Bindings>): void {
-  const selected = _selectBranch(run.conditionalBinding, run.branchContext);
+  const selected = _selectBranch(run.conditionalBinding, run.scope);
   untracked(() => applyBranch(run, selected));
 }
 
@@ -284,9 +287,9 @@ function applyBranch<Target, Bindings extends { readonly conditionalBindings?: R
     return;
   }
 
-  const { branchContext, target, bind } = run;
+  const { scope, target, bind } = run;
   run.current = selected;
-  clear(branchContext);
+  clear(scope);
 
   /*
     Selected branch could be null if
@@ -294,9 +297,9 @@ function applyBranch<Target, Bindings extends { readonly conditionalBindings?: R
     - No If/ElseIf match the condition and it lacks an else value
   */
   if (selected) {
-    bind(target, branchContext, selected);
+    bind(target, scope, selected);
     if (selected.conditionalBindings?.length) {
-      bindConditionalBindings(branchContext, selected.conditionalBindings, target, bind);
+      bindConditionalBindings(scope, selected.conditionalBindings, target, bind);
     }
   }
 }
@@ -419,7 +422,8 @@ function renderStructuralElement(parentNode: Element, context: _Context, anchor:
   const nodeStrategy = getNodeStrategy(context);
   const { structuralDirectives, structuralConditionalBindings } = config;
   const block = nodeStrategy.block(context, parentNode, anchor, 'structural', _SSR_MARKERS.structural, config.last, config.slot);
-  const elementContext = addChild(context, _scope(context, ELEMENT_LAYOUT));
+  const elementContext = _scope(context, STRUCTURAL_LAYOUT);
+  context[containerSlot(context, config.container)] = elementContext;
   const flags = signal(new Array<SignalType<boolean | undefined>>());
   const collector: StructuralCollector = {
     add: flag => flags.update(list => [...list, flag]),

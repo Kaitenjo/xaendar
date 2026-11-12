@@ -68,6 +68,10 @@ export class GeneratorContext extends CompilerContext {
    */
   private _nodeCount = 0;
   /**
+   * The number of blocks of this scope given a container (see {@link allocateContainer}).
+   */
+  private _containerCount = 0;
+  /**
    * The declarations of the constants of the module (see {@link declareConstant}), in the order they are declared: held
    * by the root scope.
    */
@@ -254,15 +258,39 @@ export class GeneratorContext extends CompilerContext {
   }
 
   /**
+   * Gives the next block of this scope (`@if`, `@switch`, `@for`, `@defer`, `@try`, `@hydrate`, `@client`,
+   * `@render`, an element structural directives are applied to) its container in the runtime scope (see `_ScopeLayout`
+   * of the runtime), which holds what the block shows: the blocks rendered into an element of the scope too, since the
+   * element renders its children in the runtime scope it is rendered in.
+   *
+   * @returns The index of the container among the containers of the scope, which the runtime adds to the slot of the
+   *   first one: the compiler counts the nodes as it generates them, so it does not know that slot yet.
+   */
+  public allocateContainer(): number {
+    // The children of an element opening a namespace are rendered in the runtime scope of the element
+    let context: GeneratorContext = this;
+    while (!context.opensScope) {
+      context = context.parent!;
+    }
+
+    return context._containerCount++;
+  }
+
+  /**
    * Declares the layout of the runtime scope of this scope (see `_ScopeLayout` of the runtime), once its body is
-   * generated: its size, the slot of its first node and the names of its variables. Identical layouts share a constant
-   * of the module, held by the root scope.
+   * generated: its size, the slot of its first node, the slot of its first container, if any, and the names of its
+   * variables. Identical layouts share a constant of the module, held by the root scope.
    *
    * @returns The name of the constant.
    */
   public declareLayout(): string {
     const nodes = SCOPE_HEADER + this.identifierCount;
-    const members = [`size: ${nodes + this._nodeCount}`, `nodes: ${nodes}`];
+    const containers = nodes + this._nodeCount;
+    const members = [`size: ${containers + this._containerCount}`, `nodes: ${nodes}`];
+    if (this._containerCount) {
+      members.push(`containers: ${containers}`);
+    }
+
     if (this.identifierCount) {
       members.push(`variables: [${this.variableNames.map(name => `'${name}'`).join(', ')}]`);
     }

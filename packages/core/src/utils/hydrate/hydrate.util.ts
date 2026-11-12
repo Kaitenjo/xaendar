@@ -7,7 +7,7 @@ import type { HydrateRun } from '../../types/hydrate-run.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { ClaimNodes } from '../claim-nodes/claim-nodes.util';
 import type { _Context } from '../../types/context.type';
-import { _scope, addChild, addCleanup, getNodeStrategy, removeChild, setNodeStrategy, trackNode } from '../context/context.util';
+import { _scope, addCleanup, containerSlot, getNodeStrategy, setNodeStrategy, trackNode } from '../context/context.util';
 import { armTriggers, disarmAll, recordEvents, replayEvents, watchedTriggers } from '../hydration-triggers/hydration-triggers.util';
 
 /**
@@ -40,6 +40,7 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
   const run: HydrateRun = {
     parentNode,
     parentContext,
+    slot: containerSlot(parentContext, block.container),
     nodeBlock,
     block,
     disarms: [],
@@ -67,7 +68,7 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
   */
   const serverNodes = run.serverNodes = nodeStrategy.skip(parentNode, nodeBlock);
   if (block.track && serverNodes.length) {
-    run.holder = holdServerNodes(parentNode, parentContext, serverNodes);
+    parentContext[run.slot] = holdServerNodes(parentNode, parentContext, serverNodes);
   }
 
   // Recording its events would stop them for good: the content stays plain HTML, and its modules are never loaded
@@ -176,14 +177,18 @@ function load(run: HydrateRun, onLoad: NoArgsVoidFunction, onError?: NoArgsVoidF
 }
 
 /**
- * Renders the content of a block, getting its nodes with a strategy.
+ * Renders the content of a block, getting its nodes with a strategy: its context takes the container of the block, in
+ * place of the scope holding the nodes of the server, if any, whose nodes the content adopted.
  *
  * @param run - The block.
  * @param strategy - The node strategy.
  * @returns The context of the content.
  */
 function show(run: HydrateRun, strategy: NodeStrategy): _Context {
-  return untracked(() => addChild(run.parentContext, run.block.content(run.parentNode, run.parentContext, run.nodeBlock.anchor, strategy)));
+  const { parentContext } = run;
+  const content = untracked(() => run.block.content(run.parentNode, parentContext, run.nodeBlock.anchor, strategy));
+  parentContext[run.slot] = content;
+  return content;
 }
 
 /**
@@ -210,10 +215,6 @@ function fire(run: HydrateRun): void {
 function adopt(run: HydrateRun): void {
   const { parentNode, parentContext, serverNodes, nodeBlock } = run;
   run.hydrated = true;
-  if (run.holder) {
-    removeChild(parentContext, run.holder);
-  }
-
   const claim = new ClaimNodes(hostOf(parentNode), true);
   claim.startAt(parentNode, serverNodes[0] ?? nodeBlock.anchor);
   const content = show(run, claim);
@@ -226,8 +227,8 @@ function adopt(run: HydrateRun): void {
 }
 
 /**
- * Creates the scope owning the nodes the server rendered for the content of a block until the content adopts them, a
- * child of the context holding the block, of the exact size of the nodes: the context removes them, and the row of a
+ * Creates the scope owning the nodes the server rendered for the content of a block until the content adopts them, held
+ * by the container of the block, of the exact size of the nodes: the context removes them, and the row of a
  * `@for` moves them, as the nodes of the content.
  *
  * N.B. Deliberate, to save memory: the nodes of the server, whose number only the runtime knows, get a scope of their
@@ -240,7 +241,7 @@ function adopt(run: HydrateRun): void {
  * @returns The scope.
  */
 function holdServerNodes(parentNode: Node, parentContext: _Context, serverNodes: readonly Node[]): _Context {
-  const holder = addChild(parentContext, _scope(parentContext, { size: HEADER + serverNodes.length, nodes: HEADER }));
+  const holder = _scope(parentContext, { size: HEADER + serverNodes.length, nodes: HEADER });
   for (let i = 0; i < serverNodes.length; i++) {
     trackNode(serverNodes[i], parentNode, holder, HEADER + i);
   }

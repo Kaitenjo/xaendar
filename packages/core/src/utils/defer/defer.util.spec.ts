@@ -11,7 +11,7 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { _declare, _read, _scope, _set, EMPTY_LAYOUT, ELEMENT_LAYOUT, clear, addChild } = await import('../context/context.util');
+const { _declare, _read, _scope, STRUCTURAL_LAYOUT, _set, ELEMENT_LAYOUT, clear, containerSlot } = await import('../context/context.util');
 const { ClaimNodes } = await import('../claim-nodes/claim-nodes.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _renderElement } = await import('../render-element/render-element.util');
@@ -59,13 +59,13 @@ const flush = async () => {
   await new Promise<void>(resolve => setTimeout(resolve));
 };
 
-const createRoot = (nodeStrategy?: NodeStrategy) => _scope(null, EMPTY_LAYOUT, nodeStrategy);
+const createRoot = (nodeStrategy?: NodeStrategy) => _scope(null, STRUCTURAL_LAYOUT, nodeStrategy);
 
 /**
  * A part rendering an element, with its listeners, through the strategy it receives.
  */
 const part = (tagName: string, events?: RenderElementEvent[]) => vi.fn((parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
-  const context = _scope(parentContext, ELEMENT_LAYOUT, nodeStrategy);
+  const context = _scope(parentContext, STRUCTURAL_LAYOUT, nodeStrategy);
   _renderElement(parentNode, context, anchor as Comment | null, { tagName, events, slot: HEADER });
   return context;
 });
@@ -149,7 +149,7 @@ describe('_defer', () => {
       const element = parent();
       const placeholder = (parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
         const context = part('i')(parentNode, parentContext, anchor, nodeStrategy);
-        addChild(context, part('u')(parentNode, context, anchor, nodeStrategy));
+        context[containerSlot(context)] = part('u')(parentNode, context, anchor, nodeStrategy);
         // An element inside one of its elements is not watched
         part('s')(element.querySelector('i')!, context, null, nodeStrategy);
         return context;
@@ -167,8 +167,8 @@ describe('_defer', () => {
     it('watches the elements of the blocks a @placeholder holds when it owns no node of its own', async () => {
       const element = parent();
       const placeholder = (parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
-        const context = _scope(parentContext, EMPTY_LAYOUT, nodeStrategy);
-        addChild(context, part('u')(parentNode, context, anchor, nodeStrategy));
+        const context = _scope(parentContext, { size: HEADER + 1, nodes: HEADER, containers: HEADER }, nodeStrategy);
+        context[containerSlot(context)] = part('u')(parentNode, context, anchor, nodeStrategy);
         return context;
       };
 

@@ -3,12 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { ClaimNodes } from '../claim-nodes/claim-nodes.util';
 import { HEADER } from '../../costants';
-import { _scope, clear, ELEMENT_LAYOUT, EMPTY_LAYOUT } from '../context/context.util';
+import { _scope, STRUCTURAL_LAYOUT, clear, ELEMENT_LAYOUT, EMPTY_LAYOUT } from '../context/context.util';
 import type { _Context } from '../../types/context.type';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { _client } from './client.util';
 
-const createRoot = (nodeStrategy?: NodeStrategy) => _scope(null, EMPTY_LAYOUT, nodeStrategy);
+const createRoot = (nodeStrategy?: NodeStrategy) => _scope(null, STRUCTURAL_LAYOUT, nodeStrategy);
 
 /**
  * The content of a block, rendering an element before the anchor it receives, through the strategy it receives.

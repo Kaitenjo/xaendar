@@ -11,7 +11,7 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { _scope, ELEMENT_LAYOUT, clear, getNodeStrategy, setNodeStrategy } = await import('../context/context.util');
+const { _scope, STRUCTURAL_LAYOUT, ELEMENT_LAYOUT, clear, getNodeStrategy, setNodeStrategy } = await import('../context/context.util');
 const { ClaimNodes } = await import('../claim-nodes/claim-nodes.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _renderElement } = await import('../render-element/render-element.util');
@@ -22,7 +22,7 @@ type Context = _Context;
 
 const flush = () => new Promise<void>(resolve => setTimeout(resolve));
 
-const createRoot = (nodeStrategy?: NodeStrategy) => _scope(null, ELEMENT_LAYOUT, nodeStrategy);
+const createRoot = (nodeStrategy?: NodeStrategy) => _scope(null, STRUCTURAL_LAYOUT, nodeStrategy);
 
 /**
  * A block rendering an element, with its listeners, through the strategy it receives.

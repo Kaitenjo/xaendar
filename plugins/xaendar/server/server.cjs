@@ -20383,7 +20383,7 @@ function toTypeCheckModuleSpecifier({ modulePath, importPath }) {
 }
 
 // ../packages/compiler/src/costants/scope-header.costant.ts
-var SCOPE_HEADER = 8;
+var SCOPE_HEADER = 7;
 
 // ../packages/compiler/src/models/compiler-context/compiler-context.model.ts
 var CompilerContext = class {

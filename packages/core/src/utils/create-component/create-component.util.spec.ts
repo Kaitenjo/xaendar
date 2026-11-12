@@ -16,14 +16,28 @@ const { CustomDirective } = await import('../../models/custom-directive/custom-d
 const { CustomElement } = await import('../../models/custom-element/custom-element');
 const { Output } = await import('../../models/output/output');
 const { StructuralDirective } = await import('../../models/structural-directive/structural-directive');
-const { _scope, EMPTY_LAYOUT, clear, getChildCount, getChild, moveTo } = await import('../context/context.util');
+const { _scope, forEachChild, EMPTY_LAYOUT, clear, moveTo } = await import('../context/context.util');
 const { _defineRender } = await import('../render-registry/render-registry.util');
 const { _createComponent } = await import('./create-component.util');
 
 /**
- * The child contexts of a context, in registration order.
+ * The scopes a scope holds: the ones of its containers, then the ones its cleanups hold, as the branch of a conditional
+ * binding or the scope of a component created in code.
  */
-const childrenOf = (context: _Context): _Context[] => Array.from({ length: getChildCount(context) }, (_item, index) => getChild(context, index));
+function childrenOf(context: _Context): _Context[] {
+  const children = new Array<_Context>();
+  forEachChild(context, (child, list) => list.push(child), children);
+  const cleanup = context[5];
+  const cleanups = Array.isArray(cleanup) ? cleanup : cleanup ? [cleanup] : [];
+  for (let i = 0; i < cleanups.length; i++) {
+    const item = cleanups[i];
+    if (typeof item !== 'function' && 'scope' in item) {
+      children.push(item.scope as _Context);
+    }
+  }
+
+  return children;
+}
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 

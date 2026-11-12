@@ -19,7 +19,7 @@ import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { DescriptorOwner } from '../../types/descriptor-owner.type';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getElementIdentifier, isConstantExpression, joinVariables, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
-import { appendBlockPosition } from '../../utils/block-position/block-position.utils';
+import { appendBlockPosition, appendContainer, rendersBlock } from '../../utils/block-position/block-position.utils';
 import { declareExpression, toArrayLiteral, toObjectLiteral, toRoleName } from '../../utils/module-code/module-code.utils';
 
 /**
@@ -102,6 +102,9 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
 
   // Only an element applying structural directives is a block: its slot is the one of its anchor, if it has one
   appendBlockPosition(members, last && structural, structural && last ? undefined : generatorContext.allocateNodeSlot());
+  if (structural) {
+    appendContainer(members, generatorContext);
+  }
 
   const element = generatorContext.declareConstant(`${nodeName}$element`, toObjectLiteral(members));
   retVal.code.push(`_renderElement(${parentNode}, context, ${anchor}, ${element});`);
@@ -115,9 +118,11 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
         /*
           The content of an element a structural directive is applied to is a scope of its own, created and destroyed with
           it, and the children of an element opening a namespace are generated in it, so that their elements name it: at
-          runtime they are rendered in the context of the element all the same
+          runtime they are rendered in the context of the element all the same. The content of an element a structural
+          directive is applied to rendering a block opens a runtime scope even without names, which holds the container of
+          the block (see `allocateContainer`)
         */
-        context: structural || childrenNamespace !== generatorContext.namespace ? new GeneratorContext(elementOwner.generatorContext, childrenNamespace, 'declarations') : generatorContext
+        context: structural || childrenNamespace !== generatorContext.namespace ? new GeneratorContext(elementOwner.generatorContext, childrenNamespace, structural && rendersBlock(node.children) ? 'scope' : 'declarations') : generatorContext
       },
       // The function takes the context of the element instead, when it renders the children in it (see `Generator`)
       args: [nodeName, 'parentContext']

@@ -20,18 +20,27 @@ type ContextCache = import('@xaendar/compiler').ContextCache;
 const { CustomElement, _defineRender } = core;
 
 /**
- * The scopes a scope holds, read from its slot `CHILDREN` (7): the scope itself while there is one, an array from the
- * second, told apart by the number of a scope in its slot `STATE` (2).
+ * The scopes a scope holds in its containers, the slots from the one its layout (slot `LAYOUT`, 6) gives to the end: a
+ * scope, `null`, or the run of a `@for`, holding the scopes of its rows.
  */
 function childrenOf(context: _Context): _Context[] {
-  const children = context[7];
-  return children === null ? [] : typeof children[2] === 'number' ? [children as _Context] : children as _Context[];
+  const children = new Array<_Context>();
+  for (let i = context[6].containers ?? context.length; i < context.length; i++) {
+    const container = context[i] as _Context | { rows: _Context[] | null } | null;
+    if (Array.isArray(container)) {
+      children.push(container);
+    } else if (container?.rows) {
+      children.push(...container.rows);
+    }
+  }
+
+  return children;
 }
 
 /**
- * The nodes a scope tracks, the slots from the one its layout (slot `LAYOUT`, 6) gives to the end.
+ * The nodes a scope tracks, the slots from the one its layout (slot `LAYOUT`, 6) gives to its first container.
  */
-const nodesOf = (context: _Context): Node[] => context.slice(context[6].nodes).filter(Boolean) as Node[];
+const nodesOf = (context: _Context): Node[] => context.slice(context[6].nodes, context[6].containers).filter(Boolean) as Node[];
 
 
 /*
@@ -441,5 +450,153 @@ describe('the scopes of a template', () => {
     expect(texts(root, 'i')).toEqual(['z']);
     // The nodes of each row stay together: its <p>, then the content of its @if before the anchor of the @if; the @for, last, has none
     expect(Array.from(root.childNodes).map(node => node.nodeName === '#comment' ? (node as Comment).data : node.textContent)).toEqual(['0:b', 'if', '1:z', 'z', 'if']);
+  });
+});
+
+describe('the containers of the blocks', () => {
+  /**
+   * The scope of the render of a component.
+   */
+  const scopeOf = (element: unknown): _Context => (element as { _context: _Context })._context;
+
+  /**
+   * A list of rows, each one an <li> with its id.
+   */
+  class List extends CustomElement {
+    public rows = signal<Row[]>([]);
+  }
+
+  const listTemplate = '<ul>@for (row of rows(); track row.name) {<li>{ row.id }</li>}</ul>';
+
+  /**
+   * Rows with the names given, numbered in order.
+   */
+  const rowsOf = (...names: string[]): Row[] => names.map((name, id) => ({ id, name }));
+
+  it('gives each occurrence of a key repeated its own row, reusing the rows of the occurrences kept in their order', async () => {
+    const { element, root } = await mount(listTemplate, List, ['rows']);
+    element.rows.set(rowsOf('a', 'b', 'a'));
+    await flush();
+    const [firstA, b, secondA] = Array.from(root.querySelectorAll('li'));
+
+    element.rows.set(rowsOf('a', 'a', 'b', 'a'));
+    await flush();
+
+    expect(texts(root, 'li')).toEqual(['0', '1', '2', '3']);
+    expect(Array.from(root.querySelectorAll('li')).slice(0, 3)).toEqual([firstA, secondA, b]);
+    expect(childrenOf(scopeOf(element))).toHaveLength(4);
+
+    element.rows.set(rowsOf('b', 'a'));
+    await flush();
+
+    expect(Array.from(root.querySelectorAll('li'))).toEqual([b, firstA]);
+    expect(childrenOf(scopeOf(element))).toHaveLength(2);
+  });
+
+  it('moves the rows reordered, removes half of them, empties the list and fills it again', async () => {
+    const { element, root } = await mount(listTemplate, List, ['rows']);
+    const names = Array.from({ length: 10 }, (_name, index) => `n${index}`);
+    element.rows.set(rowsOf(...names));
+    await flush();
+    const nodes = Array.from(root.querySelectorAll('li'));
+
+    element.rows.set(rowsOf(...names.toReversed()));
+    await flush();
+    expect(Array.from(root.querySelectorAll('li'))).toEqual(nodes.toReversed());
+
+    element.rows.set(rowsOf(...names.filter((_name, index) => index % 2 === 0)));
+    await flush();
+    expect(Array.from(root.querySelectorAll('li'))).toEqual(nodes.filter((_node, index) => index % 2 === 0));
+    expect(texts(root, 'li')).toEqual(['0', '1', '2', '3', '4']);
+    expect(childrenOf(scopeOf(element))).toHaveLength(5);
+
+    element.rows.set([]);
+    await flush();
+    expect(root.querySelectorAll('li')).toHaveLength(0);
+    expect(childrenOf(scopeOf(element))).toHaveLength(0);
+
+    element.rows.set(rowsOf('x', 'y'));
+    await flush();
+    expect(texts(root, 'li')).toEqual(['0', '1']);
+    expect(childrenOf(scopeOf(element))).toHaveLength(2);
+  });
+
+  it('changes the branch of an @if in a row while the row is refreshed, and the case of a @switch', async () => {
+    class Rows extends CustomElement {
+      public rows = signal<Row[]>([{ id: 1, name: 'a', done: false }]);
+      public mode = signal('one');
+    }
+    const { element, root } = await mount([
+      '@for (row of rows(); track row.id) {<p>@if (row.done) {<b>{ row.name }</b>} @else {<i>{ row.name }</i>}</p>}',
+      '@switch (mode()) { @case (\'one\') {<s>1</s>} @default {<u>other</u>} }'
+    ].join(''), Rows, ['rows', 'mode']);
+    const row = root.querySelector('p');
+
+    element.rows.set([{ id: 1, name: 'z', done: true }]);
+    element.mode.set('two');
+    await flush();
+
+    expect(root.querySelector('p')).toBe(row);
+    expect(texts(root, 'p > *')).toEqual(['z']);
+    expect(root.querySelector('p > b')).not.toBeNull();
+    expect(texts(root, 's, u')).toEqual(['other']);
+    // The root holds the @for and the @switch, the row the branch of its @if
+    expect(childrenOf(scopeOf(element))).toHaveLength(2);
+    expect(childrenOf(childrenOf(scopeOf(element))[0])).toHaveLength(1);
+  });
+
+  it('shows the content of a @defer in place of its @placeholder, in the container of the block', async () => {
+    class Lazy extends CustomElement {
+      public ready = signal(false);
+    }
+    const { element, root } = await mount('<div>@defer (when ready()) {<b>content</b>} @placeholder {<i>wait</i>}</div>', Lazy, ['ready']);
+    await flush();
+    expect(texts(root, 'b, i')).toEqual(['wait']);
+    const [placeholder] = childrenOf(scopeOf(element));
+
+    element.ready.set(true);
+    await flush();
+
+    expect(texts(root, 'b, i')).toEqual(['content']);
+    expect(childrenOf(scopeOf(element))).not.toContain(placeholder);
+    expect(childrenOf(scopeOf(element))).toHaveLength(1);
+  });
+
+  it('holds the @catch of a @try whose content throws at its first render, clearing what the content created', async () => {
+    class Risky extends CustomElement {
+      public label = signal('a');
+
+      public boom(): string {
+        throw new Error('boom');
+      }
+    }
+    const { element, root } = await mount('@try {<b>{ label() }</b>@if (label()) {<s>{ boom() }</s>}} @catch (error) {<i>{ error.message }</i>}', Risky, ['label']);
+
+    expect(texts(root, 'b, s, i')).toEqual(['boom']);
+    expect(childrenOf(scopeOf(element))).toHaveLength(1);
+
+    element.label.set('b');
+    await flush();
+
+    expect(texts(root, 'b, s, i')).toEqual(['boom']);
+  });
+
+  it('removes the instance of a template with the block rendering it, which stops following its arguments', async () => {
+    class Page extends CustomElement {
+      public show = signal(true);
+      public label = signal('a');
+    }
+    const { element, root } = await mount('<template row(text: string)><span>{ text }</span></template>@if (show()) {@render row(label())}', Page, ['show', 'label']);
+    expect(texts(root, 'span')).toEqual(['a']);
+    const [branch] = childrenOf(scopeOf(element));
+    expect(childrenOf(branch)).toHaveLength(1);
+
+    element.show.set(false);
+    await flush();
+    element.label.set('b');
+    await flush();
+
+    expect(root.querySelector('span')).toBeNull();
+    expect(childrenOf(scopeOf(element))).toEqual([]);
   });
 });

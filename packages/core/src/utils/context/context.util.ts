@@ -1,7 +1,8 @@
-import { CHILDREN, CLEANUP, COMPONENT, HEADER, LAYOUT, PARENT, PARENT_NODE, STATE, STRATEGY } from '../../costants';
+import { CLEANUP, COMPONENT, HEADER, LAYOUT, PARENT, PARENT_NODE, STATE, STRATEGY } from '../../costants';
 import { _runBinding } from '../../models/effect/effect';
 import type { Binding } from '../../types/binding.type';
 import type { Cleanup } from '../../types/cleanup.type';
+import type { Container } from '../../types/container.type';
 import type { _Context } from '../../types/context.type';
 import type { _DeclarationKind } from '../../types/declaration-kind.type';
 import type { Effect } from '../../types/effect.type';
@@ -30,6 +31,12 @@ export const EMPTY_LAYOUT: _ScopeLayout = Object.freeze({ size: HEADER, nodes: H
  * creates, the one of an element structural directives are applied to.
  */
 export const ELEMENT_LAYOUT: _ScopeLayout = Object.freeze({ size: HEADER + 1, nodes: HEADER });
+
+/**
+ * The layout of the scope of an element structural directives are applied to: the element, then the container of the
+ * scope its content creates, when it declares names or renders blocks (see `renderElementChildren`).
+ */
+export const STRUCTURAL_LAYOUT: _ScopeLayout = Object.freeze({ size: HEADER + 2, nodes: HEADER, containers: HEADER + 1 });
 
 /**
  * The identifiers of the variables changed in the refresh running (see {@link refresh}), the ones of the scopes
@@ -75,7 +82,6 @@ export function _scope(parent: _Context | null, layout: _ScopeLayout, nodeStrate
   scope[STRATEGY] = nodeStrategy === undefined ? parent?.[STRATEGY] ?? null : toStrategySlot(nodeStrategy);
   scope[CLEANUP] = null;
   scope[LAYOUT] = layout;
-  scope[CHILDREN] = null;
   captureContext(scope);
   return scope;
 }
@@ -190,63 +196,53 @@ export function refresh(scope: _Context, ids: readonly number[]): void {
 }
 
 /**
- * Registers a scope inside another one, as a nested block: it is cleared, and refreshed, with it.
+ * Returns the slot of the container of a block in the scope rendering it (see `_ScopeLayout`).
  *
- * @param scope - The scope holding the child.
- * @param child - The child scope. If omitted, a scope declaring nothing is created, whose parent is `scope`.
- * @returns The child scope.
+ * @param scope - The scope rendering the block.
+ * @param container - The index of the container among the containers of the scope, as the compiler gives it to the
+ *   block. Defaults to the first one.
+ * @returns The slot.
  */
-export function addChild(scope: _Context, child: _Context = _scope(scope, EMPTY_LAYOUT)): _Context {
-  const children = scope[CHILDREN];
-  if (isScopeList(children)) {
-    children.length ? children.push(child) : scope[CHILDREN] = child;
-  } else {
-    // The second child gets an array of exactly two items: a push into an empty array would reserve room for many more
-    scope[CHILDREN] = children ? [children, child] : child;
-  }
-
-  return child;
+export function containerSlot(scope: _Context, container = 0): number {
+  return scope[LAYOUT].containers! + container;
 }
 
 /**
- * Removes a scope registered inside another one, without clearing it.
+ * Visits the scopes the containers of a scope hold, in the order of the containers, the rows of a `@for` in their order:
+ * each container is read when its turn comes, so that visiting a scope may change the ones after it.
  *
- * @param scope - The scope holding the child.
- * @param child - The child scope.
+ * @template Argument - What the visit receives besides the scope.
+ * @param scope - The scope.
+ * @param visit - The visit, a function of a module, never a closure.
+ * @param argument - What the visit receives besides the scope.
  */
-export function removeChild(scope: _Context, child: _Context): void {
-  const children = scope[CHILDREN];
-  if (children === child) {
-    scope[CHILDREN] = null;
-  } else if (isScopeList(children)) {
-    const index = children.indexOf(child);
-    if (index !== -1) {
-      children.splice(index, 1);
+export function forEachChild<Argument>(scope: _Context, visit: (child: _Context, argument: Argument) => void, argument: Argument): void {
+  const { containers } = scope[LAYOUT];
+  if (containers === undefined) {
+    return;
+  }
+
+  for (let i = containers; i < scope.length; i++) {
+    const container = scope[i] as Container;
+    if (isScope(container)) {
+      visit(container, argument);
+    } else if (container?.rows) {
+      const { rows } = container;
+      for (let j = 0; j < rows.length; j++) {
+        visit(rows[j], argument);
+      }
     }
   }
 }
 
 /**
- * Returns the number of scopes registered inside a scope, which {@link getChild} reads.
+ * Returns the slot after the last node at the top of the block of a scope: the first container, or the end of the scope.
  *
  * @param scope - The scope.
- * @returns The number of child scopes.
+ * @returns The slot.
  */
-export function getChildCount(scope: _Context): number {
-  const children = scope[CHILDREN];
-  return isScopeList(children) ? children.length : children ? 1 : 0;
-}
-
-/**
- * Returns a scope registered inside a scope, by its position in registration order.
- *
- * @param scope - The scope.
- * @param index - The position of the child scope, lower than {@link getChildCount}.
- * @returns The child scope.
- */
-export function getChild(scope: _Context, index: number): _Context {
-  const children = scope[CHILDREN]!;
-  return isScopeList(children) ? children[index] : children;
+export function nodesEnd(scope: _Context): number {
+  return scope[LAYOUT].containers ?? scope.length;
 }
 
 /**
@@ -337,9 +333,16 @@ export function getNodeStrategy(scope: _Context): NodeStrategy {
  */
 export function setNodeStrategy(scope: _Context, nodeStrategy: NodeStrategy): void {
   scope[STRATEGY] = toStrategySlot(nodeStrategy);
-  for (let i = 0; i < getChildCount(scope); i++) {
-    setNodeStrategy(getChild(scope, i), nodeStrategy);
+  const cleanup = scope[CLEANUP];
+  if (Array.isArray(cleanup)) {
+    for (let i = 0; i < cleanup.length; i++) {
+      setHeldNodeStrategy(cleanup[i], nodeStrategy);
+    }
+  } else if (cleanup) {
+    setHeldNodeStrategy(cleanup, nodeStrategy);
   }
+
+  forEachChild(scope, setNodeStrategy, nodeStrategy);
 }
 
 /**
@@ -354,11 +357,11 @@ export function swapNodeStrategy(scope: _Context, nodeStrategy: NodeStrategy): v
 }
 
 /**
- * Moves the cleanups and the child scopes of a scope to another one, leaving it empty: a staging scope, collecting what
- * is created before the scope it belongs to exists, hands them over to it.
+ * Moves the cleanups of a scope to another one, leaving it empty: a staging scope, collecting what is created before the
+ * scope it belongs to exists (the effects, the components `createComponent` creates), hands them over to it.
  *
  * @param scope - The staging scope.
- * @param target - The scope receiving the cleanups and the child scopes.
+ * @param target - The scope receiving the cleanups.
  */
 export function moveTo(scope: _Context, target: _Context): void {
   const cleanup = scope[CLEANUP];
@@ -370,12 +373,7 @@ export function moveTo(scope: _Context, target: _Context): void {
     addCleanup(target, cleanup);
   }
 
-  for (let i = 0; i < getChildCount(scope); i++) {
-    addChild(target, getChild(scope, i));
-  }
-
   scope[CLEANUP] = null;
-  scope[CHILDREN] = null;
 }
 
 /**
@@ -388,9 +386,10 @@ export function moveTo(scope: _Context, target: _Context): void {
  * the DOM as it is: its nodes are inside a node removed already, or in the shadow root of a component removed from the
  * DOM, which goes with the component (see `CustomElement`).
  *
- * Each child scope is cleared after the cleanups, removing its own nodes when nothing removes them already (see
- * {@link childDetaches}): only the highest scope cleared removes the nodes at its top, and the child scopes whose nodes
- * are beside them, while the nodes inside them go with them.
+ * The scopes of its containers are cleared after the cleanups, the ones of a `@for` in the order of their rows, each one
+ * removing its own nodes when nothing removes them already (see {@link clearChild}): only the highest scope cleared
+ * removes the nodes at its top, and the child scopes whose nodes are beside them, while the nodes inside them go with
+ * them. The scopes its cleanups hold (see `ScopeHolder`) are cleared with the cleanups.
  *
  * @param scope - The scope.
  * @param detach - Whether the nodes are removed from the DOM. Defaults to `true`.
@@ -402,7 +401,7 @@ export function clear(scope: _Context, detach = true): void {
   */
   const parentNode = scope[PARENT_NODE];
   if (detach && parentNode) {
-    for (let i = scope.length - 1; i >= scope[LAYOUT].nodes; i--) {
+    for (let i = nodesEnd(scope) - 1; i >= scope[LAYOUT].nodes; i--) {
       const node = scope[i] as Node | null | undefined;
       if (node?.parentNode === parentNode) {
         parentNode.removeChild(node);
@@ -419,14 +418,9 @@ export function clear(scope: _Context, detach = true): void {
     runCleanup(cleanup);
   }
 
-  for (let i = 0; i < getChildCount(scope); i++) {
-    const child = getChild(scope, i);
-    clear(child, childDetaches(scope, child, detach));
-  }
-
+  forEachChild(scope, clearChild, detach ? scope : null);
   scope[PARENT_NODE] = null;
   scope[CLEANUP] = null;
-  scope[CHILDREN] = null;
   scope.fill(null, HEADER);
 }
 
@@ -469,14 +463,13 @@ export function createAnchor(label: string, parentNode: Node, scope: _Context, r
 }
 
 /**
- * Tells whether the child scopes of a scope are a list of scopes, the array they are held in from the second, rather
- * than a single scope, itself an array: a scope holds a number in its `STATE` slot, a list a scope or nothing there.
+ * Tells whether a container holds a scope, an array, rather than the run of a `@for` or nothing.
  *
- * @param children - The child scopes of a scope.
- * @returns `true` for a list of scopes.
+ * @param container - The container.
+ * @returns `true` for a scope.
  */
-function isScopeList(children: _Context | _Context[] | null): children is _Context[] {
-  return children !== null && typeof children[STATE] !== 'number';
+function isScope(container: Container): container is _Context {
+  return Array.isArray(container);
 }
 
 /**
@@ -530,8 +523,23 @@ function runCleanup(cleanup: Cleanup): void {
     cleanup();
   } else if ('reads' in cleanup) {
     cleanup.effect?.dispose();
+  } else if ('scope' in cleanup) {
+    // A scope held outside of the containers renders nothing beside the nodes of the scope holding it: it removes its own
+    clear(cleanup.scope);
   } else {
     cleanup.dispose();
+  }
+}
+
+/**
+ * Gives its strategy to the scope a cleanup holds, if any (see {@link setNodeStrategy}).
+ *
+ * @param cleanup - The cleanup.
+ * @param nodeStrategy - The strategy.
+ */
+function setHeldNodeStrategy(cleanup: Cleanup, nodeStrategy: NodeStrategy): void {
+  if (typeof cleanup !== 'function' && 'scope' in cleanup) {
+    setNodeStrategy(cleanup.scope, nodeStrategy);
   }
 }
 
@@ -554,43 +562,41 @@ function refreshScope(scope: _Context): void {
     refreshCleanup(cleanup);
   }
 
-  // The children are read at each iteration: refreshing one may add or remove the ones after it
-  for (let i = 0; i < getChildCount(scope); i++) {
-    const child = getChild(scope, i);
-    if (child[STATE] !== currentPass) {
-      refreshScope(child);
-    }
-  }
-
+  // The containers are read when their turn comes: a binding run again may have shown another branch, or other rows
+  forEachChild(scope, refreshChild, undefined);
   changedIds = ids;
 }
 
 /**
- * Tells whether a child scope, cleared along with its parent, removes its nodes from the DOM: when the parent removes
- * its own, the child removes the ones beside them, in the same node, but not the ones inside them, which go with them;
- * when it does not, nothing of its subtree does. A child tracking no node, or under a scope tracking none, removes its
- * nodes, if any, since nothing tells where they are.
+ * Refreshes a scope inside the one being refreshed, unless the refresh running already did, or created it.
  *
- * A child outside of any template, as the scope of a component `createComponent` creates, renders its element into its
- * target, wherever it is: it always removes it.
+ * @param child - The scope.
+ */
+function refreshChild(child: _Context): void {
+  if (child[STATE] !== currentPass) {
+    refreshScope(child);
+  }
+}
+
+/**
+ * Clears a scope of a container of a scope being cleared, removing its nodes from the DOM when nothing removes them
+ * already: when the parent removes its own, the child removes the ones beside them, in the same node, but not the ones
+ * inside them, which go with them; when it does not, nothing of its subtree does. A child tracking no node, or under a
+ * scope tracking none, removes its nodes, if any, since nothing tells where they are.
  *
  * N.B. Deliberate, to save time and memory: deciding by the node the nodes of the child are inserted into, which every
  * scope keeps (see `PARENT_NODE`), instead of a flag the compiler would write for every block, or of a scope removing
- * every node of its subtree one by one. Do not remove the nodes of the children unconditionally again: clearing a row of
- * a `@for` would remove every node of its cells, and disconnecting a component every node of its template.
+ * every node of its subtree one by one. The parent travels as the argument of the visit, `null` when it keeps the DOM as
+ * it is, so that the visit is a function of the module. Do not remove the nodes of the children unconditionally again:
+ * clearing a row of a `@for` would remove every node of its cells, and disconnecting a component every node of its
+ * template.
  *
- * @param scope - The scope being cleared.
  * @param child - The child scope.
- * @param detach - Whether the scope removes its nodes.
- * @returns `true` when the child removes its nodes.
+ * @param parent - The scope being cleared, `null` when it does not remove its nodes.
  */
-function childDetaches(scope: _Context, child: _Context, detach: boolean): boolean {
-  if (child[PARENT] === null) {
-    return true;
-  }
-
+function clearChild(child: _Context, parent: _Context | null): void {
   const parentNode = child[PARENT_NODE];
-  return detach && (parentNode === null || scope[PARENT_NODE] === null || parentNode === scope[PARENT_NODE]);
+  clear(child, parent !== null && (parentNode === null || parent[PARENT_NODE] === null || parentNode === parent[PARENT_NODE]));
 }
 
 /**
@@ -613,14 +619,18 @@ function readsAny(reads: readonly number[], ids: readonly number[]): boolean {
 }
 
 /**
- * Runs a cleanup of a scope again when it is a binding reading one of the variables changed in the refresh running (see
- * {@link refresh}).
+ * Runs a cleanup of a scope again when it is a binding reading one of the variables changed in the refresh running, and
+ * refreshes the scope it holds, if any (see {@link refresh}).
  *
  * @param cleanup - The cleanup.
  */
 function refreshCleanup(cleanup: Cleanup): void {
-  if ('reads' in cleanup && readsAny(cleanup.reads, changedIds!)) {
-    rerunBinding(cleanup);
+  if ('reads' in cleanup) {
+    if (readsAny(cleanup.reads, changedIds!)) {
+      rerunBinding(cleanup);
+    }
+  } else if ('scope' in cleanup) {
+    refreshChild(cleanup.scope);
   }
 }
 

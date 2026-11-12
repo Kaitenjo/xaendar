@@ -11,7 +11,7 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { _read, _scope, clear, EMPTY_LAYOUT, getChild, getChildCount, mountNode, refresh, update } = await import('../context/context.util');
+const { _read, _scope, forEachChild, clear, mountNode, refresh, update } = await import('../context/context.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _parameter, _renderTemplate } = await import('./template.util');
 const { _bindEffect } = await import('../../signals/effect/effect');
@@ -23,14 +23,33 @@ const { effect, signal } = await import('../../signals');
 const nodesOf = (context: _Context): Node[] => context.slice(context[LAYOUT].nodes).filter(Boolean) as Node[];
 
 /**
- * The child contexts of a context, in registration order.
+ * The scopes a scope holds: the ones of its containers, then the ones its cleanups hold, as the branch of a conditional
+ * binding or the scope of a component created in code.
  */
-const childrenOf = (context: _Context): _Context[] => Array.from({ length: getChildCount(context) }, (_item, index) => getChild(context, index));
+function childrenOf(context: _Context): _Context[] {
+  const children = new Array<_Context>();
+  forEachChild(context, (child, list) => list.push(child), children);
+  const cleanup = context[5];
+  const cleanups = Array.isArray(cleanup) ? cleanup : cleanup ? [cleanup] : [];
+  for (let i = 0; i < cleanups.length; i++) {
+    const item = cleanups[i];
+    if (typeof item !== 'function' && 'scope' in item) {
+      children.push(item.scope as _Context);
+    }
+  }
+
+  return children;
+}
 
 /**
  * The layout of a scope declaring the variables named.
  */
 const layoutOf = (...variables: string[]): _ScopeLayout => ({ size: HEADER + variables.length, nodes: HEADER + variables.length, variables });
+
+/**
+ * The layout of a scope holding no variable, and the containers of two blocks.
+ */
+const HOLDER: _ScopeLayout = { size: HEADER + 2, nodes: HEADER, containers: HEADER };
 
 /**
  * The layout of the content of the template `row`: its parameters `label` and `count`, then its `<span>`.
@@ -49,7 +68,7 @@ const flush = () => new Promise<void>(resolve => setTimeout(resolve, 0));
  * Creates the scope of a row reading `item`, a child of the scope declaring the template.
  */
 function createRow(declarationContext: _Context, item: unknown): _Context {
-  const row = _scope(declarationContext, layoutOf('item'));
+  const row = _scope(declarationContext, { ...layoutOf('item'), size: HEADER + 2, containers: HEADER + 1 });
   row[HEADER] = item;
   return row;
 }
@@ -115,8 +134,8 @@ describe('_parameter', () => {
 
 describe('_renderTemplate', () => {
   it('renders an instance before the reference node, in the context of the scope declaring the template, owned by the rendering one', () => {
-    const declarationContext = _scope(null, EMPTY_LAYOUT);
-    const renderingContext = _scope(declarationContext, EMPTY_LAYOUT);
+    const declarationContext = _scope(null, HOLDER);
+    const renderingContext = _scope(declarationContext, HOLDER);
     const { render, template } = createTemplate();
     const parent = document.createElement('div');
     const anchor = document.createComment('anchor');
@@ -136,7 +155,7 @@ describe('_renderTemplate', () => {
     const { template } = createTemplate();
     const separator = vi.spyOn(CREATE_NODES, 'separator');
 
-    _renderTemplate(document.createElement('div'), _scope(null, EMPTY_LAYOUT), null, { template, args: () => ['a', 1], separated: true });
+    _renderTemplate(document.createElement('div'), _scope(null, HOLDER), null, { template, args: () => ['a', 1], separated: true });
 
     expect(separator).toHaveBeenCalledExactlyOnceWith(expect.any(HTMLDivElement), true);
     separator.mockRestore();
@@ -147,7 +166,7 @@ describe('_renderTemplate', () => {
     const { render, template, texts } = createTemplate();
     const parent = document.createElement('div');
 
-    _renderTemplate(parent, _scope(null, EMPTY_LAYOUT), null, { template, args: () => [label(), 1] });
+    _renderTemplate(parent, _scope(null, HOLDER), null, { template, args: () => [label(), 1] });
 
     label.set('b');
     await flush();
@@ -158,7 +177,7 @@ describe('_renderTemplate', () => {
   });
 
   it('updates the parameters of the instance when its scope is refreshed with a variable an argument reads', () => {
-    const declarationContext = _scope(null, EMPTY_LAYOUT);
+    const declarationContext = _scope(null, HOLDER);
     const rowContext = createRow(declarationContext, { name: 'a', count: 1 });
     const { render, template } = createTemplate();
     const parent = document.createElement('div');
@@ -177,7 +196,7 @@ describe('_renderTemplate', () => {
     const { template, texts } = createTemplate();
     const parent = document.createElement('div');
 
-    _renderTemplate(parent, _scope(null, EMPTY_LAYOUT), null, { template, args: () => [label(), count()] });
+    _renderTemplate(parent, _scope(null, HOLDER), null, { template, args: () => [label(), count()] });
 
     label.set('b');
     count.set(2);
@@ -188,7 +207,7 @@ describe('_renderTemplate', () => {
   });
 
   it('does not refresh the instance when the arguments computed again keep their values', () => {
-    const declarationContext = _scope(null, EMPTY_LAYOUT);
+    const declarationContext = _scope(null, HOLDER);
     const rowContext = createRow(declarationContext, { name: 'a' });
     const { template, texts } = createTemplate();
 
@@ -205,7 +224,7 @@ describe('_renderTemplate', () => {
     const renders = vi.fn();
     const stop = effect(() => {
       renders();
-      _renderTemplate(document.createElement('div'), _scope(null, EMPTY_LAYOUT), null, { template, args: () => ['x', label()] });
+      _renderTemplate(document.createElement('div'), _scope(null, HOLDER), null, { template, args: () => ['x', label()] });
     });
 
     label.set('b');
@@ -215,12 +234,11 @@ describe('_renderTemplate', () => {
   });
 
   it('renders the instances of a @render passing no argument with the same frozen empty array', () => {
-    const declarationContext = _scope(null, EMPTY_LAYOUT);
+    const declarationContext = _scope(null, HOLDER);
     const { render, template } = createTemplate();
-    const config: RenderTemplateConfig = { template };
-
-    _renderTemplate(document.createElement('div'), declarationContext, null, config);
-    _renderTemplate(document.createElement('div'), declarationContext, null, config);
+    // Two @render of the same scope, each holding its instance in its own container
+    _renderTemplate(document.createElement('div'), declarationContext, null, { template });
+    _renderTemplate(document.createElement('div'), declarationContext, null, { template, container: 1 });
 
     const [firstValues, secondValues] = render.mock.calls.map(call => call[3]);
     expect(firstValues).toEqual([]);
@@ -234,7 +252,7 @@ describe('_renderTemplate', () => {
     const { template } = createTemplate();
     const middleContext = _scope(declarationContext, layoutOf('title'));
     middleContext[HEADER] = 'shadowed';
-    const renderingContext = _scope(_scope(middleContext, EMPTY_LAYOUT), EMPTY_LAYOUT);
+    const renderingContext = _scope(_scope(middleContext, HOLDER), HOLDER);
     const parent = document.createElement('div');
 
     _renderTemplate(parent, renderingContext, null, { template, depth: 3, args: () => ['a', 1] });
@@ -246,7 +264,7 @@ describe('_renderTemplate', () => {
 
   it('calls the arguments with the component of the context as this and the context', () => {
     const component = { label: 'a' };
-    const declarationContext = _scope(null, EMPTY_LAYOUT, undefined, component);
+    const declarationContext = _scope(null, HOLDER, undefined, component);
     const { template } = createTemplate();
     const args = vi.fn(function (this: typeof component, _context: _Context) {
       return [this.label, 1];
@@ -261,7 +279,7 @@ describe('_renderTemplate', () => {
   });
 
   it('shares the same config and the same arguments between two instances of the @render, each reading its own context, without writing into the config', () => {
-    const declarationContext = _scope(null, EMPTY_LAYOUT);
+    const declarationContext = _scope(null, HOLDER);
     const { render, template } = createTemplate();
     const args = vi.fn((scope: _Context) => [scope[HEADER], 1]);
     const config: RenderTemplateConfig = Object.freeze({ template, depth: 1, args, separated: false, reads: Object.freeze([0]) });

@@ -3,12 +3,12 @@ import { EffectOptions } from '@xaendar/core/signals';
 import { loadSignals } from '@xaendar/signals';
 import { Constructor, NoArgsVoidFunction } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { CONNECTED_HOOKS, DISCONNECTED_HOOKS, HYDRATE } from '../../costants';
+import { CONNECTED_HOOKS, DISCONNECTED_HOOKS, HEADER, HYDRATE } from '../../costants';
 import { HostProperty } from '../../decorators/host-property/host-property.decorator';
 import { effect } from '../../signals/effect/effect';
 import { ClaimNodes } from '../../utils/claim-nodes/claim-nodes.util';
 import { _bindEffect } from '../../signals/effect/effect';
-import { EMPTY_LAYOUT, _scope, addChild, addCleanup, getChild, getChildCount, mountNode } from '../../utils/context/context.util';
+import { EMPTY_LAYOUT, _scope, forEachChild, addCleanup, mountNode } from '../../utils/context/context.util';
 import type { _Context } from '../../types/context.type';
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
@@ -18,9 +18,23 @@ import { CustomDirective } from '../custom-directive/custom-directive';
 import { CustomElement } from './custom-element';
 
 /**
- * The child contexts of a context, in registration order.
+ * The scopes a scope holds: the ones of its containers, then the ones its cleanups hold, as the branch of a conditional
+ * binding or the scope of a component created in code.
  */
-const childrenOf = (context: _Context): _Context[] => Array.from({ length: getChildCount(context) }, (_item, index) => getChild(context, index));
+function childrenOf(context: _Context): _Context[] {
+  const children = new Array<_Context>();
+  forEachChild(context, (child, list) => list.push(child), children);
+  const cleanup = context[5];
+  const cleanups = Array.isArray(cleanup) ? cleanup : cleanup ? [cleanup] : [];
+  for (let i = 0; i < cleanups.length; i++) {
+    const item = cleanups[i];
+    if (typeof item !== 'function' && 'scope' in item) {
+      children.push(item.scope as _Context);
+    }
+  }
+
+  return children;
+}
 
 loadSignals();
 
@@ -376,13 +390,15 @@ describe('CustomElement', () => {
       const name = `x-base-${counter++}`;
       const render = vi.fn(function (this: CustomElement, nodeStrategy: NodeStrategy) {
         const root = this.shadowRoot!;
-        const context = _scope(null, EMPTY_LAYOUT, nodeStrategy, this);
+        // The root holds the container of a block
+        const context = _scope(null, { size: HEADER + 1, nodes: HEADER, containers: HEADER }, nodeStrategy, this);
         const paragraph = document.createElement('p');
         mountNode(paragraph, root, context);
         paragraph.addEventListener('click', clicked);
         addCleanup(context, () => paragraph.removeEventListener('click', clicked));
         _bindEffect(context, (node: HTMLElement) => { node.textContent = source.get(); }, paragraph);
-        const block = addChild(context);
+        const block = _scope(context, EMPTY_LAYOUT);
+        context[HEADER] = block;
         mountNode(document.createElement('b'), root, block);
         if (nested) {
           mountNode(document.createElement(nested), root, context);

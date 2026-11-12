@@ -28,4 +28,9 @@ export type RenderTemplateConfig = {
    * The identifiers of the variables of the template the arguments read, left out when they read none.
    */
   readonly reads?: readonly number[];
+  /**
+   * The index of the container of the `@render` among the containers of the context rendering it (see `_ScopeLayout`),
+   * which holds the context of the instance: left out for the first one.
+   */
+  readonly container?: number;
 };

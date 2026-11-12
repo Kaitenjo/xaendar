@@ -18,19 +18,33 @@ await vi.hoisted(async () => {
 
 const { SVG_NS } = await import('../../costants');
 const { input } = await import('../../signals/input/input');
-const { _declare, _read, _scope, EMPTY_LAYOUT, addCleanup, getNodeStrategy, clear, getChildCount, getChild, refresh, update } = await import('../context/context.util');
+const { _declare, _read, _scope, forEachChild, nodesEnd, STRUCTURAL_LAYOUT, EMPTY_LAYOUT, addCleanup, getNodeStrategy, clear, refresh, update } = await import('../context/context.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { ClaimNodes } = await import('../claim-nodes/claim-nodes.util');
 
 /**
  * The nodes a context tracks, in mount order.
  */
-const nodesOf = (context: Context): Node[] => context.slice(context[LAYOUT].nodes).filter(Boolean) as Node[];
+const nodesOf = (context: Context): Node[] => context.slice(context[LAYOUT].nodes, nodesEnd(context)).filter(Boolean) as Node[];
 
 /**
- * The child contexts of a context, in registration order.
+ * The scopes a scope holds: the ones of its containers, then the ones its cleanups hold, as the branch of a conditional
+ * binding or the scope of a component created in code.
  */
-const childrenOf = (context: Context): Context[] => Array.from({ length: getChildCount(context) }, (_item, index) => getChild(context, index));
+function childrenOf(context: Context): Context[] {
+  const children = new Array<Context>();
+  forEachChild(context, (child, list) => list.push(child), children);
+  const cleanup = context[5];
+  const cleanups = Array.isArray(cleanup) ? cleanup : cleanup ? [cleanup] : [];
+  for (let i = 0; i < cleanups.length; i++) {
+    const item = cleanups[i];
+    if (typeof item !== 'function' && 'scope' in item) {
+      children.push(item.scope as Context);
+    }
+  }
+
+  return children;
+}
 const {
   _removeAttribute,
   _renderElement,
@@ -63,15 +77,15 @@ type ElementBindings = Omit<RenderElementConditionalBinding['branches'][number],
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
 /**
- * The layout of the contexts of the tests: the variables they read, then room for two nodes.
+ * The layout of the contexts of the tests: the variables they read, then room for four nodes, then two containers.
  */
-const ROOT_LAYOUT: _ScopeLayout = { size: HEADER + 8, nodes: HEADER + 4, variables: ['label', 'enabled', 'suffix', 'panel'] };
+const ROOT_LAYOUT: _ScopeLayout = { size: HEADER + 10, nodes: HEADER + 4, containers: HEADER + 8, variables: ['label', 'enabled', 'suffix', 'panel'] };
 
 /**
  * The first slot of a context free for a node, as the compiler gives them in order.
  */
 function freeSlot(context: Context): number | undefined {
-  for (let i = context[LAYOUT].nodes; i < context.length; i++) {
+  for (let i = context[LAYOUT].nodes; i < nodesEnd(context); i++) {
     if (!context[i]) {
       return i;
     }
@@ -667,7 +681,7 @@ describe('_renderElement', () => {
   it('registers in the context of the element the context the children create for themselves with their own strategy', () => {
     const own = Object.assign({}, CREATE_NODES);
     const strategy = Object.assign({}, CREATE_NODES, { children: () => own });
-    const context = _scope(null, EMPTY_LAYOUT, strategy);
+    const context = _scope(null, STRUCTURAL_LAYOUT, strategy);
     const unlisten = vi.fn();
     const children = vi.fn<RenderChildren>((_element, childrenContext) => {
       const ownContext = _scope(childrenContext, EMPTY_LAYOUT);

@@ -9,8 +9,9 @@ import { BindingGroup } from '../../types/create-component/binding-group.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
 import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
 import { HEADER } from '../../costants';
+import type { ScopeHolder } from '../../types/scope-holder.type';
 import type { _Context } from '../../types/context.type';
-import { _scope, addChild, clear, ELEMENT_LAYOUT, removeChild } from '../context/context.util';
+import { _scope, addCleanup, clear, ELEMENT_LAYOUT, removeCleanup } from '../context/context.util';
 import { getSelector } from '../get-selector/get-selector.util';
 import { _assertRequiredInputs } from '../required-inputs/required-inputs.util';
 import { _toPropertyName } from '../input-names/input-names.util';
@@ -74,8 +75,9 @@ export function _createComponent<
 
   // The root of the component's own bindings: it is never a scope of identifiers, only the owner of their cleanup
   const context = _scope(null, ELEMENT_LAYOUT);
-  // Registered before the render, so that what a render failing halfway leaves is cleared along with the owner
-  addChild(owner(), context);
+  // Held by the owner before the render, so that what a render failing halfway leaves is cleared along with the owner
+  const holder: ScopeHolder = { scope: context };
+  addCleanup(owner(), holder);
   const { attributes, events, conditionalBindings, directives } = bindings;
   const element = untracked(() => {
     _renderElement(options.target, context, null, { tagName: selector, attributes, events, conditionalBindings, directives, slot: HEADER });
@@ -92,7 +94,7 @@ export function _createComponent<
   return {
     element,
     destroy: () => {
-      removeChild(owner(), context);
+      removeCleanup(owner(), holder);
       clear(context);
     }
   };

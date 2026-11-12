@@ -12,7 +12,7 @@ await vi.hoisted(async () => {
 
 const { effect, signal } = await import('../../signals');
 const { ClaimNodes } = await import('../claim-nodes/claim-nodes.util');
-const { _scope, EMPTY_LAYOUT, ELEMENT_LAYOUT, addCleanup, clear, trackNode } = await import('../context/context.util');
+const { _scope, STRUCTURAL_LAYOUT, EMPTY_LAYOUT, ELEMENT_LAYOUT, addCleanup, clear, trackNode } = await import('../context/context.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 
 const { connectChild, runConnection } = await import('../try-scope/try-scope.util');
@@ -23,7 +23,7 @@ const { _try } = await import('./try.util');
  */
 type Context = _Context;
 
-const createRoot = (nodeStrategy?: NodeStrategy) => _scope(null, ELEMENT_LAYOUT, nodeStrategy);
+const createRoot = (nodeStrategy?: NodeStrategy) => _scope(null, STRUCTURAL_LAYOUT, nodeStrategy);
 
 /**
  * The layout of the contexts of the tests rendering an element and the anchor of a block.

@@ -4,7 +4,8 @@ import type { NodeBlock } from './node-block.type';
 
 /**
  * A `@for` while it is rendered (see `_for`): where it is, how its items are got and rendered, and the ones it renders,
- * held by its binding as the argument of its callback.
+ * held by its binding as the argument of its callback, and by the container of the `@for` in the scope rendering it (see
+ * `_ScopeLayout`), through which the scope clears and refreshes its rows.
  *
  * N.B. Deliberate, to save memory: the state of a `@for` lives in this object, passed to `runFor`, a function declared
  * once at module level, instead of local variables of `_for` captured by an arrow created per `@for`, which would cost a
@@ -28,11 +29,19 @@ export type ForRun = {
    */
   readonly config: ForConfig;
   /**
-   * The contexts of the items of each key, in the order of the items: a key repeated in the items has a context per
-   * occurrence. `null` until the first render.
+   * The contexts of the bodies of the items, in the order of the items: `null` until the first render.
    *
    * N.B. Deliberate, to save memory: the context of the body of an item is all a `@for` keeps for it, its variables
-   * being values the context declares. Do not wrap it in an object of its own, nor add a closure updating it.
+   * being values the context declares, in an array of the exact number of the items, beside the one of their keys,
+   * created again by each run. A run reconciling the rows finds the ones to reuse through a `Map` of its own, dropped
+   * once it is done, instead of a `Map` kept between the runs holding an array per key, which cost a `Map` per `@for`
+   * and an array per row. Do not keep a `Map` of the rows, wrap a context in an object of its own, nor add a closure
+   * updating it.
    */
-  entries: Map<string | number, _Context[]> | null;
+  rows: _Context[] | null;
+  /**
+   * The key of each item, in the order of the items, the one of the row at the same index of {@link rows}: a key
+   * repeated in the items has a row per occurrence. `null` until the first render.
+   */
+  keys: Array<string | number> | null;
 };

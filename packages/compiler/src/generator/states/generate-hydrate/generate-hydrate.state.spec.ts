@@ -67,6 +67,6 @@ describe('generateHydrate', () => {
     context.tracksNodes = true;
     await generateHydrate(parse('@hydrate (idle) { <b></b> }'), 'for0', '0', context, 'anchor');
 
-    expect(context.constantDeclarations).toEqual(['const for0__hydrate0$hydrate = { triggers: [\'idle\'], content: for0__hydrate0, slot: 8, track: true };']);
+    expect(context.constantDeclarations).toEqual(['const for0__hydrate0$hydrate = { triggers: [\'idle\'], content: for0__hydrate0, slot: 7, track: true };']);
   });
 });

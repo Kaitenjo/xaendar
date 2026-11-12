@@ -30,7 +30,7 @@ describe('generateRender', () => {
       code: ['_renderTemplate(root, context, null, render0$render);']
     });
     expect(context.constantDeclarations).toEqual(['const render0$render = { template: template_row_0$template, args: render0$args };']);
-    expect(context.functionDeclarations).toEqual(['function render0$args(context) {\n  return [_read(context, 0, 8)(), this.items().length];\n}']);
+    expect(context.functionDeclarations).toEqual(['function render0$args(context) {\n  return [_read(context, 0, 7)(), this.items().length];\n}']);
     expect(context.readsDeclarations).toEqual([]);
   });
 
@@ -41,7 +41,7 @@ describe('generateRender', () => {
 
     expect((await generateRender(parse('@render row(item, $index)'), 'div0', '1', context, null, false)).code).toEqual(['_renderTemplate(div0, context, null, div0__render1$render);']);
     expect(context.constantDeclarations).toEqual(['const div0__render1$render = { template: template_row_0$template, args: div0__render1$args, reads: _reads0 };']);
-    expect(context.functionDeclarations).toEqual(['function div0__render1$args(context) {\n  return [_read(context, 0, 8), _read(context, 0, 9)];\n}']);
+    expect(context.functionDeclarations).toEqual(['function div0__render1$args(context) {\n  return [_read(context, 0, 7), _read(context, 0, 8)];\n}']);
     expect(context.readsDeclarations).toEqual(['const _reads0 = [0, 1];']);
   });
 

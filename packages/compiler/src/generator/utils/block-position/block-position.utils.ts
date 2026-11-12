@@ -1,6 +1,7 @@
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import type { GeneratorContext } from '../../context/context';
 import type { ASTNode } from '../../../parser/types/ast.type';
+import { isStructuralElement } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
 
 /**
  * Tells whether a node is the last one its parent renders: every sibling following it renders nothing (an `@import`, a
@@ -75,4 +76,52 @@ export function appendBlockPosition(members: string[], last: boolean, slot?: num
  */
 export function allocateBlockSlot(generatorContext: GeneratorContext, last: boolean): number | undefined {
   return last ? undefined : generatorContext.allocateNodeSlot();
+}
+
+/**
+ * Gives a block of the client its container in the runtime scope rendering it (see `GeneratorContext.allocateContainer`)
+ * and writes its index into the constant of the block, unless it is the first one, the default of the runtime.
+ *
+ * @param members - The members of the constant of the block.
+ * @param generatorContext - The scope rendering the block.
+ */
+export function appendContainer(members: string[], generatorContext: GeneratorContext): void {
+  const container = generatorContext.allocateContainer();
+  if (container) {
+    members.push(`container: ${container}`);
+  }
+}
+
+/**
+ * Tells whether nodes render a block holding a container of the runtime scope they are rendered in (`@if`, `@switch`,
+ * `@for`, `@defer`, `@try`, `@hydrate`, `@client`, `@render`, an element structural directives are applied to), the
+ * ones rendered into their elements included, which render their children in the same scope.
+ *
+ * @param nodes - The nodes.
+ * @returns `true` when one of them renders a block.
+ */
+export function rendersBlock(nodes: readonly ASTNode[]): boolean {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    switch (node.type) {
+      case ASTNodeType.If:
+      case ASTNodeType.Switch:
+      case ASTNodeType.For:
+      case ASTNodeType.Defer:
+      case ASTNodeType.Try:
+      case ASTNodeType.Hydrate:
+      case ASTNodeType.Client:
+      case ASTNodeType.Render:
+        return true;
+
+      case ASTNodeType.Element:
+        if (isStructuralElement(node) || rendersBlock(node.children)) {
+          return true;
+        }
+
+        break;
+    }
+  }
+
+  return false;
 }

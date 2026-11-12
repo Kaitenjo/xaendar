@@ -1,7 +1,7 @@
 import { SwitchNode } from '../../../parser/types/nodes/switch-node.type';
 import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
-import { allocateBlockSlot, appendBlockPosition, getContentAnchor } from '../../utils/block-position/block-position.utils';
+import { allocateBlockSlot, appendBlockPosition, appendContainer, getContentAnchor } from '../../utils/block-position/block-position.utils';
 import { getBlockIdentifier, resolveExpression } from '../../utils/generator/generator.utils';
 import { declareExpression, toArrayLiteral, toObjectLiteral } from '../../utils/module-code/module-code.utils';
 
@@ -62,6 +62,7 @@ export async function generateSwitch(node: SwitchNode, parentNode: string, index
   }
 
   appendBlockPosition(members, last, allocateBlockSlot(generatorContext, last));
+  appendContainer(members, generatorContext);
   const config = generatorContext.declareConstant(`${switchKey}$switch`, toObjectLiteral(members));
   retVal.code.push(`_switch(${parentNode}, context, ${anchor}, ${config});`);
   return retVal;

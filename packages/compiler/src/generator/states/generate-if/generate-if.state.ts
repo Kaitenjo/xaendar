@@ -2,7 +2,7 @@ import { ASTNodeType } from '../../../parser/types/node.enum';
 import { IfNode } from '../../../parser/types/nodes/if-node.type';
 import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
-import { allocateBlockSlot, appendBlockPosition, getContentAnchor } from '../../utils/block-position/block-position.utils';
+import { allocateBlockSlot, appendBlockPosition, appendContainer, getContentAnchor } from '../../utils/block-position/block-position.utils';
 import { getBlockIdentifier, joinVariables, resolveExpression } from '../../utils/generator/generator.utils';
 import { declareExpression, toArrayLiteral, toObjectLiteral } from '../../utils/module-code/module-code.utils';
 
@@ -76,6 +76,7 @@ export async function generateIf(node: IfNode, parentNode: string, index: string
   }
 
   appendBlockPosition(members, last, allocateBlockSlot(generatorContext, last));
+  appendContainer(members, generatorContext);
   const config = generatorContext.declareConstant(`${ifKey}$if`, toObjectLiteral(members));
   retVal.code.push(`_if(${parentNode}, context, ${anchor}, ${config});`);
   return retVal;

@@ -1,7 +1,7 @@
 import { _SSR_MARKERS } from '../../costants';
 import type { TryBlock } from '../../types/try-block.type';
 import type { _Context } from '../../types/context.type';
-import { addChild, clear, getNodeStrategy } from '../context/context.util';
+import { clear, containerSlot, getNodeStrategy } from '../context/context.util';
 import { closeTryScope, openTryScope } from '../try-scope/try-scope.util';
 
 /**
@@ -63,7 +63,7 @@ export function _try(parentNode: HTMLElement, parentContext: _Context, reference
     rendered = block.catch(parentNode, parentContext, nodeBlock.anchor, fallback, failure.error);
   }
 
-  addChild(parentContext, rendered!);
+  parentContext[containerSlot(parentContext, block.container)] = rendered!;
   if (!replaced) {
     nodeStrategy.close(parentNode, nodeBlock);
   }

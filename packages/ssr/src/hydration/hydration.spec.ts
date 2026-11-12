@@ -1847,18 +1847,27 @@ describe('the contexts of the elements', () => {
   type Context = _Context;
 
   /**
-   * The scopes a scope holds, read from its slot `CHILDREN` (7): the scope itself while there is one, an array from the
-   * second, told apart by the number of a scope in its slot `STATE` (2).
+   * The scopes a scope holds in its containers, the slots from the one its layout (slot `LAYOUT`, 6) gives to the end:
+   * a scope, `null`, or the run of a `@for`, holding the scopes of its rows.
    */
   function childrenOf(context: _Context): _Context[] {
-    const children = context[7];
-    return children === null ? [] : typeof children[2] === 'number' ? [children as _Context] : children as _Context[];
+    const children = new Array<_Context>();
+    for (let i = context[6].containers ?? context.length; i < context.length; i++) {
+      const container = context[i] as _Context | { rows: _Context[] | null } | null;
+      if (Array.isArray(container)) {
+        children.push(container);
+      } else if (container?.rows) {
+        children.push(...container.rows);
+      }
+    }
+
+    return children;
   }
-  
+
   /**
-   * The nodes a scope tracks, the slots from the one its layout (slot `LAYOUT`, 6) gives to the end.
+   * The nodes a scope tracks, the slots from the one its layout (slot `LAYOUT`, 6) gives to its first container.
    */
-  const nodesOf = (context: _Context): Node[] => context.slice(context[6].nodes).filter(Boolean) as Node[];
+  const nodesOf = (context: _Context): Node[] => context.slice(context[6].nodes, context[6].containers).filter(Boolean) as Node[];
 
   /**
    * A table of rows and columns, every cell an element reading its row.
@@ -1968,6 +1977,55 @@ describe('the contexts of the elements', () => {
     expect(cells(root)).toEqual([['x1', 'y1']]);
     expect(root.querySelector('span')).toBe(firstCell);
     expect(root.querySelectorAll('i')).toHaveLength(0);
+  });
+
+  /**
+   * A panel whose element applying a structural directive renders a @for, holding an @if, without declaring names.
+   */
+  class Panel extends CustomElement {
+    public allow = signal(true);
+    public items = signal(['a', 'b']);
+    public flag = signal(true);
+  }
+
+  const panelTemplate = () => '<div *later(allow="{ allow() }")><b>x</b>@for (item of items(); track item) {<i>{ item }</i>@if (flag()) {<u>{ item }</u>}}</div><p>end</p>';
+
+  it('adopts the content of an element a structural directive is applied to rendering blocks, in a scope holding their containers, and keeps it reactive', async () => {
+    const panel = await register('panel', Panel, panelTemplate, ['allow', 'items', 'flag']);
+    const host = load(await renderToString(panel.Server)) as unknown as Panel & Element;
+    const root = host.shadowRoot!;
+    const bold = root.querySelector('b')!;
+    const items = Array.from(root.querySelectorAll('i'));
+
+    panel.define();
+    await flush();
+
+    expect(console.warn).not.toHaveBeenCalled();
+    expect(root.querySelector('b')).toBe(bold);
+    expect(Array.from(root.querySelectorAll('i'))).toEqual(items);
+
+    host.items.set(['b', 'c', 'a']);
+    await flush();
+
+    expect(Array.from(root.querySelectorAll('i')).map(node => node.textContent)).toEqual(['b', 'c', 'a']);
+    expect(root.querySelectorAll('i')[0]).toBe(items[1]);
+    expect(Array.from(root.querySelectorAll('u')).map(node => node.textContent)).toEqual(['b', 'c', 'a']);
+
+    host.flag.set(false);
+    await flush();
+    expect(root.querySelectorAll('u')).toHaveLength(0);
+
+    // The element goes, with the scope of its content and the scopes of the blocks it holds
+    host.allow.set(false);
+    await flush();
+    expect(root.querySelector('div')).toBeNull();
+    expect(root.querySelector('i')).toBeNull();
+    expect(root.querySelector('p')!.textContent).toBe('end');
+
+    host.allow.set(true);
+    host.flag.set(true);
+    await flush();
+    expect(Array.from(root.querySelectorAll('u')).map(node => node.textContent)).toEqual(['b', 'c', 'a']);
   });
 });
 

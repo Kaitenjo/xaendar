@@ -30,7 +30,8 @@ export type RenderRun = {
    */
   readonly owner: _Context;
   /**
-   * The instance rendered, `null` before the first run.
+   * The slot of the container of the `@render` in the context rendering the instance (see `_ScopeLayout`), holding the
+   * context of the instance, `null` before the first run.
    */
-  instance: _Context | null;
+  readonly slot: number;
 };

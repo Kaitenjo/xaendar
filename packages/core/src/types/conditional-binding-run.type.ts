@@ -1,10 +1,12 @@
 import type { _Context } from './context.type';
 import type { RenderConditionalBinding } from './render-conditional-binding.type';
+import type { ScopeHolder } from './scope-holder.type';
 
 /**
  * A conditional binding of a tag while it is applied (see `bindConditionalBindings` of `_renderElement`): its branches,
  * what they bind, the context holding the bindings of the selected one, and that branch, held by its binding as the
- * argument of its callback.
+ * argument of its callback, and by the context holding the conditional binding among its cleanups, as the holder of the
+ * context of the branch (see `ScopeHolder`), which it clears and refreshes with itself.
  *
  * N.B. Deliberate, to save memory: the state of a conditional binding lives in this object, passed to a function declared
  * once at module level, and what its branches bind is applied by another one (`bind`), receiving the target, instead of
@@ -15,15 +17,11 @@ import type { RenderConditionalBinding } from './render-conditional-binding.type
  *   collector of the structural directives of an element.
  * @template Bindings - The bindings held by each branch.
  */
-export type ConditionalBindingRun<Target, Bindings extends { readonly conditionalBindings?: ReadonlyArray<RenderConditionalBinding<Bindings>> }> = {
+export type ConditionalBindingRun<Target, Bindings extends { readonly conditionalBindings?: ReadonlyArray<RenderConditionalBinding<Bindings>> }> = ScopeHolder & {
   /**
    * The conditional binding, a constant of the module of the template.
    */
   readonly conditionalBinding: RenderConditionalBinding<Bindings>;
-  /**
-   * The context the bindings of the selected branch are applied in, cleared when another branch, or none, is selected.
-   */
-  readonly branchContext: _Context;
   /**
    * What the branches bind.
    */

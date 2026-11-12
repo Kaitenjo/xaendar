@@ -1,11 +1,11 @@
 import type { _Context } from '../context.type';
 import type { NodeBlock } from '../node-block.type';
 import type { BlockConfig } from './block-config.type';
-import type { State } from './state.type';
 
 /**
  * An `@if` (or a `@switch`) while it is rendered (see `_if`): where it is, its branches and the one it renders, held by
- * its binding as the argument of its callback.
+ * its binding as the argument of its callback. The context of the branch rendered is held by the container of the block
+ * (see `_ScopeLayout`).
  *
  * N.B. Deliberate, to save memory: the state of an `@if` lives in this object, passed to `runIf`, a function declared
  * once at module level, instead of local variables of `_if` captured by an arrow created per `@if`, which would cost a
@@ -29,9 +29,13 @@ export type IfRun = {
    */
   readonly config: BlockConfig;
   /**
-   * The branch rendered, `undefined` when none is.
+   * The slot of the container of the block in the context owning it, holding the context of the branch rendered.
    */
-  state: State | undefined;
+  readonly slot: number;
+  /**
+   * The index of the branch rendered, `null` when none is.
+   */
+  active: number | null;
   /**
    * Whether the first branch was rendered: the first render gets its nodes with the strategy of the context, adopting
    * the ones of the server.

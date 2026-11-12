@@ -7,7 +7,7 @@ import type { DeferBlockFixture } from '../../types/defer-testing/defer-block-fi
 import type { DeferBlockState } from '../../types/defer-testing/defer-block-state.type';
 import type { DeferRun } from '../../types/defer-run.type';
 import type { _Context } from '../../types/context.type';
-import { addChild, addCleanup, clear, getChild, getChildCount, getNodeStrategy, removeChild } from '../context/context.util';
+import { addCleanup, clear, containerSlot, forEachChild, getNodeStrategy, nodesEnd } from '../context/context.util';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { registerDeferBlock } from '../defer-testing/defer-testing.util';
 import { armTriggers, disarmAll, watchedTriggers } from '../hydration-triggers/hydration-triggers.util';
@@ -46,6 +46,7 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
   const run: DeferRun = {
     parentNode,
     parentContext,
+    slot: containerSlot(parentContext, block.container),
     anchor: nodeBlock.anchor,
     block,
     disarms: [],
@@ -64,7 +65,7 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
 
   // The placeholder the server rendered is adopted
   if (block.placeholder) {
-    run.shown = addChild(parentContext, block.placeholder(parentNode, parentContext, run.anchor, nodeStrategy.adopt(parentNode, nodeBlock, '')));
+    parentContext[run.slot] = block.placeholder(parentNode, parentContext, run.anchor, nodeStrategy.adopt(parentNode, nodeBlock, ''));
   }
   nodeStrategy.close(parentNode, nodeBlock);
   run.placeholderEnd = performance.now() + (block.placeholderMinimum ?? 0);
@@ -83,7 +84,7 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
 
   queueMicrotask(() => {
     if (run.active && !run.fired) {
-      const elements = elementsOf(run.shown, parentNode);
+      const elements = elementsOf(parentContext[run.slot] as _Context | null, parentNode);
       run.disarms.push(armTriggers(watchedTriggers(block.triggers, elements), elements, () => fire(run), parentContext));
       if (block.prefetch) {
         run.disarms.push(armTriggers(watchedTriggers(block.prefetch, elements), elements, () => prefetch(run), parentContext));
@@ -137,15 +138,13 @@ function checkPrefetchWhen(run: DeferRun): void {
 function show(run: DeferRun, next: DeferBlockState, part?: DeferBlock['error'], failure?: unknown): void {
   untracked(() => {
     run.state = next;
-    if (run.shown) {
-      removeChild(run.parentContext, run.shown);
-      clear(run.shown);
-      run.shown = undefined;
+    const { parentContext, slot } = run;
+    const shown = parentContext[slot] as _Context | null;
+    if (shown) {
+      clear(shown);
     }
 
-    if (part) {
-      run.shown = addChild(run.parentContext, part(run.parentNode, run.parentContext, run.anchor, CREATE_NODES, failure));
-    }
+    parentContext[slot] = part ? part(run.parentNode, parentContext, run.anchor, CREATE_NODES, failure) : null;
   });
 }
 
@@ -302,29 +301,46 @@ function required<TPart>(part: TPart | undefined, keyword: string): TPart {
 }
 
 /**
+ * The node of the block whose elements {@link elementsOf} collects, while it does.
+ *
+ * N.B. Deliberate, to save memory: collecting is synchronous, so the node travels through a variable of the module,
+ * letting the visit of the contexts inside the part (see `forEachChild`) be a function of the module receiving only the
+ * list, instead of an object holding both, created for every block. Do not pass an object.
+ */
+let watchedNode: Node | null = null;
+
+/**
  * Returns the elements a part of a block renders where the block is: the ones the context of the part, or a context it
  * holds, renders into the node of the block.
  *
- * @param context - The context of the part, `undefined` when no part is rendered.
+ * @param context - The context of the part, `null` when no part is rendered.
  * @param parentNode - The node the block is rendered into.
- * @param elements - The elements, filled as they are found.
  * @returns The elements.
  */
-function elementsOf(context: _Context | undefined, parentNode: Node, elements = new Array<Element>()): Element[] {
-  if (!context) {
-    return elements;
+function elementsOf(context: _Context | null, parentNode: Node): Element[] {
+  const elements = new Array<Element>();
+  if (context) {
+    watchedNode = parentNode;
+    collectElements(context, elements);
+    watchedNode = null;
   }
 
-  for (let i = context[LAYOUT].nodes; i < context.length; i++) {
+  return elements;
+}
+
+/**
+ * Collects the elements a context, or a context it holds, renders into the node of the block (see {@link elementsOf}).
+ *
+ * @param context - The context.
+ * @param elements - The elements, filled as they are found.
+ */
+function collectElements(context: _Context, elements: Element[]): void {
+  for (let i = context[LAYOUT].nodes; i < nodesEnd(context); i++) {
     const node = context[i] as Node | null | undefined;
-    if (node?.nodeType === Node.ELEMENT_NODE && node.parentNode === parentNode) {
+    if (node?.nodeType === Node.ELEMENT_NODE && node.parentNode === watchedNode) {
       elements.push(node as Element);
     }
   }
 
-  for (let i = 0; i < getChildCount(context); i++) {
-    elementsOf(getChild(context, i), parentNode, elements);
-  }
-
-  return elements;
+  forEachChild(context, collectElements, elements);
 }

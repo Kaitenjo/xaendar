@@ -19,7 +19,7 @@ function mount(name: string): DocsDemoComponent {
     throw new Error('docs-demo is not defined');
   }
 
-  const context = _scope(null, { size: 8, nodes: 8 });
+  const context = _scope(null, { size: 7, nodes: 7 });
   _setExpressionInput(context, element, { name: 'name', value: () => name, setter: _setExpressionInput });
   _setExpressionInput(context, element, { name: 'heading', value: () => 'A demo', setter: _setExpressionInput });
   document.body.append(element);
@@ -36,7 +36,7 @@ function create(name: string): DocsDemoComponent {
     throw new Error('docs-demo is not defined');
   }
 
-  _setExpressionInput(_scope(null, { size: 8, nodes: 8 }), element, { name: 'name', value: () => name, setter: _setExpressionInput });
+  _setExpressionInput(_scope(null, { size: 7, nodes: 7 }), element, { name: 'name', value: () => name, setter: _setExpressionInput });
   return element;
 }
 

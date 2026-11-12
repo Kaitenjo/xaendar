@@ -52,9 +52,10 @@ export type DeferRun = {
    */
   state: DeferBlockState;
   /**
-   * The context of the part shown, `undefined` when none is.
+   * The slot of the container of the block in the context owning it (see `_ScopeLayout`), holding the context of the
+   * part shown, `null` when none is.
    */
-  shown?: _Context;
+  readonly slot: number;
   /**
    * The load of the modules of the content, once started.
    */

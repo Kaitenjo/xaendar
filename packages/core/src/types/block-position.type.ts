@@ -20,4 +20,9 @@ export type BlockPosition = {
    * at the top of the block of a scope that have an anchor: left out for the others, whose anchor no scope tracks.
    */
   readonly slot?: number;
+  /**
+   * The index of the container of the block among the containers of the scope rendering it (see `_ScopeLayout`), which
+   * holds what the block shows: left out for the first one.
+   */
+  readonly container?: number;
 };

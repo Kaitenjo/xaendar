@@ -6,7 +6,7 @@ import type { TemplateExpression } from '../../types/template-expression.type';
 import type { _Template } from '../../types/template.type';
 import { COMPONENT, HEADER, PARENT } from '../../costants';
 import type { _Context } from '../../types/context.type';
-import { _declare, addChild, getNodeStrategy, refresh, update } from '../context/context.util';
+import { _declare, containerSlot, getNodeStrategy, refresh, update } from '../context/context.util';
 import { _let } from '../let/let.util';
 
 /**
@@ -65,7 +65,7 @@ export function _renderTemplate(parentNode: Element, parentContext: _Context, re
     owner = owner[PARENT]!;
   }
 
-  const run: RenderRun = { parentNode, parentContext, referenceNode, config, owner, instance: null };
+  const run: RenderRun = { parentNode, parentContext, referenceNode, config, owner, slot: containerSlot(parentContext, config.container) };
   _bindEffect(parentContext, runRender, run, undefined, undefined, config.reads);
 }
 
@@ -81,7 +81,8 @@ function runRender(run: RenderRun): void {
   const values = args ? args.call(parentContext[COMPONENT], parentContext) : NO_ARGUMENTS;
 
   // The signals read while rendering or refreshing the instance are not dependencies of the arguments
-  untracked(() => run.instance ? updateInstance(run.instance, run.config.template.parameters, values) : renderInstance(run, values));
+  const instance = parentContext[run.slot] as _Context | null;
+  untracked(() => instance ? updateInstance(instance, run.config.template.parameters, values) : renderInstance(run, values));
 }
 
 /**
@@ -95,8 +96,7 @@ function renderInstance(run: RenderRun, values: readonly unknown[]): void {
   const { parentNode, parentContext, config } = run;
   const nodeStrategy = getNodeStrategy(parentContext);
   nodeStrategy.separator(parentNode, !!config.separated);
-  run.instance = config.template.render(parentNode, run.owner, run.referenceNode, values, nodeStrategy);
-  addChild(parentContext, run.instance);
+  parentContext[run.slot] = config.template.render(parentNode, run.owner, run.referenceNode, values, nodeStrategy);
 }
 
 /**

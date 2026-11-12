@@ -31,6 +31,17 @@ import { createScope, declareScope, declareTemplateParameters } from '../utils/s
 import { getTextSeparators } from '../utils/text-separators/text-separators.utils.js';
 
 /**
+ * Stands for the layout of a runtime scope in the line creating it, until every function of the template is generated
+ * (see `Generator.generate`).
+ *
+ * N.B. Deliberate: the children of an element are generated after the function rendering the element, in the scope it
+ * is rendered in, and the blocks among them take containers of that scope (see `allocateContainer`), so the layout of
+ * a scope is known only once every function is generated. Do not declare the layout when the body of its function is
+ * generated.
+ */
+const LAYOUT_PLACEHOLDER = '$layout$';
+
+/**
  * The Generator class is responsible for generating code from an abstract syntax tree (AST) representation of the input source code. 
  * It manages the state transitions and processing of different types of AST nodes to produce the final output code.
  */
@@ -119,7 +130,9 @@ export class Generator {
         indent(`const ${ROOT_NODE} = this._root;`)
       ];
       // The root of a render tracks no node: they stay in the shadow root of the component, removed with it
-      const rootScopeLine = generatedCode.push('') - 1;
+      const rootScopeLine = generatedCode.push(indent(`const context = ${createScope('null', LAYOUT_PLACEHOLDER, 'nodeStrategy', 'this')};`)) - 1;
+      // The lines creating the runtime scopes, by their index, with the scope whose layout they read
+      const scopeLines = new Map([[rootScopeLine, generatorContext]]);
 
       if (rootDeclarations) {
         this._processFunctions(parentTags, rootDeclarations.functionsToProcess);
@@ -136,7 +149,6 @@ export class Generator {
         }
       }
 
-      generatedCode[rootScopeLine] = indent(`const context = ${createScope('null', generatorContext.declareLayout(), 'nodeStrategy', 'this')};`);
       generatedCode.push(
         ...indent(['return context;']),
         '}'
@@ -157,15 +169,16 @@ export class Generator {
         /*
           N.B. Deliberate, to save memory: a context is created only for a scope, a block (its precode registering the
           variables of a @for, the error of a @catch, the parameters of a template) or the children of an element declaring
-          names, as the content of an element a structural directive is applied to may. The children of any other element
+          names or rendering a block, as the content of an element a structural directive is applied to may, whose
+          runtime scope then holds their variables or their containers. The children of any other element
           are rendered in the runtime context the element is rendered in, which the function receives as `context`,
           instead of one created for them, which a large table would pay per cell: the children of an <svg>, a <math> or a
           <foreignObject> too, their elements naming their namespace (see `generateElement`). Do not create one for every
           element, nor to change how the elements are created
         */
-        const createsContext = !isElement || (isScope && context.identifierCount > 0);
+        const createsContext = !isElement || (isScope && context.opensScope);
         generatedCode.push(`\nfunction ${key}(${(createsContext ? fnData.args! : [fnData.args![0], 'context']).join(', ')}) {`);
-        // Written once the body is generated, which gives the nodes at its top their slots
+        // Written once the body is generated, which gives the nodes at its top their slots, its layout once every function is
         const scopeLine = createsContext ? generatedCode.push('') - 1 : -1;
 
         if (precode) {
@@ -197,11 +210,17 @@ export class Generator {
 
         context.tracksNodes = false;
         if (createsContext) {
-          generatedCode[scopeLine] = indent(`const context = ${createScope('parentContext', context.declareLayout(), isElement ? undefined : 'nodeStrategy')};`);
+          generatedCode[scopeLine] = indent(`const context = ${createScope('parentContext', LAYOUT_PLACEHOLDER, isElement ? undefined : 'nodeStrategy')};`);
+          scopeLines.set(scopeLine, context);
           functionBody.push('return context;');
         }
 
         generatedCode.push(...indent(functionBody), '}');
+      }
+
+      // Every block took its container: the layouts are declared, in the order of the functions
+      for (const [line, context] of scopeLines) {
+        generatedCode[line] = generatedCode[line].replace(LAYOUT_PLACEHOLDER, context.declareLayout());
       }
 
       // The functions of the module computing the expressions follow the ones rendering the blocks

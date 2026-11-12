@@ -274,7 +274,7 @@ describe('compile imported symbols', () => {
     const source = '@import { item, Map } from \'./utils\'\n@for (item of items; track item) { {item} } { Map.size }';
     const { javascript } = await compile(source, { baseDir: '/base', signals: [], cache: createSymbolCache() });
 
-    expect(javascript).toContain('_read(context, 0, 8)');
+    expect(javascript).toContain('_read(context, 0, 7)');
     expect(javascript).not.toContain('__import_item');
     expect(javascript).toContain('function root$text2(context) {\n  return __import_Map.size;\n}');
   });

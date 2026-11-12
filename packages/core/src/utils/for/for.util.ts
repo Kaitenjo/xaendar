@@ -4,7 +4,7 @@ import { _bindEffect } from '../../signals/effect/effect';
 import type { IterationVariable } from '../../types/iteration-variable.type';
 import type { IterationVariables } from '../../types/iteration-variables.type';
 import type { _Context } from '../../types/context.type';
-import { addChild, clear, getChild, getChildCount, getNodeStrategy, refresh, removeChild, update } from '../context/context.util';
+import { clear, containerSlot, forEachChild, getNodeStrategy, nodesEnd, refresh, update } from '../context/context.util';
 import type { ForConfig } from '../../types/for-config.type';
 import type { ForRun } from '../../types/for-run.type';
 
@@ -54,9 +54,11 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
     parentNode, parentContext,
     nodeBlock,
     config,
-    entries: null
+    rows: null,
+    keys: null
   };
 
+  parentContext[containerSlot(parentContext, config.container)] = run;
   _bindEffect(parentContext, runFor, run, undefined, undefined, config.reads);
 }
 
@@ -78,8 +80,7 @@ function runFor(run: ForRun): void {
     newKeys[i] = config.track.call(component, parentContext, items[i], i, i === 0, i === last, i % 2 === 0, i % 2 !== 0);
   }
 
-  const occurrences = countOccurrences(newKeys);
-  untracked(() => run.entries ? updateItems(run, items, newKeys, occurrences) : renderItems(run, items, newKeys, occurrences));
+  untracked(() => run.rows ? updateItems(run, items, newKeys) : renderItems(run, items, newKeys));
 }
 
 /**
@@ -89,59 +90,73 @@ function runFor(run: ForRun): void {
  * @param run - The `@for`.
  * @param items - The items.
  * @param newKeys - The key of each item.
- * @param occurrences - The occurrences of the keys.
  */
-function renderItems(run: ForRun, items: unknown[], newKeys: Array<string | number>, occurrences: ReturnType<typeof countOccurrences>): void {
+function renderItems(run: ForRun, items: unknown[], newKeys: Array<string | number>): void {
   const { parentNode, parentContext, nodeBlock, config } = run;
   const nodeStrategy = getNodeStrategy(parentContext);
-  const entries = new Map<string | number, _Context[]>();
+  const rows = new Array<_Context>(items.length);
   const itemNodeStrategy = nodeStrategy.adoptItems(parentNode, nodeBlock, newKeys);
   for (let i = 0; i < items.length; i++) {
-    const key = newKeys[i];
-    const created = config.block(parentNode, parentContext, items, i, nodeBlock.anchor, itemNodeStrategy);
-    addChild(parentContext, created);
-    const keyEntries = entries.get(key) ?? new Array<_Context>(occurrences.counts.get(key)!);
-    keyEntries[occurrences.indexes[i]] = created;
-    entries.set(key, keyEntries);
+    rows[i] = config.block(parentNode, parentContext, items, i, nodeBlock.anchor, itemNodeStrategy);
   }
 
-  run.entries = entries;
+  run.rows = rows;
+  run.keys = newKeys;
   nodeStrategy.close(parentNode, nodeBlock);
 }
 
 /**
- * Renders the items of a later run, reusing the entries of the keys that survive: their variables are updated, which
+ * Renders the items of a later run, reusing the rows of the keys that survive: their variables are updated, which
  * refreshes the bindings reading them, and their nodes moved, read once refreshed, since a block at the top of the body
- * may render other nodes. The entries of the keys gone are destroyed, the ones of the new keys created.
+ * may render other nodes. The rows of the keys gone are destroyed first, the ones of the new keys created.
+ *
+ * A key repeated in the items has a row per occurrence: the n-th occurrence of a key reuses the row of its n-th
+ * occurrence in the previous run, and the occurrences beyond its new count are destroyed.
+ *
+ * N.B. Deliberate, to save memory: the rows to reuse are found through a `Map` of this run, by key, holding the first
+ * occurrence of each key, and a second one, created only when a key repeats, holding the others: both are dropped once
+ * the rows are reconciled, and the run keeps only the new rows and keys, arrays of their exact length. Do not keep a
+ * `Map` in the run between two runs, nor build the arrays with `push`.
  *
  * @param run - The `@for`, already rendered.
  * @param items - The items.
  * @param newKeys - The key of each item.
- * @param occurrences - The occurrences of the keys.
  */
-function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | number>, occurrences: ReturnType<typeof countOccurrences>): void {
+function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | number>): void {
   const { parentNode, parentContext, config } = run;
   const { variables } = config;
-  const entries = run.entries!;
-  const newEntries = new Map<string | number, _Context[]>();
+  const oldRows = run.rows!;
+  const oldKeys = run.keys!;
+  const occurrences = countOccurrences(newKeys);
+  const oldOccurrences = countOccurrences(oldKeys);
+  // The rows kept, by key: the first occurrence of each key, then the following ones of a key repeated
+  const firsts = new Map<string | number, _Context>();
+  let repeated: Map<string | number, _Context[]> | null = null;
 
-  // The entries of the keys gone, and of the occurrences of a key beyond its new count, are destroyed
-  for (const [key, keyEntries] of entries) {
-    const kept = occurrences.counts.get(key) ?? 0;
-    for (let i = kept; i < keyEntries.length; i++) {
-      clear(keyEntries[i]);
-      removeChild(parentContext, keyEntries[i]);
+  // The rows of the keys gone, and of the occurrences of a key beyond its new count, are destroyed
+  for (let i = 0; i < oldRows.length; i++) {
+    const key = oldKeys[i];
+    const occurrence = oldOccurrences.indexes[i];
+    if (occurrence >= (occurrences.counts.get(key) ?? 0)) {
+      clear(oldRows[i]);
+    } else if (occurrence === 0) {
+      firsts.set(key, oldRows[i]);
+    } else {
+      repeated ??= new Map();
+      const others = repeated.get(key);
+      others ? others.push(oldRows[i]) : repeated.set(key, [oldRows[i]]);
     }
   }
 
+  const rows = new Array<_Context>(items.length);
   let nextReference: Node | null = run.nodeBlock.anchor;
 
   for (let i = items.length - 1; i >= 0; i--) {
     const key = newKeys[i];
     const occurrence = occurrences.indexes[i];
-    const existing = entries.get(key)?.[occurrence];
+    const existing = occurrence === 0 ? firsts.get(key) : repeated?.get(key)?.[occurrence - 1];
 
-    let entry: _Context;
+    let row: _Context;
 
     if (existing) {
       if (variables) {
@@ -153,21 +168,18 @@ function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
         moveItem(parentNode, firstNode!, lastNode, nextReference);
       }
 
-      entry = existing;
+      row = existing;
     } else {
-      const created = config.block(parentNode, parentContext, items, i, nextReference, getNodeStrategy(parentContext));
-      addChild(parentContext, created);
-      findItemBounds(parentNode, created);
-      entry = created;
+      row = config.block(parentNode, parentContext, items, i, nextReference, getNodeStrategy(parentContext));
+      findItemBounds(parentNode, row);
     }
 
-    const keyEntries = newEntries.get(key) ?? new Array<_Context>(occurrences.counts.get(key)!);
-    keyEntries[occurrence] = entry;
-    newEntries.set(key, keyEntries);
+    rows[i] = row;
     nextReference = firstNode ?? nextReference;
   }
 
-  run.entries = newEntries;
+  run.rows = rows;
+  run.keys = newKeys;
 }
 
 /**
@@ -199,7 +211,7 @@ function countOccurrences(keys: Array<string | number>): { indexes: number[], co
 function findItemBounds(parentNode: Node, context: _Context): void {
   firstNode = null;
   lastNode = null;
-  collectBounds(parentNode, context);
+  collectBounds(context, parentNode);
 }
 
 /**
@@ -208,16 +220,16 @@ function findItemBounds(parentNode: Node, context: _Context): void {
  * nodes are rendered elsewhere (e.g. the children of an element) is skipped along with its descendants: their nodes are
  * moved together with the element containing them.
  *
- * @param parentNode - The element the nodes have to be rendered into.
  * @param context - The context to read the nodes of.
+ * @param parentNode - The element the nodes have to be rendered into.
  */
-function collectBounds(parentNode: Node, context: _Context): void {
+function collectBounds(context: _Context, parentNode: Node): void {
   // The nodes of a context are all inserted into the same node
   if (context[PARENT_NODE] !== null && context[PARENT_NODE] !== parentNode) {
     return;
   }
 
-  for (let i = context[LAYOUT].nodes; i < context.length; i++) {
+  for (let i = context[LAYOUT].nodes; i < nodesEnd(context); i++) {
     const node = context[i] as Node | null | undefined;
     if (node) {
       if (!firstNode) {
@@ -230,9 +242,7 @@ function collectBounds(parentNode: Node, context: _Context): void {
     }
   }
 
-  for (let i = 0; i < getChildCount(context); i++) {
-    collectBounds(parentNode, getChild(context, i));
-  }
+  forEachChild(context, collectBounds, parentNode);
 }
 
 /**

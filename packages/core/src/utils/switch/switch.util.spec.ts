@@ -11,7 +11,7 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { _scope, ELEMENT_LAYOUT, EMPTY_LAYOUT, mountNode, refresh, update } = await import('../context/context.util');
+const { _scope, STRUCTURAL_LAYOUT, ELEMENT_LAYOUT, EMPTY_LAYOUT, mountNode, refresh, update } = await import('../context/context.util');
 const { _switch } = await import('./switch.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _SSR_MARKERS } = await import('../../costants');
@@ -23,7 +23,7 @@ type Case = { readonly condition: readonly unknown[] | null, readonly block: Blo
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
 function createRoot() {
-  return _scope(null, ELEMENT_LAYOUT);
+  return _scope(null, STRUCTURAL_LAYOUT);
 }
 
 /**

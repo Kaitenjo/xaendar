@@ -5,7 +5,7 @@ import { GeneratorTransitionFunctionReturnType } from '../../types/generator-tra
 import type { GeneratorFunctionToProcess } from '../../types/generator-function-to-process.type';
 import { getReadForVariables, writeIterationVariables } from '../../utils/for-reads/for-reads.utils';
 import { getBlockIdentifier, getTextIdentifier, joinVariables, resolveExpression } from '../../utils/generator/generator.utils';
-import { allocateBlockSlot, appendBlockPosition } from '../../utils/block-position/block-position.utils';
+import { allocateBlockSlot, appendBlockPosition, appendContainer } from '../../utils/block-position/block-position.utils';
 import { declareExpression, toObjectLiteral } from '../../utils/module-code/module-code.utils';
 
 /**
@@ -136,6 +136,7 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
   }
 
   appendBlockPosition(members, last, allocateBlockSlot(generatorContext, last));
+  appendContainer(members, generatorContext);
   const config = generatorContext.declareConstant(`${forKey}$for`, toObjectLiteral(members));
   retVal.code.push(`_for(${parentNode}, context, ${anchor}, ${config});`);
 

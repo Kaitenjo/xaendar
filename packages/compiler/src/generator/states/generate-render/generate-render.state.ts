@@ -1,4 +1,5 @@
 import type { RenderNode } from '../../../parser/types/nodes/render-node.type';
+import { appendContainer } from '../../utils/block-position/block-position.utils';
 import { assertRenderTarget } from '../../../utils/render-target/render-target.utils';
 import { GeneratorContext } from '../../context/context';
 import type { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
@@ -64,6 +65,7 @@ export async function generateRender(node: RenderNode, parentNode: string, index
     members.push(`reads: ${reads}`);
   }
 
+  appendContainer(members, generatorContext);
   const config = generatorContext.declareConstant(`${renderKey}$render`, toObjectLiteral(members));
   return { code: [`_renderTemplate(${parentNode}, context, ${anchor}, ${config});`] };
 }

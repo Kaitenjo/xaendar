@@ -21,9 +21,13 @@ import { getBlockIdentifier } from '../../utils/generator/generator.utils';
 export async function generateClient(node: ClientNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null, _separated = false, last = false): Promise<GeneratorTransitionFunctionReturnType> {
   const key = getBlockIdentifier('client', parentNode, index);
   const slot = allocateBlockSlot(generatorContext, last);
+  const container = generatorContext.allocateContainer();
+  // The trailing arguments the runtime defaults are left out: `last` false, no slot, the first container
+  const args = [parentNode, 'context', `${anchor}`, key, `${last}`, `${slot}`, `${container}`];
+  const length = container ? 7 : slot !== undefined ? 6 : last ? 5 : 4;
 
   return {
-    code: [`_client(${parentNode}, context, ${anchor}, ${key}${last ? ', true' : slot === undefined ? '' : `, false, ${slot}`});`],
+    code: [`_client(${args.slice(0, length).join(', ')});`],
     functionsToProcess: new Map([[key, {
       fn: { node, parentNode: key, context: new GeneratorContext(generatorContext), anchor: getContentAnchor(last) },
       args: [key, 'parentContext', 'anchor', 'nodeStrategy']

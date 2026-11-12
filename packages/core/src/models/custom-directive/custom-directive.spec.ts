@@ -5,16 +5,30 @@ import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT, SET_DIR
 import { HostEvent } from '../../decorators/host-event/host-event.decorator';
 import { HostProperty } from '../../decorators/host-property/host-property.decorator';
 import { effect } from '../../signals/effect/effect';
-import { EMPTY_LAYOUT, _scope, addCleanup, clear, getChild, getChildCount } from '../../utils/context/context.util';
+import { EMPTY_LAYOUT, _scope, forEachChild, addCleanup, clear } from '../../utils/context/context.util';
 import type { _Context } from '../../types/context.type';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { CustomElement } from '../custom-element/custom-element';
 import { CustomDirective } from './custom-directive';
 
 /**
- * The child contexts of a context, in registration order.
+ * The scopes a scope holds: the ones of its containers, then the ones its cleanups hold, as the branch of a conditional
+ * binding or the scope of a component created in code.
  */
-const childrenOf = (context: _Context): _Context[] => Array.from({ length: getChildCount(context) }, (_item, index) => getChild(context, index));
+function childrenOf(context: _Context): _Context[] {
+  const children = new Array<_Context>();
+  forEachChild(context, (child, list) => list.push(child), children);
+  const cleanup = context[5];
+  const cleanups = Array.isArray(cleanup) ? cleanup : cleanup ? [cleanup] : [];
+  for (let i = 0; i < cleanups.length; i++) {
+    const item = cleanups[i];
+    if (typeof item !== 'function' && 'scope' in item) {
+      children.push(item.scope as _Context);
+    }
+  }
+
+  return children;
+}
 
 loadSignals();
 

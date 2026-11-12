@@ -33,8 +33,8 @@ describe('declareScope', () => {
 
     // The template takes no slot: the ref the first one, the @let the next
     expect(declarations?.code).toEqual([
-      '_declare(context, 8);',
-      '_declare(context, 9, \'let\');'
+      '_declare(context, 7);',
+      '_declare(context, 8, \'let\');'
     ]);
     expect(context.variableNames).toEqual(['field', 'total']);
     expect(context.readIdentifier('row')).toBe(key);
@@ -52,7 +52,7 @@ describe('declareScope', () => {
     const declarations = declareScope(parseTemplate('<template row()>x</template><template cell(item: string, index: number)>y</template>@let label = \'x\';'), context, toTemplateFunction);
     const cellKey = 'template_cell_28';
 
-    expect(declarations?.code).toEqual(['_declare(context, 8, \'let\');']);
+    expect(declarations?.code).toEqual(['_declare(context, 7, \'let\');']);
     expect(context.readIdentifier('cell')).toBe(`${cellKey}$template`);
     // The @let takes the identifier 0, the parameters of the cell the next ones
     expect(context.constantDeclarations).toEqual([
@@ -101,14 +101,14 @@ describe('declareTemplateParameters', () => {
     const lines = declareTemplateParameters(parseParameters('item: Item, label = item.name + suffix(), count?: number, unit = suffix()'), 'template_row_12', context);
 
     expect(lines).toEqual([
-      'context[8] = params[0];',
+      'context[7] = params[0];',
       '_parameter(context, params, 1, 1, template_row_12$label, _reads0);',
-      'context[10] = params[2];',
+      'context[9] = params[2];',
       '_parameter(context, params, 3, 3, template_row_12$unit);'
     ]);
     expect(parent.readsDeclarations).toEqual(['const _reads0 = [0];']);
     expect(parent.functionDeclarations).toEqual([
-      'function template_row_12$label(context) {\n  return _read(context, 0, 8).name + this.suffix();\n}',
+      'function template_row_12$label(context) {\n  return _read(context, 0, 7).name + this.suffix();\n}',
       'function template_row_12$unit(context) {\n  return this.suffix();\n}'
     ]);
     expect(context.getIdentifierKind('label')).toBe('variable');
@@ -119,8 +119,8 @@ describe('declareTemplateParameters', () => {
     const lines = declareTemplateParameters(parseParameters('item: Item, label = item.name'), 'template_row_0', context, undefined, true);
 
     expect(lines).toEqual([
-      'context[8] = params[0];',
-      'context[9] = 1 < params.length ? params[1] : (_read(context, 0, 8).name);'
+      'context[7] = params[0];',
+      'context[8] = 1 < params.length ? params[1] : (_read(context, 0, 7).name);'
     ]);
     expect(context.functionDeclarations).toEqual([]);
   });

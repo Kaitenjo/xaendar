@@ -11,7 +11,7 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { _read, _scope, addChild, clear, ELEMENT_LAYOUT, EMPTY_LAYOUT, mountNode, refresh, update } = await import('../context/context.util');
+const { _read, _scope, clear, containerSlot, ELEMENT_LAYOUT, EMPTY_LAYOUT, mountNode, nodesEnd, refresh, update } = await import('../context/context.util');
 const { _for, _iterationVariables } = await import('./for.util');
 const { _if } = await import('../if/if.util');
 const { _bindEffect } = await import('../../signals/effect/effect');
@@ -45,25 +45,31 @@ function deepFreeze<Value extends object>(value: Value): Value {
   return Object.freeze(value);
 }
 
-function createRoot() {
-  return _scope(null, ELEMENT_LAYOUT);
+/**
+ * The layout of a scope declaring some variables, followed by some nodes and by the containers of some blocks.
+ */
+function layoutOf(count: number, nodes = 0, containers = 0): _ScopeLayout {
+  const layout: _ScopeLayout = { size: HEADER + count + nodes + containers, nodes: HEADER + count };
+  return containers ? { ...layout, containers: HEADER + count + nodes } : layout;
 }
 
 /**
- * The layout of a scope declaring some variables, followed by some nodes.
+ * Creates the scope rendering a `@for`, holding a node and the container of the block.
  */
-const layoutOf = (count: number, nodes = 0): _ScopeLayout => ({ size: HEADER + count + nodes, nodes: HEADER + count });
+function createRoot() {
+  return _scope(null, layoutOf(0, 1, 1));
+}
 
 /**
- * Creates the scope of an item declaring the variables given, with room for two nodes at its top.
+ * Creates the scope of an item declaring the variables given, with room for two nodes at its top and a block.
  */
-const itemScope = (parentContext: Context, variables?: IterationVariables | null) => _scope(parentContext, layoutOf(variables?.used.length ?? 0, 2));
+const itemScope = (parentContext: Context, variables?: IterationVariables | null) => _scope(parentContext, layoutOf(variables?.used.length ?? 0, 2, 1));
 
 /**
  * The first slot of a scope free for a node, as the compiler gives them in order.
  */
 function freeSlot(context: Context): number | undefined {
-  for (let i = context[LAYOUT].nodes; i < context.length; i++) {
+  for (let i = context[LAYOUT].nodes; i < nodesEnd(context); i++) {
     if (!context[i]) {
       return i;
     }
@@ -117,7 +123,7 @@ function nestedIf(depth: number, body: Body = renderItem, condition = () => true
       branches: [{
         condition,
         block: (blockParent, blockContext, blockReference) => {
-          const branchContext = _scope(blockContext, layoutOf(0, 2));
+          const branchContext = _scope(blockContext, layoutOf(0, 2, 1));
           nestedIf(depth - 1, body, condition)(blockParent, branchContext, text, blockReference);
           return branchContext;
         }
@@ -132,7 +138,10 @@ function nestedIf(depth: number, body: Body = renderItem, condition = () => true
 const renderItemWithChildren: Body = (parentNode, itemContext, text, reference) => {
   const li = document.createElement('li');
   mountNode(li, parentNode, itemContext, reference as Comment | null, freeSlot(itemContext));
-  mountNode(document.createTextNode(text), li, addChild(itemContext));
+  // The scope of the children, held by the container of the item, tracks the text it renders into the element
+  const children = _scope(itemContext, ELEMENT_LAYOUT);
+  itemContext[containerSlot(itemContext)] = children;
+  mountNode(document.createTextNode(text), li, children, null, HEADER);
 };
 
 const nodeTexts =(parent: HTMLElement) => Array.from(parent.childNodes).map(node => node.textContent);
@@ -184,6 +193,11 @@ describe('_for', () => {
 
     await change(['b', 'a', 'a', 'a']);
     expect(texts()).toEqual(['b', 'a', 'a', 'a']);
+    expect(forFn).toHaveBeenCalledTimes(4);
+
+    // Three occurrences of a key kept reuse their three rows
+    await change(['a', 'a', 'a', 'b']);
+    expect(texts()).toEqual(['a', 'a', 'a', 'b']);
     expect(forFn).toHaveBeenCalledTimes(4);
 
     await change(['a', 'b']);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseTemplate } from '../../../compile/compile';
-import { appendBlockPosition, getContentAnchor, isLastRenderedChild } from './block-position.utils';
+import { appendBlockPosition, getContentAnchor, isLastRenderedChild, rendersBlock } from './block-position.utils';
 
 describe('isLastRenderedChild', () => {
   it('is true for the last node, and for a node followed only by declarations rendering nothing', () => {
@@ -38,5 +38,18 @@ describe('appendBlockPosition', () => {
     appendBlockPosition(members, false);
 
     expect(members).toEqual(['content: try0']);
+  });
+});
+
+describe('rendersBlock', () => {
+  it('is true for nodes rendering a block, in the children of their elements too, or an element structural directives are applied to', () => {
+    expect(rendersBlock(parseTemplate('<p>text</p>@if (a) { x }'))).toBe(true);
+    expect(rendersBlock(parseTemplate('<ul><li>@for (item of items; track item) { x }</li></ul>'))).toBe(true);
+    expect(rendersBlock(parseTemplate('<template t()>t</template>@render t()'))).toBe(true);
+    expect(rendersBlock(parseTemplate('<p><b *visible>x</b></p>'))).toBe(true);
+  });
+
+  it('is false for nodes rendering only elements, texts and declarations', () => {
+    expect(rendersBlock(parseTemplate('<p><b>{ a }</b></p>text@let b = 1;'))).toBe(false);
   });
 });

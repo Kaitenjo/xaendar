@@ -1,13 +1,13 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { CHILDREN, CLEANUP, COMPONENT, HEADER, LAYOUT, PARENT, PARENT_NODE, STATE, STRATEGY } from '../../costants';
+import { CLEANUP, COMPONENT, HEADER, LAYOUT, PARENT, PARENT_NODE, STATE, STRATEGY } from '../../costants';
 import { _bindEffect } from '../../signals/effect/effect';
 import type { _Context } from '../../types/context.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { closeTryScope, openTryScope } from '../try-scope/try-scope.util';
-import { _declare, _read, _scope, _set, addChild, addCleanup, clear, createAnchor, ELEMENT_LAYOUT, EMPTY_LAYOUT, getChild, getChildCount, getNodeStrategy, moveTo, mountNode, propagate, refresh, removeChild, removeCleanup, setNodeStrategy, swapNodeStrategy, trackNode, update } from './context.util';
+import { _declare, _read, _scope, _set, addCleanup, clear, containerSlot, createAnchor, ELEMENT_LAYOUT, EMPTY_LAYOUT, forEachChild, getNodeStrategy, moveTo, mountNode, nodesEnd, propagate, refresh, removeCleanup, setNodeStrategy, STRUCTURAL_LAYOUT, swapNodeStrategy, trackNode, update } from './context.util';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -17,19 +17,49 @@ await vi.hoisted(async () => {
 const flush = () => new Promise<void>(resolve => setTimeout(resolve));
 
 /**
- * The layout of a scope declaring the variables named, followed by some nodes.
+ * The layout of a scope declaring the variables named, followed by some nodes and some containers.
  */
-const layoutOf = (variables: string[], nodes = 0): _ScopeLayout => ({ size: HEADER + variables.length + nodes, nodes: HEADER + variables.length, variables });
+function layoutOf(variables: string[], nodes = 0, containers = 0): _ScopeLayout {
+  const layout = { size: HEADER + variables.length + nodes + containers, nodes: HEADER + variables.length, variables };
+  return containers ? { ...layout, containers: layout.nodes + nodes } : layout;
+}
 
 /**
- * The child scopes of a scope, in registration order.
+ * The layout of a scope holding blocks, and no variable nor node.
  */
-const childrenOf = (scope: _Context): _Context[] => Array.from({ length: getChildCount(scope) }, (_item, index) => getChild(scope, index));
+const HOLDER = layoutOf([], 0, 3);
+
+/**
+ * The layout of a scope holding a node, then blocks.
+ */
+const ELEMENT_HOLDER = layoutOf([], 1, 3);
+
+/**
+ * Holds a scope in the first empty container of another one, as a block does: a scope holding blocks when none is given.
+ */
+function addChild(scope: _Context, child: _Context = _scope(scope, HOLDER)): _Context {
+  let slot = containerSlot(scope);
+  while (scope[slot]) {
+    slot++;
+  }
+
+  scope[slot] = child;
+  return child;
+}
+
+/**
+ * The scopes the containers of a scope hold, in order.
+ */
+function childrenOf(scope: _Context): _Context[] {
+  const children = new Array<_Context>();
+  forEachChild(scope, (child, list) => list.push(child), children);
+  return children;
+}
 
 /**
  * The nodes a scope tracks, in the order of their slots.
  */
-const nodesOf = (scope: _Context): unknown[] => scope.slice(scope[LAYOUT].nodes).filter(Boolean);
+const nodesOf = (scope: _Context): unknown[] => scope.slice(scope[LAYOUT].nodes, nodesEnd(scope)).filter(Boolean);
 
 /**
  * Registers a binding of a scope reading some of its variables, by slot, as a template does: it records the values of
@@ -60,7 +90,7 @@ describe('_scope', () => {
     expect(scope[STRATEGY]).toBeNull();
     expect(scope[CLEANUP]).toBeNull();
     expect(scope[LAYOUT]).toBe(layout);
-    expect(scope[CHILDREN]).toBeNull();
+    expect(scope.slice(HEADER)).toEqual([undefined, undefined, undefined]);
   });
 
   it('gives the root of a render the component it renders, which the scopes it holds inherit', () => {
@@ -150,49 +180,27 @@ describe('variables', () => {
   });
 });
 
-describe('children', () => {
-  it('creates a scope declaring nothing when none is provided, whose parent is the scope', () => {
-    const root = _scope(null, EMPTY_LAYOUT);
-    const child = addChild(root);
+describe('containers', () => {
+  it('gives the slot of a container, the first one by default, after the nodes, where the nodes end', () => {
+    const scope = _scope(null, layoutOf(['row'], 2, 3));
 
-    expect(child[PARENT]).toBe(root);
-    expect(child[LAYOUT]).toBe(EMPTY_LAYOUT);
-    expect(childrenOf(root)).toEqual([child]);
+    expect(containerSlot(scope)).toBe(HEADER + 3);
+    expect(containerSlot(scope, 2)).toBe(HEADER + 5);
+    expect(nodesEnd(scope)).toBe(HEADER + 3);
+    expect(nodesEnd(_scope(null, layoutOf([], 2)))).toBe(HEADER + 2);
+    expect(STRUCTURAL_LAYOUT).toEqual({ size: HEADER + 2, nodes: HEADER, containers: HEADER + 1 });
   });
 
-  it('keeps a single child as it is, then the children in an array from the second, and removes any of them', () => {
-    const root = _scope(null, EMPTY_LAYOUT);
+  it('visits the scopes its containers hold in order, the rows of a @for in theirs, and skips the empty ones', () => {
+    const root = _scope(null, layoutOf([], 0, 4));
     const [first, second, third] = [_scope(root, EMPTY_LAYOUT), _scope(root, EMPTY_LAYOUT), _scope(root, EMPTY_LAYOUT)];
-    addChild(root, first);
-    expect(root[CHILDREN]).toBe(first);
-    addChild(root, second);
-    addChild(root, third);
+    root[containerSlot(root)] = first;
+    root[containerSlot(root, 1)] = null;
+    root[containerSlot(root, 2)] = { rows: [second, third] };
+    root[containerSlot(root, 3)] = { rows: null };
+
     expect(childrenOf(root)).toEqual([first, second, third]);
-
-    removeChild(root, second);
-    expect(childrenOf(root)).toEqual([first, third]);
-    removeChild(root, first);
-    removeChild(root, third);
-    expect(getChildCount(root)).toBe(0);
-
-    // An emptied array gets the next child as it is
-    addChild(root, second);
-    expect(root[CHILDREN]).toBe(second);
-    removeChild(root, second);
-    expect(root[CHILDREN]).toBeNull();
-  });
-
-  it('ignores a scope that is not a child', () => {
-    const root = _scope(null, EMPTY_LAYOUT);
-    const other = _scope(null, EMPTY_LAYOUT);
-    removeChild(root, other);
-    const child = addChild(root);
-    removeChild(root, other);
-    addChild(root);
-    removeChild(root, other);
-
-    expect(getChildCount(root)).toBe(2);
-    expect(getChild(root, 0)).toBe(child);
+    expect(childrenOf(_scope(null, EMPTY_LAYOUT))).toEqual([]);
   });
 });
 
@@ -267,22 +275,31 @@ describe('cleanups', () => {
 });
 
 describe('setNodeStrategy', () => {
-  it('sets the strategy of the scope and of the scopes it holds, leaving the ones holding it', () => {
+  it('sets the strategy of the scope and of the scopes it holds, in its containers and in its cleanups, leaving the ones holding it', () => {
     const strategy = { name: 'claim' } as unknown as NodeStrategy;
-    const root = _scope(null, EMPTY_LAYOUT, strategy);
+    const root = _scope(null, HOLDER, strategy);
     const scope = addChild(root);
     const nested = addChild(addChild(scope));
+    const held = _scope(scope, EMPTY_LAYOUT);
+    addCleanup(scope, vi.fn<() => void>());
+    addCleanup(scope, { scope: held });
+    const single = _scope(null, EMPTY_LAYOUT, strategy);
+    const heldAlone = _scope(single, EMPTY_LAYOUT);
+    addCleanup(single, { scope: heldAlone });
 
     setNodeStrategy(scope, CREATE_NODES);
+    setNodeStrategy(single, CREATE_NODES);
 
     expect(root[STRATEGY]).toBe(strategy);
     expect(scope[STRATEGY]).toBeNull();
     expect(nested[STRATEGY]).toBeNull();
+    expect(held[STRATEGY]).toBeNull();
+    expect(heldAlone[STRATEGY]).toBeNull();
   });
 
   it('swaps the strategy of the scope alone', () => {
     const strategy = { name: 'claim' } as unknown as NodeStrategy;
-    const scope = _scope(null, EMPTY_LAYOUT);
+    const scope = _scope(null, HOLDER);
     const child = addChild(scope);
 
     swapNodeStrategy(scope, strategy);
@@ -293,19 +310,18 @@ describe('setNodeStrategy', () => {
 });
 
 describe('moveTo', () => {
-  it('moves the cleanups and the children to another scope, leaving it empty', () => {
+  it('moves the cleanups, the scopes they hold included, to another scope, leaving it empty', () => {
     const [staging, target] = [_scope(null, EMPTY_LAYOUT), _scope(null, EMPTY_LAYOUT)];
     const [first, second] = [vi.fn<() => void>(), vi.fn<() => void>()];
     addCleanup(staging, first);
     addCleanup(staging, second);
-    const child = addChild(staging);
+    const held = { scope: _scope(null, EMPTY_LAYOUT) };
+    addCleanup(staging, held);
 
     moveTo(staging, target);
 
     expect(staging[CLEANUP]).toBeNull();
-    expect(staging[CHILDREN]).toBeNull();
-    expect(target[CLEANUP]).toEqual([first, second]);
-    expect(childrenOf(target)).toEqual([child]);
+    expect(target[CLEANUP]).toEqual([first, second, held]);
   });
 
   it('moves a single cleanup, and nothing from a scope without cleanups', () => {
@@ -322,7 +338,7 @@ describe('moveTo', () => {
 
 describe('clear', () => {
   it('removes each node from the node it is inserted into, from the last to the first, before running the cleanups and clearing the children, then empties its slots', () => {
-    const scope = _scope(null, layoutOf(['row'], 2));
+    const scope = _scope(null, layoutOf(['row'], 2, 1));
     scope[HEADER] = 'a';
     const parent = document.createElement('div');
     const [a, b] = [parent.appendChild(document.createElement('a')), parent.appendChild(document.createElement('b'))];
@@ -342,9 +358,8 @@ describe('clear', () => {
 
     expect(removed).toEqual([b, a]);
     expect(seen).toEqual(['cleanup 0', 'child 0']);
-    expect(scope.slice(HEADER)).toEqual([null, null, null]);
+    expect(scope.slice(HEADER)).toEqual([null, null, null, null]);
     expect(scope[PARENT_NODE]).toBeNull();
-    expect(scope[CHILDREN]).toBeNull();
   });
 
   it('leaves a node moved into another node, a node never inserted and an empty slot', () => {
@@ -363,7 +378,7 @@ describe('clear', () => {
   });
 
   it('leaves the DOM as it is when told not to remove its nodes, running the cleanups and clearing the children', () => {
-    const scope = _scope(null, ELEMENT_LAYOUT);
+    const scope = _scope(null, ELEMENT_HOLDER);
     const parent = document.createElement('div');
     const node = parent.appendChild(document.createElement('p'));
     trackNode(node, parent, scope, HEADER);
@@ -381,7 +396,7 @@ describe('clear', () => {
   });
 
   it('removes the nodes of a child beside its own, and leaves the ones of a child inside one of its elements, which go with it', () => {
-    const scope = _scope(null, ELEMENT_LAYOUT);
+    const scope = _scope(null, ELEMENT_HOLDER);
     const parent = document.createElement('div');
     const element = parent.appendChild(document.createElement('ul'));
     trackNode(element, parent, scope, HEADER);
@@ -390,7 +405,7 @@ describe('clear', () => {
     const besideNode = parent.appendChild(document.createElement('p'));
     trackNode(besideNode, parent, beside, HEADER);
     // A block inside the element, holding a block of its own
-    const inside = addChild(scope, _scope(scope, ELEMENT_LAYOUT));
+    const inside = addChild(scope, _scope(scope, ELEMENT_HOLDER));
     const insideNode = element.appendChild(document.createElement('li'));
     trackNode(insideNode, element, inside, HEADER);
     const nested = addChild(inside, _scope(inside, ELEMENT_LAYOUT));
@@ -408,13 +423,13 @@ describe('clear', () => {
   });
 
   it('removes the nodes of the blocks a child tracking no node holds, and the ones of the children of a scope tracking none', () => {
-    const scope = _scope(null, ELEMENT_LAYOUT);
+    const scope = _scope(null, ELEMENT_HOLDER);
     const parent = document.createElement('div');
     trackNode(parent.appendChild(document.createElement('p')), parent, scope, HEADER);
     const block = addChild(addChild(scope), _scope(scope, ELEMENT_LAYOUT));
     const node = parent.appendChild(document.createElement('b'));
     trackNode(node, parent, block, HEADER);
-    const empty = _scope(null, EMPTY_LAYOUT);
+    const empty = _scope(null, HOLDER);
     const emptyBlock = addChild(empty, _scope(empty, ELEMENT_LAYOUT));
     const emptyNode = parent.appendChild(document.createElement('i'));
     trackNode(emptyNode, parent, emptyBlock, HEADER);
@@ -426,12 +441,13 @@ describe('clear', () => {
     expect(emptyNode.parentNode).toBeNull();
   });
 
-  it('removes the element of a component created in code, whose scope has no parent, also when told not to remove its nodes', () => {
+  it('clears the scopes its cleanups hold, removing their nodes, as the element of a component created in code, also when told not to remove its own', () => {
     const scope = _scope(null, ELEMENT_LAYOUT);
     const parent = document.createElement('div');
     trackNode(parent.appendChild(document.createElement('p')), parent, scope, HEADER);
     const target = document.createElement('section');
-    const created = addChild(scope, _scope(null, ELEMENT_LAYOUT));
+    const created = _scope(null, ELEMENT_LAYOUT);
+    addCleanup(scope, { scope: created });
     const element = target.appendChild(document.createElement('x-toast'));
     trackNode(element, target, created, HEADER);
 
@@ -477,7 +493,7 @@ describe('refresh', () => {
   });
 
   it('refreshes the scopes inside the scope, which read its variables, a single binding as many', () => {
-    const scope = _scope(null, layoutOf(['row']));
+    const scope = _scope(null, layoutOf(['row'], 0, 1));
     scope[HEADER] = 'a';
     const nested = addChild(addChild(scope));
     const runs = new Array<unknown>();
@@ -487,6 +503,21 @@ describe('refresh', () => {
     refresh(scope, [0]);
 
     expect(runs).toEqual(['a', 'b']);
+  });
+
+  it('refreshes the scopes its cleanups hold, as the branch of a conditional binding, after the bindings before them', () => {
+    const scope = _scope(null, layoutOf(['row']));
+    scope[HEADER] = 'a';
+    const order = new Array<string>();
+    _bindEffect(scope, () => order.push('selection'), null, undefined, undefined, [0]);
+    const branch = _scope(scope, EMPTY_LAYOUT);
+    addCleanup(scope, { scope: branch });
+    _bindEffect(branch, (context: _Context) => order.push(`branch ${_read(context, 1, HEADER)}`), branch, undefined, undefined, [0]);
+
+    update(scope, HEADER, 'b');
+    refresh(scope, [0]);
+
+    expect(order).toEqual(['selection', 'branch a', 'selection', 'branch b']);
   });
 
   it('makes a binding an effect when a run reads a signal, and a plain binding again when a run reads none', async () => {
@@ -514,7 +545,7 @@ describe('refresh', () => {
   });
 
   it('carries the identifiers of an outer refresh into a refresh run inside it, and never refreshes a scope twice', () => {
-    const outer = _scope(null, layoutOf(['row']));
+    const outer = _scope(null, layoutOf(['row'], 0, 1));
     outer[HEADER] = 'a';
     const inner = addChild(outer, _scope(outer, layoutOf(['cell'])));
     inner[HEADER] = 1;
@@ -535,7 +566,7 @@ describe('refresh', () => {
   });
 
   it('does not refresh the scopes created while it runs, which render with the new values', () => {
-    const scope = _scope(null, layoutOf(['row']));
+    const scope = _scope(null, layoutOf(['row'], 0, 2));
     scope[HEADER] = 'a';
     const created = new Array<unknown[]>();
     _bindEffect(scope, (context: _Context) => {
@@ -554,9 +585,9 @@ describe('refresh', () => {
   });
 
   it('carries the identifier of a variable of the scope changed while it runs on to the bindings after it and the scopes inside the scope, not beside it', () => {
-    const root = _scope(null, layoutOf(['row']));
+    const root = _scope(null, layoutOf(['row'], 0, 2));
     root[HEADER] = 'a';
-    const scope = addChild(root, _scope(root, layoutOf(['label'])));
+    const scope = addChild(root, _scope(root, layoutOf(['label'], 0, 1)));
     _declare(scope, HEADER, 'let');
     const beside = addChild(root, _scope(root, layoutOf(['label'])));
     beside[HEADER] = 'beside';

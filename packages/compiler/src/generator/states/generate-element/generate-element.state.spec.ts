@@ -80,8 +80,8 @@ describe('generateElement', () => {
       '    { name: \'class\', value: div0$class, setter: _setReactiveProperty }'
     ].join('\n'));
     expect(result.functions).toEqual([
-      'function div0$title(context) {\n  return _read(context, 0, 8).name + _read(context, 0, 9).value;\n}',
-      'function div0$class(context) {\n  return _read(context, 0, 9).value;\n}'
+      'function div0$title(context) {\n  return _read(context, 0, 7).name + _read(context, 0, 8).value;\n}',
+      'function div0$class(context) {\n  return _read(context, 0, 8).value;\n}'
     ]);
     expect(result.reads).toEqual(['const _reads0 = [0];']);
     expectValidJavascript(result);
@@ -226,7 +226,7 @@ describe('generateElement', () => {
     context.addIdentifier('panel');
     const { constants, functionsToProcess } = await run('<div #panel><span></span></div>', context);
 
-    expect(constants).toEqual(['const div0$element = { tagName: \'div\', children: div0Children, ref: \'panel\', refSlot: 8 };']);
+    expect(constants).toEqual(['const div0$element = { tagName: \'div\', children: div0Children, ref: \'panel\', refSlot: 7 };']);
     expect(functionsToProcess?.get('div0Children')?.fn.context).toBe(context);
   });
 
@@ -236,7 +236,7 @@ describe('generateElement', () => {
     // At the top of the block of a scope tracking its nodes, the element gets a slot after the variables
     context.tracksNodes = true;
     const { constants } = await run('<input #field />', context);
-    expect(constants).toEqual(['const input0$element = { tagName: \'input\', ref: \'field\', refSlot: 8, slot: 9 };']);
+    expect(constants).toEqual(['const input0$element = { tagName: \'input\', ref: \'field\', refSlot: 7, slot: 8 };']);
   });
 
   it('renders an element structural directives are applied to in a scope of its own, reading the variables one scope up, its anchor taking the slot', async () => {
@@ -246,8 +246,8 @@ describe('generateElement', () => {
     const { constants, functions, functionsToProcess } = await run('<input *guard title="{ row }" />', context);
 
     // The slot of its anchor, after the variable
-    expect(constants[0]).toContain('slot: 9');
-    expect(functions).toEqual(expect.arrayContaining(['function input0$title(context) {\n  return _read(context, 1, 8);\n}']));
+    expect(constants[0]).toContain('slot: 8');
+    expect(functions).toEqual(expect.arrayContaining(['function input0$title(context) {\n  return _read(context, 1, 7);\n}']));
     expect(functionsToProcess?.size).toBe(0);
   });
 
@@ -502,8 +502,8 @@ describe('generateElement', () => {
       expect(reads).toEqual(['const _reads0 = [0];']);
       // Evaluated in the scope of the branch, inside the one of the element
       expect(functions).toEqual([
-        'function div0$if(context) {\n  return _read(context, 1, 8).active;\n}',
-        'function div0$switch(context) {\n  return _read(context, 1, 8).kind;\n}'
+        'function div0$if(context) {\n  return _read(context, 1, 7).active;\n}',
+        'function div0$switch(context) {\n  return _read(context, 1, 7).kind;\n}'
       ]);
     });
 

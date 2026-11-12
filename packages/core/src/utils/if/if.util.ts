@@ -3,10 +3,9 @@ import { untracked } from '../../signals';
 import { _bindEffect } from '../../signals/effect/effect';
 import type { BlockConfig } from '../../types/if/block-config.type';
 import type { IfRun } from '../../types/if/if-run.type';
-import type { State } from '../../types/if/state.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { _Context } from '../../types/context.type';
-import { addChild, clear, getNodeStrategy, removeChild } from '../context/context.util';
+import { clear, containerSlot, getNodeStrategy } from '../context/context.util';
 import { _selectBranchIndex } from '../select-branch/select-branch.util';
 
 /**
@@ -36,7 +35,8 @@ export function _if(parentNode: HTMLElement, parentContext: _Context, referenceN
   const run: IfRun = {
     parentNode, parentContext,
     nodeBlock, config,
-    state: undefined,
+    slot: containerSlot(parentContext, config.container),
+    active: null,
     started: false
   };
 
@@ -64,41 +64,33 @@ function runIf(run: IfRun): void {
  * @param selected - The index of the branch to render, `null` to render none.
  */
 function showBranch(run: IfRun, selected: number | null): void {
-  const { parentNode, parentContext, nodeBlock, config, state } = run;
+  const { parentNode, parentContext, nodeBlock } = run;
   if (!run.started) {
     run.started = true;
     const nodeStrategy = getNodeStrategy(parentContext);
     // The marker of the server holds the index of the branch it rendered, none when it rendered none
-    run.state = renderBranch(parentNode, parentContext, nodeBlock.anchor, config, state, selected, nodeStrategy.adopt(parentNode, nodeBlock, selected === null ? '' : `${selected}`));
+    renderBranch(run, selected, nodeStrategy.adopt(parentNode, nodeBlock, selected === null ? '' : `${selected}`));
     nodeStrategy.close(parentNode, nodeBlock);
-  } else if ((state?.activeBranch ?? null) !== selected) {
-    run.state = renderBranch(parentNode, parentContext, nodeBlock.anchor, config, state, selected, getNodeStrategy(parentContext));
+  } else if (run.active !== selected) {
+    renderBranch(run, selected, getNodeStrategy(parentContext));
   }
 }
 
 /**
- * Destroys the active branch, if any, and renders the selected one, if any, getting its nodes with a strategy.
+ * Destroys the active branch, if any, and renders the selected one, if any, getting its nodes with a strategy: its
+ * context is held by the container of the block.
  *
- * @param parentNode - The parent HTML element the branch is rendered into.
- * @param parentContext - The context owning the block.
- * @param anchor - The node to insert the branch before, `null` to append it.
- * @param config - The branches.
- * @param state - The active branch, `undefined` when none is.
+ * @param run - The `@if`.
  * @param selected - The index of the branch to render, `null` to render none.
  * @param nodeStrategy - The strategy the branch gets its nodes with.
- * @returns The branch rendered, `undefined` when none is.
  */
-function renderBranch(parentNode: HTMLElement, parentContext: _Context, anchor: Comment | null, config: BlockConfig, state: State | undefined, selected: number | null, nodeStrategy: NodeStrategy): State | undefined {
-  if (state) {
-    clear(state.context);
-    removeChild(parentContext, state.context);
+function renderBranch(run: IfRun, selected: number | null, nodeStrategy: NodeStrategy): void {
+  const { parentNode, parentContext, slot } = run;
+  const shown = parentContext[slot] as _Context | null;
+  if (shown) {
+    clear(shown);
   }
 
-  if (selected === null) {
-    return undefined;
-  }
-
-  const context = config.branches[selected].block(parentNode, parentContext, anchor, nodeStrategy);
-  addChild(parentContext, context);
-  return { activeBranch: selected, context };
+  run.active = selected;
+  parentContext[slot] = selected === null ? null : run.config.branches[selected].block(parentNode, parentContext, run.nodeBlock.anchor, nodeStrategy);
 }

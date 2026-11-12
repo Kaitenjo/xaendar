@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HEADER, HYDRATE, LAYOUT } from '../../costants';
 import type { _Context } from '../../types/context.type';
-import { _scope, addChild, EMPTY_LAYOUT, getNodeStrategy } from '../context/context.util';
+import { _scope, EMPTY_LAYOUT, getNodeStrategy } from '../context/context.util';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { deferElementHydration } from '../hydration-triggers/hydration-triggers.util';
 import { claimShadowRoot, ClaimNodes, isClaimed } from './claim-nodes.util';
@@ -508,8 +508,11 @@ describe('ClaimNodes', () => {
     it('makes the contexts of the render create what they render once the hydration ends, at any depth', () => {
       const root = document.createElement('x-host').attachShadow({ mode: 'open' });
       const claim = claimShadowRoot(root, false);
-      const render = _scope(context, EMPTY_LAYOUT, claim);
-      const nested = addChild(addChild(render, _scope(render, EMPTY_LAYOUT, claim)));
+      // Each scope holds the next one in its container
+      const holder = { size: HEADER + 1, nodes: HEADER, containers: HEADER };
+      const render = _scope(context, holder, claim);
+      const block = render[HEADER] = _scope(render, holder, claim);
+      const nested = block[HEADER] = _scope(block, EMPTY_LAYOUT);
 
       claim.end(root, render);
 

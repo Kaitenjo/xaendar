@@ -23,7 +23,7 @@ function mount(items: Item[]) {
   const element = document.createElement('ex-switch-button') as SwitchButtonComponent;
   const onValueChange = vi.fn<(event: CustomEvent<Item>) => void>();
   element.addEventListener('valueChange', onValueChange as unknown as EventListener);
-  _setExpressionInput(_scope(null, { size: 8, nodes: 8 }), element, { name: 'items', value: () => items, setter: _setExpressionInput });
+  _setExpressionInput(_scope(null, { size: 7, nodes: 7 }), element, { name: 'items', value: () => items, setter: _setExpressionInput });
   document.body.append(element);
 
   return { element, onValueChange };

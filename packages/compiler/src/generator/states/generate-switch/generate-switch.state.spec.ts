@@ -43,7 +43,7 @@ describe('generateSwitch', () => {
       '  reads: _reads0',
       '};'
     ].join('\n')]);
-    expect(context.functionDeclarations).toEqual(['function td0__switch0$expression(context) {\n  return _read(context, 0, 8).type;\n}']);
+    expect(context.functionDeclarations).toEqual(['function td0__switch0$expression(context) {\n  return _read(context, 0, 7).type;\n}']);
     expect(context.readsDeclarations).toEqual(['const _reads0 = [0];']);
   });
 

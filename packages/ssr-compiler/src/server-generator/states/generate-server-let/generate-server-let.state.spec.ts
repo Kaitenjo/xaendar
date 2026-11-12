@@ -11,7 +11,7 @@ describe('generateServerLet', () => {
     context.addIdentifier('total', 'variable');
 
     expect(generateServerLet(parseTemplate('@let total = price() * 2;')[0] as LetNode, { id: 'root' }, '0', context)).toEqual({
-      pieces: [{ statement: '_set(context, 0, 8, this.price() * 2);' }]
+      pieces: [{ statement: '_set(context, 0, 7, this.price() * 2);' }]
     });
   });
 
@@ -22,7 +22,7 @@ describe('generateServerLet', () => {
 
     // Rendered in the children of an element opening a namespace, which stand for no scope of the runtime
     expect(generateServerLet(parseTemplate('@let width = innerWidth;')[0] as LetNode, { id: 'root' }, '0', new GeneratorContext(context, 'svg', 'declarations'))).toEqual({
-      pieces: [{ statement: '_set(context, 0, 9, globalThis.innerWidth);' }]
+      pieces: [{ statement: '_set(context, 0, 8, globalThis.innerWidth);' }]
     });
   });
 });

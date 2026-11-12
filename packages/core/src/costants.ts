@@ -86,9 +86,10 @@ export const WAITS_FOR_HYDRATION = Symbol('WaitsForHydration');
  * the compiler, as Angular does with its `LView`, instead of an object with a field per member and two arrays of its
  * own, the variables by name and the nodes, which every scope paid, the rows of a table included. The header holds the
  * slots every scope has, at fixed indices, then come the variables, each at a slot the compiler assigns, then the nodes
- * at the top of the block. The variables come before the nodes because the compiler knows them all before it generates
- * the body of the block, while it counts the nodes as it generates them: the reads of the body need the slots of the
- * variables first. Do not go back to an object, nor to lists searched by name at runtime.
+ * at the top of the block, then the containers of its blocks (see `_ScopeLayout`). The variables come before the nodes
+ * because the compiler knows them all before it generates the body of the block, while it counts the nodes and the
+ * blocks as it generates them: the reads of the body need the slots of the variables first. Do not go back to an
+ * object, nor to lists searched by name at runtime.
  */
 export const PARENT = 0;
 /**
@@ -120,7 +121,7 @@ export const STRATEGY = 4;
 export const CLEANUP = 5;
 /**
  * The slot of a scope holding its layout (see `_ScopeLayout`), shared by every instance of its block: where its nodes
- * start, and the names of its variables for the errors.
+ * and its containers start, and the names of its variables for the errors.
  *
  * N.B. Deliberate: the one slot telling where the nodes start, since the variables before them vary from a block to
  * another, and the runtime clears and moves the nodes of scopes whose block it does not know. Do not encode it in
@@ -129,14 +130,10 @@ export const CLEANUP = 5;
  */
 export const LAYOUT = 6;
 /**
- * The slot of a scope holding the scopes inside it: the scope itself while there is one, an array from the second.
- */
-export const CHILDREN = 7;
-/**
  * The number of slots of the header of a scope: the slot of its first variable. The compiler writes the same number
  * (`SCOPE_HEADER` of `@xaendar/compiler`): change both together.
  */
-export const HEADER = 8;
+export const HEADER = 7;
 /**
  * Key of the brand marking the options `Property.required` passes to the decorator it creates, which tells them apart
  * from a default value (see `Property`).
