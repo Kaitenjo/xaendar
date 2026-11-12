@@ -1,9 +1,10 @@
-import { _SSR_MARKERS } from '../../costants';
+import { _SSR_MARKERS, COMPONENT, HEADER, LAYOUT, PARENT_NODE } from '../../costants';
 import { untracked } from '../../signals';
 import { _bindEffect } from '../../signals/effect/effect';
 import type { IterationVariable } from '../../types/iteration-variable.type';
 import type { IterationVariables } from '../../types/iteration-variables.type';
-import { _Context } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
+import { addChild, clear, getChild, getChildCount, getNodeStrategy, refresh, removeChild, update } from '../context/context.util';
 import type { ForConfig } from '../../types/for-config.type';
 import type { ForRun } from '../../types/for-run.type';
 
@@ -48,7 +49,7 @@ let lastNode: Node | null = null;
  *   the variables of the template the items and their keys read (see `ForConfig`).
  */
 export function _for(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, config: ForConfig): void {
-  const nodeBlock = parentContext.nodeStrategy.block(parentContext, parentNode, referenceNode, 'for', _SSR_MARKERS.for, config.last);
+  const nodeBlock = getNodeStrategy(parentContext).block(parentContext, parentNode, referenceNode, 'for', _SSR_MARKERS.for, config.last, config.slot);
   const run: ForRun = {
     parentNode, parentContext,
     nodeBlock,
@@ -67,7 +68,7 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
  */
 function runFor(run: ForRun): void {
   const { config, parentContext } = run;
-  const { component } = parentContext;
+  const component = parentContext[COMPONENT];
   const iterable = config.items.call(component, parentContext);
   const items = typeof iterable === 'number' ? Array.from({ length: iterable }, (_, i) => i) : iterable;
   // The track expression reads the item, the index and the implicit variables as the body does: as values
@@ -92,13 +93,13 @@ function runFor(run: ForRun): void {
  */
 function renderItems(run: ForRun, items: unknown[], newKeys: Array<string | number>, occurrences: ReturnType<typeof countOccurrences>): void {
   const { parentNode, parentContext, nodeBlock, config } = run;
-  const { nodeStrategy } = parentContext;
+  const nodeStrategy = getNodeStrategy(parentContext);
   const entries = new Map<string | number, _Context[]>();
   const itemNodeStrategy = nodeStrategy.adoptItems(parentNode, nodeBlock, newKeys);
   for (let i = 0; i < items.length; i++) {
     const key = newKeys[i];
     const created = config.block(parentNode, parentContext, items, i, nodeBlock.anchor, itemNodeStrategy);
-    parentContext.addChild(created);
+    addChild(parentContext, created);
     const keyEntries = entries.get(key) ?? new Array<_Context>(occurrences.counts.get(key)!);
     keyEntries[occurrences.indexes[i]] = created;
     entries.set(key, keyEntries);
@@ -128,8 +129,8 @@ function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
   for (const [key, keyEntries] of entries) {
     const kept = occurrences.counts.get(key) ?? 0;
     for (let i = kept; i < keyEntries.length; i++) {
-      keyEntries[i].clear();
-      parentContext.removeChild(keyEntries[i]);
+      clear(keyEntries[i]);
+      removeChild(parentContext, keyEntries[i]);
     }
   }
 
@@ -154,8 +155,8 @@ function updateItems(run: ForRun, items: unknown[], newKeys: Array<string | numb
 
       entry = existing;
     } else {
-      const created = config.block(parentNode, parentContext, items, i, nextReference, parentContext.nodeStrategy);
-      parentContext.addChild(created);
+      const created = config.block(parentNode, parentContext, items, i, nextReference, getNodeStrategy(parentContext));
+      addChild(parentContext, created);
       findItemBounds(parentNode, created);
       entry = created;
     }
@@ -211,14 +212,14 @@ function findItemBounds(parentNode: Node, context: _Context): void {
  * @param context - The context to read the nodes of.
  */
 function collectBounds(parentNode: Node, context: _Context): void {
-  const count = context.getNodeCount();
-  if (count) {
-    if (context.getNode(0).parentNode !== parentNode) {
-      return;
-    }
+  // The nodes of a context are all inserted into the same node
+  if (context[PARENT_NODE] !== null && context[PARENT_NODE] !== parentNode) {
+    return;
+  }
 
-    for (let i = 0; i < count; i++) {
-      const node = context.getNode(i);
+  for (let i = context[LAYOUT].nodes; i < context.length; i++) {
+    const node = context[i] as Node | null | undefined;
+    if (node) {
       if (!firstNode) {
         firstNode = lastNode = node;
       } else if (node.compareDocumentPosition(firstNode) & Node.DOCUMENT_POSITION_FOLLOWING) {
@@ -229,8 +230,8 @@ function collectBounds(parentNode: Node, context: _Context): void {
     }
   }
 
-  for (let i = 0; i < context.getChildCount(); i++) {
-    collectBounds(parentNode, context.getChild(i));
+  for (let i = 0; i < getChildCount(context); i++) {
+    collectBounds(parentNode, getChild(context, i));
   }
 }
 
@@ -266,7 +267,8 @@ function moveItem(parentNode: Element, first: Node, last: Node, reference: Node 
  * bindings reading the variables run again, everything else in the item's subtree (state, subscriptions, pending
  * requests) is left completely untouched.
  *
- * Only the variables the body reads are declared: the compiled code does not call it for a body reading none.
+ * Only the variables the body reads are declared, in the slots following the header of the context, in the order of
+ * `used`: the compiled code does not call it for a body reading none.
  *
  * @param context - The context of the body of the item, which the variables are declared in.
  * @param items - The full array being iterated.
@@ -275,15 +277,15 @@ function moveItem(parentNode: Element, first: Node, last: Node, reference: Node 
  *   too.
  */
 export function _iterationVariables(context: _Context, items: unknown[], index: number, variables: IterationVariables): void {
-  const { used, names } = variables;
+  const { used } = variables;
   for (let i = 0; i < used.length; i++) {
-    context.addIdentifier(names[i], iterationValue(used[i], items, index));
+    context[HEADER + i] = iterationValue(used[i], items, index);
   }
 }
 
 /**
  * Writes into the context of an item reused by a later run of a `@for` the values of its new position, then refreshes
- * it with the names of the variables that changed, if any (see `_Context.refresh`).
+ * it with the identifiers of the variables that changed, if any (see `refresh`).
  *
  * N.B. Deliberate, to save memory: a single function of the module, given the context of the item and the variables of
  * the `@for`, instead of an `update` closure created by {@link _iterationVariables} for each item, capturing its
@@ -294,17 +296,16 @@ export function _iterationVariables(context: _Context, items: unknown[], index: 
  * @param items - The full array being iterated.
  * @param index - The new index of the item.
  */
-function updateIterationVariables(context: _Context, { used, names }: IterationVariables, items: unknown[], index: number): void {
-  let changed: string[] | null = null;
+function updateIterationVariables(context: _Context, { used, ids }: IterationVariables, items: unknown[], index: number): void {
+  let changed: number[] | null = null;
   for (let i = 0; i < used.length; i++) {
-    const name = names[i];
-    if (context.update(name, iterationValue(used[i], items, index))) {
-      changed ? changed.push(name) : changed = [name];
+    if (update(context, HEADER + i, iterationValue(used[i], items, index))) {
+      changed ? changed.push(ids[i]) : changed = [ids[i]];
     }
   }
 
   if (changed) {
-    context.refresh(changed);
+    refresh(context, changed);
   }
 }
 

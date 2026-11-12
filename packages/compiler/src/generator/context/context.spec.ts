@@ -86,14 +86,48 @@ describe('GeneratorContext', () => {
       expect(context.readsDeclarations).toEqual([]);
     });
 
-    it('shares in the root scope one constant per list of variables, whatever their order', () => {
+    it('shares in the root scope one constant per list of identifiers, whatever their order', () => {
       const root = new GeneratorContext(cache);
       const scope = new GeneratorContext(root);
 
-      expect(scope.getReads(['row', 'col'])).toBe('_reads0');
-      expect(root.getReads(['col', 'row'])).toBe('_reads0');
-      expect(root.getReads(['row'])).toBe('_reads1');
-      expect(root.readsDeclarations).toEqual(['const _reads0 = [\'col\', \'row\'];', 'const _reads1 = [\'row\'];']);
+      expect(scope.getReads([10, 2])).toBe('_reads0');
+      expect(root.getReads([2, 10])).toBe('_reads0');
+      expect(root.getReads([10])).toBe('_reads1');
+      expect(root.readsDeclarations).toEqual(['const _reads0 = [2, 10];', 'const _reads1 = [10];']);
+    });
+  });
+
+  describe('layouts', () => {
+    it('gives slots to the nodes at the top of a scope only while the function rendering them tracks them, after the variables', () => {
+      const scope = new GeneratorContext(new GeneratorContext(cache));
+      scope.addIdentifier('row', 'variable');
+
+      expect(scope.allocateNodeSlot()).toBeUndefined();
+      scope.tracksNodes = true;
+      expect(scope.allocateNodeSlot()).toBe(9);
+      expect(scope.allocateNodeSlot()).toBe(10);
+      expect(scope.declareLayout()).toBe('_layout0');
+      expect(scope.constantDeclarations).toEqual([]);
+    });
+
+    it('declares a layout once per size, slot of the first node and variables, in the root scope', () => {
+      const root = new GeneratorContext(cache);
+      const first = new GeneratorContext(root);
+      const second = new GeneratorContext(root);
+      first.addIdentifier('row', 'variable');
+      second.addIdentifier('row', 'variable');
+      second.tracksNodes = true;
+      second.allocateNodeSlot();
+
+      expect(root.declareLayout()).toBe('_layout0');
+      expect(first.declareLayout()).toBe('_layout1');
+      expect(new GeneratorContext(root).declareLayout()).toBe('_layout0');
+      expect(second.declareLayout()).toBe('_layout2');
+      expect(root.constantDeclarations).toEqual([
+        'const _layout0 = { size: 8, nodes: 8 };',
+        'const _layout1 = { size: 9, nodes: 9, variables: [\'row\'] };',
+        'const _layout2 = { size: 10, nodes: 9, variables: [\'row\'] };'
+      ]);
     });
   });
 

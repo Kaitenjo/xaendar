@@ -32,7 +32,7 @@ export function generateServerTry(node: TryNode, parent: ServerParent, index: st
     functionsToProcess: new Map([
       [contentKey, toBlockFunction(node, contentKey, parent, generatorContext, last)],
       [catchKey, {
-        fn: { node: node.catch, context: catchContext, parent: { id: catchKey, tag: parent.tag, end: last }, precode: name ? `context.addIdentifier('${name}', error);` : undefined },
+        fn: { node: node.catch, context: catchContext, parent: { id: catchKey, tag: parent.tag, end: last }, precode: name ? `context[${catchContext.addressOf(name)!.slot}] = error;` : undefined },
         args: ['out', 'parentContext', 'error']
       }]
     ])

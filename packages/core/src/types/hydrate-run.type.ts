@@ -1,5 +1,5 @@
 import type { NoArgsVoidFunction } from '@xaendar/types';
-import type { _Context } from '../utils/context/context.util';
+import type { _Context } from './context.type';
 import type { HydrateBlock } from './hydrate-block.type';
 import type { NodeBlock } from './node-block.type';
 import type { RecordedEvents } from './recorded-events.type';
@@ -32,6 +32,12 @@ export type HydrateRun = {
    * The nodes the server rendered, owned by the context until the content adopts them.
    */
   serverNodes: readonly Node[];
+  /**
+   * The scope owning the nodes the server rendered until the content adopts them, a child of the context holding the
+   * block: `undefined` when the block is not at the top of a scope (see `HydrateBlock.track`), or the server rendered
+   * no node.
+   */
+  holder?: _Context;
   /**
    * Whether the context owning the block is not destroyed.
    */

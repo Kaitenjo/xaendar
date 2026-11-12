@@ -17,9 +17,10 @@ describe('Generator', () => {
   it('wraps the generated nodes in a module-level render function, giving the component to the root context', async () => {
     const code = await generate('hello');
     expect(code).toBe([
+      'const _layout0 = { size: 8, nodes: 8 };',
       'function render(nodeStrategy) {',
       '  const root = this._root;',
-      '  const context = new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 0, this);',
+      '  const context = _scope(null, _layout0, nodeStrategy, this);',
       '  _renderLiteralText(root, context, \'hello\', null);',
       '  return context;',
       '}'
@@ -30,23 +31,26 @@ describe('Generator', () => {
     const code = await generate('@for (item of items; track item) { <p title="{item}">{ item }</p> }');
 
     expect(code).toBe([
-      'const _reads0 = [\'item\'];',
-      'const for0Variables = { used: [\'item\'], names: [\'item\'] };',
+      'const _reads0 = [0];',
+      'const for0Variables = { used: [\'item\'], ids: [0] };',
       'const for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables, last: true };',
+      'const _layout0 = { size: 8, nodes: 8 };',
       'const for0__p0$element = {',
       '  tagName: \'p\',',
       '  attributes: [{ name: \'title\', value: for0__p0$title, setter: _setReactiveProperty, reads: _reads0 }],',
-      '  children: for0__p0Children',
+      '  children: for0__p0Children,',
+      '  slot: 9',
       '};',
+      'const _layout1 = { size: 10, nodes: 9, variables: [\'item\'] };',
       'function render(nodeStrategy) {',
       '  const root = this._root;',
-      '  const context = new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 0, this);',
+      '  const context = _scope(null, _layout0, nodeStrategy, this);',
       '  _for(root, context, null, for0$for);',
       '  return context;',
       '}',
       '',
       'function for0(for0, parentContext, items0, i0, anchor, nodeStrategy) {',
-      '  const context = new _Context(parentContext, nodeStrategy, 1);',
+      '  const context = _scope(parentContext, _layout1, nodeStrategy);',
       '  _iterationVariables(context, items0, i0, for0Variables);',
       '  _renderElement(for0, context, anchor, for0__p0$element);',
       '  return context;',
@@ -65,11 +69,11 @@ describe('Generator', () => {
       '}',
       '',
       'function for0__p0$title(context) {',
-      '  return context.get(\'item\');',
+      '  return _read(context, 0, 8);',
       '}',
       '',
       'function for0__p0$text0(context) {',
-      '  return context.get(\'item\');',
+      '  return _read(context, 0, 8);',
       '}'
     ].join('\n'));
   });
@@ -79,12 +83,14 @@ describe('Generator', () => {
       const code = await generate('<button (click)="highlight(name)">Go</button><label>Name <input #name /></label>');
 
       expect(code).toContain([
-        '  const context = new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 1, this);',
-        '  context.declare(\'name\');',
+        '  const context = _scope(null, _layout0, nodeStrategy, this);',
+        '  _declare(context, 8);',
         '  _renderElement(root, context, null, button0$element);'
       ].join('\n'));
-      expect(code).toContain('function button0$on_click(context) {\n  this.highlight(context.get(\'name\'));\n}');
-      expect(code).toContain('const label1__input1$element = { tagName: \'input\', ref: \'name\' };');
+      expect(code).toContain('const _layout0 = { size: 9, nodes: 9, variables: [\'name\'] };');
+      expect(code).toContain('function button0$on_click(context) {\n  this.highlight(_read(context, 0, 8));\n}');
+      // The root of a render tracks no node: no element gets a slot there
+      expect(code).toContain('const label1__input1$element = { tagName: \'input\', ref: \'name\', refSlot: 8 };');
       expect(code).toContain('_renderElement(label1, context, null, label1__input1$element);');
     });
 
@@ -93,29 +99,34 @@ describe('Generator', () => {
 
       expect(code).toContain([
         'function if0(if0, parentContext, anchor, nodeStrategy) {',
-        '  const context = new _Context(parentContext, nodeStrategy, 1);',
-        '  context.declare(\'field\');'
+        '  const context = _scope(parentContext, _layout1, nodeStrategy);',
+        '  _declare(context, 8);'
       ].join('\n'));
-      expect(code.match(/context\.declare\('field'\)/g)).toHaveLength(1);
-      expect(code).toContain('function if0__p1$text0(context) {\n  return context.get(\'field\').value;\n}');
+      // The variable, then the nodes at the top of the block
+      expect(code).toContain('const _layout1 = { size: 11, nodes: 9, variables: [\'field\'] };');
+      expect(code).toContain('const if0__input0$element = { tagName: \'input\', ref: \'field\', refSlot: 8, slot: 9 };');
+      expect(code.match(/_declare\(context, 8\)/g)).toHaveLength(1);
+      expect(code).toContain('function if0__p1$text0(context) {\n  return _read(context, 0, 8).value;\n}');
     });
 
     it('creates the context of a @for body for the iteration variables its body reads and the variables of its scope', async () => {
       const code = await generate('@for (item of items; track item) { <input #field />@let label = item.name; { label } }');
 
-      expect(code).toContain('function for0(for0, parentContext, items0, i0, anchor, nodeStrategy) {\n  const context = new _Context(parentContext, nodeStrategy, 3);');
+      expect(code).toContain('function for0(for0, parentContext, items0, i0, anchor, nodeStrategy) {\n  const context = _scope(parentContext, _layout1, nodeStrategy);');
+      // The item, the ref and the @let, then the input and the text
+      expect(code).toContain('const _layout1 = { size: 13, nodes: 11, variables: [\'item\', \'field\', \'label\'] };');
     });
 
     it('declares the variables of a @for body after its iteration variables', async () => {
       const code = await generate('@for (item of items; track item) { <input #field [class.first]="{$first}" />{ item } }');
 
-      expect(code).toContain('_iterationVariables(context, items0, i0, for0Variables);\n  context.declare(\'field\');');
+      expect(code).toContain('_iterationVariables(context, items0, i0, for0Variables);\n  _declare(context, 10);');
     });
 
     it('declares the variables a @for body reads once, as a constant of the module, which the configuration of _for and the body read', async () => {
       const code = await generate('@for (item of items; track item; i = $index) { { i } { item } }');
 
-      expect(code).toContain('const for0Variables = { used: [\'item\', \'$index\'], names: [\'item\', \'i\'] };\nconst for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables, last: true };');
+      expect(code).toContain('const for0Variables = { used: [\'item\', \'$index\'], ids: [0, 1] };\nconst for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables, last: true };');
       expect(code.match(/const for0Variables/g)).toHaveLength(1);
       expect(code).toContain('_for(root, context, null, for0$for);');
       expect(code).toMatch(/_iterationVariables\(context, items0, i0, for0Variables\);[\s\S]*return context;\n\}/);
@@ -128,8 +139,8 @@ describe('Generator', () => {
 
       expect(code).toContain([
         'function div0Children(div0, parentContext) {',
-        '  const context = new _Context(parentContext, undefined, 1);',
-        '  context.declare(\'inner\');'
+        '  const context = _scope(parentContext, _layout1);',
+        '  _declare(context, 8);'
       ].join('\n'));
       expect(code).toContain('_renderElement(div0, context, null, div0__input0$element);\n  return context;\n}');
       // Outside of its scope the name reads the component
@@ -145,10 +156,11 @@ describe('Generator', () => {
     it('declares the @let and the templates of the children of an element without structural directives in the scope holding the element, creating no context for them', async () => {
       const code = await generate('<div><span>@let total = count + 1;{ total }</span><template row(item: string)><b>{ item }</b></template></div>');
 
-      expect(code).toContain('const context = new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 2, this);');
+      // The template takes no slot of the scope declaring it
+      expect(code).toContain('const _layout0 = { size: 9, nodes: 9, variables: [\'total\'] };');
       expect(code).toContain('function div0Children(div0, context) {');
       expect(code).toContain('function div0__span0Children(div0__span0, context) {');
-      expect(code.match(/new _Context\(/g)).toHaveLength(2);
+      expect(code.match(/_scope\(/g)).toHaveLength(2);
     });
 
     it('renders the children of an element a structural directive is applied to in the context of the element when they declare nothing', async () => {
@@ -172,15 +184,15 @@ describe('Generator', () => {
       expect(code).toContain('const math1__mi0$element = { tagName: \'mi\', namespace: 2, children: math1__mi0Children };');
       expect(code).not.toContain('createElement');
       // Only render creates a context
-      expect(code.match(/new _Context\(/g)).toHaveLength(1);
+      expect(code.match(/_scope\(/g)).toHaveLength(1);
       expect(code.match(/return context;/g)).toHaveLength(1);
     });
 
     it('names the namespace of the elements of the blocks in an <svg>, and of the HTML ones in a <foreignObject>', async () => {
       const code = await generate('<svg>@if (a) { @for (item of items; track item) { <circle /> } }<foreignObject>@if (a) { <p /> }</foreignObject></svg>');
 
-      expect(code).toMatch(/const svg0__if0__for0__circle0\$element = \{ tagName: 'circle', namespace: 1 \};/);
-      expect(code).toMatch(/const svg0__foreignObject1__if0__p0\$element = \{ tagName: 'p' \};/);
+      expect(code).toMatch(/const svg0__if0__for0__circle0\$element = \{ tagName: 'circle', namespace: 1, slot: 8 \};/);
+      expect(code).toMatch(/const svg0__foreignObject1__if0__p0\$element = \{ tagName: 'p', slot: 8 \};/);
       expect(code).not.toContain('createElement');
     });
   });
@@ -192,22 +204,21 @@ describe('Generator', () => {
       const start = template.indexOf('<template');
 
       expect(code.startsWith([
-        'const _reads0 = [\'label\'];',
-        'const _reads1 = [\'count\'];',
-        `const template_row_${start}$template = { render: template_row_${start}, parameters: ['label', 'count'] };`,
-        'const render0$render = { template: \'row\', args: render0$args };'
+        'const _reads0 = [0];',
+        'const _reads1 = [1];',
+        `const template_row_${start}$template = { render: template_row_${start}, parameters: [0, 1] };`,
+        `const render0$render = { template: template_row_${start}$template, args: render0$args };`
       ].join('\n'))).toBe(true);
       expect(code).toContain([
-        '  const context = new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 1, this);',
-        `  context.addIdentifier('row', template_row_${start}$template);`,
+        '  const context = _scope(null, _layout0, nodeStrategy, this);',
         '  _renderTemplate(root, context, null, render0$render);',
         '  return context;'
       ].join('\n'));
       expect(code).toContain([
         `function template_row_${start}(template_row_${start}, parentContext, anchor, params, nodeStrategy) {`,
-        '  const context = new _Context(parentContext, nodeStrategy, 2);',
-        '  context.addIdentifier(\'label\', params[0]);',
-        '  context.addIdentifier(\'count\', params[1]);',
+        '  const context = _scope(parentContext, _layout1, nodeStrategy);',
+        '  context[8] = params[0];',
+        '  context[9] = params[1];',
         `  _renderElement(template_row_${start}, context, anchor, template_row_${start}__p0$element);`
       ].join('\n'));
       expect(code).toContain(`_renderText(template_row_${start}__p0, context, template_row_${start}__p0$text0, null, true, _reads0);`);
@@ -219,39 +230,40 @@ describe('Generator', () => {
       const code = await generate('<template row(item: Item, label = item.name + suffix(), count?: number, later: number = 1)>{ label }</template>', ['suffix']);
 
       expect(code).toContain([
-        '  context.addIdentifier(\'item\', params[0]);',
-        '  _parameter(context, params, 1, \'label\', template_row_0$label, _reads0);',
-        '  context.addIdentifier(\'count\', params[2]);',
-        '  _parameter(context, params, 3, \'later\', template_row_0$later);'
+        '  context[8] = params[0];',
+        '  _parameter(context, params, 1, 1, template_row_0$label, _reads0);',
+        '  context[10] = params[2];',
+        '  _parameter(context, params, 3, 3, template_row_0$later);'
       ].join('\n'));
-      expect(code).toContain('function template_row_0$label(context) {\n  return context.get(\'item\').name + this.suffix();\n}');
+      expect(code).toContain('function template_row_0$label(context) {\n  return _read(context, 0, 8).name + this.suffix();\n}');
       expect(code).toContain('function template_row_0$later(context) {\n  return 1;\n}');
     });
 
     it('declares the element refs and the templates of the content of a template in its scope', async () => {
       const code = await generate('<template row()><input #field /><template inner() /></template>');
 
-      expect(code).toMatch(/new _Context\(parentContext, nodeStrategy, 2\);\n {2}context\.declare\('field'\);\n {2}context\.addIdentifier\('inner', template_inner_\d+\$template\);/);
+      expect(code).toMatch(/_scope\(parentContext, _layout1, nodeStrategy\);\n {2}_declare\(context, 8\);\n {2}_renderElement\(/);
+      expect(code).toContain('const _layout1 = { size: 10, nodes: 9, variables: [\'field\'] };');
       expect(code).toMatch(/const template_inner_(\d+)\$template = \{ render: template_inner_\1, parameters: \[\] \};/);
     });
 
     it('creates the content of a template in the namespace of its declaration, and renders it there', async () => {
       const code = await generate('<svg><template dot(x: number)><circle /></template><g>@render dot(1)</g></svg><div>@render other()</div><svg><foreignObject><template other()><p /></template></foreignObject></svg>');
 
-      expect(code).toMatch(/function template_dot_\d+\(template_dot_\d+, parentContext, anchor, params, nodeStrategy\) \{\n {2}const context = new _Context\(parentContext, nodeStrategy, 1\);\n {2}context\.addIdentifier\('x', params\[0\]\);\n {2}_renderElement\(/);
-      expect(code).toMatch(/const template_dot_\d+__circle0\$element = \{ tagName: 'circle', namespace: 1 \};/);
+      expect(code).toMatch(/function template_dot_\d+\(template_dot_\d+, parentContext, anchor, params, nodeStrategy\) \{\n {2}const context = _scope\(parentContext, _layout1, nodeStrategy\);\n {2}context\[8\] = params\[0\];\n {2}_renderElement\(/);
+      expect(code).toMatch(/const template_dot_\d+__circle0\$element = \{ tagName: 'circle', namespace: 1, slot: 9 \};/);
       // A template declared in a <foreignObject> creates HTML elements, wherever it is rendered
-      expect(code).toMatch(/const template_other_\d+__p0\$element = \{ tagName: 'p' \};/);
+      expect(code).toMatch(/const template_other_\d+__p0\$element = \{ tagName: 'p', slot: 8 \};/);
       expect(code).not.toContain('createElement');
-      expect(code).toContain('const svg0__g1__render0$render = { template: \'dot\', args: svg0__g1__render0$args };');
+      expect(code).toMatch(/const svg0__g1__render0\$render = \{ template: template_dot_\d+\$template, args: svg0__g1__render0\$args \};/);
       expect(code).toContain('_renderTemplate(svg0__g1, context, null, svg0__g1__render0$render);');
     });
 
     it('registers the templates of a block in the function rendering it, forwarding its anchor to the @render', async () => {
       const code = await generate('@if (a) { <template row() />@render row() }<p></p>');
 
-      expect(code).toMatch(/function if0\(if0, parentContext, anchor, nodeStrategy\) \{\n {2}const context = new _Context\(parentContext, nodeStrategy, 1\);\n {2}context\.addIdentifier\('row', template_row_\d+\$template\);/);
-      expect(code).toContain('const if0__render1$render = { template: \'row\' };');
+      expect(code).toMatch(/function if0\(if0, parentContext, anchor, nodeStrategy\) \{\n {2}const context = _scope\(parentContext, _layout0, nodeStrategy\);\n {2}_renderTemplate\(/);
+      expect(code).toMatch(/const if0__render1\$render = \{ template: template_row_\d+\$template \};/);
       expect(code).toContain('_renderTemplate(if0, context, anchor, if0__render1$render);');
     });
 
@@ -270,25 +282,25 @@ describe('Generator', () => {
       const code = await generate(template, ['price']);
 
       expect(code).toContain([
-        '  context.declare(\'field\');',
-        '  context.declare(\'total\', \'let\');',
-        '  context.declare(\'double\', \'let\');',
-        '  context.declare(\'label\', \'let\');'
+        '  _declare(context, 8);',
+        '  _declare(context, 9, \'let\');',
+        '  _declare(context, 10, \'let\');',
+        '  _declare(context, 11, \'let\');'
       ].join('\n'));
-      expect(code).toContain('function button0$on_click(context) {\n  this.pick(context.get(\'label\'));\n}');
-      expect(code).toContain('  _let(context, \'total\', div1$let_total);');
+      expect(code).toContain('function button0$on_click(context) {\n  this.pick(_read(context, 0, 11));\n}');
+      expect(code).toContain('  _let(context, 9, 1, div1$let_total);');
       expect(code).toContain('function div1$let_total(context) {\n  return this.price() * 2;\n}');
-      expect(code).toContain('  _let(context, \'double\', root$let_double, _reads0);\n  _let(context, \'label\', root$let_label);');
-      expect(code).toContain('function root$let_double(context) {\n  return context.get(\'total\') * 2;\n}');
-      expect(code).toContain('function root$let_label(context) {\n  return context.get(\'field\').value;\n}');
+      expect(code).toContain('  _let(context, 10, 2, root$let_double, _reads0);\n  _let(context, 11, 3, root$let_label);');
+      expect(code).toContain('function root$let_double(context) {\n  return _read(context, 0, 9) * 2;\n}');
+      expect(code).toContain('function root$let_label(context) {\n  return _read(context, 0, 8).value;\n}');
       expect(code).toContain('_renderText(p5, context, p5$text0, null, true, _reads1);');
     });
 
     it('declares the @let of a block, of the content of a template and of a @for body in their own scope', async () => {
       const code = await generate('@for (item of items; track item) { @let name = item.name; }<template row()>@let id = 1;</template>');
 
-      expect(code).toMatch(/for0Variables\);\n {2}context\.declare\('name', 'let'\);\n {2}_let\(context, 'name', for0\$let_name, _reads0\);/);
-      expect(code).toMatch(/new _Context\(parentContext, nodeStrategy, 1\);\n {2}context\.declare\('id', 'let'\);\n {2}context\.set\('id', 1\);/);
+      expect(code).toMatch(/for0Variables\);\n {2}_declare\(context, 9, 'let'\);\n {2}_let\(context, 9, 2, for0\$let_name, _reads0\);/);
+      expect(code).toMatch(/_scope\(parentContext, _layout1, nodeStrategy\);\n {2}_declare\(context, 8, 'let'\);\n {2}context\[8\] = 1;/);
     });
 
     it('throws for a @let declared twice in a scope', async () => {
@@ -309,7 +321,10 @@ describe('Generator', () => {
     expect(code).toContain('if1(if1, parentContext, anchor, nodeStrategy) {');
     expect(code).toContain('for2(for2, parentContext, items2, i2, anchor, nodeStrategy) {');
     expect(code).not.toContain('_iterationVariables');
-    expect(code).toContain('for2(for2, parentContext, items2, i2, anchor, nodeStrategy) {\n  const context = new _Context(parentContext, nodeStrategy);');
+    expect(code).toContain('for2(for2, parentContext, items2, i2, anchor, nodeStrategy) {\n  const context = _scope(parentContext, _layout1, nodeStrategy);');
+    // The element at the top of the body of the @for, alone in its scope
+    expect(code).toContain('const _layout1 = { size: 9, nodes: 8 };');
+    expect(code).toContain('const for2__li0$element = { tagName: \'li\', slot: 8 };');
     expect(code).not.toContain('for2Variables');
   });
 
@@ -341,7 +356,7 @@ describe('Generator', () => {
     const code = await generate('@if (a) { <b></b> } @else { @if (c) { <i></i> } @else { <u></u> } }<p></p>');
 
     expect(code).toContain('_if(else0, context, anchor, else0__if0$if);');
-    expect(code).toContain('const else0__if0$if = { branches: [{ condition: else0__if0$condition, block: else0__if0 }, { block: else0__else0 }] };');
+    expect(code).toContain('const else0__if0$if = {\n  branches: [{ condition: else0__if0$condition, block: else0__if0 }, { block: else0__else0 }],\n  slot: 8\n};');
     expect(code.match(/function if0\(/g)).toHaveLength(1);
     expect(code.match(/function else0\(/g)).toHaveLength(1);
     expect(code).toContain('_renderElement(else0__if0, context, anchor, else0__if0__i0$element);');
@@ -388,9 +403,9 @@ describe('Generator', () => {
       const code = await generate('<p>@if (x) { a } text</p><div>@if (y) { b }@let z = 1;<template t() /></div>');
 
       expect(code).toContain('const p0__if0$if = { branches: [{ condition: p0__if0$condition, block: p0__if0 }] };');
-      expect(code).toContain('_renderLiteralText(p0__if0, context, \' a \', anchor);');
+      expect(code).toContain('_renderLiteralText(p0__if0, context, \' a \', anchor, false, 8);');
       expect(code).toContain('const div1__if0$if = { branches: [{ condition: div1__if0$condition, block: div1__if0 }], last: true };');
-      expect(code).toContain('_renderLiteralText(div1__if0, context, \' b \', null);');
+      expect(code).toContain('_renderLiteralText(div1__if0, context, \' b \', null, false, 8);');
     });
 
     it('is never in the body of a @for, whose items move, but is in the elements of the body', async () => {
@@ -400,11 +415,11 @@ describe('Generator', () => {
       expect(code).toContain('_for(ul0, context, null, ul0__for0$for);');
       expect(code).toContain('  reads: _reads0,\n  last: true\n};');
       expect(code).toContain('_if(ul0__for0__li0, context, null, ul0__for0__li0__if0$if);');
-      expect(code).toContain('_renderLiteralText(ul0__for0__li0__if0, context, \' r \', null);');
-      expect(code).toMatch(/const ul0__for0__if1\$if = \{ branches: \[\{ condition: ul0__for0__if1\$condition, block: ul0__for0__if1 \}\], reads: _reads0 \};/);
+      expect(code).toContain('_renderLiteralText(ul0__for0__li0__if0, context, \' r \', null, false, 8);');
+      expect(code).toContain('  branches: [{ condition: ul0__for0__if1$condition, block: ul0__for0__if1 }],\n  reads: _reads0,\n  slot: 10\n};');
       expect(code.match(/last: true/g)).toHaveLength(2);
       expect(code).toContain('_if(ul0__for0, context, anchor, ul0__for0__if1$if);');
-      expect(code).toContain('_renderLiteralText(ul0__for0__if1, context, \' i \', anchor);');
+      expect(code).toContain('_renderLiteralText(ul0__for0__if1, context, \' i \', anchor, false, 8);');
     });
 
     it('is never in the content of a template, rendered where a @render is', async () => {
@@ -412,7 +427,7 @@ describe('Generator', () => {
 
       expect(code).not.toContain('last: true');
       expect(code).toContain('_if(template_t_0, context, anchor, template_t_0__if0$if);');
-      expect(code).toContain('_renderLiteralText(template_t_0__if0, context, \' a \', anchor);');
+      expect(code).toContain('_renderLiteralText(template_t_0__if0, context, \' a \', anchor, false, 8);');
     });
   });
 
@@ -441,16 +456,16 @@ describe('Generator', () => {
     expect(code).toContain('_renderLiteralText(p0, context, \'b\', null, true);');
     expect(code).toContain('_renderLiteralText(textarea1, context, \'c\', null);');
     expect(code).toContain('_renderText(textarea1, context, textarea1$text1, null);');
-    expect(code).toContain('_renderLiteralText(if2, context, \'d\', anchor);');
-    expect(code).toContain('_renderText(if2, context, if2$text1, anchor, true);');
-    expect(code).toContain('const render5$render = { template: \'t\', separated: true };');
+    expect(code).toContain('_renderLiteralText(if2, context, \'d\', anchor, false, 8);');
+    expect(code).toContain('_renderText(if2, context, if2$text1, anchor, true, undefined, 9);');
+    expect(code).toMatch(/const render5\$render = \{ template: template_t_\d+\$template, separated: true \};/);
     expect(code).toContain('_renderTemplate(root, context, null, render5$render);');
   });
 
   it('separates nothing in a block rendered where the parser reads the content of the element as text', async () => {
     const code = await generate('<textarea>@if (a) { { x } }</textarea>');
 
-    expect(code).toContain('_renderText(textarea0__if0, context, textarea0__if0$text0, null);');
+    expect(code).toContain('_renderText(textarea0__if0, context, textarea0__if0$text0, null, false, undefined, 8);');
   });
 
   it('writes the expressions only as functions of the module receiving the context, and the configurations as constants, without closures nor bindings', async () => {
@@ -480,10 +495,10 @@ describe('Generator', () => {
       '};'
     ].join('\n'));
     expect(code.match(/const for0__td0__switch1\$switch/g)).toHaveLength(1);
-    expect(code).toContain('function for0__td0Children(for0__td0, context) {\n  _let(context, \'kind\', for0__td0$let_kind, _reads0);\n  _switch(for0__td0, context, null, for0__td0__switch1$switch);\n}');
-    expect(code).toContain('function for0__td0__switch1$expression(context) {\n  return context.get(\'row\').kind;\n}');
+    expect(code).toContain('function for0__td0Children(for0__td0, context) {\n  _let(context, 9, 1, for0__td0$let_kind, _reads0);\n  _switch(for0__td0, context, null, for0__td0__switch1$switch);\n}');
+    expect(code).toContain('function for0__td0__switch1$expression(context) {\n  return _read(context, 0, 8).kind;\n}');
     expect(code).toContain('events: [{ name: \'click\', handler: for0__td0$on_click }],');
-    expect(code).toContain('function for0__td0$on_click(context, $event) {\n  this.select($event, context.get(\'row\').id, context.get(\'kind\'));\n}');
+    expect(code).toContain('function for0__td0$on_click(context, $event) {\n  this.select($event, _read(context, 0, 8).id, _read(context, 0, 9));\n}');
     expect(code).toContain('function for0$items(context) {\n  return this.rows();\n}');
     expect(code).toContain('function for0$track(context, row, $index, $first, $last, $even, $odd) {\n  return row.id;\n}');
 
@@ -504,7 +519,7 @@ describe('Generator', () => {
     ];
     const code = await new Generator(template, parse(template), cache).generate([], [], [], symbols);
 
-    expect(code.startsWith('import { format as __import_format } from \'/src/format.ts\';\nfunction render(nodeStrategy) {')).toBe(true);
+    expect(code.startsWith('import { format as __import_format } from \'/src/format.ts\';\nconst _layout0 = { size: 8, nodes: 8 };\nfunction render(nodeStrategy) {')).toBe(true);
     expect(code).not.toContain('LIMIT');
     expect(code).toContain('function root$text0(context) {\n  return __import_format(1);\n}');
   });

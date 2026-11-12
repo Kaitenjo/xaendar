@@ -15,4 +15,9 @@ export type BlockPosition = {
    * Left out when it is not.
    */
   readonly last?: true;
+  /**
+   * The slot of the anchor of the block in the scope rendering it (see `_Context`), given by the compiler to the blocks
+   * at the top of the block of a scope that have an anchor: left out for the others, whose anchor no scope tracks.
+   */
+  readonly slot?: number;
 };

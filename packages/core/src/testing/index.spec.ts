@@ -1,25 +1,27 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
 import type { NodeStrategy } from '../types/node-strategy.type';
+import { HEADER } from '../costants';
+import type { _Context } from '../types/context.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
   loadSignals();
 });
 
-const { _Context } = await import('../utils/context/context.util');
+const { _scope, EMPTY_LAYOUT, ELEMENT_LAYOUT } = await import('../utils/context/context.util');
 const { _renderElement } = await import('../utils/render-element/render-element.util');
 const { _defer } = await import('../utils/defer/defer.util');
 const { getDeferBlocks, setDeferBlockBehavior } = await import('./index');
 
-type Context = InstanceType<typeof _Context>;
+type Context = _Context;
 
 /**
  * A part rendering an element through the strategy it receives.
  */
 const part = (tagName: string) => (parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
-  const context = new _Context(parentContext, nodeStrategy);
-  _renderElement(parentNode, context, anchor as Comment | null, { tagName });
+  const context = _scope(parentContext, ELEMENT_LAYOUT, nodeStrategy);
+  _renderElement(parentNode, context, anchor as Comment | null, { tagName, slot: HEADER });
   return context;
 };
 
@@ -29,7 +31,7 @@ const part = (tagName: string) => (parentNode: HTMLElement, parentContext: Conte
 const host = () => {
   const element = document.body.appendChild(document.createElement('x-host'));
   const shadowRoot = element.attachShadow({ mode: 'open' });
-  _defer(shadowRoot as unknown as HTMLElement, new _Context({ createElement: (tag: string) => document.createElement(tag) } as never), null, { triggers: ['interaction'], content: part('b'), placeholder: part('i') });
+  _defer(shadowRoot as unknown as HTMLElement, _scope(null, EMPTY_LAYOUT), null, { triggers: ['interaction'], content: part('b'), placeholder: part('i') });
   return element;
 };
 

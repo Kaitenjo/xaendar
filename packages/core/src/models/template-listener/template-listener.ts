@@ -1,5 +1,6 @@
 import type { RenderElementEvent } from '../../types/render-element-event.type';
-import type { _Context } from '../../utils/context/context.util';
+import { COMPONENT } from '../../costants';
+import type { _Context } from '../../types/context.type';
 
 /**
  * A listener of an element rendered by a template (`(click)="select(row.id)"`): the object the element listens with,
@@ -32,7 +33,7 @@ export class TemplateListener {
    */
   public handleEvent(event: Event): void {
     const context = this._context;
-    this._event.handler.call(context.component, context, event);
+    this._event.handler.call(context[COMPONENT], context, event);
   }
 
   /**

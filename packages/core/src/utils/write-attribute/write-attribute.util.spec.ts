@@ -4,7 +4,8 @@ import { HostProperty } from '../../decorators/host-property/host-property.decor
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
 import { toggleClass } from '../class-toggle/class-toggle.util';
-import { _Context } from '../context/context.util';
+import { EMPTY_LAYOUT, _scope } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
 import { _bindHost } from '../host-bindings/host-bindings.util';
 import { _setExpressionProperty, _setProperty } from '../render-element/render-element.util';
 import { _attributeValue, writeAttribute } from './write-attribute.util';
@@ -30,7 +31,7 @@ const NAMES: readonly string[] = ['hidden', 'aria-expanded', 'draggable'];
 function throughTemplate(name: string, value: unknown): string | null {
   const element = document.createElement('div');
   const attribute: RenderElementAttribute = { name, value: () => value, setter: _setProperty };
-  _setExpressionProperty(new _Context({} as never), element, attribute);
+  _setExpressionProperty(_scope(null, EMPTY_LAYOUT), element, attribute);
   return element.getAttribute(name);
 }
 
@@ -43,7 +44,7 @@ function throughHostProperty(name: string, value: unknown): string | null {
   const Klass = class extends CustomDirective { };
   Object.defineProperty(Klass, Symbol.for('Symbol.metadata'), { value: metadata });
   const element = document.createElement('div');
-  _bindHost(new Klass(), element, new _Context({} as never));
+  _bindHost(new Klass(), element, _scope(null, EMPTY_LAYOUT));
   return element.getAttribute(name);
 }
 

@@ -2,17 +2,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { ClaimNodes } from '../claim-nodes/claim-nodes.util';
-import { _Context } from '../context/context.util';
+import { HEADER } from '../../costants';
+import { _scope, clear, ELEMENT_LAYOUT, EMPTY_LAYOUT } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { _client } from './client.util';
 
-const createRoot = (nodeStrategy?: NodeStrategy) => new _Context({ createElement: (tag: string) => document.createElement(tag) } as never, nodeStrategy);
+const createRoot = (nodeStrategy?: NodeStrategy) => _scope(null, EMPTY_LAYOUT, nodeStrategy);
 
 /**
  * The content of a block, rendering an element before the anchor it receives, through the strategy it receives.
  */
 const content = (tagName: string) => vi.fn((parentNode: HTMLElement, parentContext: _Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
-  const context = new _Context(parentContext, nodeStrategy);
+  const context = _scope(parentContext, EMPTY_LAYOUT, nodeStrategy);
   const element = nodeStrategy.element(context, parentNode, tagName);
   nodeStrategy.mount(element, parentNode, anchor);
   return context;
@@ -87,7 +89,7 @@ describe('_client', () => {
 
     _client(parent, context, null, render, true);
 
-    expect(block).toHaveBeenCalledExactlyOnceWith(context, parent, null, 'client', 'xd-c', true);
+    expect(block).toHaveBeenCalledExactlyOnceWith(context, parent, null, 'client', 'xd-c', true, undefined);
     expect(parent.innerHTML).toBe('<i></i><b></b>');
     expect(render.mock.calls[0][2]).toBeNull();
   });
@@ -111,13 +113,13 @@ describe('_client', () => {
     const parent = document.createElement('div');
     const context = createRoot();
     _client(parent, context, null, (parentNode, parentContext, anchor, nodeStrategy) => {
-      const child = new _Context(parentContext, nodeStrategy);
-      nodeStrategy.text(child, parentNode, anchor, 'hello', false);
+      const child = _scope(parentContext, ELEMENT_LAYOUT, nodeStrategy);
+      nodeStrategy.text(child, parentNode, anchor, 'hello', false, HEADER);
       return child;
     });
     expect(parent.textContent).toBe('hello');
 
-    context.clear();
+    clear(context);
 
     expect(parent.textContent).toBe('');
   });

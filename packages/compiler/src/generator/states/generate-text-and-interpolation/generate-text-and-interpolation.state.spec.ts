@@ -37,10 +37,10 @@ describe('generateTextAndInterpolation', () => {
     expect(await generateTextAndInterpolation(parse('{row.id}'), 'td1', '0', context, null, true)).toEqual({
       code: ['_renderText(td1, context, td1$text0, null, true, _reads0);']
     });
-    expect(context.readsDeclarations).toEqual(['const _reads0 = [\'row\'];']);
+    expect(context.readsDeclarations).toEqual(['const _reads0 = [0];']);
     expect(context.functionDeclarations).toEqual([
-      'function td0$text0(context) {\n  return context.get(\'row\').name;\n}',
-      'function td1$text0(context) {\n  return context.get(\'row\').id;\n}'
+      'function td0$text0(context) {\n  return _read(context, 0, 8).name;\n}',
+      'function td1$text0(context) {\n  return _read(context, 0, 8).id;\n}'
     ]);
   });
 

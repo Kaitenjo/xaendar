@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
-import type { _Context } from '../../utils/context/context.util';
+import { _scope, EMPTY_LAYOUT } from '../../utils/context/context.util';
 import { TemplateListener } from './template-listener';
 
 const component = { name: 'component' };
-const context = { component } as unknown as _Context;
+const context = _scope(null, EMPTY_LAYOUT, undefined, component);
 
 describe('TemplateListener', () => {
   it('calls the handler of the template with the component as this, the context and the event', () => {

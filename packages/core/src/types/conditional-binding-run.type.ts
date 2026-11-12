@@ -1,4 +1,4 @@
-import type { _Context } from '../utils/context/context.util';
+import type { _Context } from './context.type';
 import type { RenderConditionalBinding } from './render-conditional-binding.type';
 
 /**

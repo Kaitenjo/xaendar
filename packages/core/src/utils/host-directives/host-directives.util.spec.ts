@@ -13,7 +13,7 @@ const { CustomDirective } = await import('../../models/custom-directive/custom-d
 const { CustomElement } = await import('../../models/custom-element/custom-element');
 const { Output } = await import('../../models/output/output');
 const { input } = await import('../../signals/input/input');
-const { _Context } = await import('../context/context.util');
+const { _scope, EMPTY_LAYOUT } = await import('../context/context.util');
 const { _setInput } = await import('../render-element/render-element.util');
 const { _defineRender } = await import('../render-registry/render-registry.util');
 
@@ -158,7 +158,7 @@ describe('_createHostDirectives', () => {
 
     it('binds the exposed input as the template runtime does, setting the one of the directive', () => {
       const element = create([{ directive: TooltipDirective, properties: [{ name: 'text', alias: 'label' }] }]);
-      const context = new _Context({} as never);
+      const context = _scope(null, EMPTY_LAYOUT);
       _setInput(context, element, { name: 'label', value: 'hello', setter: _setInput });
 
       expect(element.hostDirectives.get(TooltipDirective)?.text()).toBe('hello');
@@ -170,7 +170,7 @@ describe('_createHostDirectives', () => {
       element.label = 'early';
       const klass = class extends CustomElement { };
       Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { hostDirectives: [{ directive: TooltipDirective, properties: [{ name: 'text', alias: 'label' }] }] } });
-      _defineRender(klass, () => new _Context({} as never));
+      _defineRender(klass, () => _scope(null, EMPTY_LAYOUT));
       customElements.define(name, klass);
 
       document.body.appendChild(element);

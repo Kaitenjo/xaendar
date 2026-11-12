@@ -1,4 +1,4 @@
-import type { _Context } from '../utils/context/context.util';
+import type { _Context } from './context.type';
 import type { BindingHost } from './binding-host.type';
 import type { TemplateExpression } from './template-expression.type';
 
@@ -44,8 +44,8 @@ export type RenderElementAttribute = {
    */
   unbind?(context: _Context, target: Element | BindingHost, attribute: RenderElementAttribute): void;
   /**
-   * The names of the variables of the template the expression reads (see `_bindEffect`): a module constant of the
+   * The identifiers of the variables of the template the expression reads (see `_bindEffect`): a module constant of the
    * compiled code, omitted when it reads none.
    */
-  readonly reads?: readonly string[];
+  readonly reads?: readonly number[];
 };

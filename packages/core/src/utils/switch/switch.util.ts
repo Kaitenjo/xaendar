@@ -1,6 +1,6 @@
 import { _SSR_MARKERS } from '../../costants';
 import type { BlockConfig } from '../../types/if/block-config.type';
-import { _Context } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
 import { _if } from '../if/if.util';
 
 /**

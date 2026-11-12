@@ -61,7 +61,7 @@ describe('generateIf', () => {
       '  reads: _reads0',
       '};'
     ].join('\n')]);
-    expect(context.readsDeclarations).toEqual(['const _reads0 = [\'col\', \'row\'];']);
+    expect(context.readsDeclarations).toEqual(['const _reads0 = [0, 1];']);
   });
 
   it('makes every branch the parent of its own content', async () => {

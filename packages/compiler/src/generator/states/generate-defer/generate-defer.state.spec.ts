@@ -51,7 +51,7 @@ describe('generateDefer', () => {
     expect(functionsToProcess!.get('div0__placeholder1')).toMatchObject({ fn: { node: node.placeholder, parentNode: 'div0__placeholder1' }, args: ['div0__placeholder1', 'parentContext', 'anchor', 'nodeStrategy'] });
     expect(functionsToProcess!.get('div0__loading1')).toMatchObject({ fn: { node: node.loading, parentNode: 'div0__loading1' } });
     expect(functionsToProcess!.get('div0__error1')).toMatchObject({
-      fn: { node: node.error, parentNode: 'div0__error1', precode: 'context.addIdentifier(\'failure\', error);', anchor: 'anchor' },
+      fn: { node: node.error, parentNode: 'div0__error1', precode: 'context[8] = error;', anchor: 'anchor' },
       args: ['div0__error1', 'parentContext', 'anchor', 'nodeStrategy', 'error']
     });
     expect(functionsToProcess!.get('div0__error1')!.fn.context.getIdentifierKind('failure')).toBe('value');
@@ -110,6 +110,6 @@ describe('generateDefer', () => {
     for (const { fn } of functionsToProcess!.values()) {
       expect(fn).toHaveProperty('anchor', undefined);
     }
-    expect(functionsToProcess!.get('td0__error0')!.fn.precode).toBe('context.addIdentifier(\'failure\', error);');
+    expect(functionsToProcess!.get('td0__error0')!.fn.precode).toBe('context[8] = error;');
   });
 });

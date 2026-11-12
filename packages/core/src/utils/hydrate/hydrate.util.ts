@@ -1,14 +1,14 @@
 import type { NoArgsVoidFunction } from '@xaendar/types';
-import { _SSR_MARKERS } from '../../costants';
+import { _SSR_MARKERS, COMPONENT, HEADER } from '../../costants';
 import { _bindEffect } from '../../signals/effect/effect';
 import { untracked } from '../../signals/untracked';
 import type { HydrateBlock } from '../../types/hydrate-block.type';
 import type { HydrateRun } from '../../types/hydrate-run.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { ClaimNodes } from '../claim-nodes/claim-nodes.util';
-import type { _Context } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
+import { _scope, addChild, addCleanup, getNodeStrategy, removeChild, setNodeStrategy, trackNode } from '../context/context.util';
 import { armTriggers, disarmAll, recordEvents, replayEvents, watchedTriggers } from '../hydration-triggers/hydration-triggers.util';
-import { trackNode } from '../track-node/track-node.util';
 
 /**
  * Renders a `@hydrate` block, whose content the server rendered waits for the first of its triggers to hydrate.
@@ -35,8 +35,8 @@ import { trackNode } from '../track-node/track-node.util';
  * @param block - The triggers and the content.
  */
 export function _hydrate(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, block: HydrateBlock): void {
-  const { nodeStrategy } = parentContext;
-  const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'hydrate', _SSR_MARKERS.hydrate, block.last);
+  const nodeStrategy = getNodeStrategy(parentContext);
+  const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'hydrate', _SSR_MARKERS.hydrate, block.last, block.slot);
   const run: HydrateRun = {
     parentNode,
     parentContext,
@@ -51,7 +51,7 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
     prefetchInteraction: false
   };
 
-  parentContext.addUnlistener(() => {
+  addCleanup(parentContext, () => {
     run.active = false;
     disarmAll(run.disarms);
   });
@@ -62,12 +62,12 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
   }
 
   /*
-    The nodes the server rendered stay, owned by the context until the content adopts them, which removes them as its
-    own: in an element, by the element
+    The nodes the server rendered stay, owned by a scope of their own until the content adopts them, which removes them
+    as its own: in an element, by the element
   */
   const serverNodes = run.serverNodes = nodeStrategy.skip(parentNode, nodeBlock);
-  for (let i = 0; i < serverNodes.length; i++) {
-    trackNode(serverNodes[i], parentNode, parentContext);
+  if (block.track && serverNodes.length) {
+    run.holder = holdServerNodes(parentNode, parentContext, serverNodes);
   }
 
   // Recording its events would stop them for good: the content stays plain HTML, and its modules are never loaded
@@ -99,7 +99,7 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
   const recorded = triggers.length && elements.length ? recordEvents(elements, () => interact(run)) : undefined;
   if (recorded) {
     run.recorded = recorded;
-    parentContext.addUnlistener(recorded.stop);
+    addCleanup(parentContext, recorded.stop);
     // Fired once the block has been rendered: what the contract recorded was an interaction too
     if (recorded.events.length) {
       queueMicrotask(() => run.active && interact(run));
@@ -115,7 +115,7 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
  * @param run - The block, whose `when` is defined.
  */
 function checkWhen(run: HydrateRun): void {
-  if (!run.fired && run.block.when!.call(run.parentContext.component, run.parentContext)) {
+  if (!run.fired && run.block.when!.call(run.parentContext[COMPONENT], run.parentContext)) {
     queueMicrotask(() => run.active && fire(run));
   }
 }
@@ -128,7 +128,7 @@ function checkWhen(run: HydrateRun): void {
  * @param run - The block, whose `prefetchWhen` is defined.
  */
 function checkPrefetchWhen(run: HydrateRun): void {
-  if (!run.fired && run.block.prefetchWhen!.call(run.parentContext.component, run.parentContext)) {
+  if (!run.fired && run.block.prefetchWhen!.call(run.parentContext[COMPONENT], run.parentContext)) {
     queueMicrotask(() => run.active && !run.fired && prefetchModules(run));
   }
 }
@@ -183,7 +183,7 @@ function load(run: HydrateRun, onLoad: NoArgsVoidFunction, onError?: NoArgsVoidF
  * @returns The context of the content.
  */
 function show(run: HydrateRun, strategy: NodeStrategy): _Context {
-  return untracked(() => run.parentContext.addChild(run.block.content(run.parentNode, run.parentContext, run.nodeBlock.anchor, strategy)));
+  return untracked(() => addChild(run.parentContext, run.block.content(run.parentNode, run.parentContext, run.nodeBlock.anchor, strategy)));
 }
 
 /**
@@ -210,8 +210,8 @@ function fire(run: HydrateRun): void {
 function adopt(run: HydrateRun): void {
   const { parentNode, parentContext, serverNodes, nodeBlock } = run;
   run.hydrated = true;
-  for (let i = 0; i < serverNodes.length; i++) {
-    parentContext.removeNode(serverNodes[i]);
+  if (run.holder) {
+    removeChild(parentContext, run.holder);
   }
 
   const claim = new ClaimNodes(hostOf(parentNode), true);
@@ -219,10 +219,33 @@ function adopt(run: HydrateRun): void {
   const content = show(run, claim);
   claim.close(parentNode, nodeBlock);
   // The hydration of the content is over: it gets its nodes as the component holding it does
-  content.setNodeStrategy(parentContext.nodeStrategy);
+  setNodeStrategy(content, getNodeStrategy(parentContext));
   if (run.recorded) {
     replayEvents(run.recorded);
   }
+}
+
+/**
+ * Creates the scope owning the nodes the server rendered for the content of a block until the content adopts them, a
+ * child of the context holding the block, of the exact size of the nodes: the context removes them, and the row of a
+ * `@for` moves them, as the nodes of the content.
+ *
+ * N.B. Deliberate, to save memory: the nodes of the server, whose number only the runtime knows, get a scope of their
+ * own, removed once adopted, instead of slots of the scope holding the block, which the compiler sizes for the nodes it
+ * renders. Do not track them in that scope.
+ *
+ * @param parentNode - The node the block is rendered into.
+ * @param parentContext - The context holding the block.
+ * @param serverNodes - The nodes the server rendered.
+ * @returns The scope.
+ */
+function holdServerNodes(parentNode: Node, parentContext: _Context, serverNodes: readonly Node[]): _Context {
+  const holder = addChild(parentContext, _scope(parentContext, { size: HEADER + serverNodes.length, nodes: HEADER }));
+  for (let i = 0; i < serverNodes.length; i++) {
+    trackNode(serverNodes[i], parentNode, holder, HEADER + i);
+  }
+
+  return holder;
 }
 
 /**

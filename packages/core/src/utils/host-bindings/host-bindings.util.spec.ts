@@ -4,8 +4,10 @@ import { HostEvent } from '../../decorators/host-event/host-event.decorator';
 import { HostProperty } from '../../decorators/host-property/host-property.decorator';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { toggleClass } from '../class-toggle/class-toggle.util';
-import { _Context } from '../context/context.util';
+import { EMPTY_LAYOUT, _scope, clear } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
 import { _applyHostProperties, _bindHost } from './host-bindings.util';
+import { CLEANUP } from '../../costants';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -46,7 +48,7 @@ function createOwner(members: Record<string, unknown>, bindings: Record<string, 
  * Binds the host element of an owner in a new context, returning the element and the context.
  */
 function bind(owner: Owner, element: Element = document.createElement('div')) {
-  const context = new _Context({} as never);
+  const context = _scope(null, EMPTY_LAYOUT);
   _bindHost(owner, element, context);
 
   return { element, context };
@@ -57,7 +59,7 @@ describe('_bindHost', () => {
     const { element, context } = bind(new (class extends Owner { })());
 
     expect(element.attributes).toHaveLength(0);
-    expect(context.getUnlistenFns()).toBeNull();
+    expect(context[CLEANUP]).toBeNull();
   });
 
   it('writes the attributes: null, undefined and false remove them, true writes them empty, other values as strings', () => {
@@ -115,7 +117,7 @@ describe('_bindHost', () => {
     const owner = createOwner({ label, on: true }, { label: 'aria-label', on: 'class.on' });
     const { element, context } = bind(owner);
 
-    context.clear();
+    clear(context);
     expect(element.hasAttribute('aria-label')).toBe(false);
     expect(element.classList.contains('on')).toBe(false);
 
@@ -133,7 +135,7 @@ describe('_bindHost', () => {
     element.dispatchEvent(event);
     expect(calls).toEqual([[owner, event]]);
 
-    context.clear();
+    clear(context);
     element.dispatchEvent(new Event('ping'));
     expect(calls).toHaveLength(1);
   });
@@ -146,7 +148,7 @@ describe('_bindHost', () => {
 
     expect(add).toHaveBeenCalledWith('click', expect.any(Function), { capture: true, passive: true });
 
-    context.clear();
+    clear(context);
     expect(remove).toHaveBeenCalledWith('click', add.mock.calls[0][1], { capture: true, passive: true });
   });
 });

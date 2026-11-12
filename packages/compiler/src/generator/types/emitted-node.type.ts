@@ -13,10 +13,10 @@ export type EmittedNode = {
    */
   reactive?: boolean;
   /**
-   * The names of the variables of the template the node reads (see `IdentifierKind`), each one once, in the order they
+   * The identifiers of the variables of the template the node reads (see `IdentifierKind`), each one once, in the order they
    * are first read: `undefined` when it reads none.
    */
-  variables?: string[];
+  variables?: number[];
   /**
    * The mappings of the columns of `expression` to the spans of the template they come from.
    */

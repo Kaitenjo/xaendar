@@ -66,22 +66,21 @@ export function getReadForVariables(node: ForNode): ForVariable[] {
 
 /**
  * Writes the variables of a `@for` its body reads as the object literal of the `IterationVariables` of the runtime:
- * the variables, and the names they are declared with in the body (the alias of the item, the alias of an implicit
- * variable, or its own name), at the same index. Both generators declare it once per template, as a constant of the
- * module, which every item of the `@for` reads.
+ * the variables, the first slots of the scope of the body in this order, and their identifiers, unique in the template,
+ * at the same index. Both generators declare it once per template, as a constant of the module, which every item of the
+ * `@for` reads.
  *
  * @example
  * // @for (row of rows(); track row.id; i = $index) { <td>{ i } { row.name }</td> }
- * writeIterationVariables(node, ['item', '$index']); // "{ used: ['item', '$index'], names: ['row', 'i'] }"
+ * writeIterationVariables(['item', '$index'], [0, 1]); // "{ used: ['item', '$index'], ids: [0, 1] }"
  *
- * @param node - The `@for` block.
  * @param read - The variables its body reads (see {@link getReadForVariables}).
+ * @param ids - The identifier of each variable, at the same index.
  * @returns The object literal.
  */
-export function writeIterationVariables(node: ForNode, read: readonly ForVariable[]): string {
+export function writeIterationVariables(read: readonly ForVariable[], ids: readonly number[]): string {
   const used = read.map(variable => `'${variable}'`).join(', ');
-  const names = read.map(variable => `'${variable === 'item' ? node.itemAlias : node.implicitAliases.get(variable) ?? variable}'`).join(', ');
-  return `{ used: [${used}], names: [${names}] }`;
+  return `{ used: [${used}], ids: [${ids.join(', ')}] }`;
 }
 
 /**

@@ -65,9 +65,10 @@ export function isBrowserOnlyGlobal(name: string): boolean {
  * Identifiers that are not found in the active scope chain and are not
  * well-known globals are prefixed with `this.` so they resolve against
  * the component instance at runtime. Identifiers found in the scope chain
- * (the variables of the template, the element refs, the templates) are read
- * through the runtime context, `context.get(...)`, as the values they are:
- * the expression reads them as written, without calling them.
+ * (the variables of the template, the element refs) are read from the slot the
+ * compiler gave them in the runtime scope declaring them, `_read(context, depth, slot)`,
+ * as the values they are: the expression reads them as written, without calling them.
+ * A template is read as the constant of the module describing it.
  *
  * The result tells whether the expression reads a signal the compiler knows (a signal member, a reactive import), and
  * lists the variables of the template it reads (see `IdentifierKind`): the runtime runs a binding again when one of
@@ -96,8 +97,8 @@ export function isBrowserOnlyGlobal(name: string): boolean {
  * resolveExpression('items', context) // → { expression: 'this.items' }
  *
  * @example
- * // Variable of the template (e.g. `$index` in a nested @for body)
- * resolveExpression('$index', context) // → { expression: "context.get('$index')", variables: ['$index'] }
+ * // Variable of the template (e.g. `$index` of the outer @for in a nested @for body)
+ * resolveExpression('$index', context) // → { expression: '_read(context, 1, 8)', variables: [0] }
  *
  * @example
  * // Complex expression — formatting preserved
@@ -307,7 +308,7 @@ function appendEmitted(result: EmittedNode, sourceText: string, templateDelta: n
  * @param variables - The variables the part reads.
  * @returns The variables, the ones read before first.
  */
-function mergeVariables(read: string[] | undefined, variables: readonly string[]): string[] {
+function mergeVariables(read: number[] | undefined, variables: readonly number[]): number[] {
   if (!read?.length) {
     return variables.slice();
   }
@@ -344,11 +345,11 @@ function emitVerbatim(node: Node): EmittedNode {
  */
 function resolveIdentifier(text: string, generatorContext: CompilerContext, options: Required<ResolveExpressionOptions>): Omit<EmittedNode, 'segments'> {
   if (generatorContext.hasUnresolvableIdentifier(text)) {
-    return resolveDeclared(text, text, generatorContext.getUnresolvableIdentifierKind(text));
+    return resolveDeclared(text, undefined, generatorContext.getUnresolvableIdentifierKind(text));
   }
 
   if (generatorContext.hasIdentifier(text)) {
-    return resolveDeclared(`context.get('${text}')`, text, generatorContext.getIdentifierKind(text));
+    return resolveDeclared(generatorContext.readIdentifier(text), generatorContext.idOf(text), generatorContext.getIdentifierKind(text));
   }
 
   const member = options.resolver ? `${options.resolver}.${text}` : text;
@@ -374,14 +375,14 @@ function resolveIdentifier(text: string, generatorContext: CompilerContext, opti
  * Resolves an identifier the scopes of the template declare, read through `expression`.
  *
  * @param expression - The expression reading it.
- * @param name - The name of the identifier.
+ * @param id - The identifier of the variable, unique in the template, `undefined` for an identifier taking no slot.
  * @param kind - What it holds.
  * @returns The access expression, whether it reads a signal, and the variable it reads, if it is one.
  */
-function resolveDeclared(expression: string, name: string, kind: IdentifierKind | undefined): Omit<EmittedNode, 'segments'> {
+function resolveDeclared(expression: string, id: number | undefined, kind: IdentifierKind | undefined): Omit<EmittedNode, 'segments'> {
   const resolved: Omit<EmittedNode, 'segments'> = { expression, reactive: kind === 'signal' };
-  if (kind === 'variable') {
-    resolved.variables = [name];
+  if (kind === 'variable' && id !== undefined) {
+    resolved.variables = [id];
   }
 
   return resolved;
@@ -530,11 +531,11 @@ function mapDefaultOptions(options?: ResolveExpressionOptions): Required<Resolve
  * Joins the variables of the template two expressions read, as a binding reading both lists them (the conditions of an
  * `@if` chain, the iterable and the track expression of a `@for`), each one once.
  *
- * @param first - The variables the first expression reads, if any.
- * @param second - The variables the second expression reads, if any.
- * @returns The variables, the ones of the first expression first, `undefined` when neither reads any.
+ * @param first - The identifiers of the variables the first expression reads, if any.
+ * @param second - The identifiers of the variables the second expression reads, if any.
+ * @returns The identifiers, the ones of the first expression first, `undefined` when neither reads any.
  */
-export function joinVariables(first: readonly string[] | undefined, second: readonly string[] | undefined): readonly string[] | undefined {
+export function joinVariables(first: readonly number[] | undefined, second: readonly number[] | undefined): readonly number[] | undefined {
   if (!second?.length) {
     return first;
   }

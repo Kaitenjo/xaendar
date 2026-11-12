@@ -1,7 +1,15 @@
 import { loadSignals } from '@xaendar/signals';
 import { describe, expect, it, vi } from 'vitest';
-import { _Context } from '../../utils/context/context.util';
+import { _scope, clear, EMPTY_LAYOUT, refresh, update } from '../../utils/context/context.util';
+import type { _Context } from '../../types/context.type';
 import { _bindEffect, effect } from './effect';
+import { CLEANUP, HEADER } from '../../costants';
+import type { _ScopeLayout } from '../../types/scope-layout.type';
+
+/**
+ * The layout of a scope declaring `row`.
+ */
+const ROW_LAYOUT: _ScopeLayout = { size: HEADER + 1, nodes: HEADER + 1, variables: ['row'] };
 
 loadSignals();
 
@@ -383,40 +391,40 @@ describe('effect', () => {
 
 describe('_bindEffect', () => {
   it('keeps nothing for a binding reading neither a signal nor a variable of the template', () => {
-    const context = new _Context({} as _Context);
+    const context = _scope(null, EMPTY_LAYOUT);
     const callback = vi.fn();
     _bindEffect(context, callback, 'value');
 
     expect(callback).toHaveBeenCalledExactlyOnceWith('value', undefined, undefined);
-    expect(context.getUnlistenFns()).toBeNull();
+    expect(context[CLEANUP]).toBeNull();
   });
 
   it('registers in the context a binding reading variables of the template, without an effect when it reads no signal', () => {
-    const context = new _Context({} as _Context, undefined, 1);
-    context.addIdentifier('row', 'a');
+    const context = _scope(null, ROW_LAYOUT);
+    context[HEADER] = 'a';
     const seen = new Array<unknown>();
-    const callback = (scope: _Context) => { seen.push(scope.get('row')); };
-    _bindEffect(context, callback, context, undefined, undefined, ['row']);
+    const callback = (scope: _Context) => { seen.push(scope[HEADER]); };
+    _bindEffect(context, callback, context, undefined, undefined, [0]);
 
-    context.update('row', 'b');
-    context.refresh(['row']);
+    update(context, HEADER, 'b');
+    refresh(context, [0]);
 
     expect(seen).toEqual(['a', 'b']);
-    expect(context.getUnlistenFns()).toBeNull();
+    expect(context[CLEANUP]).toMatchObject({ reads: [0], effect: null });
   });
 
   it('makes a binding reading a variable and a signal an effect too, running again for both, disposed with the context', async () => {
-    const context = new _Context({} as _Context, undefined, 1);
-    context.addIdentifier('row', 'a');
+    const context = _scope(null, ROW_LAYOUT);
+    context[HEADER] = 'a';
     const state = new Signal.State(1);
     const seen = new Array<string>();
-    _bindEffect(context, (scope: _Context, source: Signal.State<number>) => { seen.push(`${scope.get('row')}${source.get()}`); }, context, state, undefined, ['row']);
+    _bindEffect(context, (scope: _Context, source: Signal.State<number>) => { seen.push(`${String(scope[HEADER])}${source.get()}`); }, context, state, undefined, [0]);
 
     state.set(2);
     await flushMicrotasks();
-    context.update('row', 'b');
-    context.refresh(['row']);
-    context.clear();
+    update(context, HEADER, 'b');
+    refresh(context, [0]);
+    clear(context);
     state.set(3);
     await flushMicrotasks();
 
@@ -425,14 +433,14 @@ describe('_bindEffect', () => {
   });
 
   it('runs the callback with its arguments, again when a signal it read changes, and is disposed with the context', async () => {
-    const context = new _Context({} as _Context);
+    const context = _scope(null, EMPTY_LAYOUT);
     const state = new Signal.State(1);
     const seen: Array<[string, number]> = [];
     _bindEffect(context, (label: string, source: Signal.State<number>) => { seen.push([label, source.get()]); }, 'value', state);
 
     state.set(2);
     await flushMicrotasks();
-    context.clear();
+    clear(context);
     state.set(3);
     await flushMicrotasks();
 

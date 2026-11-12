@@ -1,7 +1,7 @@
 import type { ClientNode } from '../../../parser/types/nodes/client-node.type';
 import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
-import { getContentAnchor } from '../../utils/block-position/block-position.utils';
+import { allocateBlockSlot, getContentAnchor } from '../../utils/block-position/block-position.utils';
 import { getBlockIdentifier } from '../../utils/generator/generator.utils';
 
 /**
@@ -20,9 +20,10 @@ import { getBlockIdentifier } from '../../utils/generator/generator.utils';
  */
 export async function generateClient(node: ClientNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null, _separated = false, last = false): Promise<GeneratorTransitionFunctionReturnType> {
   const key = getBlockIdentifier('client', parentNode, index);
+  const slot = allocateBlockSlot(generatorContext, last);
 
   return {
-    code: [`_client(${parentNode}, context, ${anchor}, ${key}${last ? ', true' : ''});`],
+    code: [`_client(${parentNode}, context, ${anchor}, ${key}${last ? ', true' : slot === undefined ? '' : `, false, ${slot}`});`],
     functionsToProcess: new Map([[key, {
       fn: { node, parentNode: key, context: new GeneratorContext(generatorContext), anchor: getContentAnchor(last) },
       args: [key, 'parentContext', 'anchor', 'nodeStrategy']

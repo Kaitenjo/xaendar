@@ -8,8 +8,8 @@ import { HostProperty } from '../../decorators/host-property/host-property.decor
 import { effect } from '../../signals/effect/effect';
 import { ClaimNodes } from '../../utils/claim-nodes/claim-nodes.util';
 import { _bindEffect } from '../../signals/effect/effect';
-import { _Context, mountNode } from '../../utils/context/context.util';
-import { _ROOT_PARENT_CONTEXT } from '../../utils/render-element/render-element.util';
+import { EMPTY_LAYOUT, _scope, addChild, addCleanup, clear, getChild, getChildCount, mountNode, removeChild } from '../../utils/context/context.util';
+import type { _Context } from '../../types/context.type';
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { _stringifyState } from '../../utils/state-serialization/state-serialization.util';
@@ -20,7 +20,7 @@ import { CustomElement } from './custom-element';
 /**
  * The child contexts of a context, in registration order.
  */
-const childrenOf = <TContext>(context: { getChildCount(): number, getChild(index: number): TContext }): TContext[] => Array.from({ length: context.getChildCount() }, (_item, index) => context.getChild(index));
+const childrenOf = (context: _Context): _Context[] => Array.from({ length: getChildCount(context) }, (_item, index) => getChild(context, index));
 
 loadSignals();
 
@@ -34,17 +34,11 @@ type TestElement = HTMLElement & {
 };
 
 /**
- * Builds a context whose `clear` is spied on, still clearing it (so disposing the effects
- * registered on it) after invoking the optional `onClear` callback.
+ * Builds a context running `onClear` first when it is cleared, before disposing the effects registered on it.
  */
-function createContext(onClear?: NoArgsVoidFunction): _Context {
-  const context = new _Context({} as never);
-  const clear = context.clear.bind(context);
-  vi.spyOn(context, 'clear').mockImplementation(() => {
-    onClear?.();
-    clear();
-  });
-
+function createContext(onClear: NoArgsVoidFunction = () => undefined): _Context {
+  const context = _scope(null, EMPTY_LAYOUT);
+  addCleanup(context, onClear);
   return context;
 }
 
@@ -91,7 +85,7 @@ const Child = (() => {
     }
   };
   Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { selector: 'x-base-created' } });
-  _defineRender(klass, () => new _Context({} as never));
+  _defineRender(klass, () => _scope(null, EMPTY_LAYOUT));
   customElements.define('x-base-created', klass);
 
   return klass;
@@ -130,13 +124,13 @@ describe('CustomElement', () => {
   });
 
   it('clears the context on disconnection', () => {
-    const context = createContext();
-    const element = create(context);
+    const cleared = vi.fn();
+    const element = create(createContext(cleared));
 
     document.body.appendChild(element);
     element.remove();
 
-    expect(context.clear).toHaveBeenCalledOnce();
+    expect(cleared).toHaveBeenCalledOnce();
   });
 
   describe('hydration', () => {
@@ -148,7 +142,7 @@ describe('CustomElement', () => {
       const name = element.localName;
       // Adopts the paragraph the tests put in the shadow root, through the strategy it gets
       const render = vi.fn(function (this: HTMLElement, nodeStrategy: NodeStrategy) {
-        const context = new _Context({ createElement: (tagName: string) => document.createElement(tagName) } as never);
+        const context = _scope(null, EMPTY_LAYOUT);
         nodeStrategy.mount(nodeStrategy.element(context, this.shadowRoot!, 'p'), this.shadowRoot!, null);
         return context;
       });
@@ -220,7 +214,7 @@ describe('CustomElement', () => {
       const render = defineAfterParse(element);
       render.mockImplementationOnce(function (this: HTMLElement, nodeStrategy: NodeStrategy) {
         this.addEventListener('click', clicks);
-        const context = new _Context({ createElement: (tagName: string) => document.createElement(tagName) } as never);
+        const context = _scope(null, EMPTY_LAYOUT);
         nodeStrategy.mount(nodeStrategy.element(context, this.shadowRoot!, 'p'), this.shadowRoot!, null);
         return context;
       });
@@ -266,9 +260,10 @@ describe('CustomElement', () => {
           this[DISCONNECTED_HOOKS] = [disconnected];
         }
       };
-      _defineRender(klass, () => new _Context({} as never));
+      _defineRender(klass, () => _scope(null, EMPTY_LAYOUT));
       customElements.define(element.localName, klass);
-      const clear = vi.spyOn((element as unknown as TestElement)._context, 'clear');
+      const clear = vi.fn();
+      addCleanup((element as unknown as TestElement)._context, clear);
 
       element.remove();
 
@@ -381,13 +376,13 @@ describe('CustomElement', () => {
       const name = `x-base-${counter++}`;
       const render = vi.fn(function (this: CustomElement, nodeStrategy: NodeStrategy) {
         const root = this.shadowRoot!;
-        const context = new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 0, this);
+        const context = _scope(null, EMPTY_LAYOUT, nodeStrategy, this);
         const paragraph = document.createElement('p');
         mountNode(paragraph, root, context);
         paragraph.addEventListener('click', clicked);
-        context.addUnlistener(() => paragraph.removeEventListener('click', clicked));
+        addCleanup(context, () => paragraph.removeEventListener('click', clicked));
         _bindEffect(context, (node: HTMLElement) => { node.textContent = source.get(); }, paragraph);
-        const block = context.addChild();
+        const block = addChild(context);
         mountNode(document.createElement('b'), root, block);
         if (nested) {
           mountNode(document.createElement(nested), root, context);
@@ -412,7 +407,7 @@ describe('CustomElement', () => {
         public onDestroy = hooks.onDestroy;
       };
       _defineRender(klass, function (this: CustomElement, nodeStrategy: NodeStrategy) {
-        const context = new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, 0, this);
+        const context = _scope(null, EMPTY_LAYOUT, nodeStrategy, this);
         mountNode(document.createElement('i'), this.shadowRoot!, context);
         return context;
       });

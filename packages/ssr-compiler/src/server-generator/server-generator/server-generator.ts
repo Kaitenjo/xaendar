@@ -1,5 +1,5 @@
 import { indent } from '@xaendar/common';
-import { assertImportableSymbol, ASTNodeType, createContext, GeneratorContext, declareScope, declareTemplateParameters, formatErrorWithPrefix, getRuntimeAlias, getTextSeparators, isLastRenderedChild, ROOT_NODE, toRuntimeImport, type ASTNode, type ComponentOrDirectiveMetadata, type ContextCache, type ElementNamespace, type GeneratorFunctionToProcess, type SymbolImport, type TemplateNode } from '@xaendar/compiler';
+import { assertImportableSymbol, ASTNodeType, createScope, GeneratorContext, declareScope, declareTemplateParameters, formatErrorWithPrefix, getRuntimeAlias, getTextSeparators, isLastRenderedChild, ROOT_NODE, toRuntimeImport, type ASTNode, type ComponentOrDirectiveMetadata, type ContextCache, type ElementNamespace, type GeneratorFunctionToProcess, type SymbolImport, type TemplateNode } from '@xaendar/compiler';
 import { generateServerClient } from '../states/generate-server-client/generate-server-client.state';
 import { generateServerTry } from '../states/generate-server-try/generate-server-try.state';
 import { generateServerDefer } from '../states/generate-server-defer/generate-server-defer.state';
@@ -25,7 +25,7 @@ import { SSR_MARKERS } from '../../costants/ssr-markers.constants';
  * The runtime helpers the code rendering on the server calls, imported by the module of every template.
  */
 const RUNTIME_IMPORTS: readonly string[] = [
-  'import { _Context, _ROOT_PARENT_CONTEXT, _iterationVariables, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
+  'import { _declare, _iterationVariables, _read, _scope, _set, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
   'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTry } from \'@xaendar/ssr\';'
 ];
 
@@ -148,7 +148,7 @@ export class ServerGenerator {
         generatorContext.addImportedIdentifier(symbol.local, getRuntimeAlias(symbol.local), symbol.reactive ? 'signal' : 'value');
       }
 
-      const root = this._writeBody(this._ast, { id: ROOT_NODE, end: true }, generatorContext, '_ROOT_PARENT_CONTEXT');
+      const root = this._writeBody(this._ast, { id: ROOT_NODE, end: true }, generatorContext, 'null');
       const code = ['function render(out) {', ...indent(root), '}'];
       for (const [key, { fn, args }] of this._functions) {
         const body = this._writeBody(fn.node.children, fn.parent, fn.context, 'parentContext', fn.precode);
@@ -185,17 +185,19 @@ export class ServerGenerator {
    * @param nodes - The nodes the function renders.
    * @param parent - Where the nodes are rendered.
    * @param generatorContext - The generator context of the nodes.
-   * @param parentContext - The expression of the parent of the runtime context of the function, which is created for the
-   *   variables of its scope: the ones its precode registers, and its declarations.
+   * @param parentContext - The expression of the scope declaring the block of the function, `null` for the root of the
+   *   render: the runtime scope of the function is created from its layout, holding the variables its precode writes and
+   *   its declarations.
    * @param precode - The code preparing the context, e.g. declaring the item of a `@for`, if any.
    * @returns The lines of the body.
    */
   private _writeBody(nodes: readonly ASTNode[], parent: ServerParent, generatorContext: GeneratorContext, parentContext: string, precode?: string): string[] {
     // Declared first, so that the context is created for the variables of the scope
     const declarations = declareScope(nodes, generatorContext, toTemplateFunction, true);
-    // The root context receives the component, which the functions of the module computing the expressions are called with
-    const component = parentContext === '_ROOT_PARENT_CONTEXT' ? 'this' : undefined;
-    const lines = [`const context = ${createContext(parentContext, undefined, generatorContext.identifierCount, component)};`];
+    // The root scope receives the component, which the functions of the module computing the expressions are called with
+    const component = parentContext === 'null' ? 'this' : undefined;
+    // The server tracks no node: the layout holds the header and the variables
+    const lines = [`const context = ${createScope(parentContext, generatorContext.declareLayout(), component && 'undefined', component)};`];
     if (precode) {
       lines.push(...precode.split('\n'));
     }

@@ -1,4 +1,5 @@
 import { ASTNodeType } from '../../../parser/types/node.enum';
+import type { GeneratorContext } from '../../context/context';
 import type { ASTNode } from '../../../parser/types/ast.type';
 
 /**
@@ -47,13 +48,31 @@ export function getContentAnchor(last: boolean): string | undefined {
 /**
  * Appends to the members of the constant of the module describing a block the one telling it is the last node of its
  * parent, which the runtime creates no anchor for, and the server closes with no marker (see `BlockPosition` of
- * `@xaendar/core`). It is left out otherwise.
+ * `@xaendar/core`). It is left out otherwise. A block with an anchor at the top of the block of a runtime scope gets the
+ * slot of its anchor in the scope (see `GeneratorContext.allocateNodeSlot`), given by the caller.
  *
  * @param members - The members of the constant.
  * @param last - Whether the block is the last node of its parent.
+ * @param slot - The slot of the anchor of the block, `undefined` for a block whose anchor no scope tracks.
  */
-export function appendBlockPosition(members: string[], last: boolean): void {
+export function appendBlockPosition(members: string[], last: boolean, slot?: number): void {
   if (last) {
     members.push('last: true');
   }
+
+  if (slot !== undefined) {
+    members.push(`slot: ${slot}`);
+  }
+}
+
+/**
+ * Gives a block of the client its slot, the one of its anchor, when it has one and the function rendering it tracks
+ * the nodes at the top of its scope: the last block of its parent has no anchor.
+ *
+ * @param generatorContext - The generator context of the scope rendering the block.
+ * @param last - Whether the block is the last node of its parent.
+ * @returns The slot, `undefined` for a block whose anchor no scope tracks.
+ */
+export function allocateBlockSlot(generatorContext: GeneratorContext, last: boolean): number | undefined {
+  return last ? undefined : generatorContext.allocateNodeSlot();
 }

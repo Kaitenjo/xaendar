@@ -1,10 +1,10 @@
 import type { NoArgsVoidFunction } from '@xaendar/types';
-import { _EVENT_CONTRACT_KEY, _HYDRATE_ATTRIBUTE, _RECORDED_EVENTS, WAITS_FOR_HYDRATION } from '../../costants';
+import { _EVENT_CONTRACT_KEY, _HYDRATE_ATTRIBUTE, _RECORDED_EVENTS, COMPONENT, WAITS_FOR_HYDRATION } from '../../costants';
 import type { _ContractEvent } from '../../types/event-contract.type';
 import type { HydrateTrigger } from '../../types/hydrate-trigger.type';
 import type { RecordedEvents } from '../../types/recorded-events.type';
 import type { Trigger } from '../../types/triggers/trigger.type';
-import type { _Context } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
 
 /**
  * The events firing the `hover` trigger: the pointer moving over an element, and the focus entering it, for the users
@@ -350,7 +350,7 @@ function armTrigger(trigger: Trigger, elements: readonly Element[], fire: NoArgs
 
       default: {
         const { target, options: declared } = trigger;
-        const component = context?.component;
+        const component = context?.[COMPONENT];
         return armTrigger(trigger.kind, target ? [target.call(component, context!)] : elements, fire, context, typeof declared === 'function' ? declared.call(component, context!) : declared);
       }
     }

@@ -26,13 +26,29 @@ import { declareExpression } from '../../utils/module-code/module-code.utils';
  * @returns Array of generated code lines.
  */
 export async function generateTextAndInterpolation(node: TextNode | InterpolationNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null, separated: boolean): Promise<GeneratorTransitionFunctionReturnType> {
-  const separator = separated ? ', true' : '';
+  const slot = generatorContext.allocateNodeSlot();
   if (node.type === ASTNodeType.Text) {
-    return { code: [`_renderLiteralText(${parentNode}, context, ${toStringLiteral(node.value)}, ${anchor}${separator});`] };
+    return { code: [`_renderLiteralText(${[parentNode, 'context', toStringLiteral(node.value), `${anchor}`].concat(optionalArguments([`${separated}`, slot?.toString()])).join(', ')});`] };
   }
 
   const { expression, variables } = resolveExpression(node.expression, generatorContext);
   const reads = generatorContext.getReads(variables);
   const text = declareExpression(generatorContext, `${parentNode}$text${index}`, expression);
-  return { code: [`_renderText(${parentNode}, context, ${text}, ${anchor}${reads ? `, ${separated}, ${reads}` : separator});`] };
+  return { code: [`_renderText(${[parentNode, 'context', text, `${anchor}`].concat(optionalArguments([`${separated}`, reads, slot?.toString()])).join(', ')});`] };
+}
+
+/**
+ * Writes the optional arguments of a call, leaving out the ones at the end holding their default value (`undefined`,
+ * or `false` for `separated`), and writing `undefined` for the ones left out before an argument written.
+ *
+ * @param values - The code of the arguments, `undefined` for an argument left out.
+ * @returns The arguments to write.
+ */
+function optionalArguments(values: ReadonlyArray<string | undefined>): string[] {
+  let end = values.length;
+  while (end && (values[end - 1] === undefined || values[end - 1] === 'false')) {
+    end--;
+  }
+
+  return values.slice(0, end).map(value => value ?? 'undefined');
 }

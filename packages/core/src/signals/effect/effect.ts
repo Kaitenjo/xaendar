@@ -1,7 +1,8 @@
 import { NoArgsVoidFunction } from '@xaendar/types';
 import { _runBinding, createEffect } from '../../models/effect/effect';
 import type { EffectCallback } from '../../types/effect-callback.type';
-import type { _Context } from '../../utils/context/context.util';
+import type { _Context } from '../../types/context.type';
+import { addCleanup } from '../../utils/context/context.util';
 import { EffectOptions } from '../types/effect-options.type';
 
 /**
@@ -59,7 +60,7 @@ export function effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsV
  * callback reads (see `_runBinding`), and decides what the binding keeps:
  * - a binding reading a variable of the template (the item and the implicit variables of a `@for`, a `@let`, the
  *   parameters of a template), which the compiler lists in `reads`, is registered in the context, which runs it again
- *   when one of them changes (see `_Context.refresh`); while it reads a signal, it is an effect too;
+ *   when one of them changes (see `refresh` of `utils/context`); while it reads a signal, it is an effect too;
  * - any other binding reading a signal is an effect, which the context keeps as its cleanup, disposing it with its
  *   `dispose()`;
  * - any other binding reads nothing that can change: nothing is kept.
@@ -69,15 +70,15 @@ export function effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsV
  * @param first - The first argument of the callback.
  * @param second - The second argument of the callback.
  * @param third - The third argument of the callback.
- * @param reads - The names of the variables of the template the binding reads, the ones of the enclosing scopes
+ * @param reads - The identifiers of the variables of the template the binding reads, the ones of the enclosing scopes
  *   included: omitted when it reads none.
  * @throws The exception thrown by the first run.
  */
-export function _bindEffect<First, Second, Third>(context: _Context, callback: EffectCallback<First, Second, Third>, first: First, second?: Second, third?: Third, reads?: readonly string[]): void {
+export function _bindEffect<First, Second, Third>(context: _Context, callback: EffectCallback<First, Second, Third>, first: First, second?: Second, third?: Third, reads?: readonly number[]): void {
   const effect = _runBinding(callback, first, second, third);
   if (reads) {
-    context.addBinding({ callback, first, second, third, reads, effect });
+    addCleanup(context, { callback, first, second, third, reads, effect });
   } else if (effect) {
-    context.addUnlistener(effect);
+    addCleanup(context, effect);
   }
 }

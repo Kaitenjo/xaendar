@@ -16,5 +16,6 @@ import { SERVER_RESOLVE_OPTIONS } from '../../utils/server-code/server-code.util
  */
 export function generateServerLet(node: LetNode, _parent: ServerParent, _index: string, generatorContext: GeneratorContext): ServerTransitionResult {
   const { expression } = resolveExpression(node.value, generatorContext, SERVER_RESOLVE_OPTIONS);
-  return { pieces: [{ statement: `context.set('${node.name}', ${expression});` }] };
+  const { depth, slot } = generatorContext.addressOf(node.name)!;
+  return { pieces: [{ statement: `_set(context, ${depth}, ${slot}, ${expression});` }] };
 }

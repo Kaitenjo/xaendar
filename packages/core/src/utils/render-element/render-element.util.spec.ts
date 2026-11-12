@@ -7,6 +7,9 @@ import type { RenderElementDirective } from '../../types/render-element-directiv
 import type { RenderElementStructuralDirective } from '../../types/render-element-structural-directive.type';
 import type { RenderElement } from '../../types/render-element.type';
 import type { TemplateExpression } from '../../types/template-expression.type';
+import { HEADER, LAYOUT, PARENT_NODE } from '../../costants';
+import type { _Context } from '../../types/context.type';
+import type { _ScopeLayout } from '../../types/scope-layout.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -15,24 +18,23 @@ await vi.hoisted(async () => {
 
 const { SVG_NS } = await import('../../costants');
 const { input } = await import('../../signals/input/input');
-const { _Context } = await import('../context/context.util');
+const { _declare, _read, _scope, EMPTY_LAYOUT, ELEMENT_LAYOUT, addCleanup, getNodeStrategy, clear, addChild, getChildCount, getChild, refresh, swapNodeStrategy, update } = await import('../context/context.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { ClaimNodes } = await import('../claim-nodes/claim-nodes.util');
 
 /**
  * The nodes a context tracks, in mount order.
  */
-const nodesOf = (context: { getNodeCount(): number, getNode(index: number): Node }): Node[] => Array.from({ length: context.getNodeCount() }, (_item, index) => context.getNode(index));
+const nodesOf = (context: Context): Node[] => context.slice(context[LAYOUT].nodes).filter(Boolean) as Node[];
 
 /**
  * The child contexts of a context, in registration order.
  */
-const childrenOf = <TContext>(context: { getChildCount(): number, getChild(index: number): TContext }): TContext[] => Array.from({ length: context.getChildCount() }, (_item, index) => context.getChild(index));
+const childrenOf = (context: Context): Context[] => Array.from({ length: getChildCount(context) }, (_item, index) => getChild(context, index));
 const {
   _removeAttribute,
   _renderElement,
   _resetProperty,
-  _ROOT_PARENT_CONTEXT,
   _setExpressionInput,
   _setExpressionProperty,
   _setInput,
@@ -51,7 +53,7 @@ const { _defineDirective } = await import('../directive-registry/directive-regis
 const { _getAppliedDirectives } = await import('../applied-directives/applied-directives.util');
 const { _getElementRef } = await import('../element-refs/element-refs.util');
 
-type Context = InstanceType<typeof _Context>;
+type Context = _Context;
 
 /**
  * The bindings of a branch of a conditional binding of an element, without its condition.
@@ -60,8 +62,26 @@ type ElementBindings = Omit<RenderElementConditionalBinding['branches'][number],
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
+/**
+ * The layout of the contexts of the tests: the variables they read, then room for two nodes.
+ */
+const ROOT_LAYOUT: _ScopeLayout = { size: HEADER + 8, nodes: HEADER + 4, variables: ['label', 'enabled', 'suffix', 'panel'] };
+
+/**
+ * The first slot of a context free for a node, as the compiler gives them in order.
+ */
+function freeSlot(context: Context): number | undefined {
+  for (let i = context[LAYOUT].nodes; i < context.length; i++) {
+    if (!context[i]) {
+      return i;
+    }
+  }
+
+  return undefined;
+}
+
 function createRoot(): Context {
-  return new _Context({} as never);
+  return _scope(null, ROOT_LAYOUT);
 }
 
 /**
@@ -74,7 +94,9 @@ const attributeOf = (name: string, value: RenderElementAttribute['value'] = ''):
  * appended when there is none.
  */
 const render = (parent: Element, context: Context, element: Omit<RenderElement, 'tagName'> = {}, anchor: Comment | null = null) => {
-  _renderElement(parent, context, anchor, Object.assign({ tagName: 'div' }, element));
+  // At the top of the context, the element, or the anchor of an element structural directives are applied to, gets a slot
+  const top = context[PARENT_NODE] === null || context[PARENT_NODE] === parent;
+  _renderElement(parent, context, anchor, Object.assign({ tagName: 'div', slot: top ? freeSlot(context) : undefined }, element));
   return (anchor ? anchor.previousSibling : parent.lastChild) as Element;
 };
 
@@ -164,15 +186,6 @@ _defineDirective('asyncVisible', AsyncVisibleDirective);
  */
 const settle = () => new Promise<void>(resolve => setTimeout(resolve));
 
-describe('_ROOT_PARENT_CONTEXT', () => {
-  it('gives the root context of a render, through its shared parent, undefined for a name no scope declares', () => {
-    const root = new _Context(_ROOT_PARENT_CONTEXT, CREATE_NODES);
-
-    expect(root.get('undeclared')).toBeUndefined();
-    expect(new _Context(_ROOT_PARENT_CONTEXT).nodeStrategy).toBe(CREATE_NODES);
-  });
-});
-
 
 describe('property setters', () => {
   it('_setProperty sets a literal attribute', () => {
@@ -190,7 +203,7 @@ describe('property setters', () => {
   it('_setExpressionProperty calls the expression with the component of the context as this and the context', () => {
     const element = document.createElement('div');
     const component = { title: 'from component' };
-    const context = new _Context(createRoot(), undefined, 0, component);
+    const context = _scope(createRoot(), EMPTY_LAYOUT, undefined, component);
     const expression = vi.fn(function (this: typeof component, _context: Context) {
       return this.title;
     });
@@ -216,12 +229,12 @@ describe('property setters', () => {
   it('_setReactiveProperty evaluates the expression again when a variable of the template it reads changes', () => {
     const element = document.createElement('div');
     const context = createRoot();
-    context.addIdentifier('label', 'first');
-    _setReactiveProperty(context, element, { name: 'title', value: scope => scope.get('label'), setter: _setReactiveProperty, reads: ['label'] });
+    context[HEADER] = 'first';
+    _setReactiveProperty(context, element, { name: 'title', value: scope => scope[HEADER], setter: _setReactiveProperty, reads: [0] });
     expect(element.getAttribute('title')).toBe('first');
 
-    context.update('label', 'second');
-    context.refresh(['label']);
+    update(context, HEADER, 'second');
+    refresh(context, [0]);
 
     expect(element.getAttribute('title')).toBe('second');
   });
@@ -275,7 +288,7 @@ describe('property setters', () => {
     const title = signal('a');
     _setReactiveProperty(context, element, attributeOf('title', () => title()));
 
-    context.clear();
+    clear(context);
     title.set('b');
     await flush();
 
@@ -479,7 +492,7 @@ describe('_renderElement', () => {
     const created = document.createElement('article');
     const element = vi.fn(() => created);
     const mount = vi.fn(CREATE_NODES.mount);
-    const context = new _Context({} as never, Object.assign({}, CREATE_NODES, { element, mount }));
+    const context = _scope(null, EMPTY_LAYOUT, Object.assign({}, CREATE_NODES, { element, mount }));
 
     _renderElement(parent, context, anchor, { tagName: 'article' });
     _renderElement(parent, context, anchor, { tagName: 'circle', namespace: 1 });
@@ -494,7 +507,7 @@ describe('_renderElement', () => {
     const context = createRoot();
     render(parent, context);
 
-    context.clear();
+    clear(context);
 
     expect(parent.childNodes.length).toBe(0);
   });
@@ -506,23 +519,24 @@ describe('_renderElement', () => {
   it('initializes the element ref naming the element, declared by its scope, before binding it and rendering its children', () => {
     const parent = document.createElement('div');
     const scope = createRoot();
-    scope.declare('panel');
+    _declare(scope, HEADER + 3);
     const seen = new Array<unknown>();
     const children = vi.fn<RenderChildren>((_element, parentContext) => {
-      seen.push(parentContext.get('panel'));
-      return new _Context(parentContext);
+      seen.push(_read(parentContext, 0, HEADER + 3));
+      return _scope(parentContext, EMPTY_LAYOUT);
     });
 
-    _renderElement(parent, scope.addChild(), null, {
+    _renderElement(parent, scope, null, {
       tagName: 'section',
-      attributes: [{ name: 'title', value: () => seen.push(scope.get('panel')), setter: _setExpressionProperty }],
+      attributes: [{ name: 'title', value: () => seen.push(scope[HEADER + 3]), setter: _setExpressionProperty }],
       children,
-      ref: 'panel'
+      ref: 'panel',
+      refSlot: HEADER + 3
     });
     const element = parent.firstElementChild;
 
     expect(element?.tagName).toBe('SECTION');
-    expect(scope.get('panel')).toBe(element);
+    expect(scope[HEADER + 3]).toBe(element);
     expect(_getElementRef(element!)).toBe('panel');
     expect(seen).toEqual([element, element]);
   });
@@ -530,15 +544,15 @@ describe('_renderElement', () => {
   it('calls the same function of the module for every element rendered from one configuration, with the component and the context of each', async () => {
     const suffix = signal('!');
     const title = vi.fn(function (this: unknown, context: Context) {
-      return `${context.get('label')}${suffix()}`;
+      return `${context[HEADER]}${suffix()}`;
     });
     const config: RenderElement = { tagName: 'div', attributes: [{ name: 'title', value: title, setter: _setReactiveProperty }] };
     const component = { name: 'component' };
-    const componentContext = new _Context(createRoot(), undefined, 0, component);
-    const first = new _Context(componentContext);
-    first.addIdentifier('label', 'first');
-    const second = new _Context(componentContext);
-    second.addIdentifier('label', 'second');
+    const componentContext = _scope(createRoot(), EMPTY_LAYOUT, undefined, component);
+    const first = _scope(componentContext, EMPTY_LAYOUT);
+    first[HEADER] = 'first';
+    const second = _scope(componentContext, EMPTY_LAYOUT);
+    second[HEADER] = 'second';
     const parent = document.createElement('section');
 
     _renderElement(parent, first, null, config);
@@ -557,8 +571,8 @@ describe('_renderElement', () => {
     const unlisten = vi.fn();
     const children = vi.fn<RenderChildren>((element, parentContext) => {
       element.appendChild(document.createElement('span'));
-      const childrenContext = new _Context(parentContext);
-      childrenContext.addUnlistener(unlisten);
+      const childrenContext = _scope(parentContext, EMPTY_LAYOUT);
+      addCleanup(childrenContext, unlisten);
       return childrenContext;
     });
     const context = createRoot();
@@ -567,7 +581,7 @@ describe('_renderElement', () => {
     expect(children).toHaveBeenCalledExactlyOnceWith(element, context);
     expect(element.firstChild!.nodeName).toBe('SPAN');
 
-    context.clear();
+    clear(context);
 
     expect(unlisten).toHaveBeenCalledOnce();
   });
@@ -578,7 +592,7 @@ describe('_renderElement', () => {
     const children = vi.fn<RenderChildren>((element, childrenContext) => {
       render(element, childrenContext);
       CREATE_NODES.text(childrenContext, element, null, 'text', false);
-      childrenContext.addUnlistener(unlisten);
+      addCleanup(childrenContext, unlisten);
       return undefined;
     });
     const parent = document.createElement('section');
@@ -589,7 +603,7 @@ describe('_renderElement', () => {
     expect(nodesOf(context)).toEqual([element]);
     expect(childrenOf(context)).toEqual([]);
 
-    context.clear();
+    clear(context);
 
     expect(unlisten).toHaveBeenCalledOnce();
     expect(parent.childNodes).toHaveLength(0);
@@ -613,44 +627,59 @@ describe('_renderElement', () => {
     expect(nodesOf(context)).toContain(third);
   });
 
-  it('renders the children in a child context with their own strategy when it differs from the one of the element', () => {
+  it('renders the children in the context of the element with their own strategy, while they render, when it differs from the one of the element', () => {
     const own = Object.assign({}, CREATE_NODES);
     const strategy = Object.assign({}, CREATE_NODES, { children: () => own });
-    const context = new _Context({} as never, strategy);
+    const context = _scope(null, EMPTY_LAYOUT, strategy);
     const unlisten = vi.fn();
+    const strategies = new Array<unknown>();
     const children = vi.fn<RenderChildren>((element, childrenContext) => {
+      strategies.push(getNodeStrategy(childrenContext));
       CREATE_NODES.text(childrenContext, element, null, 'text', false);
-      childrenContext.addUnlistener(unlisten);
+      addCleanup(childrenContext, unlisten);
       return undefined;
     });
     const element = render(document.createElement('section'), context, { children });
 
-    const [childrenContext] = childrenOf(context);
-    expect(children).toHaveBeenCalledExactlyOnceWith(element, childrenContext);
-    expect(childrenContext.nodeStrategy).toBe(own);
-    expect(nodesOf(childrenContext)).toEqual([]);
+    expect(children).toHaveBeenCalledExactlyOnceWith(element, context);
+    expect(strategies).toEqual([own]);
+    expect(getNodeStrategy(context)).toBe(strategy);
+    expect(childrenOf(context)).toEqual([]);
     expect(element.textContent).toBe('text');
 
-    context.clear();
+    clear(context);
     expect(unlisten).toHaveBeenCalledOnce();
   });
 
-  it('registers in the child context with their own strategy the context the children create for themselves', () => {
+  it('gives the context of the element its strategy back when the children rendering with their own throw', () => {
     const own = Object.assign({}, CREATE_NODES);
     const strategy = Object.assign({}, CREATE_NODES, { children: () => own });
-    const context = new _Context({} as never, strategy);
+    const context = _scope(null, EMPTY_LAYOUT, strategy);
+
+    expect(() => render(document.createElement('section'), context, {
+      children: () => {
+        throw new Error('boom');
+      }
+    })).toThrow('boom');
+    expect(getNodeStrategy(context)).toBe(strategy);
+  });
+
+  it('registers in the context of the element the context the children create for themselves with their own strategy', () => {
+    const own = Object.assign({}, CREATE_NODES);
+    const strategy = Object.assign({}, CREATE_NODES, { children: () => own });
+    const context = _scope(null, EMPTY_LAYOUT, strategy);
     const unlisten = vi.fn();
     const children = vi.fn<RenderChildren>((_element, childrenContext) => {
-      const ownContext = new _Context(childrenContext);
-      ownContext.addUnlistener(unlisten);
+      const ownContext = _scope(childrenContext, EMPTY_LAYOUT);
+      addCleanup(ownContext, unlisten);
       return ownContext;
     });
     render(document.createElement('section'), context, { children });
 
-    const [childrenContext] = childrenOf(context);
-    expect(childrenOf(childrenContext)).toHaveLength(1);
+    expect(childrenOf(context)).toHaveLength(1);
+    expect(getNodeStrategy(childrenOf(context)[0])).toBe(own);
 
-    context.clear();
+    clear(context);
     expect(unlisten).toHaveBeenCalledOnce();
   });
 
@@ -671,7 +700,7 @@ describe('_renderElement', () => {
         attributes: [{ name: 'title', value: 'hi', setter: _setProperty, unbind: _removeAttribute }]
       });
 
-      context.clear();
+      clear(context);
 
       expect(element.hasAttribute('title')).toBe(false);
     });
@@ -683,7 +712,7 @@ describe('_renderElement', () => {
       });
       expect(element.getAttribute('title')).toBe('hi');
 
-      context.clear();
+      clear(context);
 
       expect(element.hasAttribute('title')).toBe(false);
     });
@@ -695,7 +724,7 @@ describe('_renderElement', () => {
         attributes: [{ name: 'title', value: 'hi', setter: _setProperty }]
       });
 
-      context.clear();
+      clear(context);
 
       expect(dispose).not.toHaveBeenCalled();
       expect(element.getAttribute('title')).toBe('hi');
@@ -707,7 +736,7 @@ describe('_renderElement', () => {
     it('calls the handler with the component as this, the context and the event', () => {
       const handler = vi.fn();
       const component = { name: 'component' };
-      const context = new _Context(createRoot(), undefined, 0, component);
+      const context = _scope(createRoot(), EMPTY_LAYOUT, undefined, component);
       const element = render(document.createElement('div'), context, { events: [{ name: 'click', handler }] });
       const event = new Event('click');
 
@@ -732,14 +761,14 @@ describe('_renderElement', () => {
       const created = document.createElement('div');
       const add = vi.spyOn(created, 'addEventListener');
       const remove = vi.spyOn(created, 'removeEventListener');
-      const context = new _Context({} as never, Object.assign({}, CREATE_NODES, { element: () => created }));
+      const context = _scope(null, EMPTY_LAYOUT, Object.assign({}, CREATE_NODES, { element: () => created }));
       render(document.createElement('section'), context, { events: [{ name: 'click', handler: vi.fn() }] });
 
       const [name, listener] = add.mock.calls[0];
       expect(name).toBe('click');
       expect(listener).toBeInstanceOf(TemplateListener);
 
-      context.clear();
+      clear(context);
 
       expect(remove).toHaveBeenCalledExactlyOnceWith('click', listener);
     });
@@ -751,7 +780,7 @@ describe('_renderElement', () => {
         events: [{ name: 'click', handler: onClick }]
       });
 
-      context.clear();
+      clear(context);
       element.dispatchEvent(new Event('click'));
 
       expect(onClick).not.toHaveBeenCalled();
@@ -781,10 +810,11 @@ describe('_renderElement', () => {
 
     it('calls the conditions with the component as this and the context of the branch, reading the variables of the scope', () => {
       const component = { enabled: true };
-      const context = new _Context(createRoot(), undefined, 0, component);
-      context.addIdentifier('suffix', 'scope');
+      const context = _scope(createRoot(), ROOT_LAYOUT, undefined, component);
+      context[HEADER + 2] = 'scope';
+      // The branch is a scope inside the one the element is rendered in
       const condition = vi.fn(function (this: typeof component, branchContext: Context) {
-        return this.enabled && branchContext.get('suffix') === 'scope';
+        return this.enabled && _read(branchContext, 1, HEADER + 2) === 'scope';
       });
       const element = render(document.createElement('div'), context, {
         conditionalBindings: [ifBinding({ condition, attributes: [attribute('data-on')] })]
@@ -968,14 +998,14 @@ describe('_renderElement', () => {
 
       it('selects the branch again when a variable of the template its conditions read changes', () => {
         const context = createRoot();
-        context.addIdentifier('enabled', false);
+        context[HEADER + 1] = false;
         const element = render(document.createElement('div'), context, {
-          conditionalBindings: [{ branches: [{ condition: scope => scope.get('enabled'), attributes: [attribute('data-on')] }], reads: ['enabled'] }]
+          conditionalBindings: [{ branches: [{ condition: scope => _read(scope, 1, HEADER + 1), attributes: [attribute('data-on')] }], reads: [1] }]
         });
         expect(element.hasAttribute('data-on')).toBe(false);
 
-        context.update('enabled', true);
-        context.refresh(['enabled']);
+        update(context, HEADER + 1, true);
+        refresh(context, [1]);
 
         expect(element.hasAttribute('data-on')).toBe(true);
       });
@@ -1232,7 +1262,7 @@ describe('_renderElement', () => {
         )]
       });
 
-      context.clear();
+      clear(context);
       enabled.set(true);
       await flush();
 
@@ -1262,9 +1292,9 @@ describe('_renderElement', () => {
       const onGone = vi.fn();
       const parent = document.body.appendChild(document.createElement('div'));
       const context = createRoot();
-      _renderElement(parent, context, null, { tagName: 'x-mount-probe', events: [{ name: 'gone', handler: onGone }] });
+      _renderElement(parent, context, null, { tagName: 'x-mount-probe', events: [{ name: 'gone', handler: onGone }], slot: HEADER + 4 });
 
-      context.clear();
+      clear(context);
 
       expect(parent.firstChild).toBeNull();
       expect(onGone).toHaveBeenCalledOnce();
@@ -1352,7 +1382,7 @@ describe('_renderElement', () => {
       const instance = lastInstance();
       expect(instance.label()).toBe('bound');
 
-      context.clear();
+      clear(context);
 
       expect(instance.label()).toBe('initial');
     });
@@ -1374,7 +1404,7 @@ describe('_renderElement', () => {
       const instance = lastInstance();
       expect(instance.destroyed).not.toHaveBeenCalled();
 
-      context.clear();
+      clear(context);
 
       expect(instance.destroyed).toHaveBeenCalledOnce();
     });
@@ -1385,7 +1415,7 @@ describe('_renderElement', () => {
       const instance = lastInstance();
       expect(_getAppliedDirectives(element, LabelDirective)).toEqual([instance]);
 
-      context.clear();
+      clear(context);
 
       expect(_getAppliedDirectives(element, LabelDirective)).toBeUndefined();
     });
@@ -1526,7 +1556,7 @@ describe('_renderElement', () => {
       context: Context,
       element: Pick<RenderElement, 'structuralDirectives' | 'structuralConditionalBindings' | 'children' | 'last'>,
       anchor: Comment | null = null
-    ) => _renderElement(parent, context, anchor, Object.assign({ tagName: 'div', attributes: [{ name: 'id', value: 'target', setter: _setProperty }] }, element));
+    ) => _renderElement(parent, context, anchor, Object.assign({ tagName: 'div', attributes: [{ name: 'id', value: 'target', setter: _setProperty }], slot: element.last ? undefined : freeSlot(context) }, element));
     const structural = (selector = 'visible', attributes?: RenderElementAttribute[]): RenderElementStructuralDirective => ({ selector, attributes });
     const visible = (value: () => boolean): RenderElementAttribute => ({ name: 'visible', value, setter: _setReactiveInput });
     const target = (parent: Element) => parent.querySelector('#target');
@@ -1585,7 +1615,7 @@ describe('_renderElement', () => {
       const block = vi.spyOn(CREATE_NODES, 'block');
       renderStructural(parent, context, { structuralDirectives: [structural('visible', [visible(() => shown())])], last: true });
 
-      expect(block).toHaveBeenCalledExactlyOnceWith(context, parent, null, 'structural', 'xd-s', true);
+      expect(block).toHaveBeenCalledExactlyOnceWith(context, parent, null, 'structural', 'xd-s', true, undefined);
       expect([...parent.childNodes].map(node => node.nodeName)).toEqual(['SPAN', 'DIV']);
 
       shown.set(false);
@@ -1602,7 +1632,7 @@ describe('_renderElement', () => {
       const parent = document.createElement('section');
       parent.innerHTML = '<!--xd-s:1--><div id="target"></div>';
       const element = parent.lastChild;
-      const context = new _Context({} as never, new ClaimNodes('x-host'));
+      const context = _scope(null, EMPTY_LAYOUT, new ClaimNodes('x-host'));
 
       renderStructural(parent, context, { structuralDirectives: [structural()], last: true });
 
@@ -1662,14 +1692,14 @@ describe('_renderElement', () => {
       const unlisten = vi.fn();
       const children = vi.fn<RenderChildren>((element, parentContext) => {
         element.appendChild(document.createElement('span'));
-        const childrenContext = new _Context(parentContext);
-        childrenContext.addUnlistener(unlisten);
+        const childrenContext = _scope(parentContext, EMPTY_LAYOUT);
+        addCleanup(childrenContext, unlisten);
         return childrenContext;
       });
       const parent = document.createElement('section');
       renderStructural(parent, createRoot(), { structuralDirectives: [structural('visible', [visible(() => shown())])], children });
 
-      expect(children).toHaveBeenCalledExactlyOnceWith(target(parent), expect.any(_Context));
+      expect(children).toHaveBeenCalledExactlyOnceWith(target(parent), expect.any(Array));
       expect(parent.querySelector('#target > span')).not.toBeNull();
 
       shown.set(false);
@@ -1905,7 +1935,7 @@ describe('_renderElement', () => {
         const parent = document.createElement('section');
         renderStructural(parent, context, { structuralDirectives: [structural('asyncVisible')] });
 
-        context.clear();
+        clear(context);
         (lastInstance() as AsyncVisibleDirective).deferred.resolve(true);
         await settle();
 
@@ -1920,7 +1950,7 @@ describe('_renderElement', () => {
       renderStructural(parent, context, { structuralDirectives: [structural('visible', [visible(() => shown())])] });
       const instance = lastInstance();
 
-      context.clear();
+      clear(context);
       shown.set(false);
       await settle();
 

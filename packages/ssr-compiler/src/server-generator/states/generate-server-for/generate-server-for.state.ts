@@ -53,9 +53,12 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
   // Only the variables the body reads are created for each item, as the client does
   const context = new GeneratorContext(generatorContext);
   const read = getReadForVariables(node);
+  const ids = new Array<number>(read.length);
   for (let i = 0; i < read.length; i++) {
     const variable = read[i];
-    context.addIdentifier(variable === 'item' ? itemAlias! : implicitNames[variable], 'variable');
+    const name = variable === 'item' ? itemAlias! : implicitNames[variable];
+    context.addIdentifier(name, 'variable');
+    ids[i] = context.idOf(name)!;
   }
 
   const names = Object.values(implicitNames);
@@ -63,7 +66,7 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
   const fn: ServerFunctionToProcess['fn'] = { node, context, parent: { id: key, tag: parent.tag } };
   // The variables, the same for every item, are a constant of the module, as the client declares them
   if (read.length) {
-    const variables = generatorContext.declareConstant(`${key}Variables`, writeIterationVariables(node, read));
+    const variables = generatorContext.declareConstant(`${key}Variables`, writeIterationVariables(read, ids));
     fn.precode = `_iterationVariables(context, items, index, ${variables});`;
   }
 
@@ -73,7 +76,7 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
     The track expression is written as the client writes it: a function of the module, outside of the context of the
     items, whose parameters are the context of the @for, then the item and the implicit variables, read as written
   */
-  const trackContext = new GeneratorContext(generatorContext);
+  const trackContext = new GeneratorContext(generatorContext, undefined, 'declarations');
   if (itemAlias) {
     trackContext.addUnresolvableIdentifier(itemAlias);
   }

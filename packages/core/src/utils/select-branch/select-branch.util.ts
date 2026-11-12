@@ -1,5 +1,6 @@
 import type { RenderConditionalBinding } from '../../types/render-conditional-binding.type';
-import type { _Context } from '../context/context.util';
+import { COMPONENT } from '../../costants';
+import type { _Context } from '../../types/context.type';
 
 /**
  * Selects the branch of a conditional binding to apply: the first one, in declaration order, whose condition holds
@@ -35,7 +36,7 @@ export function _selectBranch<Bindings>(conditionalBinding: RenderConditionalBin
  * @returns The index of the selected branch, `-1` when no condition holds.
  */
 export function _selectBranchIndex<Bindings>(conditionalBinding: RenderConditionalBinding<Bindings>, context: _Context, defaultLast = false): number {
-  const { component } = context;
+  const component = context[COMPONENT];
   // Only a @switch declares an expression
   if (conditionalBinding.expression) {
     const value = conditionalBinding.expression.call(component, context);

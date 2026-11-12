@@ -61,4 +61,16 @@ export type RenderElement = BlockPosition & {
    * element as soon as the element is created, so that its own bindings and children read it.
    */
   readonly ref?: string;
+  /**
+   * The slot of the element ref, written with {@link ref}, in the context rendering the element, which always declares
+   * it: an element ref is declared by the scope rendering its element, among the children of the elements of the scope
+   * too, and an element structural directives are applied to, rendered in a scope of its own, declares none.
+   */
+  readonly refSlot?: number;
+  /**
+   * The slot of the element in the context rendering it, given by the compiler to an element at the top of the block
+   * of a scope: left out for the others, which no scope tracks. The one of an element structural directives are applied
+   * to is the slot of its anchor, the element itself being the only node of a scope of its own.
+   */
+  readonly slot?: number;
 };

@@ -2,7 +2,7 @@ import type { NoArgsVoidFunction } from '@xaendar/types';
 import type { ChildConnection } from '../../types/child-connection.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { TryScope } from '../../types/try-scope.type';
-import type { _Context } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
 
 /**
  * The innermost `@try` whose content the code running now renders for the first time, `undefined` outside of them. The

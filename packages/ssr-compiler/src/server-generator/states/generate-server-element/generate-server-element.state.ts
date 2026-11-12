@@ -48,7 +48,8 @@ export function generateServerElement(node: ElementNode, parent: ServerParent, i
   const childrenNamespace = getChildrenNamespace(tagName, getElementNamespace(tagName, generatorContext.namespace));
   const childrenParent: ServerParent = { id, tag: tagName, end: true };
   if (!isStructuralElement(node)) {
-    const childrenContext = childrenNamespace !== generatorContext.namespace ? new GeneratorContext(generatorContext, childrenNamespace) : generatorContext;
+    // Generated in the function of the element, the children stand for no scope of the runtime
+    const childrenContext = childrenNamespace !== generatorContext.namespace ? new GeneratorContext(generatorContext, childrenNamespace, 'declarations') : generatorContext;
     const children = generateChildren(node.children, childrenParent, childrenContext);
     return { pieces: writeElement(node, id, generatorContext, children.pieces), functionsToProcess: children.functionsToProcess };
   }
@@ -97,7 +98,8 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
   const directives = withDirectives ? mapDirectives(node.directives, owner) : undefined;
   const pieces = new Array<ServerCodePiece>();
   if (ref) {
-    pieces.push({ statement: `context.set('${ref.name}', undefined);` });
+    const { depth, slot } = generatorContext.addressOf(ref.name)!;
+    pieces.push({ statement: `_set(context, ${depth}, ${slot}, undefined);` });
   }
 
   registerEvents(node, generatorContext);

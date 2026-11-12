@@ -1,7 +1,9 @@
 export * from './class-binding/class-binding.util';
 export * from './component-runtime/component-runtime.util';
 export type * from '../types/component-runtime.type';
-export * from './context/context.util';
+export { _declare, _read, _scope, _set } from './context/context.util';
+export type * from '../types/context.type';
+export type * from '../types/scope-layout.type';
 export { _createElement, _createMATHMLElement, _createSVGElement } from './create-element/create-element.util';
 export type * from '../types/declaration-kind.type';
 export * from './directive-registry/directive-registry.util';

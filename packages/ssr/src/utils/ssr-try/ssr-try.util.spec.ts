@@ -1,3 +1,4 @@
+import type { _ScopeLayout } from '@xaendar/core';
 import { describe, expect, it, vi } from 'vitest';
 import type { ServerOutput } from '../../types/server-output.type';
 
@@ -8,10 +9,15 @@ await vi.hoisted(async () => {
   loadServerDom();
 });
 
-const { _Context } = await import('@xaendar/core');
+const { _scope } = await import('@xaendar/core');
+
+/**
+ * The layout of a scope holding its header alone, whose 8 slots the runtime reserves.
+ */
+const EMPTY_LAYOUT: _ScopeLayout = { size: 8, nodes: 8 };
 const { _ssrTry } = await import('./ssr-try.util');
 
-const context = new _Context({} as never);
+const context = _scope(null, EMPTY_LAYOUT);
 
 describe('_ssrTry', () => {
   it('writes the content between the markers of a content rendered', () => {
@@ -55,7 +61,7 @@ describe('_ssrTry', () => {
 
   it('calls the content and the @catch with the component as this and the context of the scope holding the block', () => {
     const component = { name: 'card' };
-    const componentContext = new _Context(context, undefined, 0, component);
+    const componentContext = _scope(context, EMPTY_LAYOUT, undefined, component);
     const calls = new Array<[unknown, unknown]>();
 
     _ssrTry([], componentContext, function (this: unknown, _output, contentContext) {

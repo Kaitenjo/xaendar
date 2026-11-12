@@ -5,7 +5,8 @@ import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT, SET_DIR
 import { HostEvent } from '../../decorators/host-event/host-event.decorator';
 import { HostProperty } from '../../decorators/host-property/host-property.decorator';
 import { effect } from '../../signals/effect/effect';
-import { _Context } from '../../utils/context/context.util';
+import { EMPTY_LAYOUT, _scope, addCleanup, clear, getChild, getChildCount } from '../../utils/context/context.util';
+import type { _Context } from '../../types/context.type';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { CustomElement } from '../custom-element/custom-element';
 import { CustomDirective } from './custom-directive';
@@ -13,7 +14,7 @@ import { CustomDirective } from './custom-directive';
 /**
  * The child contexts of a context, in registration order.
  */
-const childrenOf = <TContext>(context: { getChildCount(): number, getChild(index: number): TContext }): TContext[] => Array.from({ length: context.getChildCount() }, (_item, index) => context.getChild(index));
+const childrenOf = (context: _Context): _Context[] => Array.from({ length: getChildCount(context) }, (_item, index) => getChild(context, index));
 
 loadSignals();
 
@@ -42,8 +43,8 @@ function create<T extends CustomDirective>(Directive: new () => T, element = doc
  * returned context disconnects the directive and disposes its effects.
  */
 function connect(directive: CustomDirective): _Context {
-  const context = new _Context({} as never);
-  context.addUnlistener(() => directive[DIRECTIVE_DISCONNECT]());
+  const context = _scope(null, EMPTY_LAYOUT);
+  addCleanup(context, () => directive[DIRECTIVE_DISCONNECT]());
   directive[DIRECTIVE_CONNECT](context);
 
   return context;
@@ -55,7 +56,7 @@ function connect(directive: CustomDirective): _Context {
 const Child = (() => {
   const klass = class extends CustomElement { };
   Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { selector: 'x-directive-created' } });
-  _defineRender(klass, () => new _Context({} as never));
+  _defineRender(klass, () => _scope(null, EMPTY_LAYOUT));
   customElements.define('x-directive-created', klass);
 
   return klass;
@@ -99,7 +100,7 @@ describe('CustomDirective', () => {
     element.click();
     expect(handle).toHaveBeenCalledOnce();
 
-    context.clear();
+    clear(context);
     expect(element.classList.contains('on')).toBe(false);
     element.click();
     expect(handle).toHaveBeenCalledOnce();
@@ -108,7 +109,7 @@ describe('CustomDirective', () => {
   it('can be connected and disconnected without onInit and onDestroy', () => {
     const directive = create(class extends CustomDirective { });
 
-    expect(() => connect(directive).clear()).not.toThrow();
+    expect(() => clear(connect(directive))).not.toThrow();
   });
 
   it('invokes onDestroy before disposing its effects when disconnected', () => {
@@ -122,7 +123,7 @@ describe('CustomDirective', () => {
       directive.effect(() => undefined, { onCleanup: () => calls.push('dispose') });
     });
 
-    connect(directive).clear();
+    clear(connect(directive));
 
     expect(calls).toEqual(['onDestroy', 'dispose']);
   });
@@ -135,8 +136,8 @@ describe('CustomDirective', () => {
     });
     const context = connect(directive);
 
-    context.clear();
-    context.clear();
+    clear(context);
+    clear(context);
 
     expect(onCleanup).toHaveBeenCalledOnce();
   });
@@ -148,7 +149,7 @@ describe('CustomDirective', () => {
       effect(() => undefined, { onCleanup });
     });
 
-    connect(directive).clear();
+    clear(connect(directive));
 
     expect(onCleanup).not.toHaveBeenCalled();
   });
@@ -193,7 +194,7 @@ describe('CustomDirective', () => {
       const context = connect(directive);
 
       expect(onCleanup).not.toHaveBeenCalled();
-      context.clear();
+      clear(context);
       expect(onCleanup).toHaveBeenCalledOnce();
 
       state.set(1);
@@ -223,7 +224,7 @@ describe('CustomDirective', () => {
       const context = connect(directive);
 
       directive.effect(() => undefined, { onCleanup })();
-      context.clear();
+      clear(context);
 
       expect(onCleanup).toHaveBeenCalledOnce();
     });
@@ -244,7 +245,7 @@ describe('CustomDirective', () => {
       const context = connect(directive);
 
       const dispose = directive.effect(() => state.get());
-      context.clear();
+      clear(context);
 
       expect(() => dispose()).toThrow();
     });
@@ -269,7 +270,7 @@ describe('CustomDirective', () => {
         await flush();
         expect(runs).toEqual(['field 0', 'constructor 0', 'field 1', 'constructor 1']);
 
-        context.clear();
+        clear(context);
         expect(onCleanup).toHaveBeenCalledTimes(2);
       });
 
@@ -278,7 +279,7 @@ describe('CustomDirective', () => {
         const directive = create(TestDirective);
 
         directive.effect(() => undefined, { onCleanup })();
-        connect(directive).clear();
+        clear(connect(directive));
 
         expect(onCleanup).toHaveBeenCalledOnce();
       });
@@ -297,7 +298,7 @@ describe('CustomDirective', () => {
       expect(firstCleanup).toHaveBeenCalledOnce();
       expect(secondCleanup).not.toHaveBeenCalled();
 
-      context.clear();
+      clear(context);
       expect(firstCleanup).toHaveBeenCalledOnce();
       expect(secondCleanup).toHaveBeenCalledOnce();
     });
@@ -310,7 +311,7 @@ describe('CustomDirective', () => {
       const { element } = directive.createComponent(Child, { target: document.body });
       expect(element.isConnected).toBe(true);
 
-      context.clear();
+      clear(context);
 
       expect(element.isConnected).toBe(false);
     });

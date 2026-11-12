@@ -1,5 +1,5 @@
 import type { Function } from '@xaendar/types';
-import type { _Context } from '../utils/context/context.util';
+import type { _Context } from './context.type';
 
 /**
  * Renders the children of an element, as the compiler-generated render code does: it receives the element and the context

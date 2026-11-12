@@ -1,5 +1,5 @@
 import { escapeAttribute, escapeRawText } from '@xaendar/common';
-import { _applyHostProperties, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
+import { _applyHostProperties, _COMPONENT, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
 import type { Constructor, Dictionary, Function } from '@xaendar/types';
 import { ServerElement } from '../../dom/server-element/server-element';
 import type { ClientComponentOptions } from '../../types/client-component-options.type';
@@ -303,7 +303,7 @@ function applyBindings(element: Element, context: _Context, bindings: ServerBind
  * @returns The value.
  */
 function valueOf({ value }: ServerAttribute, context: _Context): unknown {
-  return typeof value === 'function' ? value.call(context.component, context) : value;
+  return typeof value === 'function' ? value.call(context[_COMPONENT], context) : value;
 }
 
 /**

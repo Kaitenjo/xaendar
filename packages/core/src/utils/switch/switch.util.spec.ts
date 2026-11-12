@@ -2,33 +2,41 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { BlockConfig } from '../../types/if/block-config.type';
 import type { TemplateExpression } from '../../types/template-expression.type';
+import { HEADER } from '../../costants';
+import type { _Context } from '../../types/context.type';
+import type { _ScopeLayout } from '../../types/scope-layout.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
   loadSignals();
 });
 
-const { _Context, mountNode } = await import('../context/context.util');
+const { _scope, clear, ELEMENT_LAYOUT, EMPTY_LAYOUT, mountNode, refresh, update } = await import('../context/context.util');
 const { _switch } = await import('./switch.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _SSR_MARKERS } = await import('../../costants');
 const { computed, signal } = await import('../../signals');
 
-type Context = InstanceType<typeof _Context>;
+type Context = _Context;
 type Case = { readonly condition: readonly unknown[] | null, readonly block: BlockConfig['branches'][number]['block'] };
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
 function createRoot() {
-  return new _Context({ createElement: (tag: string) => document.createElement(tag) } as never);
+  return _scope(null, ELEMENT_LAYOUT);
 }
+
+/**
+ * The layout of a scope declaring some variables.
+ */
+const layoutOf = (count: number): _ScopeLayout => ({ size: HEADER + count, nodes: HEADER + count });
 
 function block(label: string) {
   return (parent: HTMLElement, parentContext: Context, reference: Node | null) => {
-    const context = new _Context(parentContext);
+    const context = _scope(parentContext, ELEMENT_LAYOUT);
     const element = document.createElement('span');
     element.textContent = label;
-    mountNode(element, parent, context, reference as Comment | null);
+    mountNode(element, parent, context, reference as Comment | null, HEADER);
     return context;
   };
 }
@@ -36,7 +44,7 @@ function block(label: string) {
 /**
  * Builds the configuration of a `@switch`, as the compiler declares it in the module of the template.
  */
-function switchOf(expression: TemplateExpression<unknown>, branches: readonly Case[], reads?: readonly string[]): BlockConfig {
+function switchOf(expression: TemplateExpression<unknown>, branches: readonly Case[], reads?: readonly number[]): BlockConfig {
   return reads ? { expression, branches, reads } : { expression, branches };
 }
 
@@ -89,7 +97,7 @@ describe('_switch', () => {
 
     _switch(parent, context, null, switchOf(() => 1, cases));
 
-    expect(blockOf).toHaveBeenCalledExactlyOnceWith(context, parent, null, 'if', _SSR_MARKERS.switch, undefined);
+    expect(blockOf).toHaveBeenCalledExactlyOnceWith(context, parent, null, 'if', _SSR_MARKERS.switch, undefined, undefined);
     blockOf.mockRestore();
   });
 
@@ -102,7 +110,7 @@ describe('_switch', () => {
     const nodes = () => Array.from(parent.childNodes).map(node => `${node.nodeName}:${node.textContent}`);
     _switch(parent, context, null, { expression: () => value(), branches: cases.slice(0, 2), last: true });
 
-    expect(blockOf).toHaveBeenCalledExactlyOnceWith(context, parent, null, 'if', _SSR_MARKERS.switch, true);
+    expect(blockOf).toHaveBeenCalledExactlyOnceWith(context, parent, null, 'if', _SSR_MARKERS.switch, true, undefined);
     expect(nodes()).toEqual(['I:i', 'SPAN:one']);
 
     value.set(2);
@@ -219,7 +227,7 @@ describe('_switch', () => {
 
   it('calls the expression with the component of the context as this and the context', () => {
     const component = { mode: 2 };
-    const context = new _Context(createRoot(), undefined, 0, component);
+    const context = _scope(createRoot(), EMPTY_LAYOUT, undefined, component);
     const expression = vi.fn(function (this: typeof component, _context: Context) {
       return this.mode;
     });
@@ -233,27 +241,27 @@ describe('_switch', () => {
   });
 
   it('follows a variable of the template its expression reads when the scope is refreshed with it', () => {
-    const context = new _Context(createRoot(), undefined, 1);
-    context.addIdentifier('mode', 1);
+    const context = _scope(createRoot(), layoutOf(1));
+    context[HEADER] = 1;
     const parent = document.createElement('div');
-    _switch(parent, context, null, switchOf(scope => scope.get('mode'), cases, ['mode']));
+    _switch(parent, context, null, switchOf(scope => scope[HEADER], cases, [0]));
 
-    context.update('mode', 3);
-    context.refresh(['mode']);
+    update(context, HEADER, 3);
+    refresh(context, [0]);
 
     expect(text(parent)).toEqual(['two-three']);
   });
 
   it('shares the same config and the same expression between two instances of the block, each reading its own context, without writing into the config', () => {
-    const expression = vi.fn((scope: Context) => scope.get('mode'));
+    const expression = vi.fn((scope: Context) => scope[HEADER]);
     const config = deepFreeze(switchOf(expression, [
       { condition: [1], block: block('one') },
       { condition: null, block: block('default') }
-    ], ['mode']));
-    const first = new _Context(createRoot(), undefined, 1);
-    const second = new _Context(createRoot(), undefined, 1);
-    first.addIdentifier('mode', 1);
-    second.addIdentifier('mode', 7);
+    ], [0]));
+    const first = _scope(createRoot(), layoutOf(1));
+    const second = _scope(createRoot(), layoutOf(1));
+    first[HEADER] = 1;
+    second[HEADER] = 7;
     const firstParent = document.createElement('div');
     const secondParent = document.createElement('div');
 
@@ -264,10 +272,10 @@ describe('_switch', () => {
     expect(text(firstParent)).toEqual(['one']);
     expect(text(secondParent)).toEqual(['default']);
 
-    second.update('mode', 1);
-    second.refresh(['mode']);
-    first.update('mode', 4);
-    first.refresh(['mode']);
+    update(second, HEADER, 1);
+    refresh(second, [0]);
+    update(first, HEADER, 4);
+    refresh(first, [0]);
 
     expect(text(firstParent)).toEqual(['default']);
     expect(text(secondParent)).toEqual(['one']);

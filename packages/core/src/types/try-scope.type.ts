@@ -1,4 +1,4 @@
-import type { _Context } from '../utils/context/context.util';
+import type { _Context } from './context.type';
 
 /**
  * A `@try` rendering its content for the first time, along with the code of the components the content creates: the

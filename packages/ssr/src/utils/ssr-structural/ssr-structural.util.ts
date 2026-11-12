@@ -1,4 +1,4 @@
-import { _Context, _getComponentRuntime, _resolveDirective, _selectBranch, _SSR_MARKERS, StructuralDirective, type RenderElementStructuralDirective, type RenderElementStructuralDirectiveConditionalBinding } from '@xaendar/core';
+import { _COMPONENT, _getComponentRuntime, _resolveDirective, _selectBranch, _SSR_MARKERS, StructuralDirective, type _Context, type RenderElementStructuralDirective, type RenderElementStructuralDirectiveConditionalBinding } from '@xaendar/core';
 import type { ServerOutput } from '../../types/server-output.type';
 import type { ServerStructuralConfig } from '../../types/server-structural-config.type';
 import { _runOnServer } from '../server-runtime/server-runtime.util';
@@ -35,7 +35,7 @@ const CLOSE = `<!--/${_SSR_MARKERS.structural}-->`;
  * @param context - The runtime context the structural directives are applied in.
  * @param config - The element, a constant of the module of the template: the structural directives applied directly,
  *   the conditional bindings applying structural directives, and the function of the module writing the element in the
- *   given output, in the given runtime context, a child of `context`, called with the component as `this`.
+ *   given output, in `context` itself, called with the component as `this`.
  * @throws When no structural directive is registered for a selector.
  */
 export function _ssrStructural(out: ServerOutput, context: _Context, config: ServerStructuralConfig): void {
@@ -59,18 +59,17 @@ export function _ssrStructural(out: ServerOutput, context: _Context, config: Ser
     out.push(NOT_RENDERED);
   } else if (!pending.length) {
     out.push(RENDERED);
-    render.call(context.component, out, new _Context(context));
+    render.call(context[_COMPONENT], out, context);
   } else {
     // The element is rendered once the promises settle, out of the synchronous segment running with the runtime of the page
     const runtime = _getComponentRuntime();
-    const elementContext = new _Context(context);
     out.push(Promise.all(pending).then(values => {
       if (!values.every(value => value)) {
         return [NOT_RENDERED];
       }
 
       const output: ServerOutput = [RENDERED];
-      _runOnServer(runtime, () => render.call(context.component, output, elementContext));
+      _runOnServer(runtime, () => render.call(context[_COMPONENT], output, context));
       return output;
     }));
   }

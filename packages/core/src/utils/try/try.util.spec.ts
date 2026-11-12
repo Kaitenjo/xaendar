@@ -2,6 +2,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { TryBlock } from '../../types/try-block.type';
+import { HEADER } from '../../costants';
+import type { _Context } from '../../types/context.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -10,26 +12,31 @@ await vi.hoisted(async () => {
 
 const { effect, signal } = await import('../../signals');
 const { ClaimNodes } = await import('../claim-nodes/claim-nodes.util');
-const { _Context } = await import('../context/context.util');
+const { _scope, EMPTY_LAYOUT, ELEMENT_LAYOUT, addCleanup, clear, trackNode } = await import('../context/context.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
-const { trackNode } = await import('../track-node/track-node.util');
+
 const { connectChild, runConnection } = await import('../try-scope/try-scope.util');
 const { _try } = await import('./try.util');
 
 /**
  * The type of a runtime context.
  */
-type Context = InstanceType<typeof _Context>;
+type Context = _Context;
 
-const createRoot = (nodeStrategy?: NodeStrategy) => new _Context({ createElement: (tag: string) => document.createElement(tag) } as never, nodeStrategy);
+const createRoot = (nodeStrategy?: NodeStrategy) => _scope(null, ELEMENT_LAYOUT, nodeStrategy);
+
+/**
+ * The layout of the contexts of the tests rendering an element and the anchor of a block.
+ */
+const TWO_NODES = { size: HEADER + 2, nodes: HEADER };
 
 /**
  * Renders an element in a context of its own, as the generated code does.
  */
 const renderElement = (parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy, tagName: string) => {
-  const context = new _Context(parentContext, nodeStrategy);
+  const context = _scope(parentContext, TWO_NODES, nodeStrategy);
   const element = nodeStrategy.element(context, parentNode, tagName);
-  trackNode(element, parentNode, context);
+  trackNode(element, parentNode, context, HEADER);
   nodeStrategy.mount(element, parentNode, anchor);
   return context;
 };
@@ -76,12 +83,12 @@ describe('_try', () => {
       const render = content('b');
       const rescue = fallback('i');
 
-      _try(parent, root, null, { content: render, catch: rescue });
+      _try(parent, root, null, { content: render, catch: rescue, slot: HEADER });
 
       expect(parent.innerHTML).toBe('<b></b><!--try-->');
       expect(render.mock.calls[0][3]).toBe(CREATE_NODES);
       expect(rescue).not.toHaveBeenCalled();
-      root.clear();
+      clear(root);
       expect(parent.innerHTML).toBe('');
     });
 
@@ -98,10 +105,11 @@ describe('_try', () => {
           const context = renderElement(parentNode, parentContext, anchor, nodeStrategy, 'b');
           // A nested scope, never registered in its parent, since the content throws before returning
           const nested = renderElement(parentNode, context, anchor, nodeStrategy, 'u');
-          nested.addUnlistener(effect(() => reads(count())));
+          addCleanup(nested, effect(() => reads(count())));
           throw failure;
         },
-        catch: rescue
+        catch: rescue,
+        slot: HEADER
       });
 
       expect(parent.innerHTML).toBe('<i></i><!--try-->');
@@ -110,7 +118,7 @@ describe('_try', () => {
 
       count.set(1);
       expect(reads).toHaveBeenCalledOnce();
-      root.clear();
+      clear(root);
       expect(parent.innerHTML).toBe('');
     });
 
@@ -118,8 +126,8 @@ describe('_try', () => {
       const parent = document.createElement('div');
       const rescue = fallback('i');
 
-      _try(parent, createRoot(), null, { content: content('b', undefined), catch: rescue });
-      _try(parent, createRoot(), null, { content: () => { throw 'text'; }, catch: rescue });
+      _try(parent, createRoot(), null, { content: content('b', undefined), catch: rescue, slot: HEADER });
+      _try(parent, createRoot(), null, { content: () => { throw 'text'; }, catch: rescue, slot: HEADER });
 
       expect(rescue.mock.calls.map(call => call[4])).toEqual([undefined, 'text']);
     });
@@ -144,13 +152,14 @@ describe('_try', () => {
 
       _try(parent, createRoot(), null, {
         content: (parentNode, parentContext, anchor) => {
-          const context = new _Context(parentContext);
+          const context = _scope(parentContext, ELEMENT_LAYOUT);
           const element = document.createElement('x-failing-child');
-          trackNode(element, parentNode, context);
+          trackNode(element, parentNode, context, HEADER);
           connectChild(CREATE_NODES, element, parentNode, anchor as Comment | null);
           return context;
         },
-        catch: rescue
+        catch: rescue,
+        slot: HEADER
       });
 
       expect(rescue.mock.calls[0][4]).toBe(failure);
@@ -164,13 +173,14 @@ describe('_try', () => {
 
       _try(parent, createRoot(), null, {
         content: (_parentNode, parentContext) => {
-          const context = new _Context(parentContext);
-          context.addUnlistener(() => order.push('content'));
+          const context = _scope(parentContext, EMPTY_LAYOUT);
+          addCleanup(context, () => order.push('content'));
           // The root context of the render of a component, which has no parent among the contexts of the content
-          new _Context({} as never).addUnlistener(() => order.push('component'));
+          addCleanup(_scope(null, EMPTY_LAYOUT), () => order.push('component'));
           throw new Error('broken');
         },
-        catch: fallback('i')
+        catch: fallback('i'),
+        slot: HEADER
       });
 
       expect(order).toEqual(['content', 'component']);
@@ -183,10 +193,11 @@ describe('_try', () => {
       _try(parent, createRoot(), null, {
         content: (parentNode, parentContext, anchor, nodeStrategy) => {
           const context = renderElement(parentNode, parentContext, anchor, nodeStrategy, 'b');
-          _try(parentNode, context, anchor as Comment | null, { content: content('u', new Error('inner')), catch: () => { throw new Error('rethrown'); } });
+          _try(parentNode, context, anchor as Comment | null, { content: content('u', new Error('inner')), catch: () => { throw new Error('rethrown'); }, slot: HEADER + 1 });
           return context;
         },
-        catch: outerRescue
+        catch: outerRescue,
+        slot: HEADER
       });
 
       expect(parent.innerHTML).toBe('<s></s><!--try-->');
@@ -201,7 +212,7 @@ describe('_try', () => {
 
       _try(parent, root, null, { content: render, catch: fallback('i'), last: true });
 
-      expect(block).toHaveBeenCalledExactlyOnceWith(root, parent, null, 'try', 'xd-t', true);
+      expect(block).toHaveBeenCalledExactlyOnceWith(root, parent, null, 'try', 'xd-t', true, undefined);
       expect(parent.innerHTML).toBe('<p></p><b></b>');
       expect(render.mock.calls[0][2]).toBeNull();
 
@@ -222,7 +233,7 @@ describe('_try', () => {
       const context = createRoot(strategy);
       const render = content('b');
 
-      _try(parent, context, null, { content: render, catch: fallback('i') });
+      _try(parent, context, null, { content: render, catch: fallback('i'), slot: HEADER });
 
       expect(render.mock.calls[0][3]).toBe(strategy);
       expect(parent.firstElementChild).toBe(b);
@@ -237,7 +248,7 @@ describe('_try', () => {
       const context = createRoot(strategy);
       const rescue = fallback('i');
 
-      _try(parent, context, null, { content: content('b', new Error('browser')), catch: rescue });
+      _try(parent, context, null, { content: content('b', new Error('browser')), catch: rescue, slot: HEADER });
 
       expect(parent.innerHTML).toBe('<i></i><!--/xd-t--><p></p>');
       expect(rescue.mock.calls[0][3]).toBe(CREATE_NODES);
@@ -252,7 +263,7 @@ describe('_try', () => {
       const context = createRoot(strategy);
       const render = content('b');
 
-      _try(parent, context, null, { content: render, catch: fallback('i') });
+      _try(parent, context, null, { content: render, catch: fallback('i'), slot: HEADER });
 
       expect(parent.innerHTML).toBe('<b></b><!--/xd-t--><p></p>');
       expect(render.mock.calls[0][3]).toBe(CREATE_NODES);
@@ -260,7 +271,7 @@ describe('_try', () => {
       const failing = parse('<!--xd-t:1--><i>server</i><!--/xd-t--><p></p>');
       const failingStrategy = new ClaimNodes('x-host');
       const rescue = fallback('i');
-      _try(failing, createRoot(failingStrategy), null, { content: content('b', new Error('again')), catch: rescue });
+      _try(failing, createRoot(failingStrategy), null, { content: content('b', new Error('again')), catch: rescue, slot: HEADER });
 
       expect(failing.innerHTML).toBe('<i></i><!--/xd-t--><p></p>');
       expect(rescue.mock.calls[0][3]).toBe(CREATE_NODES);

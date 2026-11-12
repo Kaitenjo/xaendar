@@ -80,11 +80,63 @@ export const HYDRATE = Symbol('Hydrate');
  */
 export const WAITS_FOR_HYDRATION = Symbol('WaitsForHydration');
 /**
- * Key marking the parent of the root context of every render of a template (`_ROOT_PARENT_CONTEXT`), which tells the
- * root context apart: it keeps none of the nodes it renders, which stay in the shadow root of the component, removed
- * with it (see `_Context.addNode`).
+ * The slot of a scope (see `_Context`) holding the scope declaring its block, whose variables it reads.
+ *
+ * N.B. Deliberate, to save memory: a scope is a plain array of the exact length its layout gives, its slots decided by
+ * the compiler, as Angular does with its `LView`, instead of an object with a field per member and two arrays of its
+ * own, the variables by name and the nodes, which every scope paid, the rows of a table included. The header holds the
+ * slots every scope has, at fixed indices, then come the variables, each at a slot the compiler assigns, then the nodes
+ * at the top of the block. The variables come before the nodes because the compiler knows them all before it generates
+ * the body of the block, while it counts the nodes as it generates them: the reads of the body need the slots of the
+ * variables first. Do not go back to an object, nor to lists searched by name at runtime.
  */
-export const ROOT_PARENT = Symbol('RootParent');
+export const PARENT = 0;
+/**
+ * The slot of a scope holding the node the nodes at the top of its block are inserted into.
+ */
+export const PARENT_NODE = 1;
+/**
+ * The slot of a scope holding the last refresh that brought it up to date.
+ */
+export const STATE = 2;
+/**
+ * The slot of a scope holding the component whose template it renders, `this` of its expressions.
+ */
+export const COMPONENT = 3;
+/**
+ * The slot of a scope holding the strategy getting its nodes, `null` for `CREATE_NODES`.
+ *
+ * N.B. Deliberate, to save memory: `null` for the strategy of nearly every scope, so that the slot points to nothing,
+ * a strategy of a hydration only while it runs. Do not write `CREATE_NODES` in it.
+ */
+export const STRATEGY = 4;
+/**
+ * The slot of a scope holding what it runs or disposes when it is cleared, the bindings reading variables included.
+ *
+ * N.B. Deliberate, to save memory: the cleanup functions and the bindings share one slot, the item itself while there is
+ * one, an array from the second, `null` while there is none, instead of two lists, which cost an array per scope as soon
+ * as it has both a listener and a binding. Do not split them again, nor make an array of a single item.
+ */
+export const CLEANUP = 5;
+/**
+ * The slot of a scope holding its layout (see `_ScopeLayout`), shared by every instance of its block: where its nodes
+ * start, and the names of its variables for the errors.
+ *
+ * N.B. Deliberate: the one slot telling where the nodes start, since the variables before them vary from a block to
+ * another, and the runtime clears and moves the nodes of scopes whose block it does not know. Do not encode it in
+ * `STATE`: the number of the refresh grows without bound, and the two together would leave the small integers V8 keeps
+ * in a slot without allocating, costing a number per scope.
+ */
+export const LAYOUT = 6;
+/**
+ * The slot of a scope holding the scopes inside it: the scope itself while there is one, an array from the second.
+ */
+export const CHILDREN = 7;
+/**
+ * The number of slots of the header of a scope: the slot of its first variable. The compiler writes the same number
+ * (`SCOPE_HEADER` of `@xaendar/compiler`): change both together.
+ */
+export const HEADER = 8;
 /**
  * Key of the brand marking the options `Property.required` passes to the decorator it creates, which tells them apart
  * from a default value (see `Property`).

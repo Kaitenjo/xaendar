@@ -1,4 +1,4 @@
-import type { _Context } from '../../utils/context/context.util';
+import type { _Context } from '../context.type';
 import type { NodeBlock } from '../node-block.type';
 import type { BlockConfig } from './block-config.type';
 import type { State } from './state.type';

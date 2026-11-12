@@ -1,6 +1,6 @@
 import type { BindingHost } from '../../types/binding-host.type';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
-import type { _Context } from '../../utils/context/context.util';
+import type { _Context } from '../../types/context.type';
 
 /**
  * Unbinds the attributes of a branch of a conditional binding, once the branch is no longer the selected one or its

@@ -27,7 +27,7 @@ describe('generateServerFor', () => {
     }]);
     expect(context.functionDeclarations).toEqual(['function ul0__for1$track(context, user, i, $first, $last, $even, $odd) {\n  return user.id;\n}']);
     const { fn, args } = functionsToProcess!.get('ul0__for1')!;
-    expect(context.constantDeclarations).toEqual(['const ul0__for1Variables = { used: [\'item\', \'$index\'], names: [\'user\', \'i\'] };']);
+    expect(context.constantDeclarations).toEqual(['const ul0__for1Variables = { used: [\'item\', \'$index\'], ids: [0, 1] };']);
     expect(fn.precode).toBe('_iterationVariables(context, items, index, ul0__for1Variables);');
     expect(fn.parent).toEqual({ id: 'ul0__for1', tag: 'ul' });
     expect(args).toEqual(['out', 'parentContext', 'items', 'index']);
@@ -76,7 +76,7 @@ describe('generateServerFor', () => {
     expect((pieces[0] as { statement: string }).statement).toContain('out.push(_ssrItemMarker(for0$track.call(this, context, items[index], index,');
     expect(context.functionDeclarations).toEqual(['function for0$track(context, _, $index, $first, $last, $even, $odd) {\n  return $index;\n}']);
     expect(functionsToProcess!.get('for0')!.fn.precode).toBe('_iterationVariables(context, items, index, for0Variables);');
-    expect(context.constantDeclarations).toEqual(['const for0Variables = { used: [\'$index\'], names: [\'$index\'] };']);
+    expect(context.constantDeclarations).toEqual(['const for0Variables = { used: [\'$index\'], ids: [0] };']);
   });
 
   it('names the context of the track __context when the item or an alias is named context', () => {

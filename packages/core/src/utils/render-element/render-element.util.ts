@@ -1,4 +1,4 @@
-import { _SSR_MARKERS, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, ROOT_PARENT, SET_DIRECTIVE_ELEMENT } from '../../costants';
+import { _SSR_MARKERS, COMPONENT, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, HEADER, SET_DIRECTIVE_ELEMENT } from '../../costants';
 import { AttributeUnbinding } from '../../models/attribute-unbinding/attribute-unbinding';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
@@ -28,11 +28,11 @@ import type { StructuralCollector } from '../../types/structural-collector.type'
 import type { TemplateExpression } from '../../types/template-expression.type';
 import { _addAppliedDirective, _removeAppliedDirective } from '../applied-directives/applied-directives.util';
 import { restoreToggledClasses } from '../class-toggle/class-toggle.util';
-import { _Context } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
+import { _scope, addChild, addCleanup, clear, ELEMENT_LAYOUT, getNodeStrategy, swapNodeStrategy, trackNode } from '../context/context.util';
 import { _setElementRef } from '../element-refs/element-refs.util';
 import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { _selectBranch } from '../select-branch/select-branch.util';
-import { renderChildren, trackNode } from '../track-node/track-node.util';
 import { connectChild } from '../try-scope/try-scope.util';
 import { writeAttribute } from '../write-attribute/write-attribute.util';
 
@@ -84,16 +84,16 @@ export function _renderElement(parentNode: Element, context: _Context, anchor: C
  * @throws When no custom directive is registered for the selector of a directive, and, in the content of a `@try`, the
  *   error of the component the element is.
  */
-function renderElement(parentNode: Element, context: _Context, anchor: Comment | null, config: RenderElement): void {
+function renderElement(parentNode: Element, context: _Context, anchor: Comment | null, config: RenderElement, slot = config.slot): void {
   const { attributes, events, conditionalBindings, directives, children, ref } = config;
-  const { nodeStrategy } = context;
+  const nodeStrategy = getNodeStrategy(context);
   const element = nodeStrategy.element(context, parentNode, config.tagName, config.namespace);
   if (ref) {
-    context.set(ref, element);
+    context[config.refSlot!] = element;
     _setElementRef(element, ref);
   }
 
-  trackNode(element, parentNode, context);
+  trackNode(element, parentNode, context, slot);
   if (attributes?.length) {
     bindProperties(element, context, attributes);
   }
@@ -152,14 +152,16 @@ function applyPendingDirectives(binding: ElementBinding): void {
 }
 
 /**
- * Renders the children of an element in the context the element is rendered in, when they get their nodes with its
- * strategy, or in a child context with their own strategy otherwise: in a hydration, the children of an element created
- * in place of a node of the server not matching it are created too. The context the children create for themselves,
- * if any, is registered as a child of the one they are rendered in.
+ * Renders the children of an element in the context the element is rendered in: in a hydration, the children of an
+ * element created in place of a node of the server not matching it are created too, the context getting their strategy
+ * while they render. The context the children create for themselves, if any, is registered as a child of the one they
+ * are rendered in.
  *
- * N.B. Deliberate, to save memory: a context is created for the children only when their strategy differs, which only
- * an element created in a hydration does, instead of one per element, which a large table pays per cell. Their effects
- * and listeners are cleared with the context of the element, which removes the element and so its children too.
+ * N.B. Deliberate, to save memory: the children are rendered in the context of the element, instead of one per element,
+ * which a large table pays per cell, its strategy swapped while they render when theirs differs, instead of a context
+ * of their own, which the compiler would have to count as a scope of the chain the children read their variables
+ * through. Their effects and listeners are cleared with the context of the element, which removes the element and so
+ * its children too. Do not create a context for them.
  *
  * @param element - The element.
  * @param context - The context the element is rendered in.
@@ -169,14 +171,20 @@ function applyPendingDirectives(binding: ElementBinding): void {
  */
 function renderElementChildren(element: Element, context: _Context, nodeStrategy: NodeStrategy, children: RenderChildren): void {
   const childrenStrategy = nodeStrategy.children(element);
-  const childrenContext = childrenStrategy === nodeStrategy ? context : new _Context(context, childrenStrategy);
-  const ownContext = renderChildren(children, element, childrenContext);
-  if (ownContext) {
-    childrenContext.addChild(ownContext);
+  let ownContext: _Context | undefined;
+  if (childrenStrategy === nodeStrategy) {
+    ownContext = children(element, context);
+  } else {
+    swapNodeStrategy(context, childrenStrategy);
+    try {
+      ownContext = children(element, context);
+    } finally {
+      swapNodeStrategy(context, nodeStrategy);
+    }
   }
 
-  if (childrenContext !== context) {
-    context.addChild(childrenContext);
+  if (ownContext) {
+    addChild(context, ownContext);
   }
 }
 
@@ -198,7 +206,7 @@ function bindProperties(target: Element | BindingHost, context: _Context, attrib
   }
 
   if (unbinds) {
-    context.addUnlistener(new AttributeUnbinding(context, target, attributes));
+    addCleanup(context, new AttributeUnbinding(context, target, attributes));
   }
 }
 
@@ -215,7 +223,7 @@ function bindEvents(element: Element, context: _Context, events: readonly Render
     const event = events[i];
     const listener = new TemplateListener(element, event, context);
     element.addEventListener(event.name, listener);
-    context.addUnlistener(listener);
+    addCleanup(context, listener);
   }
 }
 
@@ -240,7 +248,7 @@ function bindEvents(element: Element, context: _Context, events: readonly Render
 function bindConditionalBindings<Target, Bindings extends { readonly conditionalBindings?: ReadonlyArray<RenderConditionalBinding<Bindings>> }>(context: _Context, conditionalBindings: ReadonlyArray<RenderConditionalBinding<Bindings>>, target: Target, bind: ConditionalBindingRun<Target, Bindings>['bind']): void {
   for (let i = 0; i < conditionalBindings.length; i++) {
     const conditionalBinding = conditionalBindings[i];
-    const run: ConditionalBindingRun<Target, Bindings> = { conditionalBinding, branchContext: context.addChild(), target, bind, current: undefined };
+    const run: ConditionalBindingRun<Target, Bindings> = { conditionalBinding, branchContext: addChild(context), target, bind, current: undefined };
     _bindEffect(context, runConditionalBinding<Target, Bindings>, run, undefined, undefined, conditionalBinding.reads);
   }
 }
@@ -278,7 +286,7 @@ function applyBranch<Target, Bindings extends { readonly conditionalBindings?: R
 
   const { branchContext, target, bind } = run;
   run.current = selected;
-  branchContext.clear();
+  clear(branchContext);
 
   /*
     Selected branch could be null if
@@ -380,7 +388,7 @@ function bindDirectives(element: Element, context: _Context, directives: readonl
     }
 
     // Registered before connecting, so that `onDestroy` runs before the effects created in `onInit` are disposed
-    context.addUnlistener(() => {
+    addCleanup(context, () => {
       directive[DIRECTIVE_DISCONNECT]();
       _removeAppliedDirective(element, directive);
     });
@@ -408,10 +416,10 @@ function bindDirectives(element: Element, context: _Context, directives: readonl
  * @throws When no structural directive is registered for a selector.
  */
 function renderStructuralElement(parentNode: Element, context: _Context, anchor: Comment | null, config: RenderElement): void {
-  const { nodeStrategy } = context;
+  const nodeStrategy = getNodeStrategy(context);
   const { structuralDirectives, structuralConditionalBindings } = config;
-  const block = nodeStrategy.block(context, parentNode, anchor, 'structural', _SSR_MARKERS.structural, config.last);
-  const elementContext = context.addChild();
+  const block = nodeStrategy.block(context, parentNode, anchor, 'structural', _SSR_MARKERS.structural, config.last, config.slot);
+  const elementContext = addChild(context, _scope(context, ELEMENT_LAYOUT));
   const flags = signal(new Array<SignalType<boolean | undefined>>());
   const collector: StructuralCollector = {
     add: flag => flags.update(list => [...list, flag]),
@@ -429,7 +437,7 @@ function renderStructuralElement(parentNode: Element, context: _Context, anchor:
   let rendered = false;
   let first = true;
 
-  context.addUnlistener(effect(() => {
+  addCleanup(context, effect(() => {
     const shouldRender = checkRender(flags);
     if (first) {
       first = false;
@@ -439,8 +447,8 @@ function renderStructuralElement(parentNode: Element, context: _Context, anchor:
           outcome still pending keeps the one of the server, which is no element when the element is not adopted
         */
         rendered = shouldRender ?? block.marker === '1';
-        elementContext.nodeStrategy = nodeStrategy.adopt(parentNode, block, rendered ? '1' : '0');
-        rendered && renderElement(parentNode, elementContext, block.anchor, config);
+        swapNodeStrategy(elementContext, nodeStrategy.adopt(parentNode, block, rendered ? '1' : '0'));
+        rendered && renderElement(parentNode, elementContext, block.anchor, config, HEADER);
         nodeStrategy.close(parentNode, block);
       });
       return;
@@ -453,8 +461,8 @@ function renderStructuralElement(parentNode: Element, context: _Context, anchor:
 
     rendered = shouldRender;
     untracked(() => {
-      elementContext.clear();
-      shouldRender && renderElement(parentNode, elementContext, block.anchor, config);
+      clear(elementContext);
+      shouldRender && renderElement(parentNode, elementContext, block.anchor, config, HEADER);
     });
   }));
 }
@@ -531,31 +539,12 @@ function bindStructuralDirectives(context: _Context, structuralDirectives: reado
         : result.then(value => current === evaluation && flag.set(value));
     });
 
-    context.addUnlistener(() => {
+    addCleanup(context, () => {
       evaluation++;
       dispose();
       collector.remove(flag);
     });
   }
-}
-
-/**
- * The parent of the root context of every render of a template, written by the generated code as
- * `new _Context(_ROOT_PARENT_CONTEXT, nodeStrategy, count, this)`: a name no scope declares reads `undefined`, and
- * {@link ROOT_PARENT} tells the root context it keeps no node (see `_Context.addNode`).
- *
- * N.B. Deliberate, to save memory: a single object shared by every render, instead of an object literal and a function
- * the generated code would create at each one. Its members are never written.
- */
-export const _ROOT_PARENT_CONTEXT = { get: readUndeclared, [ROOT_PARENT]: true } as unknown as _Context;
-
-/**
- * Reads a name no scope of a template declares, as the parent of the root context of a render does.
- *
- * @returns `undefined`.
- */
-function readUndeclared(): undefined {
-  return undefined;
 }
 
 /**
@@ -685,7 +674,7 @@ export function _resetProperty(_context: _Context, target: Element | BindingHost
  * @returns The value.
  */
 function evaluate(attribute: RenderElementAttribute, context: _Context): unknown {
-  return (attribute.value as TemplateExpression<unknown>).call(context.component, context);
+  return (attribute.value as TemplateExpression<unknown>).call(context[COMPONENT], context);
 }
 
 /**

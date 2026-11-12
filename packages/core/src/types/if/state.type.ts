@@ -1,4 +1,4 @@
-import type { _Context } from '../../utils/context/context.util';
+import type { _Context } from '../context.type';
 
 /**
  * The state of an `@if`: the branch it renders, `null` when it renders none, and the context of that branch.

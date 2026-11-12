@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { _EVENT_CONTRACT_KEY, WAITS_FOR_HYDRATION } from '../../costants';
-import type { _Context } from '../context/context.util';
+import { _scope, EMPTY_LAYOUT } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
 import { armTriggers, deferElementHydration, recordEvents, replayContractEvents, replayElementEvents, replayEvents, toIdle, waitedForTrigger, watchedTriggers } from './hydration-triggers.util';
 
 /**
@@ -136,7 +137,7 @@ describe('armTriggers', () => {
   it('reads the element a trigger names and the options of visible with the component and the context of the block, once armed', () => {
     const named = document.body.appendChild(document.createElement('button'));
     const component = { named, margin: '20px' };
-    const context = { component } as unknown as _Context;
+    const context = _scope(null, EMPTY_LAYOUT, undefined, component);
     const target = vi.fn(function (this: typeof component, _context: _Context) {
       return this.named;
     });

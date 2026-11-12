@@ -1,12 +1,13 @@
 import type { NoArgsVoidFunction } from '@xaendar/types';
-import { _SSR_MARKERS } from '../../costants';
+import { _SSR_MARKERS, COMPONENT, LAYOUT } from '../../costants';
 import { _bindEffect } from '../../signals/effect/effect';
 import { untracked } from '../../signals/untracked';
 import type { DeferBlock } from '../../types/defer-block.type';
 import type { DeferBlockFixture } from '../../types/defer-testing/defer-block-fixture.type';
 import type { DeferBlockState } from '../../types/defer-testing/defer-block-state.type';
 import type { DeferRun } from '../../types/defer-run.type';
-import type { _Context } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
+import { addChild, addCleanup, clear, getChild, getChildCount, getNodeStrategy, removeChild } from '../context/context.util';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { registerDeferBlock } from '../defer-testing/defer-testing.util';
 import { armTriggers, disarmAll, watchedTriggers } from '../hydration-triggers/hydration-triggers.util';
@@ -40,8 +41,8 @@ import { armTriggers, disarmAll, watchedTriggers } from '../hydration-triggers/h
  * @param block - The triggers, the content and the blocks following it.
  */
 export function _defer(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, block: DeferBlock): void {
-  const { nodeStrategy } = parentContext;
-  const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'defer', _SSR_MARKERS.defer, block.last);
+  const nodeStrategy = getNodeStrategy(parentContext);
+  const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'defer', _SSR_MARKERS.defer, block.last, block.slot);
   const run: DeferRun = {
     parentNode,
     parentContext,
@@ -56,14 +57,14 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
     state: 'placeholder'
   };
 
-  parentContext.addUnlistener(() => {
+  addCleanup(parentContext, () => {
     run.active = false;
     disarmAll(run.disarms);
   });
 
   // The placeholder the server rendered is adopted
   if (block.placeholder) {
-    run.shown = parentContext.addChild(block.placeholder(parentNode, parentContext, run.anchor, nodeStrategy.adopt(parentNode, nodeBlock, '')));
+    run.shown = addChild(parentContext, block.placeholder(parentNode, parentContext, run.anchor, nodeStrategy.adopt(parentNode, nodeBlock, '')));
   }
   nodeStrategy.close(parentNode, nodeBlock);
   run.placeholderEnd = performance.now() + (block.placeholderMinimum ?? 0);
@@ -106,7 +107,7 @@ export function _defer(parentNode: HTMLElement, parentContext: _Context, referen
  * @param run - The block, whose `when` is defined.
  */
 function checkWhen(run: DeferRun): void {
-  if (!run.fired && run.block.when!.call(run.parentContext.component, run.parentContext)) {
+  if (!run.fired && run.block.when!.call(run.parentContext[COMPONENT], run.parentContext)) {
     queueMicrotask(() => run.active && fire(run));
   }
 }
@@ -119,7 +120,7 @@ function checkWhen(run: DeferRun): void {
  * @param run - The block, whose `prefetchWhen` is defined.
  */
 function checkPrefetchWhen(run: DeferRun): void {
-  if (!run.fired && run.block.prefetchWhen!.call(run.parentContext.component, run.parentContext)) {
+  if (!run.fired && run.block.prefetchWhen!.call(run.parentContext[COMPONENT], run.parentContext)) {
     queueMicrotask(() => run.active && !run.fired && prefetch(run));
   }
 }
@@ -137,13 +138,13 @@ function show(run: DeferRun, next: DeferBlockState, part?: DeferBlock['error'], 
   untracked(() => {
     run.state = next;
     if (run.shown) {
-      run.parentContext.removeChild(run.shown);
-      run.shown.clear();
+      removeChild(run.parentContext, run.shown);
+      clear(run.shown);
       run.shown = undefined;
     }
 
     if (part) {
-      run.shown = run.parentContext.addChild(part(run.parentNode, run.parentContext, run.anchor, CREATE_NODES, failure));
+      run.shown = addChild(run.parentContext, part(run.parentNode, run.parentContext, run.anchor, CREATE_NODES, failure));
     }
   });
 }
@@ -314,15 +315,15 @@ function elementsOf(context: _Context | undefined, parentNode: Node, elements = 
     return elements;
   }
 
-  for (let i = 0; i < context.getNodeCount(); i++) {
-    const node = context.getNode(i);
-    if (node.nodeType === Node.ELEMENT_NODE && node.parentNode === parentNode) {
+  for (let i = context[LAYOUT].nodes; i < context.length; i++) {
+    const node = context[i] as Node | null | undefined;
+    if (node?.nodeType === Node.ELEMENT_NODE && node.parentNode === parentNode) {
       elements.push(node as Element);
     }
   }
 
-  for (let i = 0; i < context.getChildCount(); i++) {
-    elementsOf(context.getChild(i), parentNode, elements);
+  for (let i = 0; i < getChildCount(context); i++) {
+    elementsOf(getChild(context, i), parentNode, elements);
   }
 
   return elements;

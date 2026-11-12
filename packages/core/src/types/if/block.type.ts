@@ -1,5 +1,5 @@
 import type { Function } from '@xaendar/types';
-import type { _Context } from '../../utils/context/context.util';
+import type { _Context } from '../context.type';
 import type { NodeStrategy } from '../node-strategy.type';
 
 /**

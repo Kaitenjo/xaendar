@@ -7,18 +7,19 @@ import { declareExpression, toObjectLiteral } from '../../utils/module-code/modu
 
 /**
  * Generates the code rendering an instance of a template, e.g. `@render row(item, $index)`: a `_renderTemplate(...)`
- * call receiving a constant of the module (`div0__render1$render`, see `RenderTemplateConfig` of the runtime) naming
- * the template, which the runtime reads from the scope declaring it, and the function of the module computing the
- * values of the arguments, which the runtime calls with the component and the context, again when a signal or a
- * variable of the template it reads changes, updating the parameters of the instance instead of rendering it again.
- * When the arguments read variables of the enclosing scopes, the constant lists their names.
+ * call receiving a constant of the module (`div0__render1$render`, see `RenderTemplateConfig` of the runtime) holding
+ * the constant of the template, how many scopes up the scope declaring it is, whose variables the content of the
+ * instance reads, and the function of the module computing the values of the arguments, which the runtime calls with
+ * the component and the context, again when a signal or a variable of the template it reads changes, updating the
+ * parameters of the instance instead of rendering it again. When the arguments read variables of the enclosing scopes,
+ * the constant lists their identifiers.
  *
  * @example
  * // @render row(item, $index)
- * const div0__render1$render = { template: 'row', args: div0__render1$args, reads: _reads0 };
+ * const div0__render1$render = { template: template_row_12$template, depth: 1, args: div0__render1$args, reads: _reads0 };
  * _renderTemplate(div0, context, null, div0__render1$render);
  *
- * function div0__render1$args(context) { return [context.get('item'), context.get('$index')]; }
+ * function div0__render1$args(context) { return [_read(context, 0, 8), _read(context, 0, 9)]; }
  *
  * @param node - The `RenderNode` to process.
  * @param parentNode - Variable name of the parent DOM node.
@@ -37,14 +38,19 @@ export async function generateRender(node: RenderNode, parentNode: string, index
 
   const renderKey = getBlockIdentifier('render', parentNode, index);
   const args = new Array<string>();
-  let variables: readonly string[] | undefined;
+  let variables: readonly number[] | undefined;
   for (let i = 0; i < node.arguments.length; i++) {
     const argument = resolveExpression(node.arguments[i], generatorContext);
     args.push(argument.expression);
     variables = joinVariables(variables, argument.variables);
   }
 
-  const members = [`template: '${callee}'`];
+  const members = [`template: ${generatorContext.readIdentifier(callee)}`];
+  const depth = generatorContext.depthOf(callee)!;
+  if (depth) {
+    members.push(`depth: ${depth}`);
+  }
+
   if (args.length) {
     members.push(`args: ${declareExpression(generatorContext, `${renderKey}$args`, `[${args.join(', ')}]`)}`);
   }

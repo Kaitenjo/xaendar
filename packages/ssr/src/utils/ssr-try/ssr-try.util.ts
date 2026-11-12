@@ -1,4 +1,4 @@
-import { _SSR_MARKERS, type _Context } from '@xaendar/core';
+import { _COMPONENT, _SSR_MARKERS, type _Context } from '@xaendar/core';
 import type { ServerOutput } from '../../types/server-output.type';
 
 /**
@@ -30,7 +30,7 @@ const CATCH = '1';
  * @throws The error of the `@catch`.
  */
 export function _ssrTry(out: ServerOutput, context: _Context, content: (this: unknown, output: ServerOutput, context: _Context) => void, fallback: (this: unknown, output: ServerOutput, context: _Context, error: unknown) => void, last = false): void {
-  const { component } = context;
+  const component = context[_COMPONENT];
   let output: ServerOutput = [];
   let detail = CONTENT;
   try {

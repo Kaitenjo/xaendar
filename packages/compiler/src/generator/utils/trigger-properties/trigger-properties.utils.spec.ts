@@ -26,11 +26,11 @@ describe('getTriggerProperties', () => {
       'prefetchWhenReads: _reads0'
     ]);
     expect(context.functionDeclarations).toEqual([
-      'function defer0$when(context) {\n  return context.get(\'row\').ready;\n}',
+      'function defer0$when(context) {\n  return _read(context, 0, 8).ready;\n}',
       'function defer0$load() {\n  return Promise.all([import("/card.ts")]);\n}',
-      'function defer0$prefetchWhen(context) {\n  return context.get(\'row\').near;\n}'
+      'function defer0$prefetchWhen(context) {\n  return _read(context, 0, 8).near;\n}'
     ]);
-    expect(context.readsDeclarations).toEqual(['const _reads0 = [\'row\'];']);
+    expect(context.readsDeclarations).toEqual(['const _reads0 = [0];']);
   });
 
   it('writes the triggers by name, then the function of when and the one loading the modules of the content', () => {
@@ -76,9 +76,9 @@ describe('getTriggerProperties', () => {
       ']'
     ].join('\n')]);
     expect(context.functionDeclarations).toEqual([
-      'function defer0$hover_target(context) {\n  return context.get(\'more\');\n}',
-      'function defer0$interaction_target(context) {\n  return context.get(\'more\');\n}',
-      'function defer0$visible_target(context) {\n  return context.get(\'more\');\n}',
+      'function defer0$hover_target(context) {\n  return _read(context, 0, 8);\n}',
+      'function defer0$interaction_target(context) {\n  return _read(context, 0, 8);\n}',
+      'function defer0$visible_target(context) {\n  return _read(context, 0, 8);\n}',
       'function defer0$visible_options(context) {\n  return ({ rootMargin: this.margin() });\n}'
     ]);
   });
@@ -106,10 +106,10 @@ describe('getTriggerProperties', () => {
       'prefetchWhen: defer1$prefetchWhen'
     ]);
     expect(context.functionDeclarations).toEqual([
-      'function defer0$hover_target(context) {\n  return context.get(\'more\');\n}',
-      'function defer1$hover_target(context) {\n  return context.get(\'more\');\n}',
+      'function defer0$hover_target(context) {\n  return _read(context, 0, 8);\n}',
+      'function defer1$hover_target(context) {\n  return _read(context, 0, 8);\n}',
       'function defer1$load() {\n  return Promise.all([import("/src/a.ts")]);\n}',
-      'function defer1$prefetch_hover_target(context) {\n  return context.get(\'more\');\n}',
+      'function defer1$prefetch_hover_target(context) {\n  return _read(context, 0, 8);\n}',
       'function defer1$prefetchWhen(context) {\n  return this.soon();\n}'
     ]);
   });

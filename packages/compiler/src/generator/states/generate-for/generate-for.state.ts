@@ -5,7 +5,7 @@ import { GeneratorTransitionFunctionReturnType } from '../../types/generator-tra
 import type { GeneratorFunctionToProcess } from '../../types/generator-function-to-process.type';
 import { getReadForVariables, writeIterationVariables } from '../../utils/for-reads/for-reads.utils';
 import { getBlockIdentifier, getTextIdentifier, joinVariables, resolveExpression } from '../../utils/generator/generator.utils';
-import { appendBlockPosition } from '../../utils/block-position/block-position.utils';
+import { allocateBlockSlot, appendBlockPosition } from '../../utils/block-position/block-position.utils';
 import { declareExpression, toObjectLiteral } from '../../utils/module-code/module-code.utils';
 
 /**
@@ -16,12 +16,12 @@ import { declareExpression, toObjectLiteral } from '../../utils/module-code/modu
  * and the function rendering the body of an item, which declares the item and the implicit variables the body reads (see
  * {@link getReadForVariables}) as values, by `_iterationVariables`, and returns the context of the item. The variables
  * are the same for every item: they are declared once, as a constant of the module (see
- * {@link writeIterationVariables}), which the constant of the `@for` and the function read. The body reads them from its
- * context, by name, without calling them:
+ * {@link writeIterationVariables}), which the constant of the `@for` and the function read. The body reads them from the
+ * first slots of its scope, without calling them:
  *
  * ```javascript
  * // @for (row of rows(); track row.id; i = $index) { <td>{ i } { row.name }</td> }
- * const for0Variables = { used: ['item', '$index'], names: ['row', 'i'] };
+ * const for0Variables = { used: ['item', '$index'], ids: [0, 1] };
  * const for0$for = { items: for0$items, track: for0$track, block: for0, variables: for0Variables };
  *
  * _for(parent, context, null, for0$for);
@@ -30,9 +30,9 @@ import { declareExpression, toObjectLiteral } from '../../utils/module-code/modu
  * function for0$track(context, row, i, $first, $last, $even, $odd) { return row.id; }
  *
  * function for0(for0, parentContext, items0, i0, anchor, nodeStrategy) {
- *   const context = new _Context(parentContext, nodeStrategy, 2);
+ *   const context = _scope(parentContext, _layout0, nodeStrategy);
  *   _iterationVariables(context, items0, i0, for0Variables);
- *   // ... child nodes, reading context.get('i') and context.get('row')
+ *   // ... child nodes, reading _read(context, 0, 9) and _read(context, 0, 8)
  *   return context;
  * }
  * ```
@@ -46,7 +46,7 @@ import { declareExpression, toObjectLiteral } from '../../utils/module-code/modu
  * no item alias is declared, and the item parameter of the track function is `_`.
  * The track function takes the context of the `@for`, then the item and every implicit variable, as values, whether the
  * body reads them or not; its context is `__context` when the item or an alias is named `context`. When the iterable or the track expression read variables of the enclosing scopes, the constant
- * of the `@for` lists their names, so that it runs again when they change.
+ * of the `@for` lists their identifiers, so that it runs again when they change.
  *
  * @param node - The `ForNode` to process.
  * @param parentNode - Variable name of the parent DOM node.
@@ -99,7 +99,7 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
   };
   const members = new Array<string>();
   if (read.length) {
-    const variables = generatorContext.declareConstant(`${forKey}Variables`, writeIterationVariables(node, read));
+    const variables = generatorContext.declareConstant(`${forKey}Variables`, writeIterationVariables(read, readNames.map(name => forContext.idOf(name)!)));
     fn.precode = `_iterationVariables(context, ${itemsName}, ${counterName}, ${variables});`;
     members.push(`variables: ${variables}`);
   }
@@ -111,7 +111,8 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
     the implicit variables are its parameters, read as written, while the members of the component, the imports and
     the variables of the enclosing scopes are resolved like in any other expression of the scope of the @for
   */
-  const trackContext = new GeneratorContext(generatorContext);
+  // Called with the scope of the @for, it stands for no scope of the runtime
+  const trackContext = new GeneratorContext(generatorContext, undefined, 'declarations');
   if (node.itemAlias) {
     trackContext.addUnresolvableIdentifier(node.itemAlias);
   }
@@ -134,7 +135,7 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
     members.push(`reads: ${reads}`);
   }
 
-  appendBlockPosition(members, last);
+  appendBlockPosition(members, last, allocateBlockSlot(generatorContext, last));
   const config = generatorContext.declareConstant(`${forKey}$for`, toObjectLiteral(members));
   retVal.code.push(`_for(${parentNode}, context, ${anchor}, ${config});`);
 

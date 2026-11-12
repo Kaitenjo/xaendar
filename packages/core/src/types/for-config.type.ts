@@ -1,5 +1,5 @@
 import type { Function } from '@xaendar/types';
-import type { _Context } from '../utils/context/context.util';
+import type { _Context } from './context.type';
 import type { BlockPosition } from './block-position.type';
 import type { IterationVariables } from './iteration-variables.type';
 import type { NodeStrategy } from './node-strategy.type';
@@ -34,7 +34,7 @@ export type ForConfig = BlockPosition & {
    */
   readonly variables?: IterationVariables;
   /**
-   * The names of the variables of the template the items and their keys read, left out when they read none.
+   * The identifiers of the variables of the template the items and their keys read, left out when they read none.
    */
-  readonly reads?: readonly string[];
+  readonly reads?: readonly number[];
 };

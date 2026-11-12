@@ -25,9 +25,9 @@ export type RenderConditionalBinding<Bindings> = {
    */
   readonly expression?: never;
   /**
-   * The names of the variables of the template the conditions read (see `_bindEffect`), omitted when they read none.
+   * The identifiers of the variables of the template the conditions read (see `_bindEffect`), omitted when they read none.
    */
-  readonly reads?: readonly string[];
+  readonly reads?: readonly number[];
 } | {
   /**
    * The `@case` and `@default` branches of the `@switch`.
@@ -44,7 +44,7 @@ export type RenderConditionalBinding<Bindings> = {
    */
   readonly expression: TemplateExpression<unknown>;
   /**
-   * The names of the variables of the template the expression reads (see `_bindEffect`), omitted when it reads none.
+   * The identifiers of the variables of the template the expression reads (see `_bindEffect`), omitted when it reads none.
    */
-  readonly reads?: readonly string[];
+  readonly reads?: readonly number[];
 };

@@ -24,8 +24,6 @@ const ENTRY_POINTS: Readonly<Record<ApiPackageName, string>> = {
  * The exports used only by the compiled templates that are not prefixed with `_`: left out of the reference.
  */
 const INTERNAL_EXPORTS: ReadonlySet<string> = new Set([
-  'mountNode',
-  'createAnchor',
   'RenderFunction',
   'RenderDefinition',
   'RenderConditionalBinding',

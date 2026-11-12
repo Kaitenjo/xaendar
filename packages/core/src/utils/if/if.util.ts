@@ -5,7 +5,8 @@ import type { BlockConfig } from '../../types/if/block-config.type';
 import type { IfRun } from '../../types/if/if-run.type';
 import type { State } from '../../types/if/state.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
-import { _Context } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
+import { addChild, clear, getNodeStrategy, removeChild } from '../context/context.util';
 import { _selectBranchIndex } from '../select-branch/select-branch.util';
 
 /**
@@ -31,7 +32,7 @@ import { _selectBranchIndex } from '../select-branch/select-branch.util';
  *   through it.
  */
 export function _if(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, config: BlockConfig, kind: string = _SSR_MARKERS.if): void {
-  const nodeBlock = parentContext.nodeStrategy.block(parentContext, parentNode, referenceNode, 'if', kind, config.last);
+  const nodeBlock = getNodeStrategy(parentContext).block(parentContext, parentNode, referenceNode, 'if', kind, config.last, config.slot);
   const run: IfRun = {
     parentNode, parentContext,
     nodeBlock, config,
@@ -66,12 +67,12 @@ function showBranch(run: IfRun, selected: number | null): void {
   const { parentNode, parentContext, nodeBlock, config, state } = run;
   if (!run.started) {
     run.started = true;
-    const { nodeStrategy } = parentContext;
+    const nodeStrategy = getNodeStrategy(parentContext);
     // The marker of the server holds the index of the branch it rendered, none when it rendered none
     run.state = renderBranch(parentNode, parentContext, nodeBlock.anchor, config, state, selected, nodeStrategy.adopt(parentNode, nodeBlock, selected === null ? '' : `${selected}`));
     nodeStrategy.close(parentNode, nodeBlock);
   } else if ((state?.activeBranch ?? null) !== selected) {
-    run.state = renderBranch(parentNode, parentContext, nodeBlock.anchor, config, state, selected, parentContext.nodeStrategy);
+    run.state = renderBranch(parentNode, parentContext, nodeBlock.anchor, config, state, selected, getNodeStrategy(parentContext));
   }
 }
 
@@ -89,8 +90,8 @@ function showBranch(run: IfRun, selected: number | null): void {
  */
 function renderBranch(parentNode: HTMLElement, parentContext: _Context, anchor: Comment | null, config: BlockConfig, state: State | undefined, selected: number | null, nodeStrategy: NodeStrategy): State | undefined {
   if (state) {
-    state.context.clear();
-    parentContext.removeChild(state.context);
+    clear(state.context);
+    removeChild(parentContext, state.context);
   }
 
   if (selected === null) {
@@ -98,6 +99,6 @@ function renderBranch(parentNode: HTMLElement, parentContext: _Context, anchor: 
   }
 
   const context = config.branches[selected].block(parentNode, parentContext, anchor, nodeStrategy);
-  parentContext.addChild(context);
+  addChild(parentContext, context);
   return { activeBranch: selected, context };
 }

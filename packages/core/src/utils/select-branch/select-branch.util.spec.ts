@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { RenderConditionalBinding } from '../../types/render-conditional-binding.type';
-import type { _Context } from '../context/context.util';
+import { _scope, EMPTY_LAYOUT } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
 import { _selectBranch, _selectBranchIndex } from './select-branch.util';
 
 /**
@@ -18,7 +19,7 @@ type Component = {
 };
 
 const component: Component = { limit: 1 };
-const context = { component } as unknown as _Context;
+const context = _scope(null, EMPTY_LAYOUT, undefined, component);
 
 describe('_selectBranch', () => {
   it('selects the first branch of an @if chain whose condition holds, without evaluating the following conditions', () => {

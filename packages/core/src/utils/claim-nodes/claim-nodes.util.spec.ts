@@ -1,15 +1,21 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { HYDRATE } from '../../costants';
-import { _Context } from '../context/context.util';
+import { HEADER, HYDRATE, LAYOUT } from '../../costants';
+import type { _Context } from '../../types/context.type';
+import { _scope, addChild, EMPTY_LAYOUT, getNodeStrategy } from '../context/context.util';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { deferElementHydration } from '../hydration-triggers/hydration-triggers.util';
 import { claimShadowRoot, ClaimNodes, isClaimed } from './claim-nodes.util';
 
 /**
+ * The number of node slots of the contexts of the tests.
+ */
+const SLOTS = 4;
+
+/**
  * The nodes a context tracks, in mount order.
  */
-const nodesOf = (context: { getNodeCount(): number, getNode(index: number): Node }): Node[] => Array.from({ length: context.getNodeCount() }, (_item, index) => context.getNode(index));
+const nodesOf = (context: _Context): Node[] => context.slice(context[LAYOUT].nodes).filter(Boolean) as Node[];
 
 /**
  * A parent holding the HTML of the server.
@@ -20,7 +26,7 @@ function parse(html: string): HTMLDivElement {
   return parent;
 }
 
-const createContext = () => new _Context({ createElement: (tagName: string) => document.createElement(tagName) } as never);
+const createContext = () => _scope(null, { size: HEADER + SLOTS, nodes: HEADER });
 
 let nodeStrategy: ClaimNodes;
 let context: _Context;
@@ -205,8 +211,8 @@ describe('ClaimNodes', () => {
       const parent = parse('a<!---->b');
       const [first, , second] = Array.from(parent.childNodes);
 
-      expect(nodeStrategy.text(context, parent, null, 'x', false)).toBe(first);
-      expect(nodeStrategy.text(context, parent, null, 'x', true)).toBe(second);
+      expect(nodeStrategy.text(context, parent, null, 'x', false, HEADER)).toBe(first);
+      expect(nodeStrategy.text(context, parent, null, 'x', true, HEADER + 1)).toBe(second);
       expect(parent.innerHTML).toBe('ab');
       expect(nodesOf(context)).toEqual([first, second]);
     });
@@ -214,7 +220,7 @@ describe('ClaimNodes', () => {
     it('creates a text where the server rendered none, as for an empty interpolation, without a warning', () => {
       const parent = parse('<!----><b></b>');
 
-      const text = nodeStrategy.text(context, parent, null, 'x', true);
+      const text = nodeStrategy.text(context, parent, null, 'x', true, HEADER);
 
       expect(parent.innerHTML).toBe('x<b></b>');
       expect(nodesOf(context)).toEqual([text]);
@@ -237,7 +243,7 @@ describe('ClaimNodes', () => {
       const parent = parse('<!--xd-if:1--><p></p><!--/xd-if--><b></b>');
       const anchor = parent.childNodes[2];
 
-      const block = nodeStrategy.block(context, parent, null, 'if', 'xd-if');
+      const block = nodeStrategy.block(context, parent, null, 'if', 'xd-if', false, HEADER);
 
       expect(block).toEqual({ anchor, marker: '1', kind: 'xd-if' });
       expect(nodesOf(context)).toEqual([anchor]);
@@ -339,8 +345,8 @@ describe('ClaimNodes', () => {
       const unclosed = parse('<!--xd-if:0--><p></p>');
       const otherContext = createContext();
 
-      const block = nodeStrategy.block(context, parent, null, 'if', 'xd-if');
-      const other = nodeStrategy.block(otherContext, unclosed, null, 'if', 'xd-if');
+      const block = nodeStrategy.block(context, parent, null, 'if', 'xd-if', false, HEADER);
+      const other = nodeStrategy.block(otherContext, unclosed, null, 'if', 'xd-if', false, HEADER);
 
       expect(block.marker).toBeUndefined();
       expect(parent.innerHTML).toBe('<!--if--><b></b>');
@@ -502,13 +508,13 @@ describe('ClaimNodes', () => {
     it('makes the contexts of the render create what they render once the hydration ends, at any depth', () => {
       const root = document.createElement('x-host').attachShadow({ mode: 'open' });
       const claim = claimShadowRoot(root, false);
-      const render = new _Context(context, claim);
-      const nested = render.addChild(new _Context(render, claim)).addChild();
+      const render = _scope(context, EMPTY_LAYOUT, claim);
+      const nested = addChild(addChild(render, _scope(render, EMPTY_LAYOUT, claim)));
 
       claim.end(root, render);
 
-      expect(render.nodeStrategy).toBe(CREATE_NODES);
-      expect(nested.nodeStrategy).toBe(CREATE_NODES);
+      expect(getNodeStrategy(render)).toBe(CREATE_NODES);
+      expect(getNodeStrategy(nested)).toBe(CREATE_NODES);
     });
   });
 });

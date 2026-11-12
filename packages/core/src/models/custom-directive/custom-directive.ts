@@ -4,7 +4,8 @@ import { EffectOptions } from '../../signals/types/effect-options.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
 import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
 import { _getComponentRuntime } from '../../utils/component-runtime/component-runtime.util';
-import { _Context, _EMPTY_CONTEXT } from '../../utils/context/context.util';
+import type { _Context } from '../../types/context.type';
+import { _scope, addCleanup, EMPTY_LAYOUT, moveTo, removeCleanup } from '../../utils/context/context.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import type { CustomElement } from '../custom-element/custom-element';
 
@@ -29,7 +30,7 @@ export abstract class CustomDirective<T extends Element = Element> {
    * Until the connection it is a staging context, holding the effects created in the constructor or in a field
    * initializer: they are moved to the context of the element when the directive is connected.
    */
-  private _context = new _Context(_EMPTY_CONTEXT);
+  private _context = _scope(null, EMPTY_LAYOUT);
 
   /**
    * Reference to the HTML Element the directive is applied
@@ -90,7 +91,7 @@ export abstract class CustomDirective<T extends Element = Element> {
     // The effects and the components created before the connection wait in the staging context: they move to the one of the element
     const staging = this._context;
     this._context = context;
-    staging.moveTo(context);
+    moveTo(staging, context);
     this.onInit?.();
     _bindHost(this, this._element, context);
   }
@@ -117,10 +118,10 @@ export abstract class CustomDirective<T extends Element = Element> {
    */
   public effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
     const stop = _getComponentRuntime().effect(fn, options);
-    this._context.addUnlistener(stop);
+    addCleanup(this._context, stop);
 
     return () => {
-      this._context.removeUnlistener(stop);
+      removeCleanup(this._context, stop);
       stop();
     };
   }

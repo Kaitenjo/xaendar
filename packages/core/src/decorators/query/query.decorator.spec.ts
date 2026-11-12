@@ -7,7 +7,8 @@ import { CustomElement } from '../../models/custom-element/custom-element';
 import { effect } from '../../signals/effect/effect';
 import type { QuerySignal } from '../../signals/types/query-signal.type';
 import { _addAppliedDirective } from '../../utils/applied-directives/applied-directives.util';
-import { _Context } from '../../utils/context/context.util';
+import { EMPTY_LAYOUT, _scope } from '../../utils/context/context.util';
+import type { _Context } from '../../types/context.type';
 import { _setElementRef } from '../../utils/element-refs/element-refs.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { WebComponent } from '../web-component/web-component.decorator';
@@ -27,7 +28,7 @@ afterEach(() => document.body.replaceChildren());
  */
 function create(): CustomElement {
   const klass = class extends CustomElement { };
-  _defineRender(klass, () => new _Context({} as never));
+  _defineRender(klass, () => _scope(null, EMPTY_LAYOUT));
   const name = `x-query-decorator-${counter++}`;
   customElements.define(name, klass);
   return document.createElement(name) as CustomElement;
@@ -41,7 +42,7 @@ function create(): CustomElement {
 function defineComponent(base: Constructor<CustomElement> = CustomElement): { klass: Constructor<CustomElement>, selector: string } {
   const selector = `x-query-target-${counter++}`;
   const klass = class extends base { };
-  _defineRender(klass, () => new _Context({} as never));
+  _defineRender(klass, () => _scope(null, EMPTY_LAYOUT));
   const metadata = {};
   const addInitializer = (initializer: (this: Constructor<CustomElement>) => void) => initializer.call(klass);
   WebComponent({ selector, templateUrl: './x.html' })(klass, { metadata, addInitializer } as unknown as ClassDecoratorContext<Constructor<CustomElement>>);

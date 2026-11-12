@@ -7,6 +7,8 @@ export type * from './generator/types/generator-transition-function-return-type.
 export type * from './generator/types/identifier-kind.type';
 export type * from './generator/types/imported-identifier.type';
 export type * from './generator/types/resolve-expresion-options.type';
+export type * from './generator/types/scope-kind.type';
+export type * from './generator/types/variable-address.type';
 export type * from './generator/types/template-function-factory.type';
 export * from './generator/utils/block-position/block-position.utils';
 export * from './generator/utils/for-reads/for-reads.utils';

@@ -27,7 +27,7 @@ import type { GeneratorFunctionToProcess } from '../types/generator-function-to-
 import { GeneratorTransitionFunctionReturnType } from '../types/generator-transition-function-return-type.type.js';
 import { ROOT_NODE } from '../utils/generator/generator.utils.js';
 import { getDeferredModules } from '../utils/deferred-modules/deferred-modules.utils.js';
-import { createContext, declareScope, declareTemplateParameters } from '../utils/scope-generation/scope-generation.utils.js';
+import { createScope, declareScope, declareTemplateParameters } from '../utils/scope-generation/scope-generation.utils.js';
 import { getTextSeparators } from '../utils/text-separators/text-separators.utils.js';
 
 /**
@@ -84,7 +84,8 @@ export class Generator {
    *   rendering the blocks, which the runtime calls as they are, and the ones computing the expressions, which the
    *   runtime calls with the component as `this` and the context (see `GeneratorContext.declareFunction`). `render`
    *   takes the strategy getting the nodes, created or adopted from the HTML rendered on the server, and every function
-   *   takes the one of its scope, which its context gets.
+   *   takes the one of its scope, which its context gets. Each runtime scope is created from the layout of its block
+   *   (see `GeneratorContext.declareLayout`), declared once the body of its function is generated.
    */
   public async generate(signals: string[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = []): Promise<string> {
     /*
@@ -111,15 +112,14 @@ export class Generator {
         generatorContext.addImportedIdentifier(symbol.local, getRuntimeAlias(symbol.local), symbol.reactive ? 'signal' : 'value');
       }
 
-      // Declared first, so that the context is created for the variables of the scope
+      // Declared first, so that the slots of the variables of the scope precede the reads of its body
       const rootDeclarations = declareScope(this._ast, generatorContext, toTemplateFunction);
       const generatedCode = [
         'function render(nodeStrategy) {',
-        ...indent([
-          `const ${ROOT_NODE} = this._root;`,
-          `const context = ${createContext('_ROOT_PARENT_CONTEXT', 'nodeStrategy', generatorContext.identifierCount, 'this')};`
-        ])
-      ]
+        indent(`const ${ROOT_NODE} = this._root;`)
+      ];
+      // The root of a render tracks no node: they stay in the shadow root of the component, removed with it
+      const rootScopeLine = generatedCode.push('') - 1;
 
       if (rootDeclarations) {
         this._processFunctions(parentTags, rootDeclarations.functionsToProcess);
@@ -136,6 +136,7 @@ export class Generator {
         }
       }
 
+      generatedCode[rootScopeLine] = indent(`const context = ${createScope('null', generatorContext.declareLayout(), 'nodeStrategy', 'this')};`);
       generatedCode.push(
         ...indent(['return context;']),
         '}'
@@ -164,9 +165,8 @@ export class Generator {
         */
         const createsContext = !isElement || (isScope && context.identifierCount > 0);
         generatedCode.push(`\nfunction ${key}(${(createsContext ? fnData.args! : [fnData.args![0], 'context']).join(', ')}) {`);
-        if (createsContext) {
-          generatedCode.push(indent(`const context = ${createContext('parentContext', isElement ? undefined : 'nodeStrategy', context.identifierCount)};`));
-        }
+        // Written once the body is generated, which gives the nodes at its top their slots
+        const scopeLine = createsContext ? generatedCode.push('') - 1 : -1;
 
         if (precode) {
           generatedCode.push(indent(precode));
@@ -179,6 +179,7 @@ export class Generator {
 
         const separators = getTextSeparators(node.children, parentTag, context.namespace);
         const functionBody = new Array<string>;
+        context.tracksNodes = createsContext;
         for (let i = 0; i < node.children.length; i++) {
           const child = node.children[i];
           /*
@@ -194,7 +195,9 @@ export class Generator {
           }
         }
 
+        context.tracksNodes = false;
         if (createsContext) {
+          generatedCode[scopeLine] = indent(`const context = ${createScope('parentContext', context.declareLayout(), isElement ? undefined : 'nodeStrategy')};`);
           functionBody.push('return context;');
         }
 
@@ -273,10 +276,11 @@ export class Generator {
 
 /**
  * Describes the function rendering an instance of a template: it creates the scope of the instance, whose parent is the
- * runtime context of the scope declaring the template, so that its content reads the names visible where the template
- * is declared, and not where it is rendered. The parameters are variables of the template, read like the item of a
- * `@for` (see `declareTemplateParameters`), whose names the constant of the module the scope declaring the template
- * holds lists (`template_row_12$template`, see `declareScope`): a `@render` passing other arguments updates them by name.
+ * runtime scope declaring the template, so that its content reads the variables visible where the template is declared,
+ * and not where it is rendered. The parameters are variables of the template, read like the item of a `@for` (see
+ * `declareTemplateParameters`), the first slots of the scope, whose identifiers the constant of the module describing
+ * the template lists (`template_row_12$template`, see `declareScope`): a `@render` passing other arguments updates
+ * them by position, and refreshes the instance with their identifiers.
  *
  * @param template - The template.
  * @param key - The name of the function.

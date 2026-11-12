@@ -1,3 +1,4 @@
+import { SCOPE_HEADER } from '../../costants/scope-header.costant';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import type { DeferNode } from '../../parser/types/nodes/defer-node.type';
 import type { HydrateNode } from '../../parser/types/nodes/hydrate-node.type';
@@ -5,6 +6,7 @@ import type { ComponentMetadata } from '../../types/component-metadata.type';
 import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
 import type { ContextCache } from '../../types/context-cache.type';
 import type { ElementNamespace } from '../../types/element-namespace.type';
+import type { ScopeKind } from '../types/scope-kind.type';
 
 /**
  * Tracks identifier scope during render code generation.
@@ -22,6 +24,13 @@ export class GeneratorContext extends CompilerContext {
    * components its content alone renders, which the module of the template does not import (see `getDeferredModules`).
    */
   public deferredModules?: ReadonlyMap<HydrateNode | DeferNode, readonly string[]>;
+  /**
+   * Whether the function being generated renders the nodes at the top of the block of this scope, whose runtime scope
+   * tracks them in slots of its own (see {@link allocateNodeSlot}): set by the generator while it generates the body of
+   * a function creating the runtime scope, other than the root of the render, which tracks none. The children of an
+   * element, generated in the scope of the element, are rendered into it, and track nothing.
+   */
+  public tracksNodes = false;
   /**
    * Parent context representing the enclosing scope.
    */
@@ -46,9 +55,18 @@ export class GeneratorContext extends CompilerContext {
   private readonly _eventNames = new Set<string>();
   /**
    * The constants of the module listing the variables of the template a binding reads (see {@link getReads}), by the
-   * names they list, joined: held by the root scope.
+   * identifiers they list, joined: held by the root scope.
    */
   private readonly _reads = new Map<string, string>();
+  /**
+   * The constants of the module describing the layouts of the runtime scopes (see {@link declareLayout}), by their
+   * value: held by the root scope.
+   */
+  private readonly _layouts = new Map<string, string>();
+  /**
+   * The number of nodes at the top of the block of this scope given a slot (see {@link allocateNodeSlot}).
+   */
+  private _nodeCount = 0;
   /**
    * The declarations of the constants of the module (see {@link declareConstant}), in the order they are declared: held
    * by the root scope.
@@ -77,12 +95,12 @@ export class GeneratorContext extends CompilerContext {
    * The declarations of the constants listing the variables the bindings read (see {@link getReads}), read from the root
    * scope, to write at the top of the module.
    *
-   * @returns The declarations, one per list, e.g. `const _reads0 = ['row'];`.
+   * @returns The declarations, one per list, e.g. `const _reads0 = [0, 3];`.
    */
   public get readsDeclarations(): string[] {
     const declarations = new Array<string>();
-    for (const [names, constant] of this._reads) {
-      declarations.push(`const ${constant} = [${names.split(',').map(name => `'${name}'`).join(', ')}];`);
+    for (const [ids, constant] of this._reads) {
+      declarations.push(`const ${constant} = [${ids.split(',').join(', ')}];`);
     }
 
     return declarations;
@@ -114,8 +132,9 @@ export class GeneratorContext extends CompilerContext {
    * @param parentContext - Parent context representing the enclosing scope.
    * @param namespace - The namespace the elements declared in this scope are created in, when it differs from the one of
    *   the enclosing scope, i.e. for the children of an `<svg>`, a `<math>` or a `<foreignObject>` element.
+   * @param scopeKind - Whether the scope stands for a scope of the runtime (see `ScopeKind`). Defaults to `scope`.
    */
-  constructor(parentContext: GeneratorContext, namespace?: ElementNamespace);
+  constructor(parentContext: GeneratorContext, namespace?: ElementNamespace, scopeKind?: ScopeKind);
   /**
    * Creates a new root scope context.
    *
@@ -124,9 +143,9 @@ export class GeneratorContext extends CompilerContext {
    *   the enclosing scope, i.e. for the children of an `<svg>`, a `<math>` or a `<foreignObject>` element.
    */
   constructor(cache: ContextCache, namespace?: ElementNamespace);
-  constructor(parentContextOrCache: GeneratorContext | ContextCache, namespace?: ElementNamespace) {
+  constructor(parentContextOrCache: GeneratorContext | ContextCache, namespace?: ElementNamespace, scopeKind?: ScopeKind) {
     if (parentContextOrCache instanceof GeneratorContext) {
-      super(parentContextOrCache, namespace);
+      super(parentContextOrCache, namespace, scopeKind);
       this.cache = parentContextOrCache.cache;
       this.deferredModules = parentContextOrCache.deferredModules;
     } else {
@@ -202,10 +221,10 @@ export class GeneratorContext extends CompilerContext {
    * N.B. Deliberate, to save memory: a constant of the module instead of an array literal written in the render code,
    * which would allocate an array per binding at each render, in every row of a table. Do not inline it.
    *
-   * @param variables - The names of the variables the binding reads, if any.
+   * @param variables - The identifiers of the variables the binding reads, if any.
    * @returns The name of the constant, `undefined` when the binding reads no variable.
    */
-  public getReads(variables: readonly string[] | undefined): string | undefined {
+  public getReads(variables: readonly number[] | undefined): string | undefined {
     if (!variables?.length) {
       return undefined;
     }
@@ -214,7 +233,7 @@ export class GeneratorContext extends CompilerContext {
       return this.parent.getReads(variables);
     }
 
-    const key = variables.slice().sort().join(',');
+    const key = variables.slice().sort((first, second) => first - second).join(',');
     let constant = this._reads.get(key);
     if (!constant) {
       constant = `_reads${this._reads.size}`;
@@ -222,6 +241,33 @@ export class GeneratorContext extends CompilerContext {
     }
 
     return constant;
+  }
+
+  /**
+   * Gives the next node at the top of the block of this scope its slot in the runtime scope, after the header and the
+   * variables, while the function being generated tracks them (see {@link tracksNodes}).
+   *
+   * @returns The slot, `undefined` for a node no runtime scope tracks.
+   */
+  public allocateNodeSlot(): number | undefined {
+    return this.tracksNodes ? SCOPE_HEADER + this.identifierCount + this._nodeCount++ : undefined;
+  }
+
+  /**
+   * Declares the layout of the runtime scope of this scope (see `_ScopeLayout` of the runtime), once its body is
+   * generated: its size, the slot of its first node and the names of its variables. Identical layouts share a constant
+   * of the module, held by the root scope.
+   *
+   * @returns The name of the constant.
+   */
+  public declareLayout(): string {
+    const nodes = SCOPE_HEADER + this.identifierCount;
+    const members = [`size: ${nodes + this._nodeCount}`, `nodes: ${nodes}`];
+    if (this.identifierCount) {
+      members.push(`variables: [${this.variableNames.map(name => `'${name}'`).join(', ')}]`);
+    }
+
+    return this._rootContext()._layout(`{ ${members.join(', ')} }`);
   }
 
   /**
@@ -288,6 +334,31 @@ export class GeneratorContext extends CompilerContext {
    */
   public getImportedMetadata(key: string): ComponentOrDirectiveMetadata | undefined {
     return this._importedMetadata.get(key) ?? this.parent?.getImportedMetadata(key);
+  }
+
+  /**
+   * Returns the root scope of the template.
+   *
+   * @returns The root scope.
+   */
+  private _rootContext(): GeneratorContext {
+    return this.parent ? this.parent._rootContext() : this;
+  }
+
+  /**
+   * Returns the constant of the module holding a layout, declaring it the first time.
+   *
+   * @param value - The code of the layout.
+   * @returns The name of the constant.
+   */
+  private _layout(value: string): string {
+    let constant = this._layouts.get(value);
+    if (!constant) {
+      constant = this.declareConstant(`_layout${this._layouts.size}`, value);
+      this._layouts.set(value, constant);
+    }
+
+    return constant;
   }
 
   /**

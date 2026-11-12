@@ -33,7 +33,7 @@
     "validate:claude-plugin": "claude plugin validate plugins/xaendar && claude plugin validate plugins/xaendar/skills && claude plugin validate plugins/xaendar/agents && claude plugin validate ."
   },
   "dependencies": {
-    "@babel/core": "^8.1.0",
+    "@babel/core": "^8.1.2",
     "@rolldown/plugin-babel": "^0.3.1",
     "commander": "^15.1.0",
     "entities": "^9.0.0",
@@ -52,7 +52,7 @@
     "@types/convert-source-map": "^2.0.3",
     "@types/less": "^3.0.8",
     "@types/node": "^26.6.6",
-    "@types/vscode": "^1.145.0",
+    "@types/vscode": "^1.146.0",
     "@vitest/coverage-v8": "^5.1.0",
     "depcheck": "^1.4.7",
     "eslint": "^10.14.0",

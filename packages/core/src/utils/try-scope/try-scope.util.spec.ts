@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { NodeStrategy } from '../../types/node-strategy.type';
-import type { _Context } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
 import { captureContext, closeTryScope, connectChild, isInTryScope, openTryScope, runConnection } from './try-scope.util';
 
 const context = (name: string) => ({ name }) as unknown as _Context;

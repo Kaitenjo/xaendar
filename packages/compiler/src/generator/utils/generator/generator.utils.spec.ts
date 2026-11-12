@@ -53,8 +53,8 @@ describe('resolveExpression', () => {
 
       const { expression, segments } = collect('{ item }', 0, context);
 
-      expect(expression).toBe('({ item: context.get(\'item\') })');
-      expect(columns(expression, segments)).toContainEqual(['item: context.get(\'item\')', 2, 6]);
+      expect(expression).toBe('({ item: _read(context, 0, 8) })');
+      expect(columns(expression, segments)).toContainEqual(['item: _read(context, 0, 8)', 2, 6]);
     });
 
     it('maps the read of a narrowed signal onto the call, keeping the mappings of the call', () => {
@@ -165,10 +165,16 @@ describe('resolveExpression', () => {
   it.each([
     ['signal', true],
     ['value', false]
-  ] as const)('resolves declared %s identifiers through the context', (kind, reactive) => {
+  ] as const)('resolves declared %s identifiers through the slot of the scope declaring them', (kind, reactive) => {
     const context = new GeneratorContext(cache);
     context.addIdentifier('item', kind);
-    expect(resolve('item', context)).toEqual({ expression: 'context.get(\'item\')', reactive });
+    expect(resolve('item', context)).toEqual({ expression: '_read(context, 0, 8)', reactive });
+  });
+
+  it('resolves a template through the constant describing it, which reads no variable', () => {
+    const context = new GeneratorContext(cache);
+    context.addIdentifier('row', 'variable', 'template_row_0$template');
+    expect(resolve('row', new GeneratorContext(context))).toEqual({ expression: 'template_row_0$template', reactive: false });
   });
 
   it('resolves a variable of the template named like a signal member to the variable, which shadows the member', () => {
@@ -179,7 +185,7 @@ describe('resolveExpression', () => {
     const eventContext = new GeneratorContext(context);
     eventContext.addUnresolvableIdentifier('count');
 
-    expect(resolve('count()', forContext)).toEqual({ expression: 'context.get(\'count\')()', reactive: true });
+    expect(resolve('count()', forContext)).toEqual({ expression: '_read(context, 0, 8)()', reactive: true });
     expect(resolve('count', eventContext)).toEqual({ expression: 'count', reactive: false });
     expect(resolve('count()', context)).toEqual({ expression: 'this.count()', reactive: true });
   });
@@ -222,8 +228,8 @@ describe('resolveExpression', () => {
 
     const resolved = resolve('handler(row) + row.id + field.value', context);
 
-    expect(resolved.expression).toBe('context.get(\'handler\')(context.get(\'row\')) + context.get(\'row\').id + context.get(\'field\').value');
-    expect(resolved.variables).toEqual(['handler', 'row']);
+    expect(resolved.expression).toBe('_read(context, 0, 9)(_read(context, 0, 8)) + _read(context, 0, 8).id + _read(context, 0, 10).value');
+    expect(resolved.variables).toEqual([1, 0]);
     expect(resolved.reactive).toBeFalsy();
   });
 
@@ -272,7 +278,7 @@ describe('resolveExpression', () => {
       blockContext.addIdentifier('location');
 
       expect(resolve('name + status() + location', blockContext, { browserGlobals: 'globalThis' })).toEqual({
-        expression: 'this.name + this.status() + context.get(\'location\')',
+        expression: 'this.name + this.status() + _read(context, 0, 8)',
         reactive: true
       });
     });

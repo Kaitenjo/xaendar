@@ -8,7 +8,9 @@ import { BindableProperties } from '../../types/create-component/bindable-proper
 import { BindingGroup } from '../../types/create-component/binding-group.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
 import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
-import { _Context, _EMPTY_CONTEXT } from '../context/context.util';
+import { HEADER } from '../../costants';
+import type { _Context } from '../../types/context.type';
+import { _scope, addChild, clear, ELEMENT_LAYOUT, removeChild } from '../context/context.util';
 import { getSelector } from '../get-selector/get-selector.util';
 import { _assertRequiredInputs } from '../required-inputs/required-inputs.util';
 import { _toPropertyName } from '../input-names/input-names.util';
@@ -71,14 +73,14 @@ export function _createComponent<
   }
 
   // The root of the component's own bindings: it is never a scope of identifiers, only the owner of their cleanup
-  const context = new _Context(_EMPTY_CONTEXT);
+  const context = _scope(null, ELEMENT_LAYOUT);
   // Registered before the render, so that what a render failing halfway leaves is cleared along with the owner
-  owner().addChild(context);
+  addChild(owner(), context);
   const { attributes, events, conditionalBindings, directives } = bindings;
   const element = untracked(() => {
-    _renderElement(options.target, context, null, { tagName: selector, attributes, events, conditionalBindings, directives });
+    _renderElement(options.target, context, null, { tagName: selector, attributes, events, conditionalBindings, directives, slot: HEADER });
     // The element is the first node tracked by the context, the only one rendered in it
-    const element = context.getNode(0) as Component;
+    const element = context[HEADER] as Component;
     // Appended once the directives are applied, as a template renders the children of a tag: they are not tracked, so they stay in the element
     if (options.content?.length) {
       element.append(...options.content);
@@ -90,8 +92,8 @@ export function _createComponent<
   return {
     element,
     destroy: () => {
-      owner().removeChild(context);
-      context.clear();
+      removeChild(owner(), context);
+      clear(context);
     }
   };
 }

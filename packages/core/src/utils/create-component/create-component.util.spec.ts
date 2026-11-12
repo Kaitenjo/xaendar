@@ -3,6 +3,7 @@ import type { Constructor } from '@xaendar/types';
 import type { Aliased } from '../../signals/types/aliased.type';
 import type { InputSignal } from '../../signals/types/input-signal.type';
 import { describe, expect, it, vi } from 'vitest';
+import type { _Context } from '../../types/context.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -15,14 +16,14 @@ const { CustomDirective } = await import('../../models/custom-directive/custom-d
 const { CustomElement } = await import('../../models/custom-element/custom-element');
 const { Output } = await import('../../models/output/output');
 const { StructuralDirective } = await import('../../models/structural-directive/structural-directive');
-const { _Context } = await import('../context/context.util');
+const { _scope, EMPTY_LAYOUT, clear, getChildCount, getChild, moveTo } = await import('../context/context.util');
 const { _defineRender } = await import('../render-registry/render-registry.util');
 const { _createComponent } = await import('./create-component.util');
 
 /**
  * The child contexts of a context, in registration order.
  */
-const childrenOf = <TContext>(context: { getChildCount(): number, getChild(index: number): TContext }): TContext[] => Array.from({ length: context.getChildCount() }, (_item, index) => context.getChild(index));
+const childrenOf = (context: _Context): _Context[] => Array.from({ length: getChildCount(context) }, (_item, index) => getChild(context, index));
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
@@ -34,7 +35,7 @@ let counter = 0;
 function define<T extends Constructor<InstanceType<typeof CustomElement>>>(klass: T): T {
   const selector = `x-created-${counter++}`;
   Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { selector } });
-  _defineRender(klass, () => new _Context({} as never));
+  _defineRender(klass, () => _scope(null, EMPTY_LAYOUT));
   customElements.define(selector, klass);
   return klass;
 }
@@ -141,7 +142,7 @@ Object.defineProperty(Label, Symbol.for('Symbol.metadata'), { value: { requiredI
 /**
  * The context of the component or of the directive creating the components: never cleared, unless a test does.
  */
-const root = new _Context({} as never);
+const root = _scope(null, EMPTY_LAYOUT);
 const owner = () => root;
 
 describe('_createComponent', () => {
@@ -363,13 +364,13 @@ describe('_createComponent', () => {
     });
 
     it('removes the context of the component from the context its owner has when destroyed', () => {
-      const staging = new _Context({} as never);
-      const connected = new _Context({} as never);
+      const staging = _scope(null, EMPTY_LAYOUT);
+      const connected = _scope(null, EMPTY_LAYOUT);
       let current = staging;
       const { destroy } = _createComponent(() => current, Card, { target: document.body });
       expect(childrenOf(staging)).toHaveLength(1);
 
-      staging.moveTo(connected);
+      moveTo(staging, connected);
       current = connected;
       destroy();
 
@@ -377,10 +378,10 @@ describe('_createComponent', () => {
     });
 
     it('does nothing when called again, or after its owner is cleared', () => {
-      const context = new _Context({} as never);
+      const context = _scope(null, EMPTY_LAYOUT);
       const { element, destroy } = _createComponent(() => context, Card, { target: document.body });
 
-      context.clear();
+      clear(context);
       destroy();
       destroy();
 
@@ -391,11 +392,11 @@ describe('_createComponent', () => {
 
   describe('owner', () => {
     it('destroys the component when the context of its owner is cleared', async () => {
-      const context = new _Context({} as never);
+      const context = _scope(null, EMPTY_LAYOUT);
       const heading = signal('first');
       const { element } = _createComponent(() => context, Card, { target: document.body, properties: [{ heading: () => heading() }], directives: [Tooltip] });
 
-      context.clear();
+      clear(context);
       heading.set('second');
       await flush();
 

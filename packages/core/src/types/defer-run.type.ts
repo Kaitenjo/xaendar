@@ -1,5 +1,5 @@
 import type { NoArgsVoidFunction } from '@xaendar/types';
-import type { _Context } from '../utils/context/context.util';
+import type { _Context } from './context.type';
 import type { DeferBlock } from './defer-block.type';
 import type { DeferBlockState } from './defer-testing/defer-block-state.type';
 

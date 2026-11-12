@@ -7,11 +7,11 @@ const cache = {} as ContextCache;
 describe('generateServerRender', () => {
   it('renders an instance of the template with the value of each argument, read once', () => {
     const context = new GeneratorContext(cache);
-    context.addIdentifier('row');
+    context.addIdentifier('row', 'value', 'template_row_0');
     context.addTemplate('row', 'html');
 
-    expect(generateServerRender(parseTemplate('@render row(item, 1)')[0] as RenderNode, { id: 'root' }, '0', context)).toEqual({
-      pieces: [{ statement: '_ssrRenderTemplate(out, context, \'row\', [this.item, 1]);' }]
+    expect(generateServerRender(parseTemplate('@render row(item, 1)')[0] as RenderNode, { id: 'root' }, '0', new GeneratorContext(context))).toEqual({
+      pieces: [{ statement: '_ssrRenderTemplate(out, context, template_row_0, 1, [this.item, 1]);' }]
     });
   });
 

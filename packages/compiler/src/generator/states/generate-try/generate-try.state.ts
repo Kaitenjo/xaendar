@@ -1,7 +1,7 @@
 import type { TryNode } from '../../../parser/types/nodes/try-node.type';
 import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
-import { appendBlockPosition, getContentAnchor } from '../../utils/block-position/block-position.utils';
+import { allocateBlockSlot, appendBlockPosition, getContentAnchor } from '../../utils/block-position/block-position.utils';
 import { getBlockIdentifier } from '../../utils/generator/generator.utils';
 import { toObjectLiteral } from '../../utils/module-code/module-code.utils';
 
@@ -32,7 +32,7 @@ export async function generateTry(node: TryNode, parentNode: string, index: stri
   }
 
   const members = [`content: ${contentKey}`, `catch: ${catchKey}`];
-  appendBlockPosition(members, last);
+  appendBlockPosition(members, last, allocateBlockSlot(generatorContext, last));
   return {
     code: [`_try(${parentNode}, context, ${anchor}, ${generatorContext.declareConstant(`${contentKey}$try`, toObjectLiteral(members))});`],
     functionsToProcess: new Map([
@@ -41,7 +41,7 @@ export async function generateTry(node: TryNode, parentNode: string, index: stri
         args: [contentKey, 'parentContext', 'anchor', 'nodeStrategy']
       }],
       [catchKey, {
-        fn: { node: node.catch, parentNode: catchKey, context: catchContext, precode: name ? `context.addIdentifier('${name}', error);` : undefined, anchor: contentAnchor },
+        fn: { node: node.catch, parentNode: catchKey, context: catchContext, precode: name ? `context[${catchContext.addressOf(name)!.slot}] = error;` : undefined, anchor: contentAnchor },
         args: [catchKey, 'parentContext', 'anchor', 'nodeStrategy', 'error']
       }]
     ])

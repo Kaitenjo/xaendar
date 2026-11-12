@@ -22,13 +22,13 @@ export const CREATE_NODES: NodeStrategy = {
     parentNode.insertBefore(element, referenceNode);
   },
   children: () => CREATE_NODES,
-  text: (context, parentNode, referenceNode, value) => {
+  text: (context, parentNode, referenceNode, value, _separated, slot) => {
     const node = document.createTextNode(value);
-    mountNode(node, parentNode, context, referenceNode);
+    mountNode(node, parentNode, context, referenceNode, slot);
     return node;
   },
   separator: () => undefined,
-  block: (context, parentNode, referenceNode, label, _kind, last) => last ? LAST_BLOCK : { anchor: createAnchor(label, parentNode, context, referenceNode), marker: undefined },
+  block: (context, parentNode, referenceNode, label, _kind, last, slot) => last ? LAST_BLOCK : { anchor: createAnchor(label, parentNode, context, referenceNode, slot), marker: undefined },
   adopt: () => CREATE_NODES,
   adoptItems: () => CREATE_NODES,
   skip: () => [],

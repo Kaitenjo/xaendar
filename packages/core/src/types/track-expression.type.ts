@@ -1,4 +1,4 @@
-import type { _Context } from '../utils/context/context.util';
+import type { _Context } from './context.type';
 
 /**
  * Computes the key of an item: a function of the module of the template, called with the component as `this` and the

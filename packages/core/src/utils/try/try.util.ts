@@ -1,6 +1,7 @@
 import { _SSR_MARKERS } from '../../costants';
 import type { TryBlock } from '../../types/try-block.type';
-import { _Context } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
+import { addChild, clear, getNodeStrategy } from '../context/context.util';
 import { closeTryScope, openTryScope } from '../try-scope/try-scope.util';
 
 /**
@@ -31,18 +32,22 @@ const CATCH = '1';
  * @param referenceNode - The node to insert the block before, `null` to append it.
  * @param block - Renders the content and the `@catch`.
  * @throws The error of the `@catch`.
+ *
+ * N.B. Deliberate, to save memory: the content and the `@catch` are scopes declared by the scope holding the block, and
+ * only the one rendered in the end is registered in it, instead of a holder scope registering both, which the compiler
+ * would have to count as a scope of the chain the content reads its variables through. Do not add a holder.
  */
 export function _try(parentNode: HTMLElement, parentContext: _Context, referenceNode: Comment | null, block: TryBlock): void {
-  const { nodeStrategy } = parentContext;
-  const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'try', _SSR_MARKERS.try, block.last);
+  const nodeStrategy = getNodeStrategy(parentContext);
+  const nodeBlock = nodeStrategy.block(parentContext, parentNode, referenceNode, 'try', _SSR_MARKERS.try, block.last, block.slot);
   const replaced = nodeBlock.marker === CATCH;
   const strategy = replaced ? nodeStrategy.replace(parentNode, nodeBlock) : nodeStrategy.adopt(parentNode, nodeBlock, CONTENT);
-  const holder = new _Context(parentContext);
+  let rendered: _Context | undefined;
   const scope = openTryScope();
 
   let failure: { readonly error: unknown } | undefined;
   try {
-    holder.addChild(block.content(parentNode, holder, nodeBlock.anchor, strategy));
+    rendered = block.content(parentNode, parentContext, nodeBlock.anchor, strategy);
   } catch (error) {
     failure = { error };
   } finally {
@@ -51,14 +56,14 @@ export function _try(parentNode: HTMLElement, parentContext: _Context, reference
 
   if (failure) {
     for (let i = 0; i < scope.contexts.length; i++) {
-      scope.contexts[i].clear();
+      clear(scope.contexts[i]);
     }
 
     const fallback = replaced ? strategy : nodeStrategy.adopt(parentNode, nodeBlock, CATCH);
-    holder.addChild(block.catch(parentNode, holder, nodeBlock.anchor, fallback, failure.error));
+    rendered = block.catch(parentNode, parentContext, nodeBlock.anchor, fallback, failure.error);
   }
 
-  parentContext.addChild(holder);
+  addChild(parentContext, rendered!);
   if (!replaced) {
     nodeStrategy.close(parentNode, nodeBlock);
   }

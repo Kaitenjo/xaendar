@@ -51,18 +51,19 @@ describe('writeIterationVariables', () => {
    */
   const writeIn = (template: string) => {
     const node = parseTemplate(template)[0] as ForNode;
-    return writeIterationVariables(node, getReadForVariables(node));
+    const read = getReadForVariables(node);
+    return writeIterationVariables(read, read.map((_variable, index) => 10 + index));
   };
 
-  it('writes the variables read, and the name each one is declared with at the same index', () => {
-    expect(writeIn('@for (row of rows(); track row.id) { { $last } { row.name } }')).toBe('{ used: [\'item\', \'$last\'], names: [\'row\', \'$last\'] }');
+  it('writes the variables read, and the identifier of each one at the same index', () => {
+    expect(writeIn('@for (row of rows(); track row.id) { { $last } { row.name } }')).toBe('{ used: [\'item\', \'$last\'], ids: [10, 11] }');
   });
 
-  it('names the implicit variables by their aliases', () => {
-    expect(writeIn('@for (row of rows(); track row.id; i = $index, odd = $odd) { { odd } { i } }')).toBe('{ used: [\'$index\', \'$odd\'], names: [\'i\', \'odd\'] }');
+  it('reads the implicit variables through their aliases', () => {
+    expect(writeIn('@for (row of rows(); track row.id; i = $index, odd = $odd) { { odd } { i } }')).toBe('{ used: [\'$index\', \'$odd\'], ids: [10, 11] }');
   });
 
   it('writes only the implicit variables of a @for declaring no item', () => {
-    expect(writeIn('@for (10; track $index) { { $index } { $first } }')).toBe('{ used: [\'$index\', \'$first\'], names: [\'$index\', \'$first\'] }');
+    expect(writeIn('@for (10; track $index) { { $index } { $first } }')).toBe('{ used: [\'$index\', \'$first\'], ids: [10, 11] }');
   });
 });

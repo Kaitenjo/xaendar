@@ -1,14 +1,21 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import { _Context } from '../context/context.util';
+import { HEADER, LAYOUT } from '../../costants';
+import type { _Context } from '../../types/context.type';
+import { _scope } from '../context/context.util';
 import { CREATE_NODES } from './create-nodes.util';
+
+/**
+ * The number of node slots of the contexts of the tests.
+ */
+const SLOTS = 4;
 
 /**
  * The nodes a context tracks, in mount order.
  */
-const nodesOf = (context: { getNodeCount(): number, getNode(index: number): Node }): Node[] => Array.from({ length: context.getNodeCount() }, (_item, index) => context.getNode(index));
+const nodesOf = (context: _Context): Node[] => context.slice(context[LAYOUT].nodes).filter(Boolean) as Node[];
 
-const createContext = () => new _Context({ createElement: (tagName: string) => document.createElement(tagName) } as never);
+const createContext = () => _scope(null, { size: HEADER + SLOTS, nodes: HEADER });
 
 describe('CREATE_NODES', () => {
   it('creates the elements with the factory of the context, inserting them when they are mounted, their children created', () => {
@@ -29,7 +36,7 @@ describe('CREATE_NODES', () => {
     const anchor = parent.appendChild(document.createComment('anchor'));
     const context = createContext();
 
-    const text = CREATE_NODES.text(context, parent, anchor, 'a', true);
+    const text = CREATE_NODES.text(context, parent, anchor, 'a', true, HEADER);
     CREATE_NODES.separator(parent, true);
 
     expect(parent.innerHTML).toBe('a<!--anchor-->');
@@ -40,7 +47,7 @@ describe('CREATE_NODES', () => {
     const parent = document.createElement('div');
     const context = createContext();
 
-    const block = CREATE_NODES.block(context, parent, null, 'if', 'xd-if');
+    const block = CREATE_NODES.block(context, parent, null, 'if', 'xd-if', false, HEADER);
     const nodes = CREATE_NODES.skip(parent, block);
 
     expect(block.marker).toBeUndefined();

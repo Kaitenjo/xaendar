@@ -1,4 +1,4 @@
-import type { _Context } from '../utils/context/context.util';
+import type { _Context } from './context.type';
 
 /**
  * An event handler of a template, compiled into a function of the module of the template: the runtime calls it with the

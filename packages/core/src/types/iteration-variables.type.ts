@@ -13,12 +13,12 @@ import type { IterationVariable } from './iteration-variable.type';
 export type IterationVariables = {
   /**
    * The variables the body reads, named as the template writes them without aliases. The item is listed only when the
-   * `@for` declares it.
+   * `@for` declares it. The one at `i` is held by the slot `HEADER + i` of the context of the body.
    */
   readonly used: readonly IterationVariable[];
   /**
-   * The name each variable of {@link used}, at the same index, is declared with in the context of the body: the alias of
-   * the item, the alias of an implicit variable, or its own name.
+   * The identifier of each variable of {@link used}, at the same index, unique in the template, which a refresh of the
+   * context of the body names it by.
    */
-  readonly names: readonly string[];
+  readonly ids: readonly number[];
 };

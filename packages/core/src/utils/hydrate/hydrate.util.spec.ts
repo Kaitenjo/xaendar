@@ -3,31 +3,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { _EVENT_CONTRACT_KEY } from '../../costants';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
+import { HEADER } from '../../costants';
+import type { _Context } from '../../types/context.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
   loadSignals();
 });
 
-const { _Context } = await import('../context/context.util');
+const { _scope, EMPTY_LAYOUT, ELEMENT_LAYOUT, clear, getNodeStrategy, setNodeStrategy } = await import('../context/context.util');
 const { ClaimNodes } = await import('../claim-nodes/claim-nodes.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _renderElement } = await import('../render-element/render-element.util');
 const { _hydrate } = await import('./hydrate.util');
 const { signal } = await import('../../signals');
 
-type Context = InstanceType<typeof _Context>;
+type Context = _Context;
 
 const flush = () => new Promise<void>(resolve => setTimeout(resolve));
 
-const createRoot = (nodeStrategy?: NodeStrategy) => new _Context({ createElement: (tag: string) => document.createElement(tag) } as never, nodeStrategy);
+const createRoot = (nodeStrategy?: NodeStrategy) => _scope(null, ELEMENT_LAYOUT, nodeStrategy);
 
 /**
  * A block rendering an element, with its listeners, through the strategy it receives.
  */
 const block = (tagName: string, events?: RenderElementEvent[]) => vi.fn((parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
-  const context = new _Context(parentContext, nodeStrategy);
-  _renderElement(parentNode, context, anchor as Comment | null, { tagName, events });
+  const context = _scope(parentContext, ELEMENT_LAYOUT, nodeStrategy);
+  _renderElement(parentNode, context, anchor as Comment | null, { tagName, events, slot: HEADER });
   return context;
 });
 
@@ -85,7 +87,7 @@ describe('_hydrate', () => {
       _hydrate(element, root, null, { triggers: ['load'], load: () => new Promise<void>(resolve => loaded = resolve), content });
       _hydrate(element, root, null, { triggers: ['load'], load: () => new Promise<void>((_resolve, reject) => failed = reject), content });
 
-      root.clear();
+      clear(root);
       loaded();
       failed(new Error('offline'));
       await flush();
@@ -98,8 +100,8 @@ describe('_hydrate', () => {
       const parent = document.createElement('div');
       const root = createRoot();
 
-      _hydrate(parent, root, null, { triggers: ['load'], content: block('b') });
-      root.clear();
+      _hydrate(parent, root, null, { triggers: ['load'], content: block('b'), slot: HEADER });
+      clear(root);
 
       expect(parent.innerHTML).toBe('');
     });
@@ -113,7 +115,7 @@ describe('_hydrate', () => {
 
       _hydrate(parent, root, null, { triggers: ['interaction'], content, last: true });
 
-      expect(nodeBlock).toHaveBeenCalledExactlyOnceWith(root, parent, null, 'hydrate', 'xd-h', true);
+      expect(nodeBlock).toHaveBeenCalledExactlyOnceWith(root, parent, null, 'hydrate', 'xd-h', true, undefined);
       expect(parent.innerHTML).toBe('<i></i><b></b>');
       expect(content.mock.calls[0][2]).toBeNull();
     });
@@ -177,10 +179,10 @@ describe('_hydrate', () => {
       const content = block('b');
 
       _hydrate(parent, root, null, { triggers: ['load'], content });
-      root.setNodeStrategy(CREATE_NODES);
+      setNodeStrategy(root, CREATE_NODES);
       await flush();
 
-      expect(content.mock.results[0].value.nodeStrategy).toBe(CREATE_NODES);
+      expect(getNodeStrategy(content.mock.results[0].value as _Context)).toBe(CREATE_NODES);
     });
 
     it('creates the content where the server rendered no block, with a warning', () => {
@@ -323,7 +325,7 @@ describe('_hydrate', () => {
       const load = vi.fn(() => Promise.resolve());
       const content = block('a');
 
-      _hydrate(parent, root, null, { triggers: ['never'], load, content });
+      _hydrate(parent, root, null, { triggers: ['never'], load, content, slot: HEADER, track: true });
       _renderElement(parent, root, null, { tagName: 'i' });
       link.click();
       await new Promise(resolve => setTimeout(resolve, 20));
@@ -334,7 +336,7 @@ describe('_hydrate', () => {
       expect(parent.querySelector('a')).toBe(link);
       expect(console.warn).not.toHaveBeenCalled();
 
-      root.clear();
+      clear(root);
 
       expect(parent.querySelector('a')).toBeNull();
     });
@@ -389,17 +391,17 @@ describe('_hydrate', () => {
       const waiting = parse('<!--xd-h--><button>x</button>a<!--/xd-h-->');
       const root = createRoot(new ClaimNodes('x-host'));
       const content = block('button');
-      _hydrate(waiting, root, null, { triggers: ['idle'], content });
-      root.clear();
+      _hydrate(waiting, root, null, { triggers: ['idle'], content, slot: HEADER, track: true });
+      clear(root);
       await flush();
       expect(waiting.innerHTML).toBe('');
       expect(content).not.toHaveBeenCalled();
 
       const hydrated = parse('<!--xd-h--><button>x</button><!--/xd-h-->');
       const other = createRoot(new ClaimNodes('x-host'));
-      _hydrate(hydrated, other, null, { triggers: ['load'], content: block('button') });
+      _hydrate(hydrated, other, null, { triggers: ['load'], content: block('button'), slot: HEADER, track: true });
       await flush();
-      other.clear();
+      clear(other);
       expect(hydrated.innerHTML).toBe('');
     });
   });

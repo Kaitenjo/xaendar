@@ -1,6 +1,7 @@
 import type { DeferBlockBehavior } from '../../types/defer-testing/defer-block-behavior.type';
 import type { DeferBlockFixture } from '../../types/defer-testing/defer-block-fixture.type';
-import type { _Context } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
+import { addCleanup } from '../context/context.util';
 
 /**
  * How the `@defer` blocks behave in the tests, `undefined` outside of them: `@xaendar/core/testing` sets it once
@@ -47,7 +48,7 @@ export function registerDeferBlock(parentNode: Node, parentContext: _Context, fi
   const root = parentNode.getRootNode();
   const registered = blocks.get(root);
   registered ? registered.push(fixture) : blocks.set(root, [fixture]);
-  parentContext.addUnlistener(() => {
+  addCleanup(parentContext, () => {
     const list = blocks.get(root)!;
     list.splice(list.indexOf(fixture), 1);
   });

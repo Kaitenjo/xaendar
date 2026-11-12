@@ -2,13 +2,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ForConfig } from '../../types/for-config.type';
 import type { IterationVariables } from '../../types/iteration-variables.type';
+import { HEADER, LAYOUT } from '../../costants';
+import type { _Context } from '../../types/context.type';
+import type { _ScopeLayout } from '../../types/scope-layout.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
   loadSignals();
 });
 
-const { _Context, mountNode } = await import('../context/context.util');
+const { _read, _scope, addChild, clear, ELEMENT_LAYOUT, EMPTY_LAYOUT, mountNode, refresh, update } = await import('../context/context.util');
 const { _for, _iterationVariables } = await import('./for.util');
 const { _if } = await import('../if/if.util');
 const { _bindEffect } = await import('../../signals/effect/effect');
@@ -25,7 +28,7 @@ const moveBefore = vi.fn(function (this: Element, node: Node, child: Node | null
 });
 Object.assign(Element.prototype, { moveBefore });
 
-type Context = InstanceType<typeof _Context>;
+type Context = _Context;
 
 /**
  * Freezes an object and every object it holds, functions excluded, so that a write into it throws in strict mode.
@@ -43,7 +46,45 @@ function deepFreeze<Value extends object>(value: Value): Value {
 }
 
 function createRoot() {
-  return new _Context({ createElement: (tag: string) => document.createElement(tag) } as never);
+  return _scope(null, ELEMENT_LAYOUT);
+}
+
+/**
+ * The layout of a scope declaring some variables, followed by some nodes.
+ */
+const layoutOf = (count: number, nodes = 0): _ScopeLayout => ({ size: HEADER + count + nodes, nodes: HEADER + count });
+
+/**
+ * Creates the scope of an item declaring the variables given, with room for two nodes at its top.
+ */
+const itemScope = (parentContext: Context, variables?: IterationVariables | null) => _scope(parentContext, layoutOf(variables?.used.length ?? 0, 2));
+
+/**
+ * The first slot of a scope free for a node, as the compiler gives them in order.
+ */
+function freeSlot(context: Context): number | undefined {
+  for (let i = context[LAYOUT].nodes; i < context.length; i++) {
+    if (!context[i]) {
+      return i;
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Registers in a scope a binding for each identifier given, and returns the identifiers whose binding ran again since.
+ */
+function refreshedIds(scope: Context, ids: readonly number[]): number[] {
+  const runs = new Array<number>();
+  let rendering = true;
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i];
+    _bindEffect(scope, () => rendering || runs.push(id), null, undefined, undefined, [id]);
+  }
+
+  rendering = false;
+  return runs;
 }
 
 type Body = (parentNode: HTMLElement, itemContext: Context, text: string, reference: Node | null) => void;
@@ -52,17 +93,17 @@ type Options = { withNodes?: boolean, variables?: IterationVariables | null, bod
 /**
  * Every variable of a `@for`, declared by its own name.
  */
-const ALL_VARIABLES: IterationVariables = { used: ['item', '$index', '$first', '$last', '$even', '$odd'], names: ['item', '$index', '$first', '$last', '$even', '$odd'] };
+const ALL_VARIABLES: IterationVariables = { used: ['item', '$index', '$first', '$last', '$even', '$odd'], ids: [0, 1, 2, 3, 4, 5] };
 
 /**
  * Reads the values of the variables an item declares.
  */
-const valuesOf = (context: Context, { names }: IterationVariables = ALL_VARIABLES) => names.map(name => context.get(name));
+const valuesOf = (context: Context, { used }: IterationVariables = ALL_VARIABLES) => used.map((_variable, index) => context[HEADER + index]);
 
 const renderItem: Body = (parentNode, itemContext, text, reference) => {
   const li = document.createElement('li');
   li.textContent = text;
-  mountNode(li, parentNode, itemContext, reference as Comment | null);
+  mountNode(li, parentNode, itemContext, reference as Comment | null, freeSlot(itemContext));
 };
 
 /**
@@ -72,10 +113,11 @@ const renderItem: Body = (parentNode, itemContext, text, reference) => {
 function nestedIf(depth: number, body: Body = renderItem, condition = () => true): Body {
   return depth === 0 ? body : (parentNode, itemContext, text, reference) => {
     _if(parentNode, itemContext, reference as Comment | null, {
+      slot: freeSlot(itemContext),
       branches: [{
         condition,
         block: (blockParent, blockContext, blockReference) => {
-          const branchContext = new _Context(blockContext);
+          const branchContext = _scope(blockContext, layoutOf(0, 2));
           nestedIf(depth - 1, body, condition)(blockParent, branchContext, text, blockReference);
           return branchContext;
         }
@@ -89,8 +131,8 @@ function nestedIf(depth: number, body: Body = renderItem, condition = () => true
  */
 const renderItemWithChildren: Body = (parentNode, itemContext, text, reference) => {
   const li = document.createElement('li');
-  mountNode(li, parentNode, itemContext, reference as Comment | null);
-  mountNode(document.createTextNode(text), li, itemContext.addChild());
+  mountNode(li, parentNode, itemContext, reference as Comment | null, freeSlot(itemContext));
+  mountNode(document.createTextNode(text), li, addChild(itemContext));
 };
 
 const nodeTexts =(parent: HTMLElement) => Array.from(parent.childNodes).map(node => node.textContent);
@@ -107,7 +149,7 @@ function setup(initial: string[], { withNodes = true, variables = ALL_VARIABLES,
   // The contexts of the items created, in order of creation
   const entries = new Array<Context>();
   const forFn = vi.fn((parentNode: HTMLElement, parentContext: Context, list: unknown[], index: number, reference: Node | null) => {
-    const itemContext = new _Context(parentContext);
+    const itemContext = itemScope(parentContext, variables);
     if (variables) {
       _iterationVariables(itemContext, list, index, variables);
     }
@@ -118,7 +160,7 @@ function setup(initial: string[], { withNodes = true, variables = ALL_VARIABLES,
     return itemContext;
   });
 
-  _for(parent, context, null, { items: () => items(), track: (_context, item) => item as string, block: forFn, variables: variables ?? undefined, last });
+  _for(parent, context, null, { items: () => items(), track: (_context, item) => item as string, block: forFn, variables: variables ?? undefined, last, slot: last ? undefined : HEADER });
 
   const texts = () => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
   const change = async (next: string[]) => {
@@ -157,7 +199,7 @@ describe('_for', () => {
       return variables.join();
     });
 
-    _for(document.createElement('ul'), context, null, { items: () => ['a', 'b', 'c'], track, block: () => new _Context(createRoot()) });
+    _for(document.createElement('ul'), context, null, { items: () => ['a', 'b', 'c'], track, block: () => _scope(createRoot(), EMPTY_LAYOUT) });
 
     expect(track.mock.calls.map(call => call[0] === context)).toEqual([true, true, true]);
 
@@ -216,24 +258,23 @@ describe('_for', () => {
     expect(valuesOf(a)).toEqual(['a', 2, false, true, true, false]);
   });
 
-  it('refreshes a reused item with the names of the variables that changed, and leaves alone the ones that did not change', async () => {
+  it('refreshes a reused item with the identifiers of the variables that changed, and leaves alone the ones that did not change', async () => {
     const { entries, change } = setup(['a', 'b', 'c']);
-    const [a, b, c] = entries;
-    const refreshes = [vi.spyOn(a, 'refresh'), vi.spyOn(b, 'refresh'), vi.spyOn(c, 'refresh')];
+    const refreshes = entries.map(entry => refreshedIds(entry, ALL_VARIABLES.ids));
 
     await change(['c', 'b', 'a']);
 
     // From the index 0 to the index 2 and back, an item stays at an even index
-    expect(refreshes[0]).toHaveBeenCalledExactlyOnceWith(['$index', '$first', '$last']);
-    expect(refreshes[1]).not.toHaveBeenCalled();
-    expect(refreshes[2]).toHaveBeenCalledExactlyOnceWith(['$index', '$first', '$last']);
+    expect(refreshes[0]).toEqual([1, 2, 3]);
+    expect(refreshes[1]).toEqual([]);
+    expect(refreshes[2]).toEqual([1, 2, 3]);
   });
 
   it('runs again the bindings of a reused item reading a variable that changed, synchronously', async () => {
     const { entries, change } = setup(['a', 'b']);
     const [a] = entries;
     const seen = new Array<unknown>();
-    _bindEffect(a, (context: Context) => { seen.push(context.get('$index')); }, a, undefined, undefined, ['$index']);
+    _bindEffect(a, (context: Context) => { seen.push(context[HEADER + 1]); }, a, undefined, undefined, [1]);
 
     await change(['b', 'a']);
 
@@ -241,43 +282,43 @@ describe('_for', () => {
   });
 
   it('updates only the variables the body reads, in the order of the variables of the @for', async () => {
-    const variables: IterationVariables = { used: ['$index', '$last'], names: ['i', 'last'] };
+    const variables: IterationVariables = { used: ['$index', '$last'], ids: [1, 3] };
     const { entries, change } = setup(['a', 'b', 'c'], { variables });
     const [a] = entries;
-    const refresh = vi.spyOn(a, 'refresh');
+    const refreshed = refreshedIds(a, [1, 3]);
 
     expect(valuesOf(a, variables)).toEqual([0, false]);
 
     await change(['b', 'c', 'a']);
 
     expect(valuesOf(a, variables)).toEqual([2, true]);
-    expect(refresh).toHaveBeenCalledExactlyOnceWith(['i', 'last']);
+    expect(refreshed).toEqual([1, 3]);
   });
 
   it('updates the item of an entry reused for a new item with the same key', async () => {
     const parent = document.createElement('ul');
     const items = signal([{ id: 1, name: 'old' }]);
     const entries = new Array<Context>();
-    const variables: IterationVariables = { used: ['item'], names: ['row'] };
+    const variables: IterationVariables = { used: ['item'], ids: [0] };
     _for(parent, createRoot(), null, {
       items: () => items(),
       track: (_context, item) => (item as { id: number }).id,
       block: (_parentNode, parentContext, list, index) => {
-        const itemContext = new _Context(parentContext);
+        const itemContext = itemScope(parentContext, variables);
         _iterationVariables(itemContext, list, index, variables);
         entries.push(itemContext);
         return itemContext;
       },
       variables
     });
-    const refresh = vi.spyOn(entries[0], 'refresh');
+    const refreshed = refreshedIds(entries[0], [0]);
 
     items.set([{ id: 1, name: 'new' }]);
     await flush();
 
     expect(entries).toHaveLength(1);
-    expect(entries[0].get('row')).toEqual({ id: 1, name: 'new' });
-    expect(refresh).toHaveBeenCalledExactlyOnceWith(['row']);
+    expect(entries[0][HEADER]).toEqual({ id: 1, name: 'new' });
+    expect(refreshed).toEqual([0]);
   });
 
   it('updates the variables of each occurrence of a repeated key by its own position', async () => {
@@ -295,25 +336,26 @@ describe('_for', () => {
   it('moves the nodes a reused item renders once refreshed, a block at the top of its body rendering other ones', async () => {
     const parent = document.createElement('ul');
     const items = signal([{ id: 1, done: false }, { id: 2, done: false }]);
-    const variables: IterationVariables = { used: ['item'], names: ['row'] };
+    const variables: IterationVariables = { used: ['item'], ids: [0] };
     // The body is a block reading the item: the branch it renders, at the top of the item, changes with it
     const render = (text: string) => (blockParent: HTMLElement, blockContext: Context, blockReference: Node | null) => {
-      const branchContext = new _Context(blockContext);
-      renderItem(blockParent, branchContext, `${text}${(branchContext.get('row') as { id: number }).id}`, blockReference);
+      const branchContext = _scope(blockContext, layoutOf(0, 1));
+      renderItem(blockParent, branchContext, `${text}${(_read(branchContext, 1, HEADER) as { id: number }).id}`, blockReference);
       return branchContext;
     };
     _for(parent, createRoot(), null, {
       items: () => items(),
       track: (_context, item) => (item as { id: number }).id,
       block: (parentNode, parentContext, list, index, reference) => {
-        const itemContext = new _Context(parentContext);
+        const itemContext = itemScope(parentContext, variables);
         _iterationVariables(itemContext, list, index, variables);
         _if(parentNode, itemContext, reference as Comment | null, {
           branches: [
-            { condition: scope => (scope.get('row') as { done: boolean }).done, block: render('done ') },
+            { condition: scope => (scope[HEADER] as { done: boolean }).done, block: render('done ') },
             { block: render('todo ') }
           ],
-          reads: ['row']
+          reads: [0],
+          slot: HEADER + 1
         });
         return itemContext;
       },
@@ -350,13 +392,11 @@ describe('_for', () => {
 
   it('moves the items of a body reading no variable, which declare none', async () => {
     const { texts, entries, change } = setup(['a', 'b'], { variables: null });
-    const refreshes = entries.map(entry => vi.spyOn(entry, 'refresh'));
 
     await change(['b', 'a']);
 
     expect(texts()).toEqual(['b', 'a']);
-    expect(refreshes[0]).not.toHaveBeenCalled();
-    expect(refreshes[1]).not.toHaveBeenCalled();
+    expect(entries.map(entry => entry[LAYOUT].nodes)).toEqual([HEADER, HEADER]);
   });
 
   it('works when the items do not own any node', async () => {
@@ -501,7 +541,7 @@ describe('_for', () => {
     const parent = document.createElement('ul');
     const count = signal(3);
     const forFn = vi.fn((parentNode: HTMLElement, parentContext: Context, list: unknown[], index: number, reference: Node | null) => {
-      const itemContext = new _Context(parentContext);
+      const itemContext = itemScope(parentContext);
       renderItem(parentNode, itemContext, String(list[index]), reference);
       return itemContext;
     });
@@ -522,20 +562,20 @@ describe('_for', () => {
 
   it('reconciles its items again when a variable of the enclosing scope they read changes', () => {
     const parent = document.createElement('ul');
-    const rowContext = new _Context(createRoot(), undefined, 1);
-    rowContext.addIdentifier('row', { cells: ['a', 'b'] });
+    const rowContext = _scope(createRoot(), layoutOf(1));
+    rowContext[HEADER] = { cells: ['a', 'b'] };
     const forFn = vi.fn((parentNode: HTMLElement, parentContext: Context, list: unknown[], index: number, reference: Node | null) => {
-      const itemContext = new _Context(parentContext);
+      const itemContext = itemScope(parentContext);
       renderItem(parentNode, itemContext, String(list[index]), reference);
       return itemContext;
     });
     const texts = () => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
 
-    _for(parent, rowContext, null, { items: scope => (scope.get('row') as { cells: string[] }).cells, track: (_context, item) => item as string, block: forFn, reads: ['row'] });
+    _for(parent, rowContext, null, { items: scope => (scope[HEADER] as { cells: string[] }).cells, track: (_context, item) => item as string, block: forFn, reads: [0] });
     expect(texts()).toEqual(['a', 'b']);
 
-    rowContext.update('row', { cells: ['b', 'c'] });
-    rowContext.refresh(['row']);
+    update(rowContext, HEADER, { cells: ['b', 'c'] });
+    refresh(rowContext, [0]);
 
     expect(texts()).toEqual(['b', 'c']);
     expect(forFn).toHaveBeenCalledTimes(3);
@@ -544,7 +584,7 @@ describe('_for', () => {
   it('stops reacting and cleans up when the parent context is destroyed', async () => {
     const { parent, context, forFn, change } = setup(['a']);
 
-    context.clear();
+    clear(context);
     await change(['a', 'b']);
 
     expect(parent.childNodes.length).toBe(0);
@@ -553,7 +593,7 @@ describe('_for', () => {
 
   it('calls the items and the track expression with the component of the context as this and the context', () => {
     const component = { rows: [{ id: 1 }, { id: 2 }] };
-    const context = new _Context(createRoot(), undefined, 0, component);
+    const context = _scope(createRoot(), EMPTY_LAYOUT, undefined, component);
     const items = vi.fn(function (this: typeof component, _context: Context) {
       return this.rows;
     });
@@ -561,7 +601,7 @@ describe('_for', () => {
       return (item as { id: number }).id;
     });
 
-    _for(document.createElement('ul'), context, null, { items, track, block: (_parentNode, parentContext) => new _Context(parentContext) });
+    _for(document.createElement('ul'), context, null, { items, track, block: (_parentNode, parentContext) => itemScope(parentContext) });
 
     expect(items).toHaveBeenCalledOnce();
     expect(items.mock.contexts[0]).toBe(component);
@@ -572,20 +612,20 @@ describe('_for', () => {
   });
 
   it('shares the same config and the same functions between two instances of the @for, each reading its own context, without writing into the config', () => {
-    const variables: IterationVariables = { used: ['item'], names: ['cell'] };
-    const items = vi.fn((scope: Context) => scope.get('cells') as string[]);
+    const variables: IterationVariables = { used: ['item'], ids: [1] };
+    const items = vi.fn((scope: Context) => scope[HEADER] as string[]);
     const track = vi.fn((_scope: Context, item: unknown) => item as string);
     const block = vi.fn((parentNode: HTMLElement, parentContext: Context, list: unknown[], index: number, reference: Node | null) => {
-      const itemContext = new _Context(parentContext);
+      const itemContext = itemScope(parentContext, variables);
       _iterationVariables(itemContext, list, index, variables);
       renderItem(parentNode, itemContext, String(list[index]), reference);
       return itemContext;
     });
-    const config = deepFreeze<ForConfig>({ items, track, block, variables, reads: ['cells'] });
-    const first = new _Context(createRoot(), undefined, 1);
-    const second = new _Context(createRoot(), undefined, 1);
-    first.addIdentifier('cells', ['a', 'b']);
-    second.addIdentifier('cells', ['c']);
+    const config = deepFreeze<ForConfig>({ items, track, block, variables, reads: [0] });
+    const first = _scope(createRoot(), layoutOf(1));
+    const second = _scope(createRoot(), layoutOf(1));
+    first[HEADER] = ['a', 'b'];
+    second[HEADER] = ['c'];
     const firstParent = document.createElement('ul');
     const secondParent = document.createElement('ul');
     const texts = (parent: HTMLElement) => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
@@ -596,10 +636,10 @@ describe('_for', () => {
     expect(texts(firstParent)).toEqual(['a', 'b']);
     expect(texts(secondParent)).toEqual(['c']);
 
-    second.update('cells', ['d', 'c']);
-    second.refresh(['cells']);
-    first.update('cells', ['b', 'a']);
-    first.refresh(['cells']);
+    update(second, HEADER, ['d', 'c']);
+    refresh(second, [0]);
+    update(first, HEADER, ['b', 'a']);
+    refresh(first, [0]);
 
     const scopes = new Map([[first, 'first'], [second, 'second']]);
     expect(texts(firstParent)).toEqual(['b', 'a']);
@@ -612,15 +652,15 @@ describe('_for', () => {
 
 describe('_iterationVariables', () => {
   it('declares the variables in the context, as values, in the order of used', () => {
-    const context = createRoot();
+    const context = _scope(null, layoutOf(6));
     _iterationVariables(context, ['a', 'b', 'c'], 1, ALL_VARIABLES);
 
     expect(valuesOf(context)).toEqual(['b', 1, false, false, false, true]);
   });
 
   it('flags the first and last items', () => {
-    const first = createRoot();
-    const last = createRoot();
+    const first = _scope(null, layoutOf(6));
+    const last = _scope(null, layoutOf(6));
     _iterationVariables(first, ['a', 'b'], 0, ALL_VARIABLES);
     _iterationVariables(last, ['a', 'b'], 1, ALL_VARIABLES);
 
@@ -628,11 +668,10 @@ describe('_iterationVariables', () => {
     expect(valuesOf(last)).toEqual(['b', 1, false, true, false, true]);
   });
 
-  it('declares each variable by its name, honouring the aliases, and only the variables listed', () => {
-    const context = createRoot();
-    const addIdentifier = vi.spyOn(context, 'addIdentifier');
-    _iterationVariables(context, ['a', 'b', 'c'], 2, { used: ['item', '$index', '$last'], names: ['row', 'i', '$last'] });
+  it('writes only the variables listed, in the first slots of the context, in the order of used', () => {
+    const context = _scope(null, layoutOf(3));
+    _iterationVariables(context, ['a', 'b', 'c'], 2, { used: ['item', '$index', '$last'], ids: [0, 1, 3] });
 
-    expect(addIdentifier.mock.calls).toEqual([['row', 'c'], ['i', 2], ['$last', true]]);
+    expect(context.slice(HEADER)).toEqual(['c', 2, true]);
   });
 });

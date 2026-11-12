@@ -1,3 +1,4 @@
+import type { _Context, _ScopeLayout } from '@xaendar/core';
 import { describe, expect, it, vi } from 'vitest';
 import type { ServerOutput } from '../../types/server-output.type';
 
@@ -8,7 +9,12 @@ await vi.hoisted(async () => {
   loadServerDom();
 });
 
-const { _Context, _defineDirective, _getComponentRuntime, _setExpressionInput, Property, StructuralDirective } = await import('@xaendar/core');
+const { _scope, _defineDirective, _getComponentRuntime, _setExpressionInput, Property, StructuralDirective } = await import('@xaendar/core');
+
+/**
+ * The layout of a scope holding its header alone, whose 8 slots the runtime reserves.
+ */
+const EMPTY_LAYOUT: _ScopeLayout = { size: 8, nodes: 8 };
 type StructuralDirectiveDescriptor = import('@xaendar/core').RenderElementStructuralDirective;
 type StructuralConditionalBinding = import('@xaendar/core').RenderElementStructuralDirectiveConditionalBinding;
 const { _ssrStructural } = await import('./ssr-structural.util');
@@ -28,7 +34,7 @@ class GuardDirective extends StructuralDirective {
 }
 _defineDirective('guard', GuardDirective);
 
-const context = new _Context({ get: () => undefined } as never);
+const context = _scope(null, EMPTY_LAYOUT);
 
 /**
  * Describes the structural directive `*guard(allow="{…}")`.
@@ -38,20 +44,18 @@ const guard = (value: boolean | Promise<boolean>) => ({ selector: 'guard', attri
 /**
  * Writes the element as the generated code does, recording the context it is written in.
  */
-const render = vi.fn((out: ServerOutput, _context: InstanceType<typeof _Context>) => {
+const render = vi.fn((out: ServerOutput, _context: _Context) => {
   out.push('<p></p>');
 });
 
 describe('_ssrStructural', () => {
-  it('writes the element at once between the markers of a rendered element, in a child of the context, when every structural directive allows it synchronously', () => {
+  it('writes the element at once between the markers of a rendered element, in the context itself, when every structural directive allows it synchronously', () => {
     const out: ServerOutput = [];
 
     _ssrStructural(out, context, { structuralDirectives: [guard(true), guard(true)], render });
 
     expect(out).toEqual(['<!--xd-s:1-->', '<p></p>', '<!--/xd-s-->']);
-    const elementContext = render.mock.lastCall![1];
-    expect(elementContext).not.toBe(context);
-    expect(elementContext.get('missing')).toBeUndefined();
+    expect(render.mock.lastCall![1]).toBe(context);
   });
 
   it('writes the markers of an element not rendered for a synchronous false, without leaving the rejection of another one unhandled', async () => {
@@ -144,7 +148,7 @@ describe('_ssrStructural', () => {
   it('writes the element with the component of the context as this, a structural directive binding no property applying its defaults', () => {
     const out: ServerOutput = [];
     const component = { name: 'card' };
-    const componentContext = new _Context(context, undefined, 0, component);
+    const componentContext = _scope(context, EMPTY_LAYOUT, undefined, component);
     let self: unknown;
 
     _ssrStructural(out, componentContext, {

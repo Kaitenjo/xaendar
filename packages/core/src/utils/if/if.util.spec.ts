@@ -1,32 +1,40 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
 import type { BlockConfig } from '../../types/if/block-config.type';
+import { HEADER } from '../../costants';
+import type { _Context } from '../../types/context.type';
+import type { _ScopeLayout } from '../../types/scope-layout.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
   loadSignals();
 });
 
-const { _Context, mountNode } = await import('../context/context.util');
+const { _scope, clear, ELEMENT_LAYOUT, EMPTY_LAYOUT, mountNode, refresh, update } = await import('../context/context.util');
 const { _if } = await import('./if.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _SSR_MARKERS } = await import('../../costants');
 const { signal } = await import('../../signals');
 
-type Context = InstanceType<typeof _Context>;
+type Context = _Context;
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
 function createRoot() {
-  return new _Context({ createElement: (tag: string) => document.createElement(tag) } as never);
+  return _scope(null, ELEMENT_LAYOUT);
 }
+
+/**
+ * The layout of a scope declaring some variables.
+ */
+const layoutOf = (count: number): _ScopeLayout => ({ size: HEADER + count, nodes: HEADER + count });
 
 function branch(label: string, condition?: (context: Context) => unknown) {
   const block = vi.fn((parent: HTMLElement, parentContext: Context, reference: Node | null) => {
-    const context = new _Context(parentContext);
+    const context = _scope(parentContext, ELEMENT_LAYOUT);
     const element = document.createElement('span');
     element.textContent = label;
-    mountNode(element, parent, context, reference as Comment | null);
+    mountNode(element, parent, context, reference as Comment | null, HEADER);
     return context;
   });
   return { condition, block };
@@ -61,14 +69,14 @@ describe('_if', () => {
     const context = createRoot();
     const parent = document.createElement('div');
 
-    _if(parent, context, null, { branches: [] });
+    _if(parent, context, null, { branches: [], slot: HEADER });
     _if(parent, context, null, { branches: [] }, _SSR_MARKERS.switch);
     _if(parent, context, null, { branches: [], last: true });
 
     expect(block.mock.calls).toEqual([
-      [context, parent, null, 'if', _SSR_MARKERS.if, undefined],
-      [context, parent, null, 'if', _SSR_MARKERS.switch, undefined],
-      [context, parent, null, 'if', _SSR_MARKERS.if, true]
+      [context, parent, null, 'if', _SSR_MARKERS.if, undefined, HEADER],
+      [context, parent, null, 'if', _SSR_MARKERS.switch, undefined, undefined],
+      [context, parent, null, 'if', _SSR_MARKERS.if, true, undefined]
     ]);
     block.mockRestore();
   });
@@ -298,9 +306,9 @@ describe('_if', () => {
     const context = createRoot();
     const show = signal(true);
     const a = branch('a', () => show());
-    _if(parent, context, null, { branches: [a] });
+    _if(parent, context, null, { branches: [a], slot: HEADER });
 
-    context.clear();
+    clear(context);
     show.set(false);
     show.set(true);
     await flush();
@@ -311,7 +319,7 @@ describe('_if', () => {
 
   it('calls the conditions with the component of the context as this and the context', () => {
     const component = { visible: true };
-    const context = new _Context(createRoot(), undefined, 0, component);
+    const context = _scope(createRoot(), EMPTY_LAYOUT, undefined, component);
     const condition = vi.fn(function (this: typeof component, _context: Context) {
       return this.visible;
     });
@@ -326,26 +334,26 @@ describe('_if', () => {
   });
 
   it('follows a variable of the template its conditions read when the scope is refreshed with it', () => {
-    const context = new _Context(createRoot(), undefined, 1);
-    context.addIdentifier('show', true);
+    const context = _scope(createRoot(), layoutOf(1));
+    context[HEADER] = true;
     const parent = document.createElement('div');
-    _if(parent, context, null, { branches: [branch('a', scope => scope.get('show')), branch('b')], reads: ['show'] });
+    _if(parent, context, null, { branches: [branch('a', scope => scope[HEADER]), branch('b')], reads: [0] });
 
-    context.update('show', false);
-    context.refresh(['show']);
+    update(context, HEADER, false);
+    refresh(context, [0]);
 
     expect(text(parent)).toEqual(['b']);
   });
 
   it('shares the same config and the same conditions between two instances of the block, each reading its own context, without writing into the config', () => {
-    const condition = vi.fn((scope: Context) => scope.get('show'));
+    const condition = vi.fn((scope: Context) => scope[HEADER]);
     const a = branch('a', condition);
     const b = branch('b');
-    const config = deepFreeze<BlockConfig>({ branches: [a, b], reads: ['show'] });
-    const first = new _Context(createRoot(), undefined, 1);
-    const second = new _Context(createRoot(), undefined, 1);
-    first.addIdentifier('show', true);
-    second.addIdentifier('show', false);
+    const config = deepFreeze<BlockConfig>({ branches: [a, b], reads: [0] });
+    const first = _scope(createRoot(), layoutOf(1));
+    const second = _scope(createRoot(), layoutOf(1));
+    first[HEADER] = true;
+    second[HEADER] = false;
     const firstParent = document.createElement('div');
     const secondParent = document.createElement('div');
 
@@ -357,10 +365,10 @@ describe('_if', () => {
     expect(text(secondParent)).toEqual(['b']);
     expect(condition.mock.calls.map(call => scopes.get(call[0]))).toEqual(['first', 'second']);
 
-    second.update('show', true);
-    second.refresh(['show']);
-    first.update('show', false);
-    first.refresh(['show']);
+    update(second, HEADER, true);
+    refresh(second, [0]);
+    update(first, HEADER, false);
+    refresh(first, [0]);
 
     expect(text(firstParent)).toEqual(['b']);
     expect(text(secondParent)).toEqual(['a']);

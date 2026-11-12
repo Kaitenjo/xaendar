@@ -1,5 +1,5 @@
 import type { CustomElement } from '../models/custom-element/custom-element';
-import type { _Context } from '../utils/context/context.util';
+import type { _Context } from './context.type';
 import type { NodeStrategy } from './node-strategy.type';
 
 /**

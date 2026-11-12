@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { HEADER } from '../../costants';
+import type { _Context } from '../../types/context.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -6,104 +8,102 @@ await vi.hoisted(async () => {
 });
 
 const { _let } = await import('./let.util');
-const { _Context } = await import('../context/context.util');
+const { _declare, _scope, refresh, update } = await import('../context/context.util');
 const { _bindEffect } = await import('../../signals/effect/effect');
 const { signal } = await import('../../signals');
-
-type Context = InstanceType<typeof _Context>;
 
 const flush = () => new Promise<void>(resolve => setTimeout(resolve));
 
 /**
- * Creates the context of a scope declaring a `@let`, as the generated code does.
+ * Creates the scope declaring a `@let`, as the generated code does: the `@let` in the first slot, identifier `0`, then
+ * the other variables named, each one holding its index, identifiers from `1`.
  */
-function declareLet(name: string, ...names: string[]): Context {
-  const context = new _Context({} as never, undefined, names.length + 1);
+function declareLet(name: string, ...names: string[]): _Context {
+  const variables = [name, ...names];
+  const context = _scope(null, { size: HEADER + variables.length, nodes: HEADER + variables.length, variables });
+  _declare(context, HEADER, 'let');
   for (let i = 0; i < names.length; i++) {
-    context.addIdentifier(names[i], i);
+    context[HEADER + 1 + i] = i;
   }
-  context.declare(name, 'let');
   return context;
 }
 
 /**
- * Registers a binding reading a variable of a scope, recording the values it reads.
+ * Registers a binding reading a variable, by slot and identifier, recording its values.
  */
-function readVariable(context: Context, name: string): unknown[] {
+function readVariable(context: _Context, slot: number, id: number): unknown[] {
   const seen = new Array<unknown>();
-  _bindEffect(context, (scope: Context) => { seen.push(scope.get(name)); }, context, undefined, undefined, [name]);
+  _bindEffect(context, (scope: _Context) => { seen.push(scope[slot]); }, context, undefined, undefined, [id]);
   return seen;
 }
 
 describe('_let', () => {
-  it('writes the value into the context, which the expressions read as a value', () => {
+  it('writes the value into its slot, which the expressions read as a value', () => {
     const context = declareLet('total');
-    _let(context, 'total', () => 6);
+    _let(context, HEADER, 0, () => 6);
 
-    expect(context.get('total')).toBe(6);
+    expect(context[HEADER]).toBe(6);
   });
 
   it('calls the expression with the component of the context as this and the context', () => {
     const component = { price: 4 };
-    const context = new _Context({} as never, undefined, 1, component);
-    context.declare('total', 'let');
-    const compute = vi.fn(function (this: typeof component, _context: Context) {
+    const context = _scope(null, { size: HEADER + 1, nodes: HEADER + 1, variables: ['total'] }, undefined, component);
+    _declare(context, HEADER, 'let');
+    const compute = vi.fn(function (this: typeof component, _context: _Context) {
       return this.price * 2;
     });
 
-    _let(context, 'total', compute);
+    _let(context, HEADER, 0, compute);
 
-    expect(context.get('total')).toBe(8);
+    expect(context[HEADER]).toBe(8);
     expect(compute.mock.contexts[0]).toBe(component);
     expect(compute.mock.calls[0][0]).toBe(context);
   });
 
-  it('computes the value again once a signal it reads changes, refreshing the scope with its name', async () => {
+  it('computes the value again once a signal it reads changes, refreshing the scope with its identifier', async () => {
     const price = signal(2);
     const context = declareLet('total');
-    _let(context, 'total', () => price() * 3);
-    const refresh = vi.spyOn(context, 'refresh');
-    const seen = readVariable(context, 'total');
+    _let(context, HEADER, 0, () => price() * 3);
+    const seen = readVariable(context, HEADER, 0);
 
     price.set(5);
     await flush();
 
-    expect(context.get('total')).toBe(15);
-    expect(refresh).toHaveBeenCalledExactlyOnceWith(['total']);
+    expect(context[HEADER]).toBe(15);
     expect(seen).toEqual([6, 15]);
   });
 
   it('does not refresh the scope when a signal it reads changes without changing its value', async () => {
     const price = signal(2);
     const context = declareLet('even');
-    _let(context, 'even', () => price() % 2 === 0);
-    const refresh = vi.spyOn(context, 'refresh');
+    _let(context, HEADER, 0, () => price() % 2 === 0);
+    const seen = readVariable(context, HEADER, 0);
 
     price.set(4);
     await flush();
 
-    expect(refresh).not.toHaveBeenCalled();
+    expect(seen).toEqual([true]);
   });
 
-  it('computes the value again when the scope is refreshed with a variable it reads, carrying its name on to the bindings after it', () => {
+  it('computes the value again when the scope is refreshed with a variable it reads, carrying its identifier on to the bindings after it', () => {
     const context = declareLet('label', 'row');
-    _let(context, 'label', () => `#${context.get('row') as number}`, ['row']);
-    const seen = readVariable(context, 'label');
+    _let(context, HEADER, 0, () => `#${context[HEADER + 1] as number}`, [1]);
+    const seen = readVariable(context, HEADER, 0);
 
-    context.update('row', 7);
-    context.refresh(['row']);
+    update(context, HEADER + 1, 7);
+    refresh(context, [1]);
 
-    expect(context.get('label')).toBe('#7');
+    expect(context[HEADER]).toBe('#7');
     expect(seen).toEqual(['#0', '#7']);
   });
 
   it('is not computed again when the scope is refreshed with variables it does not read', () => {
     const context = declareLet('label', 'row', 'other');
-    const compute = vi.fn(() => context.get('row'));
-    _let(context, 'label', compute, ['row']);
+    const compute = vi.fn(() => context[HEADER + 1]);
+    _let(context, HEADER, 0, compute, [1]);
 
-    context.update('other', 9);
-    context.refresh(['other']);
+    update(context, HEADER + 2, 9);
+    refresh(context, [2]);
 
     expect(compute).toHaveBeenCalledOnce();
   });
@@ -112,13 +112,13 @@ describe('_let', () => {
     const price = signal(1);
     const tax = signal(10);
     const context = declareLet('total');
-    _let(context, 'total', () => price());
+    _let(context, HEADER, 0, () => price());
     const runs = vi.fn();
-    _bindEffect(context, (scope: Context) => {
+    _bindEffect(context, (scope: _Context) => {
       runs();
       tax();
-      scope.get('total');
-    }, context, undefined, undefined, ['total']);
+      return scope[HEADER];
+    }, context, undefined, undefined, [0]);
 
     price.set(2);
     await flush();
@@ -127,5 +127,17 @@ describe('_let', () => {
     tax.set(20);
     await flush();
     expect(runs).toHaveBeenCalledTimes(3);
+  });
+
+  it('packs a slot and a large identifier without mixing them', async () => {
+    const context = _scope(null, { size: HEADER + 1, nodes: HEADER + 1, variables: ['total'] });
+    const price = signal(1);
+    _let(context, HEADER, 70000, () => price());
+    const seen = readVariable(context, HEADER, 70000);
+
+    price.set(2);
+    await flush();
+
+    expect(seen).toEqual([1, 2]);
   });
 });

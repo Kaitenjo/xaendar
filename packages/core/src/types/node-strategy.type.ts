@@ -1,4 +1,4 @@
-import type { _Context } from '../utils/context/context.util';
+import type { _Context } from './context.type';
 import type { NodeBlock } from './node-block.type';
 import type { RenderElementNamespace } from './render-element-namespace.type';
 
@@ -44,9 +44,10 @@ export type NodeStrategy = {
    * @param referenceNode - The node the text is inserted before, `null` to append it.
    * @param value - The value of a text created.
    * @param separated - Whether the server wrote `<!---->` before the text (see `getTextSeparators` of the compiler).
+   * @param slot - The slot of the text in the context, `undefined` for a text no context tracks (see `trackNode`).
    * @returns The text node.
    */
-  text(context: _Context, parentNode: Node, referenceNode: Node | null, value: string, separated: boolean): Text;
+  text(context: _Context, parentNode: Node, referenceNode: Node | null, value: string, separated: boolean, slot?: number): Text;
   /**
    * Passes over the `<!---->` the server wrote before a `@render`, whose content follows it.
    *
@@ -65,9 +66,10 @@ export type NodeStrategy = {
    * @param label - The text of an anchor created.
    * @param kind - The marker of the block (see `_SSR_MARKERS`).
    * @param last - Whether the block is the last node of its parent, which needs no anchor.
+   * @param slot - The slot of the anchor in the context, `undefined` for an anchor no context tracks (see `trackNode`).
    * @returns The block.
    */
-  block(context: _Context, parentNode: Node, referenceNode: Node | null, label: string, kind: string, last?: boolean): NodeBlock;
+  block(context: _Context, parentNode: Node, referenceNode: Node | null, label: string, kind: string, last?: boolean, slot?: number): NodeBlock;
   /**
    * Returns the strategy of the first render of a block, given what the browser renders in it: the adopting one when
    * the server rendered the same, after which the content is adopted, the creating one otherwise. A block the server

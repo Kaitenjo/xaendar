@@ -2,7 +2,7 @@ import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
 import { GeneratorContext } from '../../context/context';
 import type { GeneratorFunctionToProcess } from '../../types/generator-function-to-process.type';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
-import { appendBlockPosition, getContentAnchor } from '../../utils/block-position/block-position.utils';
+import { allocateBlockSlot, appendBlockPosition, getContentAnchor } from '../../utils/block-position/block-position.utils';
 import { getBlockIdentifier } from '../../utils/generator/generator.utils';
 import { toObjectLiteral } from '../../utils/module-code/module-code.utils';
 import { getTriggerProperties } from '../../utils/trigger-properties/trigger-properties.utils';
@@ -58,10 +58,10 @@ export async function generateDefer(node: DeferNode, parentNode: string, index: 
       errorContext.addIdentifier(name, 'value');
     }
 
-    addBlock(properties, functionsToProcess, 'error', getBlockIdentifier('error', parentNode, index), node.error, errorContext, contentAnchor, name ? `context.addIdentifier('${name}', error);` : undefined);
+    addBlock(properties, functionsToProcess, 'error', getBlockIdentifier('error', parentNode, index), node.error, errorContext, contentAnchor, name ? `context[${errorContext.addressOf(name)!.slot}] = error;` : undefined);
   }
 
-  appendBlockPosition(properties, last);
+  appendBlockPosition(properties, last, allocateBlockSlot(generatorContext, last));
 
   return {
     code: [

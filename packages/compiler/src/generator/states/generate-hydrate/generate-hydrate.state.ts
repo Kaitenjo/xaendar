@@ -1,7 +1,7 @@
 import type { HydrateNode } from '../../../parser/types/nodes/hydrate-node.type';
 import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
-import { appendBlockPosition, getContentAnchor } from '../../utils/block-position/block-position.utils';
+import { allocateBlockSlot, appendBlockPosition, getContentAnchor } from '../../utils/block-position/block-position.utils';
 import { getBlockIdentifier } from '../../utils/generator/generator.utils';
 import { toObjectLiteral } from '../../utils/module-code/module-code.utils';
 import { getTriggerProperties } from '../../utils/trigger-properties/trigger-properties.utils';
@@ -26,7 +26,11 @@ export async function generateHydrate(node: HydrateNode, parentNode: string, ind
   const key = getBlockIdentifier('hydrate', parentNode, index);
   const properties = getTriggerProperties(node, key, generatorContext);
   properties.push(`content: ${key}`);
-  appendBlockPosition(properties, last);
+  appendBlockPosition(properties, last, allocateBlockSlot(generatorContext, last));
+  // At the top of a scope, the scope owns the nodes the server rendered until the content adopts them
+  if (generatorContext.tracksNodes) {
+    properties.push('track: true');
+  }
 
   return {
     code: [

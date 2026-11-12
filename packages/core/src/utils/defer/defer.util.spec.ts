@@ -3,13 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DeferBlockFixture } from '../../types/defer-testing/defer-block-fixture.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
+import { HEADER } from '../../costants';
+import type { _Context } from '../../types/context.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
   loadSignals();
 });
 
-const { _Context } = await import('../context/context.util');
+const { _scope, EMPTY_LAYOUT, ELEMENT_LAYOUT, clear, addChild } = await import('../context/context.util');
 const { ClaimNodes } = await import('../claim-nodes/claim-nodes.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _renderElement } = await import('../render-element/render-element.util');
@@ -18,7 +20,7 @@ const { getDeferBlocks, setDeferBlockBehavior } = await import('../defer-testing
 const { _defer } = await import('./defer.util');
 const { effect, signal } = await import('../../signals');
 
-type Context = InstanceType<typeof _Context>;
+type Context = _Context;
 
 /**
  * The IntersectionObserver standing for the one of the browser, recording the elements it observes.
@@ -57,14 +59,14 @@ const flush = async () => {
   await new Promise<void>(resolve => setTimeout(resolve));
 };
 
-const createRoot = (nodeStrategy?: NodeStrategy) => new _Context({ createElement: (tag: string) => document.createElement(tag) } as never, nodeStrategy);
+const createRoot = (nodeStrategy?: NodeStrategy) => _scope(null, EMPTY_LAYOUT, nodeStrategy);
 
 /**
  * A part rendering an element, with its listeners, through the strategy it receives.
  */
 const part = (tagName: string, events?: RenderElementEvent[]) => vi.fn((parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
-  const context = new _Context(parentContext, nodeStrategy);
-  _renderElement(parentNode, context, anchor as Comment | null, { tagName, events });
+  const context = _scope(parentContext, ELEMENT_LAYOUT, nodeStrategy);
+  _renderElement(parentNode, context, anchor as Comment | null, { tagName, events, slot: HEADER });
   return context;
 });
 
@@ -72,8 +74,8 @@ const part = (tagName: string, events?: RenderElementEvent[]) => vi.fn((parentNo
  * A part rendering a text alone.
  */
 const textPart = (text: string) => (parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
-  const context = new _Context(parentContext, nodeStrategy);
-  _renderLiteralText(parentNode, context, text, anchor as Comment | null);
+  const context = _scope(parentContext, ELEMENT_LAYOUT, nodeStrategy);
+  _renderLiteralText(parentNode, context, text, anchor as Comment | null, false, HEADER);
   return context;
 };
 
@@ -147,7 +149,7 @@ describe('_defer', () => {
       const element = parent();
       const placeholder = (parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
         const context = part('i')(parentNode, parentContext, anchor, nodeStrategy);
-        context.addChild(part('u')(parentNode, context, anchor, nodeStrategy));
+        addChild(context, part('u')(parentNode, context, anchor, nodeStrategy));
         // An element inside one of its elements is not watched
         part('s')(element.querySelector('i')!, context, null, nodeStrategy);
         return context;
@@ -165,8 +167,8 @@ describe('_defer', () => {
     it('watches the elements of the blocks a @placeholder holds when it owns no node of its own', async () => {
       const element = parent();
       const placeholder = (parentNode: HTMLElement, parentContext: Context, anchor: Node | null, nodeStrategy: NodeStrategy) => {
-        const context = new _Context(parentContext, nodeStrategy);
-        context.addChild(part('u')(parentNode, context, anchor, nodeStrategy));
+        const context = _scope(parentContext, EMPTY_LAYOUT, nodeStrategy);
+        addChild(context, part('u')(parentNode, context, anchor, nodeStrategy));
         return context;
       };
 
@@ -190,11 +192,10 @@ describe('_defer', () => {
       const element = parent();
       const root = createRoot();
       const content = part('b');
-      root.declare('more');
+      let more: Element | undefined;
 
-      _defer(element, root, null, { triggers: [{ kind: 'hover', target: () => root.get('more') as Element }, { kind: 'visible', target: () => root.get('more') as Element, options: { rootMargin: '10px' } }], content, placeholder: textPart('Wait') });
-      const more = element.appendChild(document.createElement('button'));
-      root.set('more', more);
+      _defer(element, root, null, { triggers: [{ kind: 'hover', target: () => more! }, { kind: 'visible', target: () => more!, options: { rootMargin: '10px' } }], content, placeholder: textPart('Wait') });
+      more = element.appendChild(document.createElement('button'));
       await armed();
 
       expect(FakeIntersectionObserver.last.observed).toEqual([more]);
@@ -320,7 +321,7 @@ describe('_defer', () => {
       let loaded!: () => void;
 
       _defer(element, root, null, { triggers: ['interaction'], load: () => new Promise<void>(resolve => loaded = resolve), content, placeholder: part('button'), loading: part('progress'), last: true });
-      expect(block).toHaveBeenCalledExactlyOnceWith(root, element, null, 'defer', 'xd-d', true);
+      expect(block).toHaveBeenCalledExactlyOnceWith(root, element, null, 'defer', 'xd-d', true, undefined);
       expect(element.innerHTML).toBe('<p></p><button></button>');
       await armed();
       element.querySelector('button')!.click();
@@ -358,7 +359,7 @@ describe('_defer', () => {
       buttons[1].click();
       ready.set(true);
 
-      root.clear();
+      clear(root);
       await flush();
       loaded();
       failed(new Error('offline'));
@@ -373,7 +374,7 @@ describe('_defer', () => {
       const load = vi.fn(() => Promise.resolve());
       _defer(parent(), root, null, { triggers: ['load'], prefetch: ['load'], load, content: part('b') });
 
-      root.clear();
+      clear(root);
       await flush();
 
       expect(load).not.toHaveBeenCalled();
@@ -521,7 +522,7 @@ describe('_defer', () => {
       await armed();
       await vi.advanceTimersByTimeAsync(0);
 
-      root.clear();
+      clear(root);
       await vi.advanceTimersByTimeAsync(300);
 
       expect(content).not.toHaveBeenCalled();
@@ -601,7 +602,7 @@ describe('_defer', () => {
       await flush();
 
       expect(blocks.map(({ state }) => state)).toEqual(['complete', 'placeholder']);
-      root.clear();
+      clear(root);
       expect(getDeferBlocks(element)).toEqual([]);
       expect(getDeferBlocks(document.createElement('div'))).toEqual([]);
     });

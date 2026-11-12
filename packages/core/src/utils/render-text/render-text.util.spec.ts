@@ -1,19 +1,21 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
+import { HEADER } from '../../costants';
+import type { _Context } from '../../types/context.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
   loadSignals();
 });
 
-const { _Context } = await import('../context/context.util');
+const { _scope, EMPTY_LAYOUT, ELEMENT_LAYOUT, getNodeStrategy, clear, refresh, swapNodeStrategy, update } = await import('../context/context.util');
 const { _renderLiteralText, _renderText } = await import('./render-text.util');
 const { signal } = await import('../../signals');
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
 function createRoot() {
-  return new _Context({ createElement: (tag: string) => document.createElement(tag) } as never);
+  return _scope(null, ELEMENT_LAYOUT);
 }
 
 describe('_renderText', () => {
@@ -25,8 +27,8 @@ describe('_renderText', () => {
 
   it('calls the expression with the component of the context as this and the context', () => {
     const component = { name: 'world' };
-    const context = new _Context(createRoot(), undefined, 0, component);
-    const value = vi.fn(function (this: typeof component, _context: InstanceType<typeof _Context>) {
+    const context = _scope(createRoot(), EMPTY_LAYOUT, undefined, component);
+    const value = vi.fn(function (this: typeof component, _context: _Context) {
       return `hello ${this.name}`;
     });
     const parent = document.createElement('div');
@@ -39,13 +41,15 @@ describe('_renderText', () => {
   });
 
   it('keeps the text in sync with a variable of the template it reads when the scope is refreshed with it', () => {
-    const context = new _Context(createRoot(), undefined, 1);
-    context.addIdentifier('name', 'a');
+    const context = _scope(createRoot(), { size: HEADER + 2, nodes: HEADER + 1, variables: ['name'] });
+    context[HEADER] = 'a';
     const parent = document.createElement('div');
-    _renderText(parent, context, scope => `hi ${scope.get('name')}`, null, false, ['name']);
+    _renderText(parent, context, scope => `hi ${String(scope[HEADER])}`, null, false, [0], HEADER + 1);
 
-    context.update('name', 'b');
-    context.refresh(['name']);
+    update(context, HEADER, 'b');
+    refresh(context, [0]);
+    // A text at the top of the block of a scope is tracked in its slot
+    expect(context[HEADER + 1]).toBe(parent.firstChild);
 
     expect(parent.textContent).toBe('hi b');
   });
@@ -83,9 +87,9 @@ describe('_renderText', () => {
     const parent = document.createElement('div');
     const context = createRoot();
     const name = signal('a');
-    _renderText(parent, context, () => name(), null);
+    _renderText(parent, context, () => name(), null, false, undefined, HEADER);
 
-    context.clear();
+    clear(context);
     name.set('b');
     await flush();
 
@@ -113,9 +117,9 @@ describe('_renderLiteralText', () => {
   it('removes the node when the context is destroyed', () => {
     const parent = document.createElement('div');
     const context = createRoot();
-    _renderLiteralText(parent, context, 'static', null);
+    _renderLiteralText(parent, context, 'static', null, false, HEADER);
 
-    context.clear();
+    clear(context);
 
     expect(parent.textContent).toBe('');
   });
@@ -136,7 +140,7 @@ describe('_renderLiteralText', () => {
     const parent = document.createElement('div');
     const adopted = parent.appendChild(document.createTextNode(`line${lineFeed}`));
     const context = createRoot();
-    context.nodeStrategy = { ...context.nodeStrategy, text: () => adopted };
+    swapNodeStrategy(context, { ...getNodeStrategy(context), text: () => adopted });
 
     _renderLiteralText(parent, context, `line${carriageReturn}${lineFeed}`, null);
 

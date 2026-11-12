@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import type { _Context } from '@xaendar/core';
 import type { Constructor } from '@xaendar/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -1843,7 +1844,21 @@ describe('hydration', () => {
 });
 
 describe('the contexts of the elements', () => {
-  type Context = InstanceType<typeof core._Context>;
+  type Context = _Context;
+
+  /**
+   * The scopes a scope holds, read from its slot `CHILDREN` (7): the scope itself while there is one, an array from the
+   * second, told apart by the number of a scope in its slot `STATE` (2).
+   */
+  function childrenOf(context: _Context): _Context[] {
+    const children = context[7];
+    return children === null ? [] : typeof children[2] === 'number' ? [children as _Context] : children as _Context[];
+  }
+  
+  /**
+   * The nodes a scope tracks, the slots from the one its layout (slot `LAYOUT`, 6) gives to the end.
+   */
+  const nodesOf = (context: _Context): Node[] => context.slice(context[6].nodes).filter(Boolean) as Node[];
 
   /**
    * A table of rows and columns, every cell an element reading its row.
@@ -1870,8 +1885,9 @@ describe('the contexts of the elements', () => {
    */
   function collect(context: Context, contexts = new Array<Context>()): Context[] {
     contexts.push(context);
-    for (let i = 0; i < context.getChildCount(); i++) {
-      collect(context.getChild(i), contexts);
+    const children = childrenOf(context);
+    for (let i = 0; i < children.length; i++) {
+      collect(children[i], contexts);
     }
 
     return contexts;
@@ -1885,9 +1901,10 @@ describe('the contexts of the elements', () => {
     const contexts = collect((host as unknown as { _context: Context })._context);
     for (let i = 0; i < contexts.length; i++) {
       const context = contexts[i];
-      for (let j = 0; j < context.getNodeCount(); j++) {
-        expect(context.getNode(j).parentNode).toBe(context.getNode(0).parentNode);
-        nodes.push(context.getNode(j));
+      const own = nodesOf(context);
+      for (let j = 0; j < own.length; j++) {
+        expect(own[j].parentNode).toBe(own[0].parentNode);
+        nodes.push(own[j]);
       }
     }
 

@@ -7,7 +7,8 @@ import type { CreateComponentOptions } from '../../types/create-component/create
 import type { HostDirectives } from '../../types/web-component/host-directives.type';
 import { claimShadowRoot, isClaimed } from '../../utils/claim-nodes/claim-nodes.util';
 import { _getComponentRuntime } from '../../utils/component-runtime/component-runtime.util';
-import { _Context, _EMPTY_CONTEXT } from '../../utils/context/context.util';
+import type { _Context } from '../../types/context.type';
+import { _scope, addCleanup, clear, EMPTY_LAYOUT, moveTo, removeCleanup } from '../../utils/context/context.util';
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import { deferElementHydration, replayContractEvents, replayElementEvents } from '../../utils/hydration-triggers/hydration-triggers.util';
@@ -45,7 +46,7 @@ export class CustomElement extends HTMLElement {
    * The active template execution context for this component instance,
    * holding all identifier bindings and registered cleanup functions.
    */
-  private _context = new _Context(_EMPTY_CONTEXT);
+  private _context = _scope(null, EMPTY_LAYOUT);
   /**
    * The context the host directives are connected to: it lives from the connection to the disconnection of the element,
    * disposing the effects of the directives.
@@ -82,7 +83,7 @@ export class CustomElement extends HTMLElement {
     super();
     this.hostDirectives = _createHostDirectives(this);
     if (this.hostDirectives.size) {
-      this._hostDirectivesContext = new _Context(_EMPTY_CONTEXT);
+      this._hostDirectivesContext = _scope(null, EMPTY_LAYOUT);
     }
   }
 
@@ -111,10 +112,10 @@ export class CustomElement extends HTMLElement {
    */
   public effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
     const stop = _getComponentRuntime().effect(fn, options);
-    this._context.addUnlistener(stop);
+    addCleanup(this._context, stop);
 
     return () => {
-      this._context.removeUnlistener(stop);
+      removeCleanup(this._context, stop);
       stop();
     };
   }
@@ -228,8 +229,8 @@ export class CustomElement extends HTMLElement {
   private disconnectedCallback(): void {
     switch (this._state) {
       case 'hydrating':
-        this._context.clear(false);
-        this._hostDirectivesContext?.clear(false);
+        clear(this._context, false);
+        this._clearHostDirectivesContext();
         return;
 
       case 'destroyed':
@@ -238,14 +239,14 @@ export class CustomElement extends HTMLElement {
 
     this._state = 'destroyed';
     this.onDestroy?.();
-    this._context.clear(false);
+    clear(this._context, false);
 
     // The host directives are stopped after the component, then their effects are disposed
     for (const directive of this.hostDirectives.values()) {
       directive[DIRECTIVE_DISCONNECT]();
     }
 
-    this._hostDirectivesContext?.clear(false);
+    this._clearHostDirectivesContext();
 
     const disconnectedHooks = this[DISCONNECTED_HOOKS];
     if (disconnectedHooks) {
@@ -317,7 +318,7 @@ export class CustomElement extends HTMLElement {
     const staging = this._context;
     this._context = render.call(this, nodeStrategy);
     nodeStrategy.end(this._root, this._context);
-    staging.moveTo(this._context);
+    moveTo(staging, this._context);
 
     const connectedHooks = this[CONNECTED_HOOKS];
     if (connectedHooks) {
@@ -347,6 +348,15 @@ export class CustomElement extends HTMLElement {
     return this.getRootNode() instanceof ShadowRoot && !this.hasAttribute(_SERVER_INPUTS_ATTRIBUTE)
       ? !isClaimed(this) || this.hasAttribute(_HYDRATE_ATTRIBUTE)
       : deferElementHydration(this, () => this.connectedCallback());
+  }
+
+  /**
+   * Clears the scope the host directives are connected to, if the component declares any, leaving the DOM as it is.
+   */
+  private _clearHostDirectivesContext(): void {
+    if (this._hostDirectivesContext) {
+      clear(this._hostDirectivesContext, false);
+    }
   }
 
   /**

@@ -1,3 +1,4 @@
+import type { _ScopeLayout } from '@xaendar/core';
 import { describe, expect, it, vi } from 'vitest';
 import type { ServerBindings } from '../../types/server-bindings.type';
 import type { ServerAttribute } from '../../types/server-attribute.type';
@@ -10,12 +11,17 @@ await vi.hoisted(async () => {
   loadServerDom();
 });
 
-const { _Context, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty, CustomElement, HostProperty, Property } = await import('@xaendar/core');
+const { _scope, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty, CustomElement, HostProperty, Property } = await import('@xaendar/core');
+
+/**
+ * The layout of a scope holding its header alone, whose 8 slots the runtime reserves.
+ */
+const EMPTY_LAYOUT: _ScopeLayout = { size: 8, nodes: 8 };
 type RenderConditionalBinding = import('@xaendar/core').RenderConditionalBinding<ServerBindings>;
 const { _defineServerRender } = await import('../server-render-registry/server-render-registry.util');
 const { _ssrClientComponent, _ssrComponent, _ssrStartTag } = await import('./ssr-element.util');
 
-const context = new _Context({ get: () => undefined } as never);
+const context = _scope(null, EMPTY_LAYOUT);
 
 /**
  * Describes an attribute written with a value known when the template is compiled.

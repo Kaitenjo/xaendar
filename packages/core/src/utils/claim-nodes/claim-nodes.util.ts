@@ -2,13 +2,13 @@ import type { NoArgsVoidFunction } from '@xaendar/types';
 import { _HYDRATE_ATTRIBUTE, _SSR_MARKERS, HYDRATE } from '../../costants';
 import type { NodeBlock } from '../../types/node-block.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
-import type { _Context } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
 import type { RenderElementNamespace } from '../../types/render-element-namespace.type';
 import { createNamespacedElement } from '../create-element/create-element.util';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { deferElementHydration, waitedForTrigger } from '../hydration-triggers/hydration-triggers.util';
 import { _encodeTrackKey } from '../track-key/track-key.util';
-import { trackNode } from '../track-node/track-node.util';
+import { setNodeStrategy, trackNode } from '../context/context.util';
 
 /**
  * The elements of components adopted by the component rendering them, which they wait for before hydrating (see
@@ -136,7 +136,7 @@ export class ClaimNodes implements NodeStrategy {
    * @param separated - Whether the server wrote `<!---->` before the text.
    * @returns The text node.
    */
-  public text(context: _Context, parentNode: Node, _referenceNode: Node | null, value: string, separated: boolean): Text {
+  public text(context: _Context, parentNode: Node, _referenceNode: Node | null, value: string, separated: boolean, slot?: number): Text {
     this.separator(parentNode, separated);
     let node = this._next(parentNode);
     if (node?.nodeType === Node.TEXT_NODE) {
@@ -146,7 +146,7 @@ export class ClaimNodes implements NodeStrategy {
       parentNode.insertBefore(node, this._next(parentNode));
     }
 
-    trackNode(node, parentNode, context);
+    trackNode(node, parentNode, context, slot);
     return node as Text;
   }
 
@@ -177,7 +177,7 @@ export class ClaimNodes implements NodeStrategy {
    * @param last - Whether the block is the last node of its parent, which needs no anchor.
    * @returns The block.
    */
-  public block(context: _Context, parentNode: Node, _referenceNode: Node | null, label: string, kind: string, last = false): NodeBlock {
+  public block(context: _Context, parentNode: Node, _referenceNode: Node | null, label: string, kind: string, last = false, slot?: number): NodeBlock {
     const open = this._next(parentNode);
     const opens = isMarker(open, kind) || isMarker(open, `${kind}:`, true);
     const close = opens && !last ? findClose(open!, kind) : null;
@@ -185,7 +185,7 @@ export class ClaimNodes implements NodeStrategy {
       const marker = (open as Comment).data.slice(kind.length + 1);
       this._remove(parentNode, open!);
       if (close) {
-        trackNode(close, parentNode, context);
+        trackNode(close, parentNode, context, slot);
       }
 
       return { anchor: close, marker, kind };
@@ -198,7 +198,7 @@ export class ClaimNodes implements NodeStrategy {
     }
 
     const anchor = document.createComment(label);
-    trackNode(anchor, parentNode, context);
+    trackNode(anchor, parentNode, context, slot);
     parentNode.insertBefore(anchor, open);
     return { anchor, marker: undefined };
   }
@@ -329,7 +329,7 @@ export class ClaimNodes implements NodeStrategy {
   public end(root: ShadowRoot, context: _Context): void {
     this._removeRest(root, null);
     this._positions.clear();
-    context.setNodeStrategy(CREATE_NODES);
+    setNodeStrategy(context, CREATE_NODES);
   }
 
   /**

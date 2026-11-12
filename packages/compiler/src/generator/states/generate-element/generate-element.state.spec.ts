@@ -80,10 +80,10 @@ describe('generateElement', () => {
       '    { name: \'class\', value: div0$class, setter: _setReactiveProperty }'
     ].join('\n'));
     expect(result.functions).toEqual([
-      'function div0$title(context) {\n  return context.get(\'row\').name + context.get(\'field\').value;\n}',
-      'function div0$class(context) {\n  return context.get(\'field\').value;\n}'
+      'function div0$title(context) {\n  return _read(context, 0, 8).name + _read(context, 0, 9).value;\n}',
+      'function div0$class(context) {\n  return _read(context, 0, 9).value;\n}'
     ]);
-    expect(result.reads).toEqual(['const _reads0 = [\'row\'];']);
+    expect(result.reads).toEqual(['const _reads0 = [0];']);
     expectValidJavascript(result);
   });
 
@@ -223,15 +223,32 @@ describe('generateElement', () => {
 
   it('declares the element ref naming the element after its children, rendering them in the scope of the element', async () => {
     const context = new GeneratorContext(cache);
+    context.addIdentifier('panel');
     const { constants, functionsToProcess } = await run('<div #panel><span></span></div>', context);
 
-    expect(constants).toEqual(['const div0$element = { tagName: \'div\', children: div0Children, ref: \'panel\' };']);
+    expect(constants).toEqual(['const div0$element = { tagName: \'div\', children: div0Children, ref: \'panel\', refSlot: 8 };']);
     expect(functionsToProcess?.get('div0Children')?.fn.context).toBe(context);
   });
 
   it('declares the element ref naming an element without children', async () => {
-    const { constants } = await run('<input #field />');
-    expect(constants).toEqual(['const input0$element = { tagName: \'input\', ref: \'field\' };']);
+    const context = new GeneratorContext(cache);
+    context.addIdentifier('field');
+    // At the top of the block of a scope tracking its nodes, the element gets a slot after the variables
+    context.tracksNodes = true;
+    const { constants } = await run('<input #field />', context);
+    expect(constants).toEqual(['const input0$element = { tagName: \'input\', ref: \'field\', refSlot: 8, slot: 9 };']);
+  });
+
+  it('renders an element structural directives are applied to in a scope of its own, reading the variables one scope up, its anchor taking the slot', async () => {
+    const context = new GeneratorContext(cache);
+    context.addIdentifier('row', 'variable');
+    context.tracksNodes = true;
+    const { constants, functions, functionsToProcess } = await run('<input *guard title="{ row }" />', context);
+
+    // The slot of its anchor, after the variable
+    expect(constants[0]).toContain('slot: 9');
+    expect(functions).toEqual(expect.arrayContaining(['function input0$title(context) {\n  return _read(context, 1, 8);\n}']));
+    expect(functionsToProcess?.size).toBe(0);
   });
 
   it('renders the children of an element a structural directive is applied to in a scope of their own', async () => {
@@ -314,7 +331,7 @@ describe('generateElement', () => {
     const { constants, reads } = await run('<div [class.on]="{row.active}"></div>', context);
 
     expect(constants[0]).toContain('{ name: \'on\', value: div0$class_on, setter: _setReactiveClass, reads: _reads0 }');
-    expect(reads).toEqual(['const _reads0 = [\'row\'];']);
+    expect(reads).toEqual(['const _reads0 = [0];']);
   });
 
   describe('conditional bindings', () => {
@@ -482,10 +499,11 @@ describe('generateElement', () => {
       const { constants, functions, reads } = await run('<div @if (item.active) { title="x" } @switch (item.kind) { @case (1) { id="y" } }></div>', context);
 
       expect(constants[0].match(/reads: _reads0/g)).toHaveLength(2);
-      expect(reads).toEqual(['const _reads0 = [\'item\'];']);
+      expect(reads).toEqual(['const _reads0 = [0];']);
+      // Evaluated in the scope of the branch, inside the one of the element
       expect(functions).toEqual([
-        'function div0$if(context) {\n  return context.get(\'item\').active;\n}',
-        'function div0$switch(context) {\n  return context.get(\'item\').kind;\n}'
+        'function div0$if(context) {\n  return _read(context, 1, 8).active;\n}',
+        'function div0$switch(context) {\n  return _read(context, 1, 8).kind;\n}'
       ]);
     });
 

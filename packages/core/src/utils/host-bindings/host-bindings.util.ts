@@ -5,7 +5,8 @@ import type { HostPropertyBinding } from '../../types/host/host-property-binding
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { toggleClass, untoggleClass } from '../class-toggle/class-toggle.util';
 import { writeAttribute } from '../write-attribute/write-attribute.util';
-import type { _Context } from '../context/context.util';
+import type { _Context } from '../../types/context.type';
+import { addCleanup } from '../context/context.util';
 
 /**
  * Adds a binding or a listener to the metadata of the class being decorated. The metadata of a subclass inherits from
@@ -52,7 +53,7 @@ export function _bindHost(owner: EventHost, element: Element, context: _Context)
       const { name, options, read } = events[i];
       const listener = (event: Event) => read(owner).call(owner, event);
       element.addEventListener(name, listener, options);
-      context.addUnlistener(() => element.removeEventListener(name, listener, options));
+      addCleanup(context, () => element.removeEventListener(name, listener, options));
     }
   }
 }
@@ -85,7 +86,7 @@ export function _applyHostProperties(owner: EventHost, element: Element): void {
 function bindProperty(owner: EventHost, element: Element, binding: HostPropertyBinding, context: _Context): void {
   const { name, isClass } = binding;
   _bindEffect(context, applyProperty, owner, element, binding);
-  context.addUnlistener(isClass ? () => untoggleClass(element, name) : () => writeAttribute(element, name, null));
+  addCleanup(context, isClass ? () => untoggleClass(element, name) : () => writeAttribute(element, name, null));
 }
 
 /**

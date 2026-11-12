@@ -20,10 +20,10 @@ export type HydrateBlock = BlockPosition & {
    */
   when?: TemplateExpression<unknown>,
   /**
-   * The names of the variables of the template the expression of `when` reads (see `_bindEffect`), omitted when it
+   * The identifiers of the variables of the template the expression of `when` reads (see `_bindEffect`), omitted when it
    * reads none.
    */
-  whenReads?: readonly string[],
+  whenReads?: readonly number[],
   /**
    * Loads the modules of the components only the content renders, if any: the content is rendered once they are loaded.
    */
@@ -39,12 +39,18 @@ export type HydrateBlock = BlockPosition & {
    */
   prefetchWhen?: TemplateExpression<unknown>,
   /**
-   * The names of the variables of the template the expression of the `when` following `prefetch` reads (see
+   * The identifiers of the variables of the template the expression of the `when` following `prefetch` reads (see
    * `_bindEffect`), omitted when it reads none.
    */
-  prefetchWhenReads?: readonly string[],
+  prefetchWhenReads?: readonly number[],
   /**
    * Renders the content.
    */
-  content: Block['block']
+  content: Block['block'],
+  /**
+   * Whether the block is at the top of the block of a scope, which owns the nodes the server rendered until the content
+   * adopts them, removing them and moving them with the row of a `@for`: left out for a block rendered into an element,
+   * whose nodes go with it, or at the root of a render, whose nodes stay in the shadow root.
+   */
+  track?: true
 };

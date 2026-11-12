@@ -6,7 +6,8 @@ import { INTERNAL_SELECTOR } from '../../costants';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { _addAppliedDirective } from '../../utils/applied-directives/applied-directives.util';
-import { _Context } from '../../utils/context/context.util';
+import { EMPTY_LAYOUT, _scope } from '../../utils/context/context.util';
+import type { _Context } from '../../types/context.type';
 import { _setElementRef } from '../../utils/element-refs/element-refs.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { effect } from '../effect/effect';
@@ -21,7 +22,7 @@ function create(render: (element: CustomElement) => void = () => undefined): Cus
   const klass = class extends CustomElement { };
   _defineRender(klass, function (this: CustomElement) {
     render(this);
-    return new _Context({} as never);
+    return _scope(null, EMPTY_LAYOUT);
   });
   const name = `x-query-signal-${counter++}`;
   customElements.define(name, klass);

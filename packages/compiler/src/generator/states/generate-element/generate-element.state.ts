@@ -59,11 +59,18 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   const nodeName = getElementIdentifier(node, parentNode, index);
   // A custom element of another library has no metadata: it is generated like a native element
   const isCustomElement = isValidCustomElementName(tagName, false) && !generatorContext.isForeignElement(tagName);
+  const structural = isStructuralElement(node);
   const owner: DescriptorOwner = { name: nodeName, generatorContext };
-  const attributes = mapClassBindings(node.classBindings, owner, false).concat(await mapAttributes(node.attributes, owner, tagName, isCustomElement, false, false));
-  const events = mapEvents(node.events, owner);
-  const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, owner, tagName, isCustomElement);
-  const directives = await mapDirectives(node.directives, owner);
+  /*
+    An element structural directives are applied to is rendered in a scope of its own, which the runtime creates and
+    clears with it: its bindings, its directives and its children are resolved in a generator context standing for it,
+    while the structural directives are bound in the scope of the element
+  */
+  const elementOwner: DescriptorOwner = structural ? { name: nodeName, generatorContext: new GeneratorContext(generatorContext) } : owner;
+  const attributes = mapClassBindings(node.classBindings, elementOwner, false).concat(await mapAttributes(node.attributes, elementOwner, tagName, isCustomElement, false, false));
+  const events = mapEvents(node.events, elementOwner);
+  const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, elementOwner, tagName, isCustomElement);
+  const directives = await mapDirectives(node.directives, elementOwner);
   const structuralDirectives = await mapStructuralDirectives(node.structuralDirectives, owner);
   const structuralConditionalBindings = await mapStructuralConditionalBindings(node.conditionalBindings, owner);
   const hasChildren = !!node.children.length;
@@ -85,13 +92,16 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
     members.push(`children: ${nodeName}Children`);
   }
 
-  // The element ref naming the element, declared by its scope, is initialized once the element is created
+  /*
+    The element ref naming the element, declared by the scope rendering it (an element structural directives are applied
+    to declares none), is initialized in its slot once the element is created
+  */
   if (node.ref) {
-    members.push(`ref: '${node.ref.name}'`);
+    members.push(`ref: '${node.ref.name}'`, `refSlot: ${generatorContext.addressOf(node.ref.name)!.slot}`);
   }
 
-  // Only an element applying structural directives is a block
-  appendBlockPosition(members, last && !!(structuralDirectives.length || structuralConditionalBindings.length));
+  // Only an element applying structural directives is a block: its slot is the one of its anchor, if it has one
+  appendBlockPosition(members, last && structural, structural && last ? undefined : generatorContext.allocateNodeSlot());
 
   const element = generatorContext.declareConstant(`${nodeName}$element`, toObjectLiteral(members));
   retVal.code.push(`_renderElement(${parentNode}, context, ${anchor}, ${element});`);
@@ -107,7 +117,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
           it, and the children of an element opening a namespace are generated in it, so that their elements name it: at
           runtime they are rendered in the context of the element all the same
         */
-        context: isStructuralElement(node) || childrenNamespace !== generatorContext.namespace ? new GeneratorContext(generatorContext, childrenNamespace) : generatorContext
+        context: structural || childrenNamespace !== generatorContext.namespace ? new GeneratorContext(elementOwner.generatorContext, childrenNamespace, 'declarations') : generatorContext
       },
       // The function takes the context of the element instead, when it renders the children in it (see `Generator`)
       args: [nodeName, 'parentContext']
@@ -353,7 +363,7 @@ function resolveHandler(handler: string, generatorContext: GeneratorContext): st
  * @returns The code of the descriptors, one per conditional binding.
  */
 async function mapConditionalBindings(conditionalBindings: ConditionalBindingNode[], owner: DescriptorOwner, target: string, isCustomElement = false, isDirective = false): Promise<string[]> {
-  return mapConditionalBindingDescriptors(conditionalBindings, owner, isEmptyBranch, (branch, condition) => mapBranch(branch, condition, owner, target, isCustomElement, isDirective));
+  return mapConditionalBindingDescriptors(conditionalBindings, owner, isEmptyBranch, (branch, condition, branchOwner) => mapBranch(branch, condition, branchOwner, target, isCustomElement, isDirective));
 }
 
 /**
@@ -369,26 +379,31 @@ async function mapConditionalBindings(conditionalBindings: ConditionalBindingNod
  * @returns The code of the descriptors, one per conditional binding.
  */
 async function mapStructuralConditionalBindings(conditionalBindings: ConditionalBindingNode[], owner: DescriptorOwner): Promise<string[]> {
-  return mapConditionalBindingDescriptors(conditionalBindings, owner, branch => !appliesStructuralDirectives(branch), (branch, condition) => mapStructuralBranch(branch, condition, owner));
+  return mapConditionalBindingDescriptors(conditionalBindings, owner, branch => !appliesStructuralDirectives(branch), (branch, condition, branchOwner) => mapStructuralBranch(branch, condition, branchOwner));
 }
 
 /**
  * Maps conditional binding nodes to descriptors: the branches of the conditional binding, each one mapped by `mapBranch`,
- * and, for a `@switch`, the expression whose value selects the branch to apply, and the names of the variables of the
- * template the conditions or the expression read, if any. The conditions and the expression are functions of the module
- * named after the element (`div0$if`, `div0$switch`).
+ * and, for a `@switch`, the expression whose value selects the branch to apply, and the identifiers of the variables of
+ * the template the conditions or the expression read, if any. The conditions and the expression are functions of the
+ * module named after the element (`div0$if`, `div0$switch`).
+ *
+ * The runtime evaluates the conditions, the expression and the bindings of the branches in the scope of the branch, a
+ * child of the scope the conditional binding is bound in (see `bindConditionalBindings` of the runtime): they are
+ * resolved in a generator context standing for it, one more scope up the chain for each conditional binding nesting it.
  *
  * @param conditionalBindings - The conditional binding nodes to map.
  * @param owner - The element, which the functions of the expressions are named after.
  * @param isEmpty - Tells whether a branch has nothing to apply: a conditional binding whose branches all have nothing to apply is skipped.
- * @param mapBranch - Maps a branch, given the member declaring its condition, if any, to its descriptor.
+ * @param mapBranch - Maps a branch, given the member declaring its condition, if any, and the owner standing for the scope
+ *   of the branch, to its descriptor.
  * @returns The code of the descriptors, one per conditional binding.
  */
 async function mapConditionalBindingDescriptors(
   conditionalBindings: ConditionalBindingNode[],
   owner: DescriptorOwner,
   isEmpty: Function<[branch: ConditionalBindingBranchNode], boolean>,
-  mapBranch: AsyncFunction<[branch: ConditionalBindingBranchNode, condition: string | undefined], string>
+  mapBranch: AsyncFunction<[branch: ConditionalBindingBranchNode, condition: string | undefined, branchOwner: DescriptorOwner], string>
 ): Promise<string[]> {
   const mappedConditionalBindings = new Array<string>();
 
@@ -399,17 +414,18 @@ async function mapConditionalBindingDescriptors(
       continue;
     }
 
+    const branchOwner: DescriptorOwner = { name: owner.name, generatorContext: new GeneratorContext(owner.generatorContext) };
     const mappedBranches = new Array<string>();
-    const variables: { read?: readonly string[] } = {};
+    const variables: { read?: readonly number[] } = {};
     for (let j = 0; j < branches.length; j++) {
-      mappedBranches.push(await mapBranch(branches[j], mapCondition(conditionalBinding, j, owner, variables)));
+      mappedBranches.push(await mapBranch(branches[j], mapCondition(conditionalBinding, j, branchOwner, variables), branchOwner));
     }
 
     const members = new Array<string>();
     if (conditionalBinding.type === ASTNodeType.SwitchBinding) {
-      const { expression, variables: read } = resolveExpression(conditionalBinding.expression, owner.generatorContext);
+      const { expression, variables: read } = resolveExpression(conditionalBinding.expression, branchOwner.generatorContext);
       variables.read = read;
-      members.push(`expression: ${declareElementExpression(owner, 'switch', expression)}`);
+      members.push(`expression: ${declareElementExpression(branchOwner, 'switch', expression)}`);
     }
 
     members.push(`branches: ${toArrayLiteral(mappedBranches)}`);
@@ -456,7 +472,7 @@ function appliesStructuralDirectives({ structuralDirectives, conditionalBindings
  * @param variables - Collects the variables of the template the conditions read.
  * @returns The member declaring the condition of the branch, `undefined` for an `@else`.
  */
-function mapCondition(conditionalBinding: ConditionalBindingNode, index: number, owner: DescriptorOwner, variables: { read?: readonly string[] }): string | undefined {
+function mapCondition(conditionalBinding: ConditionalBindingNode, index: number, owner: DescriptorOwner, variables: { read?: readonly number[] }): string | undefined {
   if (conditionalBinding.type === ASTNodeType.SwitchBinding) {
     const { condition } = conditionalBinding.branches[index];
     return `condition: ${condition ? `[${condition.join(', ')}]` : 'null'}`;
