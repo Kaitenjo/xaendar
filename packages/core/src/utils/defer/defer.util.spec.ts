@@ -11,7 +11,7 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { _scope, EMPTY_LAYOUT, ELEMENT_LAYOUT, clear, addChild } = await import('../context/context.util');
+const { _declare, _read, _scope, _set, EMPTY_LAYOUT, ELEMENT_LAYOUT, clear, addChild } = await import('../context/context.util');
 const { ClaimNodes } = await import('../claim-nodes/claim-nodes.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _renderElement } = await import('../render-element/render-element.util');
@@ -190,12 +190,14 @@ describe('_defer', () => {
 
     it('watches the element a trigger names, read once the code rendering the block is done, in place of the @placeholder', async () => {
       const element = parent();
-      const root = createRoot();
+      // The element ref of the trigger, declared in the scope holding the block as the compiled code does
+      const root = _scope(null, { size: HEADER + 1, nodes: HEADER + 1, variables: ['more'] });
       const content = part('b');
-      let more: Element | undefined;
+      _declare(root, HEADER);
 
-      _defer(element, root, null, { triggers: [{ kind: 'hover', target: () => more! }, { kind: 'visible', target: () => more!, options: { rootMargin: '10px' } }], content, placeholder: textPart('Wait') });
-      more = element.appendChild(document.createElement('button'));
+      _defer(element, root, null, { triggers: [{ kind: 'hover', target: () => _read(root, 0, HEADER) as Element }, { kind: 'visible', target: () => _read(root, 0, HEADER) as Element, options: { rootMargin: '10px' } }], content, placeholder: textPart('Wait') });
+      const more = element.appendChild(document.createElement('button'));
+      _set(root, 0, HEADER, more);
       await armed();
 
       expect(FakeIntersectionObserver.last.observed).toEqual([more]);

@@ -37,4 +37,12 @@ describe('generateClient', () => {
     expect(code).toEqual(['_client(td0, context, null, td0__client0, true);']);
     expect(functionsToProcess!.get('td0__client0')!.fn).toHaveProperty('anchor', undefined);
   });
+
+  it('passes the slot of its anchor at the top of a scope tracking its nodes', async () => {
+    const context = new GeneratorContext(cache);
+    context.tracksNodes = true;
+    const { code } = await generateClient(parse('@client { <b></b> }'), 'for0', '0', context, 'anchor');
+
+    expect(code).toEqual(['_client(for0, context, anchor, for0__client0, false, 8);']);
+  });
 });

@@ -52,5 +52,5 @@ export interface _Context extends Array<unknown> {
    * `@for` holding one block), and the scope itself costs nothing, where the array `[child]` costs a `JSArray` and its
    * backing store per scope. Do not go back to an array for a single child.
    */
-  7:_Context | _Context[] | null;
+  7: _Context | _Context[] | null;
 }

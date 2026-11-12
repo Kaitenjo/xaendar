@@ -619,7 +619,7 @@ function readsAny(reads: readonly number[], ids: readonly number[]): boolean {
  * @param cleanup - The cleanup.
  */
 function refreshCleanup(cleanup: Cleanup): void {
-  if (typeof cleanup !== 'function' && 'reads' in cleanup && readsAny(cleanup.reads, changedIds!)) {
+  if ('reads' in cleanup && readsAny(cleanup.reads, changedIds!)) {
     rerunBinding(cleanup);
   }
 }

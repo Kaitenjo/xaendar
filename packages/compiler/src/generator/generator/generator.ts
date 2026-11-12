@@ -212,9 +212,8 @@ export class Generator {
 
       // Only the symbols an expression reads are imported: a type, or a name only a type argument uses, is not a value at runtime
       const imports = symbols.filter(({ local }) => generatorContext.getImportedIdentifier(local)!.used).map(toRuntimeImport);
-      // The constants of the module read the ones listing the variables the bindings read
-      const prelude = imports.concat(generatorContext.readsDeclarations, generatorContext.constantDeclarations);
-      return (prelude.length ? prelude.concat(generatedCode) : generatedCode).join('\n');
+      // The constants of the module read the ones listing the variables the bindings read; the layout of the root scope is always one of them
+      return imports.concat(generatorContext.readsDeclarations, generatorContext.constantDeclarations, generatedCode).join('\n');
     } catch (err) {
       throw catchErrorWithPrefix('Generator', this._input, err);
     }

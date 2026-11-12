@@ -61,4 +61,12 @@ describe('generateHydrate', () => {
     expect(context.constantDeclarations).toEqual(['const td0__hydrate0$hydrate = { triggers: [\'idle\'], content: td0__hydrate0, last: true };']);
     expect(functionsToProcess!.get('td0__hydrate0')!.fn).toHaveProperty('anchor', undefined);
   });
+
+  it('declares the slot of its anchor at the top of a scope tracking its nodes, which owns the nodes of the server', async () => {
+    const context = new GeneratorContext(cache);
+    context.tracksNodes = true;
+    await generateHydrate(parse('@hydrate (idle) { <b></b> }'), 'for0', '0', context, 'anchor');
+
+    expect(context.constantDeclarations).toEqual(['const for0__hydrate0$hydrate = { triggers: [\'idle\'], content: for0__hydrate0, slot: 8, track: true };']);
+  });
 });

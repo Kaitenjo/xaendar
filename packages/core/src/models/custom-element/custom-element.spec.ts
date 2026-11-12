@@ -8,7 +8,7 @@ import { HostProperty } from '../../decorators/host-property/host-property.decor
 import { effect } from '../../signals/effect/effect';
 import { ClaimNodes } from '../../utils/claim-nodes/claim-nodes.util';
 import { _bindEffect } from '../../signals/effect/effect';
-import { EMPTY_LAYOUT, _scope, addChild, addCleanup, clear, getChild, getChildCount, mountNode, removeChild } from '../../utils/context/context.util';
+import { EMPTY_LAYOUT, _scope, addChild, addCleanup, getChild, getChildCount, mountNode } from '../../utils/context/context.util';
 import type { _Context } from '../../types/context.type';
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';

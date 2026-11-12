@@ -18,7 +18,7 @@ await vi.hoisted(async () => {
 
 const { SVG_NS } = await import('../../costants');
 const { input } = await import('../../signals/input/input');
-const { _declare, _read, _scope, EMPTY_LAYOUT, ELEMENT_LAYOUT, addCleanup, getNodeStrategy, clear, addChild, getChildCount, getChild, refresh, swapNodeStrategy, update } = await import('../context/context.util');
+const { _declare, _read, _scope, EMPTY_LAYOUT, addCleanup, getNodeStrategy, clear, getChildCount, getChild, refresh, update } = await import('../context/context.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { ClaimNodes } = await import('../claim-nodes/claim-nodes.util');
 

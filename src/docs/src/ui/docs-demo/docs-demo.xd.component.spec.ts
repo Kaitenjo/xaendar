@@ -1,4 +1,4 @@
-import { _Context, _setExpressionInput } from '@xaendar/core';
+import { _scope, _setExpressionInput } from '@xaendar/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import en from '../../i18n/en.json';
 import { DocsDemoComponent } from './docs-demo.xd.component';
@@ -19,7 +19,7 @@ function mount(name: string): DocsDemoComponent {
     throw new Error('docs-demo is not defined');
   }
 
-  const context = new _Context({} as never);
+  const context = _scope(null, { size: 8, nodes: 8 });
   _setExpressionInput(context, element, { name: 'name', value: () => name, setter: _setExpressionInput });
   _setExpressionInput(context, element, { name: 'heading', value: () => 'A demo', setter: _setExpressionInput });
   document.body.append(element);
@@ -36,7 +36,7 @@ function create(name: string): DocsDemoComponent {
     throw new Error('docs-demo is not defined');
   }
 
-  _setExpressionInput(new _Context({} as never), element, { name: 'name', value: () => name, setter: _setExpressionInput });
+  _setExpressionInput(_scope(null, { size: 8, nodes: 8 }), element, { name: 'name', value: () => name, setter: _setExpressionInput });
   return element;
 }
 

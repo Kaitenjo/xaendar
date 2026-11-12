@@ -343,8 +343,9 @@ describe('the scopes of a template', () => {
    * Compiles a template and renders it without a component, into a fresh element standing for its shadow root.
    */
   async function renderAlone(template: string, component: Record<string, unknown> = {}): Promise<() => unknown> {
-    const render = evaluate<(this: unknown, nodeStrategy: unknown) => unknown>(await compile(template, { signals: [], cache }));
-    return () => render.call(Object.assign({ _root: document.createElement('div') }, component), core.CREATE_NODES);
+    const render = evaluate<(this: unknown) => unknown>(await compile(template, { signals: [], cache }));
+    // Without a strategy the root scope creates its nodes, as with CREATE_NODES
+    return () => render.call(Object.assign({ _root: document.createElement('div') }, component));
   }
 
   it('reads each variable from the nearest scope declaring it, a variable of an inner scope shadowing the one of an outer scope named alike', async () => {

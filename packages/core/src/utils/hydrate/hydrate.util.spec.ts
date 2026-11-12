@@ -11,7 +11,7 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { _scope, EMPTY_LAYOUT, ELEMENT_LAYOUT, clear, getNodeStrategy, setNodeStrategy } = await import('../context/context.util');
+const { _scope, ELEMENT_LAYOUT, clear, getNodeStrategy, setNodeStrategy } = await import('../context/context.util');
 const { ClaimNodes } = await import('../claim-nodes/claim-nodes.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _renderElement } = await import('../render-element/render-element.util');

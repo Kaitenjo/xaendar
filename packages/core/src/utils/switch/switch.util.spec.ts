@@ -11,7 +11,7 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { _scope, clear, ELEMENT_LAYOUT, EMPTY_LAYOUT, mountNode, refresh, update } = await import('../context/context.util');
+const { _scope, ELEMENT_LAYOUT, EMPTY_LAYOUT, mountNode, refresh, update } = await import('../context/context.util');
 const { _switch } = await import('./switch.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _SSR_MARKERS } = await import('../../costants');

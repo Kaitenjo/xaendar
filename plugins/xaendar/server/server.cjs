@@ -20382,6 +20382,9 @@ function toTypeCheckModuleSpecifier({ modulePath, importPath }) {
   return importPath ?? modulePath.replace(/(?:\.d)?\.[cm]?tsx?$/, "");
 }
 
+// ../packages/compiler/src/costants/scope-header.costant.ts
+var SCOPE_HEADER = 8;
+
 // ../packages/compiler/src/models/compiler-context/compiler-context.model.ts
 var CompilerContext = class {
   /**
@@ -20390,13 +20393,16 @@ var CompilerContext = class {
    * @param parent - Parent context representing the enclosing scope.
    * @param _namespace - The namespace the elements declared in this scope are created in, when it differs from the one of
    *   the enclosing scope, i.e. for the children of an `<svg>`, a `<math>` or a `<foreignObject>` element.
+   * @param _scopeKind - Whether the scope stands for a scope of the runtime (see `ScopeKind`). Defaults to `scope`.
    */
-  constructor(parent, _namespace) {
+  constructor(parent, _namespace, _scopeKind = "scope") {
     this.parent = parent;
     this._namespace = _namespace;
+    this._scopeKind = _scopeKind;
   }
   parent;
   _namespace;
+  _scopeKind;
   /**
    * A set containting all the signals declared in the class (and subclasses)
    * associated to the template
@@ -20414,10 +20420,18 @@ var CompilerContext = class {
   _componentShadowingMembers = /* @__PURE__ */ new Set();
   /**
    * Identifiers declared directly in this scope, mapped to what they hold (see
-   * `IdentifierKind`): e.g. the item of a `@for` and its implicit variables like
+   * `IdentifierKind`) and where the runtime keeps them: e.g. the item of a `@for` and its implicit variables like
    * `$index` are variables of the template.
    */
   _identifiers = /* @__PURE__ */ new Map();
+  /**
+   * The names of the identifiers of this scope taking a slot of its runtime scope, in the order of their slots.
+   */
+  _variables = new Array();
+  /**
+   * The number of identifiers declared in the whole template, numbering the next one: held by the root scope.
+   */
+  _idCount = 0;
   /**
    * Names the template imports from modules, mapped to how an expression reads them
    */
@@ -20433,13 +20447,30 @@ var CompilerContext = class {
    */
   _unresolvableIdentifiers = /* @__PURE__ */ new Map();
   /**
-   * The number of identifiers declared in this scope, not in its ancestor scopes: the variables the runtime context of
-   * the scope registers, which it is created for (`new _Context(parentContext, nodeStrategy, count)`).
+   * The number of identifiers declared in this scope taking a slot of its runtime scope, not in its ancestor scopes: the
+   * variables its runtime scope holds after its header.
    *
-   * @returns The number of identifiers of this scope.
+   * @returns The number of variables of this scope.
    */
   get identifierCount() {
-    return this._identifiers.size;
+    return this._variables.length;
+  }
+  /**
+   * The names of the variables of this scope, in the order of their slots, the first one following the header.
+   *
+   * @returns The names.
+   */
+  get variableNames() {
+    return this._variables;
+  }
+  /**
+   * Whether this scope stands for a scope of the runtime, which the expressions inside it read the variables of the
+   * enclosing scopes through (see `ScopeKind`).
+   *
+   * @returns `true` when it does.
+   */
+  get opensScope() {
+    return this._scopeKind === "scope" || this._variables.length > 0;
   }
   /**
    * The namespace the elements declared in this scope are created in, looking in this scope first and then in the
@@ -20459,18 +20490,87 @@ var CompilerContext = class {
     this._customElementPatterns.push(...patterns);
   }
   /**
-   * Registers a new identifier name in this scope.
+   * Registers a new identifier name in this scope. Unless it is read through an expression of its own, it takes the
+   * next slot of the runtime scope, after the header and the variables registered before it, and an identifier unique
+   * in the template.
    *
    * @param name - The identifier name to register.
    * @param kind - Whether the identifier holds a plain value or a signal.
    *   Defaults to `'value'`.
+   * @param expression - The expression reading the identifier, for one taking no slot: a template, a constant of the
+   *   module.
    * @throws When an identifier with the same name is already declared in this scope.
    */
-  addIdentifier(name, kind = "value") {
+  addIdentifier(name, kind = "value", expression) {
     if (this._identifiers.has(name)) {
       throw new Error(`Identifier "${name}" is already declared in this scope.`);
     }
-    this._identifiers.set(name, kind);
+    if (expression) {
+      this._identifiers.set(name, { kind, expression });
+      return;
+    }
+    this._identifiers.set(name, { kind, slot: SCOPE_HEADER + this._variables.length, id: this._nextId() });
+    this._variables.push(name);
+  }
+  /**
+   * Returns where a variable of the template lives at runtime, seen from this scope: how many runtime scopes up the
+   * chain it is declared, its slot there and its identifier. Only the scopes standing for a scope of the runtime count
+   * (see {@link opensScope}).
+   *
+   * @param name - The name of the variable.
+   * @returns Its address, `undefined` when no scope declares it with a slot.
+   */
+  addressOf(name) {
+    let depth = 0;
+    for (let context = this; context; context = context.parent) {
+      const declared = context._identifiers.get(name);
+      if (declared) {
+        return declared.slot === void 0 ? void 0 : { depth, slot: declared.slot, id: declared.id };
+      }
+      if (context.opensScope) {
+        depth++;
+      }
+    }
+    return void 0;
+  }
+  /**
+   * Returns how many runtime scopes up the chain the scope declaring an identifier is, seen from this scope: the one
+   * holding a template, whose instances read its variables.
+   *
+   * @param name - The name of the identifier.
+   * @returns The number of scopes, `0` for this scope, `undefined` when no scope declares it.
+   */
+  depthOf(name) {
+    let depth = 0;
+    for (let context = this; context; context = context.parent) {
+      if (context._identifiers.has(name)) {
+        return depth;
+      }
+      if (context.opensScope) {
+        depth++;
+      }
+    }
+    return void 0;
+  }
+  /**
+   * Returns the expression reading an identifier the scopes of the template declare, seen from this scope: its own
+   * expression, or the read of its slot through the runtime scope (`_read(context, depth, slot)`, see `addressOf`).
+   *
+   * @param name - The name of the identifier, declared by this scope or by one of its ancestor scopes.
+   * @returns The expression.
+   */
+  readIdentifier(name) {
+    const address = this.addressOf(name);
+    return address ? `_read(context, ${address.depth}, ${address.slot})` : this._findIdentifier(name).expression;
+  }
+  /**
+   * Returns the identifier, unique in the template, of a variable the scopes of the template declare.
+   *
+   * @param name - The name of the variable.
+   * @returns The identifier, `undefined` for an identifier taking no slot.
+   */
+  idOf(name) {
+    return this._findIdentifier(name)?.id;
   }
   /**
    * Registers a name the template imports from a module, which its expressions read in place of a member of the
@@ -20538,7 +20638,7 @@ var CompilerContext = class {
    *   anywhere in the scope chain.
    */
   getIdentifierKind(name) {
-    return this._identifiers.get(name) ?? this.parent?.getIdentifierKind(name);
+    return this._findIdentifier(name)?.kind;
   }
   /**
    * Returns how an expression reads a name the template imports, looking in this scope first and then in the
@@ -20622,16 +20722,6 @@ var CompilerContext = class {
     return matchesCustomElementPattern(tagName, this._customElementPatterns) || (this.parent?.isForeignElement(tagName) ?? false);
   }
   /**
-   * Removes a previously registered identifier from this scope, if present.
-   * Does nothing if no identifier with the given name is declared in this scope.
-   * Note: this only affects the current scope, not any ancestor scopes.
-   *
-   * @param name - The identifier name to remove.
-   */
-  removeIdentifier(name) {
-    this._identifiers.delete(name);
-  }
-  /**
    * Removes a previously registered unresolvable identifier from this scope, if present.
    * Does nothing if no unresolvable identifier with the given name is declared in this scope.
    * Note: this only affects the current scope, not any ancestor scopes.
@@ -20650,6 +20740,23 @@ var CompilerContext = class {
    */
   declaresIdentifier(name) {
     return this._identifiers.has(name) || this._unresolvableIdentifiers.has(name);
+  }
+  /**
+   * Returns an identifier declared in this scope or in the closest ancestor scope declaring it.
+   *
+   * @param name - The name of the identifier.
+   * @returns The identifier, `undefined` when no scope declares it.
+   */
+  _findIdentifier(name) {
+    return this._identifiers.get(name) ?? this.parent?._findIdentifier(name);
+  }
+  /**
+   * Numbers the next identifier of the template, in the root scope, which holds the count of the whole template.
+   *
+   * @returns The identifier.
+   */
+  _nextId() {
+    return this.parent ? this.parent._nextId() : this._idCount++;
   }
 };
 
@@ -20999,10 +21106,10 @@ function emitVerbatim(node) {
 }
 function resolveIdentifier(text, generatorContext, options) {
   if (generatorContext.hasUnresolvableIdentifier(text)) {
-    return resolveDeclared(text, text, generatorContext.getUnresolvableIdentifierKind(text));
+    return resolveDeclared(text, void 0, generatorContext.getUnresolvableIdentifierKind(text));
   }
   if (generatorContext.hasIdentifier(text)) {
-    return resolveDeclared(`context.get('${text}')`, text, generatorContext.getIdentifierKind(text));
+    return resolveDeclared(generatorContext.readIdentifier(text), generatorContext.idOf(text), generatorContext.getIdentifierKind(text));
   }
   const member = options.resolver ? `${options.resolver}.${text}` : text;
   if (generatorContext.hasSignalField(text)) {
@@ -21018,10 +21125,10 @@ function resolveIdentifier(text, generatorContext, options) {
   }
   return { expression: member };
 }
-function resolveDeclared(expression, name, kind) {
+function resolveDeclared(expression, id, kind) {
   const resolved = { expression, reactive: kind === "signal" };
-  if (kind === "variable") {
-    resolved.variables = [name];
+  if (kind === "variable" && id !== void 0) {
+    resolved.variables = [id];
   }
   return resolved;
 }
