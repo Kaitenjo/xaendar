@@ -48,7 +48,7 @@ import { getInstantiationSuffix, INSTANCE, typeCheckScope } from '../../utils/sc
  * A custom element of another library may dispatch events the map doesn't declare: their `$event` is `any`.
  *
  * The content of an element a structural directive is applied to is a scope of its own: a block of the type-check code
- * when it declares element refs.
+ * when it declares element refs. The content of a standard `<template>` element is static HTML: it is not type-checked.
  *
  * @param node - The `ElementNode` to type-check.
  * @param processNode - Callback used to type-check each child node.
@@ -86,6 +86,11 @@ export function typeCheckElement(node: ElementNode, processNode: ProcessNode, co
   // The element is type-checked: the element ref naming its generic component is typed with the instantiation
   if (node.ref && context.getImportBySelector(tagName)?.typeParameters) {
     context.addInstantiation(node.span.start);
+  }
+
+  // The content of a standard <template> is static HTML, cloned by the code using it: nothing of it binds anything
+  if (node.content !== undefined) {
+    return lines;
   }
 
   const childrenNamespace = getChildrenNamespace(tagName, namespace);

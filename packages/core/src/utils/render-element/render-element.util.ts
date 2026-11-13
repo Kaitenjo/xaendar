@@ -34,6 +34,7 @@ import { _setElementRef } from '../element-refs/element-refs.util';
 import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { _selectBranch } from '../select-branch/select-branch.util';
 import { connectChild } from '../try-scope/try-scope.util';
+import { _setContentTemplates } from '../content-templates/content-templates.util';
 import { writeAttribute } from '../write-attribute/write-attribute.util';
 
 /**
@@ -94,12 +95,22 @@ function renderElement(parentNode: Element, context: _Context, anchor: Comment |
   }
 
   trackNode(element, parentNode, context, slot);
+  // A standard <template> the server wrote already holds its content: the parser of the browser put it there
+  if (config.content && !(element as HTMLTemplateElement).content.firstChild) {
+    element.innerHTML = config.content;
+  }
+
   if (attributes?.length) {
     bindProperties(element, context, attributes);
   }
 
   if (events?.length) {
     bindEvents(element, context, events);
+  }
+
+  // Passed like the inputs, before the component is connected: its first render reads them
+  if (config.templates) {
+    _setContentTemplates(element, context, config.templates);
   }
 
   // The directives of the branches selected before the element is mounted are applied once it is

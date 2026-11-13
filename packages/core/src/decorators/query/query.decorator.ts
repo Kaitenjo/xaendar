@@ -9,6 +9,8 @@ import type { QuerySignal } from '../../signals/types/query-signal.type';
 import type { QueryTarget } from '../../signals/types/query-target.type';
 import type { RefQueryDecorator } from '../../types/query/ref-query-decorator.type';
 import type { SingleQueryDecorator } from '../../types/query/single-query-decorator.type';
+import type { TemplateRef } from '../../types/template-ref.type';
+import { getContentTemplate } from '../../utils/content-templates/content-templates.util';
 
 /**
  * Decorator that binds an accessor of a web component to the first element
@@ -104,47 +106,46 @@ export const Query = Object.assign(singleQuery(query) as unknown as SingleQueryD
    * accessor fieldTooltip: QuerySignal<TooltipDirective | null>;
    * ```
    */
-  ref: Object.assign(refQuery(queryRef) as unknown as RefQueryDecorator<null>, {
-    /**
-     * Decorator that binds an accessor of a web component to the first element of its Shadow DOM named by an element
-     * ref (`#name`) of its template, when there must be one. It takes the options of `@Query.ref`.
-     *
-     * Transforms the decorated accessor into a read-only {@link QuerySignal}
-     * holding the element. The signal is updated each time the Shadow DOM changes,
-     * and reading it throws when no element is named by the ref, also before the element is connected for the first time.
-     *
-     * @example
-     * ```ts
-     * \@Query.ref.required('field')
-     * accessor field: QuerySignal<HTMLInputElement>;
-     * ```
-     */
-    required: refQuery(queryRefRequired) as unknown as RefQueryDecorator<never>,
-    /**
-     * Decorator that binds an accessor of a web component to all the elements of its Shadow DOM named by an element ref
-     * (`#name`) of its template: one for each row of the `@for` declaring it.
-     *
-     * Transforms the decorated accessor into a read-only {@link QuerySignal}
-     * holding the array of the elements, in document order (empty if there
-     * are none). The signal is updated each time the Shadow DOM changes.
-     *
-     * @param name - The name of the ref, without the `#`.
-     * @returns An accessor decorator that replaces the field with a `QuerySignal`.
-     *
-     * @example
-     * ```ts
-     * \@Query.ref.all('note')
-     * accessor notes: QuerySignal<HTMLInputElement[]>;
-     * ```
-     */
-    all: function all<ElementType extends Element = HTMLElement, Class extends CustomElement = CustomElement>(name: string): AccessorDecorator<Class, QuerySignal<ElementType[]>> {
-      return () => ({
-        init() {
-          return queryRefAll<ElementType>(this, name);
-        }
-      });
-    }
-  }),
+  ref: refQuery(queryRef) as unknown as RefQueryDecorator<null>,
+  /**
+   * Decorator that binds an accessor of a web component to the first element of its Shadow DOM named by an element
+   * ref (`#name`) of its template, when there must be one. It takes the options of `@Query.ref`.
+   *
+   * Transforms the decorated accessor into a read-only {@link QuerySignal}
+   * holding the element. The signal is updated each time the Shadow DOM changes,
+   * and reading it throws when no element is named by the ref, also before the element is connected for the first time.
+   *
+   * @example
+   * ```ts
+   * @Query.refRequired('field')
+   * accessor field: QuerySignal<HTMLInputElement>;
+   * ```
+   */
+  refRequired: refQuery(queryRefRequired) as unknown as RefQueryDecorator<never>,
+  /**
+   * Decorator that binds an accessor of a web component to all the elements of its Shadow DOM named by an element ref
+   * (`#name`) of its template: one for each row of the `@for` declaring it.
+   *
+   * Transforms the decorated accessor into a read-only {@link QuerySignal}
+   * holding the array of the elements, in document order (empty if there
+   * are none). The signal is updated each time the Shadow DOM changes.
+   *
+   * @param name - The name of the ref, without the `#`.
+   * @returns An accessor decorator that replaces the field with a `QuerySignal`.
+   *
+   * @example
+   * ```ts
+   * @Query.refAll('note')
+   * accessor notes: QuerySignal<HTMLInputElement[]>;
+   * ```
+   */
+  refAll: function refAll<ElementType extends Element = HTMLElement, Class extends CustomElement = CustomElement>(name: string): AccessorDecorator<Class, QuerySignal<ElementType[]>> {
+    return () => ({
+      init() {
+        return queryRefAll<ElementType>(this, name);
+      }
+    });
+  },
   /**
    * Decorator that binds an accessor of a web component to the first element of the content passed to it, its light
    * DOM, that matches the given CSS selector or is an instance of the given web component, as `contentChild` of
@@ -158,68 +159,145 @@ export const Query = Object.assign(singleQuery(query) as unknown as SingleQueryD
    *
    * @example
    * ```ts
-   * \@Query.content('[header]')
+   * @Query.content('[header]')
    * accessor header: QuerySignal<HTMLElement | null>;
    *
-   * \@Query.content('[slot="footer"]')
+   * @Query.content('[slot="footer"]')
    * accessor footer: QuerySignal<HTMLElement | null>;
    *
-   * \@Query.content(MyButtonComponent, { descendants: false })
+   * @Query.content(MyButtonComponent, { descendants: false })
    * accessor button: QuerySignal<MyButtonComponent | null>;
    * ```
    */
-  content: Object.assign(singleQuery(queryContent) as unknown as SingleQueryDecorator<null, QueryContentOptions>, {
-    /**
-     * Decorator that binds an accessor of a web component to the first element of the content passed to it, its light
-     * DOM, that matches the given CSS selector or is an instance of the given web component, when there must be one.
-     * It takes the targets and the options of `@Query.content`.
-     *
-     * Transforms the decorated accessor into a read-only {@link QuerySignal}
-     * holding the matching element. The signal is updated each time a node is added to the content or removed from it,
-     * and reading it throws when no element matches, also before the element is connected for the first time.
-     *
-     * @example
-     * ```ts
-     * \@Query.content.required('[header]')
-     * accessor header: QuerySignal<HTMLElement>;
-     * ```
-     */
-    required: singleQuery(queryContentRequired) as unknown as SingleQueryDecorator<never, QueryContentOptions>,
-    /**
-     * Decorator that binds an accessor of a web component to all the elements of the content passed to it, its light
-     * DOM, that match the given CSS selector or are instances of the given web component, in document order, as
-     * `contentChildren` of Angular: the content counts whether the Shadow DOM renders it or not, and the `slot`
-     * attribute is an attribute like any other. Only the children of the component are queried, their descendants too
-     * with `descendants: true`.
-     *
-     * Transforms the decorated accessor into a read-only {@link QuerySignal}
-     * holding the array of the matching elements (empty if there are none). The signal is
-     * updated each time a node is added to the content or removed from it.
-     *
-     * @param target - A CSS selector (a tag name, `.class`, `[attribute]`...), or the class of a
-     *   web component decorated with `@WebComponent`, whose selector is matched, or the class of a custom directive, whose
-     *   instances applied to the elements are held instead.
-     * @param options - Extends the query to the descendants of the children.
-     * @returns An accessor decorator that replaces the field with a `QuerySignal`.
-     *
-     * @example
-     * ```ts
-     * \@Query.content.all('[item]')
-     * accessor items: QuerySignal<HTMLElement[]>;
-     *
-     * \@Query.content.all(MyButtonComponent, { descendants: true })
-     * accessor buttons: QuerySignal<MyButtonComponent[]>;
-     * ```
-     */
-    all: function all<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string, Class extends CustomElement = CustomElement>(target: Target, options?: QueryContentOptions): AccessorDecorator<Class, QuerySignal<QueryElement<Target, ElementType>[]>> {
-      return () => ({
-        init() {
-          return queryContentAll(this, target, options);
-        }
-      });
-    }
-  })
+  content: singleQuery(queryContent) as unknown as SingleQueryDecorator<null, QueryContentOptions>,
+  /**
+   * Decorator that binds an accessor of a web component to the first element of the content passed to it, its light
+   * DOM, that matches the given CSS selector or is an instance of the given web component, when there must be one.
+   * It takes the targets and the options of `@Query.content`.
+   *
+   * Transforms the decorated accessor into a read-only {@link QuerySignal}
+   * holding the matching element. The signal is updated each time a node is added to the content or removed from it,
+   * and reading it throws when no element matches, also before the element is connected for the first time.
+   *
+   * @example
+   * ```ts
+   * @Query.contentRequired('[header]')
+   * accessor header: QuerySignal<HTMLElement>;
+   * ```
+   */
+  contentRequired: singleQuery(queryContentRequired) as unknown as SingleQueryDecorator<never, QueryContentOptions>,
+  /**
+   * Decorator that binds an accessor of a web component to all the elements of the content passed to it, its light
+   * DOM, that match the given CSS selector or are instances of the given web component, in document order, as
+   * `contentChildren` of Angular: the content counts whether the Shadow DOM renders it or not, and the `slot`
+   * attribute is an attribute like any other. Only the children of the component are queried, their descendants too
+   * with `descendants: true`.
+   *
+   * Transforms the decorated accessor into a read-only {@link QuerySignal}
+   * holding the array of the matching elements (empty if there are none). The signal is
+   * updated each time a node is added to the content or removed from it.
+   *
+   * @param target - A CSS selector (a tag name, `.class`, `[attribute]`...), or the class of a
+   *   web component decorated with `@WebComponent`, whose selector is matched, or the class of a custom directive, whose
+   *   instances applied to the elements are held instead.
+   * @param options - Extends the query to the descendants of the children.
+   * @returns An accessor decorator that replaces the field with a `QuerySignal`.
+   *
+   * @example
+   * ```ts
+   * @Query.contentAll('[item]')
+   * accessor items: QuerySignal<HTMLElement[]>;
+   *
+   * @Query.contentAll(MyButtonComponent, { descendants: true })
+   * accessor buttons: QuerySignal<MyButtonComponent[]>;
+   * ```
+   */
+  contentAll: function contentAll<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string, Class extends CustomElement = CustomElement>(target: Target, options?: QueryContentOptions): AccessorDecorator<Class, QuerySignal<QueryElement<Target, ElementType>[]>> {
+    return () => ({
+      init() {
+        return queryContentAll(this, target, options);
+      }
+    });
+  },
+  /**
+   * Decorator that binds an accessor of a web component to the template passed to it as content under a name, a
+   * `<template name(…)>` written among the children of its element, as `contentChild` of Angular reading a
+   * `TemplateRef`: the component renders it with `@render`, passing the arguments of its parameters, while its content
+   * reads the variables and the members of the template declaring it, as `ngTemplateOutlet` does with its context.
+   *
+   * Transforms the decorated accessor into a read-only {@link QuerySignal} holding the template, or `null` if none is
+   * passed under the name. The templates are passed before the component is connected, and never change: the signal
+   * holds the template from the first render, the one of the server and the hydration included.
+   *
+   * @param name - The name of the template, the one it is declared with.
+   * @returns An accessor decorator that replaces the field with a `QuerySignal`.
+   *
+   * @example
+   * ```ts
+   * // <my-list items="{users()}"><template row(user: User)>{ user.name }</template></my-list>
+   * \@Query.contentTemplate<[user: User]>('row')
+   * accessor row!: QuerySignal<TemplateRef<[user: User]> | null>;
+   * // In the template of my-list: @for (item of items(); track item.id) { @render row()(item) }
+   * ```
+   */
+  contentTemplate: function contentTemplate<Params extends unknown[] = [], Class extends CustomElement = CustomElement>(name: string): AccessorDecorator<Class, QuerySignal<TemplateRef<Params> | null>> {
+    return () => ({
+      init() {
+        return queryContentTemplate<Params>(this, name);
+      }
+    });
+  },
+  /**
+   * Decorator that binds an accessor of a web component to the template passed to it as content under a name, when
+   * there must be one. It takes the name of `@Query.contentTemplate`.
+   *
+   * Transforms the decorated accessor into a read-only {@link QuerySignal} holding the template, whose reading throws
+   * when none is passed under the name.
+   *
+   * @param name - The name of the template, the one it is declared with.
+   * @returns An accessor decorator that replaces the field with a `QuerySignal`.
+   *
+   * @example
+   * ```ts
+   * \@Query.contentTemplateRequired<[user: User]>('row')
+   * accessor row!: QuerySignal<TemplateRef<[user: User]>>;
+   * ```
+   */
+  contentTemplateRequired: function contentTemplateRequired<Params extends unknown[] = [], Class extends CustomElement = CustomElement>(name: string): AccessorDecorator<Class, QuerySignal<TemplateRef<Params>>> {
+    return () => ({
+      init() {
+        return queryContentTemplateRequired<Params>(this, name);
+      }
+    });
+  }
 });
+
+/**
+ * Creates a signal holding the template passed as content to `element` under a name, or `null` if there is none (see
+ * `_setContentTemplates`). The templates never change once passed: the signal reads them, it does not observe anything.
+ *
+ * @template Params - The parameters of the template.
+ * @param element - The component the template is passed to.
+ * @param name - The name of the template.
+ * @returns A {@link QuerySignal} of the template.
+ */
+export function queryContentTemplate<Params extends unknown[]>(element: CustomElement, name: string): QuerySignal<TemplateRef<Params> | null> {
+  const get = () => (getContentTemplate(element, name) ?? null) as TemplateRef<Params> | null;
+  return Object.assign(function () { return get(); }, { get });
+}
+
+/**
+ * Creates a signal holding the template passed as content to `element` under a name, whose reading throws when there is
+ * none.
+ *
+ * @template Params - The parameters of the template.
+ * @param element - The component the template is passed to.
+ * @param name - The name of the template.
+ * @returns A {@link QuerySignal} of the template.
+ */
+export function queryContentTemplateRequired<Params extends unknown[]>(element: CustomElement, name: string): QuerySignal<TemplateRef<Params>> {
+  return requireMatch(queryContentTemplate<Params>(element, name), `No template named '${name}' is passed as content to <${element.localName}>, as its required content template query needs`);
+}
 
 /**
  * Creates a decorator of a query holding a single element, given the function creating its signal: its typed

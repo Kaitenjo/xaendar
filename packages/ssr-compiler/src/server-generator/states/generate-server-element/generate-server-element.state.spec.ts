@@ -49,6 +49,30 @@ describe('generateServerElement', () => {
     expect(generateChildren.mock.lastCall![2].namespace).toBe('svg');
   });
 
+  it('writes the static content of a standard <template> as it is, without generating its children', () => {
+    generateChildren.mockClear();
+    expect(generate('<template id="row"><li class="a">x</li></template>').code).toEqual(['out.push(\'<template id="row"><li class="a">x</li></template>\');']);
+    expect(generate('<template id="empty"></template>').code).toEqual(['out.push(\'<template id="empty"></template>\');']);
+    expect(generateChildren).not.toHaveBeenCalled();
+  });
+
+  it('writes the static content of a standard <template> its structural directives allow in the function writing it', () => {
+    const { constants, functions, functionsToProcess } = generate('<template *first><b>x</b></template>');
+
+    expect(constants).toEqual(['const template0$structural = { structuralDirectives: [{ selector: \'first\' }], render: template0$render };']);
+    expect(functions).toEqual(['function template0$render(out, context) {\n  out.push(\'<template><b>x</b></template>\');\n}']);
+    expect(functionsToProcess!.size).toBe(0);
+  });
+
+  it('passes to a component the templates written among its children, by their name and the functions writing them', () => {
+    const context = new GeneratorContext(cache);
+    context.addIdentifier('row', 'template', 'template_row_10');
+    const { code, constants } = generate('<user-card><template row()></template></user-card>', context);
+
+    expect(code).toEqual(['_ssrComponent(out, context, user_card0$element);', 'out.push(\'{children of user_card0}</user-card>\');']);
+    expect(constants).toEqual(['const user_card0$element = { tagName: \'user-card\', templates: [{ name: \'row\', template: template_row_10 }] };']);
+  });
+
   it('initializes the element ref of the element as undefined before writing it', () => {
     const context = new GeneratorContext(cache);
     context.addIdentifier('field');

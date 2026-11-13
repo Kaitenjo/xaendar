@@ -250,16 +250,70 @@ describe('parseElement', () => {
       expect(node).not.toHaveProperty('closeNameSpan');
     });
 
-    it('throws for a <template> without name, pointing to its tag name', () => {
-      const template = '<template></template>';
-      expect(() => parse(template)).toThrow('A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item)');
-      expect(() => parse(template)).toThrow(expect.objectContaining({ span: { start: 1, end: 9 } }));
+    it('throws for a template without parameters, pointing to its name', () => {
+      const tokens: Token[] = [
+        { type: TokenType.TAG_OPEN_NAME, parts: ['template'], span: { start: 0, end: 9 } },
+        { type: TokenType.TEMPLATE_DECLARATION, parts: ['row'], span: { start: 10, end: 13 } },
+        { type: TokenType.TAG_OPEN_END, parts: [], span: { start: 13, end: 14 } }
+      ];
+      expect(() => new Parser('<template row>', tokens).parse()).toThrow('A template lists its parameters in parentheses after its name, even when it has none: <template row()>');
+      expect(() => new Parser('<template row>', tokens).parse()).toThrow(expect.objectContaining({ span: { start: 10, end: 13 } }));
     });
 
-    it('throws for a template without parameters, pointing to its name', () => {
-      const template = '<template row></template>';
-      expect(() => parse(template)).toThrow('A template lists its parameters in parentheses after its name, even when it has none: <template row()>');
-      expect(() => parse(template)).toThrow(expect.objectContaining({ span: { start: 10, end: 13 } }));
+    describe('standard <template> elements', () => {
+      it('parses a <template> without a declaration into an element, its static content serialized as HTML', () => {
+        const [node] = parse('<template id="row" #row><li class="item &amp; more">A &lt; b</li><br /><pre>x</pre><style>a > b</style></template>') as ElementNode[];
+        expect(node).toMatchObject({ type: ASTNodeType.Element, tagName: 'template', attributes: [{ name: 'id', value: 'row' }], ref: { name: 'row' } });
+        expect(node.content).toBe('<li class="item &amp; more">A &lt; b</li><br><pre>\nx</pre><style>a > b</style>');
+        expect(node.children.map(({ type }) => type)).toEqual([ASTNodeType.Element, ASTNodeType.Element, ASTNodeType.Element, ASTNodeType.Element]);
+      });
+
+      it('parses a <template> with a boolean attribute, and one with attributes bound to expressions', () => {
+        const [boolean, bound] = parse('<template row></template><template id="{ name() }" [class.on]="{ on() }"></template>') as ElementNode[];
+        expect(boolean).toMatchObject({ tagName: 'template', attributes: [{ name: 'row' }], content: '' });
+        expect(bound).toMatchObject({ tagName: 'template', classBindings: [{ className: 'on' }], content: '' });
+      });
+
+      it('parses a self-closing <template>, without content', () => {
+        const [node] = parse('<template id="empty" />') as ElementNode[];
+        expect(node).toMatchObject({ tagName: 'template', content: '', children: [] });
+      });
+
+      it('serializes a nested standard <template>', () => {
+        const [node] = parse('<template><template id="inner"><b>x</b></template></template>') as ElementNode[];
+        expect(node.content).toBe('<template id="inner"><b>x</b></template>');
+      });
+
+      it.each([
+        ['shadowrootmode', '<template shadowrootmode="open"></template>'],
+        ['shadowrootclonable', '<template shadowrootclonable></template>']
+      ])('throws for a <template> declaring a shadow root with %s, pointing to it', (name, template) => {
+        expect(() => parse(template)).toThrow(`A <template> cannot declare a shadow root with "${name}": the server writes the shadow root of each component`);
+        expect(() => parse(template)).toThrow(expect.objectContaining({ span: expect.objectContaining({ start: template.indexOf(name) }) }));
+      });
+
+      it.each([
+        ['an interpolation', '<template><b>{ name() }</b></template>', 'name()'],
+        ['a block', '<template>@if (on()) { <b></b> }</template>', '@if'],
+        ['the declaration of a template', '<template><template row()></template></template>', '<template row()>']
+      ])('throws for content holding %s, pointing to it', (_description, template, node) => {
+        expect(() => parse(template)).toThrow('The content of a <template> is static HTML, which the code using the template clones: it cannot interpolate values, render blocks or declare templates. Declare a template with <template name(…)> and render it with @render to bind values');
+        expect(() => parse(template)).toThrow(expect.objectContaining({ span: expect.objectContaining({ start: template.indexOf(node) }) }));
+      });
+
+      it.each([
+        ['an element ref', '<template><b #name></b></template>', '#name'],
+        ['type arguments', '<template><my-list(string)></my-list></template>', 'string'],
+        ['a class binding', '<template><b [class.on]="{ on() }"></b></template>', '[class.on]'],
+        ['an event', '<template><b (click)="go()"></b></template>', '(click)'],
+        ['a conditional binding', '<template><b @if (on()) { title="a" }></b></template>', '@if'],
+        ['a directive', '<template><b @@tint></b></template>', 'tint'],
+        ['a structural directive', '<template><b *hasRole></b></template>', 'hasRole'],
+        ['an attribute bound to an expression', '<template><b title="{ title() }"></b></template>', 'title=']
+      ])('throws for an element of the content declaring %s, pointing to it', (_description, template, binding) => {
+        expect(() => parse(template)).toThrow(/<(b|my-list)> is in the content of a <template>, static HTML which the code using the template clones: it takes only static attributes/);
+        expect(() => parse(template)).toThrow(expect.objectContaining({ span: expect.objectContaining({ start: template.indexOf(binding) }) }));
+      });
     });
 
     it.each([

@@ -7,7 +7,7 @@ const cache = {} as ContextCache;
 describe('generateServerRender', () => {
   it('renders an instance of the template with the value of each argument, read once', () => {
     const context = new GeneratorContext(cache);
-    context.addIdentifier('row', 'value', 'template_row_0');
+    context.addIdentifier('row', 'template', 'template_row_0');
     context.addTemplate('row', 'html');
 
     expect(generateServerRender(parseTemplate('@render row(item, 1)')[0] as RenderNode, { id: 'root' }, '0', new GeneratorContext(context))).toEqual({
@@ -15,7 +15,16 @@ describe('generateServerRender', () => {
     });
   });
 
-  it('throws when the name is not a template visible in the scope', () => {
-    expect(() => generateServerRender(parseTemplate('@render row()')[0] as RenderNode, { id: 'root' }, '0', new GeneratorContext(cache))).toThrow('"row" is not a template visible here');
+  it('renders an instance of the template an expression gives, or a name not referring to a template holds', () => {
+    const context = new GeneratorContext(cache);
+    context.addIdentifier('row', 'template', 'template_row_0');
+    context.addTemplate('row', 'html');
+
+    expect(generateServerRender(parseTemplate('@render rowTemplate()(item)')[0] as RenderNode, { id: 'root' }, '0', context)).toEqual({
+      pieces: [{ statement: '_ssrRenderTemplateRef(out, this.rowTemplate(), [this.item]);' }]
+    });
+    expect(generateServerRender(parseTemplate('@render pick(row)()')[0] as RenderNode, { id: 'root' }, '0', context)).toEqual({
+      pieces: [{ statement: '_ssrRenderTemplateRef(out, this.pick(_templateRef(context, 0, template_row_0)), []);' }]
+    });
   });
 });

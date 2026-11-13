@@ -68,7 +68,8 @@ export function isBrowserOnlyGlobal(name: string): boolean {
  * (the variables of the template, the element refs) are read from the slot the
  * compiler gave them in the runtime scope declaring them, `_read(context, depth, slot)`,
  * as the values they are: the expression reads them as written, without calling them.
- * A template is read as the constant of the module describing it.
+ * A template is read as a value, `_templateRef(context, depth, template_row_12$template)`: the constant of the module
+ * describing it (the function writing it, on the server) and the scope declaring it, `depth` scopes up.
  *
  * The result tells whether the expression reads a signal the compiler knows (a signal member, a reactive import), and
  * lists the variables of the template it reads (see `IdentifierKind`): the runtime runs a binding again when one of
@@ -349,7 +350,11 @@ function resolveIdentifier(text: string, generatorContext: CompilerContext, opti
   }
 
   if (generatorContext.hasIdentifier(text)) {
-    return resolveDeclared(generatorContext.readIdentifier(text), generatorContext.idOf(text), generatorContext.getIdentifierKind(text));
+    const kind = generatorContext.getIdentifierKind(text);
+    // A template read as a value is the template together with the scope declaring it, created once per scope
+    return kind === 'template'
+      ? { expression: `_templateRef(context, ${generatorContext.depthOf(text)}, ${generatorContext.readIdentifier(text)})` }
+      : resolveDeclared(generatorContext.readIdentifier(text), generatorContext.idOf(text), kind);
   }
 
   const member = options.resolver ? `${options.resolver}.${text}` : text;

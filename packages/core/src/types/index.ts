@@ -6,3 +6,4 @@ export type * from './render-element-structural-directive-conditional-binding.ty
 export type * from './render-element-attribute.type';
 export type * from './render-element-structural-directive.type';
 export * from './web-component';
+export type * from './template-ref.type';

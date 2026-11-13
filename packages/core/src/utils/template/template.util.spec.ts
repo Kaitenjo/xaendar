@@ -13,7 +13,7 @@ await vi.hoisted(async () => {
 
 const { _read, _scope, forEachChild, clear, mountNode, refresh, update } = await import('../context/context.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
-const { _parameter, _renderTemplate } = await import('./template.util');
+const { _parameter, _renderTemplate, _templateRef } = await import('./template.util');
 const { _bindEffect } = await import('../../signals/effect/effect');
 const { effect, signal } = await import('../../signals');
 
@@ -299,5 +299,100 @@ describe('_renderTemplate', () => {
     expect(args.mock.calls.map(call => scopes.get(call[0]))).toEqual(['first', 'second', 'second']);
     expect(render).toHaveBeenCalledTimes(2);
     expect(render.mock.calls.map(call => call[1] === declarationContext)).toEqual([true, true]);
+  });
+});
+
+describe('_templateRef', () => {
+  it('gives the template and the scope declaring it, depth scopes up, the same value each time it is read there', () => {
+    const declarationContext = _scope(null, HOLDER);
+    const reading = _scope(_scope(declarationContext, HOLDER), HOLDER);
+    const { template } = createTemplate();
+    const other = createTemplate().template;
+
+    const bound = _templateRef(reading, 2, template);
+
+    expect(bound).toEqual({ template, context: declarationContext });
+    expect(Object.isFrozen(bound)).toBe(true);
+    expect(_templateRef(declarationContext, 0, template)).toBe(bound);
+    const second = _templateRef(declarationContext, 0, other);
+    expect(second).toEqual({ template: other, context: declarationContext });
+    expect(_templateRef(declarationContext, 0, other)).toBe(second);
+    expect(_templateRef(declarationContext, 0, template)).toBe(bound);
+    expect(_templateRef(_scope(null, HOLDER), 0, template)).not.toBe(bound);
+  });
+});
+
+describe('_renderTemplate of an expression giving the template', () => {
+  it('renders the template the expression gives, in the scope declaring it, owned by the rendering context', () => {
+    const declarationContext = _scope(null, HOLDER, undefined, { name: 'declaring' });
+    const renderingContext = _scope(null, HOLDER, undefined, { name: 'rendering' });
+    const { render, template } = createTemplate();
+    const bound = _templateRef(declarationContext, 0, template);
+    const ref = vi.fn(() => bound);
+    const parent = document.createElement('div');
+
+    _renderTemplate(parent, renderingContext, null, { ref, args: () => ['a', 1] });
+
+    expect(parent.innerHTML).toBe('<span>a 1</span>');
+    expect(ref.mock.contexts[0]).toEqual({ name: 'rendering' });
+    expect(render).toHaveBeenCalledWith(parent, declarationContext, null, ['a', 1], CREATE_NODES);
+    clear(renderingContext);
+    expect(parent.innerHTML).toBe('');
+  });
+
+  it('renders nothing while the expression gives no template, passing over the separator of the server once', async () => {
+    const shown = signal<unknown>(null);
+    const { template } = createTemplate();
+    const bound = _templateRef(_scope(null, HOLDER), 0, template);
+    const separator = vi.spyOn(CREATE_NODES, 'separator');
+    const parent = document.createElement('div');
+
+    _renderTemplate(parent, _scope(null, HOLDER), null, { ref: () => shown() as never, args: () => ['a', 1], separated: true });
+    expect(parent.innerHTML).toBe('');
+
+    shown.set(undefined);
+    await flush();
+    expect(parent.innerHTML).toBe('');
+
+    shown.set(bound);
+    await flush();
+    expect(parent.innerHTML).toBe('<span>a 1</span>');
+    expect(separator).toHaveBeenCalledExactlyOnceWith(parent, true);
+    separator.mockRestore();
+  });
+
+  it('replaces the instance when the template changes, removes it when there is none, and updates its parameters while it stays', async () => {
+    const declarationContext = _scope(null, HOLDER);
+    const first = createTemplate();
+    const second = createTemplate();
+    const current = signal<unknown>(_templateRef(declarationContext, 0, first.template));
+    const label = signal('a');
+    const parent = document.createElement('div');
+    const anchor = parent.appendChild(document.createComment('anchor'));
+
+    _renderTemplate(parent, _scope(null, HOLDER), anchor, { ref: () => current() as never, args: () => [label(), 1] });
+    const [instance] = first.instances;
+
+    label.set('b');
+    await flush();
+    expect(first.render).toHaveBeenCalledOnce();
+    expect(parent.innerHTML).toBe('<span>b 1</span><!--anchor-->');
+
+    current.set(_templateRef(declarationContext, 0, second.template));
+    await flush();
+    expect(nodesOf(instance)).toEqual([]);
+    expect(second.render).toHaveBeenCalledOnce();
+    expect(parent.innerHTML).toBe('<span>b 1</span><!--anchor-->');
+    expect(parent.firstChild).not.toBe(first.instances[0][HEADER + 2]);
+
+    current.set(_templateRef(declarationContext, 0, second.template));
+    label.set('c');
+    await flush();
+    expect(second.render).toHaveBeenCalledOnce();
+    expect(second.texts.at(-1)).toBe('c 1');
+
+    current.set(null);
+    await flush();
+    expect(parent.innerHTML).toBe('<!--anchor-->');
   });
 });

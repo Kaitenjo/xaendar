@@ -9,8 +9,8 @@ await vi.hoisted(async () => {
   loadServerDom();
 });
 
-const { _scope } = await import('@xaendar/core');
-const { _ssrRenderTemplate } = await import('./ssr-template.util');
+const { _scope, _templateRef } = await import('@xaendar/core');
+const { _ssrRenderTemplate, _ssrRenderTemplateRef } = await import('./ssr-template.util');
 
 /**
  * The layout of a scope holding its header alone, whose 5 slots the runtime reserves.
@@ -42,5 +42,30 @@ describe('_ssrRenderTemplate', () => {
     _ssrRenderTemplate([], context, render, 0, []);
 
     expect(render.mock.calls[0][1]).toBe(context);
+  });
+});
+
+describe('_ssrRenderTemplateRef', () => {
+  it('renders an instance of a template read as a value, with the component declaring it as this, in the scope declaring it', () => {
+    const component = { name: 'parent' };
+    const declarationContext = _scope(null, EMPTY_LAYOUT, undefined, component);
+    let self: unknown;
+    const render = vi.fn(function (this: unknown, out: ServerOutput, _context: unknown, params: readonly unknown[]) {
+      self = this;
+      out.push(String(params[0]));
+    });
+    const out: ServerOutput = [];
+
+    _ssrRenderTemplateRef(out, _templateRef(declarationContext, 0, render), ['a']);
+
+    expect(out).toEqual(['a']);
+    expect(render.mock.calls[0][1]).toBe(declarationContext);
+    expect(self).toBe(component);
+  });
+
+  it.each([null, undefined])('writes nothing for %s', bound => {
+    const out: ServerOutput = [];
+    _ssrRenderTemplateRef(out, bound, []);
+    expect(out).toEqual([]);
   });
 });

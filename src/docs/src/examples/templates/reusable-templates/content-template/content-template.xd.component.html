@@ -1,0 +1,17 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { OptionListComponent } from './option-list.xd.component.ts'
+
+<ex-option-list options="{fruits()}" emptyTemplate="{nothing}">
+  <template option(name: string, selected: boolean)>
+    <span [class.selected]="{selected}">
+      { selected ? marker() : '·' } { name }
+    </span>
+  </template>
+</ex-option-list>
+
+<template nothing()>
+  <em>No fruits</em>
+</template>
+
+<ex-button (click)="toggleMarker()">toggleMarker()</ex-button>
+<ex-button (click)="toggleFruits()">toggleFruits()</ex-button>

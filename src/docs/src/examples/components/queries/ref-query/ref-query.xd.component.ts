@@ -15,12 +15,12 @@ export class RefQueryComponent extends CustomElement {
   /**
    * The text field, named by the ref #field.
    */
-  @Query.ref.required<HTMLInputElement>('field')
+  @Query.refRequired<HTMLInputElement>('field')
   public accessor field!: QuerySignal<HTMLInputElement>;
   /**
    * The rows, named by the ref #row in every row of the @for.
    */
-  @Query.ref.all<HTMLLIElement>('row')
+  @Query.refAll<HTMLLIElement>('row')
   public accessor rows!: QuerySignal<HTMLLIElement[]>;
   /**
    * The directives applied to the rows: the instances, not the elements.

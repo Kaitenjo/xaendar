@@ -44,6 +44,42 @@ describe('generateElement', () => {
     expect(functionsToProcess?.size).toBe(0);
   });
 
+  it('generates a standard <template> with the HTML of its static content, without a function rendering its children', async () => {
+    const result = await run('<template id="row"><li class="a">it\'s</li></template>');
+
+    expect(result.constants).toEqual([[
+      'const template0$element = {',
+      '  tagName: \'template\',',
+      '  attributes: [{ name: \'id\', value: \'row\', setter: _setProperty }],',
+      '  content: \'<li class="a">it\\\'s</li>\'',
+      '};'
+    ].join('\n')]);
+    expect(result.functionsToProcess?.size).toBe(0);
+    expectValidJavascript(result);
+  });
+
+  it('passes to a component the templates written among its children, while a native element passes none', async () => {
+    const context = new GeneratorContext(cache);
+    context.addIdentifier('row', 'template', 'template_row_9$template');
+    const { constants } = await run('<my-list><template row()></template></my-list>', context);
+    expect(constants).toEqual([[
+      'const my_list0$element = {',
+      '  tagName: \'my-list\',',
+      '  children: my_list0Children,',
+      '  templates: [{ name: \'row\', template: template_row_9$template }]',
+      '};'
+    ].join('\n')]);
+
+    const native = new GeneratorContext(cache);
+    native.addIdentifier('row', 'template', 'template_row_5$template');
+    expect((await run('<div><template row()></template></div>', native)).constants).toEqual(['const div0$element = { tagName: \'div\', children: div0Children };']);
+  });
+
+  it('generates a standard <template> without content as a bare element', async () => {
+    const { constants } = await run('<template></template>');
+    expect(constants).toEqual(['const template0$element = { tagName: \'template\' };']);
+  });
+
   it('forwards the anchor', async () => {
     const { code } = await run('<div></div>', new GeneratorContext(cache), 'anchor');
     expect(code).toEqual(['_renderElement(root, context, anchor, div0$element);']);

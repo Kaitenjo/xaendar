@@ -135,10 +135,12 @@ function checkRender(node: RenderNode, check: OrderCheck): void {
     checkReads(node.arguments[i], node.span, check);
   }
 
-  // A name that is not a template is reported by the type-check of the @render
+  // A @render calling anything but the name of a template reads it, evaluated when it is rendered, like its arguments
   const template = resolve(node.callee, check)?.template;
   if (template) {
     check.renders.push({ template, node, level: check.level });
+  } else {
+    checkReads(node.calleeExpression, node.calleeSpan, check);
   }
 }
 

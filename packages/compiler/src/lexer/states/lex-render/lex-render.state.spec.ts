@@ -35,11 +35,41 @@ describe('lexRender', () => {
   });
 
   it.each([
+    ['a call', '@render row()(item) tail', 'row()', 'item'],
+    ['member accesses', '@render templates.rows?.first(item) tail', 'templates.rows?.first', 'item'],
+    ['a key', '@render rows[kind()](item)', 'rows[kind()]', 'item'],
+    ['calls and accesses after a call', '@render pick(a)[0].row(b)?.inner(c)(item)', 'pick(a)[0].row(b)?.inner(c)', 'item']
+  ])('reads an expression whose value is a template, made of %s, up to the last group of parentheses', (_description, input, callee, args) => {
+    const cursor = afterKeyword(input);
+    expect(lexRender(cursor, context)).toMatchObject({ tokens: [{ type: TokenType.RENDER_CALL, parts: [callee, args], span: { start: 8, end: 8 + callee.length + args.length + 2 } }] });
+  });
+
+  it.each([
+    ['a dot followed by no name', '@render row(item). Next', '.'],
+    ['a question mark followed by no dot', '@render row(item)? Next', '?'],
+    ['a question mark and a dot followed by no name', '@render row(item)?. Next', '?'],
+    ['a name', '@render row(item)tail', 't']
+  ])('ends the call before %s', (_description, input, next) => {
+    const cursor = afterKeyword(input);
+    expect(lexRender(cursor, context)).toMatchObject({ tokens: [{ parts: ['row', 'item'] }] });
+    expect(cursor.peek()).toBe(next.charCodeAt(0));
+  });
+
+  it.each([
+    ['the name', '@render ro'],
+    ['a member access', '@render templates.ro'],
+    ['nothing', '@render ']
+  ])('reports the end of the input reached while %s of the call is written', (_description, input) => {
+    expect(() => lexRender(afterKeyword(input), context)).toThrow(expect.objectContaining({ message: '' }));
+  });
+
+  it.each([
     ['the name is missing', '@render (item())'],
     ['the arguments are missing', '@render row\n<p />'],
     ['a whitespace separates the name from the arguments', '@render row (item())'],
-    ['the name is not an identifier', '@render row.inner(item())']
+    ['the chain ends with a member access', '@render row().inner\n<p />'],
+    ['the chain ends with a key', '@render rows[0]\n<p />']
   ])('throws when %s', (_description, input) => {
-    expect(() => lexRender(afterKeyword(input), context)).toThrow('@render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item)');
+    expect(() => lexRender(afterKeyword(input), context)).toThrow('@render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item), or an expression whose value is a template, e.g. @render row()(item)');
   });
 });

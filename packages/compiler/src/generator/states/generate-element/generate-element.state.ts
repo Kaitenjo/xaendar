@@ -14,6 +14,7 @@ import { validateExpression } from '../../../parser/utils/expression-validator/e
 import { isStructuralElement } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
 import { getChildrenNamespace, getElementNamespace } from '../../../utils/element-namespace/element-namespace.utils';
 import { readsEvent } from '../../../utils/event-reads/event-reads.utils';
+import { mapContentTemplates } from '../../../utils/content-templates/content-templates.utils';
 import { GeneratorContext } from '../../context/context';
 import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { DescriptorOwner } from '../../types/descriptor-owner.type';
@@ -39,6 +40,8 @@ import { declareExpression, toArrayLiteral, toObjectLiteral, toRoleName } from '
  * The children are rendered by `_renderElement` through the function the constant names, since an element applying
  * structural directives is created, and created again, by the runtime only while they allow it: it receives the context
  * the children are rendered in, whose strategy gets their nodes, created or adopted from the HTML rendered on the server.
+ * A standard `<template>` element has no function of the children: its constant holds the HTML of its static content
+ * (`content`), which the runtime assigns to the `innerHTML` of a `<template>` it creates.
  * The classes the element toggles come before its attributes, so that writing `class` finds them, and an element adopted
  * holding the same classes is not written.
  * The conditional bindings declared on the element are split in two lists: the descriptors of the element bindings
@@ -73,7 +76,8 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   const directives = await mapDirectives(node.directives, elementOwner);
   const structuralDirectives = await mapStructuralDirectives(node.structuralDirectives, owner);
   const structuralConditionalBindings = await mapStructuralConditionalBindings(node.conditionalBindings, owner);
-  const hasChildren = !!node.children.length;
+  // The children of a standard <template> are its static content, written as HTML
+  const hasChildren = node.content === undefined && !!node.children.length;
   const retVal: GeneratorTransitionFunctionReturnType = {
     code: [],
     functionsToProcess: new Map()
@@ -90,6 +94,14 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   appendList(members, 'structuralConditionalBindings', structuralConditionalBindings);
   if (hasChildren) {
     members.push(`children: ${nodeName}Children`);
+  }
+
+  if (node.content) {
+    members.push(`content: ${toStringLiteral(node.content)}`);
+  }
+
+  if (isCustomElement) {
+    appendList(members, 'templates', mapContentTemplates(node, generatorContext));
   }
 
   /*

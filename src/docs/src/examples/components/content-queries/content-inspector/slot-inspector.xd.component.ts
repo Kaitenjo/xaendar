@@ -19,17 +19,17 @@ export class SlotInspectorComponent extends CustomElement {
   /**
    * The matching children.
    */
-  @Query.content.all('.item')
+  @Query.contentAll('.item')
   public accessor childItems!: QuerySignal<HTMLElement[]>;
   /**
    * The matches at any depth.
    */
-  @Query.content.all('.item', { descendants: true })
+  @Query.contentAll('.item', { descendants: true })
   public accessor all!: QuerySignal<HTMLElement[]>;
   /**
    * The children whose `slot` attribute is `aside`.
    */
-  @Query.content.all('[slot="aside"]')
+  @Query.contentAll('[slot="aside"]')
   public accessor inAside!: QuerySignal<HTMLElement[]>;
   /**
    * One row for each query, with the first letter of each element found.
@@ -45,9 +45,9 @@ export class SlotInspectorComponent extends CustomElement {
     const first = this.first();
     return [
       { query: "Query.content('.item')", found: this._letters(first ? [first] : []) },
-      { query: "Query.content.all('.item')", found: this._letters(this.childItems()) },
+      { query: "Query.contentAll('.item')", found: this._letters(this.childItems()) },
       { query: '… { descendants: true }', found: this._letters(this.all()) },
-      { query: 'Query.content.all(\'[slot="aside"]\')', found: this._letters(this.inAside()) }
+      { query: 'Query.contentAll(\'[slot="aside"]\')', found: this._letters(this.inAside()) }
     ];
   }
 

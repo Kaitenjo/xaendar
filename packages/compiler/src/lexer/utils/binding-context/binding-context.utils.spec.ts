@@ -17,7 +17,8 @@ describe('getBindingContext', () => {
     ['a name after other bindings', '<my-child a="{ b }" (c)="d()" @@e(f="g") ', { kind: 'attribute', tagName: 'my-child', directive: undefined, span: { start: 41, end: 41 } }],
     ['a name in a conditional binding', '<my-child @if (open) { la', { kind: 'attribute', tagName: 'my-child', directive: undefined, span: { start: 23, end: 25 } }],
     ['a name of a nested element', '<div>@if (a) { <my-child la', { kind: 'attribute', tagName: 'my-child', directive: undefined, span: { start: 25, end: 27 } }],
-    ['the text after the offset ignored', '<my-child la|bel="x"></my-child>', { kind: 'attribute', tagName: 'my-child', directive: undefined, span: { start: 10, end: 12 } }]
+    ['the text after the offset ignored', '<my-child la|bel="x"></my-child>', { kind: 'attribute', tagName: 'my-child', directive: undefined, span: { start: 10, end: 12 } }],
+    ['an attribute of a standard <template>', '<template i', { kind: 'attribute', tagName: 'template', directive: undefined, span: { start: 10, end: 11 } }]
   ])('finds an attribute of the element: %s', (_name, template, expected) => {
     expect(contextOf(template)).toEqual(expected);
   });
@@ -53,8 +54,6 @@ describe('getBindingContext', () => {
     ['after a name that cannot be an attribute', '<my-child @la'],
     ['on the name of an element ref', '<my-child #la'],
     ['after the # of an element ref', '<my-child #'],
-    ['on the name of a template', '<template ro'],
-    ['in the opening tag of a template', '<template '],
     ['after the declaration of a template', '<template row() '],
     ['after a template that cannot be lexed', '<button (click)="onClick foo()"> la']
   ])('finds nothing %s', (_name, template) => {

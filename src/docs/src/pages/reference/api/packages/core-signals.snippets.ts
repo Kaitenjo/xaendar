@@ -207,17 +207,17 @@ public accessor topHeader!: QuerySignal<HTMLElement | null>;
 /**
  * The children of the element with the item class, in document order.
  */
-@Query.content.all('.item')
+@Query.contentAll('.item')
 public accessor items!: QuerySignal<HTMLElement[]>;
 /**
  * Every element with the item class, at any depth, in document order.
  */
-@Query.content.all('.item', { descendants: true })
+@Query.contentAll('.item', { descendants: true })
 public accessor allItems!: QuerySignal<HTMLElement[]>;
 /**
  * The children passed for the footer slot: slot is an attribute like any other, rendered or not.
  */
-@Query.content.all('[slot="footer"]')
+@Query.contentAll('[slot="footer"]')
 public accessor footer!: QuerySignal<HTMLElement[]>;`
 };
 

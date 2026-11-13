@@ -7,7 +7,7 @@
 export type QueryContentOptions = {
   /**
    * Whether the descendants of the children of the component are queried too, or only its children. By default `true`
-   * for `Query.content` and `Query.content.required`, `false` for `Query.content.all`, as in Angular.
+   * for `Query.content` and `Query.contentRequired`, `false` for `Query.contentAll`, as in Angular.
    */
   descendants?: boolean;
 };

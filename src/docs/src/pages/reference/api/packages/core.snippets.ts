@@ -436,17 +436,17 @@ public accessor header!: QuerySignal<HTMLElement | null>;
 /**
  * The buttons passed for the footer slot: slot is an attribute like any other.
  */
-@Query.content.all<HTMLButtonElement>('button[slot="footer"]')
+@Query.contentAll<HTMLButtonElement>('button[slot="footer"]')
 public accessor actions!: QuerySignal<HTMLButtonElement[]>;
 /**
  * The children with the item attribute: the default of the .all variant.
  */
-@Query.content.all('[item]')
+@Query.contentAll('[item]')
 public accessor items!: QuerySignal<HTMLElement[]>;
 /**
  * Every element with the item attribute, at any depth.
  */
-@Query.content.all('[item]', { descendants: true })
+@Query.contentAll('[item]', { descendants: true })
 public accessor allItems!: QuerySignal<HTMLElement[]>;`
 };
 
@@ -468,7 +468,7 @@ export class TabGroupComponent extends CustomElement {
   /**
    * Every panel passed to the group, typed as its class: empty until the parent creates the content.
    */
-  @Query.content.all(TabPanelComponent)
+  @Query.contentAll(TabPanelComponent)
   public accessor panels!: QuerySignal<TabPanelComponent[]>;
   /**
    * The label of each tab, following the panels as they arrive.
@@ -505,7 +505,7 @@ public accessor withTooltip!: QuerySignal<HTMLButtonElement | null>;
 /**
  * The directive applied to the element an element ref names.
  */
-@Query.ref.required('field', { read: TooltipDirective })
+@Query.refRequired('field', { read: TooltipDirective })
 public accessor fieldTooltip!: QuerySignal<TooltipDirective>;
 /**
  * Together with the options of the content.

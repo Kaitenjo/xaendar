@@ -197,6 +197,10 @@ describe('typeCheckElement', () => {
       const processChild: ProcessNode = (child, context) => typeCheckElement(child as ElementNode, processChild, context);
       const runTree = (template: string) => text(typeCheckElement(parse(template), processChild, new TypeCheckContext()));
 
+      it('type-checks the attributes of a standard <template>, but not its static content', () => {
+        expect(runTree('<template title="{ label() }"><my-el></my-el></template>')).toEqual(runTree('<template title="{ label() }"></template>'));
+      });
+
       it('types the events of an <svg> and of its descendants through SVGElementEventMap', () => {
         expect(runTree('<svg (click)="f($event)"><g><circle @if (cond) { (click)="g($event)" }></circle></g></svg>')).toEqual([
           '{',

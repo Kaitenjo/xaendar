@@ -7,7 +7,7 @@ import type { QueryTarget } from '../../signals/types/query-target.type';
 
 /**
  * A decorator of a query holding a single element (`@Query`, `@Query.required`, `@Query.content`,
- * `@Query.content.required`): what it holds is typed by the target, or by the `read` option when it is given.
+ * `@Query.contentRequired`): what it holds is typed by the target, or by the `read` option when it is given.
  *
  * @template Missing - What the signal holds when nothing matches: `null`, or `never` for a required query.
  * @template Options - The options of the query besides `read`, such as `descendants` of a content query.

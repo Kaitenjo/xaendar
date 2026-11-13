@@ -74,10 +74,10 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** Parentheses after the name of an element ref.
 - **Fix:** Write #name alone.
 
-### `[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item)`
+### `[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item), or an expression whose value is a template, e.g. @render row()(item)`
 
-- **Cause:** A @render without the name of the template, without parentheses, or with a space or a dot between the name and the parentheses.
-- **Fix:** Write @render name(arguments), with () when the template has no parameters.
+- **Cause:** A @render without what it calls, without the parentheses of the arguments, or with a space between what it calls and the parentheses.
+- **Fix:** Write @render name(arguments), with () when the template has no parameters, or @render expression()(arguments) for a template given by an expression.
 
 ### `[Lexer] @let declares a name and its value, ending with a semicolon, e.g. @let address = user().address;`
 
@@ -186,15 +186,25 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @let named by something other than an identifier; 'root' is reserved in templates is reported for root, $event and the names starting with __ or $$.
 - **Fix:** Use an identifier the generated code does not reserve.
 
-### `[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item)`
+### `[Parser] The content of a <template> is static HTML, which the code using the template clones: it cannot interpolate values, render blocks or declare templates. Declare a template with <template name(…)> and render it with @render to bind values`
 
-- **Cause:** A <template> without name(…): a <template> is always the declaration of a template.
-- **Fix:** Name it and declare its parameters, then render it with @render.
+- **Cause:** An interpolation, a block or the declaration of a template in the content of a standard <template> element, one declaring no name with its parameters (`<template row>` without parentheses is one too, with the attribute row): its content is cloned by code, and nothing in it could react.
+- **Fix:** Declare a template with a name and its parameters, <template row(item: Item)>, and render it with @render, or keep the content static.
 
-### `[Parser] A template lists its parameters in parentheses after its name, even when it has none: <template row()>`
+### `[Parser] <b> is in the content of a <template>, static HTML which the code using the template clones: it takes only static attributes`
 
-- **Cause:** A <template row> without parentheses.
-- **Fix:** Write <template row()>.
+- **Cause:** An element in the content of a standard <template> element binds an attribute to an expression, toggles a class, listens to an event, declares an element ref or applies a directive.
+- **Fix:** Write only static attributes in the content, or declare a template with a name and its parameters and render it with @render.
+
+### `[Parser] A <template> cannot declare a shadow root with "shadowrootmode": the server writes the shadow root of each component`
+
+- **Cause:** A standard <template> element with shadowrootmode, shadowrootclonable, shadowrootdelegatesfocus or shadowrootserializable.
+- **Fix:** Remove the attribute: a component has its own shadow root, written by the server when it renders it.
+
+### `[Generator] <my-list> cannot receive the template "row" as content: a structural directive is applied to it, whose content is a scope of its own. Apply the directive to an element wrapping it`
+
+- **Cause:** A template declared among the children of a component a structural directive is applied to.
+- **Fix:** Apply the structural directive to an element wrapping the component, or pass the template as the value of an input.
 
 ### `[Parser] A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it`
 
@@ -508,10 +518,10 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** Two element refs or templates with the same name in the same scope, or one named like a variable of the enclosing @for.
 - **Fix:** Rename one of them: a nested scope (a block, the row of a @for) can reuse the name.
 
-### `[TypeChecker] "row" is not a template visible here: declare it with <template row(…)> in this scope or in an enclosing one`
+### `Argument of type 'string' is not assignable to parameter of type '__Template<unknown[]>'.`
 
-- **Cause:** A @render of a name that is not a template declared in its scope or in an enclosing one: a member, an import, an element ref, or a template declared in another branch or row. The build reports it as [Generator] too.
-- **Fix:** Declare the template where the @render can see it, or pass the data as arguments to a template declared further out.
+- **Cause:** A @render calling a name that is not a template declared in its scope or in an enclosing one, nor holds one: a member, an import or an element ref, rendered then as the template it should hold.
+- **Fix:** Declare the template where the @render can see it, or call an expression whose value is a TemplateRef, e.g. @render row()(item) for a query or an input.
 
 ### `[TypeChecker] Template "row" is declared among HTML elements, and its content cannot be rendered among SVG elements: declare it in the namespace it is rendered in`
 
@@ -727,6 +737,16 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** Two directive classes registered with the same selector.
 - **Fix:** Rename one of them.
 
+### `Error: No template named 'row' is passed as content to <my-list>, as its required content template query needs`
+
+- **Cause:** A @Query.contentTemplateRequired read while no <template row(…)> is declared among the children of the element of the component.
+- **Fix:** Declare the template among the children of the element, or use @Query.contentTemplate, which holds null without one.
+
+### `Error: <my-card> is an interactive component a static one renders, which hydrates by itself in the browser: it cannot receive templates as content`
+
+- **Cause:** A static component passes a template as content to an interactive component, which hydrates by itself in the browser, without the template of the static one.
+- **Fix:** Declare the template in the interactive component, or make the component passing it interactive.
+
 ### `Error: No element matches the required query 'input' of <x-search>`
 
 - **Cause:** A @Query.required was read while no element of the shadow root matched it: before the render (in onInit, in an effect created there, in the template), or while the element was not in the template.
@@ -749,7 +769,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `Error: No element matches the required content query '[header]' of <x-card>`
 
-- **Cause:** A @Query.content.required was read while no element of the content matched it: before the parent passed its content, afterRender included, or while the element was not passed.
+- **Cause:** A @Query.contentRequired was read while no element of the content matched it: before the parent passed its content, afterRender included, or while the element was not passed.
 - **Fix:** Read it in event handlers. If the content is optional, or to follow it as it arrives, use @Query.content.
 
 ### `Error: @HostProperty('class.') names no class`

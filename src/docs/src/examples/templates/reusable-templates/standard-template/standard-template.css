@@ -1,0 +1,15 @@
+:host {
+  display: block;
+}
+
+.clones {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.number {
+  font-family: ui-monospace, monospace;
+}

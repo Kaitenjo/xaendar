@@ -7,6 +7,9 @@
 @import { TeamRowsComponent } from '../../../examples/templates/reusable-templates/team-rows/team-rows.xd.component.ts'
 @import { FileTreeComponent } from '../../../examples/templates/reusable-templates/file-tree/file-tree.xd.component.ts'
 @import { StatusBadgesComponent } from '../../../examples/templates/reusable-templates/status-badges/status-badges.xd.component.ts'
+@import { ContentTemplateComponent } from '../../../examples/templates/reusable-templates/content-template/content-template.xd.component.ts'
+@import { StandardTemplateComponent } from '../../../examples/templates/reusable-templates/standard-template/standard-template.xd.component.ts'
+@import { TEMPLATE_RECEIVER } from './reusable-templates.snippets.ts'
 @import { translate as t } from '../../../core/i18n/i18n.utils.ts'
 @import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
@@ -60,6 +63,32 @@
   heading="{translations().pages.templates.reusableTemplates.scope.example1}">
   <ex-file-tree />
 </docs-example>
+
+<h2>
+  { t(translations(), 'pages.templates.reusableTemplates.passing.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.passing.p1") />
+<docs-code snippet="templates/reusable-template-passing.html" />
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.passing.p2") />
+<docs-code snippet="{TEMPLATE_RECEIVER}" />
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.passing.p3") />
+<docs-example name="templates/reusable-templates/content-template"
+  heading="{translations().pages.templates.reusableTemplates.passing.example1}">
+  <ex-content-template />
+</docs-example>
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.passing.p4") />
+
+<h2>
+  { t(translations(), 'pages.templates.reusableTemplates.standard.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.standard.p1") />
+<docs-code snippet="templates/standard-template.html" />
+<p @@htmlTranslation(key="pages.templates.reusableTemplates.standard.p2") />
+<docs-example name="templates/reusable-templates/standard-template"
+  heading="{translations().pages.templates.reusableTemplates.standard.example1}">
+  <ex-standard-template />
+</docs-example>
+
 <p>
   { t(translations(), 'pages.templates.reusableTemplates.scope.p3') }
 </p>
@@ -77,9 +106,10 @@
     <docs-callout-item heading="{translations().pages.templates.reusableTemplates.edgeCases.callout3.heading}">
       { t(translations(), 'pages.templates.reusableTemplates.edgeCases.callout3.body') }
     </docs-callout-item>
-    <docs-callout-item heading="{translations().pages.templates.reusableTemplates.edgeCases.callout4.heading}">
-      { t(translations(), 'pages.templates.reusableTemplates.edgeCases.callout4.body') }
-    </docs-callout-item>
+    <docs-callout-item @@htmlTranslation(key="pages.templates.reusableTemplates.edgeCases.callout4.body")
+      heading="{translations().pages.templates.reusableTemplates.edgeCases.callout4.heading}" />
+    <docs-callout-item @@htmlTranslation(key="pages.templates.reusableTemplates.edgeCases.callout5.body")
+      heading="{translations().pages.templates.reusableTemplates.edgeCases.callout5.heading}" />
   </docs-callout>
 </section>
 
@@ -130,6 +160,32 @@
         <td>
           { t(translations(), 'pages.templates.reusableTemplates.summary.td3') }
         </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ 'input="{name}"' }</code>,
+          <code>&lt;my-list&gt;&lt;template name(…)&gt;</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.reusableTemplates.summary.td5") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@Query.contentTemplate(\'name\')' }</code>,
+          <code>TemplateRef&lt;[param: Type]&gt;</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.reusableTemplates.summary.td6") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@render expression()(argument)' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.reusableTemplates.summary.td7") />
+      </tr>
+      <tr>
+        <td>
+          <code>&lt;template id="row"&gt;</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.reusableTemplates.summary.td8") />
       </tr>
     </tbody>
   </table>

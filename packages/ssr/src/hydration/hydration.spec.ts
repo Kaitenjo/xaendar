@@ -89,6 +89,7 @@ const testInputs: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   badge: { label: 'label' },
   counter: { start: 'start' },
   crossed: { value: 'internalValue', initialValue: 'value' },
+  picker: { template: 'template' },
   '@@later': { allow: 'allow' },
   '@@hydratedFill': { content: 'content' }
 };
@@ -2135,5 +2136,125 @@ describe('namespaces', () => {
     await flush();
     // happy-dom parses <math> and its children of the server as HTML elements, which a browser parses as MathML
     expect(namespacesOf(root)).toEqual(expected.map(element => element.startsWith('math:') || element.startsWith('mi:') ? element.replace('MathML', 'xhtml') : element));
+  });
+});
+
+describe('standard <template> elements', () => {
+  it('writes a standard <template> with its static content, adopted in the browser with its content', async () => {
+    /**
+     * A component holding a standard template its code clones.
+     */
+    class Cloner extends CustomElement {
+      public label = signal('a');
+    }
+
+    const cloner = await register('cloner', Cloner, () => '<template id="row" title="{ label() }"><li class="item">x</li></template><p>{ label() }</p>', ['label']);
+    const html = await renderToString(cloner.Server);
+    expect(html).toContain('<template id="row" title="a"><li class="item">x</li></template><p><!---->a</p>');
+
+    const host = load(html);
+    const template = host.shadowRoot!.querySelector('template')!;
+    const item = template.content.firstChild;
+    cloner.define();
+    await flush();
+
+    expect(host.shadowRoot!.querySelector('template')).toBe(template);
+    expect(template.content.firstChild).toBe(item);
+    expect(template.content.childNodes).toHaveLength(1);
+    expect(console.warn).not.toHaveBeenCalled();
+
+    (host as Cloner).label.set('b');
+    await flush();
+    expect(template.title).toBe('b');
+  });
+});
+
+describe('templates passed as content', () => {
+  /**
+   * Creates the query of a component holding the template passed to it as content under a name, as the accessor
+   * `@Query.contentTemplate` decorates does.
+   */
+  const queryTemplate = (element: object, name: string) => (core.Query.contentTemplate(name) as unknown as () => { init(this: object): unknown })().init.call(element);
+
+  it('renders on the server the template a component receives as content, reading the scope of the parent, and adopts it in the browser, keeping it reactive', async () => {
+    /**
+     * A list rendering each of its items with the template `row` it receives.
+     */
+    class List extends CustomElement {
+      public items = signal(['a', 'b']);
+      public row = queryTemplate(this, 'row');
+    }
+
+    /**
+     * A page passing to the list a template reading its own marker.
+     */
+    class Page extends CustomElement {
+      public marker = signal('#');
+    }
+
+    const list = await register('list', List, () => '<ul>@for (item of items(); track item) {<li>@render row()(item)</li>}</ul>', ['items']);
+    const page = await register('page', Page, child => `<${child('list')}><template row(item: string)><b>{ marker() }{ item }</b></template></${child('list')}>`, ['marker']);
+    onServer = true;
+    const host = load(await renderToString(page.Server));
+    const listElement = host.shadowRoot!.querySelector(tag('client', 'list'))!;
+    const items = Array.from(listElement.shadowRoot!.querySelectorAll('b'));
+    expect(items.map(item => item.textContent)).toEqual(['#a', '#b']);
+
+    onServer = false;
+    list.define();
+    page.define();
+    await flush();
+
+    expect(Array.from(listElement.shadowRoot!.querySelectorAll('b'))).toEqual(items);
+    expect(console.warn).not.toHaveBeenCalled();
+
+    (host as Page).marker.set('>');
+    (listElement as List).items.set(['a', 'b', 'c']);
+    await flush();
+
+    expect(Array.from(listElement.shadowRoot!.querySelectorAll('b')).map(item => item.textContent)).toEqual(['>a', '>b', '>c']);
+    expect(listElement.shadowRoot!.querySelector('b')).toBe(items[0]);
+  });
+
+  it('renders the template a component receives as an input, replacing its instance when the input changes', async () => {
+    /**
+     * A picker rendering the template of its input `template`, if any.
+     */
+    class Picker extends CustomElement {
+      public declare template: () => unknown;
+
+      constructor() {
+        super();
+        initTemplate(this);
+      }
+    }
+    const initTemplate = declareInput(Picker, 'template', null);
+
+    /**
+     * A page choosing which of its templates the picker renders.
+     */
+    class Page extends CustomElement {
+      public bold = signal(true);
+    }
+
+    const picker = await register('picker', Picker, () => '<p>@render template()(\'x\')</p>', ['template']);
+    const page = await register('page', Page, child => `<template strong(text: string)><b>{ text }</b></template><template em(text: string)><i>{ text }</i></template><${child('picker')} template="{ bold() ? strong : em }"></${child('picker')}>`, ['bold']);
+    const host = load(await renderToString(page.Server));
+    const pickerElement = host.shadowRoot!.querySelector(tag('client', 'picker'))!;
+    const bold = pickerElement.shadowRoot!.querySelector('b');
+    expect(bold?.textContent).toBe('x');
+
+    onServer = false;
+    picker.define();
+    page.define();
+    await flush();
+
+    expect(pickerElement.shadowRoot!.querySelector('b')).toBe(bold);
+    expect(console.warn).not.toHaveBeenCalled();
+
+    (host as Page).bold.set(false);
+    await flush();
+
+    expect(pickerElement.shadowRoot!.querySelector('p')!.innerHTML).toBe('<i>x</i>');
   });
 });

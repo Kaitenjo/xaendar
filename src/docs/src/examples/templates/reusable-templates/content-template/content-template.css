@@ -1,0 +1,7 @@
+:host {
+  display: block;
+}
+
+.selected {
+  font-weight: 600;
+}

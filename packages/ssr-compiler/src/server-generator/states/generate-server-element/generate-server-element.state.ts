@@ -1,5 +1,5 @@
 import { dropsLeadingNewline, escapeAttribute, isValidCustomElementName, isVoidElement } from '@xaendar/common';
-import { appendBlockPosition, ASTNodeType, declareExpression, GeneratorContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ClassBindingNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
+import { appendBlockPosition, ASTNodeType, declareExpression, mapContentTemplates, GeneratorContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ClassBindingNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
 import type { Function } from '@xaendar/types';
 import type { ServerCodePiece } from '../../types/server-code-piece.type';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
@@ -32,7 +32,10 @@ import { SUBMIT_ATTRIBUTE } from '../../../costants/ssr-markers.constants';
  * by an attribute, the one thing the contract has to know of an element: it must prevent the submission before the
  * runtime is there.
  * An element ref is `undefined` on the server, initialized when the render reaches the element, as on the client.
+ * The content of a standard `<template>` element is written as the HTML the compiler serialized (`ElementNode.content`),
+ * the one the client assigns to its `innerHTML`.
  *
+
  * @param node - The element node.
  * @param parent - Where the element is rendered.
  * @param index - The position of the node among its siblings.
@@ -47,7 +50,12 @@ export function generateServerElement(node: ElementNode, parent: ServerParent, i
   const id = getElementIdentifier(node, parent.id, index);
   const childrenNamespace = getChildrenNamespace(tagName, getElementNamespace(tagName, generatorContext.namespace));
   const childrenParent: ServerParent = { id, tag: tagName, end: true };
+  const { content } = node;
   if (!isStructuralElement(node)) {
+    if (content !== undefined) {
+      return { pieces: writeElement(node, id, generatorContext, toContentPieces(content)) };
+    }
+
     // Generated in the function of the element, the children stand for no scope of the runtime
     const childrenContext = childrenNamespace !== generatorContext.namespace ? new GeneratorContext(generatorContext, childrenNamespace, 'declarations') : generatorContext;
     const children = generateChildren(node.children, childrenParent, childrenContext);
@@ -58,8 +66,8 @@ export function generateServerElement(node: ElementNode, parent: ServerParent, i
   const structuralDirectives = mapStructuralDirectives(node.structuralDirectives, owner);
   const structuralConditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, owner, branch => !appliesStructuralDirectives(branch), (branch, condition) => mapStructuralBranch(branch, condition, owner));
   const functionsToProcess = new Map<string, ServerFunctionToProcess>();
-  const children = new Array<ServerCodePiece>();
-  if (node.children.length) {
+  const children = content === undefined ? new Array<ServerCodePiece>() : toContentPieces(content);
+  if (content === undefined && node.children.length) {
     const key = `${id}Children`;
     functionsToProcess.set(key, { fn: { node, context: new GeneratorContext(generatorContext, childrenNamespace), parent: childrenParent }, args: ['out', 'parentContext'] });
     children.push({ statement: `${key}.call(this, out, context);` });
@@ -74,6 +82,17 @@ export function generateServerElement(node: ElementNode, parent: ServerParent, i
     pieces: [{ statement: `_ssrStructural(out, context, ${generatorContext.declareConstant(`${id}$structural`, toObjectLiteral(members))});` }],
     functionsToProcess
   };
+}
+
+/**
+ * Writes the static content of a standard `<template>` element, the HTML the client assigns to its `innerHTML`, as it
+ * is.
+ *
+ * @param content - The HTML of the content.
+ * @returns The code of the content, nothing when it is empty.
+ */
+function toContentPieces(content: string): ServerCodePiece[] {
+  return content ? [{ html: content }] : [];
 }
 
 /**
@@ -111,6 +130,9 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
     const members = [`tagName: '${tagName}'`];
     appendList(members, 'attributes', descriptors);
     appendList(members, 'conditionalBindings', conditionalBindings);
+    if (isComponent) {
+      appendList(members, 'templates', mapContentTemplates(node, generatorContext));
+    }
     const clientComponent = isComponent ? generatorContext.getClientComponent(tagName) : undefined;
     if (!clientComponent && directives?.length) {
       appendList(members, 'directives', directives);

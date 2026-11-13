@@ -181,14 +181,14 @@ export const CORE_API: ApiPackage = {
           signature: 'Query.ref<ElementType extends Element = HTMLElement>(name: string, options?: QueryOptions): AccessorDecorator<CustomElement, QuerySignal<ElementType | null>>'
         },
         {
-          name: 'Query.ref.required',
+          name: 'Query.refRequired',
           group: 'variants',
-          signature: 'Query.ref.required<ElementType extends Element = HTMLElement>(name: string, options?: QueryOptions): AccessorDecorator<CustomElement, QuerySignal<ElementType>>'
+          signature: 'Query.refRequired<ElementType extends Element = HTMLElement>(name: string, options?: QueryOptions): AccessorDecorator<CustomElement, QuerySignal<ElementType>>'
         },
         {
-          name: 'Query.ref.all',
+          name: 'Query.refAll',
           group: 'variants',
-          signature: 'Query.ref.all<ElementType extends Element = HTMLElement>(name: string): AccessorDecorator<CustomElement, QuerySignal<ElementType[]>>'
+          signature: 'Query.refAll<ElementType extends Element = HTMLElement>(name: string): AccessorDecorator<CustomElement, QuerySignal<ElementType[]>>'
         },
         {
           name: 'Query.content',
@@ -196,14 +196,24 @@ export const CORE_API: ApiPackage = {
           signature: 'Query.content<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QueryContentOptions & QueryOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType> | null>>'
         },
         {
-          name: 'Query.content.required',
+          name: 'Query.contentRequired',
           group: 'variants',
-          signature: 'Query.content.required<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QueryContentOptions & QueryOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType>>>'
+          signature: 'Query.contentRequired<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QueryContentOptions & QueryOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType>>>'
         },
         {
-          name: 'Query.content.all',
+          name: 'Query.contentAll',
           group: 'variants',
-          signature: 'Query.content.all<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QueryContentOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType>[]>>'
+          signature: 'Query.contentAll<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string>(target: Target, options?: QueryContentOptions): AccessorDecorator<CustomElement, QuerySignal<QueryElement<Target, ElementType>[]>>'
+        },
+        {
+          name: 'Query.contentTemplate',
+          group: 'variants',
+          signature: 'Query.contentTemplate<Params extends unknown[] = []>(name: string): AccessorDecorator<CustomElement, QuerySignal<TemplateRef<Params> | null>>'
+        },
+        {
+          name: 'Query.contentTemplateRequired',
+          group: 'variants',
+          signature: 'Query.contentTemplateRequired<Params extends unknown[] = []>(name: string): AccessorDecorator<CustomElement, QuerySignal<TemplateRef<Params>>>'
         },
         {
           name: 'target',
@@ -631,6 +641,12 @@ export const CORE_API: ApiPackage = {
         }
       ],
       guides: ['components/dynamic-creation']
+    },
+    {
+      name: 'TemplateRef',
+      kind: 'type',
+      signature: 'type TemplateRef<Params extends unknown[] = []> = {\n  readonly __template: (...params: Params) => void;\n};',
+      guides: ['templates/reusable-templates']
     },
     {
       name: 'getTransferState',

@@ -1,4 +1,4 @@
-import { _COMPONENT, _PARENT, type _Context } from '@xaendar/core';
+import { _COMPONENT, _PARENT, type _BoundTemplate, type _Context } from '@xaendar/core';
 import type { ServerOutput } from '../../types/server-output.type';
 import type { ServerTemplate } from '../../types/server-template.type';
 
@@ -20,5 +20,22 @@ export function _ssrRenderTemplate(out: ServerOutput, context: _Context, templat
     owner = owner[_PARENT]!;
   }
 
-  template.call(context[_COMPONENT], out, owner, args);
+  template.call(owner[_COMPONENT], out, owner, args);
+}
+
+/**
+ * Writes an instance of the template an expression gives (`@render rowTemplate()(item)`), a template read as a value
+ * (see `_templateRef` of core), declared by the template of this component or of another one: its content is called
+ * with the component declaring it as `this` and the scope declaring it, whose variables it reads, and the values of the
+ * arguments. Nothing is written for `null` and `undefined`, as the client renders nothing.
+ *
+ * @param out - The output.
+ * @param bound - The template and the scope declaring it, `null` or `undefined` for none.
+ * @param args - The values of the arguments, in the order of the parameters.
+ */
+export function _ssrRenderTemplateRef(out: ServerOutput, bound: _BoundTemplate<ServerTemplate> | null | undefined, args: readonly unknown[]): void {
+  if (bound) {
+    const { template, context } = bound;
+    template.call(context[_COMPONENT], out, context, args);
+  }
 }

@@ -318,7 +318,6 @@ describe('Generator', () => {
     });
 
     it.each([
-      ['a name that is not a template', '<input #field />@render field()', '[Generator] "field" is not a template visible here'],
       ['a template of another namespace', '<template note() /><svg>@render note()</svg>', '[Generator] Template "note" is declared among HTML elements, and its content cannot be rendered among SVG elements'],
       ['a template declared twice in a scope', '<template row() /><template row() />', '[Generator] Identifier "row" is already declared in this scope.']
     ])('throws for the render of %s', async (_description, template, message) => {

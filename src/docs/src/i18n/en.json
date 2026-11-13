@@ -290,17 +290,17 @@
         "lead": "A content query finds elements among the content passed to the component by its parent, instead of its own template. It is how a component works with children it does not render: a tab group with its panels, a list with its items, a form with its fields. Like view queries, the result is a signal that follows the changes of the content.",
         "queryingTheProjectedContent": {
           "title": "Querying the content",
-          "p1": "<code>@Query.content</code> and <code>@Query.content.all</code> take the same targets as view queries, a CSS selector, the class of a component or the class of a custom directive, and look into the content passed to the component, its light DOM, as <code>contentChild</code> and <code>contentChildren</code> of Angular: an element counts whether a slot of the component renders it or not.",
+          "p1": "<code>@Query.content</code> and <code>@Query.contentAll</code> take the same targets as view queries, a CSS selector, the class of a component or the class of a custom directive, and look into the content passed to the component, its light DOM, as <code>contentChild</code> and <code>contentChildren</code> of Angular: an element counts whether a slot of the component renders it or not.",
           "example1": "A tab group built from its panels",
           "p2": "The group renders one tab for each panel it finds, with the label the panel received from the parent, and tells each panel whether it is active through a signal of the panel: the query is typed by the class, so the group can reach the public members of the instances. Add a panel: the parent renders it inside the group, the query finds it, and a new tab appears.",
-          "p3": "<code>@Query.content.required</code> drops <code>null</code> from the type, and reading it throws when no element of the content matches. The content arrives after <code>afterRender</code> (see the edge cases below), so there it still throws: read it in event handlers, and keep <code>@Query.content</code> to follow the content as it arrives."
+          "p3": "<code>@Query.contentRequired</code> drops <code>null</code> from the type, and reading it throws when no element of the content matches. The content arrives after <code>afterRender</code> (see the edge cases below), so there it still throws: read it in event handlers, and keep <code>@Query.content</code> to follow the content as it arrives."
         },
         "whichSlotsWhichElements": {
           "title": "Which elements",
-          "p1": "As in Angular, <code>@Query.content</code> looks into the children of the component and their descendants, while <code>@Query.content.all</code> looks only into the children: <code>descendants</code> changes it, <code>descendants: false</code> for the first, <code>descendants: true</code> for the second. Slots do not matter: the <code>slot</code> attribute is an attribute like any other, which a selector can match.",
+          "p1": "As in Angular, <code>@Query.content</code> looks into the children of the component and their descendants, while <code>@Query.contentAll</code> looks only into the children: <code>descendants</code> changes it, <code>descendants: false</code> for the first, <code>descendants: true</code> for the second. Slots do not matter: the <code>slot</code> attribute is an attribute like any other, which a selector can match.",
           "example1": "Four queries on the same content",
           "li1": "the results follow the order of the document: <em>aside</em> comes first in the inspector, but B comes after A, as in the parent;",
-          "li2": "C is inside a <code>div</code>: <code>@Query.content</code> and <code>descendants: true</code> find it, <code>@Query.content.all</code> alone does not;",
+          "li2": "C is inside a <code>div</code>: <code>@Query.content</code> and <code>descendants: true</code> find it, <code>@Query.contentAll</code> alone does not;",
           "li3": "D has a <code>slot</code> attribute that no slot of the inspector matches: it is not rendered, yet it is content all the same, and the queries find it; <code>[slot=\"aside\"]</code> finds only B;",
           "li4": "E is the fallback of a slot: it belongs to the inspector, and no content query finds it."
         },
@@ -325,7 +325,7 @@
           "th2": "Description",
           "td1": "The first element of the content matching <code>target</code>, among the children and their descendants, or <code>null</code>.",
           "td2": "All the children matching <code>target</code>.",
-          "td3": "Includes the descendants of the children, or excludes them: by default <code>true</code> for <code>@Query.content</code> and <code>@Query.content.required</code>, <code>false</code> for <code>@Query.content.all</code>.",
+          "td3": "Includes the descendants of the children, or excludes them: by default <code>true</code> for <code>@Query.content</code> and <code>@Query.contentRequired</code>, <code>false</code> for <code>@Query.contentAll</code>.",
           "td5": "Like <code>@Query.content</code>, without <code>null</code>: reading it throws when no element matches."
         }
       },
@@ -743,7 +743,7 @@
         },
         "refsAndDirectives": {
           "title": "Element refs and directives",
-          "p1": "<code>@Query.ref('name')</code> holds the element an <a href=\"#/en/templates/element-refs\">element ref</a> of the template names, <code>#name</code>, and <code>@Query.ref.all</code> the elements of every row of the <code>@for</code> declaring it. Unlike a selector, a ref doesn't depend on the tag or the classes of the element. <code>@Query.ref.required</code> throws when no element is named by the ref.",
+          "p1": "<code>@Query.ref('name')</code> holds the element an <a href=\"#/en/templates/element-refs\">element ref</a> of the template names, <code>#name</code>, and <code>@Query.refAll</code> the elements of every row of the <code>@for</code> declaring it. Unlike a selector, a ref doesn't depend on the tag or the classes of the element. <code>@Query.refRequired</code> throws when no element is named by the ref.",
           "p2": "The class of a <a href=\"#/en/directives/custom\">custom directive</a> finds the directive, not the element: the query holds the instances applied to the elements of the template, with <code>@@selector</code> or as host directives of a component, typed by the class.",
           "example1": "A ref for the field, one for every row, and the directives applied to the rows",
           "p3": "<em>Add</em> reads the field through its ref. <em>Mark every row</em> calls a method of each directive found by <code>@Query.all(MarkDirective)</code>, and the count follows the signals of the directives.",
@@ -2579,7 +2579,7 @@
           "example1": "A field focused, cleared and read through its ref",
           "p1": "The buttons come before the field and still use it: a handler runs once the template is rendered, when every element of its scope exists. <code>field.focus()</code> calls a method of the element, <code>clear(field)</code> passes the element to a method of the component, <code>search(field.value)</code> one of its properties.",
           "p2": "Reading a property through a ref is not reactive: <code>{ field.value }</code> shows the value the field had when the text was rendered. Follow the changes with an event, as the field does with <code>(input)</code>, and keep them in a signal.",
-          "p3": "The class reaches an element ref too, without a selector: <code>@Query.ref('field')</code> holds the element named <code>#field</code>, and <code>@Query.ref.all</code> the ones of every row of an <code>@for</code>. See <a href=\"#/en/components/queries\">View queries</a>."
+          "p3": "The class reaches an element ref too, without a selector: <code>@Query.ref('field')</code> holds the element named <code>#field</code>, and <code>@Query.refAll</code> the ones of every row of an <code>@for</code>. See <a href=\"#/en/components/queries\">View queries</a>."
         },
         "types": {
           "title": "The type of a ref",
@@ -2896,6 +2896,20 @@
           "example1": "A tree rendered by a recursive template",
           "p3": "The compiler reports the templates declared or rendered where they cannot be:"
         },
+        "passing": {
+          "title": "Passing a template to a component",
+          "p1": "A template is also a value: another component can render it, with the arguments of its parameters, while its content keeps reading the place it is declared in, the members and the signals of its component included. It is passed in two ways: as the value of an input, writing its name in an expression, <code>emptyTemplate=\"{nothing}\"</code>, or as content, declaring it among the children of the element of the component, <code>&lt;user-list&gt;&lt;template row(user: User)&gt;…&lt;/template&gt;&lt;/user-list&gt;</code>. It is the pattern of <code>ng-template</code> and <code>ngTemplateOutlet</code> in Angular.",
+          "p2": "The component receiving it holds a <code>TemplateRef</code>, typed with the parameters of the template as a labeled tuple: <code>@Query.contentTemplate('row')</code> reads the one passed as content under its name (<code>@Query.contentTemplateRequired</code> when there must be one), an input the one passed as its value.",
+          "p3": "Its template renders it with <code>@render</code>, which calls an expression instead of a name: <code>@render row()(user)</code> reads the query, <code>row()</code>, then passes the arguments, <code>(user)</code>. A <code>@let</code> can name it first: <code>@let template = row();</code> then <code>@render template(user)</code>. TypeScript checks the arguments against the parameters, and a template taking other parameters is rejected by the input or by the <code>@render</code>.",
+          "example1": "A list rendering its options with a template passed as content, and an empty list with one passed as an input",
+          "p4": "The instance belongs to the component rendering it: it is destroyed with it, while its bindings read the component declaring the template and are updated when what they read changes, as the marker does. When the expression gives <code>null</code> or <code>undefined</code> nothing is rendered, and when it gives another template the instance is replaced. On the server the template is rendered where the component receiving it renders it, and the browser adopts it."
+        },
+        "standard": {
+          "title": "Standard <template> elements",
+          "p1": "A <code>&lt;template&gt;</code> that declares no name with its parameters is the <code>&lt;template&gt;</code> element of HTML: it is in the DOM, with its attributes, which may be bound to expressions, and its element ref, while its content is static HTML, in its <code>content</code>, which the browser never renders. Code outside of the templates clones it with the API of the DOM, as a library expecting a <code>&lt;template&gt;</code> does.",
+          "p2": "Since the content is cloned, nothing in it can react: an interpolation, a binding, an event, an element ref, a directive, a block or the declaration of a template there are compile errors. The server writes the element with its content as it is, and the browser adopts it.",
+          "example1": "A <template> element cloned by the code of the component"
+        },
         "edgeCases": {
           "title": "Edge cases",
           "callout1": {
@@ -2911,8 +2925,12 @@
             "body": "There are no rest parameters or destructuring, and an argument cannot be spread. A parameter after an optional one, or after one with a default value, must be so too."
           },
           "callout4": {
-            "heading": "Where a template is rendered",
-            "body": "A template is rendered by the template declaring it, in its scope: it cannot be passed to another component, nor read by the class."
+            "heading": "A template rendered by another component",
+            "body": "A template passed to a component is rendered where that component renders it, inside its shadow root, while its content reads the component declaring it: its styles are the ones of the shadow root rendering it. A template cannot be passed as content to an element a structural directive is applied to, nor to an interactive component a static one renders, which hydrates by itself in the browser."
+          },
+          "callout5": {
+            "heading": "A template of another namespace",
+            "body": "The namespace of a template rendered by name is checked by the compiler; one rendered through an expression is not: a template declared among HTML elements renders HTML elements wherever it is rendered."
           }
         },
         "summary": {
@@ -2922,7 +2940,11 @@
           "td1": "Declares a template with typed parameters, visible in the whole of its scope.",
           "td2": "Renders an instance of the template where it is written, checking the arguments against the parameters.",
           "td3": "Reads a parameter in the content: a value, updated when its argument changes.",
-          "td4": "An optional parameter, and parameters with a default value, typed as declared or by the value: a <code>@render</code> may leave out their arguments."
+          "td4": "An optional parameter, and parameters with a default value, typed as declared or by the value: a <code>@render</code> may leave out their arguments.",
+          "td5": "Passes a template to a component, as the value of an input or as content.",
+          "td6": "The template a component receives as content, a <code>TemplateRef</code> typed with its parameters.",
+          "td7": "Renders the template an expression gives, the value of an input or of a query: nothing for <code>null</code> or <code>undefined</code>.",
+          "td8": "A standard <code>&lt;template&gt;</code> element, whose static content the code clones."
         }
       },
       "textInterpolation": {
@@ -3928,9 +3950,9 @@
       "cause": "Parentheses after the name of an element ref.",
       "fix": "Write #name alone."
     },
-    "[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item)": {
-      "cause": "A @render without the name of the template, without parentheses, or with a space or a dot between the name and the parentheses.",
-      "fix": "Write @render name(arguments), with () when the template has no parameters."
+    "[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item), or an expression whose value is a template, e.g. @render row()(item)": {
+      "cause": "A @render without what it calls, without the parentheses of the arguments, or with a space between what it calls and the parentheses.",
+      "fix": "Write @render name(arguments), with () when the template has no parameters, or @render expression()(arguments) for a template given by an expression."
     },
     "[Lexer] @let declares a name and its value, ending with a semicolon, e.g. @let address = user().address;": {
       "cause": "A @let without its name or its =, or whose block closes before its ;. The same message is reported as [Parser] when the template ends before the ;, or the value is missing.",
@@ -3951,14 +3973,6 @@
     "[Parser] '2total' is not a valid name for a @let: it must be an identifier.": {
       "cause": "A @let named by something other than an identifier; 'root' is reserved in templates is reported for root, $event and the names starting with __ or $$.",
       "fix": "Use an identifier the generated code does not reserve."
-    },
-    "[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item)": {
-      "cause": "A <template> without name(…): a <template> is always the declaration of a template.",
-      "fix": "Name it and declare its parameters, then render it with @render."
-    },
-    "[Parser] A template lists its parameters in parentheses after its name, even when it has none: <template row()>": {
-      "cause": "A <template row> without parentheses.",
-      "fix": "Write <template row()>."
     },
     "[Parser] A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it": {
       "cause": "An attribute, an event, a conditional binding, a directive or type arguments on a <template>.",
@@ -4116,10 +4130,6 @@
       "cause": "Two element refs or templates with the same name in the same scope, or one named like a variable of the enclosing @for.",
       "fix": "Rename one of them: a nested scope (a block, the row of a @for) can reuse the name."
     },
-    "[TypeChecker] \"row\" is not a template visible here: declare it with <template row(…)> in this scope or in an enclosing one": {
-      "cause": "A @render of a name that is not a template declared in its scope or in an enclosing one: a member, an import, an element ref, or a template declared in another branch or row. The build reports it as [Generator] too.",
-      "fix": "Declare the template where the @render can see it, or pass the data as arguments to a template declared further out."
-    },
     "[TypeChecker] Template \"row\" is declared among HTML elements, and its content cannot be rendered among SVG elements: declare it in the namespace it is rendered in": {
       "cause": "A @render inside an <svg> (or a <math>) of a template declared among HTML elements, or the other way round: the content is created in the namespace of the declaration. The build reports it as [Generator] too.",
       "fix": "Declare the template in the namespace of its @render."
@@ -4165,7 +4175,7 @@
       "fix": "Read it from afterRender on, in event handlers or in a computed signal read from them. If the element is not always there, use @Query."
     },
     "Error: No element matches the required content query '[header]' of <x-card>": {
-      "cause": "A @Query.content.required was read while no element of the content matched it: before the parent passed its content, afterRender included, or while the element was not passed.",
+      "cause": "A @Query.contentRequired was read while no element of the content matched it: before the parent passed its content, afterRender included, or while the element was not passed.",
       "fix": "Read it in event handlers. If the content is optional, or to follow it as it arrives, use @Query.content."
     },
     "Error: The required input \"name\" of ProfileComponent is not bound by a group without condition of createComponent": {
@@ -4239,6 +4249,34 @@
     "✖  src/entry-server does not export render(url): export the function rendering a page on the server.": {
       "cause": "xd prerender with an entry of the server that does not export render: the export removed or renamed.",
       "fix": "Export from the entry the function render(url), which returns the HTML of the page of a URL."
+    },
+    "[Parser] The content of a <template> is static HTML, which the code using the template clones: it cannot interpolate values, render blocks or declare templates. Declare a template with <template name(…)> and render it with @render to bind values": {
+      "cause": "An interpolation, a block or the declaration of a template in the content of a standard <template> element, one declaring no name with its parameters: its content is cloned by code, and nothing in it could react.",
+      "fix": "Declare a template with a name and its parameters, <template row(item: Item)>, and render it with @render, or keep the content static."
+    },
+    "[Parser] <b> is in the content of a <template>, static HTML which the code using the template clones: it takes only static attributes": {
+      "cause": "An element in the content of a standard <template> element binds an attribute to an expression, toggles a class, listens to an event, declares an element ref or applies a directive.",
+      "fix": "Write only static attributes in the content, or declare a template with a name and its parameters and render it with @render."
+    },
+    "[Parser] A <template> cannot declare a shadow root with \"shadowrootmode\": the server writes the shadow root of each component": {
+      "cause": "A standard <template> element with shadowrootmode, shadowrootclonable, shadowrootdelegatesfocus or shadowrootserializable: only the parser of the browser reads them, and the shadow root of a component is written by the server.",
+      "fix": "Remove the attribute: a component has its own shadow root, written by the server when it renders it."
+    },
+    "[Generator] <my-list> cannot receive the template \"row\" as content: a structural directive is applied to it, whose content is a scope of its own. Apply the directive to an element wrapping it": {
+      "cause": "A template declared among the children of a component a structural directive is applied to: its content is a scope created with the element, after the component receives its templates.",
+      "fix": "Apply the structural directive to an element wrapping the component, or pass the template as the value of an input."
+    },
+    "No template named 'row' is passed as content to <my-list>, as its required content template query needs": {
+      "cause": "A @Query.contentTemplateRequired read while no <template row(…)> is declared among the children of the element of the component.",
+      "fix": "Declare the template among the children of the element, or use @Query.contentTemplate, which holds null without one."
+    },
+    "<my-card> is an interactive component a static one renders, which hydrates by itself in the browser: it cannot receive templates as content": {
+      "cause": "A static component passes a template as content to an interactive component: in the browser the interactive one hydrates by itself, from data-xd-inputs, and the template of the static one is not there.",
+      "fix": "Declare the template in the interactive component, or make the component passing it interactive."
+    },
+    "Argument of type 'string' is not assignable to parameter of type '__Template<unknown[]>'.": {
+      "cause": "A @render calling a name that is not a template declared in its scope or in an enclosing one, nor holds one: a member, an import or an element ref, which is then rendered as the template it should hold.",
+      "fix": "Declare the template where the @render can see it, or call an expression whose value is a TemplateRef, e.g. @render row()(item) for a query or an input."
     }
   }
 }

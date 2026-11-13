@@ -100,7 +100,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Lexer',
-    message: '[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item)',
+    message: '[Lexer] @render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item), or an expression whose value is a template, e.g. @render row()(item)',
     page: 'templates/reusable-templates'
   },
   {
@@ -190,16 +190,6 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
-    message: '[Parser] A <template> declares a template: name it and list its parameters, e.g. <template row(item: Item)>, then render it with @render row(item)',
-    page: 'templates/reusable-templates'
-  },
-  {
-    phase: 'Parser',
-    message: '[Parser] A template lists its parameters in parentheses after its name, even when it has none: <template row()>',
-    page: 'templates/reusable-templates'
-  },
-  {
-    phase: 'Parser',
     message: '[Parser] A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it',
     page: 'templates/reusable-templates'
   },
@@ -226,6 +216,41 @@ export const ERRORS: readonly ErrorEntry[] = [
   {
     phase: 'Parser',
     message: "[Parser] '2row' cannot name a template: it must be an identifier",
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] The content of a <template> is static HTML, which the code using the template clones: it cannot interpolate values, render blocks or declare templates. Declare a template with <template name(…)> and render it with @render to bind values',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] <b> is in the content of a <template>, static HTML which the code using the template clones: it takes only static attributes',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] A <template> cannot declare a shadow root with "shadowrootmode": the server writes the shadow root of each component',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Generator',
+    message: '[Generator] <my-list> cannot receive the template "row" as content: a structural directive is applied to it, whose content is a scope of its own. Apply the directive to an element wrapping it',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Runtime',
+    message: 'No template named \'row\' is passed as content to <my-list>, as its required content template query needs',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Runtime',
+    message: '<my-card> is an interactive component a static one renders, which hydrates by itself in the browser: it cannot receive templates as content',
+    page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'TypeChecker',
+    message: 'Argument of type \'string\' is not assignable to parameter of type \'__Template<unknown[]>\'.',
     page: 'templates/reusable-templates'
   },
   {
@@ -587,11 +612,6 @@ export const ERRORS: readonly ErrorEntry[] = [
     phase: 'TypeChecker',
     message: "Cannot redeclare block-scoped variable 'field'.",
     page: 'templates/element-refs'
-  },
-  {
-    phase: 'TypeChecker',
-    message: '[TypeChecker] "row" is not a template visible here: declare it with <template row(…)> in this scope or in an enclosing one',
-    page: 'templates/reusable-templates'
   },
   {
     phase: 'TypeChecker',

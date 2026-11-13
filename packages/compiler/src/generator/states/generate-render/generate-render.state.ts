@@ -1,6 +1,6 @@
 import type { RenderNode } from '../../../parser/types/nodes/render-node.type';
 import { appendContainer } from '../../utils/block-position/block-position.utils';
-import { assertRenderTarget } from '../../../utils/render-target/render-target.utils';
+import { getRenderedTemplate } from '../../../utils/render-target/render-target.utils';
 import { GeneratorContext } from '../../context/context';
 import type { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getBlockIdentifier, joinVariables, resolveExpression } from '../../utils/generator/generator.utils';
@@ -22,6 +22,10 @@ import { declareExpression } from '../../utils/module-code/module-code.utils';
  *
  * function div0__render1$args(context) { return [_read(context, 0, 6), _read(context, 0, 7)]; }
  *
+ * A `@render` calling an expression (`@render rowTemplate()(item)`, or the name of a variable or of a member holding a
+ * template) names a function of the module computing the template instead (`ref: div0__render1$ref`), a template read
+ * as a value (see `_templateRef`), computed again like the arguments: the runtime replaces the instance when it changes.
+ *
  * @param node - The `RenderNode` to process.
  * @param parentNode - Variable name of the parent DOM node.
  * @param index - The index of the node among its siblings, which names its constant.
@@ -30,13 +34,10 @@ import { declareExpression } from '../../utils/module-code/module-code.utils';
  * @param separated - Whether the server separates the instance from the text preceding it with `<!---->`, which the
  *   hydration passes over.
  * @returns The generated code.
- * @throws If the name doesn't refer to a template visible in the scope, or the template creates its content in another
- *   namespace.
+ * @throws If the template the name refers to creates its content in another namespace.
  */
 export async function generateRender(node: RenderNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null, separated: boolean): Promise<GeneratorTransitionFunctionReturnType> {
-  const { callee, calleeSpan } = node;
-  assertRenderTarget(callee, calleeSpan, generatorContext.getTemplateNamespace(callee), generatorContext.namespace);
-
+  const template = getRenderedTemplate(node, name => generatorContext.getTemplateNamespace(name), generatorContext.namespace);
   const renderKey = getBlockIdentifier('render', parentNode, index);
   const args = new Array<string>();
   let variables: readonly number[] | undefined;
@@ -46,10 +47,17 @@ export async function generateRender(node: RenderNode, parentNode: string, index
     variables = joinVariables(variables, argument.variables);
   }
 
-  const members = [`template: ${generatorContext.readIdentifier(callee)}`];
-  const depth = generatorContext.depthOf(callee)!;
-  if (depth) {
-    members.push(`depth: ${depth}`);
+  const members = new Array<string>();
+  if (template) {
+    members.push(`template: ${generatorContext.readIdentifier(template)}`);
+    const depth = generatorContext.depthOf(template)!;
+    if (depth) {
+      members.push(`depth: ${depth}`);
+    }
+  } else {
+    const ref = resolveExpression(node.calleeExpression, generatorContext);
+    variables = joinVariables(variables, ref.variables);
+    members.push(`ref: ${declareExpression(generatorContext, `${renderKey}$ref`, ref.expression)}`);
   }
 
   if (args.length) {

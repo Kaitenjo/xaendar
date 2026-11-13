@@ -11,7 +11,7 @@ await vi.hoisted(async () => {
   loadServerDom();
 });
 
-const { _scope, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty, CustomElement, HostProperty, Property } = await import('@xaendar/core');
+const { _scope, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty, CustomElement, HostProperty, Property, Query } = await import('@xaendar/core');
 
 /**
  * The layout of a scope holding its header alone, whose 5 slots the runtime reserves.
@@ -19,7 +19,8 @@ const { _scope, _setExpressionClass, _setExpressionInput, _setExpressionProperty
 const EMPTY_LAYOUT: _ScopeLayout = { size: 5, nodes: 5 };
 type RenderConditionalBinding = import('@xaendar/core').RenderConditionalBinding<ServerBindings>;
 const { _defineServerRender } = await import('../server-render-registry/server-render-registry.util');
-const { _ssrClientComponent, _ssrComponent, _ssrStartTag } = await import('./ssr-element.util');
+const { _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrStartTag } = await import('./ssr-element.util');
+const { _ssrRenderTemplateRef } = await import('../ssr-template/ssr-template.util');
 
 const context = _scope(null, EMPTY_LAYOUT);
 
@@ -129,6 +130,25 @@ describe('_ssrClientComponent', () => {
 });
 
 describe('_ssrComponent', () => {
+  it('passes the templates written among the children of a component before it renders, which an island cannot receive', () => {
+    const template = vi.fn((out: ServerOutput, _context: unknown) => out.push('<b>row</b>'));
+    class TemplatedElement extends CustomElement {
+      public row = (Query.contentTemplate('row') as unknown as () => { init(this: object): () => unknown })().init.call(this);
+    }
+    customElements.define('x-templated', TemplatedElement);
+    _defineServerRender(TemplatedElement, function (this: InstanceType<typeof CustomElement>, out: ServerOutput) {
+      _ssrRenderTemplateRef(out, (this as TemplatedElement).row() as never, []);
+    });
+    const templates = [{ name: 'row', template }];
+    const out: ServerOutput = [];
+
+    _ssrComponent(out, context, { tagName: 'x-templated', templates });
+
+    expect(out.join('')).toBe('<x-templated><template shadowrootmode="open"><b>row</b></template>');
+    expect(template.mock.calls[0][1]).toBe(context);
+    expect(() => _ssrIsland([], context, { tagName: 'x-templated', templates })).toThrow('<x-templated> is an interactive component a static one renders, which hydrates by itself in the browser: it cannot receive templates as content');
+  });
+
   it('renders outside of a page, where no event contract collects the events', () => {
     class Outside extends CustomElement { }
     customElements.define('x-outside', Outside);

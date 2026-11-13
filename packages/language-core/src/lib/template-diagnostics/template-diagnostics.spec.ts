@@ -243,7 +243,7 @@ describe('getTemplateDiagnostics', () => {
 
   it('reports the render of a name that is not a template, and the reads of a template before the elements they need', async () => {
     expect(await diagnose('<input #field />\n@render field()')).toEqual([
-      ['field', '"field" is not a template visible here: declare it with <template field(…)> in this scope or in an enclosing one', DiagnosticCategory.Error]
+      ['field', 'Argument of type \'HTMLInputElement\' is not assignable to parameter of type \'__Template<unknown[]>\'.\n  Property \'__template\' is missing in type \'HTMLInputElement\' but required in type \'__Template<unknown[]>\'.', DiagnosticCategory.Error]
     ]);
     expect(await diagnose('@render row()\n<input #field />\n<template row()>{ field.value }</template>')).toEqual([
       ['row', '"field" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the ref from an event handler', DiagnosticCategory.Error]

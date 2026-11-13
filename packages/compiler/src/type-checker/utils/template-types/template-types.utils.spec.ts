@@ -4,9 +4,9 @@ import { getContentFunction, getLetValue, getParametersType, getTemplateHelpers,
 describe('getTemplateHelpers', () => {
   it('declares the type of a template and the function checking a @render, taking the values of the parameters as declared', () => {
     expect(getTemplateHelpers().map(({ text }) => text)).toEqual([
-      `type ${TEMPLATE}<Params extends unknown[]> = { readonly __params: Params };`,
+      `type ${TEMPLATE}<Params extends unknown[]> = { readonly __template: (...params: Params) => void };`,
       'type __Arguments<Params extends unknown[], Count extends number> = Params[\'length\'] extends Count ? Params : Params extends [...infer Head, unknown] ? __Arguments<Head, Count> : Params;',
-      `declare function ${RENDER}<Params extends unknown[], Count extends number>(template: ${TEMPLATE}<Params>, count: Count): (...args: Count extends Params['length'] ? __Arguments<Required<Params>, Count> : Params) => void;`
+      `declare function ${RENDER}<Params extends unknown[], Count extends number>(template: ${TEMPLATE}<Params> | null | undefined, count: Count): (...args: Count extends Params['length'] ? __Arguments<Required<Params>, Count> : Params) => void;`
     ]);
   });
 });

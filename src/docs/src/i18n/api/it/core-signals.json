@@ -226,9 +226,9 @@
   },
   "QueryContentOptions": {
     "summary": "Le opzioni delle query sul contenuto: se cercano anche tra i discendenti dei figli del componente, o solo tra i suoi figli.",
-    "description": "<p>Il secondo argomento di <code>@Query.content</code>, <code>@Query.content.required</code> e <code>@Query.content.all</code> (vedi <a href=\"#/it/reference/api/core/Query\"><code>@Query</code></a>). Una query sul contenuto cerca nel contenuto passato al componente, il suo light DOM, in ordine di documento, come <code>contentChild</code> e <code>contentChildren</code> di Angular: un elemento conta sia che uno slot del componente lo renderizzi sia che no, e l’attributo <code>slot</code> è un attributo come gli altri, che un selettore può cercare. Il contenuto di fallback degli slot e il contenuto inoltrato tramite uno <code>&lt;slot&gt;</code> non vengono mai trovati.</p>",
+    "description": "<p>Il secondo argomento di <code>@Query.content</code>, <code>@Query.contentRequired</code> e <code>@Query.contentAll</code> (vedi <a href=\"#/it/reference/api/core/Query\"><code>@Query</code></a>). Una query sul contenuto cerca nel contenuto passato al componente, il suo light DOM, in ordine di documento, come <code>contentChild</code> e <code>contentChildren</code> di Angular: un elemento conta sia che uno slot del componente lo renderizzi sia che no, e l’attributo <code>slot</code> è un attributo come gli altri, che un selettore può cercare. Il contenuto di fallback degli slot e il contenuto inoltrato tramite uno <code>&lt;slot&gt;</code> non vengono mai trovati.</p>",
     "members": {
-      "descendants": "<p>Con <code>true</code> la query cerca tra i figli del componente e i loro discendenti, e viene eseguita di nuovo quando vengono aggiunti o rimossi elementi a qualsiasi profondità; con <code>false</code> solo tra i figli, e viene eseguita di nuovo solo quando cambiano loro. Il default è <code>true</code> per <code>@Query.content</code> e <code>@Query.content.required</code>, <code>false</code> per <code>@Query.content.all</code>.</p>"
+      "descendants": "<p>Con <code>true</code> la query cerca tra i figli del componente e i loro discendenti, e viene eseguita di nuovo quando vengono aggiunti o rimossi elementi a qualsiasi profondità; con <code>false</code> solo tra i figli, e viene eseguita di nuovo solo quando cambiano loro. Il default è <code>true</code> per <code>@Query.content</code> e <code>@Query.contentRequired</code>, <code>false</code> per <code>@Query.contentAll</code>.</p>"
     },
     "usage": {
       "choosing": {
@@ -239,7 +239,7 @@
   },
   "QueryOptions": {
     "summary": "Le opzioni delle query che contengono un solo elemento: cosa leggono dall’elemento che trovano.",
-    "description": "<p>Il secondo argomento di <code>@Query</code>, <code>@Query.required</code>, <code>@Query.ref</code> e <code>@Query.ref.required</code>, e, insieme a <a href=\"#/it/reference/api/core/signals/QueryContentOptions\"><code>QueryContentOptions</code></a>, di <code>@Query.content</code> e <code>@Query.content.required</code> (vedi <a href=\"#/it/reference/api/core/Query\"><code>@Query</code></a>). Le varianti <code>.all</code> non accettano <code>read</code>.</p>",
+    "description": "<p>Il secondo argomento di <code>@Query</code>, <code>@Query.required</code>, <code>@Query.ref</code> e <code>@Query.refRequired</code>, e, insieme a <a href=\"#/it/reference/api/core/signals/QueryContentOptions\"><code>QueryContentOptions</code></a>, di <code>@Query.content</code> e <code>@Query.contentRequired</code> (vedi <a href=\"#/it/reference/api/core/Query\"><code>@Query</code></a>). Le varianti <code>.all</code> non accettano <code>read</code>.</p>",
     "members": {
       "read": "<p>Cosa contiene la query per l’elemento che trova, vedi <a href=\"#/it/reference/api/core/signals/QueryRead\"><code>QueryRead</code></a>. Di default l’elemento, oppure l’istanza della direttiva quando il target è la classe di una direttiva.</p>"
     },

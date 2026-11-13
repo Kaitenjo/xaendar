@@ -490,6 +490,29 @@ describe('_renderElement', () => {
     expect(element.parentNode).toBe(parent);
   });
 
+  it('creates a standard <template> holding its static content, which the code using it clones', () => {
+    const parent = document.createElement('div');
+    _renderElement(parent, createRoot(), null, { tagName: 'template', content: '<li class="a">x</li>' });
+
+    const template = parent.firstChild as HTMLTemplateElement;
+    expect(template.childNodes).toHaveLength(0);
+    expect(template.innerHTML).toBe('<li class="a">x</li>');
+    expect(parent.appendChild(template.content.cloneNode(true)) && parent.lastChild).toMatchObject({ tagName: 'LI', textContent: 'x' });
+  });
+
+  it('adopts a standard <template> the server wrote without writing its content again', () => {
+    const parent = document.createElement('section');
+    parent.innerHTML = '<template><li>server</li></template>';
+    const template = parent.firstChild as HTMLTemplateElement;
+    const item = template.content.firstChild;
+    const context = _scope(null, EMPTY_LAYOUT, new ClaimNodes('x-host'));
+
+    _renderElement(parent, context, null, { tagName: 'template', content: '<li>client</li>' });
+
+    expect(parent.firstChild).toBe(template);
+    expect(template.content.firstChild).toBe(item);
+  });
+
   it('inserts the element before the anchor', () => {
     const parent = document.createElement('div');
     const anchor = document.createComment('anchor');

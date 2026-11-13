@@ -113,6 +113,7 @@ export type * from './types/template-visitor.type';
 export type * from './types/web-component-error.type';
 export * from './utils/catch-error-generation/catch-error-generation.utils';
 export * from './utils/component-logic/component-logic.utils';
+export * from './utils/content-templates/content-templates.utils';
 export * from './utils/element-namespace/element-namespace.utils';
 export * from './utils/expression-children/expression-children.utils';
 export * from './utils/extract-component-members/extract-component-members.utils';

@@ -66,4 +66,10 @@ export type ElementNode = ASTNodeWithSpan<{
    * Structural directive nodes deciding whether this element is rendered.
    */
   structuralDirectives: StructuralDirectiveNode[];
+  /**
+   * The HTML of the content of a standard `<template>` element, one declaring no template (`<template id="row">`):
+   * static HTML, which the client assigns to the `innerHTML` of the element and the server writes as it is. Its
+   * children stay in `children`, for the editor, but no code renders them. `undefined` for any other element.
+   */
+  content?: string;
 }>

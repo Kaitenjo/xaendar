@@ -1,0 +1,17 @@
+<!-- The template of a page, passing two templates to <user-list> -->
+<user-list users="{users()}" emptyTemplate="{nothing}">   <!-- a template as the value of an input -->
+  <template row(user: User)>                             <!-- a template as content, named row -->
+    <b>{ user.name }</b> { greeting() }                  <!-- it reads the page, where it is declared -->
+  </template>
+</user-list>
+<template nothing()>
+  <em>Nobody here</em>
+</template>
+
+<!-- The template of <user-list>: it renders them with the arguments of their parameters -->
+@for (user of users(); track user.id) {
+  <li>@render row()(user)</li>                           <!-- row() reads the query, (user) are the arguments -->
+}
+@if (!users().length) {
+  @render emptyTemplate()()                              <!-- null or undefined renders nothing -->
+}

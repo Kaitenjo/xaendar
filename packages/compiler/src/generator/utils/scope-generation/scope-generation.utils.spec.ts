@@ -42,7 +42,7 @@ describe('declareScope', () => {
     expect([...declarations!.functionsToProcess.keys()]).toEqual([key]);
     expect(toTemplateFunction).toHaveBeenCalledWith(expect.objectContaining({ type: ASTNodeType.Template }), key, 'html', context);
     expect(context.getIdentifierKind('field')).toBe('value');
-    expect(context.getIdentifierKind('row')).toBe('value');
+    expect(context.getIdentifierKind('row')).toBe('template');
     expect(context.getTemplateNamespace('row')).toBe('html');
     expect(context.getIdentifierKind('total')).toBe('variable');
   });

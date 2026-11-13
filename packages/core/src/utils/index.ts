@@ -29,5 +29,8 @@ export * from './state-serialization/state-serialization.util';
 export * from './switch/switch.util';
 export * from './template/template.util';
 export type * from '../types/template.type';
+export type * from '../types/bound-template.type';
+export { _setContentTemplates } from './content-templates/content-templates.util';
+export type * from '../types/render-element-template.type';
 export * from './track-key/track-key.util';
 export * from './transfer-state/transfer-state.util';

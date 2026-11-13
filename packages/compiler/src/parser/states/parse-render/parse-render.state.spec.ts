@@ -1,3 +1,4 @@
+import { isCallExpression, isIdentifier } from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { TokenType } from '../../../lexer/types/token-type.enum';
@@ -24,6 +25,18 @@ describe('parseRender', () => {
       { start: template.indexOf('\'b\''), end: template.indexOf('\'b\'') + 3 },
       { start: template.indexOf('1 + 2'), end: template.indexOf('1 + 2') + 5 }
     ]);
+  });
+
+  it('parses the name of the template as an identifier, and an expression calling a template as its expression, with its span', () => {
+    const [named] = parse('@render row(item)') as RenderNode[];
+    expect(isIdentifier(named.calleeExpression)).toBe(true);
+
+    const template = '@render templates.row()(item)';
+    const [node] = parse(template) as RenderNode[];
+    expect(node).toMatchObject({ callee: 'templates.row()', calleeSpan: { start: 8, end: 23 } });
+    expect(isCallExpression(node.calleeExpression)).toBe(true);
+    expect(getTemplateSpan(node.calleeExpression)).toEqual({ start: 8, end: 23 });
+    expect(node.arguments).toHaveLength(1);
   });
 
   it('parses a render without arguments', () => {

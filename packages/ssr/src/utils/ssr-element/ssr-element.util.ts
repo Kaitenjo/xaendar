@@ -1,5 +1,5 @@
 import { escapeAttribute, escapeRawText } from '@xaendar/common';
-import { _applyHostProperties, _COMPONENT, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
+import { _applyHostProperties, _COMPONENT, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setContentTemplates, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
 import type { Constructor, Dictionary, Function } from '@xaendar/types';
 import { ServerElement } from '../../dom/server-element/server-element';
 import type { ClientComponentOptions } from '../../types/client-component-options.type';
@@ -65,6 +65,11 @@ export function _ssrStartTag(out: ServerOutput, context: _Context, config: Serve
 export function _ssrComponent(out: ServerOutput, context: _Context, config: ServerElementConfig): void {
   renderOrWriteComponent(out, context, config, element => {
     applyBindings(element, context, config);
+    // Passed like the inputs, before the component renders, as the client passes them before connecting it
+    if (config.templates) {
+      _setContentTemplates(element, context, config.templates);
+    }
+
     return undefined;
   });
 }
@@ -81,6 +86,11 @@ export function _ssrComponent(out: ServerOutput, context: _Context, config: Serv
  * @throws When a value of an input cannot be written into the HTML.
  */
 export function _ssrIsland(out: ServerOutput, context: _Context, config: ServerElementConfig): void {
+  // The browser hydrates an island by itself, from its inputs: no template of the static one is there to render
+  if (config.templates) {
+    throw new Error(`<${config.tagName}> is an interactive component a static one renders, which hydrates by itself in the browser: it cannot receive templates as content`);
+  }
+
   renderOrWriteComponent(out, context, config, element => {
     const inputs: Dictionary<string, unknown> = {};
     applyBindings(element, context, config, inputs);

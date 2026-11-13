@@ -46,7 +46,7 @@ export function declareScope(nodes: readonly ASTNode[], generatorContext: Genera
     template: (template, namespace) => {
       const { name } = template.declaration;
       const key = `template_${name}_${template.span.start}`;
-      generatorContext.addIdentifier(name, 'value', server ? key : `${key}$template`);
+      generatorContext.addIdentifier(name, 'template', server ? key : `${key}$template`);
       generatorContext.addTemplate(name, namespace);
       templates.push({ template, key, namespace });
     }

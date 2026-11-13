@@ -86,7 +86,50 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 - `<template name(params)>` declares a template: only `name(…)` on the tag, parentheses also without parameters. Each parameter needs a type (imported types too) or a default value typing it: `name?: Type`, `name: Type = value`, `name = value`, only after the required ones. The default applies only to an argument left out (an explicit `undefined` stays), reads like JS (content names, earlier parameters) and is computed again when what it reads changes. No rest or destructuring.
 - `@render name(args)` renders a new instance wherever content goes. A changed argument updates only the nodes reading its parameter. No spread arguments.
 - Visible in the whole of its scope, like an element ref. The content reads the names of its declaration (closure, `@for` items included), not of the `@render`: pass them as arguments. Recursion works.
-- Content created in the namespace of the declaration: a `@render` in another namespace is an error. An element ref the content reads must come before every `@render`. Only the declaring template renders it.
+- Content created in the namespace of the declaration: a `@render` in another namespace is an error. An element ref the content reads must come before every `@render`.
+
+### Passing a template to a component
+
+```html
+<!-- the parent: a template as content, and one as the value of an input -->
+<user-list users="{users()}" emptyTemplate="{nothing}">
+  <template row(user: User)>
+    <b>{ user.name }</b> { greeting() }      <!-- reads the parent, where it is declared -->
+  </template>
+</user-list>
+<template nothing()>
+  <em>Nobody</em>
+</template>
+
+<!-- user-list: @render calls an expression giving a TemplateRef, then the arguments -->
+@for (user of users(); track user.id) {
+  <li>@render row()(user)</li>
+}
+@if (!users().length) {
+  @render emptyTemplate()()
+}
+```
+
+```ts
+@Query.contentTemplate<[user: User]>('row')               // or @Query.contentTemplateRequired
+public accessor row!: QuerySignal<TemplateRef<[user: User]> | null>;
+@Property<InputSignal<TemplateRef<[]> | null>>(null)
+public accessor emptyTemplate!: InputSignal<TemplateRef<[]> | null>;
+```
+
+- A template read in an expression (`emptyTemplate="{nothing}"`) is a `TemplateRef` (from `@xaendar/core`), typed with its parameters as a labeled tuple; one declared among the children of a component's element is passed as content, read by `@Query.contentTemplate('name')`. Its content reads the scope and the component declaring it, wherever it is rendered (as `ngTemplateOutlet`).
+- `@render expression(args)`: a name that is not a template declared in scope is read as an expression (a member, a `@let`), and any chain (`row()`, `templates.row`, `pick(kind)`) followed by the arguments works: `@render row()(item)` reads the query, then passes `item`. `null`/`undefined` renders nothing; a different template replaces the instance. The type-check checks the arguments against `TemplateRef<Params>`.
+- The instance belongs to the component rendering it (inside its shadow root, with its styles). Not allowed: content templates on an element a structural directive is applied to (wrap it), and on an interactive component a static one renders (an island).
+
+### Standard `<template>` elements
+
+```html
+<template #row id="row" title="{ title() }">   <!-- no name(…): a real HTMLTemplateElement -->
+  <li class="row">New row</li>                <!-- static content, in .content, cloned by code -->
+</template>
+```
+
+- A `<template>` without `name(…)` is the HTML element: attributes (bound too), class bindings and a ref are allowed; its content is static HTML (elements with static attributes, texts). Interpolations, events, refs, directives, blocks and `<template name()>` in the content are compile errors; `shadowrootmode` and the other `shadowroot*` attributes are rejected. Clone it with `template.content.cloneNode(true)`. The server writes it as is, the browser adopts it.
 
 ## @let
 
@@ -274,5 +317,5 @@ Forbidden    assignments, new, arrow and function expressions, this, a cast of a
 | `(keydown.enter)` | A filter in the method |
 | `@empty` | `@if` on the length around the `@for` |
 | Pipes | Methods (in text) and computed signals |
-| `ng-template` + `ngTemplateOutlet` | `<template name(…)>` + `@render name(…)`, in the same template |
+| `ng-template` + `ngTemplateOutlet` | `<template name(…)>` + `@render name(…)`; another component receives it as content (`@Query.contentTemplate`) or as an input (`TemplateRef`) and renders it with `@render row()(…)` |
 | `ng-content` | `<slot>` / `<slot name="x">` (native shadow DOM slots) |

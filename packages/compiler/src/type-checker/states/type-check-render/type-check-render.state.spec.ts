@@ -36,8 +36,18 @@ describe('typeCheckRender', () => {
     expect(typeCheckRender(parse('@render row()'), () => [], withTemplate())[0].text).toBe('__render(row, 0)();');
   });
 
-  it('throws for a name not referring to a template', () => {
-    expect(() => typeCheckRender(parse('@render row()'), () => [], new TypeCheckContext())).toThrow('"row" is not a template visible here');
+  it('checks the template an expression gives, mapping the expression onto what the @render calls', () => {
+    const template = '@render rowTemplate()(item)';
+    const context = new TypeCheckContext();
+    context.addUnresolvableIdentifier('item');
+    const [line] = typeCheckRender(parse(template), () => [], context);
+
+    expect(line.text).toBe('__render(root.rowTemplate(), 1)(item);');
+    expect(line.mappings).toEqual(expect.arrayContaining([{ columnStart: 14, columnEnd: 25, original: { start: 8, end: 19 } }]));
+  });
+
+  it('checks a name not referring to a template as the template it holds', () => {
+    expect(typeCheckRender(parse('@render row()'), () => [], new TypeCheckContext())[0].text).toBe('__render(root.row, 0)();');
   });
 
   it('throws for a template creating its content in another namespace', () => {

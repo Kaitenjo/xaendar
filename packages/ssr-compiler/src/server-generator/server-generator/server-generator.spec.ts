@@ -25,8 +25,8 @@ const symbol = (local: string, reactive = false): SymbolImport => ({
 describe('ServerGenerator', () => {
   it('writes the imports of the runtime helpers, then render creating the root context and writing the template', () => {
     expect(generate('<p>{ title() }</p>', ['title'])).toBe([
-      'import { _declare, _iterationVariables, _read, _scope, _set, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty } from \'@xaendar/core\';',
-      'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrStartTag, _ssrStructural, _ssrTry } from \'@xaendar/ssr\';',
+      'import { _declare, _iterationVariables, _read, _scope, _set, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty, _templateRef } from \'@xaendar/core\';',
+      'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrRenderTemplateRef, _ssrStartTag, _ssrStructural, _ssrTry } from \'@xaendar/ssr\';',
       'const _layout0 = { size: 5, nodes: 5 };',
       'function render(out) {',
       '  const context = _scope(null, _layout0, undefined, this);',
@@ -305,8 +305,9 @@ describe('ServerGenerator', () => {
   });
 
   it('throws a template error naming the server generator when the code of a node cannot be generated', () => {
-    expect(() => generate('@render missing()')).toThrow(TemplateError);
-    expect(() => generate('@render missing()')).toThrow('[Server generator] "missing" is not a template visible here');
+    const template = '<template note() /><svg>@render note()</svg>';
+    expect(() => generate(template)).toThrow(TemplateError);
+    expect(() => generate(template)).toThrow('[Server generator] Template "note" is declared among HTML elements');
   });
 
   it('throws when a node has no state', () => {

@@ -4,7 +4,7 @@ import type { CustomElement } from '../../models/custom-element/custom-element';
 import type { QuerySignal } from '../../signals/types/query-signal.type';
 
 /**
- * A decorator of a query holding the element an element ref names (`@Query.ref`, `@Query.ref.required`), or the
+ * A decorator of a query holding the element an element ref names (`@Query.ref`, `@Query.refRequired`), or the
  * instance of a directive applied to it with the `read` option.
  *
  * @template Missing - What the signal holds when no element is named by the ref: `null`, or `never` for a required query.

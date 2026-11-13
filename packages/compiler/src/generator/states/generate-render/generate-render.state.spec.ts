@@ -15,7 +15,7 @@ const parse = (template: string) => new Parser(template, new Lexer(template).tok
  */
 const withTemplate = (namespace: 'html' | 'svg' = 'html') => {
   const context = new GeneratorContext(cache);
-  context.addIdentifier('row', 'value', 'template_row_0$template');
+  context.addIdentifier('row', 'template', 'template_row_0$template');
   context.addTemplate('row', namespace);
   return context;
 };
@@ -79,8 +79,26 @@ describe('generateRender', () => {
     expect(declaring.constantDeclarations).toEqual(['const if0__render0$render = { template: template_row_0$template, depth: 1, update: _runRender, effect: 0 };']);
   });
 
-  it('throws for a name not referring to a template, pointing to it', async () => {
-    await expect(generateRender(parse('@render row()'), 'root', '0', new GeneratorContext(cache), null, false)).rejects.toThrow(new Error('"row" is not a template visible here: declare it with <template row(…)> in this scope or in an enclosing one', { cause: { start: 8, end: 11 } }));
+  it('renders the template a name not referring to a template holds, a member computed by a function of the module', async () => {
+    const context = new GeneratorContext(cache);
+    await generateRender(parse('@render rowTemplate(1)'), 'root', '0', context, null, false);
+
+    expect(context.constantDeclarations).toEqual(['const render0$render = { ref: render0$ref, args: render0$args, update: _runRender, effect: 0 };']);
+    expect(context.functionDeclarations).toEqual(['function render0$ref(context) {\n  return this.rowTemplate;\n}', 'function render0$args(context) {\n  return [1];\n}']);
+  });
+
+  it('renders the template an expression gives, listing the variables it reads like the ones of the arguments', async () => {
+    const context = withTemplate();
+    context.addIdentifier('templates', 'variable');
+    context.addIdentifier('item', 'variable');
+    await generateRender(parse('@render templates.pick(row)(item)'), 'root', '0', context, null, false);
+
+    expect(context.constantDeclarations).toEqual(['const render0$render = { ref: render0$ref, args: render0$args, reads: _reads0, update: _runRender, effect: 0 };']);
+    expect(context.functionDeclarations).toEqual([
+      'function render0$ref(context) {\n  return _read(context, 0, 5).pick(_templateRef(context, 0, template_row_0$template));\n}',
+      'function render0$args(context) {\n  return [_read(context, 0, 6)];\n}'
+    ]);
+    expect(context.readsDeclarations).toEqual(['const _reads0 = [0, 1];']);
   });
 
   it('throws for a template creating its content in another namespace', async () => {

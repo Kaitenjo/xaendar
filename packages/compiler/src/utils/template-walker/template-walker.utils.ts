@@ -18,6 +18,7 @@ import type { HydrateTrigger } from '../../parser/types/triggers/hydrate-trigger
 import type { ComponentMetadata } from '../../types/component-metadata.type';
 import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
 import type { DirectiveMetadata } from '../../types/directive-metadata.type';
+import { isIdentifier } from 'typescript';
 import { ASTNodeType } from '../../parser/types/node.enum';
 import { getForVariables } from '../../parser/utils/for-variables/for-variables.utils';
 import { isStructuralElement, visitScopeDeclarations } from '../../parser/utils/scope-declarations/scope-declarations.utils';
@@ -163,6 +164,11 @@ class TemplateWalker {
 
       case ASTNodeType.Render:
         this._visitor.render?.(node);
+        // A @render calling an expression reads it like its arguments: a name is the one of a template, or read by `render`
+        if (!isIdentifier(node.calleeExpression)) {
+          this._visitor.expression?.(node.calleeExpression, variables);
+        }
+
         for (let i = 0; i < node.arguments.length; i++) {
           this._visitor.expression?.(node.arguments[i], variables);
         }

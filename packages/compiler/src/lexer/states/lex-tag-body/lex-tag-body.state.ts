@@ -87,7 +87,7 @@ export function lexTagBody(cursor: LexerCursor, context: LexerTransitionFunction
 
       default:
         retVal = {
-          state: expectsTemplateDeclaration(context.tokens) ? LexerState.TEMPLATE_DECLARATION : LexerState.ATTRIBUTE
+          state: expectsTemplateDeclaration(context.tokens, cursor) ? LexerState.TEMPLATE_DECLARATION : LexerState.ATTRIBUTE
         }
         read = false;
     }

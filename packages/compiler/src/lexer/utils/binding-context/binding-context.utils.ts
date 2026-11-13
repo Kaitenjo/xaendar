@@ -5,6 +5,7 @@ import { TokenType } from '../../types/token-type.enum';
 import type { DirectiveToken } from '../../types/tokens/directive-token.type';
 import type { StructuralDirectiveToken } from '../../types/tokens/structural-directive-token.type';
 import type { TagOpenNameToken } from '../../types/tokens/tag-open-name-token.type';
+import type { TemplateDeclarationToken } from '../../types/tokens/template-declaration-token.type';
 
 /**
  * The part of a name written right before an offset: the characters an attribute or event name cannot hold end it.
@@ -22,7 +23,7 @@ const PARTIAL_NAME = /[^\s(){}"'=<>/@*]*$/;
  * @param source - The source of the template.
  * @param offset - The offset in the template.
  * @returns The binding being written, `undefined` if the offset is not on the name of an attribute or event of an opening tag,
- *   or the tag is a `<template>`, which declares only its name and its parameters.
+ *   or the tag is a `<template>` declaring a template, which declares only its name and its parameters.
  */
 export function getBindingContext(source: string, offset: number): BindingContext | undefined {
   const before = source.slice(0, offset);
@@ -48,10 +49,13 @@ export function getBindingContext(source: string, offset: number): BindingContex
     return undefined;
   }
 
-  const tagName = tokens.findLast((token): token is TagOpenNameToken => token.type === TokenType.TAG_OPEN_NAME)!.parts[0];
-  if (tagName === 'template') {
+  // A <template> declaring a template takes nothing else: a standard <template> takes attributes like any element
+  const tag = tokens.findLast((token): token is TagOpenNameToken | TemplateDeclarationToken => token.type === TokenType.TAG_OPEN_NAME || token.type === TokenType.TEMPLATE_DECLARATION)!;
+  if (tag.type === TokenType.TEMPLATE_DECLARATION) {
     return undefined;
   }
+
+  const tagName = tag.parts[0];
 
   const inDirective = lexer.history.some(state => state === LexerState.DIRECTIVE || state === LexerState.STRUCTURAL_DIRECTIVE);
   const directive = inDirective

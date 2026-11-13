@@ -48,7 +48,7 @@ Declares an output. emit(detail?, options?) dispatches a CustomEvent named after
 
 The first element of the shadow root matching a selector or a component class, kept up to date as a signal. With the class of a custom directive it holds the instance of the directive applied to an element (with `@@selector` or as a host directive), not the element.
 
-With `{ read }` (single-element variants only, not `.all`): `@Query('.help', { read: TooltipDirective })` holds the directive applied to the first matching element that has it, `@Query<HTMLButtonElement>(TooltipDirective, { read: 'element' })` the element a directive is applied to. `Query.required`, `Query.ref`, `Query.ref.required`, `Query.content` and `Query.content.required` take the option too (the content ones next to `descendants`).
+With `{ read }` (single-element variants only, not `Query.all`, `Query.refAll`, `Query.contentAll`): `@Query('.help', { read: TooltipDirective })` holds the directive applied to the first matching element that has it, `@Query<HTMLButtonElement>(TooltipDirective, { read: 'element' })` the element a directive is applied to. `Query.required`, `Query.ref`, `Query.refRequired`, `Query.content` and `Query.contentRequired` take the option too (the content ones next to `descendants`).
 
 ### Query.required (decorator)
 
@@ -70,11 +70,11 @@ Every element of the shadow root matching a selector or a component class, or ev
 
 ```ts
 @Query.ref<E>('name') accessor name!: QuerySignal<E | null>
-@Query.ref.required<E>('name') accessor name!: QuerySignal<E>
-@Query.ref.all<E>('name') accessor name!: QuerySignal<E[]>
+@Query.refRequired<E>('name') accessor name!: QuerySignal<E>
+@Query.refAll<E>('name') accessor name!: QuerySignal<E[]>
 ```
 
-The element of the template named by the element ref `#name`, without the `#`; `.all` holds one per row of the `@for` declaring it, `.required` drops null and throws when no element has the ref. Only the template of the component: never the content passed to it.
+The element of the template named by the element ref `#name`, without the `#`; `refAll` holds one per row of the `@for` declaring it, `refRequired` drops null and throws when no element has the ref. Only the template of the component: never the content passed to it.
 
 ### Query.content (decorator)
 
@@ -84,21 +84,38 @@ The element of the template named by the element ref `#name`, without the `#`; `
 
 The first element of the content passed to the component (its light DOM) that matches a selector or a component class, as Angular's `contentChild`: among the children and their descendants (`descendants: false`: the children only), in document order. The content counts whether a slot renders it or not; `slot` is an attribute like any other (`'[slot="footer"]'`). Never finds the fallback of the slots, nor the content another component forwards through a `<slot>` (it finds the `<slot>` element). Updated when elements are added or removed, not on attribute changes.
 
-### Query.content.required (decorator)
+### Query.contentRequired (decorator)
 
 ```ts
-@Query.content.required('.selector' | ComponentClass | DirectiveClass, { descendants?, read? }) accessor name!: QuerySignal<E>
+@Query.contentRequired('.selector' | ComponentClass | DirectiveClass, { descendants?, read? }) accessor name!: QuerySignal<E>
 ```
 
 Like Query.content, for content that is always there: no null in the type, and reading it throws when no element matches.
 
-### Query.content.all (decorator)
+### Query.contentAll (decorator)
 
 ```ts
-@Query.content.all('.selector' | ComponentClass | DirectiveClass, { descendants? }) accessor name!: QuerySignal<E[]>
+@Query.contentAll('.selector' | ComponentClass | DirectiveClass, { descendants? }) accessor name!: QuerySignal<E[]>
 ```
 
 Every child of the component matching a selector or a component class, in document order, as Angular's `contentChildren`; with `descendants: true`, every matching element of the content at any depth.
+
+### Query.contentTemplate (decorator)
+
+```ts
+@Query.contentTemplate<[item: Item]>('row') accessor row!: QuerySignal<TemplateRef<[item: Item]> | null>
+@Query.contentTemplateRequired<[item: Item]>('row') accessor row!: QuerySignal<TemplateRef<[item: Item]>>
+```
+
+The template passed as content under its name, a `<template row(item: Item)>` written among the children of the component's element, as Angular's `contentChild(TemplateRef)`. Passed before the component connects and never changing: available from the first render (server and hydration included). The component's template renders it with `@render row()(item)`; `contentTemplateRequired` drops null and throws when none is passed.
+
+### TemplateRef (type)
+
+```ts
+type TemplateRef<Params extends unknown[] = []> = { readonly __template: (...params: Params) => void }
+```
+
+A template declared by `<template name(…)>` as a value: read by an expression of the template declaring it (`input="{row}"`) or by `@Query.contentTemplate`, rendered by `@render value(args)` anywhere, its content reading the scope and the component declaring it. Type an input holding one as `@Property<InputSignal<TemplateRef<[item: Item]> | null>>(null)`. `__template` exists only in the types.
 
 ### HostProperty (decorator)
 

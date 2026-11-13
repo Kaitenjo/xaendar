@@ -64,7 +64,8 @@ export function getTemplateSemanticTokens({ ast, metadatas }: TemplateAnalysis):
     },
     tryBlock: node => addToken(tokens, node.catch.nameSpan, 'variable', ['readonly']),
     defer: node => addToken(tokens, node.error?.nameSpan, 'variable', ['readonly']),
-    render: node => addToken(tokens, node.calleeSpan, 'function'),
+    // The name a @render calls: an expression it calls is visited as one
+    render: node => isIdentifier(node.calleeExpression) && addToken(tokens, node.calleeSpan, 'function'),
     let: node => addToken(tokens, node.nameSpan, 'variable', ['readonly']),
     expression: (expression, variables) => collectVariableReads(expression, expression, variables, span => addToken(tokens, span, 'variable', ['readonly']))
   });

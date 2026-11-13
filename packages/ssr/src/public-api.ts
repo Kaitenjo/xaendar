@@ -7,4 +7,4 @@ export { _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrStartTag } from './
 export * from './utils/ssr-items/ssr-items.util';
 export * from './utils/ssr-structural/ssr-structural.util';
 export { _ssrTry } from './utils/ssr-try/ssr-try.util';
-export { _ssrRenderTemplate } from './utils/ssr-template/ssr-template.util';
+export { _ssrRenderTemplate, _ssrRenderTemplateRef } from './utils/ssr-template/ssr-template.util';

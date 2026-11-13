@@ -19,7 +19,7 @@ export class TabGroupComponent extends CustomElement {
   /**
    * The projected panels, typed as instances of the component.
    */
-  @Query.content.all(TabPanelComponent)
+  @Query.contentAll(TabPanelComponent)
   public accessor panels!: QuerySignal<TabPanelComponent[]>;
   /**
    * One tab for each panel, with the label the panel received from its parent.

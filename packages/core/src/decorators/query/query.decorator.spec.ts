@@ -11,6 +11,7 @@ import { EMPTY_LAYOUT, _scope } from '../../utils/context/context.util';
 import type { _Context } from '../../types/context.type';
 import { _setElementRef } from '../../utils/element-refs/element-refs.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
+import { _setContentTemplates } from '../../utils/content-templates/content-templates.util';
 import { WebComponent } from '../web-component/web-component.decorator';
 import { Query, query, queryAll, queryContent, queryContentAll, queryContentRequired, queryRef, queryRefAll, queryRefRequired, queryRequired } from './query.decorator';
 
@@ -707,14 +708,14 @@ describe('Query.ref decorator', () => {
 
   it('creates a signal holding the element named by the ref, throwing when there is none', () => {
     const element = create();
-    const signal = init(Query.ref.required('field'), element);
+    const signal = init(Query.refRequired('field'), element);
 
     expect(() => signal()).toThrow('No element is named by the required ref \'#field\'');
   });
 
   it('creates a signal holding all the elements named by the ref', async () => {
     const element = create();
-    const signal = init(Query.ref.all('note'), element);
+    const signal = init(Query.refAll('note'), element);
     document.body.appendChild(element);
     const [first, second] = [named('note'), named('note')];
 
@@ -767,7 +768,7 @@ describe('read option', () => {
   it('holds the directive applied to the element named by a ref, throwing when required and there is none', async () => {
     const element = create();
     const signal = init(Query.ref('field', { read: Tooltip }), element);
-    const required = init(Query.ref.required('field', { read: Tooltip }), element);
+    const required = init(Query.refRequired('field', { read: Tooltip }), element);
     document.body.appendChild(element);
     expect(() => required()).toThrow(`No element is named by the required ref '#field, read: Tooltip' of <${element.localName}>`);
     const field = named('field');
@@ -785,7 +786,7 @@ describe('read option', () => {
     const { element: child, tooltip } = withTooltip();
     const element = withContent(wrapping(withTooltip().element), child);
     const signal = init(Query.content('span', { descendants: false, read: Tooltip }), element);
-    const required = init(Query.content.required(Tooltip, { descendants: false, read: 'element' }), element);
+    const required = init(Query.contentRequired(Tooltip, { descendants: false, read: 'element' }), element);
 
     document.body.appendChild(element);
 
@@ -799,8 +800,8 @@ describe('Query.content decorator', () => {
     const [first, second] = [withTooltip(), withTooltip()];
     const element = withContent(first.element, wrapping(second.element));
     const firstSignal = init(Query.content(Tooltip), element);
-    const childrenSignal = init(Query.content.all(Tooltip), element);
-    const allSignal = init(Query.content.all(Tooltip, { descendants: true }), element);
+    const childrenSignal = init(Query.contentAll(Tooltip), element);
+    const allSignal = init(Query.contentAll(Tooltip, { descendants: true }), element);
 
     document.body.appendChild(element);
 
@@ -811,7 +812,7 @@ describe('Query.content decorator', () => {
 
   it('names the class of the directive in the error of a required content query', () => {
     const element = withContent();
-    const signal = init(Query.content.required(Tooltip), element);
+    const signal = init(Query.contentRequired(Tooltip), element);
     document.body.appendChild(element);
 
     expect(() => signal()).toThrow(`No element matches the required content query 'Tooltip' of <${element.localName}>`);
@@ -841,7 +842,7 @@ describe('Query.content decorator', () => {
     it('creates a signal holding the first element of the content matching the target', () => {
       const target = item();
       const element = withContent(target, item());
-      const signal = init(Query.content.required('[item]'), element);
+      const signal = init(Query.contentRequired('[item]'), element);
 
       document.body.appendChild(element);
 
@@ -850,7 +851,7 @@ describe('Query.content decorator', () => {
 
     it('forwards the options, throwing when no element matches', () => {
       const element = withContent(wrapping(item()));
-      const signal = init(Query.content.required('[item]', { descendants: false }), element);
+      const signal = init(Query.contentRequired('[item]', { descendants: false }), element);
 
       document.body.appendChild(element);
 
@@ -862,7 +863,7 @@ describe('Query.content decorator', () => {
     it('creates a signal holding all the children of the element matching the target', () => {
       const [first, second] = [item(), item()];
       const element = withContent(first, second);
-      const signal = init(Query.content.all('[item]'), element);
+      const signal = init(Query.contentAll('[item]'), element);
 
       document.body.appendChild(element);
 
@@ -872,11 +873,37 @@ describe('Query.content decorator', () => {
     it('forwards the options', () => {
       const nested = item();
       const element = withContent(wrapping(nested));
-      const signal = init(Query.content.all('[item]', { descendants: true }), element);
+      const signal = init(Query.contentAll('[item]', { descendants: true }), element);
 
       document.body.appendChild(element);
 
       expect(signal()).toEqual([nested]);
     });
+  });
+});
+
+describe('Query.contentTemplate decorator', () => {
+  const context = _scope(null, EMPTY_LAYOUT);
+  const template = { render: () => context, parameters: [] };
+
+  it('holds the template passed as content under its name, null when there is none, read when it is read', () => {
+    const element = create();
+    const signal = init(Query.contentTemplate('row'), element);
+    expect(signal()).toBeNull();
+
+    _setContentTemplates(element, context, [{ name: 'row', template }]);
+
+    expect(signal()).toEqual({ template, context });
+    expect(signal.get()).toBe(signal());
+    expect(init(Query.contentTemplate('other'), element).get()).toBeNull();
+  });
+
+  it('throws when no template is passed under the name of a required query', () => {
+    const element = create();
+    const signal = init(Query.contentTemplateRequired('row'), element);
+    expect(() => signal()).toThrow(`No template named 'row' is passed as content to <${element.localName}>, as its required content template query needs`);
+
+    _setContentTemplates(element, context, [{ name: 'row', template }]);
+    expect(signal()).toEqual({ template, context });
   });
 });

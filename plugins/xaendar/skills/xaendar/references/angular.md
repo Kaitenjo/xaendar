@@ -12,7 +12,7 @@
 | `host: {...}`, `@HostBinding`, `@HostListener` | `@HostProperty('attr' \| 'class.x')`, `@HostEvent('event')` |
 | `signal`, `computed`, `effect`, `untracked` | the same names from `@xaendar/core/signals`; `this.effect()` for effects bound to the component |
 | `viewChild`, `viewChild.required`, `viewChildren` | `@Query`, `@Query.required`, `@Query.all`, `@Query.ref('name')` on `accessor x!: QuerySignal<…>` |
-| `contentChild`, `contentChild.required`, `contentChildren` | `@Query.content`, `@Query.content.required`, `@Query.content.all`: the content passed to the component (its light DOM), whether a slot renders it or not; `{ descendants }` with the same defaults (`true` for the single ones, `false` for `.all`); `[slot="x"]` in the selector for the content of a slot |
+| `contentChild`, `contentChild.required`, `contentChildren` | `@Query.content`, `@Query.contentRequired`, `@Query.contentAll`: the content passed to the component (its light DOM), whether a slot renders it or not; `{ descendants }` with the same defaults (`true` for the single ones, `false` for `@Query.contentAll`); `[slot="x"]` in the selector for the content of a slot |
 | `ngOnInit`, `ngAfterViewInit`, `ngOnDestroy` | `onInit`, `afterRender`, `onDestroy`: run at every connection and disconnection |
 | `ngOnChanges` | read the inputs reactively: `computed`, `this.effect` |
 | attribute directive | `@Directive({ selector: 'appX' })` on a class extending `CustomDirective<E>`, applied with `@@appX(...)` |
@@ -27,7 +27,9 @@
 | `@defer (hydrate on …)` | `@hydrate (triggers) { … }` (the triggers of `@defer` without element refs, `never`, and `prefetch`): only for content rendered on the server, in the browser the content renders at once |
 | `TestBed` `DeferBlockBehavior`, `getDeferBlocks()`, `render(DeferBlockState.Complete)` | `@xaendar/core/testing`: `setDeferBlockBehavior('manual')`, `getDeferBlocks(element)`, `await block.render('complete')` |
 | `<ng-content select="…">` | `<slot name="…" />`; children pick it with `slot="…"` |
-| `<ng-template #row let-item>` + `ngTemplateOutlet` | `<template row(item: Item)>` + `@render row(item)`, in the same template |
+| `<ng-template #row let-item>` + `ngTemplateOutlet` | `<template row(item: Item)>` + `@render row(item)` in the same template |
+| `contentChild(TemplateRef)` / a `TemplateRef` input + `ngTemplateOutlet` | `<my-list><template row(item: Item)>…</template></my-list>` read by `@Query.contentTemplate<[item: Item]>('row')`, or `input="{row}"` on an input typed `TemplateRef<[item: Item]> \| null`; the child renders it with `@render row()(item)` |
+| a plain `<template>` cloned by code | `<template #tpl>` without `name(…)`: a real `HTMLTemplateElement` with static content |
 | `@let` | `@let name = value;`, read as `name`, as in Angular |
 | pipes | methods of the class and `computed` signals |
 | services, `inject()`, providers | modules exporting signals, `computed`s and functions (patterns.md, Shared state) |

@@ -5,7 +5,10 @@ import { plain } from '../line-builder/line-builder.utils';
 
 /**
  * The type of a template: it carries the parameters of the function its content is type-checked in, as a labeled
- * tuple. A template is not callable: only a `@render` renders it.
+ * tuple. A template is not callable: only a `@render` renders it. It has the shape of `TemplateRef` of
+ * `@xaendar/core`, so that a template read as a value is accepted where a `TemplateRef` taking the same arguments is,
+ * e.g. by an input: a function taking the parameters, so that a template accepting more than the arguments passed is
+ * accepted too.
  */
 export const TEMPLATE = '__Template';
 
@@ -13,7 +16,7 @@ export const TEMPLATE = '__Template';
  * The function each `@render` is checked through: called with the template and the number of arguments the `@render`
  * passes, it returns a function taking them, so that their number and their types are checked like the ones of a
  * function call. A parameter whose argument is passed takes its type as declared: `undefined` is not an argument left
- * out.
+ * out. The template may be `null` or `undefined`, the value of an expression giving none, for which nothing renders.
  */
 export const RENDER = '__render';
 
@@ -26,9 +29,9 @@ export const RENDER = '__render';
  */
 export function getTemplateHelpers(): Line[] {
   return [
-    plain(`type ${TEMPLATE}<Params extends unknown[]> = { readonly __params: Params };`),
+    plain(`type ${TEMPLATE}<Params extends unknown[]> = { readonly __template: (...params: Params) => void };`),
     plain('type __Arguments<Params extends unknown[], Count extends number> = Params[\'length\'] extends Count ? Params : Params extends [...infer Head, unknown] ? __Arguments<Head, Count> : Params;'),
-    plain(`declare function ${RENDER}<Params extends unknown[], Count extends number>(template: ${TEMPLATE}<Params>, count: Count): (...args: Count extends Params['length'] ? __Arguments<Required<Params>, Count> : Params) => void;`)
+    plain(`declare function ${RENDER}<Params extends unknown[], Count extends number>(template: ${TEMPLATE}<Params> | null | undefined, count: Count): (...args: Count extends Params['length'] ? __Arguments<Required<Params>, Count> : Params) => void;`)
   ];
 }
 

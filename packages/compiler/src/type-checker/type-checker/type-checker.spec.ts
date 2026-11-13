@@ -38,9 +38,9 @@ describe('TypeChecker', () => {
     const { text, mappingTable } = await new TypeChecker(template, parse(template)).generate([]);
 
     expect(text).toBe([
-      'type __Template<Params extends unknown[]> = { readonly __params: Params };',
+      'type __Template<Params extends unknown[]> = { readonly __template: (...params: Params) => void };',
       'type __Arguments<Params extends unknown[], Count extends number> = Params[\'length\'] extends Count ? Params : Params extends [...infer Head, unknown] ? __Arguments<Head, Count> : Params;',
-      'declare function __render<Params extends unknown[], Count extends number>(template: __Template<Params>, count: Count): (...args: Count extends Params[\'length\'] ? __Arguments<Required<Params>, Count> : Params) => void;',
+      'declare function __render<Params extends unknown[], Count extends number>(template: __Template<Params> | null | undefined, count: Count): (...args: Count extends Params[\'length\'] ? __Arguments<Required<Params>, Count> : Params) => void;',
       'function typeCheck() {',
       `  type __Params${start} = Parameters<typeof __template${start}>;`,
       `  let row!: __Template<__Params${start}>;`,

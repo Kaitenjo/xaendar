@@ -7,6 +7,7 @@ import type { RenderElementEvent } from './render-element-event.type';
 import type { RenderElementNamespace } from './render-element-namespace.type';
 import type { RenderElementStructuralDirectiveConditionalBinding } from './render-element-structural-directive-conditional-binding.type';
 import type { RenderElementStructuralDirective } from './render-element-structural-directive.type';
+import type { _RenderElementTemplate } from './render-element-template.type';
 
 /**
  * Describes an element of a template, which `_renderElement` renders: its tag, its bindings, its directives and its
@@ -56,6 +57,17 @@ export type RenderElement = BlockPosition & {
    * Renders the children of the element, each time the element is created.
    */
   readonly children?: RenderChildren;
+  /**
+   * The HTML of the static content of a standard `<template>` element, assigned to its `innerHTML` when the element is
+   * created: an element adopted from the HTML of the server already holds it, in its `content`. Left out for any other
+   * element, and for a `<template>` without content.
+   */
+  readonly content?: string;
+  /**
+   * The templates written among the children of the element of a component, which the component reads with
+   * `@Query.contentTemplate`: passed to it before it is connected. Left out when there are none.
+   */
+  readonly templates?: readonly _RenderElementTemplate[];
   /**
    * The element ref naming the element (`#name`), declared by the context of its scope: it is initialized with the
    * element as soon as the element is created, so that its own bindings and children read it.
