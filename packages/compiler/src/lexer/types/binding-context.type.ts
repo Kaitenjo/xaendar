@@ -6,9 +6,10 @@ import type { Span } from '../../types/span.type';
  */
 export type BindingContext = {
   /**
-   * Whether the name is the one of an attribute (`name="..."`) or of an event (`(name)="..."`).
+   * Whether the name is the one of an attribute (`name="..."`), of an event (`(name)="..."`) or of the model of a
+   * two-way binding (`[(name)]="..."`).
    */
-  readonly kind: 'attribute' | 'event';
+  readonly kind: 'attribute' | 'event' | 'twoWay';
   /**
    * The tag name of the element.
    */

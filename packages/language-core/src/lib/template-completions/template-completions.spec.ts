@@ -339,6 +339,17 @@ describe('getTemplateBindingCompletions', () => {
     expect(completionsOf('<my-child la')).toEqual(['label:property:0@10-12', 'size:property:0@10-12', '(closed):event:1@10-12', '(picked):event:1@10-12']);
   });
 
+  it('proposes the models of a component as two-way bindings, and their events of change, on the name of an attribute, of a two-way binding and of an event', () => {
+    const counter = { type: 'component', selector: 'my-counter', properties: new Map([['value', {}], ['label', {}]]), events: new Map([['valueChange', {}], ['labelChanged', {}]]) } as unknown as TemplateAnalysis['metadatas'][number];
+    const counterCompletionsOf = (template: string) => getTemplateBindingCompletions([counter], template, template.length)
+      ?.map(({ name, kind, replacementSpan }) => `${name}:${kind}@${replacementSpan!.start}-${replacementSpan!.end}`);
+
+    expect(counterCompletionsOf('<my-counter ')).toEqual(['value:property@12-12', 'label:property@12-12', '[(value)]:property@12-12', '(valueChange):event@12-12', '(labelChanged):event@12-12']);
+    expect(counterCompletionsOf('<my-counter [(va')).toEqual(['value:property@14-16']);
+    expect(counterCompletionsOf('<my-counter (')).toEqual(['valueChange:event@13-13', 'labelChanged:event@13-13']);
+    expect(completionsOf('<my-child [(')).toEqual([]);
+  });
+
   it('proposes the events of a component, inherited ones included, after the ( of an event', () => {
     expect(completionsOf('<my-child (')).toEqual(['closed:event:1@11-11', 'picked:event:1@11-11']);
   });

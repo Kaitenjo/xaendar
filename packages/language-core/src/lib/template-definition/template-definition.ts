@@ -59,7 +59,8 @@ function collectTargets({ ast, metadatas, imports, templatePath, languageService
     },
     directive: (node, directive) => addTarget(targets, node.selectorSpan, directive && getClassDefinition(directive)),
     attribute: (node, owner) => addTarget(targets, node.nameSpan, owner?.properties.get(node.name)?.declaration),
-    event: (node, owner) => addTarget(targets, node.nameSpan, owner?.events.get(node.name)?.declaration)
+    // The listener of a two-way binding shares the name of its input, which leads to the same accessor
+    event: (node, owner) => !node.twoWay && addTarget(targets, node.nameSpan, owner?.events.get(node.name)?.declaration)
   });
 
   return targets;

@@ -108,6 +108,31 @@ describe('lexAttribute', () => {
     expect(() => lexAttribute(new LexerCursor('disabled(input)="f()">'), outerContext)).toThrow('Unexpected \'(\' in attribute name');
   });
 
+  it.each([
+    ['in the tag body', context],
+    ['in a directive', directiveContext],
+    ['in a block of a conditional binding', conditionalBindingContext]
+  ])('reads the parentheses of a two-way binding as part of its name, %s', (_description, outerContext) => {
+    const cursor = new LexerCursor('[(value)]="count">');
+    expect(lexAttribute(cursor, outerContext)).toEqual({
+      state: LexerState.ATTRIBUTE_VALUE,
+      pushState: true,
+      tokens: [{ type: TokenType.ATTRIBUTE, parts: ['[(value)]'] }]
+    });
+  });
+
+  it('stops before a ) closing a directive after the name of a two-way binding', () => {
+    const cursor = new LexerCursor('[(value)])');
+    expect(lexAttribute(cursor, directiveContext)).toEqual({
+      state: LexerState.DIRECTIVE_BODY,
+      tokens: [{ type: TokenType.ATTRIBUTE, parts: ['[(value)]'] }]
+    });
+  });
+
+  it('throws on a ( after the [ of a binding, once the name has started', () => {
+    expect(() => lexAttribute(new LexerCursor('[a(b)]>'), context)).toThrow('Unexpected \'(\' in attribute name');
+  });
+
   it('starts an attribute value after = and consumes the opening quote', () => {
     const cursor = new LexerCursor('class="foo">');
     expect(lexAttribute(cursor, context)).toEqual({

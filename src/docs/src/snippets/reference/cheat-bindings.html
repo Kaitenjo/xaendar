@@ -4,6 +4,9 @@
 <!-- Components: inputs, set as InputSignals -->
 <x-card heading="Static string" count="{3}" user="{user()}" />
 
+<!-- Two-way binding: a model of a component, bound to a writable signal named without braces nor call -->
+<x-stepper [(value)]="quantity" />
+
 <!-- Events: one method call; arguments are literals, members, loop variables, property accesses or $event -->
 <button (click)="save()">Save</button>
 <input (input)="type($event)" />

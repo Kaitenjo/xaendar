@@ -1,5 +1,6 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue, DecoratorMetadataContext, Function } from '@xaendar/types';
-import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_REQUIRED_INPUTS, PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND } from '../../costants';
+import { PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND } from '../../costants';
+import { registerInput } from '../../utils/input-registration/input-registration.util';
 import type { BindingHost } from '../../types/binding-host.type';
 import { input } from '../../signals/input/input';
 import { InputSignal } from '../../signals/types/input-signal.type';
@@ -43,24 +44,7 @@ function createPropertyDecorator<
       actualOptions = value;
     }
 
-    const metadata = context.metadata;
-    const attributeName = actualOptions?.alias ?? propertyKey;
-    /*
-      The metadata of a subclass inherits from the one of its parent class: the map of the parent is copied into the
-      metadata of the class, so the inputs of the parent stay visible and the ones of the class do not reach the parent.
-    */
-    if (!Object.hasOwn(metadata, INTERNAL_ALIAS_TO_ATTRIBUTE)) {
-      metadata[INTERNAL_ALIAS_TO_ATTRIBUTE] = Object.assign({}, metadata[INTERNAL_ALIAS_TO_ATTRIBUTE]);
-    }
-    metadata[INTERNAL_ALIAS_TO_ATTRIBUTE]![attributeName] = propertyKey;
-    // An accessor declared again overrides the inherited one, required or not
-    if (required || metadata[INTERNAL_REQUIRED_INPUTS]?.has(propertyKey)) {
-      if (!Object.hasOwn(metadata, INTERNAL_REQUIRED_INPUTS)) {
-        metadata[INTERNAL_REQUIRED_INPUTS] = new Set(metadata[INTERNAL_REQUIRED_INPUTS]);
-      }
-
-      required ? metadata[INTERNAL_REQUIRED_INPUTS]!.add(propertyKey) : metadata[INTERNAL_REQUIRED_INPUTS]!.delete(propertyKey);
-    }
+    registerInput(context.metadata, propertyKey, actualOptions?.alias, required);
 
     return {
       init(_?: InputSignal<ActualValue, IncomingValue>) {

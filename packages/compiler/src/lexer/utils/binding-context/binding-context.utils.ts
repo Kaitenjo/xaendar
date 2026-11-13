@@ -19,6 +19,7 @@ const PARTIAL_NAME = /[^\s(){}"'=<>/@*]*$/;
  * @example
  * getBindingContext('<my-child la', 12);              // { kind: 'attribute', tagName: 'my-child', directive: undefined, span: { start: 10, end: 12 } }
  * getBindingContext('<my-child @@tooltip((sh', 23);  // { kind: 'event', tagName: 'my-child', directive: 'tooltip', span: { start: 21, end: 23 } }
+ * getBindingContext('<my-child [(va', 14);           // { kind: 'twoWay', tagName: 'my-child', directive: undefined, span: { start: 12, end: 14 } }
  *
  * @param source - The source of the template.
  * @param offset - The offset in the template.
@@ -44,10 +45,13 @@ export function getBindingContext(source: string, offset: number): BindingContex
     return undefined;
   }
 
-  const kind = getBindingKind(lexer.state);
-  if (!kind) {
+  const state = getBindingKind(lexer.state);
+  if (!state) {
     return undefined;
   }
+
+  // The name of a two-way binding follows its `[(`
+  const kind = state === 'attribute' && before.endsWith('[(', start) ? 'twoWay' : state;
 
   // A <template> declaring a template takes nothing else: a standard <template> takes attributes like any element
   const tag = tokens.findLast((token): token is TagOpenNameToken | TemplateDeclarationToken => token.type === TokenType.TAG_OPEN_NAME || token.type === TokenType.TEMPLATE_DECLARATION)!;
@@ -71,7 +75,7 @@ export function getBindingContext(source: string, offset: number): BindingContex
  * @param state - The state the lexer ended in.
  * @returns The kind of the name, `undefined` if the state is not on a binding name.
  */
-function getBindingKind(state: LexerState): BindingContext['kind'] | undefined {
+function getBindingKind(state: LexerState): Exclude<BindingContext['kind'], 'twoWay'> | undefined {
   switch (state) {
     case LexerState.TAG_BODY:
     case LexerState.DIRECTIVE_BODY:

@@ -1,4 +1,5 @@
 // states/type-check-element.state.ts
+import { toModelChangeEvent } from '@xaendar/common';
 import type { Expression, Identifier } from 'typescript';
 import { isIdentifier } from 'typescript';
 import { resolveExpression } from '../../../generator/utils/generator/generator.utils';
@@ -480,15 +481,33 @@ function withOwnerType<Metadata extends ComponentOrDirectiveMetadata>(metadata: 
  * @param attributes - The attribute nodes bound to the directive.
  * @param metadata - Metadata of the directive the attributes are bound to.
  * @param owner - The directive (`@@selector`) or the structural directive (`*selector`) the attributes are bound to, used in error messages.
- * @throws If an attribute doesn't match any property of the directive, or is the name of the property of an input declaring an alias.
+ * @throws If an attribute doesn't match any property of the directive, or is the name of the property of an input declaring
+ *   an alias, or a two-way binding binds no model of the directive.
  */
 function assertDirectiveProperties(attributes: AttributeNode[], metadata: ComponentOrDirectiveMetadata, owner: string): void {
   for (let i = 0; i < attributes.length; i++) {
     const { name, span } = attributes[i];
+    assertTwoWayBindable(attributes[i], metadata);
     if (!metadata.properties.has(name)) {
       assertNotAliasedProperty(attributes[i], metadata);
       throw new Error(`Unknown property "${name}" on ${owner} (${metadata.className} has no @Property with this name).`, { cause: span });
     }
+  }
+}
+
+/**
+ * Ensures the input a two-way binding binds (`[(value)]`) has its event of change (`valueChange`): a model (`@Model`),
+ * or an input and an event named so (`@Property` and `@Event`). Any other attribute passes.
+ *
+ * @param attribute - The attribute node.
+ * @param metadata - Metadata of the component or directive the attribute is bound to.
+ * @throws If the attribute is bound by a two-way binding and the component or the directive has no input with its name or
+ *   no event of change.
+ */
+function assertTwoWayBindable({ name, span, twoWay }: AttributeNode, metadata: ComponentOrDirectiveMetadata): void {
+  const event = toModelChangeEvent(name);
+  if (twoWay && !(metadata.properties.has(name) && metadata.events.has(event))) {
+    throw new Error(`[(${name})] binds the input "${name}" and its event "${event}", which ${metadata.className} does not both declare: declare a model with @Model, or an input and an event with these names.`, { cause: span });
   }
 }
 
@@ -577,13 +596,15 @@ function getAlwaysBoundAttributes(conditionalBindings: ConditionalBindingNode[])
  * @param metadata - Metadata of the component or directive the attributes are bound to.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines, one block per bound property.
- * @throws If a property is bound without a value, or an attribute is the name of the property of an input declaring an alias.
+ * @throws If a property is bound without a value, an attribute is the name of the property of an input declaring an alias,
+ *   or a two-way binding binds no model.
  */
 function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: ComponentOrDirectiveMetadata, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
 
   for (let i = 0; i < attributes.length; i++) {
     const { name, value, span, bare } = attributes[i];
+    assertTwoWayBindable(attributes[i], metadata);
     const property = metadata.properties.get(name);
     if (!property) {
       assertNotAliasedProperty(attributes[i], metadata);
@@ -650,7 +671,8 @@ function typeCheckComponentEvents(events: EventNode[], metadata: ComponentOrDire
  * @param nativeEventType - Builds the type of `$event` for the native events of the element and of the directives applied to it.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines.
- * @throws If the element declares type arguments: only a web component imported in the template has a class to pass them to.
+ * @throws If the element declares type arguments: only a web component imported in the template has a class to pass them
+ *   to, or a two-way binding: only a component or a directive declares models.
  */
 function typeCheckNativeBindings(node: ElementNode, nativeEventType: NativeEventType, context: TypeCheckContext): Line[] {
   if (node.typeArguments) {
@@ -658,12 +680,12 @@ function typeCheckNativeBindings(node: ElementNode, nativeEventType: NativeEvent
   }
 
   return [
-    ...typeCheckNativeAttributes(node.attributes, context),
+    ...typeCheckNativeAttributes(node.attributes, node.tagName, context),
     ...typeCheckClassBindings(node.classBindings, context),
     ...typeCheckStyleBindings(node.styleBindings, context),
     ...typeCheckNativeEvents(node.events, nativeEventType, context),
     ...typeCheckConditionalBindings(node.conditionalBindings, context, branch => [
-      ...typeCheckNativeAttributes(branch.attributes, context),
+      ...typeCheckNativeAttributes(branch.attributes, node.tagName, context),
       ...typeCheckClassBindings(branch.classBindings, context),
       ...typeCheckStyleBindings(branch.styleBindings, context),
       ...typeCheckNativeEvents(branch.events, nativeEventType, context),
@@ -677,14 +699,21 @@ function typeCheckNativeBindings(node: ElementNode, nativeEventType: NativeEvent
  * resolved expression as a statement. Literal attributes are skipped.
  *
  * @param attributes - The attribute nodes to type-check.
+ * @param tagName - The tag name of the element, used in the error message.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines, one per expression attribute.
+ * @throws If an attribute is bound by a two-way binding: a native element, or a custom element of another library, has no
+ *   model.
  */
-function typeCheckNativeAttributes(attributes: AttributeNode[], context: TypeCheckContext): Line[] {
+function typeCheckNativeAttributes(attributes: AttributeNode[], tagName: string, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
 
   for (let i = 0; i < attributes.length; i++) {
-    const { value } = attributes[i];
+    const { name, value, span, twoWay } = attributes[i];
+    if (twoWay) {
+      throw new Error(`[(${name})] binds a model of a component or of a directive: <${tagName}> is not a component imported in the template.`, { cause: span });
+    }
+
     if (typeof value !== 'string') {
       lines.push(line(mappedInterpolation(value, context, ';')));
     }

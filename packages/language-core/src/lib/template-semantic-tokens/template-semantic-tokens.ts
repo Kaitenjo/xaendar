@@ -38,6 +38,11 @@ export function getTemplateSemanticTokens({ ast, metadatas }: TemplateAnalysis):
       }
     },
     event: (node, owner, variables) => {
+      // The listener of a two-way binding is written by its input, which colors its name and its signal
+      if (node.twoWay) {
+        return;
+      }
+
       if (owner?.events.has(node.name)) {
         addToken(tokens, node.nameSpan, 'event');
       }

@@ -158,8 +158,10 @@ function collectBindings<Target extends CustomElement | CustomDirective>(target:
       const names = keys(group);
       for (let j = 0; j < names.length; j++) {
         const name = names[j];
-        if (name !== 'condition' && typeof name === 'string' && group[name]) {
-          listeners.push({ name, handler: toTemplateHandler(group[name] as Function<[event: Event], unknown>) });
+        // The names of the events of change of the models are template literals, which do not index the group as they are
+        const listener = group[name as keyof typeof group];
+        if (name !== 'condition' && typeof name === 'string' && listener) {
+          listeners.push({ name, handler: toTemplateHandler(listener as Function<[event: Event], unknown>) });
         }
       }
     }

@@ -435,15 +435,15 @@ function readValue(reader: Reader): string {
 
 /**
  * Reads an attribute, with its value if it has one, or the declaration of a template, a name followed by the parameters
- * of the template in parentheses.
+ * of the template in parentheses. The name of a two-way binding, `[(value)]`, is read with its parentheses.
  *
  * @param reader - The reader, at the start of the name.
  * @returns The attribute or the declaration.
- * @throws If the parameters of the template are not closed.
+ * @throws If the parameters of the template, or the name of a two-way binding, are not closed.
  */
 function readAttributeOrDeclaration(reader: Reader): LayoutAttribute | LayoutTemplateDeclaration {
   const { source } = reader;
-  const name = readName(reader, NAME);
+  const name = source.startsWith('[(', reader.position) ? readTwoWayName(reader) : readName(reader, NAME);
   // Only a template declares a name followed by parentheses
   if (source[reader.position] === '(') {
     const end = findClosing(source, reader.position);
@@ -462,6 +462,24 @@ function readAttributeOrDeclaration(reader: Reader): LayoutAttribute | LayoutTem
 
   reader.position++;
   return { kind: 'attribute', name, value: readValue(reader) };
+}
+
+/**
+ * Reads the name of a two-way binding, up to the `)]` closing it.
+ *
+ * @param reader - The reader, on the `[(`.
+ * @returns The name, with its brackets and parentheses: `[(value)]`.
+ * @throws If the name is not closed.
+ */
+function readTwoWayName(reader: Reader): string {
+  const end = reader.source.indexOf(')]', reader.position);
+  if (end === -1) {
+    return fail('A two-way binding is not closed');
+  }
+
+  const name = reader.source.slice(reader.position, end + 2);
+  reader.position = end + 2;
+  return name;
 }
 
 /**

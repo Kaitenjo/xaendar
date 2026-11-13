@@ -1,7 +1,8 @@
 import type { ApiPackage } from '../api.data';
 import { PROPERTY_OPTIONS, PROPERTY_TYPE, READ_ONLY_INPUT, TRANSFORM_TYPE } from '../../../components/inputs/inputs.snippets';
+import { MODEL_DECLARATION } from '../../../components/outputs/outputs.snippets';
 import { QUERY_DECORATORS, QUERY_REQUIRED } from '../../../components/queries/queries.snippets';
-import { COMPUTED_EQUALS, COMPUTED_MEMBER, EFFECT_BATCHING, EFFECT_CLEANUP, EFFECT_COMPONENT, INPUT_LOCAL_COPY, QUERY_CONTENT_DESCENDANTS, QUERY_ELEMENT, QUERY_SIGNAL_READ, QUERY_TARGET_NATIVE, SIGNAL_COMPONENT, SIGNAL_EQUALS, SIGNAL_IDENTITY, SIGNAL_WATCHED, UNTRACKED_CALL, UNTRACKED_READ } from './core-signals.snippets';
+import { COMPUTED_EQUALS, COMPUTED_MEMBER, EFFECT_BATCHING, EFFECT_CLEANUP, EFFECT_COMPONENT, INPUT_LOCAL_COPY, MODEL_WRITE, QUERY_CONTENT_DESCENDANTS, QUERY_ELEMENT, QUERY_SIGNAL_READ, QUERY_TARGET_NATIVE, SIGNAL_COMPONENT, SIGNAL_EQUALS, SIGNAL_IDENTITY, SIGNAL_WATCHED, UNTRACKED_CALL, UNTRACKED_READ } from './core-signals.snippets';
 import { QUERY_READ } from './core.snippets';
 import { COMPUTED_THIS } from '../../../signals/computed/computed.snippets';
 import { INFINITE_LOOP } from '../../../signals/effects/effects.snippets';
@@ -190,7 +191,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
       usage: [
         { key: 'declaring', snippets: [PROPERTY_OPTIONS] },
         { key: 'narrowerTypes', snippets: [PROPERTY_TYPE] },
-        { key: 'readOnly', snippets: [READ_ONLY_INPUT, INPUT_LOCAL_COPY] }
+        { key: 'readOnly', snippets: [READ_ONLY_INPUT, INPUT_LOCAL_COPY, MODEL_WRITE] }
       ],
       guides: ['components/inputs']
     },
@@ -204,6 +205,37 @@ export const CORE_SIGNALS_API: ApiPackage = {
         { key: 'declaring', snippets: [PROPERTY_OPTIONS, PROPERTY_TYPE] }
       ],
       guides: ['components/inputs']
+    },
+    {
+      name: 'ModelSignal',
+      kind: 'type',
+      signature: `type ModelSignal<Value = unknown> = InputSignal<Value> & {
+  set(value: Value): void;
+  update(updater: (previous: Value) => Value): void;
+}`,
+      members: [
+        {
+          name: 'get',
+          group: 'methods',
+          signature: 'get(): Value'
+        },
+        {
+          name: 'set',
+          group: 'methods',
+          signature: 'set(value: Value): void'
+        },
+        {
+          name: 'update',
+          group: 'methods',
+          signature: 'update(updater: (previous: Value) => Value): void'
+        }
+      ],
+      usage: [
+        { key: 'declaring', snippets: [MODEL_DECLARATION] },
+        { key: 'binding', snippets: ['components/two-way-binding.html'] },
+        { key: 'instead', snippets: [MODEL_WRITE] }
+      ],
+      guides: ['components/outputs', 'components/inputs']
     },
     {
       name: 'QuerySignal',

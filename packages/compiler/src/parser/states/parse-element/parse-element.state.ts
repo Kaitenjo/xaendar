@@ -25,13 +25,15 @@ import { parseEvent } from '../parse-event/parse-event.state';
 import { parseStructuralDirective } from '../parse-structural-directive/parse-structural-directive.state';
 import { parseElementRef } from '../parse-element-ref/parse-element-ref.state';
 import { parseTemplateDeclaration } from '../parse-template-declaration/parse-template-declaration.state';
+import { isTwoWayBinding, parseTwoWayBinding } from '../parse-two-way-binding/parse-two-way-binding.state';
 import { isStructuralElement } from '../../utils/scope-declarations/scope-declarations.utils';
 import { assertStandardTemplate, serializeTemplateContent } from '../../utils/template-content/template-content.utils';
 import { parseTemplateParameters } from '../../utils/template-parameters/template-parameters.utils';
 import { parseTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 
 /**
- * Parses a TAG_OPEN_NAME token and the subsequent element ref or declaration of a template, attributes, class bindings, events, conditional bindings, directives,
+ * Parses a TAG_OPEN_NAME token and the subsequent element ref or declaration of a template, attributes, class bindings,
+ * two-way bindings (an attribute and an event each, see `parseTwoWayBinding`), events, conditional bindings, directives,
  * structural directives and children into an `ElementNode`. Handles both regular and self-closing tags.
  * A `<template>` declaring a template, e.g. `<template row(item: Item)>`, is not an element: it is parsed into a
  * `TemplateNode`. Any other `<template>` is a standard `<template>` element, whose content is static HTML (see
@@ -82,7 +84,11 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
         break;
 
       case TokenType.ATTRIBUTE:
-        if (isBracketBinding(token)) {
+        if (isTwoWayBinding(token)) {
+          const { attribute, event } = parseTwoWayBinding(cursor, parseNode, token);
+          attributes.push(attribute);
+          events.push(event);
+        } else if (isBracketBinding(token)) {
           const binding = parseBracketBinding(cursor, parseNode, token);
           binding.type === ASTNodeType.ClassBinding ? classBindings.push(binding) : styleBindings.push(binding);
         } else {

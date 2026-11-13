@@ -251,6 +251,28 @@ function values<Obj extends object, Key extends keyof Obj, Value extends Obj[Key
       signature: 'function toSameOriginPath(url: string): string',
       usage: [{ key: 'serving', snippets: [TO_SAME_ORIGIN_PATH] }],
       guides: ['tools/ssr/overview']
+    },
+    {
+      name: 'MODEL_CHANGE_SUFFIX',
+      kind: 'constant',
+      signature: 'const MODEL_CHANGE_SUFFIX: \'Change\'',
+      guides: ['components/outputs']
+    },
+    {
+      name: 'toModelChangeEvent',
+      kind: 'function',
+      signature: 'function toModelChangeEvent(name: string): string',
+      members: [{ name: 'name', group: 'parameters', signature: 'name: string' }],
+      usage: [{ key: 'converting' }],
+      guides: ['components/outputs']
+    },
+    {
+      name: 'toModelName',
+      kind: 'function',
+      signature: 'function toModelName(event: string): string | undefined',
+      members: [{ name: 'event', group: 'parameters', signature: 'event: string' }],
+      usage: [{ key: 'converting' }],
+      guides: ['components/outputs']
     }
   ]
 };

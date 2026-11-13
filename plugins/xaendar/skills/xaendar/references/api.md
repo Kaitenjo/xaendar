@@ -32,6 +32,22 @@ Declares an input. The accessor holds an InputSignal, set by the bindings of the
 
 Declares an input that every use of the component must bind, in every branch of a conditional binding. Checked at compile time in the templates; `createComponent` throws when no group without `condition` binds it, `renderToString` when its `inputs` leave it out.
 
+### Model (decorator)
+
+```ts
+@Model<ModelSignal<T>>(defaultValue?, { alias?, equals?, watched?, unwatched?, event?: { bubbles?, cancelable?, composed? } }) accessor name!: ModelSignal<T>
+```
+
+Declares a model: an input (bound, assigned and reset as a `@Property`, without `transform`) that the class also writes with `set`/`update`, which dispatch on the host element (a directive: its element) a `CustomEvent` named `nameChange` (`aliasChange` with an `alias`, which the accessor declares: `Aliased<ModelSignal<T>, 'alias'>`), whose `detail` is the new value, only when it differs from the current one by `equals`. Setting it from outside (a binding, `createComponent`, `renderToString`, `element.name = v`) never dispatches. A parent binds both with `[(name)]="signal"`; `(nameChange)` is listened to like any event. `event` holds the options of the change event (by default it neither bubbles nor leaves the shadow root). Not on a structural directive. Costs per instance the memory of a `@Property`, less than `@Property` + `@Event`.
+
+### Model.required (decorator)
+
+```ts
+@Model.required({ alias?, equals?, event? }) accessor name!: ModelSignal<T>
+```
+
+A model every use must bind, as `@Property.required`: `[(name)]` or `name="{…}"` count.
+
 ### Event (decorator)
 
 ```ts
@@ -152,7 +168,7 @@ Base class of components: an open shadow root, the lifecycle hooks, and effects 
 ### createComponent (method of CustomElement and CustomDirective)
 
 ```ts
-this.createComponent(ToastComponent, { target: Element, properties?: [{ input: () => value, condition?: () => boolean }], events?: [{ output: (event: CustomEvent<T>) => void, click: (event: MouseEvent) => void, condition? }], directives?: [Directive | { directive, condition?, properties?, events? }], content?: Node[] })
+this.createComponent(ToastComponent, { target: Element, properties?: [{ input: () => value, condition?: () => boolean }], events?: [{ output: (event: CustomEvent<T>) => void, valueChange: (event: CustomEvent<T>) => void /* of a model */, click: (event: MouseEvent) => void, condition? }], directives?: [Directive | { directive, condition?, properties?, events? }], content?: Node[] })
 ```
 
 Creates a component in code and appends it to `target`, bound as a tag of a template is: the inputs are set before the element is appended (its `onInit` reads them), then the directives are applied and the content appended (projected through its slots; a `DocumentFragment` gives its nodes). Getters and conditions run in effects. A group with a `condition` is bound only while it holds; when it stops, its inputs go back to their defaults and its listeners stop. Throws for a class without `@WebComponent`, an input bound by two groups, a structural directive, or a directive that is already a host directive of the component. The component belongs to its creator: it is destroyed when the creator is disconnected (a directive: stops), after `onDestroy`. Callable from the constructor, a field or `onInit`; the creation is not tracked by an enclosing effect. In a directive, call it from `onInit`. A getter returning a string literal for a union-typed input of a *directive* needs `as const`.
@@ -219,7 +235,7 @@ The options of @WebComponent.
 { directive: Constructor<CustomDirective>; properties?: HostDirectiveMember[]; events?: HostDirectiveMember[] }
 ```
 
-A host directive of a component, with the properties and the events of the directive it exposes.
+A host directive of a component, with the properties and the events of the directive it exposes: a model is exposed as a property (`'value'`) and its change event as an event (`'valueChange'`).
 
 ### HostDirectiveMember (type)
 
@@ -303,6 +319,15 @@ Aliased<InputSignal<T>, 'alias'> // an input declaring an alias, bound by it
 ```
 
 The type of an input: read-only for the component, set by the bindings of the parent.
+
+### ModelSignal (type)
+
+```ts
+ModelSignal<T> = InputSignal<T> & { set(value: T): void; update(fn: (previous: T) => T): void }
+Aliased<ModelSignal<T>, 'alias'> // a model declaring an alias, bound by it, its event named aliasChange
+```
+
+The type of a model: an input the class writes, dispatching its change event. Assignable where a `Signal<T>` is expected, so a component can pass its own model to a child: `[(value)]="value"`.
 
 ### QuerySignal (type)
 

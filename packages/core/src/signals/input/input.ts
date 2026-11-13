@@ -8,8 +8,9 @@ import { assertPrivateContext } from './input-set.symbol';
  * The prototype shared by every getter returned by {@link input}: it extends `Function.prototype`, so that the getter
  * stays a function, and holds the `set`, `reset` and `get` methods and the {@link INPUT_SIGNAL_INSTANCE_SYMBOL} mark,
  * created once instead of once per input. The `transform` and the initial value of each input are kept on its getter.
+ * The prototype of the models extends it (see `model`).
  */
-const INPUT_PROTOTYPE = Object.create(Function.prototype, {
+export const INPUT_PROTOTYPE = Object.create(Function.prototype, {
   set: {
     /**
      * Sets the value of the underlying {@link Signal.State}, converted by the `transform` of the input if it has one.

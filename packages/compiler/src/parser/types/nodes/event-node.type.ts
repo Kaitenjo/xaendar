@@ -35,4 +35,10 @@ export type EventNode = ASTNodeWithSpan<{
    * `(click)="select($event as MouseEvent)"`: only the ones of the parameters cast, if any.
    */
   casts?: Map<number, CastNode>;
+  /**
+   * Set on the listener a two-way binding binds (`valueChange` of `[(value)]="count"`), calling `set` of the signal
+   * with the detail of the event (`count.set($event.detail)`): its name has the span of the name of the input, the
+   * attribute node marked the same way.
+   */
+  twoWay?: true;
 }>;

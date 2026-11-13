@@ -1,4 +1,4 @@
-import { CSS_UNITS } from '@xaendar/common';
+import { CSS_UNITS, toModelChangeEvent } from '@xaendar/common';
 import { type ComponentOrDirectiveMetadata, getBindingContext, getExpressionContext, getImportContext, getImportInsertion, getImportPathContext, getKeywordContext, getSelectorContext, getTriggerContext, type KeywordContext, resolveShimPosition, type Span, type TriggerContext } from '@xaendar/compiler';
 import { dirname } from 'node:path';
 import { forEachChild, type Identifier, isClassDeclaration, isImportDeclaration, isNamespaceImport, isVariableStatement, type Node, ScriptElementKind, type SourceFile, type Symbol, SymbolFlags, type TypeChecker } from 'typescript';
@@ -291,9 +291,14 @@ export function getTemplateStyleCompletions(source: string, offset: number): Tem
 /**
  * Proposes the bindings of a component or directive at an offset of a template where the name of an attribute or
  * event is being written, read from the source itself, so that they are proposed while the template doesn't compile:
- * - on the name of an attribute: the inputs of the component, or of the directive whose parentheses hold it, then
- *   its events, between parentheses;
- * - on the name of an event, after its `(`: the events.
+ * - on the name of an attribute: the inputs of the component, or of the directive whose parentheses hold it, then its
+ *   models as two-way bindings (`[(value)]`), then its events, between parentheses, the events of change of the models
+ *   (`valueChange`) included;
+ * - on the name of an event, after its `(`: the events;
+ * - on the name of a two-way binding, after its `[(`: the models.
+ *
+ * A model is an input whose event of change (its name followed by `Change`) the component or directive dispatches: one
+ * declared with `@Model`, or an input and an event declared with `@Property` and `@Event`.
  *
  * @param metadatas - The metadata of the components and directives imported by the template.
  * @param source - The current source of the template.
@@ -315,13 +320,19 @@ export function getTemplateBindingCompletions(metadatas: readonly ComponentOrDir
     return [];
   }
 
+  const models = Array.from(owner.properties.keys()).filter(name => owner.events.has(toModelChangeEvent(name)));
+  if (kind === 'twoWay') {
+    return models.map((name): TemplateCompletion => ({ name, kind: ScriptElementKind.memberVariableElement, sortText: '0', replacementSpan: span }));
+  }
+
   const events = [...owner.events.keys()].map((name): TemplateCompletion => ({ name: kind === 'event' ? name : `(${name})`, kind: 'event', sortText: '1', replacementSpan: span }));
   if (kind === 'event') {
     return events;
   }
 
   const properties = [...owner.properties.keys()].map((name): TemplateCompletion => ({ name, kind: ScriptElementKind.memberVariableElement, sortText: '0', replacementSpan: span }));
-  return [...properties, ...events];
+  const twoWayBindings = models.map((name): TemplateCompletion => ({ name: `[(${name})]`, kind: ScriptElementKind.memberVariableElement, sortText: '0', replacementSpan: span }));
+  return properties.concat(twoWayBindings, events);
 }
 
 /**

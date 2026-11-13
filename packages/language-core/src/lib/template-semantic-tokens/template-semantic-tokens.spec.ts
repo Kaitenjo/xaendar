@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
+import { COUNTER_FIXTURE, createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import type { FixtureProject } from '../types/fixture-project.type';
 import { getTemplateSemanticTokens, TEMPLATE_SEMANTIC_TOKEN_MODIFIERS, TEMPLATE_SEMANTIC_TOKEN_TYPES } from './template-semantic-tokens';
 
@@ -48,6 +48,19 @@ describe('getTemplateSemanticTokens', () => {
       ['item', 'variable', 'readonly'],
       ['label', 'property'],
       ['$index', 'variable', 'readonly']
+    ]);
+  }, TIMEOUT);
+
+  it('colors the name and the signal of a two-way binding once, leaving its listener out', async () => {
+    project.write(COUNTER_FIXTURE.path, COUNTER_FIXTURE.text);
+    const source = '@import { Counter } from \'./counter\';\n@for (item of items; track item.id) { <my-counter [(value)]="item.id" /> }';
+    const { analysis } = await project.analyze(source);
+
+    expect(getTemplateSemanticTokens(analysis!).map(({ span, type, modifiers }) => [source.slice(span.start, span.end), type, ...modifiers])).toEqual([
+      ['item', 'variable', 'readonly'],
+      ['item', 'variable', 'readonly'],
+      ['value', 'property'],
+      ['item', 'variable', 'readonly']
     ]);
   }, TIMEOUT);
 

@@ -486,6 +486,50 @@ describe('typeCheckElement', () => {
     });
   });
 
+  describe('two-way bindings', () => {
+    const model = metadata({ value: new ComponentPropertyMetadata('value', 'number', { required: true }) }, { valueChange: 'number' });
+
+    it('checks the value of the signal against the input and writes the detail of the event of change into it, the input counting as bound', () => {
+      const lines = run('<my-el [(value)]="count"></my-el>', model);
+
+      expect(text(lines)).toEqual([
+        '{',
+        '  (root.count()) satisfies number;',
+        '}',
+        '{',
+        '  let $event!: CustomEvent<number>;',
+        '  root.count.set($event.detail);',
+        '}'
+      ]);
+    });
+
+    it.each([
+      ['an input without event of change', metadata({ value: new ComponentPropertyMetadata('value', 'number') })],
+      ['an event of change without input', metadata({}, { valueChange: 'number' })]
+    ])('throws for a component declaring %s', (_name, component) => {
+      expect(() => run('<my-el [(value)]="count"></my-el>', component)).toThrow('[(value)] binds the input "value" and its event "valueChange", which MyEl does not both declare: declare a model with @Model, or an input and an event with these names.');
+    });
+
+    it('checks a two-way binding of a directive, in a branch too, and throws for a directive declaring no model', () => {
+      const directive = directiveMetadata({ on: new ComponentPropertyMetadata('on', 'boolean') }, { onChange: 'boolean' });
+      const lines = run('<div @@myDirective(@if (a) { [(on)]="flag" })></div>', directive);
+
+      expect(text(lines)).toContain('    root.flag.set($event.detail);');
+      expect(() => run('<div @@myDirective([(on)]="flag")></div>', directiveMetadata({ on: new ComponentPropertyMetadata('on', 'boolean') }))).toThrow('[(on)] binds the input "on" and its event "onChange", which MyDirective does not both declare');
+    });
+
+    it.each([
+      ['a native element', '<input [(value)]="text" />', '<input>'],
+      ['a branch of a native element', '<input @if (a) { [(value)]="text" } />', '<input>'],
+      ['a custom element of another library', '<sl-input [(value)]="text" />', '<sl-input>']
+    ])('throws for %s, which declares no model', (_name, template, tag) => {
+      const context = new TypeCheckContext();
+      context.addCustomElementPatterns('sl-*');
+
+      expect(() => typeCheckElement(parse(template), processNode, context)).toThrow(`[(value)] binds a model of a component or of a directive: ${tag} is not a component imported in the template.`);
+    });
+  });
+
   describe('custom elements of other libraries', () => {
     const runForeign = (template: string, ...imports: Array<ComponentMetadata | DirectiveMetadata>): Line[] => {
       const context = new TypeCheckContext();

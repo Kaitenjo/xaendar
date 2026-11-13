@@ -1,4 +1,4 @@
-import { isValidCustomElementName, slice } from '@xaendar/common';
+import { isValidCustomElementName, slice, toModelChangeEvent } from '@xaendar/common';
 import { ClassDeclaration, CompilerOptions, Decorator, EntityName, Expression, forEachChild, getDecorators, getNameOfDeclaration, Identifier, isArrowFunction, isCallExpression, isClassDeclaration, isDecorator, isEnumDeclaration, isFunctionExpression, isIdentifier, isImportDeclaration, isInterfaceDeclaration, isMethodDeclaration, isNamedImports, isNamespaceImport, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isQualifiedName, isShorthandPropertyAssignment, isStringLiteral, isTypeAliasDeclaration, isTypeReferenceNode, ModifierLike, Node, ObjectLiteralElementLike, ObjectLiteralExpression, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
 import { ComponentPropertyMetadataWithSpan } from '../../models/component-property-metadata-with-span/component-property-metadata-with-span.model';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
@@ -273,7 +273,8 @@ function extractTypeParameters(klass: ClassDeclarationWithName): ClassTypeParame
 }
 
 /**
- * Extracts the metadata of the `@Property` and `@Event` accessors of a component or a directive, inherited ones included.
+ * Extracts the metadata of the `@Property`, `@Model` and `@Event` accessors of a component or a directive, inherited ones
+ * included: a model is a property and an event, named after the property followed by `Change`, whose detail is its value.
  *
  * @param klass - The class declaring the accessors.
  * @param sourceFile - The source file declaring the class, used in the error messages and to reference the types of the accessors.
@@ -300,7 +301,7 @@ function extractBindingsMetadata(klass: ClassDeclarationWithName, sourceFile: So
 }
 
 /**
- * Collects the `@Property` and `@Event` accessors of a class, walking its inheritance chain: the accessors of
+ * Collects the `@Property`, `@Model` and `@Event` accessors of a class, walking its inheritance chain: the accessors of
  * the base classes first, so that an accessor declared again by a subclass overrides the inherited one.
  *
  * Base classes that can't be resolved are skipped, like those declared in `.d.ts` files, which carry no decorators.
@@ -324,7 +325,8 @@ function collectBindingsMetadata(klass: ResolvedClass, kind: ComponentMetadata['
 }
 
 /**
- * Collects the `@Property` and `@Event` accessors declared by a class itself.
+ * Collects the `@Property`, `@Model` and `@Event` accessors declared by a class itself: a model adds its property and
+ * its event of change, which share the declaration of the accessor.
  *
  * @param klass - The class declaring the accessors, with the file declaring it.
  * @param kind - Whether the class is a component or a directive, used in the error messages.
@@ -348,9 +350,11 @@ function collectOwnBindingsMetadata({ sourceFile, declaration }: ResolvedClass, 
     }
 
     let required = false;
+    let model = false;
     const propDecorator = Array.from(memberModifiers).find((member): member is PropertyDecorator => {
       const result = isPropertyDecorator(member);
       required = !!result.required;
+      model = !!result.model;
       return result.decorator
     });
 
@@ -362,6 +366,11 @@ function collectOwnBindingsMetadata({ sourceFile, declaration }: ResolvedClass, 
         const overridden = properties.entries().find(([, property]) => property.name === propName);
         if (overridden) {
           properties.delete(overridden[0]);
+          // The event of change of an overridden model goes with it
+          const change = toModelChangeEvent(overridden[0]);
+          if (events.get(change)?.declaration === overridden[1].declaration) {
+            events.delete(change);
+          }
         }
 
         const metadata = extractPropertyMetadata(member, nameNode, propName, propDecorator, required, accessorOwner, sourceFile);
@@ -369,6 +378,9 @@ function collectOwnBindingsMetadata({ sourceFile, declaration }: ResolvedClass, 
         const conflictingProperty = properties.get(actualPropName);
         if (!conflictingProperty) {
           properties.set(actualPropName, metadata);
+          if (model) {
+            events.set(toModelChangeEvent(actualPropName), { type: metadata.type, declaration: metadata.declaration });
+          }
         } else {
           const { span: { start, end }, sourceFile: conflictingSourceFile } = conflictingProperty;
           const { line, character } = conflictingSourceFile.getLineAndCharacterOfPosition(start);
@@ -573,9 +585,12 @@ function extractClientOnly(ssr: Expression): ComponentMetadata['clientOnly'] {
 }
 
 /**
- * Checks if a modifier is a @Property decorator.
+ * Checks if a modifier is a decorator declaring an input: `@Property`, `@Property.required`, `@Model` or `@Model.required`.
+ *
+ * @param modifier - The modifier of the accessor.
+ * @returns Whether the modifier is one of them, whether it declares a required input and whether it declares a model.
  */
-function isPropertyDecorator(modifier: ModifierLike): { decorator: boolean, required?: true } {
+function isPropertyDecorator(modifier: ModifierLike): { decorator: boolean, required?: true, model?: true } {
   if (!isDecorator(modifier)) {
     return {
       decorator: false
@@ -591,19 +606,14 @@ function isPropertyDecorator(modifier: ModifierLike): { decorator: boolean, requ
 
   const subExpr = expr.expression
 
-  // @Property(...
-  if (isIdentifier(subExpr) && subExpr.text === 'Property') {
-    return {
-      decorator: true,
-    }
+  // @Property(... or @Model(...
+  if (isIdentifier(subExpr) && isInputDecoratorName(subExpr.text)) {
+    return toInputDecorator(subExpr.text, false);
   }
 
-  // @Property.required(...
-  if (isPropertyAccessExpression(subExpr) && isIdentifier(subExpr.expression) && subExpr.expression.text === 'Property' && subExpr.name.text === 'required') {
-    return {
-      decorator: true,
-      required: true
-    }
+  // @Property.required(... or @Model.required(...
+  if (isPropertyAccessExpression(subExpr) && isIdentifier(subExpr.expression) && isInputDecoratorName(subExpr.expression.text) && subExpr.name.text === 'required') {
+    return toInputDecorator(subExpr.expression.text, true);
   }
 
   return {
@@ -612,13 +622,43 @@ function isPropertyDecorator(modifier: ModifierLike): { decorator: boolean, requ
 }
 
 /**
- * Extracts property metadata from @Property or @Property.required decorator.
+ * Tells whether a name is the one of a decorator declaring an input.
  *
- * @param property - The accessor decorated with `@Property`.
+ * @param name - The name the decorator is called with.
+ * @returns `true` for `Property` and `Model`.
+ */
+function isInputDecoratorName(name: string): name is PropertyDecorator['expression']['expression']['text'] {
+  return name === 'Property' || name === 'Model';
+}
+
+/**
+ * Describes a decorator declaring an input (see {@link isPropertyDecorator}).
+ *
+ * @param name - The name of the decorator.
+ * @param required - Whether it is the `required` variant.
+ * @returns The description.
+ */
+function toInputDecorator(name: PropertyDecorator['expression']['expression']['text'], required: boolean): { decorator: true, required?: true, model?: true } {
+  const result: { decorator: true, required?: true, model?: true } = { decorator: true };
+  if (required) {
+    result.required = true;
+  }
+
+  if (name === 'Model') {
+    result.model = true;
+  }
+
+  return result;
+}
+
+/**
+ * Extracts property metadata from a @Property, @Property.required, @Model or @Model.required decorator.
+ *
+ * @param property - The accessor decorated with `@Property` or `@Model`.
  * @param nameNode - The name of the accessor.
  * @param name - The text of the name of the accessor.
- * @param decorator - The `@Property` decorator of the accessor.
- * @param required - Whether the decorator is `@Property.required`.
+ * @param decorator - The `@Property` or `@Model` decorator of the accessor.
+ * @param required - Whether the decorator is `@Property.required` or `@Model.required`.
  * @param accessorOwner - The type of the class the metadata are extracted for, which declares or inherits the accessor, as referenced from any file (see {@link getAccessorOwnerType}).
  * @param sourceFile - The source file declaring the accessor.
  * @returns The metadata of the property, with the span of its name or of its alias.

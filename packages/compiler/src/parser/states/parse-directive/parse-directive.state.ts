@@ -16,6 +16,7 @@ import type { EventNode } from '../../types/nodes/event-node.type';
 import { parseTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
 import { assertNoBracketBindings } from '../parse-class-binding/parse-class-binding.state';
+import { isTwoWayBinding, parseTwoWayBinding } from '../parse-two-way-binding/parse-two-way-binding.state';
 import { parseConditionalBinding } from '../parse-conditional-binding/parse-conditional-binding.state';
 import { parseEvent } from '../parse-event/parse-event.state';
 
@@ -43,7 +44,13 @@ export function parseDirective(cursor: ParserCursor, parseNode: NoArgsFunction<A
     const token = cursor.peek<AttributeToken | EventToken | IfToken | SwitchToken | DirectiveCloseToken>();
     switch (token.type) {
       case TokenType.ATTRIBUTE:
-        attributes.push(parseAttribute(cursor, parseNode, token));
+        if (isTwoWayBinding(token)) {
+          const { attribute, event } = parseTwoWayBinding(cursor, parseNode, token);
+          attributes.push(attribute);
+          events.push(event);
+        } else {
+          attributes.push(parseAttribute(cursor, parseNode, token));
+        }
         break;
 
       case TokenType.EVENT:

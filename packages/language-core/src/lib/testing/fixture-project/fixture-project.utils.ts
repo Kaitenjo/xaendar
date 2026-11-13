@@ -34,11 +34,13 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
   'stubs/core.ts': [
     'export type InputSignal<T> = () => T;',
     'export type Output<T = void> = { emit(value: T): void };',
+    'export type ModelSignal<T> = (() => T) & { set(value: T): void };',
     'type Decorator = (...args: any[]) => any;',
     'export declare function WebComponent(options: { selector: string, templateUrl: string }): Decorator;',
     'export declare function Directive(options: { selector: string }): Decorator;',
     'export declare const Property: ((...args: any[]) => Decorator) & { required: (...args: any[]) => Decorator };',
     'export declare function Event(): Decorator;',
+    'export declare const Model: ((...args: any[]) => Decorator) & { required: (...args: any[]) => Decorator };',
     'export declare class CustomElement extends HTMLElement { onInit?(): void; effect(callback: () => void): () => void; }',
     ''
   ].join('\n'),
@@ -105,6 +107,28 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
     ''
   ].join('\n')
 };
+
+/**
+ * A component declaring a model, `<my-counter>` of `src/counter.ts`, which a test writes in the fixture project when it
+ * needs one: it is not part of the project, whose components other tests list.
+ */
+export const COUNTER_FIXTURE = {
+  /**
+   * The path of the file, relative to the root of the project.
+   */
+  path: 'src/counter.ts',
+  /**
+   * The text of the file.
+   */
+  text: [
+    'import { Model, ModelSignal, WebComponent } from \'@xaendar/core\';',
+    '@WebComponent({ selector: \'my-counter\', templateUrl: \'./counter.html\' })',
+    'export class Counter {',
+    '  @Model(0) accessor value!: ModelSignal<number>;',
+    '}',
+    ''
+  ].join('\n')
+} as const;
 
 /**
  * Writes the fixture project in a new temporary directory.

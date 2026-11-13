@@ -258,13 +258,18 @@ function toClientOptions({ selector, clientOnly }: ComponentMetadata, generatorC
  * @param target - The tag name of the component, or the selector of the directive as applied in templates
  *   (`@@selector`), the attributes are bound to, `undefined` for a native element.
  * @returns The code of the descriptors, one per attribute.
- * @throws When a directive the template imports does not declare an attribute bound to it.
+ * @throws When a directive the template imports does not declare an attribute bound to it, or a two-way binding binds no
+ *   input, as on the client.
  */
 function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, target: string | undefined): string[] {
   const { generatorContext } = owner;
   const metadata = target && attributes.length ? generatorContext.getImportedMetadata(target) : undefined;
-  return attributes.map(({ name, value, span }) => {
+  return attributes.map(({ name, value, span, twoWay }) => {
     const input = metadata?.properties.get(name);
+    if (twoWay && !input) {
+      throw new Error(`[(${name})] binds a model of a component or of a directive: ${target ?? 'a native element'} has no input "${name}"`, { cause: span });
+    }
+
     if (metadata?.type === 'directive' && !input) {
       throw new Error(`Unable to resolve the metadata of property "${name}" of ${target}`, { cause: span });
     }

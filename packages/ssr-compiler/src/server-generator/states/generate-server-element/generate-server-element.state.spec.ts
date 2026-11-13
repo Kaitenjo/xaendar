@@ -118,6 +118,21 @@ describe('generateServerElement', () => {
     expect(generate('<x-input class="a"></x-input>', context).constants[0]).toContain('{ name: \'class\', value: \'a\', setter: _setInput }');
   });
 
+  it('sets the input a two-way binding binds from the signal, writing nothing of its listener, and throws for one binding no input', () => {
+    const withInput = () => {
+      const context = new GeneratorContext(cache);
+      context.addImportedMetadata({ type: 'component', selector: 'x-input', properties: new Map([['value', { name: 'value' }]]) } as never);
+      return context;
+    };
+    const { constants, functions } = generate('<x-input [(value)]="text"></x-input>', withInput());
+
+    expect(constants[0]).toContain('{ name: \'value\', value: x_input0$value, setter: _setExpressionInput }');
+    expect(constants[0]).not.toContain('valueChange');
+    expect(functions).toEqual([expressionFunction('x_input0$value', 'this.text()')]);
+    expect(() => generate('<x-input [(other)]="text"></x-input>', withInput())).toThrow('[(other)] binds a model of a component or of a directive: x-input has no input "other"');
+    expect(() => generate('<input @if (on()) { [(value)]="text" } />')).toThrow('[(value)] binds a model of a component or of a directive: a native element has no input "value"');
+  });
+
   it('writes a custom element of another library like a native element', () => {
     const context = new GeneratorContext(cache);
     context.addCustomElementPatterns('sl-*');

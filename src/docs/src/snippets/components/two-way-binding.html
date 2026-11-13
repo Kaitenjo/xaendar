@@ -1,0 +1,22 @@
+<!-- The model value of ex-stepper, bound to the signal quantity of the parent -->
+<ex-stepper [(value)]="quantity" />
+
+<!-- The same, written in full -->
+<ex-stepper value="{quantity()}" (valueChange)="quantity.set($event.detail)" />
+
+<!-- A signal reached through a property of a member or of a variable of the template -->
+<ex-stepper [(value)]="form.quantity" />
+@for (line of lines(); track line.id) {
+  <ex-stepper [(value)]="line.quantity" />
+}
+
+<!-- In a conditional binding, and between the parentheses of a directive -->
+<ex-stepper
+  @if (editable()) {
+    [(value)]="quantity"
+  }
+/>
+<label @@exToggle([(on)]="enabled")>Notifications</label>
+
+<!-- The event alone, with the input bound one way -->
+<ex-stepper value="{quantity()}" (valueChange)="log($event.detail)" />

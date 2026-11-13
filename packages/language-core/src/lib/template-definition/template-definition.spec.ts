@@ -2,7 +2,7 @@ import { ASTNodeType } from '@xaendar/compiler';
 import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
-import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
+import { COUNTER_FIXTURE, createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import type { FixtureProject } from '../types/fixture-project.type';
 import { findDefinitionTarget, getTemplateDefinition } from './template-definition';
 import type { TemplateDefinition } from '../types/template-definition.type';
@@ -92,6 +92,19 @@ describe('getTemplateDefinition', () => {
     expect(textsOf(getTemplateDefinition(analysis, at('picked')))).toEqual([['src/child.ts', 'picked']]);
     expect(textsOf(getTemplateDefinition(analysis, at('closed')))).toEqual([['src/child-base.ts', 'closed']]);
   });
+
+  it('leads the name of a two-way binding to its @Model once, and its signal to its TypeScript definition', async () => {
+    // A project of its own: analyzing another template would replace the shim of the shared analysis
+    const own = createFixtureProject();
+    own.write(COUNTER_FIXTURE.path, COUNTER_FIXTURE.text);
+    const { analysis: twoWay } = await own.analyze('@import { Counter } from \'./counter\';\n<my-counter [(value)]="title" />');
+    const offsetOf = (text: string) => twoWay!.source.indexOf(text) + 2;
+    const relative = (definitions: TemplateDefinition[]) => definitions.map(({ fileName, span }) => [fileName.slice(own.root.length + 1), readFileSync(fileName, 'utf8').slice(span.start, span.end)]);
+
+    expect(relative(getTemplateDefinition(twoWay!, offsetOf('value')))).toEqual([['src/counter.ts', 'value']]);
+    expect(relative(getTemplateDefinition(twoWay!, offsetOf('title')))).toEqual([['src/app.ts', 'title']]);
+    own.dispose();
+  }, TIMEOUT);
 
   it('leads the selector of a directive or structural directive to its class', () => {
     expect(textsOf(getTemplateDefinition(analysis, at('tooltip(')))).toEqual([['src/directives.ts', 'Tooltip']]);

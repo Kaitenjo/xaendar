@@ -9,7 +9,7 @@ Applies to every class: components, directives and plain classes, in `packages/*
 
 ## Order
 
-1. public fields (including decorated `accessor`s: `@Property`, `@Event`, `@Query`)
+1. public fields (including decorated `accessor`s: `@Property`, `@Model`, `@Event`, `@Query`)
 2. protected fields
 3. private fields
 4. getters and setters
@@ -71,6 +71,8 @@ const lang = this.language();
 An input with an `alias` declares it in its type too, `Aliased<InputSignal<T>, 'alias'>` (imported from `@xaendar/core/signals`): templates, `createComponent` and `renderToString` bind it by the alias only.
 
 A `transform` taking another type than the value of the input is declared as the second type argument of the signal, which templates, `createComponent` and `renderToString` take: `@Property(0, { transform: (value: string) => Number(value) }) public accessor size!: InputSignal<number, string>;` (without it `@Property` does not compile).
+
+An input the class also writes, and that the parent binds two-way (`[(value)]="count"`), is a model: `@Model(default)` on `public accessor value!: ModelSignal<T>` (the same generic and `Aliased` rules as `@Property`, without `transform`). Never pair a `@Property` `x` with an `@Event` `xChange` and a local signal copying the input: the model is the state, and it costs the memory of a single input.
 
 Any type works, imported aliases included: the type-check code of the parent templates references it through the accessor of the class, never as a copy. Inputs bound statically (`kind="tip"`) are type-checked as `string`, so a literal union there rejects static values.
 

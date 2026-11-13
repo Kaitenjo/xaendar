@@ -13,6 +13,7 @@ const { CustomDirective } = await import('../../models/custom-directive/custom-d
 const { CustomElement } = await import('../../models/custom-element/custom-element');
 const { Output } = await import('../../models/output/output');
 const { input } = await import('../../signals/input/input');
+const { createModelPrototype, model } = await import('../../signals/model/model');
 const { _scope, EMPTY_LAYOUT } = await import('../context/context.util');
 const { _setInput } = await import('../render-element/render-element.util');
 const { _defineRender } = await import('../render-registry/render-registry.util');
@@ -40,6 +41,17 @@ class LabelDirective extends CustomDirective {
 }
 
 /**
+ * Directive declaring two models, one aliased, and an input.
+ */
+class ToggleDirective extends CustomDirective {
+  public readonly checked = model<boolean>(createModelPrototype(false, { name: 'checkedChange', event: undefined, equals: Object.is }), this, undefined);
+  public readonly state = model<boolean>(createModelPrototype(false, { name: 'onChange', event: undefined, equals: Object.is }), this, undefined);
+  public readonly text = input<string>('');
+}
+
+Object.defineProperty(ToggleDirective, Symbol.for('Symbol.metadata'), { value: { aliasToAttribute: { checked: 'checked', on: 'state', text: 'text' } } });
+
+/**
  * Directive declaring nothing.
  */
 class PlainDirective extends CustomDirective { }
@@ -49,7 +61,7 @@ let counter = 0;
 /**
  * Builds a component whose `@WebComponent` declares the given host directives, as it would store them in its metadata.
  */
-function create(hostDirectives?: Array<typeof TooltipDirective | typeof PlainDirective | HostDirectiveOptions>, componentInputs?: Record<string, string>): HostElement {
+function create(hostDirectives?: Array<typeof TooltipDirective | typeof PlainDirective | typeof ToggleDirective | HostDirectiveOptions>, componentInputs?: Record<string, string>): HostElement {
   const klass = class extends CustomElement { };
   if (hostDirectives || componentInputs) {
     Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { hostDirectives, aliasToAttribute: componentInputs } });
@@ -243,6 +255,27 @@ describe('_createHostDirectives', () => {
       expect(() => create([{ directive: TooltipDirective, events: ['missing'] }])).toThrow('TooltipDirective does not declare an event named "missing"');
       expect(() => create([{ directive: TooltipDirective, events: ['text'] }])).toThrow('does not declare an event named "text"');
       expect(() => create([{ directive: TooltipDirective, events: ['fake'] }])).toThrow('does not declare an event named "fake"');
+    });
+
+    it('dispatches the exposed event of change of a model, by the name of the model or by its alias', () => {
+      const element = create([{ directive: ToggleDirective, events: ['checkedChange', { name: 'onChange', alias: 'stateChange' }] }]);
+      const heard = new Array<unknown>();
+      for (const name of ['checkedChange', 'onChange', 'stateChange']) {
+        element.addEventListener(name, event => heard.push([event.type, (event as CustomEvent).detail]));
+      }
+
+      const directive = element.hostDirectives.get(ToggleDirective)!;
+      directive.checked.set(true);
+      directive.state.set(true);
+
+      expect(heard).toEqual([['checkedChange', true], ['stateChange', true]]);
+    });
+
+    it('throws when the event is not the one of change of a model', () => {
+      expect(() => create([{ directive: ToggleDirective, events: ['stateChange'] }])).toThrow('ToggleDirective does not declare an event named "stateChange"');
+      expect(() => create([{ directive: ToggleDirective, events: ['textChange'] }])).toThrow('does not declare an event named "textChange"');
+      expect(() => create([{ directive: ToggleDirective, events: ['Change'] }])).toThrow('does not declare an event named "Change"');
+      expect(() => create([{ directive: PlainDirective, events: ['valueChange'] }])).toThrow('does not declare an event named "valueChange"');
     });
   });
 });

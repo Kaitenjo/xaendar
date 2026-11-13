@@ -136,6 +136,21 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** An attribute name in brackets other than [class.name] and [style.name]: brackets only toggle classes and set style properties.
 - **Fix:** Bind the attribute without brackets, e.g. title="{ … }", or use [class.name] or [style.name].
 
+### `[Parser] "[(value)x]" is not a two-way binding: write [(name)]="signal"`
+
+- **Cause:** An attribute name starting with [( that is not [(name)]: something after the )], spaces or brackets in the name, or an empty name.
+- **Fix:** Write the name of the model between [( and )].
+
+### `[Parser] [(value)] binds a writable signal, named without braces nor call: [(value)]="signal"`
+
+- **Cause:** A two-way binding without a value, with an empty one, or with an interpolation ([(value)]="{ count() }").
+- **Fix:** Name the signal as it is: [(value)]="count".
+
+### `[Parser] [(value)] binds a writable signal, named without braces nor call: a member, a variable of the template or one of their properties, e.g. [(value)]="count"`
+
+- **Cause:** A two-way binding whose value is a call (count()), uses ?., or is any other expression than a name or a chain of property accesses.
+- **Fix:** Name the signal without calling it; for a computed value, bind the input and the event separately: value="{ total() }" (valueChange)="setTotal($event.detail)".
+
 ### `[Parser] [style.color] sets the style property by the value of an expression: [style.color]="{expression}"`
 
 - **Cause:** A style binding with a static value, or without a value.
@@ -452,6 +467,21 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** A listener for an event that is neither an output of the component nor a native event of its element: a different case, or a misspelled name.
 - **Fix:** Match the name of the accessor, letter by letter.
+
+### `[TypeChecker] [(value)] binds the input "value" and its event "valueChange", which XCounter does not both declare: declare a model with @Model, or an input and an event with these names.`
+
+- **Cause:** A two-way binding on a component or directive with no input of that name, or no event of change: an @Property without @Model, an aliased model bound by the name of its property, or a misspelled name.
+- **Fix:** Declare the input with @Model (or add an @Event named after the input followed by Change), or bind the model by its alias.
+
+### `[TypeChecker] [(value)] binds a model of a component or of a directive: <input> is not a component imported in the template.`
+
+- **Cause:** A two-way binding on a native element, or on a custom element of another library: they declare no model.
+- **Fix:** Bind the attribute and listen to the event: (input)="setName(field.value)", and write the DOM property from a directive (patterns.md, Forms).
+
+### `Property 'set' does not exist on type 'Computed<number>'.`
+
+- **Cause:** A two-way binding naming a signal that cannot be written: a computed, an input (`InputSignal`), a plain field or method.
+- **Fix:** Bind a `signal()` or a model of the component; for a derived value bind the input and the event separately.
 
 ### `[TypeChecker] Unknown property "shade" on @@exTint (TintDirective has no @Property with this name).`
 

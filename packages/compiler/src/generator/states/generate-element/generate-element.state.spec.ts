@@ -196,6 +196,27 @@ describe('generateElement', () => {
       expect(constants[0]).toContain('attributes: [{ name: \'userId\', value: \'u\', setter: _setInput, unbind: _resetProperty }]');
     });
 
+    it('binds a two-way binding as the input set from the signal and the listener writing the detail of its event of change into it', async () => {
+      const result = await run('<my-el [(title)]="heading"></my-el>', new GeneratorContext(cache));
+
+      expect(result.constants.at(-1)).toContain('events: [{ name: \'titleChange\', handler: my_el0$on_titleChange }]');
+      expect(result.functions).toEqual([
+        'function my_el0$title(context) {\n  return this.heading();\n}',
+        'function my_el0$on_titleChange(context, $event) {\n  this.heading.set($event.detail);\n}'
+      ]);
+      expectValidJavascript(result);
+    });
+
+    it.each([
+      ['a component', '<my-el [(other)]="heading"></my-el>', 'my-el'],
+      ['a native element', '<input [(value)]="text" />', 'input'],
+      ['a directive', '<div @@myDirective([(other)]="heading")></div>', '@@myDirective']
+    ])('throws for a two-way binding of %s declaring no input with its name', async (_name, template, target) => {
+      const name = template.includes('other') ? 'other' : 'value';
+
+      await expect(run(template, new GeneratorContext(cache))).rejects.toThrow(`[(${name})] binds a model of a component or of a directive: ${target} has no input "${name}"`);
+    });
+
     it('does not query the metadata of a component binding no attribute', async () => {
       const context = new GeneratorContext({ getOrInsert: async () => { throw new Error('No metadata'); }, getImport: () => Promise.reject(new Error('No import')), set: () => undefined });
       const { constants } = await run('<my-el></my-el>', context);

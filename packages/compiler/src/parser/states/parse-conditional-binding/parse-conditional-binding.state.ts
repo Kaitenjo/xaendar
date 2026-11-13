@@ -23,6 +23,7 @@ import type { ClassBindingNode } from '../../types/nodes/class-binding-node.type
 import type { StyleBindingNode } from '../../types/nodes/style-binding-node.type';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
 import { isBracketBinding, parseBracketBinding } from '../parse-class-binding/parse-class-binding.state';
+import { isTwoWayBinding, parseTwoWayBinding } from '../parse-two-way-binding/parse-two-way-binding.state';
 import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseEvent } from '../parse-event/parse-event.state';
 import { parseStructuralDirective } from '../parse-structural-directive/parse-structural-directive.state';
@@ -205,7 +206,11 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
     const token = cursor.peek();
     switch (token.type) {
       case TokenType.ATTRIBUTE:
-        if (isBracketBinding(token)) {
+        if (isTwoWayBinding(token)) {
+          const { attribute, event } = parseTwoWayBinding(cursor, parseNode, token);
+          attributes.push(attribute);
+          events.push(event);
+        } else if (isBracketBinding(token)) {
           const binding = parseBracketBinding(cursor, parseNode, token);
           binding.type === ASTNodeType.ClassBinding ? classBindings.push(binding) : styleBindings.push(binding);
         } else {

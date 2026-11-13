@@ -232,6 +232,27 @@ describe('extractComponentsMetadataFromSourceFile', () => {
     });
   });
 
+  describe('models', () => {
+    it('extracts a model as a property and its event of change, named after its alias if any, both typed by the value of the model', async () => {
+      const code = component(`
+        @Model(0) accessor value!: ModelSignal<number>;
+        @Model.required({ alias: 'on' }) accessor checked!: Aliased<ModelSignal<boolean>, 'on'>;
+        @Model() accessor untyped;
+      `);
+      const metadata = (await extract(code))?.get('MyEl');
+
+      expect([...metadata!.properties.keys()]).toEqual(['value', 'on', 'untyped']);
+      expect(metadata?.properties.get('value')).toMatchObject({ name: 'value', type: propertyType('MyEl', 'value'), required: false });
+      expect(metadata?.properties.get('on')).toMatchObject({ name: 'checked', type: propertyType('MyEl', 'checked'), required: true, alias: 'on' });
+      expect(Object.fromEntries(metadata!.events)).toEqual({
+        valueChange: { type: propertyType('MyEl', 'value'), declaration: metadata?.properties.get('value')?.declaration },
+        onChange: { type: propertyType('MyEl', 'checked'), declaration: metadata?.properties.get('on')?.declaration },
+        untypedChange: { type: 'any', declaration: metadata?.properties.get('untyped')?.declaration }
+      });
+      expect(code.slice(metadata!.events.get('onChange')!.declaration!.span.start, metadata!.events.get('onChange')!.declaration!.span.end)).toBe('checked');
+    });
+  });
+
   describe('inheritance', () => {
     const subclass = (heritage: string, body = '') => `@WebComponent({ selector: 'my-el', templateUrl: './t.xaendar' })\nclass MyEl ${heritage} {\n${body}\n}`;
 
@@ -283,6 +304,21 @@ describe('extractComponentsMetadataFromSourceFile', () => {
       expect([...metadata!.properties.keys()]).toEqual(['label']);
       expect(metadata?.properties.get('label')).toMatchObject({ required: true, alias: undefined });
       expect(Object.fromEntries(metadata!.events)).toMatchObject({ picked: { type: 'void' } });
+    });
+
+    it('drops the event of change of an inherited model the class overrides with a property, and keeps an event of its own', async () => {
+      const metadata = (await extract(`
+        class Base {
+          @Model(0) accessor value!: ModelSignal<number>;
+          @Model(false, { alias: 'on' }) accessor checked!: Aliased<ModelSignal<boolean>, 'on'>;
+          @Model('') accessor label!: ModelSignal<string>;
+        }
+        ${subclass('extends Base', '@Property(0) accessor value!: InputSignal<number>;\n@Event() accessor onChange!: Output<boolean>;\n@Property(false) accessor checked!: InputSignal<boolean>;\n@Model(\'\') accessor label!: ModelSignal<string>;')}
+      `))?.get('MyEl');
+
+      expect([...metadata!.properties.keys()]).toEqual(['value', 'checked', 'label']);
+      expect([...metadata!.events.keys()]).toEqual(['onChange', 'labelChange']);
+      expect(metadata?.events.get('onChange')?.type).toBe(eventType('MyEl', 'onChange'));
     });
 
     it('throws, pointing at the inherited property, when a property of the class resolves to its name', async () => {

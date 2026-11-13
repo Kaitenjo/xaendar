@@ -3,6 +3,7 @@ import { CLEANUP } from '../../costants';
 import type { Constructor } from '@xaendar/types';
 import type { Aliased } from '../../signals/types/aliased.type';
 import type { InputSignal } from '../../signals/types/input-signal.type';
+import type { ModelSignal } from '../../signals/types/model-signal.type';
 import { describe, expect, it, vi } from 'vitest';
 import type { _Context } from '../../types/context.type';
 
@@ -12,6 +13,7 @@ await vi.hoisted(async () => {
 });
 
 const { input } = await import('../../signals/input/input');
+const { createModelPrototype, model } = await import('../../signals/model/model');
 const { computed, effect, signal } = await import('../../signals');
 const { CustomDirective } = await import('../../models/custom-directive/custom-directive');
 const { CustomElement } = await import('../../models/custom-element/custom-element');
@@ -54,6 +56,14 @@ function define<T extends Constructor<InstanceType<typeof CustomElement>>>(klass
   customElements.define(selector, klass);
   return klass;
 }
+
+/**
+ * Component declaring two models, one aliased.
+ */
+const Picker = define(class Picker extends CustomElement {
+  public readonly value: ModelSignal<number> = model<number>(createModelPrototype(0, { name: 'valueChange', event: undefined, equals: Object.is }), this, undefined);
+  public readonly checked = model<boolean>(createModelPrototype(false, { name: 'onChange', event: undefined, equals: Object.is }), this, undefined) as Aliased<ModelSignal<boolean>, 'on'>;
+});
 
 const Card = define(class Card extends CustomElement {
   public readonly heading = input<string>('default heading');
@@ -259,6 +269,17 @@ describe('_createComponent', () => {
 
     expect(onChanged).toHaveBeenCalledWith(3);
     expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it('binds a model as an input and listens to its event of change', () => {
+    const onValueChange = vi.fn();
+    const value = signal(3);
+    const { element } = _createComponent(owner, Picker, { target: document.body, properties: [{ value: () => value() }], events: [{ valueChange: event => onValueChange(event.detail) }] });
+
+    expect(element.value()).toBe(3);
+    element.value.set(4);
+
+    expect(onValueChange).toHaveBeenCalledWith(4);
   });
 
   it('calls a listener with the event alone, the element being this, as addEventListener does', () => {
@@ -482,6 +503,16 @@ describe('_createComponent', () => {
       host.createComponent(Card, { target: document.body, directives: [{ directive: Tooltip, properties: [{ text: () => 1 }] }] });
       // @ts-expect-error the detail of a directive event is the value of its output
       host.createComponent(Card, { target: document.body, directives: [{ directive: Tooltip, events: [{ toggled: event => event.detail.toUpperCase() }] }] });
+      // A model is bound as an input, by its alias when it declares one, and its event of change is named after it, its detail being its value
+      host.createComponent(Picker, { target: document.body, properties: [{ value: () => 1, on: () => true }], events: [{ valueChange: event => event.detail.toFixed(), onChange: event => !event.detail }] });
+      // @ts-expect-error the value of a model has its type
+      host.createComponent(Picker, { target: document.body, properties: [{ value: () => 'one' }] });
+      // @ts-expect-error the detail of the event of change of a model is its value
+      host.createComponent(Picker, { target: document.body, events: [{ valueChange: event => event.detail.toUpperCase() }] });
+      // @ts-expect-error the event of change of a model declaring an alias is named after the alias
+      host.createComponent(Picker, { target: document.body, events: [{ checkedChange: () => undefined }] });
+      // @ts-expect-error a model is not an event
+      host.createComponent(Picker, { target: document.body, events: [{ value: () => undefined }] });
     };
 
     expect(check).toBeTypeOf('function');

@@ -18,7 +18,7 @@ After the tag name, write the items of the opening tag in this order:
 4. conditional directives: `@if (…) { @@name(…) }`
 5. directives: `@@name(…)`
 6. conditional attributes (and component inputs): `@if (…) { name="…" }`
-7. attributes (and component inputs), then class bindings, then style bindings: `name="…"`, `[class.name]="{…}"`, `[style.name]="{…}"`
+7. attributes (and component inputs, two-way bindings included), then class bindings, then style bindings: `name="…"`, `[(name)]="signal"`, `[class.name]="{…}"`, `[style.name]="{…}"`
 8. conditional events: `@if (…) { (name)="…" }`
 9. events: `(name)="…"`
 

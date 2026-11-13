@@ -4,13 +4,13 @@ import { CREATE_COMPONENT, CREATE_COMPONENT_CONTENT } from '../../../components/
 import { MANUAL_SUBCLASS } from '../../../components/inheritance/inheritance.snippets';
 import { PROPERTY_OPTIONS, PROPERTY_TYPE, READ_ONLY_INPUT, TRANSFORM_TYPE } from '../../../components/inputs/inputs.snippets';
 import { CONNECTED_CALLBACK, LIFECYCLE_HOOKS } from '../../../components/lifecycle/lifecycle.snippets';
-import { EVENT_DECLARATION, MEMBER_NAME_CLASH } from '../../../components/outputs/outputs.snippets';
+import { EVENT_DECLARATION, MEMBER_NAME_CLASH, MODEL_DECLARATION } from '../../../components/outputs/outputs.snippets';
 import { QUERY_DECORATORS, QUERY_REQUIRED } from '../../../components/queries/queries.snippets';
 import { CONSTRUCTOR_ACCESS, HOST_DIRECTIVE } from '../../../directives/custom/custom.snippets';
 import { DIRECTIVE_REGISTRATION } from '../../../directives/overview/overview.snippets';
 import { HYDRATE_COMPONENT } from '../../../tools/ssr/progressive-hydration/progressive-hydration.snippets';
 import { TRANSFER_STATE_COMPONENT, TRANSFER_STATE_ENTRY } from '../../../tools/ssr/transfer-state/transfer-state.snippets';
-import { CANCELABLE_EVENT, CREATE_COMPONENT_DIRECTIVES, CREATE_COMPONENT_GROUPS, CUSTOM_DIRECTIVE, DIRECTIVE_CREATE_COMPONENT, DIRECTIVE_KINDS, HOST_BINDINGS_DIRECTIVE, HOST_DIRECTIVE_MEMBERS, HOST_LISTENER, HOST_LISTENER_TARGETS, HOST_PROPERTY, HOST_PROPERTY_VALUES, OUTPUT_EMIT, QUERY_CONTENT, QUERY_CONTENT_OPTIONS, QUERY_READ, QUERY_TIMING, STRUCTURAL_DIRECTIVE } from './core.snippets';
+import { CANCELABLE_EVENT, CREATE_COMPONENT_DIRECTIVES, CREATE_COMPONENT_GROUPS, CUSTOM_DIRECTIVE, DIRECTIVE_CREATE_COMPONENT, DIRECTIVE_KINDS, HOST_BINDINGS_DIRECTIVE, HOST_DIRECTIVE_MEMBERS, HOST_LISTENER, HOST_LISTENER_TARGETS, HOST_PROPERTY, HOST_PROPERTY_VALUES, MODEL_CREATE_COMPONENT, MODEL_DIRECTIVE, MODEL_HOST_DIRECTIVE, OUTPUT_EMIT, QUERY_CONTENT, QUERY_CONTENT_OPTIONS, QUERY_READ, QUERY_TIMING, STRUCTURAL_DIRECTIVE } from './core.snippets';
 
 /**
  * The symbols of `@xaendar/core`.
@@ -130,6 +130,57 @@ export const CORE_API: ApiPackage = {
         { key: 'reading', snippets: [READ_ONLY_INPUT] }
       ],
       guides: ['components/inputs', 'templates/binding', 'signals/options', 'directives/custom']
+    },
+    {
+      name: 'Model',
+      kind: 'decorator',
+      signature: 'function Model<Value extends ModelSignal<ActualValue>, ActualValue = Value extends ModelSignal<infer Type> ? Type : unknown>(value?: ActualValue, options?: Omit<InputSignalOptions<ActualValue>, \'transform\'> & { alias?: string; event?: Partial<EventOptions> }): AccessorDecorator<CustomElement | CustomDirective, ModelSignal<ActualValue>>',
+      members: [
+        {
+          name: 'Model.required',
+          group: 'variants',
+          signature: 'Model.required<ActualValue = unknown>(options?: Omit<InputSignalOptions<ActualValue>, \'transform\'> & { alias?: string; event?: Partial<EventOptions> }): AccessorDecorator<CustomElement | CustomDirective, ModelSignal<ActualValue>>',
+          snippets: ['components/required-error.txt']
+        },
+        {
+          name: 'value',
+          group: 'parameters',
+          signature: 'value?: ActualValue'
+        },
+        {
+          name: 'alias',
+          group: 'options',
+          signature: 'alias?: string'
+        },
+        {
+          name: 'event',
+          group: 'options',
+          signature: 'event?: Partial<EventOptions>'
+        },
+        {
+          name: 'equals',
+          group: 'options',
+          signature: 'equals?: (a: ActualValue, b: ActualValue) => boolean'
+        },
+        {
+          name: 'watched',
+          group: 'options',
+          signature: 'watched?: () => void'
+        },
+        {
+          name: 'unwatched',
+          group: 'options',
+          signature: 'unwatched?: () => void'
+        }
+      ],
+      usage: [
+        { key: 'declaring', snippets: [MODEL_DECLARATION] },
+        { key: 'binding', snippets: ['components/two-way-binding.html'] },
+        { key: 'directives', snippets: [MODEL_DIRECTIVE, MODEL_HOST_DIRECTIVE] },
+        { key: 'outside', snippets: [MODEL_CREATE_COMPONENT] },
+        { key: 'errors', snippets: ['components/two-way-binding-errors.txt'] }
+      ],
+      guides: ['components/outputs', 'components/inputs', 'directives/custom', 'components/dynamic-creation']
     },
     {
       name: 'Event',

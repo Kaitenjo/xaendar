@@ -469,6 +469,26 @@ export const ERRORS: readonly ErrorEntry[] = [
     page: 'components/inputs'
   },
   {
+    phase: 'Parser',
+    message: '[Parser] [(value)] binds a writable signal, named without braces nor call: [(value)]="signal"',
+    page: 'components/outputs'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] [(value)] binds a writable signal, named without braces nor call: a member, a variable of the template or one of their properties, e.g. [(value)]="count"',
+    page: 'components/outputs'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] [(value)] binds a model of a component or of a directive: <input> is not a component imported in the template.',
+    page: 'components/outputs'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] [(value)] binds the input "value" and its event "valueChange", which QuantityLabelComponent does not both declare: declare a model with @Model, or an input and an event with these names.',
+    page: 'components/outputs'
+  },
+  {
     phase: 'TypeChecker',
     message: "Property 'bubbly' does not exist on type 'HTMLElementEventMap'.",
     page: 'components/outputs'

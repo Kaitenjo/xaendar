@@ -1,9 +1,11 @@
+import { toModelName } from '@xaendar/common';
 import type { Constructor } from '@xaendar/types';
 import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_HOST_DIRECTIVES, DIRECTIVE_ORDER, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
 import type { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { CustomElement } from '../../models/custom-element/custom-element';
 import { Output } from '../../models/output/output';
 import { isInputSignal } from '../../signals/input/input-instance.symbol';
+import { isModelSignal } from '../../signals/model/model-instance.symbol';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
 import type { HostDirectiveMember } from '../../types/web-component/host-directive-member.type';
 import type { HostDirectiveOptions } from '../../types/web-component/host-directive-options.type';
@@ -146,7 +148,7 @@ function exposeInputs(element: CustomElement, directive: CustomDirective, inputs
 }
 
 /**
- * Collects the events of a host directive its component exposes.
+ * Collects the events of a host directive its component exposes: its outputs and the events of change of its models.
  *
  * @param directive - The host directive dispatching the events.
  * @param outputs - The events to expose, see {@link HostDirectiveOptions.events}.
@@ -159,7 +161,7 @@ function getExposedEvents(directive: CustomDirective, outputs: HostDirectiveMemb
   if (outputs?.length) {
     for (let i = 0; i < outputs.length; i++) {
       const { name, alias } = toExposure(outputs[i]);
-      if (!(directive[name] instanceof Output)) {
+      if (!(directive[name] instanceof Output) && !isModelChange(directive, name)) {
         throw new Error(`${directive.constructor.name} does not declare an event named "${name}"`);
       }
 
@@ -168,4 +170,18 @@ function getExposedEvents(directive: CustomDirective, outputs: HostDirectiveMemb
   }
 
   return events;
+}
+
+/**
+ * Tells whether an event is the event of change of a model of a directive: the name of the model (its alias, when it
+ * declares one) followed by `Change`.
+ *
+ * @param directive - The directive.
+ * @param name - The name of the event.
+ * @returns `true` if a model of the directive dispatches the event, `false` otherwise.
+ */
+function isModelChange(directive: CustomDirective, name: string): boolean {
+  const model = toModelName(name);
+  const property = model && getWebComponentMetadata(directive.constructor)?.[INTERNAL_ALIAS_TO_ATTRIBUTE]?.[model];
+  return !!property && isModelSignal(directive[property]);
 }

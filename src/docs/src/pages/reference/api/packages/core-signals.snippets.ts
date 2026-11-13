@@ -189,6 +189,26 @@ public increment(): void {
 };
 
 /**
+ * The snippet `model-write.ts`, shown by the API reference of core-signals.
+ */
+export const MODEL_WRITE: SourceFile = {
+  name: 'model-write.ts',
+  lang: 'ts',
+  code: `/**
+ * The value bound by the parent, which the component changes too: no local copy, the parent sees every change.
+ */
+@Model(0)
+public accessor value!: ModelSignal<number>;
+
+/**
+ * Changes the value: a parent binding [(value)]="count" finds it in count.
+ */
+public increment(): void {
+  this.value.update(value => value + 1);
+}`
+};
+
+/**
  * The snippet `query-content-descendants.ts`, shown by the API reference of core-signals.
  */
 export const QUERY_CONTENT_DESCENDANTS: SourceFile = {

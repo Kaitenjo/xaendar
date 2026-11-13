@@ -139,7 +139,7 @@
       },
       "readOnly": {
         "title": "In sola lettura dentro il componente",
-        "body": "<p>Scrivere un input dall’interno del componente non compila, e forzato con un cast lancia un errore. Per un valore che cambia anche il componente, copia l’input in un signal locale con un effetto, e scrivi quello locale.</p>"
+        "body": "<p>Scrivere un input dall’interno del componente non compila, e forzato con un cast lancia un errore. Per un valore che cambia anche il componente, copia l’input in un signal locale con un effetto, e scrivi quello locale. Quando il padre deve vedere il cambiamento, dichiara invece un model, con <a href=\"#/it/reference/api/core/Model\"><code>@Model</code></a>.</p>"
       }
     }
   },
@@ -150,6 +150,29 @@
       "declaring": {
         "title": "Dichiarare un alias",
         "body": "<p>L’opzione e il tipo dell’accessor indicano lo stesso alias. Con un argomento di tipo sul decoratore, è il tipo dell’accessor.</p>"
+      }
+    }
+  },
+  "ModelSignal": {
+    "summary": "Il tipo dei model dichiarati con <code>@Model</code>: un input che il padre imposta, e che la classe che lo dichiara può anche scrivere, inviando un evento di cambiamento.",
+    "description": "<p>Il decoratore <a href=\"#/it/reference/api/core/Model\"><code>@Model</code></a>, e <code>@Model.required</code>, vanno su un <code>accessor</code> di un componente o di una direttiva custom di tipo <code>ModelSignal&lt;T&gt;</code>, e lo sostituiscono con un model. È un <a href=\"#/it/reference/api/core/signals/InputSignal\"><code>InputSignal</code></a> con <code>set</code> e <code>update</code> pubblici: chiamarlo, o chiamare il suo <code>get()</code>, restituisce il valore e lo traccia come ogni signal, e i binding del padre, <code>createComponent</code>, <code>renderToString</code> e le assegnazioni alla proprietà dell’elemento lo impostano senza inviare nulla.</p><p><code>set</code> e <code>update</code>, chiamati dalla classe, cambiano il valore e, quando è diverso da quello corrente secondo <code>equals</code>, inviano sull’elemento host l’evento di cambiamento, che ha il nome del model seguito da <code>Change</code> e come <code>detail</code> il nuovo valore: un two-way binding, <code>[(value)]=\"quantity\"</code>, lo riscrive nel signal del padre. Il valore ha lo stesso tipo nei due sensi: un model non ha <code>transform</code>.</p><p>L’annotazione, importata da <code>@xaendar/core/signals</code>, dice al compilatore dei template che l’accessor è un model, con il suo evento.</p>",
+    "members": {
+      "get": "<p>Restituisce il valore corrente, come chiamare il model, e lo registra come dipendenza del computed, dell’effect o del binding del template in esecuzione.</p>",
+      "set": "<p>Imposta il valore, dalla classe che dichiara il model. Quando <code>equals</code> lo trova diverso da quello corrente, il model notifica i suoi lettori e invia l’evento di cambiamento, con il valore come <code>detail</code>; altrimenti non succede nulla. L’evento viene inviato in modo sincrono, una volta impostato il valore: i suoi listener leggono già il nuovo valore, e annullarlo non annulla il cambiamento.</p>",
+      "update": "<p>Imposta il valore a quello che l’updater restituisce a partire dal valore corrente, letto senza tracciarlo, come fa <code>set</code>: l’evento di cambiamento viene inviato solo quando il valore cambia.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "Dichiarare un model",
+        "body": "<p>L’accessor è di tipo <code>ModelSignal&lt;T&gt;</code>, oppure <code>Aliased&lt;ModelSignal&lt;T&gt;, 'alias'&gt;</code> quando il model dichiara un alias, che dà il nome anche al suo evento.</p>"
+      },
+      "binding": {
+        "title": "Two-way binding",
+        "body": "<p>Un padre lega il model a uno dei suoi signal scrivibili con <code>[(value)]</code>, oppure ascolta l’evento da solo con <code>(valueChange)</code>.</p>"
+      },
+      "instead": {
+        "title": "Al posto di una copia locale",
+        "body": "<p>Un input che anche il componente cambia richiede una copia locale, che il padre non vede mai. Un model si scrive sul posto, e il padre che lo lega riceve ogni cambiamento.</p>"
       }
     }
   },

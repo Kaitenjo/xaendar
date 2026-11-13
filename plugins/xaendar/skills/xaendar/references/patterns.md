@@ -1,6 +1,6 @@
 # Patterns
 
-Idiomatic ways to cover what Xaendar does not ship: there is no DI, router, forms module, HTTP client or two-way binding.
+Idiomatic ways to cover what Xaendar does not ship: there is no DI, router, forms module or HTTP client, and two-way binding (`[(x)]`) covers only the models of components and directives, not native fields.
 
 ## Shared state (a store)
 
@@ -75,6 +75,7 @@ public onDestroy(): void {
 
 ## Forms
 
+- A form control written as a component (a toggle, a stepper, a date picker) declares its value as a `@Model` and the form binds it with `[(value)]="field"`, `field` a signal of the form.
 - Read each field with `(input)` (text) or `(change)` (select, checkbox) calling a method: `this.name.set((event.target as HTMLInputElement).value)`, or pass a ref property: `(input)="setName(field.value)"`.
 - Validate with a `computed` over the field signals; show the errors after the first submit attempt.
 - `<form novalidate (submit)="submit($event)">`, and `event.preventDefault()` in the method.

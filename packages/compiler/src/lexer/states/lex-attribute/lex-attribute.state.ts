@@ -14,7 +14,8 @@ import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.u
  * @param cursor - The lexer cursor positioned at the start of the attribute.
  * @param context - Unused lexer context.
  * @returns Transition result with the ATTRIBUTE token and next state.
- * @throws If the attribute name is malformed or contains `(`, a `)` is found outside of a directive, or a `}` is found outside of a conditional binding.
+ * @throws If the attribute name is malformed or contains `(` (but the parentheses of the name of a two-way binding,
+ *   `[(value)]`), a `)` is found outside of a directive, or a `}` is found outside of a conditional binding.
  */
 export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
@@ -73,8 +74,17 @@ export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFuncti
         <input @@myDirective(disabled) />
 
         Outside of a directive there is nothing for ')' to close.
+        The ')' closing the name of a two-way binding, opened by its '[(', is part of the name.
+        Ex:
+        <x-counter [(value)]="count" />
       */
       case RPAREN:
+        if (isOpenTwoWayBinding(attribute)) {
+          cursor.advance();
+          attribute = `${attribute}${cursor.currentChar.value}`;
+          break;
+        }
+
         if (resolveTagBodyState(context.history.at(-1)) !== LexerState.DIRECTIVE_BODY) {
           throw new Error('Unexpected \')\': there is no directive to close');
         }
@@ -118,8 +128,18 @@ export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFuncti
         it means the separating space before the event binding is missing.
         Ex:
         <input disabled(input)="onInput()" />
+
+        Right after a '[' it opens the name of a two-way binding instead, part of the name.
+        Ex:
+        <x-counter [(value)]="count" />
       */
       case LPAREN:
+        if (attribute === '[') {
+          cursor.advance();
+          attribute = `${attribute}${cursor.currentChar.value}`;
+          break;
+        }
+
         throw new Error('Unexpected \'(\' in attribute name: event bindings must be separated from the previous binding by a space');
 
       case EQUAL_THEN:
@@ -195,4 +215,15 @@ export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFuncti
   }
 
   return retVal;
+}
+
+/**
+ * Tells whether the name of an attribute read so far is the one of a two-way binding whose `(` is not closed yet:
+ * `[(value` in `[(value)]`.
+ *
+ * @param attribute - The name read so far.
+ * @returns `true` if the name opens a two-way binding and holds no `)`.
+ */
+function isOpenTwoWayBinding(attribute: string): boolean {
+  return attribute.startsWith('[(') && !attribute.includes(')');
 }

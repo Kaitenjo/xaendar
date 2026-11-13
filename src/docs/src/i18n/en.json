@@ -539,7 +539,7 @@
           },
           "callout2": {
             "heading": "Inputs are read-only inside the component",
-            "p1": "<code>InputSignal</code> has no public <code>set</code>: only the bindings of the parent, and the assignments to the property of the element from outside, write it. For a value that the component changes too, copy the input into a local signal in an effect, and write the local one."
+            "p1": "<code>InputSignal</code> has no public <code>set</code>: only the bindings of the parent, and the assignments to the property of the element from outside, write it. For a value that the component changes too, copy the input into a local signal in an effect, and write the local one. When the parent has to see the change, declare a model with <code>@Model</code> instead: see the two-way binding in <a href=\"#/en/components/outputs\">Outputs</a>."
           },
           "callout3": {
             "heading": "transform decides the type checked in templates",
@@ -616,7 +616,7 @@
       "outputs": {
         "eyebrow": "Components",
         "title": "Outputs with @Event",
-        "lead": "An output is how a child talks to its parent. You declare it with <code>@Event</code> on an accessor of the child, and it becomes an <code>Output</code> whose <code>emit</code> dispatches a <code>CustomEvent</code> on the element of the child. The parent listens to it in its template, like to a native event.",
+        "lead": "An output is how a child talks to its parent. You declare it with <code>@Event</code> on an accessor of the child, and it becomes an <code>Output</code> whose <code>emit</code> dispatches a <code>CustomEvent</code> on the element of the child. The parent listens to it in its template, like to a native event. A model, declared with <code>@Model</code>, joins an input and an output in a single member, which the parent binds in both directions.",
         "declaringAndEmitting": {
           "title": "Declaring and emitting",
           "p1": "The event is named after the accessor, and the type argument of <code>Output</code> is the type of its <code>detail</code>. Without a type argument the event carries no detail, and <code>emit</code> takes at most the options. The options passed to the decorator apply to every emission; those passed to <code>emit</code> are merged over them for that emission only."
@@ -625,7 +625,7 @@
           "title": "Listening in the parent",
           "p1": "The parent binds a method to the event with <code>(valueChange)=\"setQuantity($event)\"</code>. <code>$event</code> is the <code>CustomEvent</code> itself: the method reads the value in <code>event.detail</code>.",
           "example1": "Data down, events up",
-          "p2": "The picker never changes the quantity: it shows its input and asks for a new value with <code>valueChange</code>. The parent owns the quantity and decides: past <code>5</code> it ignores the request, and the picker keeps showing the value it receives. Together, an input and an output make a component controlled by its parent, which is how Xaendar replaces two-way binding. <code>cleared</code> has no detail, and its handler takes no argument. A template can still pass <code>$event</code> to it, typed <code>CustomEvent&lt;null&gt;</code>: its <code>detail</code> is <code>null</code>, but the event itself is there, for instance to call <code>preventDefault()</code> on an event declared <code>cancelable</code>."
+          "p2": "The picker never changes the quantity: it shows its input and asks for a new value with <code>valueChange</code>. The parent owns the quantity and decides: past <code>5</code> it ignores the request, and the picker keeps showing the value it receives. Together, an input and an output make a component controlled by its parent, which can refuse a value. When the child changes the value by itself, a model binds it in both directions: see <em>Two-way binding</em> below. <code>cleared</code> has no detail, and its handler takes no argument. A template can still pass <code>$event</code> to it, typed <code>CustomEvent&lt;null&gt;</code>: its <code>detail</code> is <code>null</code>, but the event itself is there, for instance to call <code>preventDefault()</code> on an event declared <code>cancelable</code>."
         },
         "eventOptions": {
           "title": "Event options",
@@ -633,6 +633,16 @@
           "example1": "Who receives what",
           "p2": "Press the four buttons. The template binding on the tag receives everything. <code>bubbling</code> reaches the frame, which is in the same shadow root as the child, but stops at the root, so the host of the parent never sees it. Only <code>escaping</code>, and <code>plain</code> with the options overridden, reach the host and the document. On the way out the target is retargeted: the document sees the outermost component containing the source, while <code>composedPath()[0]</code> is still the element that emitted it.",
           "p3": "The frame, the host and the document listen with <code>addEventListener</code>: a template can only bind a custom event on the tag of the component that declares it. Listeners added outside the template are yours to remove, which the example does in <code>onDestroy</code>."
+        },
+        "twoWayBinding": {
+          "title": "Two-way binding",
+          "p1": "When the child changes a value by itself and the parent has to follow it, the input and the output become a single member, a model. You declare it with <a href=\"#/en/reference/api/core/Model\"><code>@Model</code></a> on an accessor typed <a href=\"#/en/reference/api/core/signals/ModelSignal\"><code>ModelSignal</code></a>: the parent sets it as any input, and the child reads it, but also writes it, with <code>set</code> and <code>update</code>. Every write that changes the value dispatches on the element of the child a <code>CustomEvent</code> named after the model followed by <code>Change</code>, <code>valueChange</code> for <code>value</code>, with the new value as its <code>detail</code>. The options are the ones of <code>@Property</code> but <code>transform</code>, since the value goes both ways, plus <code>event</code>, the options of the event of change, which by default neither bubbles nor leaves the shadow root. With an <code>alias</code>, the event is named after the alias.",
+          "p2": "The parent binds both with the syntax of Angular, <code>[(value)]=\"quantity\"</code>, naming a writable signal without braces and without call: the input receives the value of the signal, and every <code>valueChange</code> writes its detail into the signal.",
+          "example1": "Two steppers, one signal",
+          "p3": "Both steppers are bound to <code>quantity</code>: a click on one of them writes the signal through <code>valueChange</code>, and the other one shows the new value. <em>Reset</em> writes the signal from the parent: the steppers receive it as an input and dispatch nothing, since only the writes of the class declaring the model dispatch the event. At zero, the minus button writes the same value again: <code>equals</code> finds no change, and no event is dispatched.",
+          "p4": "<code>[(value)]=\"quantity\"</code> stands for <code>value=\"{quantity()}\"</code> together with <code>(valueChange)=\"quantity.set($event.detail)\"</code>. The signal can be a member created with <code>signal()</code>, a model of the parent, which then passes the change on to its own parent, or a signal reached through a property of a member or of a variable of the template, such as <code>form.quantity</code> or the item of a <code>@for</code>. The binding works on the tag of a component, in a conditional binding and between the parentheses of a custom directive, which can declare models too. The event can also be listened to alone, and the editor proposes both <code>[(value)]</code> and <code>(valueChange)</code>.",
+          "p5": "A two-way binding needs only an input <code>x</code> and an event <code>xChange</code>, so it also binds a pair declared with <code>@Property</code> and <code>@Event</code>, such as the quantity picker of the first example. A model is the lighter way to declare it: an instance costs as much as with the input alone, with no <code>Output</code> and no function of its own.",
+          "p6": "Outside the templates a model is bound by the same names. <code>createComponent</code> takes it among the <code>properties</code>, <code>{ value: () =&gt; this.quantity() }</code>, and its event among the <code>events</code>, <code>{ valueChange: event =&gt; this.quantity.set(event.detail) }</code>, typed after the model. A component exposes the model of a host directive by listing its name in <code>properties</code> and the name of its event in <code>events</code>: see <a href=\"#/en/reference/api/core/HostDirectiveOptions\"><code>HostDirectiveOptions</code></a>."
         },
         "edgeCases": {
           "title": "Edge cases",
@@ -657,6 +667,14 @@
           "callout6": {
             "heading": "Names already taken by HTMLElement",
             "p1": "A component is an <code>HTMLElement</code>, so an event named <code>remove</code>, <code>click</code> or <code>focus</code> would replace a method of the element. TypeScript rejects it, and so it does for an input or a signal named <code>title</code>, <code>lang</code> or <code>hidden</code>. Choose another name, or keep the name in templates with an <code>alias</code>."
+          },
+          "callout7": {
+            "heading": "What a two-way binding accepts",
+            "p1": "The value names a writable signal: braces, a call or any other expression fail the build. The element is a component imported in the template, or the binding goes between the parentheses of a directive, and the class declares both the input and its event of change. A native element, or a custom element of another library, has no model: listen to its events, as in <a href=\"#/en/patterns/forms\">Forms</a>."
+          },
+          "callout8": {
+            "heading": "The parent cannot refuse the value of a model",
+            "p1": "The child keeps the value it writes, whatever the parent does with the event: a parent that ignores it, or binds the input one way only, writes the input again only when its own signal changes. When the parent must be able to refuse a value, as with the limit of the first example, keep an input and an output apart, and let the child only ask for the change."
           }
         },
         "summary": {
@@ -668,7 +686,11 @@
           "td3": "Dispatches the event on the element, with options merged over the default ones.",
           "td4": "The form of an <code>Output</code> without a detail.",
           "td5": "<code>(name)=\"method($event)\"</code>",
-          "td6": "Listens in the template of the parent. <code>$event</code> is the <code>CustomEvent</code>."
+          "td6": "Listens in the template of the parent. <code>$event</code> is the <code>CustomEvent</code>.",
+          "td7": "Declares a model: an input the class can also write, and an event named after it followed by <code>Change</code>. <code>@Model.required(options?)</code> declares one without default.",
+          "td8": "The type of the accessor: an <code>InputSignal&lt;T&gt;</code> with <code>set</code> and <code>update</code>, which dispatch the event of change when the value changes.",
+          "td9": "<code>[(name)]=\"signal\"</code>",
+          "td10": "Binds the model to a writable signal of the parent, in both directions."
         }
       },
       "hostBindings": {
@@ -1415,7 +1437,7 @@
       },
       "whatXaendarDoesNot": {
         "title": "What Xaendar does not do",
-        "p1": "Xaendar is deliberately small. There is no dependency injection, no router, no pipes and no two-way binding: shared state lives in plain modules of signals, formatting lives in methods, and forms are wired with events. The <a href=\"#/en/reference/coming-from-angular\">Coming from Angular</a> page maps every Angular concept to its Xaendar counterpart, and the <a href=\"#/en/patterns/forms\">Patterns</a> section shows the idiomatic way to cover the gaps."
+        "p1": "Xaendar is deliberately small. There is no dependency injection, no router and no pipes: shared state lives in plain modules of signals, formatting lives in methods, and forms are wired with events, since the two-way binding, <code>[(value)]</code>, binds the models of components and directives, not native fields. The <a href=\"#/en/reference/coming-from-angular\">Coming from Angular</a> page maps every Angular concept to its Xaendar counterpart, and the <a href=\"#/en/patterns/forms\">Patterns</a> section shows the idiomatic way to cover the gaps."
       }
     },
     "patterns": {
@@ -1462,7 +1484,7 @@
       "forms": {
         "eyebrow": "Patterns",
         "title": "Forms",
-        "lead": "Xaendar has no form module and no two-way binding. A form is made of plain elements: their events write signals, computed signals validate them, and a directive writes values back into the fields when the state has to drive them.",
+        "lead": "Xaendar has no form module, and its two-way binding, <code>[(value)]</code>, binds the models of components, not native fields. A form is made of plain elements: their events write signals, computed signals validate them, and a directive writes values back into the fields when the state has to drive them.",
         "readingTheFields": {
           "title": "Reading the fields",
           "example1": "A sign-up form",
@@ -1694,7 +1716,9 @@
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> and custom properties",
           "td19": "<code>&lt;template name(…)&gt;</code> and <code>@render name(…)</code>, with typed parameters; passed to another component as content, read with <code>@Query.contentTemplate</code>, or as an input typed <code>TemplateRef</code>: see <a href=\"#/en/templates/reusable-templates\">Templates and @render</a>",
           "td20": "<code>@let</code>, also called a template variable, a value read as <code>name</code>, as in Angular, kept up to date with what it reads: see <a href=\"#/en/templates/let\">@let</a>",
-          "td21": "The same syntax: <code>[class.x]=\"{ condition }\"</code>, with the value in braces, merged class by class with the directives and the component as in Angular. There is no <code>[class]</code> bound to an object: <code>class=\"{`a ${b()}`}\"</code> binds the string. See <a href=\"#/en/templates/binding\">Binding</a>."
+          "td21": "The same syntax: <code>[class.x]=\"{ condition }\"</code>, with the value in braces, merged class by class with the directives and the component as in Angular. There is no <code>[class]</code> bound to an object: <code>class=\"{`a ${b()}`}\"</code> binds the string. See <a href=\"#/en/templates/binding\">Binding</a>.",
+          "td22": "<code>@Model</code> and <code>@Model.required</code> on an accessor typed <code>ModelSignal</code>: <code>set</code> and <code>update</code> dispatch the event of change, <code>valueChange</code>",
+          "td23": "The same syntax, <code>[(value)]=\"signal\"</code>, with the signal named without call, on components and directives. Native fields have no model: see <a href=\"#/en/patterns/forms\">Forms</a>."
         },
         "whatWorksDifferently": {
           "title": "What works differently",
@@ -1703,7 +1727,7 @@
           "li4": "<strong>Templates are strict.</strong> Listeners call one method, expressions cannot assign or create objects, and a few characters must be escaped. See <a href=\"#/en/reference/template-syntax\">the cheat sheet</a>.",
           "callout1": {
             "heading": "Not available",
-            "body": "Dependency injection, a router, a forms module, an HTTP client, two-way binding and event modifiers such as <code>(keydown.enter)</code>. The <a href=\"#/en/patterns/forms\">Patterns</a> section shows how to cover the common cases with signals and directives."
+            "body": "Dependency injection, a router, a forms module, an HTTP client, <code>[(ngModel)]</code> on native fields and event modifiers such as <code>(keydown.enter)</code>. The <a href=\"#/en/patterns/forms\">Patterns</a> section shows how to cover the common cases with signals and directives."
           }
         }
       },
@@ -1760,7 +1784,7 @@
           "title": "What does not exist",
           "th1": "Missing",
           "th2": "Instead",
-          "td1": "<code>prop=\"{ … }\"</code> and a listener; a directive writing the property",
+          "td1": "<code>prop=\"{ … }\"</code> and a listener; a directive writing the property. <code>[(x)]</code> binds only the models of components and directives",
           "td2": "A filter in the method: <code>(keydown.enter)</code> listens to an event with that name",
           "td4": "Pipes",
           "td5": "Methods and computed signals"
@@ -3773,6 +3797,22 @@
     "[TypeChecker] \"showValue\" is the property of an input of XCard declaring the alias \"show-value\": bind it as show-value=\"…\".": {
       "cause": "A template binding an input by the name of its property, while the input declares an alias: the name of the property would be an attribute of the element, which the input never reads.",
       "fix": "Bind the input by its alias."
+    },
+    "[Parser] [(value)] binds a writable signal, named without braces nor call: [(value)]=\"signal\"": {
+      "cause": "A two-way binding without a value, or with its value in braces, as an interpolation.",
+      "fix": "Name the signal without braces and without call: [(value)]=\"quantity\"."
+    },
+    "[Parser] [(value)] binds a writable signal, named without braces nor call: a member, a variable of the template or one of their properties, e.g. [(value)]=\"count\"": {
+      "cause": "The value of a two-way binding is not a signal the binding can write: a call, an optional chaining, a literal or an operator.",
+      "fix": "Name the signal itself: a member, a variable of the template or one of their properties, as in [(value)]=\"form.quantity\"."
+    },
+    "[TypeChecker] [(value)] binds a model of a component or of a directive: <input> is not a component imported in the template.": {
+      "cause": "A two-way binding on a native element, or on a custom element of another library: neither declares models.",
+      "fix": "Listen to the event of the element and write the signal in the event handler, as in Forms; for a component, import it in the template."
+    },
+    "[TypeChecker] [(value)] binds the input \"value\" and its event \"valueChange\", which QuantityLabelComponent does not both declare: declare a model with @Model, or an input and an event with these names.": {
+      "cause": "The component or the directive does not declare the input, or its event of change.",
+      "fix": "Declare the model with @Model, or the missing @Property or @Event."
     },
     "Property 'bubbly' does not exist on type 'HTMLElementEventMap'.": {
       "cause": "A listener for an unknown event on a native element.",

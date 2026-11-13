@@ -31,6 +31,15 @@ describe('getBindingContext', () => {
   });
 
   it.each([
+    ['nothing written yet', '<my-child [(', { kind: 'twoWay', tagName: 'my-child', directive: undefined, span: { start: 12, end: 12 } }],
+    ['a partial name', '<my-child [(va', { kind: 'twoWay', tagName: 'my-child', directive: undefined, span: { start: 12, end: 14 } }],
+    ['a name in the parentheses of a directive', '<my-child @@tooltip([(o', { kind: 'twoWay', tagName: 'my-child', directive: 'tooltip', span: { start: 22, end: 23 } }],
+    ['a bracket alone, an attribute', '<my-child [', { kind: 'attribute', tagName: 'my-child', directive: undefined, span: { start: 10, end: 11 } }]
+  ])('finds the model of a two-way binding: %s', (_name, template, expected) => {
+    expect(contextOf(template)).toEqual(expected);
+  });
+
+  it.each([
     ['an attribute of a directive', '<my-child @@tooltip(te', { kind: 'attribute', tagName: 'my-child', directive: 'tooltip', span: { start: 20, end: 22 } }],
     ['an attribute after another', '<my-child @@tooltip(text="a" ', { kind: 'attribute', tagName: 'my-child', directive: 'tooltip', span: { start: 29, end: 29 } }],
     ['an event of a directive', '<my-child @@tooltip((sh', { kind: 'event', tagName: 'my-child', directive: 'tooltip', span: { start: 21, end: 23 } }],

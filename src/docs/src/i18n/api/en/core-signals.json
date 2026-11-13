@@ -139,7 +139,7 @@
       },
       "readOnly": {
         "title": "Read-only inside the component",
-        "body": "<p>Writing an input from inside the component does not compile, and forced with a cast it throws. For a value the component changes too, copy the input into a local signal with an effect, and write the local one.</p>"
+        "body": "<p>Writing an input from inside the component does not compile, and forced with a cast it throws. For a value the component changes too, copy the input into a local signal with an effect, and write the local one. When the parent has to see the change, declare a model instead, with <a href=\"#/en/reference/api/core/Model\"><code>@Model</code></a>.</p>"
       }
     }
   },
@@ -150,6 +150,29 @@
       "declaring": {
         "title": "Declaring an alias",
         "body": "<p>The option and the type of the accessor name the same alias. With a type argument on the decorator, it is the type of the accessor.</p>"
+      }
+    }
+  },
+  "ModelSignal": {
+    "summary": "The type of the models declared with <code>@Model</code>: an input the parent sets, which the class declaring it can also write, dispatching an event of change.",
+    "description": "<p>The <a href=\"#/en/reference/api/core/Model\"><code>@Model</code></a> decorator, and <code>@Model.required</code>, go on an <code>accessor</code> of a component or a custom directive typed <code>ModelSignal&lt;T&gt;</code>, and replace it with a model. It is an <a href=\"#/en/reference/api/core/signals/InputSignal\"><code>InputSignal</code></a> with a public <code>set</code> and <code>update</code>: calling it, or its <code>get()</code>, returns the value and tracks it like any signal, and the bindings of the parent, <code>createComponent</code>, <code>renderToString</code> and the assignments to the property of the element set it quietly.</p><p><code>set</code> and <code>update</code>, called by the class, change the value and, when it differs from the current one by <code>equals</code>, dispatch on the host element the event of change, named after the model followed by <code>Change</code>, whose <code>detail</code> is the new value: a two-way binding, <code>[(value)]=\"quantity\"</code>, writes it back into the signal of the parent. The value has the same type both ways: a model has no <code>transform</code>.</p><p>The annotation, imported from <code>@xaendar/core/signals</code>, tells the template compiler that the accessor is a model, with its event.</p>",
+    "members": {
+      "get": "<p>Returns the current value, like calling the model, and registers it as a dependency of the computed signal, the effect or the template binding running.</p>",
+      "set": "<p>Sets the value, from the class declaring the model. When <code>equals</code> finds it different from the current one, the model notifies its readers and dispatches the event of change, with the value as <code>detail</code>; otherwise nothing happens. The event is dispatched synchronously, once the value is set: its listeners already read the new value, and canceling it does not undo the change.</p>",
+      "update": "<p>Sets the value to the one the updater returns from the current value, read without tracking it, as <code>set</code> does: the event of change is dispatched only when the value changes.</p>"
+    },
+    "usage": {
+      "declaring": {
+        "title": "Declaring a model",
+        "body": "<p>The accessor is typed <code>ModelSignal&lt;T&gt;</code>, or <code>Aliased&lt;ModelSignal&lt;T&gt;, 'alias'&gt;</code> when the model declares an alias, which names its event too.</p>"
+      },
+      "binding": {
+        "title": "Two-way binding",
+        "body": "<p>A parent binds the model to one of its writable signals with <code>[(value)]</code>, or listens to the event alone with <code>(valueChange)</code>.</p>"
+      },
+      "instead": {
+        "title": "Instead of a local copy",
+        "body": "<p>An input the component changes too needs a local copy, which the parent never sees. A model is written in place, and the parent binding it receives every change.</p>"
       }
     }
   },

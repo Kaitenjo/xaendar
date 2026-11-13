@@ -19,7 +19,7 @@ export type HostDirectiveOptions = {
   properties?: HostDirectiveMember[],
   /**
    * The events of the directive exposed on the component, listened to from the templates using it: each one is the
-   * name of an `@Event` of the directive, or an object also giving the name it is dispatched with on the component, as
+   * name of an `@Event` of the directive or of the event of change of one of its models (`valueChange`), or an object also giving the name it is dispatched with on the component, as
    * in `'opened'` or `{ name: 'opened', alias: 'shown' }`. The events not listed are not dispatched on the component.
    */
   events?: HostDirectiveMember[]

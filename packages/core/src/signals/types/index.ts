@@ -3,6 +3,7 @@ export * from './computed.type';
 export * from './effect-options.type';
 export * from './input-signal.options.type';
 export * from './input-signal.type';
+export * from './model-signal.type';
 export * from './query-element.type';
 export * from './query-options.type';
 export * from './query-content-options.type';

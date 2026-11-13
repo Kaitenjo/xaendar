@@ -1,0 +1,12 @@
+@import { ModelStepperComponent } from './model-stepper.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="steppers">
+  <ex-model-stepper [(value)]="quantity" />
+  <ex-model-stepper [(value)]="quantity" />
+</div>
+<p>
+  Quantity in the parent:
+  <strong>{ quantity() }</strong>
+</p>
+<ex-button (click)="reset()">Reset</ex-button>

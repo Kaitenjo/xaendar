@@ -429,6 +429,67 @@ public get stateLabel(): string {
 };
 
 /**
+ * The snippet `model-create-component.ts`, shown by the API reference of core.
+ */
+export const MODEL_CREATE_COMPONENT: SourceFile = {
+  name: 'model-create-component.ts',
+  lang: 'ts',
+  code: `this.createComponent(StepperComponent, {
+  target: this.list,
+  // The model, bound as any input: by its name, or by its alias
+  properties: [{ value: () => this.quantity() }],
+  // Its event of change, whose detail is typed as the model
+  events: [{ valueChange: event => this.quantity.set(event.detail) }]
+});`
+};
+
+/**
+ * The snippet `model-directive.ts`, shown by the API reference of core.
+ */
+export const MODEL_DIRECTIVE: SourceFile = {
+  name: 'model-directive.ts',
+  lang: 'ts',
+  code: `// toggle.directive.ts
+/**
+ * Switches a boolean at each click of its element: templates bind it with @@exToggle([(on)]="enabled").
+ */
+@Directive({ selector: 'exToggle' })
+export class ToggleDirective extends CustomDirective<HTMLElement> {
+  /**
+   * Whether the toggle is on. Its event of change, onChange, is dispatched on the element of the directive.
+   */
+  @Model(false, { alias: 'on' })
+  public accessor active!: Aliased<ModelSignal<boolean>, 'on'>;
+
+  /**
+   * Switches the value, dispatching onChange.
+   */
+  @HostListener('click')
+  public toggle(): void {
+    this.active.update(active => !active);
+  }
+}`
+};
+
+/**
+ * The snippet `model-host-directive.ts`, shown by the API reference of core.
+ */
+export const MODEL_HOST_DIRECTIVE: SourceFile = {
+  name: 'model-host-directive.ts',
+  lang: 'ts',
+  code: `// toggle-button.xd.component.ts
+/**
+ * A button switching on and off: it exposes the model of ToggleDirective, so templates bind [(on)]="enabled" on its tag.
+ */
+@WebComponent({
+  selector: 'ex-toggle-button',
+  hostDirectives: [{ directive: ToggleDirective, properties: ['on'], events: ['onChange'] }],
+  templateUrl: './toggle-button.xd.component.html'
+})
+export class ToggleButtonComponent extends CustomElement {}`
+};
+
+/**
  * The snippet `output-emit.ts`, shown by the API reference of core.
  */
 export const OUTPUT_EMIT: SourceFile = {

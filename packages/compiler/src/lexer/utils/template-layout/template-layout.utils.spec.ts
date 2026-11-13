@@ -40,6 +40,19 @@ describe('parseTemplateLayout', () => {
     }]);
   });
 
+  it('reads the name of a two-way binding with its brackets and parentheses, and rejects one that is not closed', () => {
+    expect(parseTemplateLayout('<x-counter [(value)]="count" @@tracked([(on)]="flag") />')).toEqual([{
+      kind: 'element',
+      name: 'x-counter',
+      selfClosing: true,
+      items: [
+        { kind: 'attribute', name: '[(value)]', value: 'count' },
+        { kind: 'directive', prefix: '@@', name: 'tracked', items: [{ kind: 'attribute', name: '[(on)]', value: 'flag' }] }
+      ]
+    }]);
+    expect(parseTemplateLayout('<x-counter [(value="count" />')).toBeUndefined();
+  });
+
   it('reads a self-closing element and a void element without content', () => {
     expect(parseTemplateLayout('<br/><input type="text">')).toEqual([
       { kind: 'element', name: 'br', selfClosing: true, items: [] },

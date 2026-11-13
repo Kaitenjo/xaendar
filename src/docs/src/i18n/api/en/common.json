@@ -314,5 +314,35 @@
         "body": "<p><code>CSS_UNITS.has('px')</code> is <code>true</code>, <code>CSS_UNITS.has('PX')</code> is <code>false</code>: the units are written in lowercase.</p>"
       }
     }
+  },
+  "MODEL_CHANGE_SUFFIX": {
+    "summary": "The suffix of the name of the event of change of a model, after the name the model is bound with.",
+    "description": "<p><code>'Change'</code>: the model <code>value</code> dispatches <code>valueChange</code>, and a two-way binding <code>[(value)]</code> listens to it. The compiler, the language server and the runtime use it to pair an input with its event.</p>"
+  },
+  "toModelChangeEvent": {
+    "summary": "Gets the name of the event a model dispatches when it changes its value.",
+    "description": "<p>Appends <a href=\"#/en/reference/api/common/MODEL_CHANGE_SUFFIX\"><code>MODEL_CHANGE_SUFFIX</code></a> to the name the model is bound with: its alias when it declares one, else the name of its accessor. <code>@Model</code> names its event with it, and the compiler the event a two-way binding listens to.</p>",
+    "members": {
+      "name": "<p>The name the model is bound with.</p>"
+    },
+    "usage": {
+      "converting": {
+        "title": "Converting a name",
+        "body": "<p><code>toModelChangeEvent('value')</code> is <code>'valueChange'</code>, <code>toModelChangeEvent('on')</code> is <code>'onChange'</code>.</p>"
+      }
+    }
+  },
+  "toModelName": {
+    "summary": "Gets the name of the model an event of change belongs to: the inverse of <code>toModelChangeEvent</code>.",
+    "description": "<p>Drops <a href=\"#/en/reference/api/common/MODEL_CHANGE_SUFFIX\"><code>MODEL_CHANGE_SUFFIX</code></a> from the end of the name. A name that does not end with it, or is made of the suffix alone, gives <code>undefined</code>. The name is not checked against any class: the runtime uses it to recognize, among the events a component exposes from a host directive, the events of change of its models.</p>",
+    "members": {
+      "event": "<p>The name of the event.</p>"
+    },
+    "usage": {
+      "converting": {
+        "title": "Converting a name",
+        "body": "<p><code>toModelName('valueChange')</code> is <code>'value'</code>; <code>toModelName('Change')</code> and <code>toModelName('closed')</code> are <code>undefined</code>.</p>"
+      }
+    }
   }
 }

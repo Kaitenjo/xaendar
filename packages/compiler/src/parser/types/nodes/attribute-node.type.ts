@@ -28,4 +28,9 @@ export type AttributeNode = ASTNodeWithSpan<{
    * only valid for the attributes of a native element, a component or directive property always needs a value.
    */
   bare?: true;
+  /**
+   * Set on the input a two-way binding binds (`value` of `[(value)]="count"`), whose value is the call of the signal
+   * (`count()`): the listener of its event of change is the event node marked the same way.
+   */
+  twoWay?: true;
 }>

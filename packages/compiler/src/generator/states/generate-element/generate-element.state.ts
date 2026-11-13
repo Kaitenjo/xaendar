@@ -227,7 +227,7 @@ function declareElementExpression(owner: DescriptorOwner, role: string, expressi
  * @param isDirective - Whether the owner is a directive.
  * @param conditional - Whether the attributes are declared inside a conditional binding.
  * @returns The code of the descriptors, one per attribute.
- * @throws If the metadata of a directive property can't be resolved.
+ * @throws If the metadata of a directive property can't be resolved, or a two-way binding binds no input.
  */
 async function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, target: string, isCustomElement: boolean, isDirective: boolean, conditional: boolean): Promise<string[]> {
   const mappedAttributes = new Array<string>();
@@ -235,8 +235,12 @@ async function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner
   // Native elements have no metadata
   const metadata = attributes.length && (isCustomElement || isDirective) ? await generatorContext.cache?.getOrInsert(target) : undefined;
   for (let i = 0; i < attributes.length; i++) {
-    const { name, value } = attributes[i];
+    const { name, value, twoWay } = attributes[i];
     const input = metadata?.properties.get(name);
+    if (twoWay && !input) {
+      throw new Error(`[(${name})] binds a model of a component or of a directive: ${target} has no input "${name}"`, { cause: attributes[i].span });
+    }
+
     if (isDirective && !input) {
       // Unlike components, a non-recognized property cannot be applied as an attribute on the DOM element itself
       throw new Error(`Unable to resolve the metadata of property "${name}" of ${target}`, { cause: attributes[i].span });

@@ -1,0 +1,13 @@
+:host {
+  display: block;
+}
+
+.steppers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+p {
+  margin: 0.75rem 0 0.4rem;
+}
