@@ -25,7 +25,7 @@ import { SSR_MARKERS } from '../../costants/ssr-markers.constants';
  * The runtime helpers the code rendering on the server calls, imported by the module of every template.
  */
 const RUNTIME_IMPORTS: readonly string[] = [
-  'import { _declare, _forItems, _iterationVariables, _read, _scope, _set, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty, _setExpressionStyle, _templateRef } from \'@xaendar/core\';',
+  'import { _declare, _forItems, _iterationVariables, _read, _scope, _set, _setExpressionInput, _setExpressionProperty, _setExpressionStyling, _setInput, _setProperty, _setStyling, _templateRef } from \'@xaendar/core\';',
   'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrRenderTemplate, _ssrRenderTemplateRef, _ssrStartTag, _ssrStructural, _ssrTry } from \'@xaendar/ssr\';'
 ];
 

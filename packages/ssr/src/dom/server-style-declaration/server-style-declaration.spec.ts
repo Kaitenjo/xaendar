@@ -56,4 +56,24 @@ describe('ServerStyleDeclaration', () => {
     expect(owner.attributes.get('style')).toBe('');
     expect(style.length).toBe(0);
   });
+
+  it('reads and writes the priority of a property, as a browser serializes it', () => {
+    const owner = ownerWith('color: red !important; top: 0;');
+    const style = new ServerStyleDeclaration(owner);
+    expect(style.getPropertyValue('color')).toBe('red');
+    expect(style.getPropertyPriority('color')).toBe('important');
+    expect(style.getPropertyPriority('top')).toBe('');
+    expect(style.getPropertyPriority('left')).toBe('');
+
+    style.setProperty('top', '1px', 'important');
+    expect(owner.attributes.get('style')).toBe('color: red !important; top: 1px !important;');
+    expect(style.removeProperty('top')).toBe('1px');
+  });
+
+  it('keeps a ; inside parentheses or quotes in its value', () => {
+    const owner = ownerWith('background: url(a;b.png); content: "x;y";');
+    const style = new ServerStyleDeclaration(owner);
+    expect(style.getPropertyValue('background')).toBe('url(a;b.png)');
+    expect(style.length).toBe(2);
+  });
 });

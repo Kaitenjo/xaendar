@@ -1,5 +1,6 @@
 import type { BindingHost } from '../../types/binding-host.type';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
+import type { _RenderElementBinding } from '../../types/render-element-binding.type';
 import type { _Context } from '../../types/context.type';
 
 /**
@@ -22,7 +23,7 @@ export class AttributeUnbinding {
   constructor(
     private readonly _context: _Context,
     private readonly _target: Element | BindingHost,
-    private readonly _attributes: readonly RenderElementAttribute[]
+    private readonly _attributes: readonly _RenderElementBinding[]
   ) { }
 
   /**
@@ -31,7 +32,7 @@ export class AttributeUnbinding {
   public dispose(): void {
     for (let i = 0; i < this._attributes.length; i++) {
       const attribute = this._attributes[i];
-      attribute.unbind?.(this._context, this._target, attribute);
+      (attribute.unbind as RenderElementAttribute['unbind'])?.(this._context, this._target, attribute as RenderElementAttribute);
     }
   }
 }

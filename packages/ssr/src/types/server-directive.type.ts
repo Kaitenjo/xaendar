@@ -10,6 +10,11 @@ export type ServerDirective = {
    */
   readonly selector: string;
   /**
+   * The position of the directive among the ones of its element, as the client reads it (see `RenderElementDirective.order`
+   * of core): left out for the first one.
+   */
+  readonly order?: number;
+  /**
    * The properties of the directive, left out when it binds none.
    */
   readonly attributes?: readonly ServerAttribute[];

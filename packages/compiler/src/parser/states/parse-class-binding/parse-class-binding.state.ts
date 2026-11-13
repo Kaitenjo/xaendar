@@ -1,3 +1,4 @@
+import { CSS_UNITS, toCssPropertyName } from '@xaendar/common';
 import type { NoArgsFunction } from '@xaendar/types';
 import type { AttributeToken } from '../../../lexer/types/tokens/attribute-token.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
@@ -48,8 +49,8 @@ export function isBracketBinding(token: AttributeToken): boolean {
  * @param parseNode - Parser function for recursive child parsing.
  * @param token - The ATTRIBUTE token, whose name starts with `[`.
  * @returns The parsed node.
- * @throws If the binding is neither `[class.name]` nor `[style.name]`, the property of a style binding is not valid, or
- *   its value is not an interpolation.
+ * @throws If the binding is neither `[class.name]` nor `[style.name]`, the property of a style binding is not valid or
+ *   its unit is not one of CSS, or its value is not an interpolation.
  */
 export function parseBracketBinding(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: AttributeToken): ClassBindingNode | StyleBindingNode {
   const { name, nameSpan, value, span } = parseAttribute(cursor, parseNode, token);
@@ -75,9 +76,14 @@ export function parseBracketBinding(cursor: ParserCursor, parseNode: NoArgsFunct
       throw new Error(`${name} does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. [style.width.px], or a custom property, e.g. [style.--accent]`, { cause: nameSpan });
     }
 
-    node.property = match[1].replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
-    if (match[2]) {
-      node.unit = match[2];
+    const [, property, unit] = match;
+    node.property = toCssPropertyName(property);
+    if (unit) {
+      if (!CSS_UNITS.has(unit)) {
+        throw new Error(`${name} sets ${property} in "${unit}", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh`, { cause: nameSpan });
+      }
+
+      node.unit = unit;
     }
   }
 

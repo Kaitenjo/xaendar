@@ -1,6 +1,6 @@
 import { isValidCustomElementName } from '@xaendar/common';
 import type { AsyncFunction, Function } from '@xaendar/types';
-import { factory, identifierToKeywordKind, SyntaxKind } from 'typescript';
+import { factory, identifierToKeywordKind, SyntaxKind, type Expression } from 'typescript';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
 import type { ClassBindingNode } from '../../../parser/types/nodes/class-binding-node.type';
@@ -19,9 +19,11 @@ import { mapContentTemplates } from '../../../utils/content-templates/content-te
 import { GeneratorContext } from '../../context/context';
 import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { DescriptorOwner } from '../../types/descriptor-owner.type';
+import type { StylingExpressions } from '../../types/styling-expressions.type';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getElementIdentifier, isConstantExpression, joinVariables, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
 import { appendBlockPosition, appendContainer, rendersBlock } from '../../utils/block-position/block-position.utils';
+import { describeStyling, getDirectiveOrder, orderDirectives, splitStylingAttributes } from '../../utils/styling/styling.utils';
 import { declareExpression, toArrayLiteral, toObjectLiteral, toRoleName } from '../../utils/module-code/module-code.utils';
 
 /**
@@ -43,8 +45,8 @@ import { declareExpression, toArrayLiteral, toObjectLiteral, toRoleName } from '
  * the children are rendered in, whose strategy gets their nodes, created or adopted from the HTML rendered on the server.
  * A standard `<template>` element has no function of the children: its constant holds the HTML of its static content
  * (`content`), which the runtime assigns to the `innerHTML` of a `<template>` it creates.
- * The classes the element toggles come before its attributes, so that writing `class` finds them, and an element adopted
- * holding the same classes is not written.
+ * Its `class` and its `style` are described one each (see `mapStyling`), merged key by key with the other sources writing
+ * them: `styling` flags the states the runtime creates before applying them (see `stylingFlags`).
  * The conditional bindings declared on the element are split in two lists: the descriptors of the element bindings
  * leave out the structural directives, the ones of the structural conditional bindings keep only them.
  *
@@ -71,7 +73,8 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
     while the structural directives are bound in the scope of the element
   */
   const elementOwner: DescriptorOwner = structural ? { name: nodeName, generatorContext: new GeneratorContext(generatorContext, undefined, 'runtime') } : owner;
-  const attributes = mapClassBindings(node.classBindings, elementOwner, false).concat(mapStyleBindings(node.styleBindings, elementOwner, false), await mapAttributes(node.attributes, elementOwner, tagName, isCustomElement, false, false));
+  orderDirectives(node);
+  const [attributes, written] = await mapBindings(node, elementOwner, tagName, isCustomElement, false, false);
   const events = mapEvents(node.events, elementOwner);
   const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, elementOwner, tagName, isCustomElement);
   const directives = await mapDirectives(node.directives, elementOwner);
@@ -93,6 +96,11 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   appendList(members, 'directives', directives);
   appendList(members, 'structuralDirectives', structuralDirectives);
   appendList(members, 'structuralConditionalBindings', structuralConditionalBindings);
+  const styling = stylingFlags(node, written, structural);
+  if (styling) {
+    members.push(`styling: ${styling}`);
+  }
+
   if (hasChildren) {
     members.push(`children: ${nodeName}Children`);
   }
@@ -293,81 +301,194 @@ function declareAttribute(owner: DescriptorOwner, role: string, update: string, 
 }
 
 /**
- * Maps the classes an element toggles to descriptors `_renderElement` applies like the ones of its attributes, with a
- * setter toggling the class instead of setting an attribute: once for a value reading no name, as a binding otherwise,
- * with the names of the variables of the template it reads. The value is a function of the module named after the
- * element and the class (`td0$class_active`).
+ * Maps the bindings of an element, or of a branch of one of its conditional bindings, to their descriptors: its `class`
+ * and its `style`, each one described once (see {@link mapStyling}), unless the component declares an input with their
+ * name, then its other attributes and its inputs (see {@link mapAttributes}). The bindings of a directive are its
+ * inputs.
  *
- * A class toggled inside a conditional binding is also removed when its branch is no longer the selected one.
- *
- * @param classBindings - The class binding nodes of the element, or of a branch of one of its conditional bindings.
+ * @param bindings - The attributes, the classes and the style properties bound.
  * @param owner - The element, which the functions of the expressions are named after.
- * @param conditional - Whether the class bindings are declared inside a conditional binding.
- * @returns The code of the descriptors, one per class.
+ * @param target - The tag name of the element, or the selector of the directive as applied in templates (`@@selector`).
+ * @param isCustomElement - Whether the owner is a custom element.
+ * @param isDirective - Whether the owner is a directive.
+ * @param conditional - Whether the bindings are declared inside a conditional binding.
+ * @returns The code of the descriptors, and what they write: `1` for `class`, `2` for `style`.
+ * @throws If the metadata of a directive property can't be resolved.
  */
-function mapClassBindings(classBindings: ClassBindingNode[], owner: DescriptorOwner, conditional: boolean): string[] {
-  const mappedAttributes = new Array<string>();
-  for (let i = 0; i < classBindings.length; i++) {
-    const { className, value } = classBindings[i];
-    const { expression, variables } = resolveExpression(value.expression, owner.generatorContext);
-    const role = `class_${toRoleName(className)}`;
-    const constant = isConstantExpression(value.expression);
-    const reads = owner.generatorContext.getReads(variables);
-    const members = [
-      `name: ${toStringLiteral(className)}`,
-      `value: ${declareElementExpression(owner, role, expression)}`,
-      `setter: ${constant ? '_setExpressionClass' : '_setReactiveClass'}`
-    ];
-    appendReads(members, reads);
-    if (conditional) {
-      members.push('unbind: _removeClass');
-    }
-
-    // A binding runs again through the setter evaluating the expression once
-    mappedAttributes.push(constant ? toObjectLiteral(members) : declareAttribute(owner, role, '_setExpressionClass', members, reads));
+async function mapBindings({ attributes, classBindings, styleBindings }: Pick<ElementNode, 'attributes' | 'classBindings' | 'styleBindings'>, owner: DescriptorOwner, target: string, isCustomElement: boolean, isDirective: boolean, conditional: boolean): Promise<[descriptors: string[], styling: number]> {
+  if (isDirective) {
+    return [await mapAttributes(attributes, owner, target, false, true, conditional), 0];
   }
 
-  return mappedAttributes;
+  // Native elements have no metadata
+  const metadata = isCustomElement && attributes.length ? await owner.generatorContext.cache?.getOrInsert(target) : undefined;
+  const [rest, classAttribute, styleAttribute] = splitStylingAttributes(attributes, name => !!metadata?.properties.has(name));
+  const mapped = new Array<string>();
+  let styling = 0;
+  const classes = mapStyling('class', classAttribute, classBindings, owner, conditional);
+  if (classes) {
+    mapped.push(classes);
+    styling |= 1;
+  }
+
+  const style = mapStyling('style', styleAttribute, styleBindings, owner, conditional);
+  if (style) {
+    mapped.push(style);
+    styling |= 2;
+  }
+
+  return [mapped.concat(await mapAttributes(rest, owner, target, isCustomElement, false, conditional)), styling];
 }
 
 /**
- * Maps the style properties an element sets to descriptors `_renderElement` applies like the ones of its attributes,
- * after the classes and before the attributes, so that writing `style` finds them, with a setter setting the property
- * instead of an attribute: once for a value reading no name, as a binding otherwise, with the names of the variables of
- * the template it reads. The unit of the binding, if any, is written in the descriptor. The value is a function of the
- * module named after the element and the property (`td0$style_width`).
+ * Maps the `class` or the `style` of an element, its string and the keys it binds one by one, to one descriptor
+ * `_renderElement` applies like the ones of its attributes (see `_RenderStyling` of the runtime): `_setStyling` for a
+ * static string alone, `_setExpressionStyling` once for expressions reading no name, otherwise a binding of the scope
+ * (`_setReactiveStyling`), keeping its element and the values computed last in its slots, with the names of the
+ * variables of the template its expressions read. Inside a conditional binding it is removed when its branch is no
+ * longer the selected one.
  *
- * A property set inside a conditional binding is also removed when its branch is no longer the selected one.
+ * N.B. Deliberate, to save memory: one descriptor and one binding for the whole attribute instead of one per class or
+ * property, so that an element keeps one effect and three slots. Do not map a binding per key again.
  *
- * @param styleBindings - The style binding nodes of the element, or of a branch of one of its conditional bindings.
+ * @param attribute - The attribute.
+ * @param string - The attribute holding the string, if any.
+ * @param keys - The keys bound one by one.
  * @param owner - The element, which the functions of the expressions are named after.
- * @param conditional - Whether the style bindings are declared inside a conditional binding.
- * @returns The code of the descriptors, one per property.
+ * @param conditional - Whether the bindings are declared inside a conditional binding.
+ * @returns The code of the descriptor, `undefined` when the element writes nothing on the attribute.
  */
-function mapStyleBindings(styleBindings: StyleBindingNode[], owner: DescriptorOwner, conditional: boolean): string[] {
-  const mappedAttributes = new Array<string>();
-  for (let i = 0; i < styleBindings.length; i++) {
-    const { property, unit, value } = styleBindings[i];
-    const { expression, variables } = resolveExpression(value.expression, owner.generatorContext);
-    const role = `style_${toRoleName(property)}`;
-    const constant = isConstantExpression(value.expression);
-    const reads = owner.generatorContext.getReads(variables);
-    const members = [`name: ${toStringLiteral(property)}`];
-    if (unit) {
-      members.push(`unit: ${toStringLiteral(unit)}`);
-    }
-
-    members.push(`value: ${declareElementExpression(owner, role, expression)}`, `setter: ${constant ? '_setExpressionStyle' : '_setReactiveStyle'}`);
-    appendReads(members, reads);
-    if (conditional) {
-      members.push('unbind: _removeStyle');
-    }
-
-    // A binding runs again through the setter evaluating the expression once
-    mappedAttributes.push(constant ? toObjectLiteral(members) : declareAttribute(owner, role, '_setExpressionStyle', members, reads));
+function mapStyling(attribute: 'class' | 'style', string: AttributeNode | undefined, keys: ReadonlyArray<ClassBindingNode | StyleBindingNode>, owner: DescriptorOwner, conditional: boolean): string | undefined {
+  const { generatorContext } = owner;
+  const found: StylingExpressions = { count: 0, constant: true, variables: undefined };
+  const members = describeStyling(attribute, string, keys, (role, expression) => declareStylingExpression(owner, role, expression, found));
+  if (!members) {
+    return undefined;
   }
 
-  return mappedAttributes;
+  if (found.count && !found.constant) {
+    const reads = generatorContext.getReads(found.variables);
+    members.push('setter: _setReactiveStyling');
+    appendReads(members, reads);
+    appendStylingUnbind(members, conditional);
+    return generatorContext.declareBinding(`${owner.name}$${attribute}$binding`, members, '_setExpressionStyling', true, true) ?? toObjectLiteral(members);
+  }
+
+  members.push(`setter: ${found.count ? '_setExpressionStyling' : '_setStyling'}`);
+  appendStylingUnbind(members, conditional);
+  return toObjectLiteral(members);
+}
+
+/**
+ * Declares the function of the module computing an expression of the `class` or of the `style` of an element,
+ * collecting whether the expressions read a name, and the variables of the template they read.
+ *
+ * @param owner - The element.
+ * @param role - The role the function is named after.
+ * @param expression - The expression.
+ * @param found - Collects what the expressions read.
+ * @returns The name of the function.
+ */
+function declareStylingExpression(owner: DescriptorOwner, role: string, expression: Expression, found: StylingExpressions): string {
+  const resolved = resolveExpression(expression, owner.generatorContext);
+  found.count++;
+  found.constant &&= isConstantExpression(expression);
+  found.variables = joinVariables(found.variables, resolved.variables);
+  return declareElementExpression(owner, role, resolved.expression);
+}
+
+/**
+ * Appends the unbind of a descriptor of `class` or `style` declared inside a conditional binding.
+ *
+ * @param members - The members of the descriptor.
+ * @param conditional - Whether it is declared inside a conditional binding.
+ */
+function appendStylingUnbind(members: string[], conditional: boolean): void {
+  if (conditional) {
+    members.push('unbind: _removeStyling');
+  }
+}
+
+/**
+ * Flags the states merging the sources of the `class` and of the `style` of an element the runtime creates before
+ * applying its bindings (see `_prepareStyling` of the runtime), for an attribute the element writes:
+ * - `1` (`class`) and `2` (`style`) when another source of the template writes it, or may: a branch of one of its
+ *   conditional bindings writing it or applying directives, or, for an element applying structural directives, whose
+ *   bindings the runtime keeps without slots, always;
+ * - `4` and `8` when a source outside the template may write it: the component the element is, or a directive it
+ *   applies, which the runtime checks.
+ *
+ * N.B. Deliberate, to save memory: an element written by its template alone, nearly every one, gets no flag, so that
+ * the runtime creates no state for it. Do not flag every element.
+ *
+ * @param node - The element.
+ * @param writes - What the element writes itself: `1` for `class`, `2` for `style`.
+ * @param structural - Whether it applies structural directives.
+ * @returns The flags, `0` for none.
+ */
+function stylingFlags(node: ElementNode, writes: number, structural: boolean): number {
+  if (!writes) {
+    return 0;
+  }
+
+  const branches = branchStyling(node.conditionalBindings);
+  let flags = structural || branches & 4 ? writes : writes & branches;
+  if (isValidCustomElementName(node.tagName, false) || node.directives.length) {
+    flags |= (writes & ~flags) << 2;
+  }
+
+  return flags;
+}
+
+/**
+ * Tells which of `class` and `style` a branch writes itself, by its bindings: a `class` an input of the component takes
+ * counts too, which only makes the runtime create a state it needs not.
+ *
+ * @param bindings - The branch.
+ * @returns `1` for `class`, `2` for `style`, both, `0` for none.
+ */
+function writtenStyling({ attributes, classBindings, styleBindings }: Pick<ElementNode, 'attributes' | 'classBindings' | 'styleBindings'>): number {
+  let flags = classBindings.length ? 1 : 0;
+  if (styleBindings.length) {
+    flags |= 2;
+  }
+
+  for (let i = 0; i < attributes.length; i++) {
+    switch (attributes[i].name) {
+      case 'class':
+        flags |= 1;
+        break;
+
+      case 'style':
+        flags |= 2;
+        break;
+    }
+  }
+
+  return flags;
+}
+
+/**
+ * Tells what the branches of conditional bindings, nested ones included, write: `1` `class`, `2` `style`, `4` the
+ * directives they apply.
+ *
+ * @param conditionalBindings - The conditional bindings.
+ * @returns The flags.
+ */
+function branchStyling(conditionalBindings: ConditionalBindingNode[]): number {
+  let flags = 0;
+  for (let i = 0; i < conditionalBindings.length; i++) {
+    const { branches } = conditionalBindings[i];
+    for (let j = 0; j < branches.length; j++) {
+      const branch = branches[j];
+      flags |= writtenStyling(branch) | branchStyling(branch.conditionalBindings);
+      if (branch.directives.length) {
+        flags |= 4;
+      }
+    }
+  }
+
+  return flags;
 }
 
 /**
@@ -596,9 +717,15 @@ function mapCondition(conditionalBinding: ConditionalBindingNode, index: number,
  * @returns The code of the descriptor of the branch.
  */
 async function mapBranch(branch: ConditionalBindingBranchNode, condition: string | undefined, owner: DescriptorOwner, target: string, isCustomElement: boolean, isDirective: boolean): Promise<string> {
-  const { attributes, classBindings, styleBindings, events, conditionalBindings, directives } = branch;
+  const { events, conditionalBindings, directives } = branch;
   const members = condition ? [condition] : new Array<string>();
-  appendList(members, 'attributes', mapClassBindings(classBindings, owner, true).concat(mapStyleBindings(styleBindings, owner, true), await mapAttributes(attributes, owner, target, isCustomElement, isDirective, true)));
+  const [attributes, styling] = await mapBindings(branch, owner, target, isCustomElement, isDirective, true);
+  appendList(members, 'attributes', attributes);
+  // A branch writing `class` or `style` is a source that comes and goes, merged by the state of the element
+  if (styling) {
+    members.push(`styling: ${styling}`);
+  }
+
   appendList(members, 'events', mapEvents(events, owner, isDirective ? `${toRoleName(target.slice(2))}_` : ''));
   appendList(members, 'conditionalBindings', await mapConditionalBindings(conditionalBindings, owner, target, isCustomElement, isDirective));
 
@@ -625,8 +752,14 @@ async function mapDirectives(directives: DirectiveNode[], owner: DescriptorOwner
   const mappedDirectives = new Array<string>();
 
   for (let i = 0; i < directives.length; i++) {
-    const { selector, attributes, events, conditionalBindings } = directives[i];
+    const directive = directives[i];
+    const { selector, attributes, events, conditionalBindings } = directive;
     const members = [`selector: '${selector}'`];
+    const order = getDirectiveOrder(directive);
+    if (order) {
+      members.push(`order: ${order}`);
+    }
+
     appendList(members, 'attributes', await mapAttributes(attributes, owner, `@@${selector}`, false, true, false));
     appendList(members, 'events', mapEvents(events, owner, `${toRoleName(selector)}_`));
     appendList(members, 'conditionalBindings', await mapConditionalBindings(conditionalBindings, owner, `@@${selector}`, false, true));

@@ -52,6 +52,12 @@ export const SET_DIRECTIVE_ELEMENT = Symbol('SetDirectiveElement');
  */
 export const SET_DIRECTIVE_EVENTS = Symbol('SetDirectiveEvents');
 /**
+ * Key of the order of a directive among the ones of its element, which decides which one wins when two of them write the
+ * same key of `class` or `style` (see `StylingSource.order`): the host directives first, in the order the component
+ * declares them, then the ones of the template, in the order they appear on the element.
+ */
+export const DIRECTIVE_ORDER = Symbol('DirectiveOrder');
+/**
  * Key of the internal method the template runtime invokes to start a directive,
  * once its inputs have been bound (see `CustomDirective`).
  */

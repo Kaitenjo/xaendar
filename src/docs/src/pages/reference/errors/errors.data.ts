@@ -265,6 +265,11 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
+    message: '[Parser] [style.width.foo] sets width in "foo", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Parser',
     message: '[Parser] Style property "width" is bound more than once on <div>',
     page: 'templates/for'
   },
@@ -731,6 +736,16 @@ export const ERRORS: readonly ErrorEntry[] = [
   {
     phase: 'Runtime',
     message: "Error: @HostProperty('class.') names no class",
+    page: 'components/host-bindings'
+  },
+  {
+    phase: 'Runtime',
+    message: 'Error: @HostProperty(\'style.width.foo\') sets width in "foo", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh',
+    page: 'components/host-bindings'
+  },
+  {
+    phase: 'Runtime',
+    message: 'Error: @HostProperty(\'class.on\') on second binds the class on, which another member binds already',
     page: 'components/host-bindings'
   },
   {

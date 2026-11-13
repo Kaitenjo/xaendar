@@ -1,4 +1,4 @@
-import { _SSR_MARKERS, COMPONENT, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, HEADER, SET_DIRECTIVE_ELEMENT } from '../../costants';
+import { _SSR_MARKERS, COMPONENT, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DIRECTIVE_ORDER, HEADER, SET_DIRECTIVE_ELEMENT } from '../../costants';
 import { AttributeUnbinding } from '../../models/attribute-unbinding/attribute-unbinding';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
@@ -18,6 +18,7 @@ import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { RenderChildren } from '../../types/render-children.type';
 import type { RenderConditionalBinding } from '../../types/render-conditional-binding.type';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
+import type { _RenderElementBinding } from '../../types/render-element-binding.type';
 import type { RenderElementConditionalBinding } from '../../types/render-element-conditional-binding.type';
 import type { RenderElementDirective } from '../../types/render-element-directive.type';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
@@ -27,7 +28,6 @@ import type { RenderElement } from '../../types/render-element.type';
 import type { StructuralCollector } from '../../types/structural-collector.type';
 import type { TemplateExpression } from '../../types/template-expression.type';
 import { _addAppliedDirective, _removeAppliedDirective } from '../applied-directives/applied-directives.util';
-import { restoreBindings } from '../class-toggle/class-toggle.util';
 import type { _Context } from '../../types/context.type';
 import { _scope, addCleanup, clear, containerSlot, EMPTY_LAYOUT, getNodeStrategy, STRUCTURAL_LAYOUT, swapNodeStrategy, trackNode } from '../context/context.util';
 import { _setElementRef } from '../element-refs/element-refs.util';
@@ -35,6 +35,8 @@ import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { _selectBranch } from '../select-branch/select-branch.util';
 import { connectChild } from '../try-scope/try-scope.util';
 import { _setContentTemplates } from '../content-templates/content-templates.util';
+import { _prepareStyling } from '../styling-binding/styling-binding.util';
+import { ensureStylingState } from '../styling-state/styling-state.util';
 import { writeAttribute } from '../write-attribute/write-attribute.util';
 
 /**
@@ -98,6 +100,11 @@ function renderElement(parentNode: Element, context: _Context, anchor: Comment |
   // A standard <template> the server wrote already holds its content: the parser of the browser put it there
   if (config.content && !(element as HTMLTemplateElement).content.firstChild) {
     element.innerHTML = config.content;
+  }
+
+  // The states merging the sources of `class` and `style` exist before the bindings of the template write them
+  if (config.styling) {
+    _prepareStyling(element, config.styling, directives);
   }
 
   if (attributes?.length) {
@@ -209,11 +216,11 @@ function renderElementChildren(element: Element, context: _Context, nodeStrategy
  * @param context - The current template execution scope.
  * @param attributes - The list of attributes to bind, constants of the module of the template.
  */
-function bindProperties(target: Element | BindingHost, context: _Context, attributes: readonly RenderElementAttribute[]): void {
+function bindProperties(target: Element | BindingHost, context: _Context, attributes: readonly _RenderElementBinding[]): void {
   let unbinds = false;
   for (let i = 0; i < attributes.length; i++) {
     const attribute = attributes[i];
-    attribute.setter(context, target, attribute);
+    (attribute.setter as RenderElementAttribute['setter'])(context, target, attribute as RenderElementAttribute);
     unbinds ||= !!attribute.unbind;
   }
 
@@ -328,7 +335,13 @@ function applyBranch<Target, Bindings extends { readonly conditionalBindings?: R
  */
 function bindElementBranch(binding: ElementBinding, context: _Context, branch: RenderElementConditionalBinding['branches'][number]): void {
   const { element } = binding;
-  const { attributes, events, directives } = branch;
+  const { attributes, events, directives, styling } = branch;
+  // A branch is a source of `class` and `style` that comes and goes, merged with the others by the state of the element
+  if (styling) {
+    styling & 1 && ensureStylingState(element, 'class');
+    styling & 2 && ensureStylingState(element, 'style');
+  }
+
   if (attributes?.length) {
     bindProperties(element, context, attributes);
   }
@@ -380,8 +393,10 @@ function bindDirectiveBranch(directive: CustomDirective, context: _Context, bran
  * @throws When no custom directive is registered for a selector, or when the element is a component already declaring the directive as a host directive.
  */
 function bindDirectives(element: Element, context: _Context, directives: readonly RenderElementDirective[]): void {
+  // The directives of the template follow the host directives of the component (see `DIRECTIVE_ORDER`)
+  const hostDirectives = element instanceof CustomElement ? element.hostDirectives.size : 0;
   for (let i = 0; i < directives.length; i++) {
-    const { selector, attributes, events, conditionalBindings } = directives[i];
+    const { selector, attributes, events, conditionalBindings, order } = directives[i];
     const Directive = _resolveDirective(selector, CustomDirective);
     if (element instanceof CustomElement && element.hostDirectives?.has(Directive)) {
       throw new Error(`Directive ${typeof selector === 'string' ? `"${selector}"` : Directive.name} is applied more than once on <${element.localName}>: it is already a host directive of the component`);
@@ -390,6 +405,7 @@ function bindDirectives(element: Element, context: _Context, directives: readonl
     // Elements rendered from a template are always HTML, SVG or MathML elements, all exposing the inline style of an HTMLElement
     const directive = new Directive();
     directive[SET_DIRECTIVE_ELEMENT] = element;
+    directive[DIRECTIVE_ORDER] = hostDirectives + (order ?? 0);
 
     if (attributes?.length) {
       bindProperties(directive, context, attributes);
@@ -649,16 +665,14 @@ export function _setReactiveInput(context: _Context, target: Element | BindingHo
 }
 
 /**
- * Removes an attribute from an HTML element. Removing `class` keeps the classes toggled by class bindings.
+ * Removes an attribute from an HTML element.
  *
  * @param _context - The current template execution scope.
  * @param element - The element to remove the attribute from.
  * @param attribute - The attribute to remove.
  */
 export function _removeAttribute(_context: _Context, element: Element, attribute: RenderElementAttribute): void {
-  const { name } = attribute;
-  element.removeAttribute(name);
-  restoreBindings(element, name);
+  element.removeAttribute(attribute.name);
 }
 
 /**
@@ -682,7 +696,6 @@ export function _resetProperty(_context: _Context, target: Element | BindingHost
   const element = target as Element;
   delete (element as unknown as Record<string, unknown>)[name];
   element.removeAttribute(name);
-  restoreBindings(element, name);
 }
 
 /**
@@ -717,7 +730,7 @@ function updateInput(target: Element | BindingHost, name: string, newValue: unkn
 /**
  * Updates an attribute of an HTML element, only when the value differs from the one the element holds, as an element
  * adopted from the HTML of the server does: the value is written as `@HostProperty` writes it (see `_attributeValue`),
- * `null` and `undefined` removing it. Writing `class` keeps the classes toggled by class bindings.
+ * `null` and `undefined` removing it.
  *
  * An input is never written by it: the compiler binds the inputs it knows through the setters of the inputs, so an
  * input found here is one it did not recognize, e.g. the name of the property of an input declaring an alias.

@@ -15,6 +15,7 @@ export * from './generator/utils/for-reads/for-reads.utils';
 export * from './generator/utils/generator/generator.utils';
 export * from './generator/utils/module-code/module-code.utils';
 export * from './generator/utils/scope-generation/scope-generation.utils';
+export * from './generator/utils/styling/styling.utils';
 export * from './generator/utils/text-separators/text-separators.utils';
 export type * from './lexer/types/binding-context.type';
 export type * from './lexer/types/expression-context.type';

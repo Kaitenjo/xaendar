@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { HostListener } from '../../decorators/host-listener/host-listener.decorator';
 import { HostProperty } from '../../decorators/host-property/host-property.decorator';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
-import { toggleClass } from '../class-toggle/class-toggle.util';
+import { _hasStylingState } from '../styling-state/styling-state.util';
 import { EMPTY_LAYOUT, _scope, clear } from '../context/context.util';
 import type { _Context } from '../../types/context.type';
 import { _applyHostProperties, _bindHost } from './host-bindings.util';
@@ -93,15 +93,20 @@ describe('_bindHost', () => {
     expect(element.getAttribute('aria-label')).toBe('On');
   });
 
-  it('toggles a class while the value is truthy, keeping it when the class attribute is written', async () => {
-    const active = signal(1);
-    const owner = createOwner({ active, kind: 'tall' }, { active: 'class.active', kind: 'class' });
+  it('writes the string of class and toggles a class while the value is truthy, the class winning over the string, without a state', async () => {
+    const active = signal<unknown>(1);
+    const owner = createOwner({ active, kind: 'tall active' }, { active: 'class.active', kind: 'class' });
     const { element } = bind(owner);
     expect(element.className).toBe('tall active');
+    expect(_hasStylingState(element, 'class')).toBe(false);
 
     active.set(0);
     await flush();
-    expect(element.classList.contains('active')).toBe(false);
+    expect(element.className).toBe('tall');
+
+    active.set(null);
+    await flush();
+    expect(element.className).toBe('tall active');
   });
 
   it('sets a style property followed by its unit, removing it for null and when the context is cleared', async () => {
@@ -120,12 +125,18 @@ describe('_bindHost', () => {
     expect(style.getPropertyValue('background-color')).toBe('');
   });
 
-  it('keeps the classes of the class bindings when it writes the class attribute', () => {
+  it('leaves the classes and the properties other code wrote, also when the context is cleared', () => {
     const element = document.createElement('div');
-    toggleClass(element, 'selected', true);
-    bind(createOwner({ kind: 'card' }, { kind: 'class' }), element);
+    element.classList.add('selected');
+    (element as HTMLElement).style.setProperty('color', 'red');
+    const { context } = bind(createOwner({ kind: 'card', layout: 'display: flex' }, { kind: 'class', layout: 'style' }), element);
+    expect(element.className).toBe('selected card');
+    expect((element as HTMLElement).style.getPropertyValue('display')).toBe('flex');
 
-    expect(element.className).toBe('card selected');
+    clear(context);
+    expect(element.className).toBe('selected');
+    expect((element as HTMLElement).style.getPropertyValue('color')).toBe('red');
+    expect((element as HTMLElement).style.getPropertyValue('display')).toBe('');
   });
 
   it('removes the attributes and the classes, and stops writing them, when the context is cleared', async () => {
@@ -191,6 +202,25 @@ describe('_bindHost', () => {
 });
 
 describe('_applyHostProperties', () => {
+  it('writes the classes and the style alone, or the attributes alone, the same class writing them again', () => {
+    const Styled = class extends Owner { };
+    const metadata: DecoratorMetadataObject = {};
+    (HostProperty('style') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'layout', static: false, metadata, access: { get: () => 'display: flex' } });
+    (HostProperty('class.on') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'on', static: false, metadata, access: { get: () => true } });
+    Object.defineProperty(Styled, Symbol.for('Symbol.metadata'), { value: metadata });
+    for (let i = 0; i < 2; i++) {
+      const element = document.createElement('div');
+      _applyHostProperties(new Styled(), element);
+      expect(element.getAttribute('style')).toBe('display: flex;');
+      expect(element.className).toBe('on');
+    }
+
+    const element = document.createElement('div');
+    _applyHostProperties(createOwner({ role: 'switch' }, { role: 'role' }), element);
+    expect(element.getAttribute('role')).toBe('switch');
+    expect(element.hasAttribute('class')).toBe(false);
+  });
+
   it('writes the attributes and toggles the classes once, without binding them, and leaves the events alone', async () => {
     const label = signal('One');
     const add = vi.fn();

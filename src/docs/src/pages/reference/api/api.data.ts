@@ -12,9 +12,10 @@ import { SSR_API } from './packages/ssr.data';
 import { TYPES_API } from './packages/types.data';
 
 /**
- * The kinds of documented symbols. `global` is a value installed on `globalThis` rather than exported.
+ * The kinds of documented symbols. `constant` is an exported value that is neither a function nor a class, `global` a
+ * value installed on `globalThis` rather than exported.
  */
-export type ApiKind = 'decorator' | 'class' | 'function' | 'type' | 'global';
+export type ApiKind = 'decorator' | 'class' | 'function' | 'constant' | 'type' | 'global';
 
 /**
  * The groups the members of a symbol are listed in, each under its own heading, in this order.

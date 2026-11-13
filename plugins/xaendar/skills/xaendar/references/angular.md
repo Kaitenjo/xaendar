@@ -21,7 +21,8 @@
 | `{{ expr }}` | `{ expr }` |
 | `[attr]="expr"`, `[prop]="expr"` | `attr="{expr}"`: an attribute on native elements, an input on components |
 | `[class.x]="cond"` | `[class.x]="{cond}"` |
-| `[style.x]`, `[style.width.px]` | the same syntax with braces: `[style.x]="{value}"`, `[style.width.px]="{n}"`, `[style.--var]="{v}"` |
+| `[style.x]`, `[style.width.px]` | the same syntax with braces: `[style.x]="{value}"`, `[style.width.px]="{n}"`, `[style.--var]="{v}"`; merged with directives and host bindings with the precedence of Angular (template > directives > component, a key > the string) |
+| `[class]="{…}"`, `[style]="{…}"`, `[ngClass]`, `[ngStyle]` | no object bindings: one `[class.x]` / `[style.x]` per key, or the string `class="{`a ${b()}`}"` |
 | `[ngClass]`, `[ngStyle]` | `class="{`a ${b()}`}"`, `style="{…}"`, or a conditional binding |
 | `@if`, `@for`, `@switch` | the same blocks, `@for` with `@empty` and `$count`, over any iterable, its variables read as in Angular (`item.name`, `$index`) |
 | `@defer (on …)` with `@placeholder`, `@loading`, `@error` | `@defer (triggers) { … }` with the same blocks, written once each in any order, triggers separated by commas without `on`: `load` (`immediate`), `idle`/`idle(500)`, `timer(2s)`, `visible` (`viewport`), `interaction`, `hover`, `when expr`; no parentheses waits for `idle`. An element: `hover(ref)`, `visible(ref, { rootMargin: '200px' })` (Angular's `viewport({ trigger: ref, … })`). `prefetch idle`, `prefetch when expr` (Angular's `prefetch on idle`). `@placeholder (minimum 500ms)`, `@loading (after 100ms, minimum 1s)`, commas between the parameters. `@error (error)` receives the error |

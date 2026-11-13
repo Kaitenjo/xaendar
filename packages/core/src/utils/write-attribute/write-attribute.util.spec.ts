@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { HostProperty } from '../../decorators/host-property/host-property.decorator';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
-import { toggleClass } from '../class-toggle/class-toggle.util';
 import { EMPTY_LAYOUT, _scope } from '../context/context.util';
 import type { _Context } from '../../types/context.type';
 import { _bindHost } from '../host-bindings/host-bindings.util';
@@ -92,15 +91,6 @@ describe('writeAttribute', () => {
 
     writeAttribute(element, 'aria-expanded', null);
     expect(element.hasAttribute('aria-expanded')).toBe(false);
-  });
-
-  it('keeps the classes toggled on the element when it writes class', () => {
-    const element = document.createElement('div');
-    toggleClass(element, 'selected', true);
-
-    writeAttribute(element, 'class', 'card');
-
-    expect(element.className).toBe('card selected');
   });
 
   it('writes the same attribute in a template and through @HostProperty, for every value and every kind of attribute', () => {

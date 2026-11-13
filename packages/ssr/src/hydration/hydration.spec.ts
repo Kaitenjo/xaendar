@@ -2342,4 +2342,47 @@ describe('style bindings', () => {
     expect(div.style.getPropertyValue('width')).toBe('75%');
     expect(div.style.getPropertyValue('height')).toBe('4px');
   });
+
+  it('merges the class and the style a template binds on a component with the ones of its host properties, the template winning, and adopts them without writing them again', async () => {
+    /**
+     * A tile writing its own classes and style on its element.
+     */
+    class Tile extends CustomElement { }
+    const metadata: DecoratorMetadataObject = {};
+    const members: Record<string, unknown> = { layout: 'display: flex; gap: 1px; width: 10px', kind: 'tile base', on: true };
+    const properties: Record<string, string> = { layout: 'style', kind: 'class', on: 'class.on' };
+    for (const [member, name] of Object.entries(properties)) {
+      (core.HostProperty(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: member, static: false, metadata, access: { get: () => members[member] } });
+    }
+
+    Object.defineProperty(Tile, Symbol.for('Symbol.metadata'), { value: metadata });
+    const tile = await register('tile', Tile, () => '<p>t</p>');
+
+    /**
+     * A board binding the class and the style of its tile.
+     */
+    class Board extends CustomElement {
+      public gap = signal<number | null>(4);
+    }
+
+    const board = await register('board', Board, child => `<${child('tile')} class="extra" [class.on]="{ false }" [style.gap.px]="{ gap() }"></${child('tile')}>`, ['gap']);
+    const html = await renderToString(board.Server);
+    expect(html).toContain('<server-tile-');
+    expect(html).toMatch(/<server-tile-\d+ class="extra tile base" style="gap: 4px; display: flex; width: 10px;">/);
+
+    const host = load(html);
+    const element = host.shadowRoot!.firstElementChild as HTMLElement;
+    const records = observe(element);
+    tile.define();
+    board.define();
+    await flush();
+
+    expect(records().filter(record => record.type === 'attributes')).toEqual([]);
+    expect(console.warn).not.toHaveBeenCalled();
+
+    (host as Board).gap.set(null);
+    await flush();
+    expect(element.style.getPropertyValue('gap')).toBe('1px');
+    expect(element.className).toBe('extra tile base');
+  });
 });

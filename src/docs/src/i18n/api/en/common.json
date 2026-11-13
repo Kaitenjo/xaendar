@@ -254,5 +254,65 @@
         "body": "<p>The page is chosen from the path of the request, which no target can move to another origin.</p>"
       }
     }
+  },
+  "toCssPropertyName": {
+    "summary": "Converts the name of a style property to the one CSS uses.",
+    "description": "<p>A name in camelCase becomes kebab-case, each uppercase letter turning into <code>-</code> followed by the lowercase letter: <code>'fontSize'</code> becomes <code>'font-size'</code>, <code>'WebkitTransform'</code> <code>'-webkit-transform'</code>. A custom property, starting with <code>--</code>, is returned as it is, since its name is case-sensitive.</p><p>The template compiler and <code>@HostProperty</code> convert with it the property of <code>[style.name]</code> and <code>'style.name'</code>.</p>",
+    "usage": {
+      "converting": {
+        "title": "Converting a property",
+        "body": "<p><code>toCssPropertyName('backgroundColor')</code> is <code>'background-color'</code>, <code>toCssPropertyName('--mainColor')</code> is <code>'--mainColor'</code>.</p>"
+      }
+    }
+  },
+  "splitClasses": {
+    "summary": "Splits the text of a class attribute into its classes.",
+    "description": "<p>The classes are separated by ASCII whitespace (space, tab, line feed, form feed, carriage return), as the browser reads them. Each class is returned once, in the order it first appears.</p>",
+    "usage": {
+      "splitting": {
+        "title": "Splitting classes",
+        "body": "<p><code>splitClasses(' a b\\ta ')</code> is <code>['a', 'b']</code>; a text without classes gives <code>undefined</code>, so the caller checks <code>?.length</code> instead of looping over an empty array.</p>"
+      }
+    }
+  },
+  "parseStyleDeclarations": {
+    "summary": "Parses the text of a style attribute into the names and the values of its declarations.",
+    "description": "<p>Returns a flat list, <code>[name, value, name, value]</code>. The declarations are separated by <code>;</code> and the name from the value by the first <code>:</code>, both outside parentheses and quotes: <code>url(a;b.png)</code>, <code>var(--x, a)</code> and <code>\"a;b\"</code> stay whole. The name of a property that is not custom is lowercased, as CSS compares them, and a value ending with <code>!important</code> keeps it, normalized to <code> !important</code>.</p><p>A declaration without name or value is left out, and a property declared twice keeps its last value, as the browser does. A text without declarations gives <code>undefined</code>.</p><p>The template compiler parses with it the static <code>style</code> of an element, and the runtime the strings it merges, in the browser and on the server.</p>",
+    "usage": {
+      "parsing": {
+        "title": "Parsing a style",
+        "body": "<p><code>parseStyleDeclarations('display: flex; background: url(a;b.png) !important')</code> is <code>['display', 'flex', 'background', 'url(a;b.png) !important']</code>.</p>"
+      }
+    }
+  },
+  "stylePriority": {
+    "summary": "Gives the priority a value of a style property is written with.",
+    "description": "<p>Returns <code>'important'</code> for a value ending with <code>!important</code>, in any case and with any spaces before it, an empty string otherwise: the third argument of <code>style.setProperty</code>. See <a href=\"#/en/reference/api/common/styleValue\"><code>styleValue</code></a> for the value without it.</p>",
+    "usage": {
+      "writing": {
+        "title": "Writing a property",
+        "body": "<p><code>style.setProperty(name, styleValue(value), stylePriority(value))</code> writes a value as <a href=\"#/en/reference/api/common/parseStyleDeclarations\"><code>parseStyleDeclarations</code></a> gives it.</p>"
+      }
+    }
+  },
+  "styleValue": {
+    "summary": "Gives a value of a style property without the !important it may end with.",
+    "description": "<p>Removes a final <code>!important</code>, in any case and with the spaces before it, leaving any other value as it is. See <a href=\"#/en/reference/api/common/stylePriority\"><code>stylePriority</code></a> for the priority.</p>",
+    "usage": {
+      "writing": {
+        "title": "Writing a property",
+        "body": "<p><code>styleValue('red !important')</code> is <code>'red'</code>, <code>styleValue('red')</code> is <code>'red'</code>.</p>"
+      }
+    }
+  },
+  "CSS_UNITS": {
+    "summary": "The units a style binding can follow its property with.",
+    "description": "<p>The lengths, the angles, the times, the frequencies, the resolutions and the flex fraction of CSS, in lowercase, and <code>%</code>: <code>px</code>, <code>rem</code>, <code>em</code>, <code>vh</code>, <code>dvh</code>, <code>cqi</code>, <code>deg</code>, <code>ms</code>, <code>fr</code> and the others. A unit outside the set, in <code>[style.width.foo]</code> or <code>@HostProperty('style.width.foo')</code>, is an error.</p>",
+    "usage": {
+      "checking": {
+        "title": "Checking a unit",
+        "body": "<p><code>CSS_UNITS.has('px')</code> is <code>true</code>, <code>CSS_UNITS.has('PX')</code> is <code>false</code>: the units are written in lowercase.</p>"
+      }
+    }
   }
 }

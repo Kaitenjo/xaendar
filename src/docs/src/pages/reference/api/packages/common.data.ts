@@ -90,6 +90,42 @@ export const COMMON_API: ApiPackage = {
       usage: [{ key: 'converting', snippets: [TO_KEBAB_CASE] }]
     },
     {
+      name: 'toCssPropertyName',
+      kind: 'function',
+      signature: 'function toCssPropertyName(name: string): string',
+      usage: [{ key: 'converting' }]
+    },
+    {
+      name: 'splitClasses',
+      kind: 'function',
+      signature: 'function splitClasses(text: string): string[] | undefined',
+      usage: [{ key: 'splitting' }]
+    },
+    {
+      name: 'parseStyleDeclarations',
+      kind: 'function',
+      signature: 'function parseStyleDeclarations(text: string): string[] | undefined',
+      usage: [{ key: 'parsing' }]
+    },
+    {
+      name: 'stylePriority',
+      kind: 'function',
+      signature: 'function stylePriority(value: string): string',
+      usage: [{ key: 'writing' }]
+    },
+    {
+      name: 'styleValue',
+      kind: 'function',
+      signature: 'function styleValue(value: string): string',
+      usage: [{ key: 'writing' }]
+    },
+    {
+      name: 'CSS_UNITS',
+      kind: 'constant',
+      signature: 'const CSS_UNITS: ReadonlySet<string>',
+      usage: [{ key: 'checking' }]
+    },
+    {
       name: 'indent',
       kind: 'function',
       signature: `function indent(lines: string): string;

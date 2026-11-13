@@ -142,7 +142,7 @@ export function generateTemplateModule(compiledFunctions: string, dependencyPath
   }
 
   lines.push(
-    'import { _if, _switch, _for, _hydrate, _client, _try, _defer, _scope, _read, _set, _declare, _iterationVariables, _renderElement, _renderText, _renderLiteralText, _setProperty, _setExpressionProperty, _setReactiveProperty, _setInput, _setExpressionInput, _setReactiveInput, _removeAttribute, _resetProperty, _setExpressionClass, _setReactiveClass, _removeClass, _setExpressionStyle, _setReactiveStyle, _removeStyle, _renderTemplate, _templateRef, _parameter, _let, _updateText, _runIf, _runFor, _runRender, _runLet, _runConditionalBinding } from \'@xaendar/core\';',
+    'import { _if, _switch, _for, _hydrate, _client, _try, _defer, _scope, _read, _set, _declare, _iterationVariables, _renderElement, _renderText, _renderLiteralText, _setProperty, _setExpressionProperty, _setReactiveProperty, _setInput, _setExpressionInput, _setReactiveInput, _removeAttribute, _resetProperty, _setStyling, _setExpressionStyling, _setReactiveStyling, _removeStyling, _renderTemplate, _templateRef, _parameter, _let, _updateText, _runIf, _runFor, _runRender, _runLet, _runConditionalBinding } from \'@xaendar/core\';',
     '',
     compiledFunctions,
     '',

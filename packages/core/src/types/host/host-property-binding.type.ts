@@ -1,17 +1,17 @@
 import type { EventHost } from '../event/event-host.type';
 
 /**
- * An attribute, a class or a style property a web component or a custom directive binds on its host element, declared
- * by `@HostProperty`.
+ * An attribute, the classes or the style a web component or a custom directive binds on its host element, declared by
+ * `@HostProperty`.
  */
 export type HostPropertyBinding = {
   /**
-   * The name of the attribute, of the class, or of the style property, as CSS writes it.
+   * The name of the attribute, of the class, or of the style property, as CSS writes it: empty for the string of `class`
+   * or of `style` (`@HostProperty('class')`).
    */
   readonly name: string,
   /**
-   * What the binding writes: an attribute, a class it toggles (`class.name`), or a style property it sets
-   * (`style.name`).
+   * What the binding writes: an attribute, the classes (`class`, `class.name`), or the style (`style`, `style.name`).
    */
   readonly kind: 'attribute' | 'class' | 'style',
   /**

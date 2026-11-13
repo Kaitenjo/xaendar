@@ -25,7 +25,7 @@ const symbol = (local: string, reactive = false): SymbolImport => ({
 describe('ServerGenerator', () => {
   it('writes the imports of the runtime helpers, then render creating the root context and writing the template', () => {
     expect(generate('<p>{ title() }</p>', ['title'])).toBe([
-      'import { _declare, _forItems, _iterationVariables, _read, _scope, _set, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty, _setExpressionStyle, _templateRef } from \'@xaendar/core\';',
+      'import { _declare, _forItems, _iterationVariables, _read, _scope, _set, _setExpressionInput, _setExpressionProperty, _setExpressionStyling, _setInput, _setProperty, _setStyling, _templateRef } from \'@xaendar/core\';',
       'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrRenderTemplate, _ssrRenderTemplateRef, _ssrStartTag, _ssrStructural, _ssrTry } from \'@xaendar/ssr\';',
       'const _layout0 = { size: 5, nodes: 5 };',
       'function render(out) {',

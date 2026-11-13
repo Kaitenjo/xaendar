@@ -1,5 +1,5 @@
 import { escapeAttribute, escapeRawText } from '@xaendar/common';
-import { _applyHostProperties, _COMPONENT, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setContentTemplates, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
+import { _applyHostProperties, _COMPONENT, _createStylingState, _DIRECTIVE_ORDER, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setContentTemplates, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
 import type { Constructor, Dictionary, Function } from '@xaendar/types';
 import { ServerElement } from '../../dom/server-element/server-element';
 import type { ClientComponentOptions } from '../../types/client-component-options.type';
@@ -31,6 +31,7 @@ export function _ssrStartTag(out: ServerOutput, context: _Context, config: Serve
   const { tagName, directives } = config;
   const element = new ServerElement();
   element.localName = tagName;
+  prepareStyling(element as unknown as Element);
   // The directives of the selected branches, applied once every binding of the element is, as the client does
   const branchDirectives = config.conditionalBindings?.length ? new Array<readonly ServerDirective[]>() : undefined;
   applyBindings(element as unknown as Element, context, config, undefined, branchDirectives);
@@ -64,6 +65,7 @@ export function _ssrStartTag(out: ServerOutput, context: _Context, config: Serve
  */
 export function _ssrComponent(out: ServerOutput, context: _Context, config: ServerElementConfig): void {
   renderOrWriteComponent(out, context, config, element => {
+    prepareStyling(element);
     applyBindings(element, context, config);
     // Passed like the inputs, before the component renders, as the client passes them before connecting it
     if (config.templates) {
@@ -93,6 +95,7 @@ export function _ssrIsland(out: ServerOutput, context: _Context, config: ServerE
 
   renderOrWriteComponent(out, context, config, element => {
     const inputs: Dictionary<string, unknown> = {};
+    prepareStyling(element);
     applyBindings(element, context, config, inputs);
     return _stringifyState(inputs, `<${config.tagName}>`);
   });
@@ -274,6 +277,18 @@ function collectEvents(Component: Constructor<CustomElement>, { render }: Server
 }
 
 /**
+ * Creates the states merging the sources of the `class` and of the `style` of an element written through the runtime,
+ * before its bindings are applied: its template, its directives and the component it is all write them once, merged
+ * with the precedence of the client, whatever the order they are applied in.
+ *
+ * @param element - The element.
+ */
+function prepareStyling(element: Element): void {
+  _createStylingState(element, 'class');
+  _createStylingState(element, 'style');
+}
+
+/**
  * Applies the bindings of an element: the attributes and the classes in order, through their setters, then the ones of
  * the branch each conditional binding selects, nested ones included.
  *
@@ -333,10 +348,11 @@ function valueOf({ value }: ServerAttribute, context: _Context): unknown {
  */
 function applyDirectives(element: ServerElement, context: _Context, directives: readonly ServerDirective[]): void {
   for (let i = 0; i < directives.length; i++) {
-    const { selector, attributes } = directives[i];
+    const { selector, attributes, order } = directives[i];
     const Directive = _resolveDirective(selector, CustomDirective);
     const directive = new Directive();
     directive[_SET_DIRECTIVE_ELEMENT] = element as unknown as Element;
+    directive[_DIRECTIVE_ORDER] = order ?? 0;
     if (attributes?.length) {
       for (let j = 0; j < attributes.length; j++) {
         const attribute = attributes[j];

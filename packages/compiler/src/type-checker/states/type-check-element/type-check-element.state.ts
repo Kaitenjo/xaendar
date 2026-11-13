@@ -713,8 +713,9 @@ function typeCheckClassBindings(classBindings: ClassBindingNode[], context: Type
 }
 
 /**
- * Type-checks the style properties set on an element, native or not: the value of each one must be a string or a
- * number, written followed by the unit of the binding, or `null`, `undefined` or `false`, which remove the property.
+ * Type-checks the style properties set on an element, native or not: the value of a property with a unit must be a
+ * number, written followed by the unit, the one of any other property a string or a number, and `null` and `undefined`
+ * leave the property to the other sources writing it.
  *
  * @param styleBindings - The style binding nodes to type-check.
  * @param context - Current type-check scope.
@@ -724,8 +725,8 @@ function typeCheckStyleBindings(styleBindings: StyleBindingNode[], context: Type
   const lines = new Array<Line>();
 
   for (let i = 0; i < styleBindings.length; i++) {
-    const { value } = styleBindings[i];
-    lines.push(line('(', mappedInterpolation(value, context, ') satisfies string | number | null | undefined | false;')));
+    const { value, unit } = styleBindings[i];
+    lines.push(line('(', mappedInterpolation(value, context, unit ? ') satisfies number | null | undefined;' : ') satisfies string | number | null | undefined;')));
   }
 
   return lines;

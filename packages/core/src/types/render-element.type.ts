@@ -1,6 +1,6 @@
 import type { BlockPosition } from './block-position.type';
 import type { RenderChildren } from './render-children.type';
-import type { RenderElementAttribute } from './render-element-attribute.type';
+import type { _RenderElementBinding } from './render-element-binding.type';
 import type { RenderElementConditionalBinding } from './render-element-conditional-binding.type';
 import type { RenderElementDirective } from './render-element-directive.type';
 import type { RenderElementEvent } from './render-element-event.type';
@@ -32,7 +32,7 @@ export type RenderElement = BlockPosition & {
   /**
    * The attributes of the element, and the classes it toggles, which come first so that writing `class` finds them.
    */
-  readonly attributes?: readonly RenderElementAttribute[];
+  readonly attributes?: readonly _RenderElementBinding[];
   /**
    * The event listeners of the element.
    */
@@ -85,4 +85,10 @@ export type RenderElement = BlockPosition & {
    * to is the slot of its anchor, the element itself being the only node of a scope of its own.
    */
   readonly slot?: number;
+  /**
+   * The states merging the sources of the `class` and of the `style` of the element to create before its bindings are
+   * applied (see `_prepareStyling`): `1` and `2` always, for `class` and `style`, `4` and `8` when its component
+   * or its directives write them. Left out for an element its template alone writes, nearly every one.
+   */
+  readonly styling?: number;
 };

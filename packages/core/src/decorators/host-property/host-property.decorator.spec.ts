@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { INTERNAL_HOST_PROPERTIES } from '../../costants';
+import type { CustomDirective } from '../../models/custom-directive/custom-directive';
+import type { Signal } from '../../signals/types/signal.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { HostProperty } from './host-property.decorator';
 
@@ -49,5 +51,52 @@ describe('HostProperty decorator', () => {
 
   it('throws for a static member', () => {
     expect(() => decorate('role', {}, 'role', true)).toThrow('@HostProperty(\'role\') cannot decorate the static member role');
+  });
+
+  it('stores the strings of class and style, without name', () => {
+    expect(decorate('class')[INTERNAL_HOST_PROPERTIES]).toEqual([{ name: '', kind: 'class', read: expect.any(Function) }]);
+    expect(decorate('style')[INTERNAL_HOST_PROPERTIES]).toEqual([{ name: '', kind: 'style', read: expect.any(Function) }]);
+  });
+
+  it('throws for a unit CSS does not have', () => {
+    expect(() => HostProperty('style.width.foo')).toThrow('@HostProperty(\'style.width.foo\') sets width in "foo", which is not a unit of CSS');
+  });
+
+  it('throws when the class binds the same class, property or string twice', () => {
+    const metadata = decorate('class.on', {}, 'first');
+    expect(() => decorate('class.on', metadata, 'second')).toThrow('@HostProperty(\'class.on\') on second binds the class on, which another member binds already');
+    decorate('style.width.px', metadata, 'width');
+    expect(() => decorate('style.width', metadata, 'other')).toThrow('binds the style property width, which another member binds already');
+    decorate('style', metadata, 'layout');
+    expect(() => decorate('style', metadata, 'again')).toThrow('binds the string of style, which another member binds already');
+    expect(() => decorate('role', decorate('role', {}, 'one'), 'two')).not.toThrow();
+  });
+});
+
+describe('types of @HostProperty', () => {
+  /**
+   * The context TypeScript passes the decorator of a field of a directive holding a value of a type: calling a decorator
+   * with it checks it as TypeScript checks a decorator applied to the field. Never called.
+   */
+  const contextOf = <Value>() => undefined as unknown as ClassFieldDecoratorContext<CustomDirective, Value> & { metadata: WebComponentMetadata };
+
+  it('types the member by the name: strings for class and style, numbers for a property with a unit', () => {
+    const check = () => {
+      HostProperty('class')(undefined, contextOf<string | null>());
+      HostProperty('style')(undefined, contextOf<Signal<string | undefined>>());
+      HostProperty('style.width.px')(undefined, contextOf<number>());
+      HostProperty('style.color')(undefined, contextOf<string | number | null>());
+      HostProperty('style.--size')(undefined, contextOf<number>());
+      HostProperty('class.on')(undefined, contextOf<{ any: true }>());
+      HostProperty('aria-hidden')(undefined, contextOf<boolean>());
+      // @ts-expect-error the string of class is a string
+      HostProperty('class')(undefined, contextOf<number>());
+      // @ts-expect-error a property with a unit takes a number
+      HostProperty('style.width.px')(undefined, contextOf<string>());
+      // @ts-expect-error a property takes a string or a number
+      HostProperty('style.color')(undefined, contextOf<boolean>());
+    };
+
+    expect(check).toBeTypeOf('function');
   });
 });

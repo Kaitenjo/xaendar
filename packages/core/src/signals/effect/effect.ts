@@ -90,7 +90,8 @@ export function _bindSite(scope: _Context, site: BindingSite, target?: unknown, 
     scope[base + site.target] = target;
   }
 
-  scope[base + effect] = _runBinding(update, scope, target, site);
+  // A binding keeping its last value receives the index of its slots (see `BindingSite.indexed`)
+  scope[base + effect] = _runBinding(update, scope, site.indexed ? base + site.target! : target, site);
 }
 
 /**

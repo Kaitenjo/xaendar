@@ -28,6 +28,10 @@
   --tone: var(--tok-fn);
 }
 
+.kind--constant {
+  --tone: var(--tok-num);
+}
+
 .kind--global {
   --tone: var(--tok-dir);
 }

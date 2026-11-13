@@ -50,6 +50,7 @@
       "decorator": "Decoratore",
       "class": "Classe",
       "function": "Funzione",
+      "constant": "Costante",
       "type": "Tipo",
       "global": "Globale"
     },
@@ -678,7 +679,8 @@
           "title": "Attributi e classi",
           "p1": "<code>@HostProperty('name')</code> su un campo, un getter o un accessor scrive il suo valore nell’attributo <code>name</code> dell’elemento host; <code>@HostProperty('class.name')</code> attiva e disattiva la classe <code>name</code>, che l’elemento ha finché il valore è truthy. Il membro viene letto dentro un effetto: un valore che non legge signal viene scritto una volta sola, mentre un signal, o un getter che legge signal, viene riscritto ogni volta che cambiano.",
           "example1": "Un interruttore disegnato dal proprio elemento",
-          "p2": "Fai clic sugli interruttori, oppure raggiungili con Tab e premi Spazio. <code>role</code> non legge signal e viene scritto una volta sola. <code>on</code> contiene un signal, e l’host ha la classe <code>on</code> finché è <code>true</code>: il foglio di stile disegna l’interruttore a partire da <code>:host(.on)</code>. I getter di <code>aria-checked</code>, <code>aria-disabled</code> e <code>tabindex</code> vengono riscritti quando cambiano <code>on</code> o <code>locked</code>. <code>locked</code> è un input riflesso sull’host: il padre lo lega, e il foglio di stile legge <code>:host([locked])</code>. Ispeziona l’interruttore del Wi-Fi con gli strumenti per sviluppatori per vederne cambiare gli attributi mentre attivi la modalità aereo."
+          "p2": "Fai clic sugli interruttori, oppure raggiungili con Tab e premi Spazio. <code>role</code> non legge signal e viene scritto una volta sola. <code>on</code> contiene un signal, e l’host ha la classe <code>on</code> finché è <code>true</code>: il foglio di stile disegna l’interruttore a partire da <code>:host(.on)</code>. I getter di <code>aria-checked</code>, <code>aria-disabled</code> e <code>tabindex</code> vengono riscritti quando cambiano <code>on</code> o <code>locked</code>. <code>locked</code> è un input riflesso sull’host: il padre lo lega, e il foglio di stile legge <code>:host([locked])</code>. Ispeziona l’interruttore del Wi-Fi con gli strumenti per sviluppatori per vederne cambiare gli attributi mentre attivi la modalità aereo.",
+          "p3": "<code>@HostProperty('class')</code> e <code>@HostProperty('style')</code> scrivono una stringa di classi, o di dichiarazioni, e <code>@HostProperty('style.name')</code> una proprietà, seguita dalla sua unità se c’è (<code>'style.width.px'</code>). Vengono fusi chiave per chiave con il template che renderizza l’elemento e con le sue direttive, che vincono sul componente: il template può sovrascrivere una classe o una proprietà che il componente scrive, e restituirla legando <code>null</code>. TypeScript controlla il membro in base al nome: una stringa per <code>class</code> e <code>style</code>, un numero per una proprietà con unità. Vedi <a href=\"#/it/templates/binding\">Binding</a>."
         },
         "events": {
           "title": "Gli eventi dell’host",
@@ -711,7 +713,7 @@
           },
           "callout3": {
             "heading": "Il padre lega lo stesso attributo",
-            "p1": "L’host è anche un tag nel template del padre, che può scrivere lo stesso attributo, come può farlo una direttiva applicata all’elemento. I valori non vengono uniti: vince l’ultima scrittura. Un attributo statico del padre viene sovrascritto alla connessione, e rimosso alla disconnessione. Lascia ogni attributo a un solo proprietario, oppure prendi il valore del padre da un input riflesso con <code>@HostProperty</code>, come fa <code>locked</code>. Le classi non si scontrano: <code>class.name</code> attiva e disattiva solo la propria classe, e la mantiene quando il padre scrive <code>class</code>."
+            "p1": "L’host è anche un tag nel template del padre, che può scrivere lo stesso attributo, come può farlo una direttiva applicata all’elemento. Un attributo non viene fuso: vince l’ultima scrittura, un attributo statico del padre viene sovrascritto alla connessione e rimosso alla disconnessione. Lascia ogni attributo a un solo proprietario, oppure prendi il valore del padre da un input riflesso con <code>@HostProperty</code>, come fa <code>locked</code>. <code>class</code> e <code>style</code> invece vengono fusi, una classe o una proprietà alla volta: il template del padre vince sulle direttive, che vincono sul componente, e quando il componente viene distrutto vengono tolte solo le sue chiavi."
           },
           "callout4": {
             "heading": "In onInit non è ancora legato nulla",
@@ -727,7 +729,7 @@
           "th1": "API",
           "th2": "Descrizione",
           "td1": "Scrive il valore di un campo, di un getter o di un accessor in un attributo dell’host: rimosso per <code>null</code> e <code>undefined</code>; un booleano lo aggiunge vuoto o lo rimuove, oppure viene scritto come <code>\"true\"</code> o <code>\"false\"</code> sugli attributi <code>aria-*</code> ed enumerati.",
-          "td2": "Attiva una classe dell’host finché il valore è truthy.",
+          "td2": "Attiva una classe dell’host finché il valore è truthy, fusa con le classi che scrivono il template e le direttive.",
           "td3": "Ascolta un evento dell’host, o della finestra o del documento con il prefisso window: o document:, con un metodo, che riceve l’evento tipizzato dal suo nome."
         }
       },
@@ -1682,7 +1684,7 @@
           "td8": "Direttive custom, <code>@@nome</code>",
           "td9": "Direttive strutturali",
           "td10": "<code>*nome</code>, con <code>shouldRender()</code>, anche asincrono",
-          "td11": "La stessa sintassi: <code>[style.color]=\"{ color() }\"</code>, anche con un’unità, <code>[style.width.px]</code>, e per le custom property, <code>[style.--accent]</code>. Vedi <a href=\"#/it/templates/binding\">Binding</a>.",
+          "td11": "La stessa sintassi: <code>[style.color]=\"{ color() }\"</code>, anche con un’unità, <code>[style.width.px]</code>, e per le custom property, <code>[style.--accent]</code>. Lo stile viene fuso proprietà per proprietà con la stessa precedenza di Angular: il template, poi le direttive, poi il componente, e una proprietà legata da sola vince sulla stringa. Non esiste <code>[style]</code> legato a un oggetto. Vedi <a href=\"#/it/templates/binding\">Binding</a>.",
           "td12": "<code>imports</code> del componente",
           "td13": "<code>@import</code> in cima al template",
           "td14": "Service e <code>inject()</code>",
@@ -1692,7 +1694,7 @@
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> e custom property",
           "td19": "<code>&lt;template name(…)&gt;</code> e <code>@render name(…)</code>, con parametri tipizzati; passati a un altro componente come content, letti con <code>@Query.contentTemplate</code>, o come input tipizzato <code>TemplateRef</code>: vedi <a href=\"#/it/templates/reusable-templates\">Template e @render</a>",
           "td20": "<code>@let</code>, chiamata anche variabile di template, un valore letto come <code>nome</code>, come in Angular, tenuto aggiornato con ciò che legge: vedi <a href=\"#/it/templates/let\">@let</a>",
-          "td21": "Stessa sintassi: <code>[class.x]=\"{ condizione }\"</code>, con il valore tra graffe. Vedi <a href=\"#/it/templates/binding\">Binding</a>."
+          "td21": "Stessa sintassi: <code>[class.x]=\"{ condizione }\"</code>, con il valore tra graffe, fusa classe per classe con le direttive e il componente come in Angular. Non esiste <code>[class]</code> legato a un oggetto: <code>class=\"{`a ${b()}`}\"</code> lega la stringa. Vedi <a href=\"#/it/templates/binding\">Binding</a>."
         },
         "whatWorksDifferently": {
           "title": "Cosa funziona diversamente",
@@ -2103,13 +2105,20 @@
           "title": "Attivare una classe",
           "p1": "<code>[class.nome]=\"{ espressione }\"</code> dà all’elemento la classe <code>nome</code> finché il valore dell’espressione è truthy, e gliela toglie altrimenti. Il valore può essere di qualsiasi tipo. Funziona sugli elementi nativi, sui tag dei componenti, dove la classe va sull’elemento stesso, e dentro i <a href=\"#/it/templates/conditional-bindings\">binding condizionali</a>, dove la classe viene tolta quando il suo ramo non è più selezionato. Dopo il punto va qualsiasi nome di classe senza spazi, <code>[class.is-active]</code> compreso.",
           "example1": "Un attributo class legato e due binding di classe",
-          "p2": "I binding di classe e l’attributo <code>class</code> funzionano insieme, anche quando è legato: ogni volta che <code>class</code> viene riscritto, le classi dei binding vengono applicate sopra, e un binding con valore falsy toglie la sua classe anche quando <code>class</code> la elenca. Un binding di classe segue i signal che legge, come un attributo."
+          "p2": "I binding di classe e l’attributo <code>class</code> funzionano insieme, anche quando è legato: vengono fusi classe per classe, i binding di classe vincono sulla stringa, e vengono scritte solo le classi il cui valore cambia. Un binding con valore falsy toglie la sua classe anche quando <code>class</code> la elenca; uno che vale <code>null</code> o <code>undefined</code> non ha opinione, e lascia la classe alla stringa. Un binding di classe segue i signal che legge, come un attributo."
         },
         "settingAStyle": {
           "title": "Impostare una proprietà di stile",
-          "p1": "<code>[style.name]=\"{ expression }\"</code> imposta la proprietà di stile <code>name</code> al valore dell’espressione, una stringa o un numero, e la rimuove per <code>null</code>, <code>undefined</code> e <code>false</code>. La proprietà si scrive in kebab-case o in camelCase, <code>[style.background-color]</code> o <code>[style.backgroundColor]</code>, e può essere seguita da un’unità, che il valore riceve: <code>[style.width.px]=\"{ 120 }\"</code> scrive <code>120px</code>. Una custom property si imposta come è scritta: <code>[style.--accent]</code>.",
+          "p1": "<code>[style.name]=\"{ expression }\"</code> imposta la proprietà di stile <code>name</code> al valore dell’espressione, una stringa o un numero; <code>null</code>, <code>undefined</code> e una stringa vuota non hanno opinione, e lasciano la proprietà alle altre sorgenti che la scrivono, oppure la rimuovono. La proprietà si scrive in kebab-case o in camelCase, <code>[style.background-color]</code> o <code>[style.backgroundColor]</code>, e può essere seguita da un’unità del CSS, che il valore riceve e che accetta un numero: <code>[style.width.px]=\"{ 120 }\"</code> scrive <code>120px</code>. Una custom property si imposta come è scritta: <code>[style.--accent]</code>. Un valore che termina con <code>!important</code> viene impostato con quella priorità.",
           "example1": "Una barra con una larghezza in percentuale, una custom property e una proprietà rimossa da null",
-          "p2": "Gli style binding e l’attributo <code>style</code> lavorano insieme, anche quando è legato: ogni volta che <code>style</code> viene riscritto, le proprietà dei binding vengono applicate sopra. Funzionano sui tag dei componenti e dentro i binding condizionali, dove la proprietà viene rimossa quando il suo ramo non è più selezionato, e <code>@HostProperty('style.width.px')</code> ne lega una sull’elemento host."
+          "p2": "Gli style binding e l’attributo <code>style</code> lavorano insieme, anche quando è legato: vengono fusi proprietà per proprietà, e i binding vincono sulla stringa. La stringa viene letta come una lista di dichiarazioni, compresi i <code>;</code> dentro <code>url(…)</code> o tra virgolette. Funzionano sui tag dei componenti e dentro i binding condizionali, dove la proprietà viene rimossa quando il suo ramo non è più selezionato, e <code>@HostProperty('style.width.px')</code> ne lega una sull’elemento host."
+        },
+        "merging": {
+          "title": "Fondere class e style",
+          "p1": "La <code>class</code> e lo <code>style</code> di un elemento possono essere scritti da più sorgenti: il template che lo renderizza, le direttive che applica, comprese le sue host directive, e il componente che è, con <code>@HostProperty</code>. Vengono fusi chiave per chiave, una classe o una proprietà alla volta, e per ogni chiave vince la sorgente più forte che ha un’opinione: il template, poi le direttive, poi il componente. In ognuna di esse una chiave legata da sola (<code>[class.on]</code>, <code>@HostProperty('style.width.px')</code>) vince sulla stringa (<code>class=\"…\"</code>, <code>@HostProperty('style')</code>). Tra due direttive vince quella applicata dopo: prima le host directive, nell’ordine in cui il componente le dichiara, poi quelle del template, nell’ordine in cui compaiono.",
+          "p2": "Una sorgente senza opinione su una chiave la lascia a quelle sotto: un template che lega <code>[style.width]=\"{ null }\"</code> lascia valere la larghezza di una direttiva o del componente. Per una classe <code>false</code> è un’opinione, <code>null</code> no: <code>[class.on]=\"{ false }\"</code> toglie la classe anche quando il componente la aggiunge, <code>[class.on]=\"{ null }\"</code> la lascia al componente. Quando una sorgente sparisce (un ramo non più selezionato, una direttiva distrutta) le chiavi che scriveva prendono il valore delle sorgenti sotto, e le chiavi delle altre restano.",
+          "p3": "L’ordine in cui le sorgenti girano non conta: il risultato dipende solo dal loro livello. Vengono scritte solo le chiavi il cui valore cambia, con <code>classList</code> e <code>style.setProperty</code>, mai scrivendo l’attributo intero, così un elemento adottato dall’HTML del server che ha già gli stessi valori non viene riscritto. Le classi e le proprietà che altro codice scrive sull’elemento non vengono tracciate: il runtime tocca solo le chiavi che ha scritto, e rimuove una chiave su cui nessuna sorgente ha un’opinione solo se l’aveva scritta lui.",
+          "p4": "Un elemento scritto solo dal suo template, il caso più comune, non costa niente in più: la sua classe e il suo stile vengono scritti direttamente. Lo stato della fusione viene tenuto solo per gli elementi scritti da più di una sorgente."
         },
         "bindingTheInputsOf": {
           "title": "Legare gli input dei componenti",
@@ -2157,7 +2166,7 @@
           "td5": "<code>input=\"{ expression }\"</code> su un componente",
           "td6": "Imposta l’input, con il valore così com’è.",
           "td7": "La classe <code>name</code>, presente finché il valore è truthy.",
-          "td8": "La proprietà di stile <code>name</code>, con la sua unità se c’è, rimossa per <code>null</code>, <code>undefined</code> e <code>false</code>."
+          "td8": "La proprietà di stile <code>name</code>, con la sua unità se c’è; <code>null</code>, <code>undefined</code> e una stringa vuota la lasciano alle altre sorgenti."
         }
       },
       "conditionalBindings": {
@@ -4316,6 +4325,18 @@
     "@for iterates an array, a number or an iterable (a Map, a Set…), not a string": {
       "cause": "Un @for la cui espressione dà, a runtime, una stringa, null, undefined o un oggetto non iterabile: il type-check non l’ha visto, tipizzato come any.",
       "fix": "Dai al @for un array, un numero o un iterabile, ad esempio un array vuoto invece di null."
+    },
+    "[Parser] [style.width.foo] sets width in \"foo\", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh": {
+      "cause": "Uno style binding la cui unità non è un’unità del CSS.",
+      "fix": "Scrivi un’unità del CSS in minuscolo, oppure lega la proprietà senza unità e scrivi l’unità nel valore: [style.width.px], [style.width]=\"{ `${w}px` }\"."
+    },
+    "Error: @HostProperty('style.width.foo') sets width in \"foo\", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh": {
+      "cause": "Un @HostProperty di una proprietà di stile la cui unità non è un’unità del CSS. Viene lanciato quando la classe viene definita.",
+      "fix": "Scrivi un’unità del CSS in minuscolo: @HostProperty('style.width.px')."
+    },
+    "Error: @HostProperty('class.on') on second binds the class on, which another member binds already": {
+      "cause": "Due membri di una classe, o delle classi che estende, che legano con @HostProperty la stessa classe, la stessa proprietà di stile o la stessa stringa di class o style. Viene lanciato quando la classe viene definita.",
+      "fix": "Lega ogni classe e ogni proprietà con un solo membro, calcolando il suo valore dagli altri in un getter."
     }
   }
 }

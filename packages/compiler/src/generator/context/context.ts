@@ -347,16 +347,21 @@ export class GeneratorContext extends CompilerContext {
    * @param update - The callback of the binding, a function of the runtime (`_updateText`, `_runIf`), which the scope
    *   runs it again with: a binding without slots is run by the callback the runtime gives it.
    * @param target - Whether the binding keeps its target: it writes one and reads variables of the template.
+   * @param indexed - Whether the binding keeps, after its target, the values it computed last (see `BindingSite.indexed`
+   *   of the runtime): the bindings of `class` and `style`, which always keep their target.
    * @returns The name the constant is declared with, `undefined` when the binding gets no slot and nothing is declared.
    */
-  public declareBinding(name: string, members: string[], update: string, target: boolean): string | undefined {
+  public declareBinding(name: string, members: string[], update: string, target: boolean, indexed = false): string | undefined {
     const scope = this._scopeContext();
     if (scope.runtimeScope) {
       return undefined;
     }
 
     members.push(`update: ${update}`, `effect: ${scope._bindingSlots++}`);
-    if (target) {
+    if (indexed) {
+      members.push(`target: ${scope._bindingSlots}`, 'indexed: true');
+      scope._bindingSlots += 2;
+    } else if (target) {
       members.push(`target: ${scope._bindingSlots++}`);
     }
 

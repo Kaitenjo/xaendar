@@ -1,5 +1,3 @@
-import { updateAttribute } from '../class-toggle/class-toggle.util';
-
 /**
  * The enumerated attributes whose keywords include `false` (lowercase), which a boolean writes as `"true"` or `"false"`
  * instead of adding or removing them: `contenteditable="false"`, `draggable="false"`, `spellcheck="false"` and
@@ -39,15 +37,18 @@ export function _attributeValue(name: string, value: unknown): string | null {
 
 /**
  * Writes an attribute of an element from the value of a binding (see {@link _attributeValue}), only when it differs from
- * the one the element holds, as an element adopted from the HTML of the server does. Writing `class` keeps the classes
- * toggled by class bindings (see `updateAttribute`).
+ * the one the element holds, as an element adopted from the HTML of the server does. `class` and `style` are written key
+ * by key instead (see `_RenderStyling` and `HostStylingRun`).
  *
  * @param element - The element.
  * @param name - The name of the attribute.
  * @param value - The value of the binding.
  */
 export function writeAttribute(element: Element, name: string, value: unknown): void {
-  updateAttribute(element, name, _attributeValue(name, value));
+  const text = _attributeValue(name, value);
+  if (element.getAttribute(name) !== text) {
+    text === null ? element.removeAttribute(name) : element.setAttribute(name, text);
+  }
 }
 
 /**

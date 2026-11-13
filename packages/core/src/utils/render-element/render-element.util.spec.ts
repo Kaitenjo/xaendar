@@ -7,7 +7,7 @@ import type { RenderElementDirective } from '../../types/render-element-directiv
 import type { RenderElementStructuralDirective } from '../../types/render-element-structural-directive.type';
 import type { RenderElement } from '../../types/render-element.type';
 import type { TemplateExpression } from '../../types/template-expression.type';
-import { CLEANUP, HEADER, LAYOUT, PARENT_NODE } from '../../costants';
+import { CLEANUP, DIRECTIVE_ORDER, HEADER, LAYOUT, PARENT_NODE } from '../../costants';
 import type { _Context } from '../../types/context.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 
@@ -57,13 +57,13 @@ const {
   _setReactiveProperty
 } = await import('./render-element.util');
 const { signal } = await import('../../signals');
-const { _setExpressionClass } = await import('../class-binding/class-binding.util');
 const { AttributeUnbinding } = await import('../../models/attribute-unbinding/attribute-unbinding');
 const { CustomDirective } = await import('../../models/custom-directive/custom-directive');
 const { CustomElement } = await import('../../models/custom-element/custom-element');
 const { StructuralDirective } = await import('../../models/structural-directive/structural-directive');
 const { TemplateListener } = await import('../../models/template-listener/template-listener');
 const { _defineDirective } = await import('../directive-registry/directive-registry.util');
+const { _removeStyling, _setExpressionStyling, _setStyling } = await import('../styling-binding/styling-binding.util');
 const { _getAppliedDirectives } = await import('../applied-directives/applied-directives.util');
 const { _getElementRef } = await import('../element-refs/element-refs.util');
 
@@ -314,26 +314,6 @@ describe('property setters', () => {
     element.setAttribute('title', 'x');
     _removeAttribute(createRoot(), element, attributeOf('title'));
     expect(element.hasAttribute('title')).toBe(false);
-  });
-
-  it('keeps the classes toggled by class bindings when the class attribute is written, removed or reset', async () => {
-    const element = document.createElement('div');
-    const classes = signal('a');
-    _setExpressionClass(createRoot(), element, attributeOf('on', () => true));
-    _setReactiveProperty(createRoot(), element, attributeOf('class', () => classes()));
-    await flush();
-    expect(element.className).toBe('a on');
-
-    classes.set('b');
-    await flush();
-    expect(element.className).toBe('b on');
-
-    _removeAttribute(createRoot(), element, attributeOf('class'));
-    expect(element.className).toBe('on');
-
-    _setProperty(createRoot(), element, attributeOf('class', 'c'));
-    _resetProperty(createRoot(), element, attributeOf('class'));
-    expect(element.className).toBe('on');
   });
 
   describe('input signal properties', () => {
@@ -828,6 +808,44 @@ describe('_renderElement', () => {
     const attribute = (name: string, value = 'on'): RenderElementAttribute => ({ name, value, setter: _setProperty, unbind: _removeAttribute });
     const ifBinding = (...branches: Array<ElementBindings & { readonly condition?: TemplateExpression<unknown> }>): RenderElementConditionalBinding => ({ branches });
     const switchBinding = (expression: TemplateExpression<unknown>, ...branches: Array<ElementBindings & { readonly condition: readonly unknown[] | null }>): RenderElementConditionalBinding => ({ expression, branches });
+
+    it('merges the class and the style of a branch with the ones of the element, giving them back when it is no longer selected', async () => {
+      const enabled = signal(true);
+      const element = render(document.createElement('div'), createRoot(), {
+        styling: 3,
+        attributes: [
+          { name: 'class', text: 'base wide', statics: ['base', true, 'wide', true], setter: _setStyling },
+          { name: 'style', text: 'width: 1px', statics: ['width', '1px'], setter: _setStyling }
+        ],
+        conditionalBindings: [ifBinding({
+          condition: () => enabled(),
+          styling: 3,
+          attributes: [
+            { name: 'class', keys: ['wide', 'on'], values: [() => false, () => true], setter: _setExpressionStyling, unbind: _removeStyling },
+            { name: 'style', keys: ['width'], values: [() => 2], units: ['px'], setter: _setExpressionStyling, unbind: _removeStyling }
+          ]
+        })]
+      });
+      expect(element.className).toBe('base on');
+      expect((element as HTMLElement).style.getPropertyValue('width')).toBe('2px');
+
+      enabled.set(false);
+      await flush();
+      expect(element.className).toBe('base wide');
+      expect((element as HTMLElement).style.getPropertyValue('width')).toBe('1px');
+    });
+
+    it('gives the directives of the template their order after the host directives', () => {
+      const orders = new Array<number>();
+      const OrderDirective = class extends CustomDirective {
+        public onInit(): void {
+          orders.push(this[DIRECTIVE_ORDER]);
+        }
+      };
+      _defineDirective('order', OrderDirective);
+      render(document.createElement('div'), createRoot(), { directives: [{ selector: 'order' }, { selector: 'order', order: 1 }] });
+      expect(orders).toEqual([0, 1]);
+    });
 
     it('applies attributes only while the condition is true', async () => {
       const enabled = signal(false);

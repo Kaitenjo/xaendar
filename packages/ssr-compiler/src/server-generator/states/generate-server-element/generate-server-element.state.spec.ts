@@ -95,12 +95,27 @@ describe('generateServerElement', () => {
     expect(functions).toEqual([expressionFunction('user_card0$label', 'this.on()')]);
   });
 
-  it('writes the start tag of an element setting style properties through _ssrStartTag, with their unit, in its branches too', () => {
+  it('writes the start tag of an element setting style properties through _ssrStartTag, one descriptor of the style with their units, in its branches too', () => {
     const { code, constants } = generate('<div [style.width.px]="{ on() }" @if (mode()) { [style.--accent]="{ 1 }" }></div>');
 
     expect(code).toEqual(['_ssrStartTag(out, context, div0$element);', 'out.push(\'</div>\');']);
-    expect(constants[0]).toContain('{ name: \'width\', unit: \'px\', value: div0$style_width, setter: _setExpressionStyle }');
-    expect(constants[0]).toContain('{ name: \'--accent\', value: div0$style___accent, setter: _setExpressionStyle }');
+    expect(constants[0]).toContain([
+      '    {',
+      '      name: \'style\',',
+      '      keys: [\'width\'],',
+      '      values: [div0$style_width],',
+      '      units: [\'px\'],',
+      '      setter: _setExpressionStyling',
+      '    }'
+    ].join('\n'));
+    expect(constants[0]).toContain('{ name: \'style\', keys: [\'--accent\'], values: [div0$style___accent], setter: _setExpressionStyling }');
+  });
+
+  it('writes the static class of a component through _ssrComponent, with _setStyling, and a class input of the component as an input', () => {
+    const context = new GeneratorContext(cache);
+    context.addImportedMetadata({ type: 'component', selector: 'x-input', properties: new Map([['class', { name: 'class' }]]) } as never);
+    expect(generate('<my-el class="a"></my-el>').constants[0]).toContain('{ name: \'class\', text: \'a\', statics: [\'a\', true], setter: _setStyling }');
+    expect(generate('<x-input class="a"></x-input>', context).constants[0]).toContain('{ name: \'class\', value: \'a\', setter: _setInput }');
   });
 
   it('writes a custom element of another library like a native element', () => {
@@ -110,7 +125,7 @@ describe('generateServerElement', () => {
     expect(generate('<sl-button variant="primary"></sl-button>', context).code).toEqual(['out.push(\'<sl-button variant="primary"></sl-button>\');']);
   });
 
-  it('writes the start tag of an element toggling classes through _ssrStartTag, the classes after the attributes', () => {
+  it('writes the start tag of an element toggling classes through _ssrStartTag, the class string and the classes in one descriptor', () => {
     const { code, constants, functions } = generate('<div class="a" [class.is-on]="{ on() }"></div>');
 
     expect(code).toEqual(['_ssrStartTag(out, context, div0$element);', 'out.push(\'</div>\');']);
@@ -118,8 +133,14 @@ describe('generateServerElement', () => {
       'const div0$element = {',
       '  tagName: \'div\',',
       '  attributes: [',
-      '    { name: \'class\', value: \'a\', setter: _setProperty },',
-      '    { name: \'is-on\', value: div0$class_is_on, setter: _setExpressionClass }',
+      '    {',
+      '      name: \'class\',',
+      '      text: \'a\',',
+      '      statics: [\'a\', true],',
+      '      keys: [\'is-on\'],',
+      '      values: [div0$class_is_on],',
+      '      setter: _setExpressionStyling',
+      '    }',
       '  ]',
       '};'
     ].join('\n')]);
@@ -153,7 +174,7 @@ describe('generateServerElement', () => {
       '        },',
       '        {',
       '          condition: div0$if2,',
-      '          attributes: [{ name: \'on\', value: div0$class_on, setter: _setExpressionClass }]',
+      '          attributes: [{ name: \'class\', keys: [\'on\'], values: [div0$class_on], setter: _setExpressionStyling }]',
       '        },',
       '        { attributes: [{ name: \'title\', value: \'z\', setter: _setProperty }] }',
       '      ]',
@@ -210,7 +231,7 @@ describe('generateServerElement', () => {
       '        { name: \'level\', value: p0$level, setter: _setExpressionProperty }',
       '      ]',
       '    },',
-      '    { selector: \'mark\' }',
+      '    { selector: \'mark\', order: 1 }',
       '  ]',
       '};'
     ].join('\n')]);
@@ -230,7 +251,7 @@ describe('generateServerElement', () => {
       '        {',
       '          condition: p0$if,',
       '          directives: [{ selector: \'tip\' }],',
-      '          conditionalBindings: [{ branches: [{ condition: p0$if1, directives: [{ selector: \'mark\' }] }] }]',
+      '          conditionalBindings: [{ branches: [{ condition: p0$if1, directives: [{ selector: \'mark\', order: 1 }] }] }]',
       '        }',
       '      ]',
       '    }',

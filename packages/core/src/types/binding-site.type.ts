@@ -45,4 +45,15 @@ export type BindingSite = {
    * the template, which the scope runs again with it.
    */
   readonly target?: number;
+  /**
+   * Whether the binding keeps, in the slot after the one of its target, the value it computed last, which it compares
+   * the next one with: the callback receives the absolute index of the slot of the target, instead of the target, and
+   * reads the target and the value through it. Given only to the bindings of `class` and `style` (see `_RenderStyling`),
+   * which always have a target.
+   *
+   * N.B. Deliberate: the slots of a branch rendered inline are counted from the area of its block, known only while it
+   * renders (see `bindingsBase`), so the callback run again by an effect could not find them from the scope alone. Do not
+   * pass the target instead of the index.
+   */
+  readonly indexed?: true;
 };

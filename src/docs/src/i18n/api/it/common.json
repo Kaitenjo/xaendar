@@ -254,5 +254,65 @@
         "body": "<p>La pagina viene scelta dal percorso della richiesta, che nessun target può spostare su un’altra origine.</p>"
       }
     }
+  },
+  "toCssPropertyName": {
+    "summary": "Converte il nome di una proprietà di stile in quello che usa il CSS.",
+    "description": "<p>Un nome in camelCase diventa kebab-case: ogni lettera maiuscola diventa <code>-</code> seguito dalla lettera minuscola. <code>'fontSize'</code> diventa <code>'font-size'</code>, <code>'WebkitTransform'</code> diventa <code>'-webkit-transform'</code>. Una custom property, che inizia con <code>--</code>, resta com’è, perché il suo nome distingue maiuscole e minuscole.</p><p>Il compilatore dei template e <code>@HostProperty</code> la usano per convertire la proprietà di <code>[style.name]</code> e di <code>'style.name'</code>.</p>",
+    "usage": {
+      "converting": {
+        "title": "Convertire una proprietà",
+        "body": "<p><code>toCssPropertyName('backgroundColor')</code> dà <code>'background-color'</code>, <code>toCssPropertyName('--mainColor')</code> dà <code>'--mainColor'</code>.</p>"
+      }
+    }
+  },
+  "splitClasses": {
+    "summary": "Divide il testo di un attributo class nelle sue classi.",
+    "description": "<p>Le classi sono separate dagli spazi bianchi ASCII (spazio, tab, a capo, form feed, ritorno a capo), come le legge il browser. Ogni classe compare una volta sola, nell’ordine della sua prima occorrenza.</p>",
+    "usage": {
+      "splitting": {
+        "title": "Dividere le classi",
+        "body": "<p><code>splitClasses(' a b\\ta ')</code> dà <code>['a', 'b']</code>. Un testo senza classi dà <code>undefined</code>, così chi la chiama controlla <code>?.length</code> invece di ciclare su un array vuoto.</p>"
+      }
+    }
+  },
+  "parseStyleDeclarations": {
+    "summary": "Analizza il testo di un attributo style nei nomi e nei valori delle sue dichiarazioni.",
+    "description": "<p>Restituisce una lista piatta, <code>[nome, valore, nome, valore]</code>. Le dichiarazioni sono separate da <code>;</code>, e il nome è separato dal valore dal primo <code>:</code>, contando entrambi solo fuori da parentesi e virgolette: <code>url(a;b.png)</code>, <code>var(--x, a)</code> e <code>\"a;b\"</code> restano interi. Il nome di una proprietà che non è custom viene scritto in minuscolo, come il CSS li confronta. Un valore che termina con <code>!important</code> lo mantiene, nella forma <code> !important</code>.</p><p>Una dichiarazione senza nome o senza valore viene scartata, e per una proprietà dichiarata due volte vale l’ultimo valore, come fa il browser. Un testo senza dichiarazioni dà <code>undefined</code>.</p><p>Il compilatore dei template la usa per lo <code>style</code> statico di un elemento, il runtime per le stringhe che fonde, nel browser e sul server.</p>",
+    "usage": {
+      "parsing": {
+        "title": "Analizzare uno stile",
+        "body": "<p><code>parseStyleDeclarations('display: flex; background: url(a;b.png) !important')</code> dà <code>['display', 'flex', 'background', 'url(a;b.png) !important']</code>.</p>"
+      }
+    }
+  },
+  "stylePriority": {
+    "summary": "Dà la priorità con cui si scrive il valore di una proprietà di stile.",
+    "description": "<p>Restituisce <code>'important'</code> per un valore che termina con <code>!important</code>, maiuscolo o minuscolo e con qualsiasi spazio prima, altrimenti una stringa vuota. È il terzo argomento di <code>style.setProperty</code>. Per il valore senza priorità c’è <a href=\"#/it/reference/api/common/styleValue\"><code>styleValue</code></a>.</p>",
+    "usage": {
+      "writing": {
+        "title": "Scrivere una proprietà",
+        "body": "<p><code>style.setProperty(name, styleValue(value), stylePriority(value))</code> scrive un valore nella forma in cui lo dà <a href=\"#/it/reference/api/common/parseStyleDeclarations\"><code>parseStyleDeclarations</code></a>.</p>"
+      }
+    }
+  },
+  "styleValue": {
+    "summary": "Dà il valore di una proprietà di stile senza l’eventuale !important finale.",
+    "description": "<p>Toglie un <code>!important</code> finale, maiuscolo o minuscolo e con gli spazi che lo precedono, e lascia com’è qualsiasi altro valore. Per la priorità c’è <a href=\"#/it/reference/api/common/stylePriority\"><code>stylePriority</code></a>.</p>",
+    "usage": {
+      "writing": {
+        "title": "Scrivere una proprietà",
+        "body": "<p><code>styleValue('red !important')</code> dà <code>'red'</code>, e anche <code>styleValue('red')</code> dà <code>'red'</code>.</p>"
+      }
+    }
+  },
+  "CSS_UNITS": {
+    "summary": "Le unità che possono seguire la proprietà di uno style binding.",
+    "description": "<p>Le unità CSS di lunghezza, angolo, tempo, frequenza e risoluzione, la frazione dei flex, tutte in minuscolo, più <code>%</code>: <code>px</code>, <code>rem</code>, <code>em</code>, <code>vh</code>, <code>dvh</code>, <code>cqi</code>, <code>deg</code>, <code>ms</code>, <code>fr</code> e le altre. Un’unità che non è nell’insieme è un errore, sia in <code>[style.width.foo]</code> sia in <code>@HostProperty('style.width.foo')</code>.</p>",
+    "usage": {
+      "checking": {
+        "title": "Controllare un’unità",
+        "body": "<p><code>CSS_UNITS.has('px')</code> dà <code>true</code>, <code>CSS_UNITS.has('PX')</code> dà <code>false</code>: le unità si scrivono in minuscolo.</p>"
+      }
+    }
   }
 }

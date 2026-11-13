@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import type { FixtureProject } from '../types/fixture-project.type';
-import { getTemplateBindingCompletions, getTemplateCompletions, getTemplateExpressionCompletions, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSourceBindingCompletions, getTemplateTriggerCompletions } from './template-completions';
+import { getTemplateBindingCompletions, getTemplateCompletions, getTemplateExpressionCompletions, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSourceBindingCompletions, getTemplateStyleCompletions, getTemplateTriggerCompletions } from './template-completions';
 
 const TIMEOUT = 60_000;
 const source = '<b title="{ title }">{ items[0].na }</b>';
@@ -296,6 +296,29 @@ describe('getTemplateSourceBindingCompletions', () => {
   it('leaves the offsets not on the name of a binding to the other completions', async () => {
     expect(await getTemplateSourceBindingCompletions(project.path('src/never-analyzed.html'), `${imports}<p>{ ti`, imports.length + 9)).toBeUndefined();
   }, TIMEOUT);
+});
+
+describe('getTemplateStyleCompletions', () => {
+  it('proposes the CSS properties after [style., replacing what follows it', () => {
+    const source = '<div [style.fo';
+    const completions = getTemplateStyleCompletions(source, source.length)!;
+    expect(completions.map(({ name }) => name)).toContain('font-size');
+    expect(completions[0].replacementSpan).toEqual({ start: 12, end: 14 });
+  });
+
+  it('proposes the units of CSS after the property, none for a custom property', () => {
+    const source = '<div [style.width.p';
+    const completions = getTemplateStyleCompletions(source, source.length)!;
+    expect(completions.map(({ name }) => name)).toContain('px');
+    expect(completions[0].replacementSpan).toEqual({ start: 18, end: 19 });
+    expect(getTemplateStyleCompletions('<div [style.--x.', 16)).toEqual([]);
+  });
+
+  it('proposes nothing elsewhere, in a directive or on another binding', () => {
+    expect(getTemplateStyleCompletions('<div [class.', 12)).toBeUndefined();
+    expect(getTemplateStyleCompletions('<div @@tip([style.', 18)).toBeUndefined();
+    expect(getTemplateStyleCompletions('text [style.', 12)).toBeUndefined();
+  });
 });
 
 describe('getTemplateBindingCompletions', () => {

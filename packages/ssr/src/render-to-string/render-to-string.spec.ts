@@ -338,6 +338,32 @@ describe('renderToString', () => {
     expect(directiveEffect).not.toHaveBeenCalled();
   });
 
+  it('merges the class and the style of the template and of the directives of an element key by key, the template winning, then the directive applied later', async () => {
+    const directiveOf = (selector: string, properties: Record<string, [name: string, value: unknown]>) => {
+      const metadata: DecoratorMetadataObject = {};
+      for (const [member, [name, value]] of Object.entries(properties)) {
+        (HostProperty(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: member, static: false, metadata, access: { get: () => value } });
+      }
+
+      const Directive = class extends CustomDirective { };
+      Object.defineProperty(Directive, Symbol.for('Symbol.metadata'), { value: metadata });
+      _defineDirective(selector, Directive);
+    };
+    directiveOf('wide', { width: ['style.width.px', 20], color: ['style.color', 'blue'], on: ['class.on', true], kind: ['class', 'wide'] });
+    directiveOf('narrow', { width: ['style.width.px', 5], gap: ['style', 'gap: 2px'] });
+
+    /**
+     * A component whose element merges the class and the style of its template and of two directives.
+     */
+    class MergedElement extends CustomElement {
+      public off = null;
+    }
+    customElements.define('merged-card', MergedElement);
+    _defineServerRender(MergedElement, await compile('<p class="a" style="color: red" [class.on]="{ off }" @@wide @@narrow></p>', [], [], []));
+
+    expect(await renderToString(MergedElement)).toBe('<merged-card><template shadowrootmode="open"><p class="a wide on" style="color: red; width: 5px; gap: 2px;"></p></template></merged-card>');
+  });
+
   describe('the interactive components a static template renders', () => {
     const metadata: DecoratorMetadataObject = {};
 

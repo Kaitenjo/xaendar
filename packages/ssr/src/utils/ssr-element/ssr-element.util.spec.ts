@@ -11,7 +11,7 @@ await vi.hoisted(async () => {
   loadServerDom();
 });
 
-const { _scope, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty, CustomElement, HostProperty, Property, Query } = await import('@xaendar/core');
+const { _scope, _setExpressionInput, _setExpressionStyling, _setExpressionProperty, _setInput, _setProperty, CustomElement, HostProperty, Property, Query } = await import('@xaendar/core');
 
 /**
  * The layout of a scope holding its header alone, whose 5 slots the runtime reserves.
@@ -47,13 +47,13 @@ const expressionInput = (name: string, value: unknown) => ({ name, value: () => 
 /**
  * Describes a class toggled by the value of an expression.
  */
-const classBinding = (name: string, value: unknown) => ({ name, value: () => value, setter: _setExpressionClass }) as unknown as ServerAttribute;
+const classBinding = (name: string, value: unknown, text?: string) => ({ name: 'class', text, statics: text ? [text, true] : undefined, keys: [name], values: [() => value], setter: _setExpressionStyling }) as unknown as ServerAttribute;
 
 describe('_ssrStartTag', () => {
   it('writes the start tag with the attributes and the classes applied in order through the setters of the client', () => {
     const out: ServerOutput = [];
 
-    _ssrStartTag(out, context, { tagName: 'div', attributes: [literal('class', 'a'), expression('title', '"x" & <y>'), classBinding('on', 1)] });
+    _ssrStartTag(out, context, { tagName: 'div', attributes: [classBinding('on', 1, 'a'), expression('title', '"x" & <y>')] });
 
     expect(out).toEqual(['<div class="a on" title="&quot;x&quot; &amp; &lt;y&gt;">']);
   });

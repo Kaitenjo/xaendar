@@ -1,4 +1,4 @@
-import { analyzeTemplate, disposeProjectLanguageServices, findUnusedImports, getComponentDefinition, getComponentDiagnostics, getTemplateFormatting, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateExpressionCompletions, getTemplateHover, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSemanticTokens, getTemplateSourceBindingCompletions, getTemplateTriggerCompletions, invalidateTemplateMetadata, normalizeFileName, organizeTemplateImports, removeDocumentOverlay, removeTemplateAnalysis, removeTemplateImport, setDocumentOverlay, TEMPLATE_SEMANTIC_TOKEN_MODIFIERS, TEMPLATE_SEMANTIC_TOKEN_TYPES, type TemplateAnalysis, type TemplateAnalysisResult, type TemplateCompletion, type TemplateDefinition } from '@xaendar/language-core';
+import { analyzeTemplate, disposeProjectLanguageServices, findUnusedImports, getComponentDefinition, getComponentDiagnostics, getTemplateFormatting, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateExpressionCompletions, getTemplateHover, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSemanticTokens, getTemplateSourceBindingCompletions, getTemplateStyleCompletions, getTemplateTriggerCompletions, invalidateTemplateMetadata, normalizeFileName, organizeTemplateImports, removeDocumentOverlay, removeTemplateAnalysis, removeTemplateImport, setDocumentOverlay, TEMPLATE_SEMANTIC_TOKEN_MODIFIERS, TEMPLATE_SEMANTIC_TOKEN_TYPES, type TemplateAnalysis, type TemplateAnalysisResult, type TemplateCompletion, type TemplateDefinition } from '@xaendar/language-core';
 import { basename } from 'node:path';
 import type { TextDocument } from 'vscode-languageserver-textdocument';
 import { type CodeAction, CodeActionKind, type CodeActionParams, type CompletionItem, type CompletionParams, type Connection, type DefinitionParams, type DocumentFormattingParams, type Diagnostic, DiagnosticSeverity, DiagnosticTag, type DidChangeWatchedFilesParams, FileChangeType, type Hover, type HoverParams, type InitializeParams, type TextEdit, type InitializeResult, InsertTextFormat, type LocationLink, MarkupKind, type SemanticTokens, SemanticTokensBuilder, type SemanticTokensParams, TextDocumentSyncKind, type TextDocuments } from 'vscode-languageserver/node';
@@ -336,7 +336,7 @@ export class XaendarLanguageServer {
    * Proposes the completions at the cursor in a template: in the path of an `@import`, the modules and directories;
    * between its braces, the components and directives the module declares; on the tag name of an element or the
    * selector of a directive, the components and directives imported by the template; on the name of an attribute or
-   * event, the bindings of the component or directive; after a `@`, the blocks that can be written there; between the
+   * event, the bindings of the component or directive, and after `[style.` the CSS properties, then their units; after a `@`, the blocks that can be written there; between the
    * parentheses of a `@defer` or of a `@hydrate`, their triggers, and of a `@placeholder` or of a `@loading`, their
    * parameters; in an
    * interpolation, in the method an event calls and in its arguments, in the condition of a block, the variables of
@@ -362,6 +362,7 @@ export class XaendarLanguageServer {
         ?? await getTemplateSelectorCompletions(templatePath, document.getText(), offset)
         ?? getTemplateKeywordCompletions(templatePath, document.getText(), offset)
         ?? getTemplateTriggerCompletions(document.getText(), offset)
+        ?? getTemplateStyleCompletions(document.getText(), offset)
         ?? await getTemplateSourceBindingCompletions(templatePath, document.getText(), offset)
         ?? (components && await getTemplateExpressionCompletions(templatePath, document.getText(), offset, components, context?.triggerCharacter))
       : undefined;

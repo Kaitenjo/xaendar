@@ -75,14 +75,14 @@ describe('typeCheckElement', () => {
       expect(lines[0].mappings![0]).toBeDefined();
     });
 
-    it('type-checks the values of the style properties, strings, numbers, null, undefined or false, on the element and in its conditional bindings', () => {
+    it('type-checks the values of the style properties, numbers with a unit, strings or numbers without, null or undefined, on the element and in its conditional bindings', () => {
       expect(text(run('<div [style.width.px]="{width()}" @if (cond()) { [style.color]="{color}" }></div>'))).toEqual([
-        '(root.width()) satisfies string | number | null | undefined | false;',
+        '(root.width()) satisfies number | null | undefined;',
         'if (root.cond()) {',
-        '  (root.color) satisfies string | number | null | undefined | false;',
+        '  (root.color) satisfies string | number | null | undefined;',
         '}'
       ]);
-      expect(text(run('<my-el [style.width.px]="{width()}"></my-el>', metadata({})))).toEqual(['(root.width()) satisfies string | number | null | undefined | false;']);
+      expect(text(run('<my-el [style.width]="{width()}"></my-el>', metadata({})))).toEqual(['(root.width()) satisfies string | number | null | undefined;']);
     });
 
     it('declares $event in a separate block for each event, so that every handler gets its own', () => {

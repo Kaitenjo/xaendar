@@ -38,6 +38,7 @@ export class DocsApiKindComponent extends CustomElement {
     decorator: 'D',
     class: 'C',
     function: 'F',
+    constant: 'K',
     type: 'T',
     global: 'G'
   };

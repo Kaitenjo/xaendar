@@ -963,7 +963,7 @@ function rerunSite(scope: _Context, site: BindingSite, base: number): void {
 
   let effect: Effect | null;
   try {
-    effect = _runBinding(site.update!, scope, site.target === undefined ? undefined : scope[base + site.target], site);
+    effect = _runBinding(site.update!, scope, targetOf(scope, site, base), site);
   } catch (error) {
     queueMicrotask(() => {
       throw error;
@@ -973,4 +973,21 @@ function rerunSite(scope: _Context, site: BindingSite, base: number): void {
 
   previous?.dispose();
   scope[slot] = effect;
+}
+
+/**
+ * Gives what a binding a scope keeps in its slots is run again with: its target, the index of the slot of its target for
+ * a binding keeping its last value (see `BindingSite.indexed`), `undefined` for a binding without target.
+ *
+ * @param scope - The scope.
+ * @param site - The binding.
+ * @param base - The first slot of the bindings of the scope.
+ * @returns The target, or the index of its slot.
+ */
+function targetOf(scope: _Context, { target, indexed }: BindingSite, base: number): unknown {
+  if (target === undefined) {
+    return undefined;
+  }
+
+  return indexed ? base + target : scope[base + target];
 }

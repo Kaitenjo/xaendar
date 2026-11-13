@@ -14,6 +14,11 @@ export type RenderElementDirective = {
    */
   readonly selector: string | Constructor<CustomDirective>;
   /**
+   * The position of the directive among the ones the element applies, in the order they appear, its conditional
+   * bindings included (see `DIRECTIVE_ORDER`): left out for the first one, and for an element applying one directive.
+   */
+  readonly order?: number;
+  /**
    * The list of directive properties to be bound: the attributes of an element, except the ones
    * unbound by removing the attribute, since a directive has no underlying attribute to remove.
    */

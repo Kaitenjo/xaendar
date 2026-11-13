@@ -146,6 +146,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A style binding whose property holds characters a property cannot, or whose unit is not lowercase letters or %, or is followed by more than one unit.
 - **Fix:** Write the property in kebab-case or camelCase, and at most one unit in lowercase.
 
+### `[Parser] [style.width.foo] sets width in "foo", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh`
+
+- **Cause:** A style binding whose unit is not one of CSS.
+- **Fix:** Write a unit of CSS in lowercase, or bind the property without unit and write the unit in the value.
+
 ### `[Parser] Style property "width" is bound more than once on <div>`
 
 - **Cause:** The same style property set twice on an element, also with different units, or on the element and in one of its conditional bindings.
@@ -801,6 +806,16 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** A @Query.contentRequired was read while no element of the content matched it: before the parent passed its content, afterRender included, or while the element was not passed.
 - **Fix:** Read it in event handlers. If the content is optional, or to follow it as it arrives, use @Query.content.
+
+### `Error: @HostProperty('style.width.foo') sets width in "foo", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh`
+
+- **Cause:** A @HostProperty of a style property whose unit is not one of CSS. Thrown when the class is defined.
+- **Fix:** Write a unit of CSS in lowercase: @HostProperty('style.width.px').
+
+### `Error: @HostProperty('class.on') on second binds the class on, which another member binds already`
+
+- **Cause:** Two members of a class, or of the classes it extends, binding the same class, style property or string of class/style with @HostProperty. Thrown when the class is defined.
+- **Fix:** Bind each class and property with one member, computing its value in a getter.
 
 ### `Error: @HostProperty('class.') names no class`
 

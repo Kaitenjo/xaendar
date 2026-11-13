@@ -1,5 +1,5 @@
 import type { Constructor, NoArgsVoidFunction } from '@xaendar/types';
-import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
+import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DIRECTIVE_ORDER, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
 import { EffectOptions } from '../../signals/types/effect-options.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
 import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
@@ -24,6 +24,12 @@ export abstract class CustomDirective<T extends Element = Element> {
    * Allows accessing the members of subclasses through an index signature.
    */
   [key: string]: unknown
+  /**
+   * The order of the directive among the ones of its element (see `DIRECTIVE_ORDER`), set by the runtime before
+   * `DIRECTIVE_CONNECT`: of two directives writing the same key of `class` or `style`, the one with the greater order
+   * wins.
+   */
+  public [DIRECTIVE_ORDER] = 0;
   /**
    * The active template execution context for this directive instance,
    * holding all identifier bindings and registered cleanup functions.

@@ -100,7 +100,7 @@ describe('generateElement', () => {
       'const div0$element = {',
       '  tagName: \'div\',',
       '  attributes: [',
-      '    { name: \'class\', value: \'a\', setter: _setProperty },',
+      '    { name: \'class\', text: \'a\', statics: [\'a\', true], setter: _setStyling },',
       '    { name: \'width\', value: div0$width, setter: _setExpressionProperty },',
       '    div0$title$binding',
       '  ]',
@@ -117,30 +117,33 @@ describe('generateElement', () => {
     const context = new GeneratorContext(cache);
     context.addIdentifier('row', 'variable');
     context.addIdentifier('field', 'value');
-    const result = await run('<div title="{row.name + field.value}" class="{field.value}"></div>', context);
+    const result = await run('<div title="{row.name + field.value}" class="{row.kind}"></div>', context);
 
     expect(result.constants.slice(0, 2)).toEqual([[
+      'const div0$class$binding = {',
+      '  name: \'class\',',
+      '  string: div0$class,',
+      '  setter: _setReactiveStyling,',
+      '  reads: _reads0,',
+      '  update: _setExpressionStyling,',
+      '  effect: 0,',
+      '  target: 1,',
+      '  indexed: true',
+      '};'
+    ].join('\n'), [
       'const div0$title$binding = {',
       '  name: \'title\',',
       '  value: div0$title,',
       '  setter: _setReactiveProperty,',
       '  reads: _reads0,',
       '  update: _setExpressionProperty,',
-      '  effect: 0,',
-      '  target: 1',
-      '};'
-    ].join('\n'), [
-      'const div0$class$binding = {',
-      '  name: \'class\',',
-      '  value: div0$class,',
-      '  setter: _setReactiveProperty,',
-      '  update: _setExpressionProperty,',
-      '  effect: 2',
+      '  effect: 3,',
+      '  target: 4',
       '};'
     ].join('\n')]);
     expect(result.functions).toEqual([
-      'function div0$title(context) {\n  return _read(context, 0, 5).name + _read(context, 0, 6).value;\n}',
-      'function div0$class(context) {\n  return _read(context, 0, 6).value;\n}'
+      'function div0$class(context) {\n  return _read(context, 0, 5).kind;\n}',
+      'function div0$title(context) {\n  return _read(context, 0, 5).name + _read(context, 0, 6).value;\n}'
     ]);
     expect(result.reads).toEqual(['const _reads0 = [0];']);
     expectValidJavascript(result);
@@ -370,55 +373,80 @@ describe('generateElement', () => {
     expect(functionsToProcess?.get('foreignObject0Children')?.fn.context.namespace).toBe('html');
   });
 
-  it('generates the style properties set on the element after its classes and before its attributes, with their unit, and the ones of a conditional binding removed with it', async () => {
+  it('generates the class and the style of the element as one descriptor each, before its attributes: the static string parsed, the keys bound one by one with their units, and the ones of a branch removed with it', async () => {
     const context = new GeneratorContext(cache);
     context.addSignalClassField('width');
-    const result = await run('<div style="color: red" [style.width.px]="{width()}" [class.on]="{1}" [style.--accent]="{\'blue\'}" @if (x) { [style.top.%]="{5}" }></div>', context);
-
-    const element = result.constants.find(constant => constant.startsWith('const div0$element'))!;
-    expect(element).toContain([
-      '  attributes: [',
-      '    { name: \'on\', value: div0$class_on, setter: _setExpressionClass },',
-      '    div0$style_width$binding,',
-      '    { name: \'--accent\', value: div0$style___accent, setter: _setExpressionStyle },',
-      '    { name: \'style\', value: \'color: red\', setter: _setProperty }',
-      '  ],'
-    ].join('\n'));
-    expect(result.constants.join('\n')).toContain('{ name: \'top\', unit: \'%\', value: div0$style_top, setter: _setExpressionStyle, unbind: _removeStyle }');
-    expect(result.constants[0]).toBe([
-      'const div0$style_width$binding = {',
-      '  name: \'width\',',
-      '  unit: \'px\',',
-      '  value: div0$style_width,',
-      '  setter: _setReactiveStyle,',
-      '  update: _setExpressionStyle,',
-      '  effect: 0',
-      '};'
-    ].join('\n'));
-    expectValidJavascript(result);
-  });
-
-  it('generates the classes toggled on the element before its attributes, with a setter toggling them, so that writing class finds them', async () => {
-    const context = new GeneratorContext(cache);
-    context.addSignalClassField('active');
-    const result = await run('<div [class.is-on]="{active()}" title="x" [class.big]="{2 > 1}"></div>', context);
+    const result = await run(`<div style="color: red" [style.width.px]="{width()}" [class.on]="{1}" [style.--accent]="{'blue'}" @if (x) { [style.top.%]="{5}" }></div>`, context);
 
     expect(result.constants).toEqual([[
-      'const div0$class_is_on$binding = {',
-      '  name: \'is-on\',',
-      '  value: div0$class_is_on,',
-      '  setter: _setReactiveClass,',
-      '  update: _setExpressionClass,',
-      '  effect: 0',
+      'const div0$style$binding = {',
+      '  name: \'style\',',
+      '  text: \'color: red\',',
+      '  statics: [\'color\', \'red\'],',
+      '  keys: [\'width\', \'--accent\'],',
+      '  values: [div0$style_width, div0$style___accent],',
+      '  units: [\'px\', \'\'],',
+      '  setter: _setReactiveStyling,',
+      '  update: _setExpressionStyling,',
+      '  effect: 0,',
+      '  target: 1,',
+      '  indexed: true',
+      '};'
+    ].join('\n'), [
+      'const div0$conditional$binding = {',
+      '  branches: [',
+      '    {',
+      '      condition: div0$if,',
+      '      attributes: [',
+      '        {',
+      '          name: \'style\',',
+      '          keys: [\'top\'],',
+      '          values: [div0$style_top],',
+      '          units: [\'%\'],',
+      '          setter: _setExpressionStyling,',
+      '          unbind: _removeStyling',
+      '        }',
+      '      ],',
+      '      styling: 2',
+      '    }',
+      '  ],',
+      '  update: _runConditionalBinding,',
+      '  effect: 3',
       '};'
     ].join('\n'), [
       'const div0$element = {',
       '  tagName: \'div\',',
       '  attributes: [',
-      '    div0$class_is_on$binding,',
-      '    { name: \'big\', value: div0$class_big, setter: _setExpressionClass },',
-      '    { name: \'title\', value: \'x\', setter: _setProperty }',
-      '  ]',
+      '    { name: \'class\', keys: [\'on\'], values: [div0$class_on], setter: _setExpressionStyling },',
+      '    div0$style$binding',
+      '  ],',
+      '  conditionalBindings: [div0$conditional$binding],',
+      '  styling: 2',
+      '};'
+    ].join('\n')]);
+    expectValidJavascript(result);
+  });
+
+  it('binds the classes bound one by one in one binding of the class, before the attributes', async () => {
+    const context = new GeneratorContext(cache);
+    context.addSignalClassField('active');
+    const result = await run('<div [class.is-on]="{active()}" title="x" [class.big]="{2 > 1}"></div>', context);
+
+    expect(result.constants).toEqual([[
+      'const div0$class$binding = {',
+      '  name: \'class\',',
+      '  keys: [\'is-on\', \'big\'],',
+      '  values: [div0$class_is_on, div0$class_big],',
+      '  setter: _setReactiveStyling,',
+      '  update: _setExpressionStyling,',
+      '  effect: 0,',
+      '  target: 1,',
+      '  indexed: true',
+      '};'
+    ].join('\n'), [
+      'const div0$element = {',
+      '  tagName: \'div\',',
+      '  attributes: [div0$class$binding, { name: \'title\', value: \'x\', setter: _setProperty }]',
       '};'
     ].join('\n')]);
     expect(result.functions).toEqual([
@@ -428,27 +456,63 @@ describe('generateElement', () => {
     expectValidJavascript(result);
   });
 
-  it('passes to the binding of a class the constant listing the variables of the template it reads', async () => {
+  it('passes to the binding of the class the constant listing the variables of the template its expressions read', async () => {
     const context = new GeneratorContext(cache);
     context.addIdentifier('row', 'variable');
-    const { constants, reads } = await run('<div [class.on]="{row.active}"></div>', context);
+    const { constants, reads } = await run('<div class="{row.kind}" [class.on]="{row.active}"></div>', context);
 
     expect(constants[0]).toBe([
-      'const div0$class_on$binding = {',
-      '  name: \'on\',',
-      '  value: div0$class_on,',
-      '  setter: _setReactiveClass,',
+      'const div0$class$binding = {',
+      '  name: \'class\',',
+      '  string: div0$class,',
+      '  keys: [\'on\'],',
+      '  values: [div0$class_on],',
+      '  setter: _setReactiveStyling,',
       '  reads: _reads0,',
-      '  update: _setExpressionClass,',
+      '  update: _setExpressionStyling,',
       '  effect: 0,',
-      '  target: 1',
+      '  target: 1,',
+      '  indexed: true',
       '};'
     ].join('\n'));
     expect(reads).toEqual(['const _reads0 = [0];']);
   });
 
+  it('keeps class and style as inputs of a component declaring them, and leaves out an empty static string', async () => {
+    const context = new GeneratorContext(cacheWith({ class: new ComponentPropertyMetadata('class', 'string') }));
+    const { constants } = await run('<my-el class="a" style=" ; "></my-el>', context);
+    expect(constants).toEqual(['const my_el0$element = { tagName: \'my-el\', attributes: [{ name: \'class\', value: \'a\', setter: _setInput }] };']);
+  });
+
+  it('flags the states the runtime creates: for a component, for directives, for structural directives, for branches applying directives', async () => {
+    const flagsOf = async (template: string) => /styling: (\d+)/.exec((await run(template, new GeneratorContext(cacheWith({})))).constants.at(-1)!)?.[1];
+    expect(await flagsOf('<my-el class="a" [style.width.px]="{1}"></my-el>')).toBe('12');
+    expect(await flagsOf('<div class="a" @@tip()></div>')).toBe('4');
+    expect(await flagsOf('<div *visible style="top: 0"></div>')).toBe('2');
+    expect(await flagsOf('<div class="a" style="top: 0" @if (x) { @@tip() }></div>')).toBe('3');
+    expect(await flagsOf('<div class="a" @if (x) { [style.top.px]="{1}" }></div>')).toBeUndefined();
+    expect(await flagsOf('<div @@tip()></div>')).toBeUndefined();
+    expect(await flagsOf('<div [class.a]="{1}" @if (x) { class="b" }></div>')).toBe('1');
+    expect(await flagsOf('<div class="a" @if (x) { [class.b]="{1}" }></div>')).toBe('1');
+    expect(await flagsOf('<div [style.top.px]="{1}" @if (x) { style="left: 0" }></div>')).toBe('2');
+  });
+
+  it('describes the class of an element applying structural directives without slots, the runtime keeping its binding', async () => {
+    const context = new GeneratorContext(cache);
+    context.addSignalClassField('kind');
+    const { constants } = await run('<div *visible class="{kind()}"></div>', context);
+    expect(constants.join('\n')).toContain('attributes: [{ name: \'class\', string: div0$class, setter: _setReactiveStyling }]');
+  });
+
+  it('gives the directives of an element applying more than one their order, the ones of its branches included', async () => {
+    const { constants } = await run('<div @@first() @if (x) { @@second() } @@third()></div>');
+    const text = constants.join('\n');
+    expect(text).toContain('{ selector: \'second\', order: 1 }');
+    expect(text).toContain('directives: [{ selector: \'first\' }, { selector: \'third\', order: 2 }]');
+  });
+
   describe('conditional bindings', () => {
-    it('generates the classes toggled by a branch, removed when it is no longer selected, even when the branch toggles nothing else', async () => {
+    it('generates the classes of a branch, removed when it is no longer selected, even when the branch writes nothing else', async () => {
       const result = await run('<div @if (cond()) { [class.on]="{1}" }></div>');
 
       expect(result.constants).toEqual([[
@@ -456,7 +520,16 @@ describe('generateElement', () => {
         '  branches: [',
         '    {',
         '      condition: div0$if,',
-        '      attributes: [{ name: \'on\', value: div0$class_on, setter: _setExpressionClass, unbind: _removeClass }]',
+        '      attributes: [',
+        '        {',
+        '          name: \'class\',',
+        '          keys: [\'on\'],',
+        '          values: [div0$class_on],',
+        '          setter: _setExpressionStyling,',
+        '          unbind: _removeStyling',
+        '        }',
+        '      ],',
+        '      styling: 1',
         '    }',
         '  ],',
         '  update: _runConditionalBinding,',
@@ -634,7 +707,13 @@ describe('generateElement', () => {
         '          branches: [',
         '            {',
         '              condition: div0$if1,',
-        '              directives: [{ selector: \'second\', attributes: [{ name: \'display\', value: \'block\', setter: _setInput }] }]',
+        '              directives: [',
+        '                {',
+        '                  selector: \'second\',',
+        '                  order: 1,',
+        '                  attributes: [{ name: \'display\', value: \'block\', setter: _setInput }]',
+        '                }',
+        '              ]',
         '            }',
         '          ]',
         '        }',

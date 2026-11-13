@@ -1,5 +1,5 @@
 import { dropsLeadingNewline, escapeAttribute, isValidCustomElementName, isVoidElement } from '@xaendar/common';
-import { appendBlockPosition, ASTNodeType, declareExpression, mapContentTemplates, GeneratorContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ClassBindingNode, type StyleBindingNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
+import { appendBlockPosition, ASTNodeType, declareExpression, describeStyling, getDirectiveOrder, mapContentTemplates, orderDirectives, splitStylingAttributes, GeneratorContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
 import type { Function } from '@xaendar/types';
 import type { ServerCodePiece } from '../../types/server-code-piece.type';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
@@ -113,6 +113,7 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
   const isComponent = isValidCustomElementName(tagName, false) && !generatorContext.isForeignElement(tagName);
   // Only a native element applies its custom directives on the server
   const withDirectives = !isComponent;
+  orderDirectives(node);
   const conditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, owner, branch => isEmptyBranch(branch, withDirectives), (branch, condition) => mapBranch(branch, condition, isComponent ? tagName : undefined, owner));
   const directives = withDirectives ? mapDirectives(node.directives, owner) : undefined;
   const pieces = new Array<ServerCodePiece>();
@@ -124,10 +125,8 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
   registerEvents(node, generatorContext);
 
   if (isComponent || classBindings.length || styleBindings.length || conditionalBindings.length || directives?.length) {
-    const descriptors = mapAttributes(attributes, owner, isComponent ? tagName : undefined);
+    const descriptors = mapBindings(node, owner, isComponent ? tagName : undefined);
     appendSubmitMark(descriptors, node);
-    appendClassBindings(descriptors, classBindings, owner);
-    appendStyleBindings(descriptors, styleBindings, owner);
     const members = [`tagName: '${tagName}'`];
     appendList(members, 'attributes', descriptors);
     appendList(members, 'conditionalBindings', conditionalBindings);
@@ -281,36 +280,37 @@ function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, targ
 }
 
 /**
- * Appends to the descriptors of the attributes the ones of the classes the element toggles, as the client does.
+ * Maps the bindings of an element, or of a branch of one of its conditional bindings, to the descriptors the runtime
+ * applies, as the client does: its `class` and its `style`, one descriptor each (see `describeStyling`), merged key by
+ * key with the directives and the component writing them, written once (`_setStyling`, `_setExpressionStyling`),
+ * unless the component declares an input with their name, then its other attributes (see {@link mapAttributes}).
  *
- * @param descriptors - The code of the descriptors of the attributes.
- * @param classBindings - The class binding nodes.
+ * @param bindings - The attributes, the classes and the style properties bound.
  * @param owner - The element, which the functions of the expressions are named after.
+ * @param component - The tag name of the element when it is a component, `undefined` for a native element.
+ * @returns The code of the descriptors.
+ * @throws When a directive the template imports does not declare an attribute bound to it.
  */
-function appendClassBindings(descriptors: string[], classBindings: ClassBindingNode[], owner: DescriptorOwner): void {
-  for (let i = 0; i < classBindings.length; i++) {
-    const { className, value } = classBindings[i];
-    descriptors.push(toObjectLiteral([`name: ${toStringLiteral(className)}`, `value: ${declareElementExpression(owner, `class_${toRoleName(className)}`, value.expression)}`, 'setter: _setExpressionClass']));
-  }
+function mapBindings({ attributes, classBindings, styleBindings }: Pick<ElementNode, 'attributes' | 'classBindings' | 'styleBindings'>, owner: DescriptorOwner, component: string | undefined): string[] {
+  const metadata = component && attributes.length ? owner.generatorContext.getImportedMetadata(component) : undefined;
+  const [rest, classAttribute, styleAttribute] = splitStylingAttributes(attributes, name => !!metadata?.properties.has(name));
+  const descriptors = new Array<string>();
+  appendStyling(descriptors, describeStyling('class', classAttribute, classBindings, (role, expression) => declareElementExpression(owner, role, expression)));
+  appendStyling(descriptors, describeStyling('style', styleAttribute, styleBindings, (role, expression) => declareElementExpression(owner, role, expression)));
+  return descriptors.concat(mapAttributes(rest, owner, component));
 }
 
 /**
- * Appends to the descriptors of the attributes the ones of the style properties the element sets, with their unit, if
- * any, as the client does.
+ * Appends the descriptor of the `class` or of the `style` of an element, written once: `_setStyling` for a static
+ * string alone, `_setExpressionStyling` for expressions.
  *
- * @param descriptors - The code of the descriptors of the attributes.
- * @param styleBindings - The style binding nodes.
- * @param owner - The element, which the functions of the expressions are named after.
+ * @param descriptors - The code of the descriptors.
+ * @param members - The members of the descriptor, `undefined` when the element writes nothing on the attribute.
  */
-function appendStyleBindings(descriptors: string[], styleBindings: StyleBindingNode[], owner: DescriptorOwner): void {
-  for (let i = 0; i < styleBindings.length; i++) {
-    const { property, unit, value } = styleBindings[i];
-    const members = [`name: ${toStringLiteral(property)}`];
-    if (unit) {
-      members.push(`unit: ${toStringLiteral(unit)}`);
-    }
-
-    members.push(`value: ${declareElementExpression(owner, `style_${toRoleName(property)}`, value.expression)}`, 'setter: _setExpressionStyle');
+function appendStyling(descriptors: string[], members: string[] | undefined): void {
+  if (members) {
+    const expressions = members.some(member => member.startsWith('string:') || member.startsWith('values:'));
+    members.push(`setter: ${expressions ? '_setExpressionStyling' : '_setStyling'}`);
     descriptors.push(toObjectLiteral(members));
   }
 }
@@ -390,10 +390,8 @@ function mapCondition(conditionalBinding: ConditionalBindingNode, index: number,
  */
 function mapBranch(branch: ConditionalBindingBranchNode, condition: string | undefined, component: string | undefined, owner: DescriptorOwner): string {
   const withDirectives = !component;
-  const attributes = mapAttributes(branch.attributes, owner, component);
+  const attributes = mapBindings(branch, owner, component);
   appendSubmitMark(attributes, branch);
-  appendClassBindings(attributes, branch.classBindings, owner);
-  appendStyleBindings(attributes, branch.styleBindings, owner);
   const members = condition ? [condition] : new Array<string>();
   appendList(members, 'attributes', attributes);
   if (withDirectives) {
@@ -429,7 +427,7 @@ function mapStructuralBranch(branch: ConditionalBindingBranchNode, condition: st
  * @returns The code of the descriptors, one per directive.
  */
 function mapDirectives(directives: DirectiveNode[], owner: DescriptorOwner): string[] {
-  return directives.map(({ selector, attributes }) => toDirectiveDescriptor(selector, attributes, owner));
+  return directives.map(directive => toDirectiveDescriptor(directive.selector, directive.attributes, owner, getDirectiveOrder(directive)));
 }
 
 /**
@@ -444,15 +442,21 @@ function mapStructuralDirectives(structuralDirectives: StructuralDirectiveNode[]
 }
 
 /**
- * Writes the descriptor of a directive: its selector and its properties, left out when it binds none.
+ * Writes the descriptor of a directive: its selector, its order among the directives of its element, if any, as the
+ * client writes it, and its properties, left out when it binds none.
  *
  * @param selector - The selector of the directive.
  * @param attributes - The attribute nodes binding its properties.
  * @param owner - The element, which the functions of the expressions are named after.
+ * @param order - The position of the directive among the ones of its element, if any.
  * @returns The code of the descriptor.
  */
-function toDirectiveDescriptor(selector: string, attributes: AttributeNode[], owner: DescriptorOwner): string {
+function toDirectiveDescriptor(selector: string, attributes: AttributeNode[], owner: DescriptorOwner, order?: number): string {
   const members = [`selector: ${toStringLiteral(selector)}`];
+  if (order) {
+    members.push(`order: ${order}`);
+  }
+
   appendList(members, 'attributes', mapAttributes(attributes, owner, `@@${selector}`));
   return toObjectLiteral(members);
 }

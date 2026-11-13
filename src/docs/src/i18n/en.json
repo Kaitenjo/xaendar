@@ -50,6 +50,7 @@
       "decorator": "Decorator",
       "class": "Class",
       "function": "Function",
+      "constant": "Constant",
       "type": "Type",
       "global": "Global"
     },
@@ -678,7 +679,8 @@
           "title": "Attributes and classes",
           "p1": "<code>@HostProperty('name')</code> on a field, a getter or an accessor writes its value in the attribute <code>name</code> of the host element; <code>@HostProperty('class.name')</code> toggles the class <code>name</code>, which the element has while the value is truthy. The member is read inside an effect: a value that reads no signal is written once, while a signal, or a getter reading signals, is written again each time they change.",
           "example1": "A switch drawn by its own element",
-          "p2": "Click the switches, or reach them with Tab and press Space. <code>role</code> reads no signal and is written once. <code>on</code> holds a signal, and the host has the class <code>on</code> while it is <code>true</code>: the stylesheet draws the switch from <code>:host(.on)</code>. The getters of <code>aria-checked</code>, <code>aria-disabled</code> and <code>tabindex</code> are written again when <code>on</code> or <code>locked</code> change. <code>locked</code> is an input reflected on the host: the parent binds it, and the stylesheet reads <code>:host([locked])</code>. Inspect the Wi-Fi switch with the developer tools to watch its attributes change while you turn the airplane mode on."
+          "p2": "Click the switches, or reach them with Tab and press Space. <code>role</code> reads no signal and is written once. <code>on</code> holds a signal, and the host has the class <code>on</code> while it is <code>true</code>: the stylesheet draws the switch from <code>:host(.on)</code>. The getters of <code>aria-checked</code>, <code>aria-disabled</code> and <code>tabindex</code> are written again when <code>on</code> or <code>locked</code> change. <code>locked</code> is an input reflected on the host: the parent binds it, and the stylesheet reads <code>:host([locked])</code>. Inspect the Wi-Fi switch with the developer tools to watch its attributes change while you turn the airplane mode on.",
+          "p3": "<code>@HostProperty('class')</code> and <code>@HostProperty('style')</code> write a string of classes, or of declarations, and <code>@HostProperty('style.name')</code> a property, followed by its unit if any (<code>'style.width.px'</code>). They are merged key by key with the template rendering the element and with its directives, which win over the component: the template can override a class or a property the component writes, and give it back by binding <code>null</code>. TypeScript checks the member by the name: a string for <code>class</code> and <code>style</code>, a number for a property with a unit. See <a href=\"#/en/templates/binding\">Binding</a>."
         },
         "events": {
           "title": "Events of the host",
@@ -711,7 +713,7 @@
           },
           "callout3": {
             "heading": "The parent binds the same attribute",
-            "p1": "The host is also a tag in the template of the parent, which can write the same attribute, as can a directive applied to the element. The values are not merged: the last write wins. A static attribute of the parent is overwritten at connection, and removed at disconnection. Leave each attribute to a single owner, or take the value of the parent through an input reflected with <code>@HostProperty</code>, as <code>locked</code> does. Classes do not clash: <code>class.name</code> toggles only its own class, and keeps it when the parent writes <code>class</code>."
+            "p1": "The host is also a tag in the template of the parent, which can write the same attribute, as can a directive applied to the element. An attribute is not merged: the last write wins, a static attribute of the parent is overwritten at connection and removed at disconnection. Leave each attribute to a single owner, or take the value of the parent through an input reflected with <code>@HostProperty</code>, as <code>locked</code> does. <code>class</code> and <code>style</code> are merged instead, a class or a property at a time: the template of the parent wins over the directives, which win over the component, and when the component is destroyed only its own keys are taken away."
           },
           "callout4": {
             "heading": "Nothing is bound yet in onInit",
@@ -727,7 +729,7 @@
           "th1": "API",
           "th2": "Description",
           "td1": "Writes the value of a field, a getter or an accessor in an attribute of the host: removed for <code>null</code> and <code>undefined</code>; a boolean adds it empty or removes it, or is written as <code>\"true\"</code> or <code>\"false\"</code> on the <code>aria-*</code> and enumerated attributes.",
-          "td2": "Toggles a class of the host while the value is truthy.",
+          "td2": "Toggles a class of the host while the value is truthy, merged with the classes the template and the directives write.",
           "td3": "Listens to an event of the host, or of the window or of the document with the prefix window: or document:, with a method, which receives the event typed by its name."
         }
       },
@@ -1682,7 +1684,7 @@
           "td8": "Custom directives, <code>@@name</code>",
           "td9": "Structural directives",
           "td10": "<code>*name</code>, with <code>shouldRender()</code>, also asynchronous",
-          "td11": "The same syntax: <code>[style.color]=\"{ color() }\"</code>, also with a unit, <code>[style.width.px]</code>, and for custom properties, <code>[style.--accent]</code>. See <a href=\"#/en/templates/binding\">Binding</a>.",
+          "td11": "The same syntax: <code>[style.color]=\"{ color() }\"</code>, also with a unit, <code>[style.width.px]</code>, and for custom properties, <code>[style.--accent]</code>. The style is merged property by property with the same precedence as Angular: the template, then the directives, then the component, a property bound alone over the string. There is no <code>[style]</code> bound to an object. See <a href=\"#/en/templates/binding\">Binding</a>.",
           "td12": "Component <code>imports</code>",
           "td13": "<code>@import</code> at the top of the template",
           "td14": "Services and <code>inject()</code>",
@@ -1692,7 +1694,7 @@
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> and custom properties",
           "td19": "<code>&lt;template name(…)&gt;</code> and <code>@render name(…)</code>, with typed parameters; passed to another component as content, read with <code>@Query.contentTemplate</code>, or as an input typed <code>TemplateRef</code>: see <a href=\"#/en/templates/reusable-templates\">Templates and @render</a>",
           "td20": "<code>@let</code>, also called a template variable, a value read as <code>name</code>, as in Angular, kept up to date with what it reads: see <a href=\"#/en/templates/let\">@let</a>",
-          "td21": "The same syntax: <code>[class.x]=\"{ condition }\"</code>, with the value in braces. See <a href=\"#/en/templates/binding\">Binding</a>."
+          "td21": "The same syntax: <code>[class.x]=\"{ condition }\"</code>, with the value in braces, merged class by class with the directives and the component as in Angular. There is no <code>[class]</code> bound to an object: <code>class=\"{`a ${b()}`}\"</code> binds the string. See <a href=\"#/en/templates/binding\">Binding</a>."
         },
         "whatWorksDifferently": {
           "title": "What works differently",
@@ -2103,13 +2105,20 @@
           "title": "Toggling a class",
           "p1": "<code>[class.name]=\"{ expression }\"</code> gives the element the class <code>name</code> while the value of the expression is truthy, and takes it away otherwise. The value can be of any type. It works on native elements, on the tags of components, where the class goes on the element itself, and inside <a href=\"#/en/templates/conditional-bindings\">conditional bindings</a>, where the class is taken away when its branch is no longer selected. Any class name without spaces follows the dot, <code>[class.is-active]</code> included.",
           "example1": "A bound class attribute and two class bindings",
-          "p2": "The class bindings and the <code>class</code> attribute work together, also when it is bound: whenever <code>class</code> is written again, the classes of the bindings are applied on top of it, and a binding whose value is falsy takes its class away even when <code>class</code> lists it. A class binding follows the signals it reads, as an attribute does."
+          "p2": "The class bindings and the <code>class</code> attribute work together, also when it is bound: they are merged class by class, the class bindings winning over the string, and only the classes whose value changes are written. A binding whose value is falsy takes its class away even when <code>class</code> lists it; one holding <code>null</code> or <code>undefined</code> has no opinion, and leaves the class to the string. A class binding follows the signals it reads, as an attribute does."
         },
         "settingAStyle": {
           "title": "Setting a style property",
-          "p1": "<code>[style.name]=\"{ expression }\"</code> sets the style property <code>name</code> to the value of the expression, a string or a number, and removes it for <code>null</code>, <code>undefined</code> and <code>false</code>. The property is written in kebab-case or in camelCase, <code>[style.background-color]</code> or <code>[style.backgroundColor]</code>, and can be followed by a unit, which the value receives: <code>[style.width.px]=\"{ 120 }\"</code> writes <code>120px</code>. A custom property is set as it is written: <code>[style.--accent]</code>.",
+          "p1": "<code>[style.name]=\"{ expression }\"</code> sets the style property <code>name</code> to the value of the expression, a string or a number; <code>null</code>, <code>undefined</code> and an empty string have no opinion, and leave the property to the other sources writing it, or remove it. The property is written in kebab-case or in camelCase, <code>[style.background-color]</code> or <code>[style.backgroundColor]</code>, and can be followed by a unit of CSS, which the value receives and which takes a number: <code>[style.width.px]=\"{ 120 }\"</code> writes <code>120px</code>. A custom property is set as it is written: <code>[style.--accent]</code>. A value ending with <code>!important</code> is set with that priority.",
           "example1": "A bar with a width in percent, a custom property and a property removed by null",
-          "p2": "The style bindings and the <code>style</code> attribute work together, also when it is bound: whenever <code>style</code> is written again, the properties of the bindings are applied on top of it. They work on the tags of components and inside conditional bindings, where the property is removed when its branch is no longer selected, and <code>@HostProperty('style.width.px')</code> binds one on the host element."
+          "p2": "The style bindings and the <code>style</code> attribute work together, also when it is bound: they are merged property by property, the bindings winning over the string, which is read as a list of declarations, a <code>;</code> inside <code>url(…)</code> or quotes included. They work on the tags of components and inside conditional bindings, where the property is removed when its branch is no longer selected, and <code>@HostProperty('style.width.px')</code> binds one on the host element."
+        },
+        "merging": {
+          "title": "Merging class and style",
+          "p1": "The <code>class</code> and the <code>style</code> of an element can be written by more than one source: the template rendering it, the directives it applies, its host directives included, and the component it is, through <code>@HostProperty</code>. They are merged key by key, a class or a property at a time, and for each key the strongest source having an opinion wins: the template, then the directives, then the component. In each of them a key bound alone (<code>[class.on]</code>, <code>@HostProperty('style.width.px')</code>) wins over the string (<code>class=\"…\"</code>, <code>@HostProperty('style')</code>), and of two directives the one applied later wins: the host directives first, in the order the component declares them, then the ones of the template, in the order they appear.",
+          "p2": "A source without opinion on a key leaves it to the ones below: a template binding <code>[style.width]=\"{ null }\"</code> lets the width of a directive or of the component apply. For a class, <code>false</code> is an opinion, while <code>null</code> is not: <code>[class.on]=\"{ false }\"</code> takes the class away even when the component adds it, <code>[class.on]=\"{ null }\"</code> leaves it to the component. When a source goes away (a branch no longer selected, a directive destroyed) the keys it wrote take the value of the sources below, and the keys of the others stay.",
+          "p3": "The order the sources run in does not matter: the result depends only on their level. Only the keys whose value changes are written, with <code>classList</code> and <code>style.setProperty</code>, never by writing the whole attribute, so an element adopted from the HTML of the server holding the same values is not written again. The classes and the properties other code writes on the element are not tracked: the runtime touches only the keys it wrote, and removes a key no source has an opinion on only if it wrote it.",
+          "p4": "An element written by its template alone, the most common case, costs nothing more: its class and its style are written directly. The merging state is kept only for the elements written by more than one source."
         },
         "bindingTheInputsOf": {
           "title": "Binding the inputs of components",
@@ -2157,7 +2166,7 @@
           "td5": "<code>input=\"{ expression }\"</code> on a component",
           "td6": "Sets the input, with the value as it is.",
           "td7": "The class <code>name</code>, present while the value is truthy.",
-          "td8": "The style property <code>name</code>, with its unit if any, removed for <code>null</code>, <code>undefined</code> and <code>false</code>."
+          "td8": "The style property <code>name</code>, with its unit if any; <code>null</code>, <code>undefined</code> and an empty string leave it to the other sources."
         }
       },
       "conditionalBindings": {
@@ -4316,6 +4325,18 @@
     "@for iterates an array, a number or an iterable (a Map, a Set…), not a string": {
       "cause": "A @for whose expression gives, at runtime, a string, null, undefined or an object that is not iterable: the type-check did not see it, typed as any.",
       "fix": "Give the @for an array, a number or an iterable, e.g. an empty array instead of null."
+    },
+    "[Parser] [style.width.foo] sets width in \"foo\", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh": {
+      "cause": "A style binding whose unit is not one of CSS.",
+      "fix": "Write a unit of CSS in lowercase, or bind the property without unit and write the unit in the value: [style.width.px], [style.width]=\"{ `${w}px` }\"."
+    },
+    "Error: @HostProperty('style.width.foo') sets width in \"foo\", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh": {
+      "cause": "A @HostProperty of a style property whose unit is not one of CSS. Thrown when the class is defined.",
+      "fix": "Write a unit of CSS in lowercase: @HostProperty('style.width.px')."
+    },
+    "Error: @HostProperty('class.on') on second binds the class on, which another member binds already": {
+      "cause": "Two members of a class, or of the classes it extends, binding the same class, the same style property or the same string of class or style with @HostProperty. Thrown when the class is defined.",
+      "fix": "Bind each class and each property with one member, computing its value from the others in a getter."
     }
   }
 }

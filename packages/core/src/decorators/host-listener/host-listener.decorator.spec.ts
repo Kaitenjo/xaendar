@@ -40,7 +40,7 @@ describe('HostListener decorator', () => {
     expect(child[INTERNAL_HOST_LISTENERS]!.map(({ name }) => name)).toEqual(['click', 'focus']);
   });
 
-  it.each(['', 'window:', 'document:'])('throws for %j, which names no event', name => {
+  it.each(['', 'window:', 'document:', 'visualViewport'])('throws for %j, which names no event', name => {
     expect(() => HostListener(name)).toThrow(`@HostListener('${name}') names no event`);
   });
 

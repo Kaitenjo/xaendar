@@ -1,5 +1,5 @@
 import type { Constructor } from '@xaendar/types';
-import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_HOST_DIRECTIVES, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
+import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_HOST_DIRECTIVES, DIRECTIVE_ORDER, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
 import type { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { CustomElement } from '../../models/custom-element/custom-element';
 import { Output } from '../../models/output/output';
@@ -75,6 +75,7 @@ export function _createHostDirectives(element: CustomElement): HostDirectives {
 
     const directive = new Directive();
     directive[SET_DIRECTIVE_ELEMENT] = element;
+    directive[DIRECTIVE_ORDER] = i;
     directive[SET_DIRECTIVE_EVENTS] = getExposedEvents(directive, outputs);
     exposeInputs(element, directive, inputs, exposed);
     directives.set(Directive, directive);

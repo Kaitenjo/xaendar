@@ -17,7 +17,7 @@ export class DocsApiIndexComponent extends CustomElement {
   /**
    * The kinds offered by the filter.
    */
-  public readonly kinds: readonly ApiKind[] = ['decorator', 'class', 'function', 'type', 'global'];
+  public readonly kinds: readonly ApiKind[] = ['decorator', 'class', 'function', 'constant', 'type', 'global'];
   /**
    * The text typed in the filter.
    */

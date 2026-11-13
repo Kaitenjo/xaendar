@@ -57,6 +57,10 @@ describe('parseBracketBinding', () => {
     expect(() => parse(template)).toThrow('does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. [style.width.px], or a custom property, e.g. [style.--accent]');
   });
 
+  it('rejects a unit CSS does not have', () => {
+    expect(() => parse('<div [style.width.foo]="{c}"></div>')).toThrow('[style.width.foo] sets width in "foo", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh');
+  });
+
   it('rejects a style property set by a static value', () => {
     expect(() => parse('<div [style.color]="red"></div>')).toThrow('[style.color] sets the style property by the value of an expression: [style.color]="{expression}"');
   });

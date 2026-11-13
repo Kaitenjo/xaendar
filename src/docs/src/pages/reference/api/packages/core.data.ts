@@ -249,12 +249,12 @@ export const CORE_API: ApiPackage = {
     {
       name: 'HostProperty',
       kind: 'decorator',
-      signature: 'function HostProperty(name: string): HostPropertyDecorator\n\ntype HostPropertyDecorator = {\n  <This extends CustomElement | CustomDirective, Value>(value: undefined, context: ClassFieldDecoratorContext<This, Value>): void;\n  <This extends CustomElement | CustomDirective, Value>(value: (this: This) => Value, context: ClassGetterDecoratorContext<This, Value>): void;\n  <This extends CustomElement | CustomDirective, Value>(value: ClassAccessorDecoratorTarget<This, Value>, context: ClassAccessorDecoratorContext<This, Value>): void;\n};',
+      signature: 'function HostProperty<Name extends string>(name: Name): HostPropertyDecorator<HostPropertyValue<Name>>\n\ntype HostPropertyValue<Name extends string> =\n  Name extends \'class\' | \'style\' ? string | null | undefined\n  : Name extends `style.--${string}` ? string | number | null | undefined\n  : Name extends `style.${string}.${string}` ? number | null | undefined\n  : Name extends `style.${string}` ? string | number | null | undefined\n  : unknown;\n\ntype HostPropertyDecorator<Allowed> = {\n  <This extends CustomElement | CustomDirective, Value extends Allowed | (() => Allowed)>(value: undefined, context: ClassFieldDecoratorContext<This, Value>): void;\n  <This extends CustomElement | CustomDirective, Value extends Allowed | (() => Allowed)>(value: (this: This) => Value, context: ClassGetterDecoratorContext<This, Value>): void;\n  <This extends CustomElement | CustomDirective, Value extends Allowed | (() => Allowed)>(value: ClassAccessorDecoratorTarget<This, Value>, context: ClassAccessorDecoratorContext<This, Value>): void;\n};',
       members: [
         {
           name: 'name',
           group: 'parameters',
-          signature: 'name: string'
+          signature: 'name: Name'
         }
       ],
       usage: [

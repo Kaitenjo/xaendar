@@ -1,5 +1,7 @@
-export * from './class-binding/class-binding.util';
-export * from './style-binding/style-binding.util';
+export { _prepareStyling, _removeStyling, _setExpressionStyling, _setReactiveStyling, _setStyling } from './styling-binding/styling-binding.util';
+export { _hasStylingState, createStylingState as _createStylingState } from './styling-state/styling-state.util';
+export type * from '../types/styling/render-styling.type';
+export type * from '../types/render-element-binding.type';
 export * from './component-runtime/component-runtime.util';
 export type * from '../types/component-runtime.type';
 export { _declare, _read, _scope, _set } from './context/context.util';

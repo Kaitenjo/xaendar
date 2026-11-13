@@ -1,3 +1,4 @@
+import { CSS_UNITS } from '@xaendar/common';
 import { type ComponentOrDirectiveMetadata, getBindingContext, getExpressionContext, getImportContext, getImportInsertion, getImportPathContext, getKeywordContext, getSelectorContext, getTriggerContext, type KeywordContext, resolveShimPosition, type Span, type TriggerContext } from '@xaendar/compiler';
 import { dirname } from 'node:path';
 import { forEachChild, type Identifier, isClassDeclaration, isImportDeclaration, isNamespaceImport, isVariableStatement, type Node, ScriptElementKind, type SourceFile, type Symbol, SymbolFlags, type TypeChecker } from 'typescript';
@@ -6,10 +7,16 @@ import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { listModuleEntries } from '../utils/module-entries/module-entries.utils';
 import { toModulePath } from '../utils/module-path/module-path.utils';
 import { normalizeFileName, resolvePosixPath } from '../utils/path/path.utils';
+import { getCssProperties } from '../utils/css-properties/css-properties.utils';
 import { getSymbolKind } from '../utils/symbol-kind/symbol-kind.utils';
 import type { TemplateCompletion } from '../types/template-completion.type';
 import type { ShimPosition } from '../types/shim-position.type';
 import { readSsr } from '../utils/xaendar-config/xaendar-config.utils';
+
+/**
+ * Matches the name of a style binding being written: the property, and the unit after it, if a `.` follows it.
+ */
+const STYLE_BINDING_RE = /^\[style\.([^.\]]*)(?:\.([^.\]]*))?$/;
 
 /**
  * The snippet writing the block of each keyword.
@@ -245,6 +252,40 @@ export function getTemplateTriggerCompletions(source: string, offset: number): T
     snippet: TRIGGER_SNIPPETS[name] ?? name,
     retrigger: RETRIGGERING_TRIGGERS.has(name)
   }));
+}
+
+/**
+ * Proposes what a style binding is being written with at an offset of a template, while it doesn't compile too: after
+ * `[style.`, the CSS properties (see `getCssProperties`); after `[style.name.`, the units of CSS, but for a custom
+ * property, which takes none.
+ *
+ * @param source - The current source of the template.
+ * @param offset - The offset in the template.
+ * @returns The completions, `undefined` if the offset is not on the name of a style binding of an element.
+ */
+export function getTemplateStyleCompletions(source: string, offset: number): TemplateCompletion[] | undefined {
+  const context = getBindingContext(source, offset);
+  if (context?.kind !== 'attribute' || context.directive !== undefined) {
+    return undefined;
+  }
+
+  const match = STYLE_BINDING_RE.exec(source.slice(context.span.start, offset));
+  if (!match) {
+    return undefined;
+  }
+
+  const [, property, unit] = match;
+  if (unit === undefined) {
+    const span = { start: offset - property.length, end: offset };
+    return getCssProperties().map((name): TemplateCompletion => ({ name, kind: ScriptElementKind.memberVariableElement, sortText: '0', replacementSpan: span }));
+  }
+
+  if (property.startsWith('--')) {
+    return [];
+  }
+
+  const span = { start: offset - unit.length, end: offset };
+  return [...CSS_UNITS].map((name): TemplateCompletion => ({ name, kind: ScriptElementKind.keyword, sortText: '0', replacementSpan: span }));
 }
 
 /**
