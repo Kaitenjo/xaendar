@@ -44,18 +44,18 @@ export class AutoFocusComponent extends CustomElement {
   }
 
   /**
-   * Saves the title on Enter, or gives up on Escape.
+   * Saves the title on Enter.
    *
    * @param event - The keydown event of the field.
    */
-  public onKeydown(event: KeyboardEvent): void {
-    switch (event.key) {
-      case 'Enter': 
-        this.heading.set((event.target as HTMLInputElement).value);
+  public onKeydownEnter(event: KeyboardEvent): void {
+    this.heading.set((event.target as HTMLInputElement).value);
+  }
 
-      // Break is missing on purpose, both cases should set editing to false
-      case 'Escape':
-        this.editing.set(false);
-    }
+  /**
+   * Gives up on Escape.
+   */
+  public onKeydownEscape(): void {
+    this.editing.set(false);
   }
 }

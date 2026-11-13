@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
+import { KEY_MODIFIERS } from '@xaendar/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { _isKey } from '../key-event/key-event.util';
 import { _EVENT_CONTRACT_KEY, WAITS_FOR_HYDRATION } from '../../costants';
 import { _scope, EMPTY_LAYOUT } from '../context/context.util';
 import type { _Context } from '../../types/context.type';
@@ -290,6 +292,18 @@ describe('replayEvents', () => {
     button.click();
     expect(replayed).toHaveLength(2);
     expect(replayed[1].defaultPrevented).toBe(false);
+  });
+
+  it('replays a keyboard event with its key, its code and its modifiers, which the listeners of the key events test', () => {
+    const input = document.body.appendChild(document.createElement('input'));
+    const recorded = recordEvents([input], () => undefined);
+    input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Enter', code: 'NumpadEnter', ctrlKey: true }));
+    const keys = new Array<string>();
+    input.addEventListener('keydown', event => _isKey(event, 'enter', KEY_MODIFIERS.control) && _isKey(event, 'numpadenter', KEY_MODIFIERS.control, true) && keys.push(event.key));
+
+    replayEvents(recorded);
+
+    expect(keys).toEqual(['Enter']);
   });
 });
 

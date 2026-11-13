@@ -437,3 +437,26 @@ createServer(async (request, response) => {
   response.end(await renderPage(pathname));
 }).listen(3000);`
 };
+
+/**
+ * The snippet `parse-key-event.ts`, shown by the API reference of common.
+ */
+export const PARSE_KEY_EVENT: SourceFile = {
+  name: 'parse-key-event.ts',
+  lang: 'ts',
+  code: `import { parseKeyEvent } from '@xaendar/common';
+
+// { event: 'keydown', key: 'enter', modifiers: 0 }
+parseKeyEvent('keydown.Enter');
+// { event: 'keyup', key: 'z', modifiers: 10 }, KEY_MODIFIERS.control | KEY_MODIFIERS.shift
+parseKeyEvent('keyup.shift.control.z');
+// { event: 'keydown', key: 'keya', modifiers: 1, code: true }
+parseKeyEvent('keydown.alt.code.keyA');
+// { event: 'keydown', key: 'escape', modifiers: 0 }
+parseKeyEvent('keydown.esc');
+// undefined: not key events
+parseKeyEvent('keydown');
+parseKeyEvent('click.outside');
+// Throws: "ctrl" is not a modifier of the key event "keydown.ctrl.s": alt, control, meta, shift or code
+parseKeyEvent('keydown.ctrl.s');`
+};

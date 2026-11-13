@@ -634,7 +634,8 @@ function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: Com
  * An event not declared as an `@Event` is a native event of the element the component is, or the directive is
  * applied to, since its listener is attached to the element: `$event` is typed through `nativeEventType`, so an
  * event name the element doesn't dispatch, such as a misspelled `@Event`, is reported by TypeScript. The name is
- * checked even when the handler is not passed `$event`.
+ * checked even when the handler is not passed `$event`. A key event (`keydown.enter`) is always the native event it
+ * names first, `keydown`.
  *
  * @param events - The event nodes to type-check.
  * @param metadata - Metadata of the component or directive emitting the events.
@@ -646,17 +647,17 @@ function typeCheckComponentEvents(events: EventNode[], metadata: ComponentOrDire
   const lines = new Array<Line>();
 
   for (let i = 0; i < events.length; i++) {
-    const { name, nameSpan, parameters, span } = events[i];
-    const event = metadata.events.get(name);
+    const { name, parameters, key } = events[i];
+    const event = key ? undefined : metadata.events.get(name);
 
     if (event) {
       // An event without payload is emitted without detail, which the CustomEvent sets to null
       lines.push(...typeCheckEvent(events[i], `CustomEvent<${event.type === 'void' ? 'null' : event.type}>`, context));
     } else {
-      const eventType = nativeEventType(name);
-      passesEvent(parameters) 
+      const eventType = nativeEventType(key?.event ?? name);
+      passesEvent(parameters)
         ? lines.push(...typeCheckEvent(events[i], eventType, context))
-        : lines.push(line(mappedEventName(`null! satisfies ${eventType};`, span, name, nameSpan)), ...typeCheckEvent(events[i], eventType, context));
+        : lines.push(line(mappedEventName(`null! satisfies ${eventType};`, events[i])), ...typeCheckEvent(events[i], eventType, context));
     }
   }
 
@@ -763,7 +764,8 @@ function typeCheckStyleBindings(styleBindings: StyleBindingNode[], context: Type
 
 /**
  * Type-checks the event bindings of a native element, typing `$event` through the
- * event map of the element (see {@link typeCheckEvent}), e.g. `HTMLElementEventMap['click']`.
+ * event map of the element (see {@link typeCheckEvent}), e.g. `HTMLElementEventMap['click']`, the one of a key event by
+ * its event (`HTMLElementEventMap['keydown']` for `keydown.enter`).
  *
  * @param events - The event nodes to type-check.
  * @param nativeEventType - Builds the type of `$event` for the native events of the element.
@@ -771,7 +773,7 @@ function typeCheckStyleBindings(styleBindings: StyleBindingNode[], context: Type
  * @returns The generated type-check lines, one call per event, wrapped in a block when it declares `$event`.
  */
 function typeCheckNativeEvents(events: EventNode[], nativeEventType: NativeEventType, context: TypeCheckContext): Line[] {
-  return events.flatMap(event => typeCheckEvent(event, nativeEventType(event.name), context));
+  return events.flatMap(event => typeCheckEvent(event, nativeEventType(event.key?.event ?? event.name), context));
 }
 
 /**
@@ -785,7 +787,8 @@ function typeCheckNativeEvents(events: EventNode[], nativeEventType: NativeEvent
  * @param context - Current type-check scope.
  * @returns The generated type-check lines: the call, wrapped in a block when it declares `$event`.
  */
-function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, casts, span }: EventNode, eventType: string, context: TypeCheckContext): Line[] {
+function typeCheckEvent(event: EventNode, eventType: string, context: TypeCheckContext): Line[] {
+  const { handler, handlerSpan, parameters, casts, span } = event;
   const eventContext = new TypeCheckContext(context);
   eventContext.addUnresolvableIdentifier('$event');
   for (let i = 0; i < parameters.length; i++) {
@@ -832,7 +835,7 @@ function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, cast
     ? [
       plain('{'),
       ...indentLines([
-        line(mappedEventName(`let $event!: ${eventType};`, span, name, nameSpan)),
+        line(mappedEventName(`let $event!: ${eventType};`, event)),
         callLine
       ]),
       plain('}')
@@ -842,17 +845,17 @@ function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, cast
 
 /**
  * Maps a text typing an event by its name (e.g. `let $event!: HTMLElementEventMap['click'];`) onto the span of the
- * event binding, and the name quoted in it onto the name of the event, where TypeScript reports an unknown event.
+ * event binding, and the name quoted in it onto the name of the event, where TypeScript reports an unknown event: the
+ * beginning of the name of a key event, its event (`keydown` of `keydown.enter`).
  *
  * @param text - The text typing the event.
- * @param span - The span of the event binding.
- * @param name - The name of the event.
- * @param nameSpan - The span of the name of the event.
+ * @param event - The event binding.
  * @returns The mapped fragment.
  */
-function mappedEventName(text: string, span: Span, name: string, nameSpan: Span): LinePart {
-  const nameColumn = text.indexOf(`'${name}'`) + 1;
-  return mappedSegments(text, span, nameColumn ? [{ columnStart: nameColumn, columnEnd: nameColumn + name.length, original: nameSpan }] : []);
+function mappedEventName(text: string, { span, name, nameSpan, key }: EventNode): LinePart {
+  const typed = key?.event ?? name;
+  const nameColumn = text.indexOf(`'${typed}'`) + 1;
+  return mappedSegments(text, span, nameColumn ? [{ columnStart: nameColumn, columnEnd: nameColumn + typed.length, original: { start: nameSpan.start, end: nameSpan.start + typed.length } }] : []);
 }
 
 /**

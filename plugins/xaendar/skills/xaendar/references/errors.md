@@ -181,6 +181,21 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A class binding in the parentheses of a directive, or in a conditional binding inside them, which only bind the properties of the directive.
 - **Fix:** Move it among the bindings of the element.
 
+### `[Parser] "ctrl" is not a modifier of the key event "keydown.ctrl.s": alt, control, meta, shift or code`
+
+- **Cause:** A key event (`keydown.*`, `keyup.*`) with a part before the key that is not a modifier: the modifiers are `alt`, `control`, `meta`, `shift`, plus `code` to match `event.code`.
+- **Fix:** Write the modifier by its name, `(keydown.control.s)`, or put the key last.
+
+### `[Parser] The key event "keydown." names no key: write it after the last dot, e.g. keydown.enter`
+
+- **Cause:** A key event ending with a dot.
+- **Fix:** Write the key after the last dot: `(keydown.enter)`, `(keydown.space)` for the space bar, `(keydown.dot)` for the period.
+
+### `[Parser] The key event "keydown.shift.shift.a" names "shift" twice`
+
+- **Cause:** A key event naming a modifier, or `code`, more than once.
+- **Fix:** Name each modifier once: `(keydown.shift.a)`.
+
 ### `[Parser] Directive "exTint" is applied more than once on <p>`
 
 - **Cause:** The same directive applied twice to one element.
@@ -856,6 +871,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** A @HostListener with an empty name, or with nothing after window: or document:. Thrown when the class is defined.
 - **Fix:** Name the event: @HostListener('click'), @HostListener('window:resize').
+
+### `Error: @HostListener('keydown.ctrl.s'): "ctrl" is not a modifier of the key event "keydown.ctrl.s": alt, control, meta, shift or code`
+
+- **Cause:** A @HostListener on a key event naming a part that is not a modifier, no key (`keydown.`: The key event "keydown." names no key…) or a modifier twice (names "shift" twice). Thrown when the class is defined; the name after the prefix is checked (`document:keydown.ctrl.s` reports keydown.ctrl.s).
+- **Fix:** Use `alt`, `control`, `meta`, `shift`, `code` once each, then the key: @HostListener('document:keydown.control.s').
 
 ### `Error: @HostProperty('role') cannot decorate the static member defaultRole`
 

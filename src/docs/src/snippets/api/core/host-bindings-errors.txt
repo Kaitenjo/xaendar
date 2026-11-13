@@ -7,6 +7,9 @@ Error: @HostListener('') names no event
 @HostListener('window:')
 Error: @HostListener('window:') names no event
 
+@HostListener('keydown.ctrl.s')
+Error: @HostListener('keydown.ctrl.s'): "ctrl" is not a modifier of the key event "keydown.ctrl.s": alt, control, meta, shift or code
+
 @HostProperty('role') static defaultRole = 'switch';
 Error: @HostProperty('role') cannot decorate the static member defaultRole
 

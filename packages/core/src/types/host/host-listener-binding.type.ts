@@ -1,3 +1,4 @@
+import type { KeyEventFilter } from '@xaendar/common';
 import type { EventHost } from '../event/event-host.type';
 import type { HostListenerHandler } from './host-listener-handler.type';
 
@@ -18,6 +19,11 @@ export type HostListenerBinding = {
    * The options the listener is added with.
    */
   readonly options: Pick<AddEventListenerOptions, 'capture' | 'once' | 'passive'> | undefined,
+  /**
+   * The key the listener is filtered by, for a key event (`keydown.enter`): the method is called only for that key, with
+   * exactly its modifiers. Left out for any other event.
+   */
+  readonly key?: KeyEventFilter,
   /**
    * Reads the decorated method of an instance, which handles the event.
    */

@@ -199,6 +199,27 @@ describe('_bindHost', () => {
     document.dispatchEvent(new Event('keydown'));
     expect(calls).toHaveLength(2);
   });
+
+  it('calls the method of a key event only for its key, with exactly its modifiers', () => {
+    const calls = new Array<string>();
+    const owner = createOwner(
+      { onEscape(event: KeyboardEvent) { calls.push(`escape ${event.type}`); }, onUndo(event: KeyboardEvent) { calls.push(`undo ${event.key}`); } },
+      {},
+      { onEscape: ['document:keydown.escape'], onUndo: ['keyup.control.z'] }
+    );
+    const { element, context } = bind(owner);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', shiftKey: true }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    element.dispatchEvent(new KeyboardEvent('keyup', { key: 'z' }));
+    element.dispatchEvent(new KeyboardEvent('keyup', { key: 'z', ctrlKey: true }));
+    expect(calls).toEqual(['escape keydown', 'undo z']);
+
+    clear(context);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(calls).toHaveLength(2);
+  });
 });
 
 describe('_applyHostProperties', () => {

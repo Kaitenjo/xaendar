@@ -706,9 +706,9 @@
         },
         "events": {
           "title": "Gli eventi dell’host",
-          "p1": "<code>@HostListener('name')</code> su un metodo ascolta l’evento sull’elemento host, dalla connessione alla disconnessione. Il metodo riceve l’evento, il cui tipo TypeScript ricava dal nome (<code>KeyboardEvent</code> per <code>keydown</code>, <code>Event</code> per un output, che il parametro può restringere a <code>CustomEvent&lt;boolean&gt;</code>), oppure non prende parametri. Nell’interruttore i clic chiamano <code>toggle</code>, compresi quelli sull’etichetta proiettata, e <code>onKeydown</code> trasforma Spazio e Invio in un cambio di stato. Le opzioni sono quelle di <code>addEventListener</code>: <code>capture</code>, <code>once</code> e <code>passive</code>.",
+          "p1": "<code>@HostListener('name')</code> su un metodo ascolta l’evento sull’elemento host, dalla connessione alla disconnessione. Il metodo riceve l’evento, il cui tipo TypeScript ricava dal nome (<code>KeyboardEvent</code> per <code>keydown</code>, <code>Event</code> per un output, che il parametro può restringere a <code>CustomEvent&lt;boolean&gt;</code>), oppure non prende parametri. Nell’interruttore i clic chiamano <code>toggle</code>, compresi quelli sull’etichetta proiettata, e <code>onKey</code>, che ascolta gli eventi di tasto <code>keydown.space</code> e <code>keydown.enter</code>, trasforma Spazio e Invio in un cambio di stato. Le opzioni sono quelle di <code>addEventListener</code>: <code>capture</code>, <code>once</code> e <code>passive</code>.",
           "p2": "Il listener sente gli eventi nativi dell’host, gli eventi inviati su di esso, compresi gli output del componente, e gli eventi che risalgono dal suo contenuto. Dal suo shadow root escono solo gli eventi composed, come <code>click</code> e <code>keydown</code>: <code>change</code> e gli output dei figli restano dentro, e si ascoltano nel template. Vedi <a href=\"#/it/reference/api/core/HostListener\"><code>HostListener</code></a>.",
-          "p3": "Con il prefisso <code>window:</code> o <code>document:</code> il metodo ascolta la finestra o il documento, dalla connessione alla disconnessione dell’host: un menu che si chiude a un clic altrove nella pagina, un layout che segue la dimensione della finestra. L’evento è tipizzato attraverso <code>WindowEventMap</code> e <code>DocumentEventMap</code>, e un parametro senza relazione con esso è un errore di tipo. Sul server non vengono ascoltati, come ogni listener, e l’event contract non li registra prima dell’hydration."
+          "p3": "Con il prefisso <code>window:</code> o <code>document:</code> il metodo ascolta la finestra o il documento, dalla connessione alla disconnessione dell’host: un menu che si chiude a un clic altrove nella pagina, un layout che segue la dimensione della finestra. L’evento è tipizzato attraverso <code>WindowEventMap</code> e <code>DocumentEventMap</code>, e un parametro senza relazione con esso è un errore di tipo. Sul server non vengono ascoltati, come ogni listener, e l’event contract non li registra prima dell’hydration. Un evento di tasto indica il suo tasto come nei template: <code>document:keydown.escape</code> chiama il metodo solo per Esc (vedi <a href=\"#/it/templates/events\">Gestione degli eventi</a>)."
         },
         "values": {
           "title": "Dai valori agli attributi",
@@ -1718,7 +1718,8 @@
           "td20": "<code>@let</code>, chiamata anche variabile di template, un valore letto come <code>nome</code>, come in Angular, tenuto aggiornato con ciò che legge: vedi <a href=\"#/it/templates/let\">@let</a>",
           "td21": "Stessa sintassi: <code>[class.x]=\"{ condizione }\"</code>, con il valore tra graffe, fusa classe per classe con le direttive e il componente come in Angular. Non esiste <code>[class]</code> legato a un oggetto: <code>class=\"{`a ${b()}`}\"</code> lega la stringa. Vedi <a href=\"#/it/templates/binding\">Binding</a>.",
           "td22": "<code>@Model</code> e <code>@Model.required</code> su un accessor tipizzato <code>ModelSignal</code>: <code>set</code> e <code>update</code> inviano l’evento di cambiamento, <code>valueChange</code>",
-          "td23": "La stessa sintassi, <code>[(value)]=\"signal\"</code>, con il signal indicato senza chiamata, su componenti e direttive. I campi nativi non hanno model: vedi <a href=\"#/it/patterns/forms\">Form</a>."
+          "td23": "La stessa sintassi, <code>[(value)]=\"signal\"</code>, con il signal indicato senza chiamata, su componenti e direttive. I campi nativi non hanno model: vedi <a href=\"#/it/patterns/forms\">Form</a>.",
+          "td24": "Gli stessi eventi di tasto: il tasto dopo l’evento, <code>(keyup.escape)</code>, i modificatori <code>alt</code>, <code>control</code>, <code>meta</code> e <code>shift</code> prima di esso, che devono corrispondere esattamente, e <code>code</code> per <code>event.code</code>; anche in <code>@HostListener('document:keydown.escape')</code>. Vedi <a href=\"#/it/templates/events\">Gestione degli eventi</a>."
         },
         "whatWorksDifferently": {
           "title": "Cosa funziona diversamente",
@@ -1727,7 +1728,7 @@
           "li4": "<strong>I template sono rigorosi.</strong> I listener chiamano un solo metodo, le espressioni non possono assegnare né creare oggetti, e alcuni caratteri vanno trattati con l’escape. Vedi <a href=\"#/it/reference/template-syntax\">il prontuario</a>.",
           "callout1": {
             "heading": "Non disponibile",
-            "body": "Dependency injection, un router, un modulo per i form, un client HTTP, <code>[(ngModel)]</code> sui campi nativi e i modificatori degli eventi come <code>(keydown.enter)</code>. La sezione <a href=\"#/it/patterns/forms\">Pattern</a> mostra come coprire i casi comuni con signal e direttive."
+            "body": "Dependency injection, un router, un modulo per i form, un client HTTP e <code>[(ngModel)]</code> sui campi nativi. La sezione <a href=\"#/it/patterns/forms\">Pattern</a> mostra come coprire i casi comuni con signal e direttive."
           }
         }
       },
@@ -1785,7 +1786,7 @@
           "th1": "Assente",
           "th2": "Al suo posto",
           "td1": "<code>prop=\"{ … }\"</code> e un listener; una direttiva che scrive la proprietà. <code>[(x)]</code> lega solo i model dei componenti e delle direttive",
-          "td2": "Un filtro nel metodo: <code>(keydown.enter)</code> ascolta un evento con quel nome",
+          "td2": "Chiama <code>preventDefault()</code> o <code>stopPropagation()</code> su <code>$event</code> nel metodo. Gli eventi di tasto, come <code>(keydown.enter)</code>, sono gli unici modificatori",
           "td4": "Pipe",
           "td5": "Metodi e computed"
         }
@@ -2245,6 +2246,20 @@
           "li4": "un signal senza chiamata, che passa il signal stesso: <code>bump</code> cambia il contatore che riceve.",
           "p2": "Il template è controllato dai tipi: <code>$event</code> ha il tipo dell’evento, un <code>MouseEvent</code> per <code>click</code> o un <code>KeyboardEvent</code> per <code>keydown</code>, e ogni argomento deve essere compatibile con il parametro del metodo."
         },
+        "keyEvents": {
+          "title": "Eventi dei tasti",
+          "p1": "Un listener di <code>keydown</code> o <code>keyup</code> può indicare, dopo un punto, il tasto che aspetta, come in Angular: <code>(keydown.enter)=\"save()\"</code> chiama <code>save</code> solo quando si preme Invio, e gli altri tasti non arrivano mai al metodo.",
+          "example1": "Eventi dei tasti",
+          "p2": "Dopo l’evento, il nome si legge così:",
+          "li1": "<strong>Il tasto</strong> viene per ultimo: <code>event.key</code> in minuscolo, come <code>enter</code>, <code>escape</code>, <code>tab</code>, <code>arrowup</code> o <code>a</code>. <code>esc</code> equivale a <code>escape</code>, e i due tasti che non si possono scrivere in un nome sono <code>space</code>, per <code>' '</code>, e <code>dot</code>, per <code>'.'</code>. Tutto il nome si legge in minuscolo, quindi funziona anche <code>keydown.Enter</code>.",
+          "li2": "<strong>I modificatori</strong> <code>alt</code>, <code>control</code>, <code>meta</code> e <code>shift</code> vengono prima del tasto, in qualsiasi ordine: <code>(keydown.control.shift.z)</code>. Devono corrispondere esattamente: <code>(keydown.enter)</code> non viene chiamato per Ctrl+Invio, né <code>(keydown.control.s)</code> per Ctrl+Maiusc+S. Un modificatore che è il tasto stesso non conta, quindi <code>(keydown.shift)</code> viene chiamato quando si preme Maiusc.",
+          "li3": "<strong><code>code</code></strong>, tra i modificatori, confronta <code>event.code</code> invece di <code>event.key</code>: la posizione del tasto sulla tastiera, qualunque carattere scriva. <code>(keydown.alt.code.digit1)</code> è Alt+1 anche su macOS, dove Alt+1 scrive <code>¡</code>, e <code>(keydown.code.keyw)</code> è lo stesso tasto su una tastiera QWERTY e su una AZERTY.",
+          "li4": "<strong>Solo <code>keydown</code> e <code>keyup</code></strong> si leggono così: qualsiasi altro nome con un punto è il nome di un evento, così com’è scritto. Su un componente, un evento di tasto vince su un <code>@Event</code> con lo stesso nome.",
+          "p3": "<code>$event</code> è il <code>KeyboardEvent</code>, come per <code>(keydown)</code>. Non esistono altri modificatori, come <code>.prevent</code> o <code>.stop</code>: chiama <code>preventDefault()</code> o <code>stopPropagation()</code> su <code>$event</code> nel metodo, come fa <code>save</code> nell’esempio, così che Ctrl+S non apra la finestra per salvare la pagina.",
+          "p4": "Un evento di tasto costa quanto qualsiasi listener: il compilatore scrive il controllo del tasto nell’event handler, una funzione del modulo condivisa da tutte le istanze del componente, e l’elemento tiene un solo listener. Gli eventi di tasto di un elemento sullo stesso evento che fanno la stessa chiamata, uno dopo l’altro tra i listener di quell’evento, condividono un solo listener, che controlla tutti i tasti: nell’esempio Invio, Ctrl+S e Cmd+S aggiungono un listener, non tre. Chiamate diverse restano listener separati, chiamati nell’ordine in cui sono scritti, così che <code>stopImmediatePropagation()</code> e un’eccezione si comportino come scritto.",
+          "p5": "Un modificatore che non esiste, un tasto mancante e una parte scritta due volte sono errori di compilazione, segnalati sul nome dell’evento:",
+          "p6": "Gli stessi nomi funzionano in <code>@HostListener</code>, anche dopo <code>window:</code> e <code>document:</code>: <code>@HostListener('document:keydown.escape')</code> chiude una finestra di dialogo ovunque sia il focus (vedi <a href=\"#/it/components/host-bindings\">Host binding</a>). In una pagina renderizzata sul server, l’event contract registra <code>keydown</code> e <code>keyup</code> prima dell’hydration, e l’evento ripetuto mantiene il tasto e i modificatori: gli eventi di tasto lo sentono come qualsiasi altro."
+        },
         "whatAHandlerCannot": {
           "title": "Cosa non può contenere un handler",
           "p1": "Assegnazioni, arrow function e più di un’istruzione vengono rifiutate. I messaggi del lexer non sempre dicono perché, quindi eccoli, accanto all’handler che li produce:",
@@ -2252,11 +2267,17 @@
         },
         "edgeCases": {
           "title": "Casi limite",
-          "example1": "Niente modificatori degli eventi",
-          "p1": "I template non hanno modificatori degli eventi: <code>(keydown.enter)</code> ascolta un evento che si chiama letteralmente <code>keydown.enter</code>, che il browser non invia mai, e il primo contatore non si muove. Filtra il tasto nel metodo, come fa il secondo campo. Lo stesso vale per <code>preventDefault()</code> e <code>stopPropagation()</code>: chiamali su <code>$event</code>.",
+          "callout1": {
+            "heading": "Il tasto scritto dipende dai modificatori",
+            "body": "<code>event.key</code> è il carattere che il tasto scrive: Maiusc+1 scrive <code>!</code> su una tastiera US, quindi lì <code>(keydown.shift.1)</code> non viene mai chiamato, e su macOS Alt cambia quasi tutte le lettere. Filtra questi tasti per posizione, con <code>code</code>: <code>(keydown.shift.code.digit1)</code>. Maiusc con una lettera va bene: <code>A</code> si legge <code>a</code>."
+          },
           "callout2": {
             "heading": "Il target di $event",
             "body": "<code>$event.target</code> è tipizzato <code>EventTarget | null</code>: l’evento può arrivare da un discendente dell’elemento, quindi <code>$event.target.value</code> non compila. Leggi il campo con un <a href=\"#/it/templates/element-refs\">element ref</a>, come in <code>save(field.value)</code>, passalo con un cast, come in <code>save($event.target as HTMLInputElement)</code> (vedi <a href=\"#/it/templates/expressions\">Sintassi delle espressioni</a>), oppure restringi il target nel metodo."
+          },
+          "callout3": {
+            "heading": "Con o senza modificatore",
+            "body": "Visto che i modificatori devono corrispondere esattamente, un metodo pensato sia per Invio sia per Ctrl+Invio ha bisogno di entrambi i nomi, con la stessa chiamata: <code>(keydown.enter)=\"send()\" (keydown.control.enter)=\"send()\"</code>, che condividono un solo listener. Un <code>keydown</code> senza tasto, come quello che Chrome invia quando compila automaticamente un campo, non è mai un evento di tasto."
           }
         },
         "summary": {
@@ -2266,7 +2287,9 @@
           "td1": "Chiama un metodo del componente, di uno dei suoi membri o di un element ref, per ogni evento.",
           "td2": "Passa l’evento, tipizzato in base al nome, o una sua proprietà.",
           "td3": "Letterali, membri, variabili di un ciclo, le loro proprietà, espressioni e chiamate.",
-          "td4": "Un listener attivo solo finché vale la condizione. Vedi <a href=\"#/it/templates/conditional-bindings\">Binding condizionali</a>."
+          "td4": "Un listener attivo solo finché vale la condizione. Vedi <a href=\"#/it/templates/conditional-bindings\">Binding condizionali</a>.",
+          "td5": "Chiama il metodo solo per quel tasto, premuto senza modificatori; anche <code>keyup</code>. Altri tasti che fanno la stessa chiamata condividono il listener.",
+          "td6": "Modificatori prima del tasto, in qualsiasi ordine, che devono corrispondere esattamente; <code>code</code> confronta la posizione del tasto, <code>event.code</code>."
         }
       },
       "expressions": {
@@ -3608,7 +3631,7 @@
           "title": "Il language server",
           "p1": "Il server compila ogni template mentre viene modificato, con lo stesso codice di type check del plugin Vite, e ne trasforma il risultato in funzionalità dell’editor:",
           "li1": "<strong>Diagnostica</strong>: 250 ms dopo l’ultima modifica, gli errori del template nella loro posizione: errori di sintassi, tag né importati né dichiarati, import che non si risolvono, e gli errori TypeScript delle sue espressioni. Gli import inutilizzati sono sbiaditi. I tag che corrispondono ai <code>customElements</code> dello <code>xaendar.json</code> più vicino sono controllati come elementi nativi, e una modifica di quel file fa ricontrollare i template aperti. In un file di componente, gli errori di <code>@WebComponent</code> nella loro posizione: opzioni che la build non può leggere, un selettore non valido o dichiarato da un altro componente del progetto, un <code>templateUrl</code> o uno <code>styleUrl</code> che porta a un file inesistente.",
-          "li2": "<strong>Completamenti</strong>: i percorsi e i simboli di un <code>@import</code>; i componenti e le direttive sui nomi dei tag e sui selettori delle direttive, aggiungendo il loro <code>@import</code>; gli input e gli output sui nomi di attributi ed eventi; i blocchi dopo <code>@</code>; le variabili del template e i membri del componente nelle espressioni.",
+          "li2": "<strong>Completamenti</strong>: i percorsi e i simboli di un <code>@import</code>; i componenti e le direttive sui nomi dei tag e sui selettori delle direttive, aggiungendo il loro <code>@import</code>; gli input e gli output sui nomi di attributi ed eventi; i tasti e i modificatori dopo <code>(keydown.</code> e <code>(keyup.</code>; i blocchi dopo <code>@</code>; le variabili del template e i membri del componente nelle espressioni.",
           "li3": "<strong>Hover</strong>: la firma e il JSDoc di componenti, direttive, input, output e simboli importati.",
           "li4": "<strong>Vai alla definizione</strong>: dal template alla classe, al membro o al simbolo; dal <code>@WebComponent</code> di un file componente al suo template e al suo foglio di stile.",
           "li5": "<strong>Code action</strong>: rimuovere un import inutilizzato, e organizzare gli import (<code>source.organizeImports</code>, Alt+Shift+O): quelli inutilizzati rimossi, le istruzioni dallo stesso modulo unite, tutte ordinate.",
@@ -3705,6 +3728,18 @@
     "[Lexer] No spaces are allowed in event handler name": {
       "cause": "Un’assegnazione come listener, come (click)=\"open = true\".",
       "fix": "Sposta l’assegnazione in un metodo."
+    },
+    "[Parser] \"ctrl\" is not a modifier of the key event \"keydown.ctrl.s\": alt, control, meta, shift or code": {
+      "cause": "Un evento di tasto (keydown.… o keyup.…) con una parte prima del tasto che non è un modificatore: i modificatori sono alt, control, meta e shift, e code confronta event.code.",
+      "fix": "Scrivi il modificatore con il suo nome, (keydown.control.s), o metti il tasto per ultimo."
+    },
+    "[Parser] The key event \"keydown.\" names no key: write it after the last dot, e.g. keydown.enter": {
+      "cause": "Un evento di tasto che finisce con un punto.",
+      "fix": "Scrivi il tasto dopo l’ultimo punto: (keydown.enter), (keydown.space) per la barra spaziatrice, (keydown.dot) per il punto."
+    },
+    "[Parser] The key event \"keydown.shift.shift.a\" names \"shift\" twice": {
+      "cause": "Un evento di tasto che indica un modificatore, o code, più di una volta.",
+      "fix": "Indica ogni modificatore una volta: (keydown.shift.a)."
     },
     "[Lexer] Expected { after @import": {
       "cause": "Un import di default: @import Card from …",
@@ -4249,6 +4284,10 @@
     "Error: @HostListener('') names no event": {
       "cause": "Un @HostListener con un nome vuoto, o senza niente dopo window: o document:. Viene lanciato quando la classe viene definita.",
       "fix": "Indica il nome dell’evento: @HostListener('click'), @HostListener('window:resize')."
+    },
+    "Error: @HostListener('keydown.ctrl.s'): \"ctrl\" is not a modifier of the key event \"keydown.ctrl.s\": alt, control, meta, shift or code": {
+      "cause": "Un @HostListener su un evento di tasto con una parte che non è un modificatore. Un nome senza tasto (keydown.) o con un modificatore ripetuto lancia gli altri messaggi degli eventi di tasto, dopo lo stesso prefisso. Viene lanciato quando la classe viene definita.",
+      "fix": "Usa alt, control, meta, shift e code, una volta ciascuno, poi il tasto: @HostListener('document:keydown.control.s')."
     },
     "Error: @HostProperty('role') cannot decorate the static member defaultRole": {
       "cause": "Un @HostProperty su un campo, un getter o un accessor statico: l’elemento host appartiene a un’istanza.",

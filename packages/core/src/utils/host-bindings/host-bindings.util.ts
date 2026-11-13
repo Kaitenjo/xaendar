@@ -9,6 +9,7 @@ import type { StylingAttribute } from '../../types/styling/styling-attribute.typ
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { addCleanup } from '../context/context.util';
 import { applyHostStyling, registerHostStyling } from '../host-styling/host-styling.util';
+import { _isKey } from '../key-event/key-event.util';
 import { writeAttribute } from '../write-attribute/write-attribute.util';
 
 /**
@@ -40,7 +41,7 @@ export function _addHostMetadata<Key extends typeof INTERNAL_HOST_PROPERTIES | t
  * declare: each attribute is written inside an effect, so it is written again only when it reads a signal, the
  * properties of `class` and of `style` are bound as one source of each attribute (see `HostStylingRun`), merged key by
  * key with the other sources writing it, and each listener is added to the element, or to the window or the document it
- * names. When the context is cleared the effects are disposed, the attributes removed, the keys of `class` and `style`
+ * names, the one of a key event calling the method only for its key. When the context is cleared the effects are disposed, the attributes removed, the keys of `class` and `style`
  * of the owner taken away, giving back the value of the sources below, and the listeners removed.
  *
  * @param owner - The web component or the custom directive.
@@ -71,9 +72,12 @@ export function _bindHost(owner: EventHost, element: Element, context: _Context)
   const listeners = metadata?.[INTERNAL_HOST_LISTENERS];
   if (listeners?.length) {
     for (let i = 0; i < listeners.length; i++) {
-      const { name, target, options, read } = listeners[i];
+      const { name, target, options, read, key } = listeners[i];
       const eventTarget: EventTarget = target ? globalThis[target] : element;
-      const listener = (event: Event) => read(owner).call(owner, event);
+      // A key event calls the method only for its key (see `_isKey`)
+      const listener = key
+        ? (event: Event) => _isKey(event as KeyboardEvent, key.key, key.modifiers, key.code) && read(owner).call(owner, event)
+        : (event: Event) => read(owner).call(owner, event);
       eventTarget.addEventListener(name, listener, options);
       addCleanup(context, () => eventTarget.removeEventListener(name, listener, options));
     }

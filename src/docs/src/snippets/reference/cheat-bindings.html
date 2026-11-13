@@ -11,3 +11,6 @@
 <button (click)="save()">Save</button>
 <input (input)="type($event)" />
 <x-picker (valueChange)="pick($event)" />
+
+<!-- Key events: the method is called only for that key, with exactly those modifiers -->
+<input (keydown.enter)="save()" (keydown.control.s)="save()" (keyup.escape)="close()" />

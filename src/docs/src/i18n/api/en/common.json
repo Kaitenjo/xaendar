@@ -344,5 +344,32 @@
         "body": "<p><code>toModelName('valueChange')</code> is <code>'value'</code>; <code>toModelName('Change')</code> and <code>toModelName('closed')</code> are <code>undefined</code>.</p>"
       }
     }
+  },
+  "parseKeyEvent": {
+    "summary": "Reads the key a listener is filtered by from the name of its event: <code>keydown.enter</code>, <code>keyup.control.shift.z</code>, <code>keydown.code.keya</code>.",
+    "description": "<p>The name is <code>keydown</code> or <code>keyup</code>, followed by the modifiers, in any order, by <code>code</code> to match the code of the key instead of the key it types, and by the key, all of them separated by dots. The modifiers and the key are read in lowercase, <code>esc</code> is <code>escape</code>, and the keys that cannot be written in a name are <code>space</code> and <code>dot</code>. Any other name, <code>keydown</code> alone included, gives <code>undefined</code>. The compiler reads the key events of the templates with it, <code>@HostListener</code> its name, and the language server the name being written.</p>",
+    "members": {
+      "name": "<p>The name of the event, as written in the template or given to <code>@HostListener</code>, without the prefix <code>window:</code> or <code>document:</code>. A key event naming no key, a modifier that does not exist or a part twice throws.</p>"
+    },
+    "usage": {
+      "reading": {
+        "title": "Reading a name",
+        "body": "<p>The name is read in lowercase, the modifiers in any order; a name that is not a key event gives <code>undefined</code>, and a key event written wrong throws the message the compiler reports.</p>"
+      }
+    }
+  },
+  "KEY_MODIFIERS": {
+    "summary": "The modifiers a key event can name, each one a bit of the mask of <code>KeyEventFilter.modifiers</code>.",
+    "description": "<p><code>{ alt: 1, control: 2, meta: 4, shift: 8 }</code>: the bits of <code>altKey</code>, <code>ctrlKey</code>, <code>metaKey</code> and <code>shiftKey</code>. <code>keyup.control.shift.z</code> has the modifiers <code>2 | 8</code>, that is <code>10</code>.</p>"
+  },
+  "KeyEventFilter": {
+    "summary": "The key a listener of a key event is filtered by: the listener is called only for that key, with exactly its modifiers.",
+    "description": "<p>What <a href=\"#/en/reference/api/common/parseKeyEvent\"><code>parseKeyEvent</code></a> reads from a name such as <code>keydown.control.s</code>: the event listened to, the key and the modifiers.</p>",
+    "members": {
+      "event": "<p>The event listened to: <code>keydown</code> or <code>keyup</code>.</p>",
+      "key": "<p>The key, in lowercase, as it is read from the event: <code>enter</code>, <code>escape</code>, <code>a</code>, <code>space</code> for <code>' '</code>, <code>dot</code> for <code>'.'</code>, the code of the key with <code>code</code> (<code>keya</code>, <code>digit1</code>).</p>",
+      "modifiers": "<p>The modifiers that must be pressed, and no other one: the bits of <a href=\"#/en/reference/api/common/KEY_MODIFIERS\"><code>KEY_MODIFIERS</code></a>, <code>0</code> for none.</p>",
+      "code": "<p>Set when the key is matched against <code>event.code</code>, its place on the keyboard, instead of <code>event.key</code>, the character it types.</p>"
+    }
   }
 }

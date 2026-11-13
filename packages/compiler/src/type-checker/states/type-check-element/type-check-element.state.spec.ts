@@ -342,6 +342,17 @@ describe('typeCheckElement', () => {
       ]);
     });
 
+    it('types a key event as the native event it names first, even when the component declares an @Event with its name', () => {
+      expect(text(run('<my-el (keydown.enter)="f($event)" (keyup.escape)="g()"></my-el>', metadata({}, { 'keydown.enter': 'number' })))).toEqual([
+        '{',
+        '  let $event!: HTMLElementEventMap[\'keydown\'];',
+        '  root.f($event);',
+        '}',
+        'null! satisfies HTMLElementEventMap[\x27keyup\x27];',
+        'root.g();'
+      ]);
+    });
+
     it('type-checks inputs and outputs inside conditional bindings', () => {
       const component = metadata(properties, { done: 'number' });
       const lines = run('<my-el @if (cond) { title="{heading}" (done)="f($event)" @if (inner) { label="x" } } @else { label="{other}" }></my-el>', component);
@@ -956,6 +967,14 @@ describe('typeCheckElement structural directives', () => {
       expect(call.mappings).toContainEqual({ columnStart: 28, columnEnd: 34, original: at(template, '$event') });
       // The event name quoted in the type of $event
       expect(declaration.mappings).toContainEqual({ columnStart: 36, columnEnd: 41, original: at(template, 'click') });
+    });
+
+    it('types a key event by its event, mapping the event onto the beginning of its name', () => {
+      const template = '<input (keydown.enter)="save($event.key)" />';
+      const [, declaration] = run(template);
+
+      expect(declaration.text).toBe('  let $event!: HTMLElementEventMap[\'keydown\'];');
+      expect(declaration.mappings).toContainEqual({ columnStart: 36, columnEnd: 43, original: at(template, 'keydown') });
     });
 
     it('casts the arguments of an event, each type written as is and mapped onto the template', () => {

@@ -44,6 +44,31 @@ describe('parseEvent', () => {
     expect(run('<div (click)="onClick(a)"></div>')).not.toHaveProperty('casts');
   });
 
+  it('reads the key of a key event, keeping the name as written', () => {
+    expect(run('<input (keydown.Enter)="save()" />')).toMatchObject({ name: 'keydown.Enter', key: { event: 'keydown', key: 'enter', modifiers: 0 } });
+    expect(run('<input (keyup.control.shift.z)="redo()" />')).toMatchObject({ key: { event: 'keyup', key: 'z', modifiers: 10 } });
+    expect(run('<input (keydown.code.keyA)="select()" />').key).toEqual({ event: 'keydown', key: 'keya', modifiers: 0, code: true });
+  });
+
+  it('reads no key for any other event', () => {
+    expect(run('<input (keydown)="press()" />')).not.toHaveProperty('key');
+    expect(run('<x-a (done.x)="press()" />')).not.toHaveProperty('key');
+  });
+
+  it('throws for a key event naming no key or a modifier that does not exist, on the name', () => {
+    const template = '<input (keydown.ctrl.s)="save()" />';
+    let error: Error | undefined;
+    try {
+      run(template);
+    } catch (thrown) {
+      error = thrown as Error;
+    }
+
+    expect(error?.message).toBe('"ctrl" is not a modifier of the key event "keydown.ctrl.s": alt, control, meta, shift or code');
+    expect(error?.cause).toEqual({ start: template.indexOf('keydown'), end: template.indexOf(')=') });
+    expect(() => run('<input (keydown.)="save()" />')).toThrow('The key event "keydown." names no key: write it after the last dot, e.g. keydown.enter');
+  });
+
   it('throws when the event is not followed by a handler', () => {
     expect(() => runTokens([{ type: TokenType.EVENT, parts: ['click'], span: { start: 0, end: 5 } }])).toThrow('Invalid event format for click');
   });

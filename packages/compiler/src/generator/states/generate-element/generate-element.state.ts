@@ -1,4 +1,4 @@
-import { isValidCustomElementName } from '@xaendar/common';
+import { isValidCustomElementName, type KeyEventFilter } from '@xaendar/common';
 import type { AsyncFunction, Function } from '@xaendar/types';
 import { factory, identifierToKeywordKind, SyntaxKind, type Expression } from 'typescript';
 import { ASTNodeType } from '../../../parser/types/node.enum';
@@ -20,6 +20,7 @@ import { GeneratorContext } from '../../context/context';
 import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { DescriptorOwner } from '../../types/descriptor-owner.type';
 import type { StylingExpressions } from '../../types/styling-expressions.type';
+import type { TemplateListenerCode } from '../../types/template-listener-code.type';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import { getElementIdentifier, isConstantExpression, joinVariables, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
 import { appendBlockPosition, appendContainer, rendersBlock } from '../../utils/block-position/block-position.utils';
@@ -516,6 +517,17 @@ function appendReads(members: string[], reads: string | undefined): void {
  * scope declaring the listener and the native event, which the function declares as `$event` when an argument reads it,
  * whole or in part (`$event.target`).
  *
+ * A key event (`(keydown.enter)="save()"`) is listened to as its event, `keydown`, whose handler makes the call only for
+ * its key: `if (_isKey($event, 'enter', 0)) this.save();`. A key event making the same call as the last listener of its
+ * event in the list, filtered too, joins it, its key added to the condition: `(keydown.enter)="save()"
+ * (keydown.escape)="save()"` is one listener, calling `save()` for either key.
+ *
+ * N.B. Deliberate, to save memory: the keys of the listeners joined are tested by one handler, so that every element
+ * keeps one listener, and the element one registration, instead of one per key. A key event names one key, with
+ * exactly its modifiers, so the listeners joined would never both have called it for the same event; only the last
+ * listener of the event is joined, so that the listeners of an event are called in the order they are written. Do not
+ * join a listener without filter, nor listeners making different calls.
+ *
  * @param events - The event nodes to bind to the element.
  * @param owner - The element, which the functions of the handlers are named after.
  * @param prefix - The part of the name of the functions telling what declares the events: the selector of a directive
@@ -531,16 +543,49 @@ function mapEvents(events: EventNode[], owner: DescriptorOwner, prefix = ''): st
 
   generatorContext.addUnresolvableIdentifier('$event');
 
-  const mappedEvents = events.map(({ name, handler, parameters }) => {
+  const listeners = new Array<TemplateListenerCode>();
+  // The last listener of each event, which a key event making the same call joins
+  const lastListeners = new Map<string, TemplateListenerCode>();
+  for (let i = 0; i < events.length; i++) {
+    const { name, handler, parameters, key } = events[i];
     const method = resolveHandler(handler, generatorContext);
     const args = parameters.map(parameter => resolveExpression(parameter, generatorContext).expression).join(', ');
-    const parametersOfHandler = parameters.some(readsEvent) ? 'context, $event' : 'context';
-    const declared = generatorContext.declareFunction(`${owner.name}$${prefix}on_${toRoleName(name)}`, parametersOfHandler, [`${method}(${args});`]);
-    return toObjectLiteral([`name: '${name}'`, `handler: ${declared}`]);
+    const call = `${method}(${args})`;
+    const event = key?.event ?? name;
+    const last = lastListeners.get(event);
+    if (key && last?.keys && last.call === call) {
+      last.keys.push(toKeyCondition(key));
+      last.role = `${last.role}_${toRoleName(name.slice(event.length + 1))}`;
+      continue;
+    }
+
+    const listener: TemplateListenerCode = { event, call, role: toRoleName(name), readsEvent: parameters.some(readsEvent) };
+    if (key) {
+      listener.keys = [toKeyCondition(key)];
+    }
+
+    listeners.push(listener);
+    lastListeners.set(event, listener);
+  }
+
+  const mappedEvents = listeners.map(({ event, call, role, readsEvent: passesEvent, keys }) => {
+    const body = keys ? `if (${keys.join(' || ')}) ${call};` : `${call};`;
+    const declared = generatorContext.declareFunction(`${owner.name}$${prefix}on_${role}`, keys || passesEvent ? 'context, $event' : 'context', [body]);
+    return toObjectLiteral([`name: '${event}'`, `handler: ${declared}`]);
   });
 
   generatorContext.removeUnresolvabledIdentifier('$event');
   return mappedEvents;
+}
+
+/**
+ * Writes the test of the key of a key event the handler of its listener makes (see `_isKey` of the runtime).
+ *
+ * @param key - The key the listener is filtered by.
+ * @returns The code of the test, e.g. `_isKey($event, 'enter', 0)`.
+ */
+function toKeyCondition({ key, modifiers, code }: KeyEventFilter): string {
+  return `_isKey($event, ${toStringLiteral(key)}, ${modifiers}${code ? ', true' : ''})`;
 }
 
 /**

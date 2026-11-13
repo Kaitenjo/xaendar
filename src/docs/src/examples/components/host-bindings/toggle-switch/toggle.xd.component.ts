@@ -79,19 +79,15 @@ export class ToggleComponent extends CustomElement {
   }
 
   /**
-   * Turns the switch on or off with the keyboard, as a native switch does.
+   * Turns the switch on or off with Space or Enter, as a native switch does: the key events call it only for those keys.
    *
    * @param event - The key pressed while the host has the focus.
    */
-  @HostListener('keydown')
-  public onKeydown(event: KeyboardEvent): void {
-    switch (event.key) {
-      case ' ':
-      case 'Enter':
-        // Space would scroll the page
-        event.preventDefault();
-        this.toggle();
-        break;
-    }
+  @HostListener('keydown.space')
+  @HostListener('keydown.enter')
+  public onKey(event: KeyboardEvent): void {
+    // Space would scroll the page
+    event.preventDefault();
+    this.toggle();
   }
 }

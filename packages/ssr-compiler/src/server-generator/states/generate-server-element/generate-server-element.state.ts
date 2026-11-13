@@ -173,14 +173,16 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
 }
 
 /**
- * Registers the events an element listens to, the ones of its conditional bindings included, whatever branch is selected.
+ * Registers the events an element listens to, the ones of its conditional bindings included, whatever branch is selected:
+ * `keydown` for a key event (`keydown.enter`), which the contract records as any other one.
  *
  * @param bindings - The element, or a branch of a conditional binding.
  * @param generatorContext - The generator context of the element.
  */
 function registerEvents({ events, conditionalBindings }: Pick<ConditionalBindingBranchNode, 'events' | 'conditionalBindings'>, generatorContext: GeneratorContext): void {
   for (let i = 0; i < events.length; i++) {
-    generatorContext.addEventName(events[i].name);
+    const { name, key } = events[i];
+    generatorContext.addEventName(key?.event ?? name);
   }
 
   for (let i = 0; i < conditionalBindings.length; i++) {

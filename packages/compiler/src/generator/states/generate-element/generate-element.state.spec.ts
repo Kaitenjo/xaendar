@@ -289,6 +289,71 @@ describe('generateElement', () => {
     expect(functions).toEqual(['function div0$on_click(context) {\n  this.f();\n}', 'function div0$on_click1(context) {\n  this.g();\n}']);
   });
 
+  it('listens to a key event as its event, making the call only for its key', async () => {
+    const result = await run('<input (keydown.enter)="save()" (keyup.control.shift.z)="redo(1)" (keydown.code.keyA)="select($event)" (keydown.\\)="slash()" />');
+
+    expect(result.constants[0]).toContain([
+      'events: [',
+      '    { name: \'keydown\', handler: input0$on_keydown_enter },',
+      '    { name: \'keyup\', handler: input0$on_keyup_control_shift_z },',
+      '    { name: \'keydown\', handler: input0$on_keydown_code_keyA },',
+      '    { name: \'keydown\', handler: input0$on_keydown__ }',
+      '  ]'
+    ].join('\n'));
+    expect(result.functions).toEqual([
+      'function input0$on_keydown_enter(context, $event) {\n  if (_isKey($event, \'enter\', 0)) this.save();\n}',
+      'function input0$on_keyup_control_shift_z(context, $event) {\n  if (_isKey($event, \'z\', 10)) this.redo(1);\n}',
+      'function input0$on_keydown_code_keyA(context, $event) {\n  if (_isKey($event, \'keya\', 0, true)) this.select($event);\n}',
+      'function input0$on_keydown__(context, $event) {\n  if (_isKey($event, \'\\\\\', 0)) this.slash();\n}'
+    ]);
+    expectValidJavascript(result);
+  });
+
+  it('joins the key events making the same call as the last listener of their event, filtered too', async () => {
+    const result = await run('<input (keydown.enter)="save(a)" (keydown.escape)="save(a)" (keydown.shift.tab)="save(a)" (click)="save(a)" />');
+
+    expect(result.constants[0]).toContain([
+      'events: [',
+      '    { name: \'keydown\', handler: input0$on_keydown_enter_escape_shift_tab },',
+      '    { name: \'click\', handler: input0$on_click }',
+      '  ]'
+    ].join('\n'));
+    expect(result.functions).toEqual([
+      'function input0$on_keydown_enter_escape_shift_tab(context, $event) {\n  if (_isKey($event, \'enter\', 0) || _isKey($event, \'escape\', 0) || _isKey($event, \'tab\', 8)) this.save(this.a);\n}',
+      'function input0$on_click(context) {\n  this.save(this.a);\n}'
+    ]);
+    expectValidJavascript(result);
+  });
+
+  it('joins no key event making another call, following a listener of its event making another one, or a listener without filter', async () => {
+    const { constants } = await run([
+      '<input',
+      '(keydown.enter)="save(a)" (keydown.escape)="save(b)"',
+      '(keyup.enter)="close()" (keyup)="log()" (keyup.escape)="close()"',
+      '(focus)="close()" (keydown.tab)="next()" (keydown)="next()" (keydown.space)="next()" />'
+    ].join(' '));
+
+    expect(constants[0]).toContain([
+      '    { name: \'keydown\', handler: input0$on_keydown_enter },',
+      '    { name: \'keydown\', handler: input0$on_keydown_escape },',
+      '    { name: \'keyup\', handler: input0$on_keyup_enter },',
+      '    { name: \'keyup\', handler: input0$on_keyup },',
+      '    { name: \'keyup\', handler: input0$on_keyup_escape },',
+      '    { name: \'focus\', handler: input0$on_focus },',
+      '    { name: \'keydown\', handler: input0$on_keydown_tab },',
+      '    { name: \'keydown\', handler: input0$on_keydown },',
+      '    { name: \'keydown\', handler: input0$on_keydown_space }'
+    ].join('\n'));
+  });
+
+  it('joins the key events of a branch in its own list', async () => {
+    const result = await run('<div (keydown.enter)="f()" @if (cond()) { (keydown.escape)="f()" (keydown.tab)="f()" }></div>');
+
+    expect(result.constants[0]).toContain('events: [{ name: \'keydown\', handler: div0$on_keydown_escape_tab }]');
+    expect(result.constants[1]).toContain('events: [{ name: \'keydown\', handler: div0$on_keydown_enter }]');
+    expectValidJavascript(result);
+  });
+
   it('rejects a handler starting with a reserved word that is not a valid expression', async () => {
     await expect(run('<div (click)="delete[a=1]()"></div>')).rejects.toThrow('is not allowed inside template expressions');
   });

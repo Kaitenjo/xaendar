@@ -1,10 +1,8 @@
-<label>
-  (keydown.enter)
-  <input type="text" placeholder="Press Enter" (keydown.enter)="onEnter()" />
-  { withModifier() }
-</label>
-<label>
-  (keydown) + filter
-  <input type="text" placeholder="Press Enter" (keydown)="onKeydown($event)" />
-  { withFilter() }
-</label>
+<input #field type="text" placeholder="Type, then Enter, Ctrl+S, Shift+Enter or Escape" aria-label="Note"
+  (keydown.enter)="save(field.value, $event)" (keydown.control.s)="save(field.value, $event)"
+  (keydown.meta.s)="save(field.value, $event)" (keydown.shift.enter)="pin(field.value)" (keyup.escape)="clear(field)" />
+<ol class="log">
+  @for (line of calls(); track line.id) {
+    <li>{ line.text }</li>
+  }
+</ol>

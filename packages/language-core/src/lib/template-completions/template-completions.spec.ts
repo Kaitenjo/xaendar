@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import type { FixtureProject } from '../types/fixture-project.type';
-import { getTemplateBindingCompletions, getTemplateCompletions, getTemplateExpressionCompletions, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSourceBindingCompletions, getTemplateStyleCompletions, getTemplateTriggerCompletions } from './template-completions';
+import { getTemplateBindingCompletions, getTemplateCompletions, getTemplateExpressionCompletions, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateKeyEventCompletions, getTemplateSourceBindingCompletions, getTemplateStyleCompletions, getTemplateTriggerCompletions } from './template-completions';
 
 const TIMEOUT = 60_000;
 const source = '<b title="{ title }">{ items[0].na }</b>';
@@ -318,6 +318,31 @@ describe('getTemplateStyleCompletions', () => {
     expect(getTemplateStyleCompletions('<div [class.', 12)).toBeUndefined();
     expect(getTemplateStyleCompletions('<div @@tip([style.', 18)).toBeUndefined();
     expect(getTemplateStyleCompletions('text [style.', 12)).toBeUndefined();
+  });
+});
+
+describe('getTemplateKeyEventCompletions', () => {
+  const namesAt = (source: string) => getTemplateKeyEventCompletions(source, source.length)?.map(({ name }) => name);
+
+  it('proposes the keys, the modifiers and code after keydown. or keyup., replacing the key being written', () => {
+    const source = '<input (keydown.en';
+    const completions = getTemplateKeyEventCompletions(source, source.length)!;
+    expect(completions.map(({ name }) => name)).toEqual(['enter', 'escape', 'space', 'tab', 'backspace', 'delete', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'home', 'end', 'pageup', 'pagedown', 'alt', 'control', 'meta', 'shift', 'code']);
+    expect(completions[0].replacementSpan).toEqual({ start: 16, end: 18 });
+    expect(namesAt('<my-el @if (on) { (keyup.')).toContain('escape');
+  });
+
+  it('leaves out the modifiers already written, and proposes the modifiers alone after code', () => {
+    expect(namesAt('<input (keydown.Shift.control.')).toEqual(expect.arrayContaining(['enter', 'alt', 'meta', 'code']));
+    expect(namesAt('<input (keydown.Shift.control.')).not.toContain('shift');
+    expect(namesAt('<input (keydown.code.alt.')).toEqual(['control', 'meta', 'shift']);
+  });
+
+  it('proposes nothing elsewhere, on another event or on an attribute', () => {
+    expect(namesAt('<input (keydown')).toBeUndefined();
+    expect(namesAt('<input (click.')).toBeUndefined();
+    expect(namesAt('<input keydown.')).toBeUndefined();
+    expect(namesAt('text (keydown.')).toBeUndefined();
   });
 });
 

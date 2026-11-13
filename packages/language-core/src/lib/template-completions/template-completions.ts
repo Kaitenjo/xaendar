@@ -1,4 +1,4 @@
-import { CSS_UNITS, toModelChangeEvent } from '@xaendar/common';
+import { CSS_UNITS, KEY_MODIFIERS, toModelChangeEvent } from '@xaendar/common';
 import { type ComponentOrDirectiveMetadata, getBindingContext, getExpressionContext, getImportContext, getImportInsertion, getImportPathContext, getKeywordContext, getSelectorContext, getTriggerContext, type KeywordContext, resolveShimPosition, type Span, type TriggerContext } from '@xaendar/compiler';
 import { dirname } from 'node:path';
 import { forEachChild, type Identifier, isClassDeclaration, isImportDeclaration, isNamespaceImport, isVariableStatement, type Node, ScriptElementKind, type SourceFile, type Symbol, SymbolFlags, type TypeChecker } from 'typescript';
@@ -17,6 +17,18 @@ import { readSsr } from '../utils/xaendar-config/xaendar-config.utils';
  * Matches the name of a style binding being written: the property, and the unit after it, if a `.` follows it.
  */
 const STYLE_BINDING_RE = /^\[style\.([^.\]]*)(?:\.([^.\]]*))?$/;
+
+/**
+ * Matches the name of a key event being written: the parts written after its event, each one followed by a dot, and the
+ * part being written.
+ */
+const KEY_EVENT_RE = /^key(?:down|up)\.((?:[^.]*\.)*)([^.]*)$/;
+
+/**
+ * The keys proposed by the completions of the name of a key event, the ones most listened to, written as
+ * `parseKeyEvent` reads them.
+ */
+const COMMON_KEYS: readonly string[] = ['enter', 'escape', 'space', 'tab', 'backspace', 'delete', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'home', 'end', 'pageup', 'pagedown'];
 
 /**
  * The snippet writing the block of each keyword.
@@ -286,6 +298,36 @@ export function getTemplateStyleCompletions(source: string, offset: number): Tem
 
   const span = { start: offset - unit.length, end: offset };
   return [...CSS_UNITS].map((name): TemplateCompletion => ({ name, kind: ScriptElementKind.keyword, sortText: '0', replacementSpan: span }));
+}
+
+/**
+ * Proposes what the name of a key event is being written with at an offset of a template, while it doesn't compile
+ * too: after `(keydown.` or `(keyup.`, and after each modifier, the modifiers it doesn't name yet, `code` and the keys
+ * most listened to; after `code.`, the modifiers alone, since the codes of the keys are written as the browser names them
+ * (see `parseKeyEvent` of `@xaendar/common`).
+ *
+ * @param source - The current source of the template.
+ * @param offset - The offset in the template.
+ * @returns The completions, `undefined` if the offset is not on the name of a key event.
+ */
+export function getTemplateKeyEventCompletions(source: string, offset: number): TemplateCompletion[] | undefined {
+  const context = getBindingContext(source, offset);
+  if (context?.kind !== 'event') {
+    return undefined;
+  }
+
+  const match = KEY_EVENT_RE.exec(source.slice(context.span.start, offset));
+  if (!match) {
+    return undefined;
+  }
+
+  const written = match[1].toLowerCase().split('.');
+  const key = match[2];
+  const span = { start: offset - key.length, end: offset };
+  const modifiers = Object.keys(KEY_MODIFIERS).filter(modifier => !written.includes(modifier));
+  const parts = written.includes('code') ? modifiers : modifiers.concat('code');
+  const completions = parts.map((name): TemplateCompletion => ({ name, kind: ScriptElementKind.keyword, sortText: '1', replacementSpan: span }));
+  return written.includes('code') ? completions : COMMON_KEYS.map((name): TemplateCompletion => ({ name, kind: ScriptElementKind.constElement, sortText: '0', replacementSpan: span })).concat(completions);
 }
 
 /**

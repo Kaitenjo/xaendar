@@ -37,6 +37,29 @@
 <p @@htmlTranslation(key="pages.templates.events.callingAMethod.p2") />
 
 <h2>
+  { t(translations(), 'pages.templates.events.keyEvents.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.events.keyEvents.p1") />
+<docs-code snippet="templates/key-events.html" />
+<docs-example name="templates/events/key-filter" heading="{translations().pages.templates.events.keyEvents.example1}">
+  <ex-key-filter />
+</docs-example>
+<p>
+  { t(translations(), 'pages.templates.events.keyEvents.p2') }
+</p>
+<ul>
+  <li @@htmlTranslation(key="pages.templates.events.keyEvents.li1") />
+  <li @@htmlTranslation(key="pages.templates.events.keyEvents.li2") />
+  <li @@htmlTranslation(key="pages.templates.events.keyEvents.li3") />
+  <li @@htmlTranslation(key="pages.templates.events.keyEvents.li4") />
+</ul>
+<p @@htmlTranslation(key="pages.templates.events.keyEvents.p3") />
+<p @@htmlTranslation(key="pages.templates.events.keyEvents.p4") />
+<p @@htmlTranslation(key="pages.templates.events.keyEvents.p5") />
+<docs-code snippet="templates/key-event-errors.txt" />
+<p @@htmlTranslation(key="pages.templates.events.keyEvents.p6") />
+
+<h2>
   { t(translations(), 'pages.templates.events.whatAHandlerCannot.title') }
 </h2>
 <p>
@@ -51,12 +74,11 @@
   <h2>
     { t(translations(), 'pages.templates.events.edgeCases.title') }
   </h2>
-  <docs-example name="templates/events/key-filter" heading="{translations().pages.templates.events.edgeCases.example1}"
-    kind="edge">
-    <ex-key-filter />
-  </docs-example>
-  <p @@htmlTranslation(key="pages.templates.events.edgeCases.p1") />
   <docs-callout kind="edge">
+    <docs-callout-item @@htmlTranslation(key="pages.templates.events.edgeCases.callout1.body")
+      heading="{translations().pages.templates.events.edgeCases.callout1.heading}" />
+    <docs-callout-item @@htmlTranslation(key="pages.templates.events.edgeCases.callout3.body")
+      heading="{translations().pages.templates.events.edgeCases.callout3.heading}" />
     <docs-callout-item @@htmlTranslation(key="pages.templates.events.edgeCases.callout2.body")
       heading="{translations().pages.templates.events.edgeCases.callout2.heading}" />
   </docs-callout>
@@ -107,6 +129,19 @@
           <code>{ '@if (condition) { (event)="method()" }' }</code>
         </td>
         <td @@htmlTranslation(key="pages.templates.events.summary.td4") />
+      </tr>
+      <tr>
+        <td>
+          <code>(keydown.enter)="method()"</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.events.summary.td5") />
+      </tr>
+      <tr>
+        <td>
+          <code>(keydown.control.shift.z)</code>,
+          <code>(keydown.code.keya)</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.events.summary.td6") />
       </tr>
     </tbody>
   </table>

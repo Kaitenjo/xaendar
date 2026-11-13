@@ -20279,6 +20279,37 @@ function dropsLeadingNewline(tagName) {
   return LEADING_NEWLINE_ELEMENTS.has(tagName);
 }
 
+// ../packages/common/src/utils/key-event/key-event.util.ts
+var KEY_MODIFIERS = { alt: 1, control: 2, meta: 4, shift: 8 };
+function parseKeyEvent(name) {
+  const dot = name.indexOf(".");
+  const event = dot < 0 ? name : name.slice(0, dot);
+  if (dot < 0 || event !== "keydown" && event !== "keyup") {
+    return void 0;
+  }
+  const parts = name.slice(dot + 1).toLowerCase().split(".");
+  const key = parts[parts.length - 1];
+  if (!key) {
+    throw new Error(`The key event "${name}" names no key: write it after the last dot, e.g. ${event}.enter`);
+  }
+  let modifiers = 0;
+  let code = false;
+  for (let i2 = 0; i2 < parts.length - 1; i2++) {
+    const part = parts[i2];
+    const modifier = Object.hasOwn(KEY_MODIFIERS, part) ? KEY_MODIFIERS[part] : 0;
+    if (!modifier && part !== "code") {
+      throw new Error(`"${part}" is not a modifier of the key event "${name}": alt, control, meta, shift or code`);
+    }
+    if (modifier ? modifiers & modifier : code) {
+      throw new Error(`The key event "${name}" names "${part}" twice`);
+    }
+    modifiers |= modifier;
+    code ||= !modifier;
+  }
+  const filter = { event, key: key === "esc" ? "escape" : key, modifiers };
+  return code ? Object.assign(filter, { code: true }) : filter;
+}
+
 // ../packages/common/src/utils/model/model.util.ts
 var MODEL_CHANGE_SUFFIX = "Change";
 function toModelChangeEvent(name) {
@@ -24713,6 +24744,13 @@ function parseEvent(cursor, _parseNode, token) {
   const startOffset = token.span.start;
   cursor.advance();
   const name = token.parts[0];
+  const nameSpan = cursor.findSpan(name, startOffset);
+  let key;
+  try {
+    key = parseKeyEvent(name);
+  } catch (error) {
+    throw Object.assign(error, { cause: nameSpan });
+  }
   const handlerToken = cursor.peek();
   if (handlerToken.type !== 8 /* EVENT_HANDLER */) {
     throw `Invalid event format for ${name}`;
@@ -24735,7 +24773,7 @@ function parseEvent(cursor, _parseNode, token) {
   const node = {
     type: 2 /* Event */,
     name,
-    nameSpan: cursor.findSpan(name, startOffset),
+    nameSpan,
     handler: handlerToken.parts[0],
     handlerSpan: cursor.findSpan(handlerToken.parts[0], handlerToken.span.start),
     parameters,
@@ -24746,6 +24784,9 @@ function parseEvent(cursor, _parseNode, token) {
   };
   if (casts?.size) {
     node.casts = casts;
+  }
+  if (key) {
+    node.key = key;
   }
   return node;
 }
@@ -27940,13 +27981,13 @@ function typeCheckComponentAttributes(attributes, metadata, context) {
 function typeCheckComponentEvents(events, metadata, nativeEventType, context) {
   const lines = new Array();
   for (let i2 = 0; i2 < events.length; i2++) {
-    const { name, nameSpan, parameters, span } = events[i2];
-    const event = metadata.events.get(name);
+    const { name, parameters, key } = events[i2];
+    const event = key ? void 0 : metadata.events.get(name);
     if (event) {
       lines.push(...typeCheckEvent(events[i2], `CustomEvent<${event.type === "void" ? "null" : event.type}>`, context));
     } else {
-      const eventType = nativeEventType(name);
-      passesEvent(parameters) ? lines.push(...typeCheckEvent(events[i2], eventType, context)) : lines.push(line(mappedEventName(`null! satisfies ${eventType};`, span, name, nameSpan)), ...typeCheckEvent(events[i2], eventType, context));
+      const eventType = nativeEventType(key?.event ?? name);
+      passesEvent(parameters) ? lines.push(...typeCheckEvent(events[i2], eventType, context)) : lines.push(line(mappedEventName(`null! satisfies ${eventType};`, events[i2])), ...typeCheckEvent(events[i2], eventType, context));
     }
   }
   return lines;
@@ -28000,9 +28041,10 @@ function typeCheckStyleBindings(styleBindings, context) {
   return lines;
 }
 function typeCheckNativeEvents(events, nativeEventType, context) {
-  return events.flatMap((event) => typeCheckEvent(event, nativeEventType(event.name), context));
+  return events.flatMap((event) => typeCheckEvent(event, nativeEventType(event.key?.event ?? event.name), context));
 }
-function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, casts, span }, eventType, context) {
+function typeCheckEvent(event, eventType, context) {
+  const { handler, handlerSpan, parameters, casts, span } = event;
   const eventContext = new TypeCheckContext(context);
   eventContext.addUnresolvableIdentifier("$event");
   for (let i2 = 0; i2 < parameters.length; i2++) {
@@ -28019,7 +28061,7 @@ function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, cast
   for (let i2 = 0; i2 < parameters.length; i2++) {
     const separator = i2 ? ", " : "";
     const argumentSegments = new Array();
-    const resolved = resolveExpression(parameters[i2], eventContext, { resolver: "root", preserveTypeScript: true, narrowedSignal: (name2) => eventContext.getNarrowedSignal(name2) }, argumentSegments).expression;
+    const resolved = resolveExpression(parameters[i2], eventContext, { resolver: "root", preserveTypeScript: true, narrowedSignal: (name) => eventContext.getNarrowedSignal(name) }, argumentSegments).expression;
     const cast = casts?.get(i2);
     const argument = cast ? castExpression(parameters[i2], resolved, argumentSegments, cast) : resolved;
     const column = call.length + separator.length;
@@ -28033,15 +28075,16 @@ function typeCheckEvent({ name, nameSpan, handler, handlerSpan, parameters, cast
   return passesEvent(parameters) ? [
     plain("{"),
     ...indentLines([
-      line(mappedEventName(`let $event!: ${eventType};`, span, name, nameSpan)),
+      line(mappedEventName(`let $event!: ${eventType};`, event)),
       callLine
     ]),
     plain("}")
   ] : [callLine];
 }
-function mappedEventName(text, span, name, nameSpan) {
-  const nameColumn = text.indexOf(`'${name}'`) + 1;
-  return mappedSegments(text, span, nameColumn ? [{ columnStart: nameColumn, columnEnd: nameColumn + name.length, original: nameSpan }] : []);
+function mappedEventName(text, { span, name, nameSpan, key }) {
+  const typed = key?.event ?? name;
+  const nameColumn = text.indexOf(`'${typed}'`) + 1;
+  return mappedSegments(text, span, nameColumn ? [{ columnStart: nameColumn, columnEnd: nameColumn + typed.length, original: { start: nameSpan.start, end: nameSpan.start + typed.length } }] : []);
 }
 function passesEvent(parameters) {
   return parameters.some((parameter) => isEventBeginning(parameter) || readsEvent(parameter));
@@ -31629,6 +31672,8 @@ function getCssProperties(readFile = import_typescript31.sys.readFile) {
 
 // ../packages/language-core/src/lib/template-completions/template-completions.ts
 var STYLE_BINDING_RE2 = /^\[style\.([^.\]]*)(?:\.([^.\]]*))?$/;
+var KEY_EVENT_RE = /^key(?:down|up)\.((?:[^.]*\.)*)([^.]*)$/;
+var COMMON_KEYS = ["enter", "escape", "space", "tab", "backspace", "delete", "arrowup", "arrowdown", "arrowleft", "arrowright", "home", "end", "pageup", "pagedown"];
 var KEYWORD_SNIPPETS = {
   "if": "@if ($1) {\n	$0\n}",
   "else": "@else {\n	$0\n}",
@@ -31769,6 +31814,23 @@ function getTemplateStyleCompletions(source, offset) {
   }
   const span = { start: offset - unit.length, end: offset };
   return [...CSS_UNITS].map((name) => ({ name, kind: import_typescript32.ScriptElementKind.keyword, sortText: "0", replacementSpan: span }));
+}
+function getTemplateKeyEventCompletions(source, offset) {
+  const context = getBindingContext(source, offset);
+  if (context?.kind !== "event") {
+    return void 0;
+  }
+  const match = KEY_EVENT_RE.exec(source.slice(context.span.start, offset));
+  if (!match) {
+    return void 0;
+  }
+  const written = match[1].toLowerCase().split(".");
+  const key = match[2];
+  const span = { start: offset - key.length, end: offset };
+  const modifiers = Object.keys(KEY_MODIFIERS).filter((modifier) => !written.includes(modifier));
+  const parts = written.includes("code") ? modifiers : modifiers.concat("code");
+  const completions = parts.map((name) => ({ name, kind: import_typescript32.ScriptElementKind.keyword, sortText: "1", replacementSpan: span }));
+  return written.includes("code") ? completions : COMMON_KEYS.map((name) => ({ name, kind: import_typescript32.ScriptElementKind.constElement, sortText: "0", replacementSpan: span })).concat(completions);
 }
 function getTemplateBindingCompletions(metadatas, source, offset) {
   const context = getBindingContext(source, offset);
@@ -33175,7 +33237,7 @@ var XaendarLanguageServer = class {
     const offset = document.offsetAt(position);
     const templatePath = fromUri(document.uri);
     const components = this._registry.resolve(templatePath);
-    const completions = isTemplate(document) ? getTemplateImportPathCompletions(templatePath, document.getText(), offset) ?? await getTemplateImportCompletions(templatePath, document.getText(), offset) ?? await getTemplateSelectorCompletions(templatePath, document.getText(), offset) ?? getTemplateKeywordCompletions(templatePath, document.getText(), offset) ?? getTemplateTriggerCompletions(document.getText(), offset) ?? getTemplateStyleCompletions(document.getText(), offset) ?? await getTemplateSourceBindingCompletions(templatePath, document.getText(), offset) ?? (components && await getTemplateExpressionCompletions(templatePath, document.getText(), offset, components, context?.triggerCharacter)) : void 0;
+    const completions = isTemplate(document) ? getTemplateImportPathCompletions(templatePath, document.getText(), offset) ?? await getTemplateImportCompletions(templatePath, document.getText(), offset) ?? await getTemplateSelectorCompletions(templatePath, document.getText(), offset) ?? getTemplateKeywordCompletions(templatePath, document.getText(), offset) ?? getTemplateTriggerCompletions(document.getText(), offset) ?? getTemplateStyleCompletions(document.getText(), offset) ?? getTemplateKeyEventCompletions(document.getText(), offset) ?? await getTemplateSourceBindingCompletions(templatePath, document.getText(), offset) ?? (components && await getTemplateExpressionCompletions(templatePath, document.getText(), offset, components, context?.triggerCharacter)) : void 0;
     if (completions) {
       return this._toCompletionItems(completions, document);
     }

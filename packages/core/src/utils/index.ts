@@ -21,6 +21,7 @@ export { _attributeValue } from './write-attribute/write-attribute.util';
 export { _assertRequiredInputs } from './required-inputs/required-inputs.util';
 export { _toPropertyName } from './input-names/input-names.util';
 export * from './if/if.util';
+export { _isKey } from './key-event/key-event.util';
 export * from './let/let.util';
 export * from './render-element/render-element.util';
 export * from './render-registry/render-registry.util';

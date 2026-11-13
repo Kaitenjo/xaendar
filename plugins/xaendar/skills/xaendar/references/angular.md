@@ -11,7 +11,8 @@
 | `model()`, `model.required()` | `@Model(default)` / `@Model.required()` on `public accessor x!: ModelSignal<T>`, `this.x.set(v)` dispatching `xChange` (a DOM `CustomEvent`, `$event.detail`) |
 | `[(x)]="sig"` two-way binding | the same: `[(x)]="sig"`, `sig` a writable signal named without `()`; Angular's assignment to a plain field (`[(x)]="field"`) does not exist |
 | `[(ngModel)]` on native fields | `(input)` + a directive writing the property (patterns.md, Forms) |
-| `host: {...}`, `@HostBinding`, `@HostListener` | `@HostProperty('attr' \| 'class.x' \| 'style.x')`, `@HostListener('event' \| 'window:event' \| 'document:event')` |
+| `host: {...}`, `@HostBinding`, `@HostListener` | `@HostProperty('attr' \| 'class.x' \| 'style.x')`, `@HostListener('event' \| 'window:event' \| 'document:event')`, key events included (`@HostListener('document:keydown.escape')`) |
+| `(keydown.enter)`, `(keyup.control.shift.z)`, `(keydown.code.keya)` | the same key events; `control` (not `ctrl`), `esc` for `escape`, `space`, `dot`; modifiers matched exactly; no `.prevent`/`.stop` (call it on `$event`) |
 | `signal`, `computed`, `effect`, `untracked` | the same names from `@xaendar/core/signals`; `this.effect()` for effects bound to the component |
 | `viewChild`, `viewChild.required`, `viewChildren` | `@Query`, `@Query.required`, `@Query.all`, `@Query.ref('name')` on `accessor x!: QuerySignal<…>` |
 | `contentChild`, `contentChild.required`, `contentChildren` | `@Query.content`, `@Query.contentRequired`, `@Query.contentAll`: the content passed to the component (its light DOM), whether a slot renders it or not; `{ descendants }` with the same defaults (`true` for the single ones, `false` for `@Query.contentAll`); `[slot="x"]` in the selector for the content of a slot |
@@ -44,7 +45,7 @@
 ## Steps
 
 1. Create the files with `xd generate component <selector> -p <folder>`, then move the class members: inputs, outputs and queries become decorated accessors, state stays in signals, `computed` callbacks move to `_computeX()` methods (SKILL.md, Code conventions).
-2. Rewrite the template: single braces, every attribute value in double quotes, self-closed empty elements, one method call per listener, no pipes or event modifiers (`(keydown.enter)` → filter the key in the method), `@import` for every component, directive and module symbol it reads.
+2. Rewrite the template: single braces, every attribute value in double quotes, self-closed empty elements, one method call per listener (key events such as `(keydown.enter)` stay as they are), no pipes, `@import` for every component, directive and module symbol it reads.
 3. Replace services with store modules, and `HttpClient` calls with `fetch`.
 4. Replace `ng-content` with slots, and component styles that relied on view encapsulation emulation with `:host`, `::slotted()`, `::part()` and custom properties.
 5. Run `/xaendar:check` and fix every `Xaendar:` error.

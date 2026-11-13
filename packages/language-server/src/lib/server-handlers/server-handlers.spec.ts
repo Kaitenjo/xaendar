@@ -665,6 +665,15 @@ describe('XaendarLanguageServer', () => {
       expect(getTemplateCompletions).toHaveBeenCalledWith(result.analysis, 7);
     });
 
+    it('proposes the keys of a key event after its dot', async () => {
+      const { server } = setup(template('<input (keydown.'));
+
+      const items = await server.onCompletion({ textDocument: { uri: TEMPLATE_URI }, position: { line: 0, character: 16 }, context: { triggerKind: 2, triggerCharacter: '.' } });
+
+      expect(items.map(({ label }) => label)).toEqual(expect.arrayContaining(['enter', 'escape', 'shift', 'code']));
+      expect(analyzeTemplate).not.toHaveBeenCalled();
+    });
+
     it('proposes nothing in an expression of a template that doesn\'t compile, or after the ( of a call', async () => {
       const { server } = setup(template('<b>{ ti '));
       vi.mocked(analyzeTemplate).mockResolvedValue(analysisOf('<b>{ ti }</b>'));

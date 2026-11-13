@@ -2,7 +2,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 
 /**
- * Two fields reacting to Enter: one with a modifier that does not exist, one filtering in its method.
+ * A field listening to key events: Enter, Ctrl+S and Cmd+S save the note, Shift+Enter pins it, Escape clears it.
  */
 @WebComponent({
   selector: 'ex-key-filter',
@@ -11,29 +11,50 @@ import { signal } from '@xaendar/core/signals';
 })
 export class KeyFilterComponent extends CustomElement {
   /**
-   * How many times each field saw Enter.
+   * The calls received, latest first.
    */
-  public readonly withModifier = signal(0);
+  public readonly calls = signal<Array<{ id: number; text: string }>>([]);
   /**
-   * How many times the second field saw Enter.
+   * The identifier of the next line.
    */
-  public readonly withFilter = signal(0);
+  private _nextId = 0;
 
   /**
-   * Called by the first field: never, since no event is named keydown.enter.
+   * Called for Enter, Ctrl+S and Cmd+S, by a single listener: the three key events make the same call.
+   *
+   * @param note - The text of the field.
+   * @param event - The keydown event, whose default action, the dialog saving the page for Ctrl+S, is prevented.
    */
-  public onEnter(): void {
-    this.withModifier.update(count => count + 1);
+  public save(note: string, event: KeyboardEvent): void {
+    event.preventDefault();
+    this._record(`save("${note}") on ${event.ctrlKey ? 'Ctrl+' : event.metaKey ? 'Cmd+' : ''}${event.key}`);
   }
 
   /**
-   * Called by the second field for every key: it filters Enter itself.
+   * Called for Shift+Enter only: plain Enter calls `save`, since the modifiers of a key event must match exactly.
    *
-   * @param event - The keydown event.
+   * @param note - The text of the field.
    */
-  public onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter') {
-      this.withFilter.update(count => count + 1);
-    }
+  public pin(note: string): void {
+    this._record(`pin("${note}")`);
+  }
+
+  /**
+   * Called when Escape is released.
+   *
+   * @param field - The field to clear.
+   */
+  public clear(field: HTMLInputElement): void {
+    field.value = '';
+    this._record('clear()');
+  }
+
+  /**
+   * Adds a line to the log, keeping the last five.
+   *
+   * @param text - The line.
+   */
+  private _record(text: string): void {
+    this.calls.update(lines => [{ id: this._nextId++, text }, ...lines].slice(0, 5));
   }
 }

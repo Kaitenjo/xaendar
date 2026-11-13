@@ -1,4 +1,4 @@
-import { CustomElement, Query, WebComponent } from '@xaendar/core';
+import { CustomElement, HostListener, Query, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
 import { translations } from '../../core/i18n/i18n';
@@ -60,24 +60,19 @@ export class DocsSearchComponent extends CustomElement {
    * used, not with the top bar.
    */
   private readonly _apiData = signal<typeof ApiData | undefined>(undefined);
+
   /**
    * Focuses the search field when `/` is pressed outside of a text field.
    */
-  private readonly _onShortcut = (event: KeyboardEvent): void => {
+  @HostListener('document:keydown.slash')
+  public onDocumentKeydown(event: KeyboardEvent): void {
     const target = event.composedPath()[0];
     const typing = target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
-    if (event.key === '/' && !typing) {
+    if (!typing) {
       event.preventDefault();
       this.input()?.focus();
     }
   };
-
-  /**
-   * Starts listening to the keyboard shortcut, in the browser only: the server has no document.
-   */
-  public afterRender(): void {
-    document.addEventListener('keydown', this._onShortcut);
-  }
 
   /**
    * Updates the query as the reader types.
@@ -96,28 +91,28 @@ export class DocsSearchComponent extends CustomElement {
    *
    * @param event - The `keydown` event of the search field.
    */
-  public onKeydown(event: KeyboardEvent): void {
+  public onKeydownArrowDown(event: KeyboardEvent): void {
     const count = this.results().length;
-    switch (event.key) {
-      case 'ArrowDown':
-        event.preventDefault();
-        this.active.set(count ? (this.active() + 1) % count : 0);
-        break;
-      case 'ArrowUp':
-        event.preventDefault();
-        this.active.set(count ? (this.active() - 1 + count) % count : 0);
-        break;
-      case 'Enter': {
-        const result = this.results()[this.active()];
-        if (result) {
-          this.go(result.path);
-        }
-        break;
-      }
-      case 'Escape':
-        this._reset();
-        break;
+    event.preventDefault();
+    this.active.set(count ? (this.active() + 1) % count : 0);
+
+  }
+
+  public onKeydownArrowUp(event: KeyboardEvent): void {
+    const count = this.results().length;
+    event.preventDefault();
+    this.active.set(count ? (this.active() - 1 + count) % count : 0);
+  }
+
+  public onKeydownEnter(): void {
+    const result = this.results()[this.active()];
+    if (result) {
+      this.go(result.path);
     }
+  }
+
+  public onKeydownEscape(): void {
+    this._reset();
   }
 
   /**
@@ -195,12 +190,5 @@ export class DocsSearchComponent extends CustomElement {
     }
     this.query.set('');
     this.expanded.set(false);
-  }
-
-  /**
-   * Stops listening to the keyboard shortcut.
-   */
-  public onDestroy(): void {
-    document.removeEventListener('keydown', this._onShortcut);
   }
 }

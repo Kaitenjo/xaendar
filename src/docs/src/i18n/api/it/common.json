@@ -344,5 +344,32 @@
         "body": "<p><code>toModelName('valueChange')</code> dà <code>'value'</code>; <code>toModelName('Change')</code> e <code>toModelName('closed')</code> danno <code>undefined</code>.</p>"
       }
     }
+  },
+  "parseKeyEvent": {
+    "summary": "Legge il tasto per cui un listener è filtrato dal nome del suo evento: <code>keydown.enter</code>, <code>keyup.control.shift.z</code>, <code>keydown.code.keya</code>.",
+    "description": "<p>Il nome è <code>keydown</code> o <code>keyup</code>, seguito dai modificatori, in qualsiasi ordine, da <code>code</code> per confrontare il codice del tasto invece del carattere che scrive, e dal tasto, tutti separati da punti. I modificatori e il tasto si leggono in minuscolo, <code>esc</code> è <code>escape</code>, e i tasti che non si possono scrivere in un nome sono <code>space</code> e <code>dot</code>. Qualsiasi altro nome, compreso <code>keydown</code> da solo, dà <code>undefined</code>. Il compilatore ci legge gli eventi di tasto dei template, <code>@HostListener</code> il suo nome, e il language server il nome che si sta scrivendo.</p>",
+    "members": {
+      "name": "<p>Il nome dell’evento, come è scritto nel template o passato a <code>@HostListener</code>, senza il prefisso <code>window:</code> o <code>document:</code>. Un evento di tasto senza tasto, con un modificatore che non esiste o con una parte ripetuta lancia un errore.</p>"
+    },
+    "usage": {
+      "reading": {
+        "title": "Leggere un nome",
+        "body": "<p>Il nome si legge in minuscolo, i modificatori in qualsiasi ordine; un nome che non è un evento di tasto dà <code>undefined</code>, e un evento di tasto scritto male lancia il messaggio che segnala il compilatore.</p>"
+      }
+    }
+  },
+  "KEY_MODIFIERS": {
+    "summary": "I modificatori che un evento di tasto può indicare, ciascuno un bit della maschera di <code>KeyEventFilter.modifiers</code>.",
+    "description": "<p><code>{ alt: 1, control: 2, meta: 4, shift: 8 }</code>: i bit di <code>altKey</code>, <code>ctrlKey</code>, <code>metaKey</code> e <code>shiftKey</code>. <code>keyup.control.shift.z</code> ha i modificatori <code>2 | 8</code>, cioè <code>10</code>.</p>"
+  },
+  "KeyEventFilter": {
+    "summary": "Il tasto per cui è filtrato un listener di un evento di tasto: il listener viene chiamato solo per quel tasto, esattamente con i suoi modificatori.",
+    "description": "<p>Quello che <a href=\"#/it/reference/api/common/parseKeyEvent\"><code>parseKeyEvent</code></a> legge da un nome come <code>keydown.control.s</code>: l’evento ascoltato, il tasto e i modificatori.</p>",
+    "members": {
+      "event": "<p>L’evento ascoltato: <code>keydown</code> o <code>keyup</code>.</p>",
+      "key": "<p>Il tasto, in minuscolo, come viene letto dall’evento: <code>enter</code>, <code>escape</code>, <code>a</code>, <code>space</code> per <code>' '</code>, <code>dot</code> per <code>'.'</code>, il codice del tasto con <code>code</code> (<code>keya</code>, <code>digit1</code>).</p>",
+      "modifiers": "<p>I modificatori che devono essere premuti, e nessun altro: i bit di <a href=\"#/it/reference/api/common/KEY_MODIFIERS\"><code>KEY_MODIFIERS</code></a>, <code>0</code> per nessuno.</p>",
+      "code": "<p>Presente quando il tasto si confronta con <code>event.code</code>, la sua posizione sulla tastiera, invece che con <code>event.key</code>, il carattere che scrive.</p>"
+    }
   }
 }

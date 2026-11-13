@@ -121,6 +121,13 @@ describe('ServerGenerator', () => {
     expect(code).toContain('render.events = ["click","keydown","focus"];');
   });
 
+  it('writes the event of a key event for the event contract', () => {
+    const source = '<input (keydown.enter)="a()" (keyup.escape)="b()" />';
+    const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], []);
+
+    expect(code).toContain('render.events = ["keydown","keyup"];');
+  });
+
   it('writes no events for a template without listeners', () => {
     const source = '<p></p>';
 

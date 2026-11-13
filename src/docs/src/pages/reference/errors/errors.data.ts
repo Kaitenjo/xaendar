@@ -64,6 +64,21 @@ export const ERRORS: readonly ErrorEntry[] = [
     page: 'templates/events'
   },
   {
+    phase: 'Parser',
+    message: '[Parser] "ctrl" is not a modifier of the key event "keydown.ctrl.s": alt, control, meta, shift or code',
+    page: 'templates/events'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] The key event "keydown." names no key: write it after the last dot, e.g. keydown.enter',
+    page: 'templates/events'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] The key event "keydown.shift.shift.a" names "shift" twice',
+    page: 'templates/events'
+  },
+  {
     phase: 'Lexer',
     message: '[Lexer] Expected { after @import',
     page: 'templates/imports'
@@ -771,6 +786,11 @@ export const ERRORS: readonly ErrorEntry[] = [
   {
     phase: 'Runtime',
     message: "Error: @HostListener('') names no event",
+    page: 'components/host-bindings'
+  },
+  {
+    phase: 'Runtime',
+    message: 'Error: @HostListener(\'keydown.ctrl.s\'): "ctrl" is not a modifier of the key event "keydown.ctrl.s": alt, control, meta, shift or code',
     page: 'components/host-bindings'
   },
   {

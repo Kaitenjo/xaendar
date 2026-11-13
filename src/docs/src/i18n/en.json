@@ -706,9 +706,9 @@
         },
         "events": {
           "title": "Events of the host",
-          "p1": "<code>@HostListener('name')</code> on a method listens to the event on the host element, from the connection to the disconnection. The method receives the event, whose type TypeScript takes from the name (<code>KeyboardEvent</code> for <code>keydown</code>, <code>Event</code> for an output, which the parameter can narrow to <code>CustomEvent&lt;boolean&gt;</code>), or takes no parameter at all. In the switch, the clicks call <code>toggle</code>, those on the projected label included, and <code>onKeydown</code> turns Space and Enter into a toggle. The options are the ones of <code>addEventListener</code>: <code>capture</code>, <code>once</code> and <code>passive</code>.",
+          "p1": "<code>@HostListener('name')</code> on a method listens to the event on the host element, from the connection to the disconnection. The method receives the event, whose type TypeScript takes from the name (<code>KeyboardEvent</code> for <code>keydown</code>, <code>Event</code> for an output, which the parameter can narrow to <code>CustomEvent&lt;boolean&gt;</code>), or takes no parameter at all. In the switch, the clicks call <code>toggle</code>, those on the projected label included, and <code>onKey</code>, listening to the key events <code>keydown.space</code> and <code>keydown.enter</code>, turns Space and Enter into a toggle. The options are the ones of <code>addEventListener</code>: <code>capture</code>, <code>once</code> and <code>passive</code>.",
           "p2": "The listener hears the native events of the host, the events dispatched on it, the outputs of the component included, and the events bubbling from its content. From its shadow root only the composed events come out, such as <code>click</code> and <code>keydown</code>: <code>change</code> and the outputs of the children stay inside, and are listened to in the template. See <a href=\"#/en/reference/api/core/HostListener\"><code>HostListener</code></a>.",
-          "p3": "With the prefix <code>window:</code> or <code>document:</code> the method listens to the window or to the document, from the connection to the disconnection of the host: a menu closing on a click elsewhere in the page, a layout following the size of the window. The event is typed through <code>WindowEventMap</code> and <code>DocumentEventMap</code>, and a parameter unrelated to it is a type error. On the server they are not listened to, as every listener, and the event contract does not record them before the hydration."
+          "p3": "With the prefix <code>window:</code> or <code>document:</code> the method listens to the window or to the document, from the connection to the disconnection of the host: a menu closing on a click elsewhere in the page, a layout following the size of the window. The event is typed through <code>WindowEventMap</code> and <code>DocumentEventMap</code>, and a parameter unrelated to it is a type error. On the server they are not listened to, as every listener, and the event contract does not record them before the hydration. A key event names its key as in templates: <code>document:keydown.escape</code> calls the method only for Escape (see <a href=\"#/en/templates/events\">Event listeners</a>)."
         },
         "values": {
           "title": "From values to attributes",
@@ -1718,7 +1718,8 @@
           "td20": "<code>@let</code>, also called a template variable, a value read as <code>name</code>, as in Angular, kept up to date with what it reads: see <a href=\"#/en/templates/let\">@let</a>",
           "td21": "The same syntax: <code>[class.x]=\"{ condition }\"</code>, with the value in braces, merged class by class with the directives and the component as in Angular. There is no <code>[class]</code> bound to an object: <code>class=\"{`a ${b()}`}\"</code> binds the string. See <a href=\"#/en/templates/binding\">Binding</a>.",
           "td22": "<code>@Model</code> and <code>@Model.required</code> on an accessor typed <code>ModelSignal</code>: <code>set</code> and <code>update</code> dispatch the event of change, <code>valueChange</code>",
-          "td23": "The same syntax, <code>[(value)]=\"signal\"</code>, with the signal named without call, on components and directives. Native fields have no model: see <a href=\"#/en/patterns/forms\">Forms</a>."
+          "td23": "The same syntax, <code>[(value)]=\"signal\"</code>, with the signal named without call, on components and directives. Native fields have no model: see <a href=\"#/en/patterns/forms\">Forms</a>.",
+          "td24": "The same key events: the key after the event, <code>(keyup.escape)</code>, the modifiers <code>alt</code>, <code>control</code>, <code>meta</code> and <code>shift</code> before it, matched exactly, and <code>code</code> for <code>event.code</code>; in <code>@HostListener('document:keydown.escape')</code> too. See <a href=\"#/en/templates/events\">Event listeners</a>."
         },
         "whatWorksDifferently": {
           "title": "What works differently",
@@ -1727,7 +1728,7 @@
           "li4": "<strong>Templates are strict.</strong> Listeners call one method, expressions cannot assign or create objects, and a few characters must be escaped. See <a href=\"#/en/reference/template-syntax\">the cheat sheet</a>.",
           "callout1": {
             "heading": "Not available",
-            "body": "Dependency injection, a router, a forms module, an HTTP client, <code>[(ngModel)]</code> on native fields and event modifiers such as <code>(keydown.enter)</code>. The <a href=\"#/en/patterns/forms\">Patterns</a> section shows how to cover the common cases with signals and directives."
+            "body": "Dependency injection, a router, a forms module, an HTTP client and <code>[(ngModel)]</code> on native fields. The <a href=\"#/en/patterns/forms\">Patterns</a> section shows how to cover the common cases with signals and directives."
           }
         }
       },
@@ -1785,7 +1786,7 @@
           "th1": "Missing",
           "th2": "Instead",
           "td1": "<code>prop=\"{ … }\"</code> and a listener; a directive writing the property. <code>[(x)]</code> binds only the models of components and directives",
-          "td2": "A filter in the method: <code>(keydown.enter)</code> listens to an event with that name",
+          "td2": "Call <code>preventDefault()</code> or <code>stopPropagation()</code> on <code>$event</code> in the method. Key events, such as <code>(keydown.enter)</code>, are the only modifiers",
           "td4": "Pipes",
           "td5": "Methods and computed signals"
         }
@@ -2245,6 +2246,20 @@
           "li4": "a signal without the call, which passes the signal itself: <code>bump</code> changes whichever counter it receives.",
           "p2": "The template is type-checked: <code>$event</code> has the type of the event, a <code>MouseEvent</code> for <code>click</code> or a <code>KeyboardEvent</code> for <code>keydown</code>, and each argument must fit the parameter of the method."
         },
+        "keyEvents": {
+          "title": "Key events",
+          "p1": "A <code>keydown</code> or <code>keyup</code> listener can name, after a dot, the key it waits for, as in Angular: <code>(keydown.enter)=\"save()\"</code> calls <code>save</code> only when Enter is pressed, and the other keys never reach the method.",
+          "example1": "Key events",
+          "p2": "After the event, the name is read this way:",
+          "li1": "<strong>The key</strong> comes last: <code>event.key</code> in lowercase, as <code>enter</code>, <code>escape</code>, <code>tab</code>, <code>arrowup</code> or <code>a</code>. <code>esc</code> is the same as <code>escape</code>, and the two keys that cannot be written in a name are <code>space</code>, for <code>' '</code>, and <code>dot</code>, for <code>'.'</code>. The whole name is read in lowercase, so <code>keydown.Enter</code> works too.",
+          "li2": "<strong>The modifiers</strong> <code>alt</code>, <code>control</code>, <code>meta</code> and <code>shift</code> come before the key, in any order: <code>(keydown.control.shift.z)</code>. They must match exactly: <code>(keydown.enter)</code> is not called for Ctrl+Enter, nor <code>(keydown.control.s)</code> for Ctrl+Shift+S. A modifier that is the key itself does not count, so <code>(keydown.shift)</code> is called when Shift is pressed.",
+          "li3": "<strong><code>code</code></strong>, among the modifiers, matches <code>event.code</code> instead of <code>event.key</code>: the place of the key on the keyboard, whatever it types. <code>(keydown.alt.code.digit1)</code> is Alt+1 on macOS too, where Alt+1 types <code>¡</code>, and <code>(keydown.code.keyw)</code> is the same key on a QWERTY and on an AZERTY keyboard.",
+          "li4": "<strong>Only <code>keydown</code> and <code>keyup</code></strong> are read this way: any other name with a dot is the name of an event, as written. On a component, a key event wins over an <code>@Event</code> named like it.",
+          "p3": "<code>$event</code> is the <code>KeyboardEvent</code>, as for <code>(keydown)</code>. There are no other modifiers, such as <code>.prevent</code> or <code>.stop</code>: call <code>preventDefault()</code> or <code>stopPropagation()</code> on <code>$event</code> in the method, as <code>save</code> does in the example, so that Ctrl+S does not open the dialog saving the page.",
+          "p4": "A key event costs what any listener costs: the compiler writes the test of the key into the event handler, a function of the module shared by every instance of the component, and the element keeps one listener. Key events of an element on the same event making the same call, one after the other among the listeners of that event, share one listener, which tests every key: in the example Enter, Ctrl+S and Cmd+S add one listener, not three. Different calls stay separate listeners, called in the order they are written, so that <code>stopImmediatePropagation()</code> and an exception behave as written.",
+          "p5": "A modifier that does not exist, a missing key and a part written twice are compile errors, reported on the name of the event:",
+          "p6": "The same names work in <code>@HostListener</code>, also after <code>window:</code> and <code>document:</code>: <code>@HostListener('document:keydown.escape')</code> closes a dialog wherever the focus is (see <a href=\"#/en/components/host-bindings\">Host bindings</a>). On a page rendered on the server, the event contract records <code>keydown</code> and <code>keyup</code> before the hydration, and the event replayed keeps its key and its modifiers: the key events hear it as any other."
+        },
         "whatAHandlerCannot": {
           "title": "What a handler cannot contain",
           "p1": "Assignments, arrow functions and more than one statement are rejected. The messages of the lexer do not always say why, so here they are, next to the handler that produces them:",
@@ -2252,11 +2267,17 @@
         },
         "edgeCases": {
           "title": "Edge cases",
-          "example1": "No event modifiers",
-          "p1": "Templates have no event modifiers: <code>(keydown.enter)</code> listens to an event whose name is literally <code>keydown.enter</code>, which the browser never dispatches, and the first counter never moves. Filter the key in the method, as the second field does. The same goes for <code>preventDefault()</code> and <code>stopPropagation()</code>: call them on <code>$event</code>.",
+          "callout1": {
+            "heading": "The key typed depends on the modifiers",
+            "body": "<code>event.key</code> is the character the key types: Shift+1 types <code>!</code> on a US keyboard, so <code>(keydown.shift.1)</code> is never called there, and on macOS Alt changes most letters. Filter those keys by their place, with <code>code</code>: <code>(keydown.shift.code.digit1)</code>. Shift and a letter are fine: <code>A</code> is read as <code>a</code>."
+          },
           "callout2": {
             "heading": "The target of $event",
             "body": "<code>$event.target</code> is typed <code>EventTarget | null</code>: the event may come from a descendant of the element, so <code>$event.target.value</code> does not compile. Read the field through an <a href=\"#/en/templates/element-refs\">element ref</a>, as in <code>save(field.value)</code>, pass it with a cast, as in <code>save($event.target as HTMLInputElement)</code> (see <a href=\"#/en/templates/expressions\">Expression syntax</a>), or narrow the target in the method."
+          },
+          "callout3": {
+            "heading": "With or without a modifier",
+            "body": "Since the modifiers match exactly, a method meant for Enter and Ctrl+Enter alike needs both names, with the same call: <code>(keydown.enter)=\"send()\" (keydown.control.enter)=\"send()\"</code>, which share one listener. A <code>keydown</code> without a key, such as the one Chrome dispatches when it autofills a field, is never a key event."
           }
         },
         "summary": {
@@ -2266,7 +2287,9 @@
           "td1": "Calls a method of the component, of one of its members or of an element ref, for each event.",
           "td2": "Passes the event, typed by its name, or one of its properties.",
           "td3": "Literals, members, variables of a loop, their properties, expressions and calls.",
-          "td4": "A listener active only while the condition holds. See <a href=\"#/en/templates/conditional-bindings\">Conditional bindings</a>."
+          "td4": "A listener active only while the condition holds. See <a href=\"#/en/templates/conditional-bindings\">Conditional bindings</a>.",
+          "td5": "Calls the method only for that key, pressed without modifiers; <code>keyup</code> too. Other keys making the same call share the listener.",
+          "td6": "Modifiers before the key, in any order, matched exactly; <code>code</code> matches the place of the key, <code>event.code</code>."
         }
       },
       "expressions": {
@@ -3608,7 +3631,7 @@
           "title": "The language server",
           "p1": "The server compiles each template as it is edited, with the same type-check code as the Vite plugin, and turns the result into editor features:",
           "li1": "<strong>Diagnostics</strong>: 250 ms after the last change, the errors of the template at their position: syntax errors, tags that are neither imported nor declared, imports that cannot be resolved, and the TypeScript errors of its expressions. Unused imports are faded. The tags matching the <code>customElements</code> of the nearest <code>xaendar.json</code> are checked like native elements, and a change of that file checks the open templates again. In a component file, the errors of <code>@WebComponent</code> at their position: options the build cannot read, an invalid selector or one another component of the project declares, a <code>templateUrl</code> or a <code>styleUrl</code> leading to a missing file.",
-          "li2": "<strong>Completions</strong>: the paths and the symbols of an <code>@import</code>; the components and directives on tag names and directive selectors, adding their <code>@import</code>; the inputs and outputs on attribute and event names; the blocks after <code>@</code>; the variables of the template and the members of the component in expressions.",
+          "li2": "<strong>Completions</strong>: the paths and the symbols of an <code>@import</code>; the components and directives on tag names and directive selectors, adding their <code>@import</code>; the inputs and outputs on attribute and event names; the keys and the modifiers after <code>(keydown.</code> and <code>(keyup.</code>; the blocks after <code>@</code>; the variables of the template and the members of the component in expressions.",
           "li3": "<strong>Hover</strong>: the signature and the JSDoc of components, directives, inputs, outputs and imported symbols.",
           "li4": "<strong>Go to definition</strong>: from the template to the class, the member or the symbol; from the <code>@WebComponent</code> of a component file to its template and its stylesheet.",
           "li5": "<strong>Code actions</strong>: removing an unused import, and organizing the imports (<code>source.organizeImports</code>, Alt+Shift+O): unused ones removed, statements from the same module merged, all of them sorted.",
@@ -3705,6 +3728,18 @@
     "[Lexer] No spaces are allowed in event handler name": {
       "cause": "An assignment as listener, such as (click)=\"open = true\".",
       "fix": "Move the assignment into a method."
+    },
+    "[Parser] \"ctrl\" is not a modifier of the key event \"keydown.ctrl.s\": alt, control, meta, shift or code": {
+      "cause": "A key event (keydown.… or keyup.…) with a part before the key that is not a modifier: the modifiers are alt, control, meta and shift, and code matches event.code.",
+      "fix": "Write the modifier by its name, (keydown.control.s), or put the key last."
+    },
+    "[Parser] The key event \"keydown.\" names no key: write it after the last dot, e.g. keydown.enter": {
+      "cause": "A key event ending with a dot.",
+      "fix": "Write the key after the last dot: (keydown.enter), (keydown.space) for the space bar, (keydown.dot) for the period."
+    },
+    "[Parser] The key event \"keydown.shift.shift.a\" names \"shift\" twice": {
+      "cause": "A key event naming a modifier, or code, more than once.",
+      "fix": "Name each modifier once: (keydown.shift.a)."
     },
     "[Lexer] Expected { after @import": {
       "cause": "A default import: @import Card from …",
@@ -4249,6 +4284,10 @@
     "Error: @HostListener('') names no event": {
       "cause": "A @HostListener with an empty name, or with nothing after window: or document:. Thrown when the class is defined.",
       "fix": "Name the event: @HostListener('click'), @HostListener('window:resize')."
+    },
+    "Error: @HostListener('keydown.ctrl.s'): \"ctrl\" is not a modifier of the key event \"keydown.ctrl.s\": alt, control, meta, shift or code": {
+      "cause": "A @HostListener on a key event naming a part that is not a modifier. A name naming no key (keydown.) or a modifier twice throws the other messages of the key events, after the same prefix. Thrown when the class is defined.",
+      "fix": "Use alt, control, meta, shift and code, once each, then the key: @HostListener('document:keydown.control.s')."
     },
     "Error: @HostProperty('role') cannot decorate the static member defaultRole": {
       "cause": "A @HostProperty on a static field, getter or accessor: the host element belongs to an instance.",

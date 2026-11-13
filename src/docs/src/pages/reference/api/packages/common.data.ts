@@ -1,5 +1,5 @@
 import type { ApiPackage } from '../api.data';
-import { DROPS_LEADING_NEWLINE, ENTRIES, ESCAPE_ATTRIBUTE, ESCAPE_RAW_TEXT, ESCAPE_TEXT, INDENT, IS_EMPTY, IS_NON_EMPTY, IS_RAW_TEXT_ELEMENT, IS_VALID_CUSTOM_ELEMENT_NAME, IS_VOID_ELEMENT, KEYS, MATCHES_CUSTOM_ELEMENT_PATTERN, REMOVE_ITEM, SLICE, SMALL_SET, STACK, TO_KEBAB_CASE, TO_PASCAL_CASE, TO_SAME_ORIGIN_PATH, VALUES } from './common.snippets';
+import { DROPS_LEADING_NEWLINE, ENTRIES, ESCAPE_ATTRIBUTE, ESCAPE_RAW_TEXT, ESCAPE_TEXT, INDENT, IS_EMPTY, IS_NON_EMPTY, IS_RAW_TEXT_ELEMENT, IS_VALID_CUSTOM_ELEMENT_NAME, IS_VOID_ELEMENT, KEYS, MATCHES_CUSTOM_ELEMENT_PATTERN, REMOVE_ITEM, SLICE, SMALL_SET, STACK, TO_KEBAB_CASE, PARSE_KEY_EVENT, TO_PASCAL_CASE, TO_SAME_ORIGIN_PATH, VALUES } from './common.snippets';
 
 /**
  * The symbols of `@xaendar/common`.
@@ -273,6 +273,37 @@ function values<Obj extends object, Key extends keyof Obj, Value extends Obj[Key
       members: [{ name: 'event', group: 'parameters', signature: 'event: string' }],
       usage: [{ key: 'converting' }],
       guides: ['components/outputs']
+    },
+    {
+      name: 'parseKeyEvent',
+      kind: 'function',
+      signature: 'function parseKeyEvent(name: string): KeyEventFilter | undefined',
+      members: [{ name: 'name', group: 'parameters', signature: 'name: string' }],
+      usage: [{ key: 'reading', snippets: [PARSE_KEY_EVENT] }],
+      guides: ['templates/events', 'components/host-bindings']
+    },
+    {
+      name: 'KEY_MODIFIERS',
+      kind: 'constant',
+      signature: 'const KEY_MODIFIERS: { readonly alt: 1; readonly control: 2; readonly meta: 4; readonly shift: 8 }',
+      guides: ['templates/events']
+    },
+    {
+      name: 'KeyEventFilter',
+      kind: 'type',
+      signature: `type KeyEventFilter = {
+  readonly event: 'keydown' | 'keyup';
+  readonly key: string;
+  readonly modifiers: number;
+  readonly code?: true;
+}`,
+      members: [
+        { name: 'event', group: 'properties', signature: "readonly event: 'keydown' | 'keyup'" },
+        { name: 'key', group: 'properties', signature: 'readonly key: string' },
+        { name: 'modifiers', group: 'properties', signature: 'readonly modifiers: number' },
+        { name: 'code', group: 'properties', signature: 'readonly code?: true' }
+      ],
+      guides: ['templates/events']
     }
   ]
 };

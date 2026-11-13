@@ -32,6 +32,19 @@ describe('HostListener decorator', () => {
     expect(decorate('htmx:load')[INTERNAL_HOST_LISTENERS]).toEqual([{ name: 'htmx:load', options: undefined, read: expect.any(Function) }]);
   });
 
+  it('stores the key of a key event, listening to its event', () => {
+    expect(decorate('keydown.enter')[INTERNAL_HOST_LISTENERS]).toEqual([{ name: 'keydown', options: undefined, key: { event: 'keydown', key: 'enter', modifiers: 0 }, read: expect.any(Function) }]);
+    expect(decorate('document:keyup.shift.esc', { capture: true })[INTERNAL_HOST_LISTENERS]).toEqual([
+      { name: 'keyup', target: 'document', options: { capture: true }, key: { event: 'keyup', key: 'escape', modifiers: 8 }, read: expect.any(Function) }
+    ]);
+    expect(decorate('keydown.code.keyA')[INTERNAL_HOST_LISTENERS]).toEqual([{ name: 'keydown', options: undefined, key: { event: 'keydown', key: 'keya', modifiers: 0, code: true }, read: expect.any(Function) }]);
+  });
+
+  it('throws for a key event naming no key or a modifier that does not exist', () => {
+    expect(() => HostListener('keydown.')).toThrow('@HostListener(\'keydown.\'): The key event "keydown." names no key: write it after the last dot, e.g. keydown.enter');
+    expect(() => HostListener('window:keydown.ctrl.s')).toThrow('@HostListener(\'window:keydown.ctrl.s\'): "ctrl" is not a modifier of the key event "keydown.ctrl.s": alt, control, meta, shift or code');
+  });
+
   it('adds the listeners of a class to the ones of its parent, leaving the parent untouched', () => {
     const parent = decorate('click');
     const child = decorate('focus', undefined, Object.create(parent));
@@ -74,7 +87,14 @@ describe('types of @HostListener', () => {
       const wrongKeydown: DecoratorOf<(event: PointerEvent) => void> = HostListener('document:keydown');
       // @ts-expect-error the method receives an event
       const wrongValue: DecoratorOf<(value: number) => void> = HostListener('click');
-      return [click, anyClick, nothing, keydown, resize, storage, keyup, changed, wrongClick, wrongResize, wrongKeydown, wrongValue];
+      const enter: DecoratorOf<(event: KeyboardEvent) => void> = HostListener('keydown.enter');
+      const escape: DecoratorOf<(event: KeyboardEvent) => void> = HostListener('document:keyup.control.escape');
+      const windowKey: DecoratorOf<(event: KeyboardEvent) => void> = HostListener('window:keydown.code.keya');
+      // @ts-expect-error a key event is a keyboard event
+      const wrongEnter: DecoratorOf<(event: PointerEvent) => void> = HostListener('keydown.enter');
+      // @ts-expect-error a key event of the document is a keyboard event
+      const wrongEscape: DecoratorOf<(event: MouseEvent) => void> = HostListener('document:keydown.escape');
+      return [click, anyClick, nothing, keydown, resize, storage, keyup, changed, wrongClick, wrongResize, wrongKeydown, wrongValue, enter, escape, windowKey, wrongEnter, wrongEscape];
     };
 
     expect(check).toBeTypeOf('function');

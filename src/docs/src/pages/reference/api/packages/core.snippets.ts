@@ -288,19 +288,16 @@ public toggle(): void {
 }
 
 /**
- * The name gives the type of the event: KeyboardEvent for keydown, MouseEvent for click.
+ * A key event names its key after a dot, as in templates: the method is called only for Space or Enter, pressed
+ * without modifiers. The name gives the type of the event: KeyboardEvent for keydown, MouseEvent for click.
  *
  * @param event - The key pressed while the host has the focus.
  */
-@HostListener('keydown')
-public onKeydown(event: KeyboardEvent): void {
-  switch (event.key) {
-    case ' ':
-    case 'Enter':
-      event.preventDefault();
-      this.toggle();
-      break;
-  }
+@HostListener('keydown.space')
+@HostListener('keydown.enter')
+public onKey(event: KeyboardEvent): void {
+  event.preventDefault();
+  this.toggle();
 }
 
 /**
@@ -343,6 +340,14 @@ public closeOutside(event: MouseEvent): void {
 }
 
 /**
+ * Closes the menu on Escape, wherever the focus is in the page: a key event of the document.
+ */
+@HostListener('document:keydown.escape')
+public close(): void {
+  this.open.set(false);
+}
+
+/**
  * Follows the width of the window. The listener is on the window while the host is connected.
  *
  * @param event - The resize, a UIEvent of WindowEventMap.
@@ -355,6 +360,37 @@ public onResize(_event: UIEvent): void {
 // ✗ a type error: a click is a MouseEvent, not a KeyboardEvent
 @HostListener('click')
 public onClick(event: KeyboardEvent): void { … }`
+};
+
+/**
+ * The snippet `host-listener-keys.ts`, shown by the API reference of core.
+ */
+export const HOST_LISTENER_KEYS: SourceFile = {
+  name: 'host-listener-keys.ts',
+  lang: 'ts',
+  code: `/**
+ * Saves on Ctrl+S anywhere in the page. The modifiers must match exactly: Ctrl+Shift+S does not call it.
+ *
+ * @param event - The keydown, a KeyboardEvent, whose default action, saving the page, is prevented.
+ */
+@HostListener('document:keydown.control.s')
+public save(event: KeyboardEvent): void {
+  event.preventDefault();
+  this.saved.emit(this.value());
+}
+
+/**
+ * Selects the first tab on Alt+1, read from the code of the key, its place on the keyboard: on macOS Alt+1 types ¡,
+ * which keydown.alt.1 would not match.
+ */
+@HostListener('keydown.alt.code.digit1')
+public selectFirst(): void {
+  this.selected.set(0);
+}
+
+// ✗ throws when the class is defined: the modifier is control
+@HostListener('keydown.ctrl.s')
+public quickSave(): void { … }`
 };
 
 /**

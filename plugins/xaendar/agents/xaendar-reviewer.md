@@ -26,7 +26,7 @@ Check at least the following:
 - Signal values mutated in place (`items().push(x)`, `user().name = …`). Nobody is notified.
 - Effects writing a signal they also read (an endless loop), signals read after an `await` in an effect or in an async `shouldRender` (not tracked), inputs read once in a hook instead of reactively.
 - Listeners on `window`/`document`, observers and timers without removal in `onDestroy`. Directive setup reading `this.element` or the inputs in the constructor, or reading the children of the element synchronously in `onInit`.
-- `(keydown.enter)`-style modifiers: they listen to an event with that literal name.
+- A key filtered by hand in a method (`if (event.key === 'Enter')`) where `(keydown.enter)` or `@HostListener('keydown.enter')` suffices; `ctrl` instead of `control` in a key event (a compile error), and a key event expected to fire with extra modifiers (`(keydown.enter)` ignores Ctrl+Enter).
 - A class used only from code (`createComponent`, `@Query(Class)`) whose module nothing imports.
 - `@hydrate`: a component meant to load lazily also rendered outside the block (its module stays in the chunk of the template), `@hydrate` used to show something else while waiting in the browser (it only delays the hydration of content the server rendered: in the browser the content renders at once), and `"sideEffects": false` in the `package.json` of the application (the bundler drops the imports that define the components).
 - Before the hydration, in a project with `ssr`: a `submit` handled only with `@HostListener` or a directive (the form leaves the page: `(submit)` in the template), and a `(click)` on a link relying on `preventDefault()` (the browser follows the link before the runtime is there).
