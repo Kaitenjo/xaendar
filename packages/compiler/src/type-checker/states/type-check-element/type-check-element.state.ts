@@ -5,6 +5,7 @@ import { resolveExpression } from '../../../generator/utils/generator/generator.
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import type { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
 import type { ClassBindingNode } from '../../../parser/types/nodes/class-binding-node.type';
+import type { StyleBindingNode } from '../../../parser/types/nodes/style-binding-node.type';
 import type { ConditionalBindingBranchNode } from '../../../parser/types/nodes/conditional-binding-branch-node.type';
 import type { ConditionalBindingNode } from '../../../parser/types/nodes/conditional-binding-node.type';
 import type { DirectiveNode } from '../../../parser/types/nodes/directive-node.type';
@@ -147,6 +148,7 @@ function typeCheckComponentBindings(node: ElementNode, declaredMetadata: Compone
     return [
       ...typeCheckComponentAttributes(branch.attributes, metadata, context),
       ...typeCheckClassBindings(branch.classBindings, context),
+      ...typeCheckStyleBindings(branch.styleBindings, context),
       ...typeCheckComponentEvents(branch.events, metadata, nativeEventType, context),
       ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEventType, context)
     ];
@@ -166,6 +168,7 @@ function typeCheckComponentBindings(node: ElementNode, declaredMetadata: Compone
   }
 
   lines.push(...typeCheckClassBindings(node.classBindings, context));
+  lines.push(...typeCheckStyleBindings(node.styleBindings, context));
   lines.push(...typeCheckComponentEvents(node.events, metadata, nativeEventType, context));
   lines.push(...conditionalBindingLines);
 
@@ -657,10 +660,12 @@ function typeCheckNativeBindings(node: ElementNode, nativeEventType: NativeEvent
   return [
     ...typeCheckNativeAttributes(node.attributes, context),
     ...typeCheckClassBindings(node.classBindings, context),
+    ...typeCheckStyleBindings(node.styleBindings, context),
     ...typeCheckNativeEvents(node.events, nativeEventType, context),
     ...typeCheckConditionalBindings(node.conditionalBindings, context, branch => [
       ...typeCheckNativeAttributes(branch.attributes, context),
       ...typeCheckClassBindings(branch.classBindings, context),
+      ...typeCheckStyleBindings(branch.styleBindings, context),
       ...typeCheckNativeEvents(branch.events, nativeEventType, context),
       ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEventType, context)
     ])
@@ -702,6 +707,25 @@ function typeCheckClassBindings(classBindings: ClassBindingNode[], context: Type
   for (let i = 0; i < classBindings.length; i++) {
     const { value } = classBindings[i];
     lines.push(line(mappedInterpolation(value, context, ';')));
+  }
+
+  return lines;
+}
+
+/**
+ * Type-checks the style properties set on an element, native or not: the value of each one must be a string or a
+ * number, written followed by the unit of the binding, or `null`, `undefined` or `false`, which remove the property.
+ *
+ * @param styleBindings - The style binding nodes to type-check.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines, one per style binding.
+ */
+function typeCheckStyleBindings(styleBindings: StyleBindingNode[], context: TypeCheckContext): Line[] {
+  const lines = new Array<Line>();
+
+  for (let i = 0; i < styleBindings.length; i++) {
+    const { value } = styleBindings[i];
+    lines.push(line('(', mappedInterpolation(value, context, ') satisfies string | number | null | undefined | false;')));
   }
 
   return lines;

@@ -82,7 +82,7 @@ function serializeNodes(nodes: readonly ASTNode[], parentTag: string | undefined
  */
 function serializeElement(element: ElementNode): string {
   const { tagName, attributes } = element;
-  const binding = element.ref ?? element.typeArguments?.[0] ?? element.classBindings[0] ?? element.events[0] ?? element.conditionalBindings[0] ?? element.directives[0] ?? element.structuralDirectives[0] ?? attributes.find(({ value }) => typeof value !== 'string');
+  const binding = element.ref ?? element.typeArguments?.[0] ?? element.classBindings[0] ?? element.styleBindings[0] ?? element.events[0] ?? element.conditionalBindings[0] ?? element.directives[0] ?? element.structuralDirectives[0] ?? attributes.find(({ value }) => typeof value !== 'string');
   if (binding) {
     throw new Error(`<${tagName}> is in the content of a <template>, static HTML which the code using the template clones: it takes only static attributes`, { cause: binding.span });
   }

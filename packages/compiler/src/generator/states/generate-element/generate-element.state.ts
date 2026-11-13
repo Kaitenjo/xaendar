@@ -4,6 +4,7 @@ import { factory, identifierToKeywordKind, SyntaxKind } from 'typescript';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
 import type { ClassBindingNode } from '../../../parser/types/nodes/class-binding-node.type';
+import type { StyleBindingNode } from '../../../parser/types/nodes/style-binding-node.type';
 import { ConditionalBindingBranchNode } from '../../../parser/types/nodes/conditional-binding-branch-node.type';
 import { ConditionalBindingNode } from '../../../parser/types/nodes/conditional-binding-node.type';
 import { DirectiveNode } from '../../../parser/types/nodes/directive-node.type';
@@ -70,7 +71,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
     while the structural directives are bound in the scope of the element
   */
   const elementOwner: DescriptorOwner = structural ? { name: nodeName, generatorContext: new GeneratorContext(generatorContext, undefined, 'runtime') } : owner;
-  const attributes = mapClassBindings(node.classBindings, elementOwner, false).concat(await mapAttributes(node.attributes, elementOwner, tagName, isCustomElement, false, false));
+  const attributes = mapClassBindings(node.classBindings, elementOwner, false).concat(mapStyleBindings(node.styleBindings, elementOwner, false), await mapAttributes(node.attributes, elementOwner, tagName, isCustomElement, false, false));
   const events = mapEvents(node.events, elementOwner);
   const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, elementOwner, tagName, isCustomElement);
   const directives = await mapDirectives(node.directives, elementOwner);
@@ -330,6 +331,46 @@ function mapClassBindings(classBindings: ClassBindingNode[], owner: DescriptorOw
 }
 
 /**
+ * Maps the style properties an element sets to descriptors `_renderElement` applies like the ones of its attributes,
+ * after the classes and before the attributes, so that writing `style` finds them, with a setter setting the property
+ * instead of an attribute: once for a value reading no name, as a binding otherwise, with the names of the variables of
+ * the template it reads. The unit of the binding, if any, is written in the descriptor. The value is a function of the
+ * module named after the element and the property (`td0$style_width`).
+ *
+ * A property set inside a conditional binding is also removed when its branch is no longer the selected one.
+ *
+ * @param styleBindings - The style binding nodes of the element, or of a branch of one of its conditional bindings.
+ * @param owner - The element, which the functions of the expressions are named after.
+ * @param conditional - Whether the style bindings are declared inside a conditional binding.
+ * @returns The code of the descriptors, one per property.
+ */
+function mapStyleBindings(styleBindings: StyleBindingNode[], owner: DescriptorOwner, conditional: boolean): string[] {
+  const mappedAttributes = new Array<string>();
+  for (let i = 0; i < styleBindings.length; i++) {
+    const { property, unit, value } = styleBindings[i];
+    const { expression, variables } = resolveExpression(value.expression, owner.generatorContext);
+    const role = `style_${toRoleName(property)}`;
+    const constant = isConstantExpression(value.expression);
+    const reads = owner.generatorContext.getReads(variables);
+    const members = [`name: ${toStringLiteral(property)}`];
+    if (unit) {
+      members.push(`unit: ${toStringLiteral(unit)}`);
+    }
+
+    members.push(`value: ${declareElementExpression(owner, role, expression)}`, `setter: ${constant ? '_setExpressionStyle' : '_setReactiveStyle'}`);
+    appendReads(members, reads);
+    if (conditional) {
+      members.push('unbind: _removeStyle');
+    }
+
+    // A binding runs again through the setter evaluating the expression once
+    mappedAttributes.push(constant ? toObjectLiteral(members) : declareAttribute(owner, role, '_setExpressionStyle', members, reads));
+  }
+
+  return mappedAttributes;
+}
+
+/**
  * Appends to the members of a descriptor the constant listing the variables of the template its value reads, if any.
  *
  * @param members - The members of the descriptor.
@@ -496,8 +537,8 @@ async function mapConditionalBindingDescriptors(
  * @param branch - The branch to check.
  * @returns `true` if the branch has nothing to apply, `false` otherwise.
  */
-function isEmptyBranch({ attributes, classBindings, events, conditionalBindings, directives }: ConditionalBindingBranchNode): boolean {
-  return !attributes.length && !classBindings.length && !events.length && !directives.length && conditionalBindings.every(({ branches }) => branches.every(isEmptyBranch));
+function isEmptyBranch({ attributes, classBindings, styleBindings, events, conditionalBindings, directives }: ConditionalBindingBranchNode): boolean {
+  return !attributes.length && !classBindings.length && !styleBindings.length && !events.length && !directives.length && conditionalBindings.every(({ branches }) => branches.every(isEmptyBranch));
 }
 
 /**
@@ -555,9 +596,9 @@ function mapCondition(conditionalBinding: ConditionalBindingNode, index: number,
  * @returns The code of the descriptor of the branch.
  */
 async function mapBranch(branch: ConditionalBindingBranchNode, condition: string | undefined, owner: DescriptorOwner, target: string, isCustomElement: boolean, isDirective: boolean): Promise<string> {
-  const { attributes, classBindings, events, conditionalBindings, directives } = branch;
+  const { attributes, classBindings, styleBindings, events, conditionalBindings, directives } = branch;
   const members = condition ? [condition] : new Array<string>();
-  appendList(members, 'attributes', mapClassBindings(classBindings, owner, true).concat(await mapAttributes(attributes, owner, target, isCustomElement, isDirective, true)));
+  appendList(members, 'attributes', mapClassBindings(classBindings, owner, true).concat(mapStyleBindings(styleBindings, owner, true), await mapAttributes(attributes, owner, target, isCustomElement, isDirective, true)));
   appendList(members, 'events', mapEvents(events, owner, isDirective ? `${toRoleName(target.slice(2))}_` : ''));
   appendList(members, 'conditionalBindings', await mapConditionalBindings(conditionalBindings, owner, target, isCustomElement, isDirective));
 

@@ -9,7 +9,7 @@
 | `input()`, `@Input` / `input.required()` | `@Property(default)` / `@Property.required()` on `public accessor x!: InputSignal<T>` |
 | `output()`, `@Output` + `EventEmitter` | `@Event()` on `public accessor x!: Output<T>`, `this.x.emit(value)`: a DOM `CustomEvent`, `$event.detail` in the parent |
 | `model()`, `[(ngModel)]`, two-way binding | an input plus an output; for fields, `(input)` + a directive writing the property (patterns.md, Forms) |
-| `host: {...}`, `@HostBinding`, `@HostListener` | `@HostProperty('attr' \| 'class.x')`, `@HostEvent('event')` |
+| `host: {...}`, `@HostBinding`, `@HostListener` | `@HostProperty('attr' \| 'class.x' \| 'style.x')`, `@HostEvent('event')` |
 | `signal`, `computed`, `effect`, `untracked` | the same names from `@xaendar/core/signals`; `this.effect()` for effects bound to the component |
 | `viewChild`, `viewChild.required`, `viewChildren` | `@Query`, `@Query.required`, `@Query.all`, `@Query.ref('name')` on `accessor x!: QuerySignal<…>` |
 | `contentChild`, `contentChild.required`, `contentChildren` | `@Query.content`, `@Query.contentRequired`, `@Query.contentAll`: the content passed to the component (its light DOM), whether a slot renders it or not; `{ descendants }` with the same defaults (`true` for the single ones, `false` for `@Query.contentAll`); `[slot="x"]` in the selector for the content of a slot |
@@ -21,8 +21,9 @@
 | `{{ expr }}` | `{ expr }` |
 | `[attr]="expr"`, `[prop]="expr"` | `attr="{expr}"`: an attribute on native elements, an input on components |
 | `[class.x]="cond"` | `[class.x]="{cond}"` |
-| `[ngClass]`, `[style.x]`, `[ngStyle]` | `class="{`a ${b()}`}"`, `style="{…}"`, or a conditional binding |
-| `@if`, `@for`, `@switch` | the same blocks: `@for` without `@empty`, its variables read as in Angular (`item.name`, `$index`) |
+| `[style.x]`, `[style.width.px]` | the same syntax with braces: `[style.x]="{value}"`, `[style.width.px]="{n}"`, `[style.--var]="{v}"` |
+| `[ngClass]`, `[ngStyle]` | `class="{`a ${b()}`}"`, `style="{…}"`, or a conditional binding |
+| `@if`, `@for`, `@switch` | the same blocks, `@for` with `@empty` and `$count`, over any iterable, its variables read as in Angular (`item.name`, `$index`) |
 | `@defer (on …)` with `@placeholder`, `@loading`, `@error` | `@defer (triggers) { … }` with the same blocks, written once each in any order, triggers separated by commas without `on`: `load` (`immediate`), `idle`/`idle(500)`, `timer(2s)`, `visible` (`viewport`), `interaction`, `hover`, `when expr`; no parentheses waits for `idle`. An element: `hover(ref)`, `visible(ref, { rootMargin: '200px' })` (Angular's `viewport({ trigger: ref, … })`). `prefetch idle`, `prefetch when expr` (Angular's `prefetch on idle`). `@placeholder (minimum 500ms)`, `@loading (after 100ms, minimum 1s)`, commas between the parameters. `@error (error)` receives the error |
 | `@defer (hydrate on …)` | `@hydrate (triggers) { … }` (the triggers of `@defer` without element refs, `never`, and `prefetch`): only for content rendered on the server, in the browser the content renders at once |
 | `TestBed` `DeferBlockBehavior`, `getDeferBlocks()`, `render(DeferBlockState.Complete)` | `@xaendar/core/testing`: `setDeferBlockBehavior('manual')`, `getDeferBlocks(element)`, `await block.render('complete')` |

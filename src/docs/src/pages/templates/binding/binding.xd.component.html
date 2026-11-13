@@ -8,6 +8,7 @@
 @import { BooleanAttributesComponent } from '../../../examples/templates/binding/boolean-attributes/boolean-attributes.xd.component.ts'
 @import { ValueAttributeComponent } from '../../../examples/templates/binding/value-attribute/value-attribute.xd.component.ts'
 @import { ClassBindingComponent } from '../../../examples/templates/binding/class-binding/class-binding.xd.component.ts'
+@import { StyleBindingComponent } from '../../../examples/templates/binding/style-binding/style-binding.xd.component.ts'
 @import { translate as t } from '../../../core/i18n/i18n.utils.ts'
 @import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
@@ -50,6 +51,16 @@
   <ex-class-binding />
 </docs-example>
 <p @@htmlTranslation(key="pages.templates.binding.togglingAClass.p2") />
+
+<h2>
+  { t(translations(), 'pages.templates.binding.settingAStyle.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.binding.settingAStyle.p1") />
+<docs-example name="templates/binding/style-binding"
+  heading="{translations().pages.templates.binding.settingAStyle.example1}">
+  <ex-style-binding />
+</docs-example>
+<p @@htmlTranslation(key="pages.templates.binding.settingAStyle.p2") />
 
 <h2>
   { t(translations(), 'pages.templates.binding.bindingTheInputsOf.title') }
@@ -153,6 +164,14 @@
           <code>{ '[class.name]="{ expression }"' }</code>
         </td>
         <td @@htmlTranslation(key="pages.templates.binding.summary.td7") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '[style.name]="{ expression }"' }</code>,
+          <code>{ '[style.width.px]' }</code>,
+          <code>{ '[style.--name]' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.binding.summary.td8") />
       </tr>
     </tbody>
   </table>

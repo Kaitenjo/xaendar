@@ -50,6 +50,8 @@ export type * from './parser/types/nodes/case-node.type';
 export type * from './parser/types/nodes/cast-node.type';
 export type * from './parser/types/nodes/catch-node.type';
 export type * from './parser/types/nodes/class-binding-node.type';
+export type * from './parser/types/nodes/style-binding-node.type';
+export type * from './parser/types/nodes/empty-node.type';
 export type * from './parser/types/nodes/client-node.type';
 export type * from './parser/types/nodes/conditional-binding-branch-node.type';
 export type * from './parser/types/nodes/conditional-binding-node.type';

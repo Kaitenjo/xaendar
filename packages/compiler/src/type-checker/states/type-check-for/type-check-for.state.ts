@@ -1,4 +1,5 @@
 import { ForImplicitVariables } from '../../../parser/types/nodes/for-implicit-variables.type';
+import { FOR_IMPLICIT_VARIABLES } from '../../../parser/utils/for-variables/for-variables.utils';
 import { ForNode } from '../../../parser/types/nodes/for-node.type';
 import { TypeCheckContext } from '../../models/context/context';
 import type { Line } from '../../types/line.type';
@@ -9,13 +10,13 @@ import { mappedExpression } from '../../utils/mapped-expression/mapped-expressio
 import { typeCheckScope } from '../../utils/scope/scope.utils';
 
 /**
- * Generic arrow function the iterable of every `@for` is passed to: it accepts only a
- * number or an array, the only iterables `_for` supports at runtime, so any other value
- * (e.g. a `Set`) is reported on the iterable itself, and it types a number `n` as the
- * `number[]` it is turned into at runtime (`0, 1, ..., n - 1`), leaving an array untouched. Being distributive, a `number | Item[]`
- * iterable gives items typed `number | Item`.
+ * Generic arrow function the iterable of every `@for` is passed to: it accepts a number or any iterable but a string,
+ * the values `_forItems` iterates at runtime, so any other value (a string, `null`, an object) is reported on the
+ * iterable itself, and it types a number `n` as the `number[]` it is turned into at runtime (`0, 1, ..., n - 1`),
+ * leaving an iterable untouched: `for...of` types the item of an array, of a `Set`, of a generator, and the entries of a
+ * `Map`, `[key, value]`. Being distributive, a `number | Item[]` iterable gives items typed `number | Item`.
  */
-const FOR_ITERABLE = '(<T extends number | readonly unknown[]>(iterable: T): T extends number ? number[] : T => iterable as never)';
+const FOR_ITERABLE = '(<T extends number | Iterable<unknown>>(iterable: T & (T extends string ? never : unknown)): T extends number ? number[] : T => iterable as never)';
 
 /**
  * Name of the variable of the `for...of` loop holding each value of the iterable: the item alias is declared
@@ -35,7 +36,8 @@ const FOR_VALUE = '$$item';
  * function boundary needed. The iterable goes through {@link FOR_ITERABLE}
  * so that a numeric iterable is accepted too. The item alias and the implicit
  * variables are declared in the body as the values they are at runtime: the
- * item has the type of the loop variable.
+ * item has the type of the loop variable. The content of the `@empty`, if any,
+ * is checked in a block of its own after the loop, in the enclosing scope.
  *
  * @param node - The `ForNode` to type-check.
  * @param processNode - Callback emitting the lines of each child node.
@@ -44,18 +46,12 @@ const FOR_VALUE = '$$item';
  */
 export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
   const forContext = new TypeCheckContext(context);
-  const indexName = resolveImplicit(node, '$index');
-  const firstName = resolveImplicit(node, '$first');
-  const lastName = resolveImplicit(node, '$last');
-  const evenName = resolveImplicit(node, '$even');
-  const oddName = resolveImplicit(node, '$odd');
-
   if (node.itemAlias) {
     forContext.addUnresolvableIdentifier(node.itemAlias, 'variable');
   }
-  const identifiers = [indexName, firstName, lastName, evenName, oddName];
-  for (let i = 0; i < identifiers.length; i++) {
-    forContext.addUnresolvableIdentifier(identifiers[i], 'variable');
+
+  for (let i = 0; i < FOR_IMPLICIT_VARIABLES.length; i++) {
+    forContext.addUnresolvableIdentifier(resolveImplicit(node, FOR_IMPLICIT_VARIABLES[i]), 'variable');
   }
 
   const lines = new Array<Line>();
@@ -68,13 +64,11 @@ export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: T
     body.push(declareVariable(node.itemAlias, node.itemAliasSpan, `typeof ${FOR_VALUE}`));
   }
 
-  body.push(
-    declareVariable(indexName, node.implicitAliasSpans.get('$index'), 'number'),
-    declareVariable(firstName, node.implicitAliasSpans.get('$first'), 'boolean'),
-    declareVariable(lastName, node.implicitAliasSpans.get('$last'), 'boolean'),
-    declareVariable(evenName, node.implicitAliasSpans.get('$even'), 'boolean'),
-    declareVariable(oddName, node.implicitAliasSpans.get('$odd'), 'boolean')
-  );
+  // $index and $count are numbers, the other implicit variables booleans
+  for (let i = 0; i < FOR_IMPLICIT_VARIABLES.length; i++) {
+    const variable = FOR_IMPLICIT_VARIABLES[i];
+    body.push(declareVariable(resolveImplicit(node, variable), node.implicitAliasSpans.get(variable), variable === '$index' || variable === '$count' ? 'number' : 'boolean'));
+  }
 
   // The body is a scope of its own: the element refs it declares follow the ones of the loop
   const { declarations, lines: content } = typeCheckScope(node.children, forContext, processNode);
@@ -86,6 +80,13 @@ export function typeCheckFor(node: ForNode, processNode: ProcessNode, context: T
 
   lines.push(...indentLines(body));
   lines.push(plain('}'));
+
+  // The content of the @empty is a scope of its own, after the loop: it reads none of its variables
+  if (node.empty) {
+    const empty = typeCheckScope(node.empty.children, new TypeCheckContext(context), processNode);
+    lines.push(plain('{'), ...indentLines(empty.declarations.concat(empty.lines)), plain('}'));
+  }
+
   return lines;
 }
 

@@ -96,7 +96,7 @@ function refreshedIds(scope: Context, ids: readonly number[]): number[] {
 }
 
 type Body = (parentNode: HTMLElement, itemContext: Context, text: string, reference: Node | null) => void;
-type Options = { withNodes?: boolean, variables?: IterationVariables | null, body?: Body, last?: true };
+type Options = { withNodes?: boolean, variables?: IterationVariables | null, body?: Body, last?: true, empty?: ForConfig['empty'] };
 
 /**
  * Every variable of a `@for`, declared by its own name.
@@ -148,7 +148,7 @@ const renderItemWithChildren: Body = (parentNode, itemContext, text, reference) 
 
 const nodeTexts =(parent: HTMLElement) => Array.from(parent.childNodes).map(node => node.textContent);
 
-function setup(initial: string[], { withNodes = true, variables = ALL_VARIABLES, body = renderItem, last }: Options = {}) {
+function setup(initial: Iterable<unknown>, { withNodes = true, variables = ALL_VARIABLES, body = renderItem, last, empty }: Options = {}) {
   const parent = document.createElement('ul');
   if (last) {
     // The @for follows another node of its parent, which the items are appended after
@@ -156,7 +156,7 @@ function setup(initial: string[], { withNodes = true, variables = ALL_VARIABLES,
   }
 
   const context = createRoot();
-  const items = signal(initial);
+  const items = signal<Iterable<unknown>>(initial);
   // The contexts of the items created, in order of creation
   const entries = new Array<Context>();
   const forFn = vi.fn((parentNode: HTMLElement, parentContext: Context, list: unknown[], index: number, reference: Node | null) => {
@@ -171,10 +171,10 @@ function setup(initial: string[], { withNodes = true, variables = ALL_VARIABLES,
     return itemContext;
   });
 
-  _for(parent, context, null, { items: () => items(), track: (_context, item) => item as string, block: forFn, variables: variables ?? undefined, last, slot: last ? undefined : HEADER });
+  _for(parent, context, null, { items: () => items(), track: (_context, item) => item as string, block: forFn, variables: variables ?? undefined, last, slot: last ? undefined : HEADER, empty });
 
   const texts = () => Array.from(parent.querySelectorAll('li')).map(li => li.textContent);
-  const change = async (next: string[]) => {
+  const change = async (next: Iterable<unknown>) => {
     items.set(next);
     await flush();
   };
@@ -230,9 +230,9 @@ describe('_for', () => {
     expect(track.mock.calls.map(call => call[0] === context)).toEqual([true, true, true]);
 
     expect(keys).toEqual([
-      ['a', 0, true, false, true, false],
-      ['b', 1, false, false, false, true],
-      ['c', 2, false, true, true, false]
+      ['a', 0, true, false, true, false, 3],
+      ['b', 1, false, false, false, true, 3],
+      ['c', 2, false, true, true, false, 3]
     ]);
   });
 
@@ -699,5 +699,84 @@ describe('_iterationVariables', () => {
     _iterationVariables(context, ['a', 'b', 'c'], 2, { used: ['item', '$index', '$last'], ids: [0, 1, 3] });
 
     expect(context.slice(HEADER)).toEqual(['c', 2, true]);
+  });
+});
+
+/**
+ * Renders the content of an `@empty`: a `<p>` in a scope of its own, as the compiled code does.
+ */
+const renderEmpty = vi.fn((parentNode: HTMLElement, parentContext: Context, reference: Node | null) => {
+  const emptyContext = _scope(parentContext, layoutOf(0, 1));
+  const paragraph = document.createElement('p');
+  paragraph.textContent = 'none';
+  mountNode(paragraph, parentNode, emptyContext, reference as Comment | null, HEADER);
+  return emptyContext;
+});
+
+describe('_for with @empty', () => {
+  it('renders the content of the @empty while there are no items, and the items once there are some', async () => {
+    renderEmpty.mockClear();
+    const { parent, change, texts } = setup([], { empty: renderEmpty });
+    expect(parent.querySelector('p')?.textContent).toBe('none');
+
+    await change(['a', 'b']);
+    expect(parent.querySelector('p')).toBeNull();
+    expect(texts()).toEqual(['a', 'b']);
+
+    await change([]);
+    expect(texts()).toEqual([]);
+    expect(nodeTexts(parent)).toEqual(['none', 'for']);
+    expect(renderEmpty).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the content of the @empty while there are still no items', async () => {
+    renderEmpty.mockClear();
+    const { parent, change } = setup([], { empty: renderEmpty });
+    const paragraph = parent.querySelector('p');
+
+    await change(new Set());
+    expect(parent.querySelector('p')).toBe(paragraph);
+    expect(renderEmpty).toHaveBeenCalledOnce();
+  });
+
+  it('renders the content of the @empty of the last node of its parent at its end, and destroys it with the @for', async () => {
+    const { parent, context, change } = setup(['a'], { empty: renderEmpty, last: true });
+
+    await change([]);
+    expect(parent.lastChild?.textContent).toBe('none');
+
+    clear(context);
+    expect(parent.querySelector('p')).toBeNull();
+  });
+
+  it('renders nothing without @empty while there are no items', async () => {
+    const { parent, change, texts } = setup(['a']);
+    await change([]);
+    expect(texts()).toEqual([]);
+    expect(parent.querySelector('p')).toBeNull();
+  });
+});
+
+describe('_for over iterables', () => {
+  it('iterates the values of a Set and the entries of a Map, keeping the rows of the keys kept', async () => {
+    const { change, texts, entries } = setup(new Set(['a', 'b']));
+    expect(texts()).toEqual(['a', 'b']);
+
+    await change(new Map([['b', 1], ['c', 2]]).keys());
+    expect(texts()).toEqual(['b', 'c']);
+    expect(entries).toHaveLength(3);
+  });
+
+  it('throws for a string, which it would iterate by character', () => {
+    expect(() => setup('ab' as never)).toThrow('@for iterates an array, a number or an iterable (a Map, a Set…), not a string');
+  });
+
+  it('declares $count, updated in the rows kept when the number of the items changes', async () => {
+    const variables: IterationVariables = { used: ['$count'], ids: [6] };
+    const { change, entries } = setup(['a', 'b'], { variables });
+    expect(valuesOf(entries[0], variables)).toEqual([2]);
+
+    await change(['a', 'b', 'c']);
+    expect(valuesOf(entries[0], variables)).toEqual([3]);
   });
 });

@@ -874,7 +874,7 @@
         },
         "dynamicClassesAndStyles": {
           "title": "Dynamic classes and styles",
-          "p1": "<code>class</code> and <code>style</code> are attributes like any other: bind them to an expression and the attribute is rewritten when the value changes. Building the string in a computed signal keeps the template short and the binding reactive. A single class that comes and goes is shorter with <code>[class.name]=\"{ condition }\"</code>, as the label does: see <a href=\"#/en/templates/binding\">Binding</a>.",
+          "p1": "<code>class</code> and <code>style</code> are attributes like any other: bind them to an expression and the attribute is rewritten when the value changes. Building the string in a computed signal keeps the template short and the binding reactive. A single class that comes and goes is shorter with <code>[class.name]=\"{ condition }\"</code>, as the label does, and a single property with <code>[style.width.%]=\"{ value }\"</code>: see <a href=\"#/en/templates/binding\">Binding</a>.",
           "example1": "A progress bar"
         },
         "sassAndLess": {
@@ -1681,7 +1681,7 @@
           "td8": "Custom directives, <code>@@name</code>",
           "td9": "Structural directives",
           "td10": "<code>*name</code>, with <code>shouldRender()</code>, also asynchronous",
-          "td11": "A template literal in <code>class</code> or <code>style</code>, or a conditional binding",
+          "td11": "The same syntax: <code>[style.color]=\"{ color() }\"</code>, also with a unit, <code>[style.width.px]</code>, and for custom properties, <code>[style.--accent]</code>. See <a href=\"#/en/templates/binding\">Binding</a>.",
           "td12": "Component <code>imports</code>",
           "td13": "<code>@import</code> at the top of the template",
           "td14": "Services and <code>inject()</code>",
@@ -1689,7 +1689,7 @@
           "td16": "Pipes",
           "td17": "Methods and computed signals",
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> and custom properties",
-          "td19": "<code>&lt;template name(…)&gt;</code> and <code>@render name(…)</code>, with typed parameters, in the template declaring them: see <a href=\"#/en/templates/reusable-templates\">Templates and @render</a>",
+          "td19": "<code>&lt;template name(…)&gt;</code> and <code>@render name(…)</code>, with typed parameters; passed to another component as content, read with <code>@Query.contentTemplate</code>, or as an input typed <code>TemplateRef</code>: see <a href=\"#/en/templates/reusable-templates\">Templates and @render</a>",
           "td20": "<code>@let</code>, also called a template variable, a value read as <code>name</code>, as in Angular, kept up to date with what it reads: see <a href=\"#/en/templates/let\">@let</a>",
           "td21": "The same syntax: <code>[class.x]=\"{ condition }\"</code>, with the value in braces. See <a href=\"#/en/templates/binding\">Binding</a>."
         },
@@ -1700,7 +1700,7 @@
           "li4": "<strong>Templates are strict.</strong> Listeners call one method, expressions cannot assign or create objects, and a few characters must be escaped. See <a href=\"#/en/reference/template-syntax\">the cheat sheet</a>.",
           "callout1": {
             "heading": "Not available",
-            "body": "Dependency injection, a router, a forms module, an HTTP client, two-way binding, event modifiers such as <code>(keydown.enter)</code>, <code>@empty</code> and templates passed to other components. The <a href=\"#/en/patterns/forms\">Patterns</a> section shows how to cover the common cases with signals and directives."
+            "body": "Dependency injection, a router, a forms module, an HTTP client, two-way binding and event modifiers such as <code>(keydown.enter)</code>. The <a href=\"#/en/patterns/forms\">Patterns</a> section shows how to cover the common cases with signals and directives."
           }
         }
       },
@@ -1727,7 +1727,7 @@
         },
         "controlFlow": {
           "title": "Control flow",
-          "p1": "The variables of <code>@for</code> are the item, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> and <code>$odd</code>, values read without parentheses. See <a href=\"#/en/templates/if\">@if</a>, <a href=\"#/en/templates/for\">@for</a>, <a href=\"#/en/templates/switch\">@switch</a>, <a href=\"#/en/templates/try\">@try</a> and <a href=\"#/en/templates/defer\">@defer</a>, and <a href=\"#/en/tools/ssr/progressive-hydration\">Server-side rendering</a> for <code>@hydrate</code>."
+          "p1": "The variables of <code>@for</code> are the item, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code>, <code>$odd</code> and <code>$count</code>, values read without parentheses, and an <code>@empty</code> follows the block. Any iterable can be iterated, a <code>Map</code> or a <code>Set</code> included. See <a href=\"#/en/templates/if\">@if</a>, <a href=\"#/en/templates/for\">@for</a>, <a href=\"#/en/templates/switch\">@switch</a>, <a href=\"#/en/templates/try\">@try</a> and <a href=\"#/en/templates/defer\">@defer</a>, and <a href=\"#/en/tools/ssr/progressive-hydration\">Server-side rendering</a> for <code>@hydrate</code>."
         },
         "templates": {
           "title": "Templates and @render",
@@ -1759,7 +1759,6 @@
           "th2": "Instead",
           "td1": "<code>prop=\"{ … }\"</code> and a listener; a directive writing the property",
           "td2": "A filter in the method: <code>(keydown.enter)</code> listens to an event with that name",
-          "td3": "<code>@if</code> around the <code>@for</code>",
           "td4": "Pipes",
           "td5": "Methods and computed signals"
         }
@@ -2091,7 +2090,7 @@
         "bindingAttributes": {
           "title": "Binding attributes",
           "example1": "Four attributes bound to the same page",
-          "p1": "The whole value has to be one expression: a template literal when you need text around it. The value is converted to a string and written with <code>setAttribute</code>, so <code>class</code> and <code>style</code> are bound like any other attribute, as shown in <a href=\"#/en/components/styling\">Styling</a>; <code>null</code> and <code>undefined</code> remove the attribute instead."
+          "p1": "The whole value has to be one expression: a template literal when you need text around it. The value is converted to a string and written with <code>setAttribute</code>, so <code>class</code> and <code>style</code> are bound like any other attribute, while <code>[class.name]</code> and <code>[style.name]</code> bind one class and one property, as shown in <a href=\"#/en/components/styling\">Styling</a>; <code>null</code> and <code>undefined</code> remove the attribute instead."
         },
         "whichExpressionsAreReactive": {
           "title": "Which expressions are reactive",
@@ -2104,6 +2103,12 @@
           "p1": "<code>[class.name]=\"{ expression }\"</code> gives the element the class <code>name</code> while the value of the expression is truthy, and takes it away otherwise. The value can be of any type. It works on native elements, on the tags of components, where the class goes on the element itself, and inside <a href=\"#/en/templates/conditional-bindings\">conditional bindings</a>, where the class is taken away when its branch is no longer selected. Any class name without spaces follows the dot, <code>[class.is-active]</code> included.",
           "example1": "A bound class attribute and two class bindings",
           "p2": "The class bindings and the <code>class</code> attribute work together, also when it is bound: whenever <code>class</code> is written again, the classes of the bindings are applied on top of it, and a binding whose value is falsy takes its class away even when <code>class</code> lists it. A class binding follows the signals it reads, as an attribute does."
+        },
+        "settingAStyle": {
+          "title": "Setting a style property",
+          "p1": "<code>[style.name]=\"{ expression }\"</code> sets the style property <code>name</code> to the value of the expression, a string or a number, and removes it for <code>null</code>, <code>undefined</code> and <code>false</code>. The property is written in kebab-case or in camelCase, <code>[style.background-color]</code> or <code>[style.backgroundColor]</code>, and can be followed by a unit, which the value receives: <code>[style.width.px]=\"{ 120 }\"</code> writes <code>120px</code>. A custom property is set as it is written: <code>[style.--accent]</code>.",
+          "example1": "A bar with a width in percent, a custom property and a property removed by null",
+          "p2": "The style bindings and the <code>style</code> attribute work together, also when it is bound: whenever <code>style</code> is written again, the properties of the bindings are applied on top of it. They work on the tags of components and inside conditional bindings, where the property is removed when its branch is no longer selected, and <code>@HostProperty('style.width.px')</code> binds one on the host element."
         },
         "bindingTheInputsOf": {
           "title": "Binding the inputs of components",
@@ -2133,7 +2138,7 @@
           },
           "callout5": {
             "heading": "A class binding needs an expression",
-            "p1": "The value of <code>[class.name]</code> is always an expression in braces: a static value, or no value, does not compile. Brackets only bind classes: <code>[style.color]</code> or <code>[title]</code> are errors too."
+            "p1": "The value of <code>[class.name]</code> and of <code>[style.name]</code> is always an expression in braces: a static value, or no value, does not compile. Brackets bind classes and style properties only: <code>[title]</code> or <code>[attr.title]</code> are errors."
           },
           "callout6": {
             "heading": "Classes are toggled on the element, not in directives",
@@ -2150,7 +2155,8 @@
           "td4": "An attribute present only while the condition holds.",
           "td5": "<code>input=\"{ expression }\"</code> on a component",
           "td6": "Sets the input, with the value as it is.",
-          "td7": "The class <code>name</code>, present while the value is truthy."
+          "td7": "The class <code>name</code>, present while the value is truthy.",
+          "td8": "The style property <code>name</code>, with its unit if any, removed for <code>null</code>, <code>undefined</code> and <code>false</code>."
         }
       },
       "conditionalBindings": {
@@ -2285,17 +2291,23 @@
       "for": {
         "eyebrow": "Templates",
         "title": "Lists with @for",
-        "lead": "<code>@for</code> renders its block once for each item of an array, or a number of times. Each row is identified by a key, given by <code>track</code>: when the array changes, the rows whose key is still there are kept, moved if needed, and only the others are created or removed.",
+        "lead": "<code>@for</code> renders its block once for each item of an array or of any other iterable, a <code>Map</code>, a <code>Set</code>, a generator, or a number of times, and the content of its <code>@empty</code> while there is none. Each row is identified by a key, given by <code>track</code>: when the items change, the rows whose key is still there are kept, moved if needed, and only the others are created or removed.",
         "itemsKeysAndContext": {
           "title": "Items, keys and context",
           "example1": "The context of each row",
-          "p1": "Inside the block, the item and <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> and <code>$odd</code> are values, read without parentheses, as in <code>task.title</code>. When its row is reused for a new object with the same key, the item becomes the new object, and when rows are added or removed before it, the variables of the position change, as the stripes show: the row is not rendered again, only the nodes reading them are updated. An event handler reads them when the event fires, so it always gets the current item: passed to a method, <code>task</code> is the item itself. <code>position = $index</code> gives one of the variables of the position another name, which is the way to reach the index of an outer loop from an inner one.",
+          "p1": "Inside the block, the item and <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code>, <code>$odd</code> and <code>$count</code>, the number of the items, are values, read without parentheses, as in <code>task.title</code>. When its row is reused for a new object with the same key, the item becomes the new object, and when rows are added or removed before it, the variables of the position change, as the stripes show: the row is not rendered again, only the nodes reading them are updated. An event handler reads them when the event fires, so it always gets the current item: passed to a method, <code>task</code> is the item itself. <code>position = $index</code> gives one of the variables of the position another name, which is the way to reach the index of an outer loop from an inner one.",
           "p2": "The key is an expression of the item, which <code>track</code> reads as the block does: a property, as in <code>track task.id</code>, or the item itself with <code>track task</code>. Without <code>track</code> the item itself is the key."
         },
         "repeatingANumberOf": {
           "title": "Repeating a number of times",
           "p1": "A number instead of an array repeats the block: <code>@for (5)</code> without a variable, or <code>@for (step of count())</code> with <code>step</code> going from <code>0</code> to <code>count() - 1</code>. The number can come from a signal, and the rows follow it.",
           "example1": "Five dots and a rating"
+        },
+        "iterables": {
+          "title": "Iterables: Map, Set and generators",
+          "p1": "Any iterable can be iterated, a <code>Map</code>, a <code>Set</code> or the result of a generator: the item is what the iterable yields, the entries <code>[key, value]</code> of a <code>Map</code>, typed as TypeScript types them. Its values are read at each run, and the rows follow them as they follow an array. Since a <code>Map</code> yields a new entry each time, track it by its key, <code>track entry[0]</code>.",
+          "example1": "The scores of a Map, counted with $count",
+          "p2": "A string is not accepted, although it is iterable: iterated by mistake, it would render a row per character. <code>null</code> and <code>undefined</code> are not accepted either: the type-check reports them, and the runtime throws an error naming what it got."
         },
         "nestedLoops": {
           "title": "Nested loops",
@@ -2304,7 +2316,7 @@
         },
         "emptyLists": {
           "title": "Empty lists",
-          "p1": "There is no <code>@empty</code> block: wrap the loop in an <code>@if</code> on the length of the array.",
+          "p1": "<code>@empty { … }</code>, right after the block of the <code>@for</code>, is rendered while there are no items, and removed as soon as there is one. Its content reads the place the <code>@for</code> is in, not the variables of the loop.",
           "example1": "A list of messages that can be empty"
         },
         "edgeCases": {
@@ -2317,7 +2329,7 @@
           "p3": "A key repeated in the list gets a row per occurrence, matched in order, so the rows follow the array at every change: press the button a few times. Rows with the same key are told apart only by their order, so unique keys remain the safe choice when rows hold state.",
           "callout1": {
             "heading": "What can be iterated, and what cannot",
-            "p1": "Arrays and numbers only: a <code>Set</code>, a <code>Map</code> or a string must be converted to an array first, for example with <code>[...set]</code> in a computed signal. There is no <code>$count</code>: use the length of the array. The expression of <code>track</code> reads the item, the implicit variables, the members of the component and the imports, but no element ref. A negative number renders nothing."
+            "p1": "Arrays, numbers and any other iterable, but strings. The expression of <code>track</code> reads the item, the implicit variables, the members of the component and the imports, but no element ref. A negative number renders nothing."
           }
         },
         "summary": {
@@ -2327,8 +2339,10 @@
           "td1": "A row for each item, identified by its key.",
           "td2": "The item itself is the key.",
           "td3": "Repeats the block, with <code>step</code> from <code>0</code>.",
-          "td4": "The position of the row, as values.",
-          "td5": "An alias for a context variable."
+          "td4": "The position of the row and the number of the items, as values.",
+          "td5": "An alias for a context variable.",
+          "td6": "Rendered while there are no items.",
+          "td7": "Any iterable but a string: here the entries of a <code>Map</code>."
         }
       },
       "if": {
@@ -3631,7 +3645,7 @@
   },
   "errors": {
     "[Lexer] Unknown flow-control keyword": {
-      "cause": "An @ in text starts a block: a keyword written without a space before its parenthesis (@if(…)), a keyword that does not exist (@unless, @empty), or a plain @, as in an email address.",
+      "cause": "An @ in text starts a block: a keyword written without a space before its parenthesis (@if(…)), a keyword that does not exist (@unless, @foreach), or a plain @, as in an email address.",
       "fix": "Write a space after the keyword, and &commat; or an interpolation such as { '@' } for a literal @."
     },
     "[Lexer] Comment never closed: '<!--' without '-->'": {
@@ -3697,10 +3711,6 @@
     "[Parser] [class.on] toggles the class by the value of an expression: [class.on]=\"{expression}\"": {
       "cause": "A class binding with a static value, or without a value.",
       "fix": "Bind it to an expression in braces: [class.on]=\"{ active() }\"."
-    },
-    "[Parser] \"[style.color]\" is not a binding: a class is toggled with [class.name]=\"{expression}\"": {
-      "cause": "An attribute name in brackets other than [class.name]: brackets only toggle classes.",
-      "fix": "Bind the attribute without brackets, e.g. style=\"{ … }\", or toggle a class with [class.name]."
     },
     "[Parser] [class.on] cannot be bound inside a directive: bind it on the element": {
       "cause": "A class binding in the parentheses of a directive, or in a conditional binding inside them, which only bind the properties of the directive.",
@@ -3773,14 +3783,6 @@
     "This comparison appears to be unintentional because the types '1' and '2' have no overlap.": {
       "cause": "A readonly member initialized with a literal has a literal type, and the template is checked with it.",
       "fix": "Annotate the member with a wider type."
-    },
-    "Argument of type 'Set<number>' is not assignable to parameter of type 'number | readonly unknown[]'.": {
-      "cause": "@for over something that is neither an array nor a number: a Set, a Map, a string.",
-      "fix": "Convert it to an array, for instance in a computed signal."
-    },
-    "Property '$count' does not exist on type 'XList'.": {
-      "cause": "$count is not one of the variables of @for.",
-      "fix": "Read the length of the list."
     },
     "Cannot find name 'first'.": {
       "cause": "A member of the component as the value of an @case, which only accepts literals.",
@@ -4277,6 +4279,42 @@
     "Argument of type 'string' is not assignable to parameter of type '__Template<unknown[]>'.": {
       "cause": "A @render calling a name that is not a template declared in its scope or in an enclosing one, nor holds one: a member, an import or an element ref, which is then rendered as the template it should hold.",
       "fix": "Declare the template where the @render can see it, or call an expression whose value is a TemplateRef, e.g. @render row()(item) for a query or an input."
+    },
+    "[Parser] \"[attr.color]\" is not a binding: a class is toggled with [class.name]=\"{expression}\", a style property is set with [style.name]=\"{expression}\"": {
+      "cause": "An attribute name in brackets other than [class.name] and [style.name]: brackets only toggle classes and set style properties.",
+      "fix": "Bind the attribute without brackets, e.g. title=\"{ … }\", or use [class.name] or [style.name]."
+    },
+    "[Parser] [style.color] sets the style property by the value of an expression: [style.color]=\"{expression}\"": {
+      "cause": "A style binding with a static value, or without a value.",
+      "fix": "Put the value in braces, [style.color]=\"{ 'red' }\", or write it in the style attribute."
+    },
+    "[Parser] [style.width.PX] does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. [style.width.px], or a custom property, e.g. [style.--accent]": {
+      "cause": "A style binding whose property holds characters a property cannot, or whose unit is not lowercase letters or %, or is followed by more than one unit.",
+      "fix": "Write the property in kebab-case or camelCase, and at most one unit in lowercase: [style.width.px], [style.height.%]."
+    },
+    "[Parser] Style property \"width\" is bound more than once on <div>": {
+      "cause": "The same style property set twice on an element, also with different units, or on the element and in one of its conditional bindings.",
+      "fix": "Bind it once, or in different branches of the same condition."
+    },
+    "[Parser] [style.color] cannot be bound inside a directive: bind it on the element": {
+      "cause": "A style binding in the parentheses of a directive, which only bind its properties.",
+      "fix": "Write it on the element, or set the property from the directive with @HostProperty('style.color')."
+    },
+    "[Parser] @empty must follow the block of a @for": {
+      "cause": "An @empty that does not follow the closing brace of a @for, at the top of the template or after another block.",
+      "fix": "Write it right after the block of the @for: } @empty { … }."
+    },
+    "[Parser] @empty takes no parameters: it is rendered while the @for has no items": {
+      "cause": "An @empty followed by parentheses.",
+      "fix": "Remove them: @empty { … }."
+    },
+    "Argument of type 'string' is not assignable to parameter of type 'never'.": {
+      "cause": "A @for iterating a string, which would render a row per character.",
+      "fix": "Iterate an array of what you need, e.g. [...word] in a computed signal."
+    },
+    "@for iterates an array, a number or an iterable (a Map, a Set…), not a string": {
+      "cause": "A @for whose expression gives, at runtime, a string, null, undefined or an object that is not iterable: the type-check did not see it, typed as any.",
+      "fix": "Give the @for an array, a number or an iterable, e.g. an empty array instead of null."
     }
   }
 }

@@ -25,8 +25,8 @@ const symbol = (local: string, reactive = false): SymbolImport => ({
 describe('ServerGenerator', () => {
   it('writes the imports of the runtime helpers, then render creating the root context and writing the template', () => {
     expect(generate('<p>{ title() }</p>', ['title'])).toBe([
-      'import { _declare, _iterationVariables, _read, _scope, _set, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty, _templateRef } from \'@xaendar/core\';',
-      'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrItems, _ssrRenderTemplate, _ssrRenderTemplateRef, _ssrStartTag, _ssrStructural, _ssrTry } from \'@xaendar/ssr\';',
+      'import { _declare, _forItems, _iterationVariables, _read, _scope, _set, _setExpressionClass, _setExpressionInput, _setExpressionProperty, _setInput, _setProperty, _setExpressionStyle, _templateRef } from \'@xaendar/core\';',
+      'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrRenderTemplate, _ssrRenderTemplateRef, _ssrStartTag, _ssrStructural, _ssrTry } from \'@xaendar/ssr\';',
       'const _layout0 = { size: 5, nodes: 5 };',
       'function render(out) {',
       '  const context = _scope(null, _layout0, undefined, this);',
@@ -196,12 +196,12 @@ describe('ServerGenerator', () => {
       `  _ssrRenderTemplate(out, context, ${key}, 2, [_read(context, 0, 5)]);`,
       '}',
       '',
-      'function if2__for1$track(context, user, $index, $first, $last, $even, $odd) {',
+      'function if2__for1$track(context, user, $index, $first, $last, $even, $odd, $count) {',
       '  return user;',
       '}'
     ].join('\n'));
     // The functions of the module computing the expressions close it, after the ones rendering the blocks
-    expect(code.endsWith('function if2__for1$track(context, user, $index, $first, $last, $even, $odd) {\n  return user;\n}')).toBe(true);
+    expect(code.endsWith('function if2__for1$track(context, user, $index, $first, $last, $even, $odd, $count) {\n  return user;\n}')).toBe(true);
   });
 
   describe('the last block of its parent', () => {

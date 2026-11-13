@@ -17,10 +17,11 @@ import type { TrackExpression } from './track-expression.type';
  */
 export type ForConfig = BindingSite & BlockPosition & {
   /**
-   * Computes the items to iterate: an array, or a number `n`, iterated as `0, 1, ..., n - 1`. A function of the module,
-   * called with the component and the context of the scope holding the `@for`.
+   * Computes the items to iterate: an array, a number `n`, iterated as `0, 1, ..., n - 1`, or any other iterable (a
+   * `Map`, a `Set`…) but a string (see `_forItems`). A function of the module, called with the component and the
+   * context of the scope holding the `@for`.
    */
-  readonly items: TemplateExpression<unknown[] | number>;
+  readonly items: TemplateExpression<Iterable<unknown> | number>;
   /**
    * Computes the key of an item.
    */
@@ -30,6 +31,11 @@ export type ForConfig = BindingSite & BlockPosition & {
    * function of the module, called as it is.
    */
   readonly block: Function<[HTMLElement, _Context, unknown[], number, Node | null, NodeStrategy], _Context>;
+  /**
+   * Renders the content of the `@empty` following the `@for` while there are no items, returning its context: a
+   * function of the module, called as it is. Left out when the `@for` has no `@empty`.
+   */
+  readonly empty?: Function<[HTMLElement, _Context, Node | null, NodeStrategy], _Context>;
   /**
    * The variables the body reads, left out when it reads none.
    */

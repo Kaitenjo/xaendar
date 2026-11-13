@@ -23,6 +23,33 @@ describe('parseForControlFlow', () => {
     const tokens: Token[] = [{ type: TokenType.FOR, span: { start: 0, end: 3 } }];
     expect(() => new Parser('', tokens).parse()).toThrow('Expected CONDITION after FOR, got EOF');
   });
+
+  it('parses a @for without @empty, its empty null', () => {
+    const [node] = parse('@for (item of items; track item) { <li></li> }') as ForNode[];
+    expect(node.empty).toBeNull();
+  });
+
+  it('parses the @empty following the block, the span of the @for reaching its end', () => {
+    const template = '@for (item of items; track item) { <li></li> } @empty { <p>None</p> } <i></i>';
+    const [node] = parse(template) as ForNode[];
+    const end = template.indexOf(' <i>');
+    expect(node.empty).toMatchObject({ type: ASTNodeType.Empty, span: { start: template.indexOf('@empty'), end } });
+    expect(node.empty!.children.map(({ type }) => type)).toContain(ASTNodeType.Element);
+    expect(node.span).toEqual({ start: 0, end });
+  });
+
+  it('throws for an @empty declaring parameters, pointing to them', () => {
+    const template = '@for (item of items; track item) { } @empty (x) { }';
+    expect(() => parse(template)).toThrow('@empty takes no parameters: it is rendered while the @for has no items');
+    expect(() => parse(template)).toThrow(expect.objectContaining({ span: { start: template.indexOf('x)'), end: template.indexOf('x)') + 1 } }));
+  });
+
+  it.each([
+    ['at the top of the template', '@empty { <p>None</p> }'],
+    ['after an @if', '@if (a) { } @empty { }']
+  ])('throws for an @empty not following a @for, %s', (_description, template) => {
+    expect(() => parse(template)).toThrow('@empty must follow the block of a @for');
+  });
 });
 
 describe('parseForExpression', () => {

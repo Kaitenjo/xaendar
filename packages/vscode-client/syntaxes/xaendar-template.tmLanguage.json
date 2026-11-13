@@ -376,7 +376,7 @@
       }
     },
     "control-flow-bare": {
-      "match": "(@(?:else(?!\\s+if\\b)|default|client|placeholder|try|loading|defer|hydrate))\\b\\s*(\\{)?",
+      "match": "(@(?:else(?!\\s+if\\b)|empty|default|client|placeholder|try|loading|defer|hydrate))\\b\\s*(\\{)?",
       "captures": {
         "1": { "name": "keyword.control.xaendar" },
         "2": { "name": "punctuation.section.block.begin.xaendar" }

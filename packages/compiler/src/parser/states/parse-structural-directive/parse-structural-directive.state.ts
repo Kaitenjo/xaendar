@@ -10,7 +10,7 @@ import type { AttributeNode } from '../../types/nodes/attribute-node.type';
 import type { StructuralDirectiveNode } from '../../types/nodes/structural-directive-node.type';
 import { parseTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
-import { assertNoClassBindings } from '../parse-class-binding/parse-class-binding.state';
+import { assertNoBracketBindings } from '../parse-class-binding/parse-class-binding.state';
 
 /**
  * Parses a STRUCTURAL_DIRECTIVE token and the attributes declared in its body, up to the DIRECTIVE_CLOSE token,
@@ -47,7 +47,7 @@ export function parseStructuralDirective(cursor: ParserCursor, parseNode: NoArgs
     }
   }
 
-  assertNoClassBindings(attributes);
+  assertNoBracketBindings(attributes);
 
   const selectorSpan = cursor.findSpan(token.parts[0], startOffset);
   const node: StructuralDirectiveNode = {

@@ -1,6 +1,6 @@
-{ $count }                                    Property '$count' does not exist on type 'ListComponent'.
 track task.id; let i = $index                 [Parser] 'let i' is not a valid alias identifier.
-} @empty { … }                                [Lexer] Unknown flow-control keyword
-@for (tag of tagSet; track tag)               Argument of type 'Set<string>' is not assignable to parameter of type 'number | readonly unknown[]'.
-@for (letter of word; track $index)           Argument of type 'string' is not assignable to parameter of type 'number | readonly unknown[]'.
+@for (letter of word; track $index)           Argument of type 'string' is not assignable to parameter of type 'never'.
+@for (item of maybe(); track item)            Argument of type 'string[] | null' is not assignable to parameter of type 'number | Iterable<unknown>'.
+@if (a) { } @empty { }                        [Parser] @empty must follow the block of a @for
+} @empty (none) { }                           [Parser] @empty takes no parameters: it is rendered while the @for has no items
 track task().id                               'task' is a template variable, not a signal: remove the parentheses and read it as task, since the variables of a template (@for, @let, parameters of a template) hold their values

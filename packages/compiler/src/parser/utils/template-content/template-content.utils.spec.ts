@@ -12,6 +12,7 @@ const element = (tagName: string, children: ASTNode[] = [], attributes: ElementN
   nameSpan: span,
   attributes,
   classBindings: [],
+  styleBindings: [],
   events: [],
   children,
   conditionalBindings: [],

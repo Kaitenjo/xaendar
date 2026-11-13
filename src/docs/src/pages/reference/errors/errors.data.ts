@@ -140,11 +140,6 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
-    message: '[Parser] "[style.color]" is not a binding: a class is toggled with [class.name]="{expression}"',
-    page: 'templates/binding'
-  },
-  {
-    phase: 'Parser',
     message: '[Parser] [class.on] cannot be bound inside a directive: bind it on the element',
     page: 'templates/binding'
   },
@@ -252,6 +247,51 @@ export const ERRORS: readonly ErrorEntry[] = [
     phase: 'TypeChecker',
     message: 'Argument of type \'string\' is not assignable to parameter of type \'__Template<unknown[]>\'.',
     page: 'templates/reusable-templates'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] "[attr.color]" is not a binding: a class is toggled with [class.name]="{expression}", a style property is set with [style.name]="{expression}"',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] [style.color] sets the style property by the value of an expression: [style.color]="{expression}"',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] [style.width.PX] does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. [style.width.px], or a custom property, e.g. [style.--accent]',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] Style property "width" is bound more than once on <div>',
+    page: 'templates/for'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] [style.color] cannot be bound inside a directive: bind it on the element',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] @empty must follow the block of a @for',
+    page: 'templates/for'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] @empty takes no parameters: it is rendered while the @for has no items',
+    page: 'templates/for'
+  },
+  {
+    phase: 'TypeChecker',
+    message: 'Argument of type \'string\' is not assignable to parameter of type \'never\'.',
+    page: 'templates/for'
+  },
+  {
+    phase: 'Runtime',
+    message: '@for iterates an array, a number or an iterable (a Map, a Set…), not a string',
+    page: 'templates/for'
   },
   {
     phase: 'Parser',
@@ -447,16 +487,6 @@ export const ERRORS: readonly ErrorEntry[] = [
     phase: 'TypeChecker',
     message: "This comparison appears to be unintentional because the types '1' and '2' have no overlap.",
     page: 'templates/expressions'
-  },
-  {
-    phase: 'TypeChecker',
-    message: "Argument of type 'Set<number>' is not assignable to parameter of type 'number | readonly unknown[]'.",
-    page: 'templates/for'
-  },
-  {
-    phase: 'TypeChecker',
-    message: "Property '$count' does not exist on type 'XList'.",
-    page: 'templates/for'
   },
   {
     phase: 'TypeChecker',

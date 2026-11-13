@@ -1,9 +1,10 @@
+import { ServerStyleDeclaration } from '../server-style-declaration/server-style-declaration';
 import { ServerTokenList } from '../server-token-list/server-token-list';
 
 /**
- * An element of the server DOM: the attributes of an element, in the order they are written, its classes, and the
- * content a custom directive assigns to its `innerHTML`. What the runtime writes the bindings and the directives of an
- * element into, before writing its start tag. Its events are never listened to.
+ * An element of the server DOM: the attributes of an element, in the order they are written, its classes, its inline
+ * style, and the content a custom directive assigns to its `innerHTML`. What the runtime writes the bindings and the
+ * directives of an element into, before writing its start tag. Its events are never listened to.
  *
  * It is constructed without arguments, as the constructor of `Element`, and its tag name is assigned right afterwards,
  * as `document.createElement` does in a browser.
@@ -13,6 +14,10 @@ export class ServerElement {
    * The classes of the element, held by its `class` attribute.
    */
   public readonly classList = new ServerTokenList(this, 'class');
+  /**
+   * The inline style of the element, held by its `style` attribute.
+   */
+  public readonly style = new ServerStyleDeclaration(this);
   /**
    * The content a custom directive assigns to the element, written right after its start tag as it is, without
    * escaping: `undefined` while nothing assigns it.

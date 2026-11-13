@@ -9,8 +9,11 @@ import type { MaybeASTNodeWithSpan } from '../../types/maybe-ast-node-with-span.
 import { ForExpression } from '../../types/for-expression.type';
 import { ASTNodeType } from '../../types/node.enum';
 import { ForImplicitVariables } from '../../types/nodes/for-implicit-variables.type';
+import { FOR_IMPLICIT_VARIABLES } from '../../utils/for-variables/for-variables.utils';
 import type { Span } from '../../../types/span.type';
 import { ForNode } from '../../types/nodes/for-node.type';
+import type { EmptyNode } from '../../types/nodes/empty-node.type';
+import type { EmptyToken } from '../../../lexer/types/tokens/empty-token.type';
 import { validateExpression } from '../../utils/expression-validator/expression-validator';
 import { isValidIdentifier } from '../../utils/identifier/identifier.utils';
 import { parseBlockChildren } from '../parse-block-children/parse-block-children.state';
@@ -18,12 +21,14 @@ import type { ForSection } from '../../types/for-section.type';
 
 /**
  * Parses a `@for` directive, consuming the FOR token, the CONDITION token,
- * the BLOCK_OPEN token, and all child nodes until BLOCK_CLOSE.
+ * the BLOCK_OPEN token, and all child nodes until BLOCK_CLOSE, then the `@empty { … }` following the block, if any,
+ * rendered while there are no items.
  *
  * @param cursor - Parser cursor positioned at the FOR token.
  * @param parseNode - Parser function for recursive child parsing.
  * @param _token - The FOR token (consumed for position advancement).
  * @returns The parsed `ForNode`.
+ * @throws When the `@empty` declares parameters.
  */
 export function parseForControlFlow(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, _token: ForToken): MaybeASTNodeWithSpan<ForNode> {
   // consume FOR
@@ -39,8 +44,35 @@ export function parseForControlFlow(cursor: ParserCursor, parseNode: NoArgsFunct
   cursor.advance(2);
 
   const children = parseBlockChildren(cursor, parseNode);
+  let empty: EmptyNode | null = null;
+  const next = cursor.peek();
+  if (next.type === TokenType.EMPTY) {
+    // consume the keyword
+    cursor.advance();
+    const parameters = cursor.peek();
+    if (parameters.type === TokenType.CONDITION) {
+      throw new Error('@empty takes no parameters: it is rendered while the @for has no items', { cause: cursor.findConditionSpan(parameters) });
+    }
 
-  return { type: ASTNodeType.For, ...expression, children };
+    // consume BLOCK_OPEN
+    cursor.advance();
+    const emptyChildren = parseBlockChildren(cursor, parseNode);
+    empty = { type: ASTNodeType.Empty, children: emptyChildren, span: { start: next.span.start, end: cursor.getCurrentToken().value.span.end } };
+  }
+
+  return { type: ASTNodeType.For, ...expression, children, empty };
+}
+
+/**
+ * Rejects an `@empty` block not following the block of a `@for`.
+ *
+ * @param _cursor - Unused parser cursor.
+ * @param _parseNode - Unused.
+ * @param token - The keyword of the block.
+ * @throws Always.
+ */
+export function parseOrphanEmpty(_cursor: ParserCursor, _parseNode: NoArgsFunction<ASTNode | undefined>, token: EmptyToken): never {
+  throw new Error('@empty must follow the block of a @for', { cause: token.span });
 }
 
 /**
@@ -147,7 +179,7 @@ export function parseForExpression(source: string, offset = 0): ForExpression {
  */
 function parseImplicitAliases({ text, offset }: ForSection, out: Map<ForImplicitVariables, string>, spans: Map<ForImplicitVariables, Span>): void {
   const entries = splitTopLevel(text);
-  const IMPLICIT_VARIABLES = new Set(['$index', '$last', '$first', '$even', '$odd']);
+  const IMPLICIT_VARIABLES = new Set<string>(FOR_IMPLICIT_VARIABLES);
 
   for (let i = 0; i < entries.length; i++) {
     const { text: trimmed, start } = entries[i];

@@ -3,7 +3,7 @@ import type { ServerFunctionToProcess } from '../../types/server-function-to-pro
 import type { ServerParent } from '../../types/server-parent.type';
 import type { ServerTransitionResult } from '../../types/server-transition-result.type';
 import { SSR_MARKERS } from '../../../costants/ssr-markers.constants';
-import { SERVER_RESOLVE_OPTIONS } from '../../utils/server-code/server-code.utils';
+import { SERVER_RESOLVE_OPTIONS, toBlockFunction } from '../../utils/server-code/server-code.utils';
 
 /**
  * Generates the code of a `@for`: a loop rendering the body once per item, through the function rendering it, named
@@ -15,16 +15,16 @@ import { SERVER_RESOLVE_OPTIONS } from '../../utils/server-code/server-code.util
  * The items are written between the markers of the browser, `<!--xd-for-->` and `<!--/xd-for-->`, the place of the
  * anchor of the client, each one opened by a marker holding its key (see `_ssrItemMarker`): the value of the `track`
  * expression, written as the client writes it, a function whose parameters are the item and the implicit variables, as
- * values.
+ * values. Without items, the content of the `@empty` is written between the markers, by a function of its own.
  *
  * @example
  * // @for (user of users(); track user.id) { … }
  * {
- *   const items = _ssrItems(this.users());
- *   const track = (user, $index, $first, $last, $even, $odd) => user.id;
+ *   const items = _forItems(this.users());
+ *   const track = (user, $index, $first, $last, $even, $odd, $count) => user.id;
  *   out.push('<!--xd-for-->');
  *   for (let index = 0; index < items.length; index++) {
- *     out.push(_ssrItemMarker(track(items[index], index, index === 0, index === items.length - 1, index % 2 === 0, index % 2 !== 0)));
+ *     out.push(_ssrItemMarker(track(items[index], index, index === 0, index === items.length - 1, index % 2 === 0, index % 2 !== 0, items.length)));
  *     for0.call(this, out, context, items, index);
  *   }
  *   out.push('<!--/xd-for-->');
@@ -47,7 +47,8 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
     $first: resolveImplicit(node, '$first'),
     $last: resolveImplicit(node, '$last'),
     $even: resolveImplicit(node, '$even'),
-    $odd: resolveImplicit(node, '$odd')
+    $odd: resolveImplicit(node, '$odd'),
+    $count: resolveImplicit(node, '$count')
   };
 
   // Only the variables the body reads are created for each item, as the client does
@@ -87,13 +88,20 @@ export function generateServerFor(node: ForNode, parent: ServerParent, index: st
 
   const lines = [
     '{',
-    `  const items = _ssrItems(${iterable});`,
+    `  const items = _forItems(${iterable});`,
     `  out.push(${toStringLiteral(`<!--${SSR_MARKERS.for}-->`)});`,
     '  for (let index = 0; index < items.length; index++) {',
-    `    out.push(_ssrItemMarker(${track}.call(this, context, items[index], index, index === 0, index === items.length - 1, index % 2 === 0, index % 2 !== 0)));`,
+    `    out.push(_ssrItemMarker(${track}.call(this, context, items[index], index, index === 0, index === items.length - 1, index % 2 === 0, index % 2 !== 0, items.length)));`,
     `    ${key}.call(this, out, context, items, index);`,
     '  }'
   ];
+  // Without items, the content of the @empty is written in place of the rows, as the client renders it
+  if (node.empty) {
+    const emptyKey = getBlockIdentifier('empty', parent.id, index);
+    functionsToProcess.set(emptyKey, toBlockFunction(node.empty, emptyKey, parent, generatorContext, last));
+    lines.push('  if (!items.length) {', `    ${emptyKey}.call(this, out, context);`, '  }');
+  }
+
   // The last node of its parent is closed by no marker, as the client renders it without anchor
   if (!last) {
     lines.push(`  out.push(${toStringLiteral(`<!--/${SSR_MARKERS.for}-->`)});`);

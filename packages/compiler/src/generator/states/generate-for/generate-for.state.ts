@@ -1,11 +1,12 @@
 import { ForImplicitVariables } from '../../../parser/types/nodes/for-implicit-variables.type';
+import { FOR_IMPLICIT_VARIABLES } from '../../../parser/utils/for-variables/for-variables.utils';
 import { ForNode } from '../../../parser/types/nodes/for-node.type';
 import { GeneratorContext } from '../../context/context';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import type { GeneratorFunctionToProcess } from '../../types/generator-function-to-process.type';
 import { getReadForVariables, writeIterationVariables } from '../../utils/for-reads/for-reads.utils';
 import { getBlockIdentifier, getTextIdentifier, joinVariables, resolveExpression } from '../../utils/generator/generator.utils';
-import { allocateBlockSlot, appendBlockPosition, appendContainer } from '../../utils/block-position/block-position.utils';
+import { allocateBlockSlot, appendBlockPosition, appendContainer, getContentAnchor } from '../../utils/block-position/block-position.utils';
 import { declareExpression } from '../../utils/module-code/module-code.utils';
 
 /**
@@ -71,13 +72,9 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
   const itemsName = getTextIdentifier('items', parentNode, index);
   const counterName = getTextIdentifier('i', parentNode, index);
 
-  const indexName = resolveImplicit(node, '$index');
-  const firstName = resolveImplicit(node, '$first');
-  const lastName = resolveImplicit(node, '$last');
-  const evenName = resolveImplicit(node, '$even');
-  const oddName = resolveImplicit(node, '$odd');
   const forContext = new GeneratorContext(generatorContext);
-  const identifiers = [indexName, firstName, lastName, evenName, oddName];
+  // In the order of the parameters of the track expression after the item (see `TrackExpression` of the runtime)
+  const identifiers = FOR_IMPLICIT_VARIABLES.map(variable => resolveImplicit(node, variable));
 
   /*
     Only the variables the body reads are declared for each item, as values: the item and the implicit variables,
@@ -131,6 +128,16 @@ export async function generateFor(node: ForNode, parentNode: string, index: stri
     `track: ${declareExpression(generatorContext, `${forKey}$track`, track.expression, trackParameters)}`,
     `block: ${forKey}`
   );
+  // The content of the @empty is a scope of its own in the one of the @for, reading none of its variables, which does not move
+  if (node.empty) {
+    const emptyKey = getBlockIdentifier('empty', parentNode, index);
+    members.push(`empty: ${emptyKey}`);
+    retVal.functionsToProcess!.set(emptyKey, {
+      fn: { node: node.empty, parentNode: emptyKey, context: new GeneratorContext(generatorContext), anchor: getContentAnchor(last) },
+      args: [emptyKey, 'parentContext', 'anchor', 'nodeStrategy']
+    });
+  }
+
   if (reads) {
     members.push(`reads: ${reads}`);
   }

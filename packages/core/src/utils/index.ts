@@ -1,4 +1,5 @@
 export * from './class-binding/class-binding.util';
+export * from './style-binding/style-binding.util';
 export * from './component-runtime/component-runtime.util';
 export type * from '../types/component-runtime.type';
 export { _declare, _read, _scope, _set } from './context/context.util';
@@ -8,6 +9,7 @@ export { _createElement, _createMATHMLElement, _createSVGElement } from './creat
 export type * from '../types/declaration-kind.type';
 export * from './directive-registry/directive-registry.util';
 export { _for, _iterationVariables, _runFor } from './for/for.util';
+export { _forItems } from './for-items/for-items.util';
 export { _client } from './client/client.util';
 export { _try } from './try/try.util';
 export { _defer } from './defer/defer.util';

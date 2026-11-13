@@ -106,6 +106,7 @@ describe('getTemplateUsage', () => {
       ['the @else if of a reactive @if', '@if (open()) { } @else if (other) { <x-child></x-child> }'],
       ['a reactive @else if', '@if (open) { } @else if (other()) { <x-child></x-child> }'],
       ['a reactive @for', '@for (item of items(); track item) { <x-child></x-child> }'],
+      ['the @empty of a reactive @for', '@for (item of items(); track item) { } @empty { <x-child></x-child> }'],
       ['a reactive @switch', '@switch (kind()) { @case (1) { <x-child></x-child> } }'],
       ['a @default of a reactive @switch', '@switch (kind()) { @default { <x-child></x-child> } }'],
       ['a <template>', '<template row()><x-child></x-child></template>'],

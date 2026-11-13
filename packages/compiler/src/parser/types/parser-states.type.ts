@@ -8,6 +8,7 @@ import type { CatchToken } from '../../lexer/types/tokens/catch-token.type'
 import type { DeferToken } from '../../lexer/types/tokens/defer-token.type'
 import type { LoadingToken } from '../../lexer/types/tokens/loading-token.type'
 import type { ErrorToken } from '../../lexer/types/tokens/error-token.type'
+import type { EmptyToken } from '../../lexer/types/tokens/empty-token.type'
 import { IfToken } from '../../lexer/types/tokens/if-token.type'
 import { ImportPathToken } from '../../lexer/types/tokens/import-path-token.type'
 import { InterpolationExpressionToken } from '../../lexer/types/tokens/interpolation-expression-token.type'
@@ -44,6 +45,7 @@ export type ParserStates = {
   [TokenType.DEFER]: ParserTransitionFunction<DeferToken>,
   [TokenType.LOADING]: ParserTransitionFunction<LoadingToken>,
   [TokenType.ERROR]: ParserTransitionFunction<ErrorToken>,
+  [TokenType.EMPTY]: ParserTransitionFunction<EmptyToken>,
   [TokenType.IMPORT]: ParserTransitionFunction<ImportPathToken>,
   [TokenType.RENDER]: ParserTransitionFunction<RenderToken>,
   [TokenType.LET]: ParserTransitionFunction<LetToken>

@@ -118,5 +118,13 @@ export enum ASTNodeType {
   /**
    * What a `@defer` renders when the modules of its content fail to load, `@error (error) { … }`.
    */
-  Error
+  Error,
+  /**
+   * What a `@for` renders while it has no items, `@empty { … }`.
+   */
+  Empty,
+  /**
+   * A style property set on an HTML element by the value of an expression, `[style.name]="{expression}"`.
+   */
+  StyleBinding
 }

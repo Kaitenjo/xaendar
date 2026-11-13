@@ -4,7 +4,7 @@ import type { ForNode } from '../../types/nodes/for-node.type';
 /**
  * The implicit variables declared by every `@for` block.
  */
-export const FOR_IMPLICIT_VARIABLES: readonly ForImplicitVariables[] = ['$index', '$first', '$last', '$even', '$odd'];
+export const FOR_IMPLICIT_VARIABLES: readonly ForImplicitVariables[] = ['$index', '$first', '$last', '$even', '$odd', '$count'];
 
 /**
  * Returns the names of the variables a `@for` block declares: the item alias and the implicit variables, by their alias if any.

@@ -1,0 +1,14 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="track">
+  <div
+    class="bar"
+    [style.width.%]="{progress()}"
+    [style.--bar-color]="{highlighted() ? 'var(--xd-accent)' : 'var(--xd-border-strong)'}"
+    [style.font-weight]="{highlighted() ? 600 : null}"
+  >
+    { progress() }%
+  </div>
+</div>
+<ex-button (click)="advance()">advance()</ex-button>
+<ex-button (click)="toggleHighlighted()">toggleHighlighted()</ex-button>

@@ -29,13 +29,14 @@ const VOID_ELEMENTS: ReadonlySet<string> = new Set(['area', 'base', 'br', 'col',
  * the triggers of a `@hydrate` and of a `@defer`, the times of a `@placeholder` and of a `@loading`, the name of the
  * error of a `@catch` and of an `@error`.
  */
-const UNCONDITIONAL_BRANCHES: ReadonlySet<string> = new Set(['else', 'default', 'client', 'placeholder', 'try', 'catch', 'loading', 'error', 'hydrate', 'defer']);
+const UNCONDITIONAL_BRANCHES: ReadonlySet<string> = new Set(['else', 'empty', 'default', 'client', 'placeholder', 'try', 'catch', 'loading', 'error', 'hydrate', 'defer']);
 
 /**
- * The branches that may follow the first one of a block, in any order and once each: the `@placeholder` of a `@client`,
- * the `@catch` of a `@try`, the `@placeholder`, `@loading` and `@error` of a `@defer`.
+ * The branches that may follow the first one of a block, in any order and once each: the `@empty` of a `@for`, the
+ * `@placeholder` of a `@client`, the `@catch` of a `@try`, the `@placeholder`, `@loading` and `@error` of a `@defer`.
  */
 const FOLLOWING_BRANCHES: ReadonlyMap<string, readonly string[]> = new Map([
+  ['for', ['empty']],
   ['client', ['placeholder']],
   ['try', ['catch']],
   ['defer', ['placeholder', 'loading', 'error']]

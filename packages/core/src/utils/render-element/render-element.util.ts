@@ -27,7 +27,7 @@ import type { RenderElement } from '../../types/render-element.type';
 import type { StructuralCollector } from '../../types/structural-collector.type';
 import type { TemplateExpression } from '../../types/template-expression.type';
 import { _addAppliedDirective, _removeAppliedDirective } from '../applied-directives/applied-directives.util';
-import { restoreToggledClasses } from '../class-toggle/class-toggle.util';
+import { restoreBindings } from '../class-toggle/class-toggle.util';
 import type { _Context } from '../../types/context.type';
 import { _scope, addCleanup, clear, containerSlot, EMPTY_LAYOUT, getNodeStrategy, STRUCTURAL_LAYOUT, swapNodeStrategy, trackNode } from '../context/context.util';
 import { _setElementRef } from '../element-refs/element-refs.util';
@@ -658,7 +658,7 @@ export function _setReactiveInput(context: _Context, target: Element | BindingHo
 export function _removeAttribute(_context: _Context, element: Element, attribute: RenderElementAttribute): void {
   const { name } = attribute;
   element.removeAttribute(name);
-  restoreToggledClasses(element, name);
+  restoreBindings(element, name);
 }
 
 /**
@@ -682,7 +682,7 @@ export function _resetProperty(_context: _Context, target: Element | BindingHost
   const element = target as Element;
   delete (element as unknown as Record<string, unknown>)[name];
   element.removeAttribute(name);
-  restoreToggledClasses(element, name);
+  restoreBindings(element, name);
 }
 
 /**

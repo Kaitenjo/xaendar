@@ -874,7 +874,7 @@
         },
         "dynamicClassesAndStyles": {
           "title": "Classi e stili dinamici",
-          "p1": "<code>class</code> e <code>style</code> sono attributi come gli altri: legali a un’espressione e l’attributo viene riscritto quando il valore cambia. Costruire la stringa in un computed mantiene il template corto e il binding reattivo. Una singola classe che va e viene è più breve con <code>[class.nome]=\"{ condizione }\"</code>, come fa l’etichetta: vedi <a href=\"#/it/templates/binding\">Binding</a>.",
+          "p1": "<code>class</code> e <code>style</code> sono attributi come gli altri: legali a un’espressione e l’attributo viene riscritto quando il valore cambia. Costruire la stringa in un computed mantiene il template corto e il binding reattivo. Una singola classe che va e viene è più breve con <code>[class.nome]=\"{ condizione }\"</code>, come fa l’etichetta, e una singola proprietà con <code>[style.width.%]=\"{ valore }\"</code>: vedi <a href=\"#/it/templates/binding\">Binding</a>.",
           "example1": "Una barra di avanzamento"
         },
         "sassAndLess": {
@@ -1681,7 +1681,7 @@
           "td8": "Direttive custom, <code>@@nome</code>",
           "td9": "Direttive strutturali",
           "td10": "<code>*nome</code>, con <code>shouldRender()</code>, anche asincrono",
-          "td11": "Un template literal in <code>class</code> o <code>style</code>, o un binding condizionale",
+          "td11": "La stessa sintassi: <code>[style.color]=\"{ color() }\"</code>, anche con un’unità, <code>[style.width.px]</code>, e per le custom property, <code>[style.--accent]</code>. Vedi <a href=\"#/it/templates/binding\">Binding</a>.",
           "td12": "<code>imports</code> del componente",
           "td13": "<code>@import</code> in cima al template",
           "td14": "Service e <code>inject()</code>",
@@ -1689,7 +1689,7 @@
           "td16": "Pipe",
           "td17": "Metodi e computed",
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> e custom property",
-          "td19": "<code>&lt;template name(…)&gt;</code> e <code>@render name(…)</code>, con parametri tipizzati, nel template che li dichiara: vedi <a href=\"#/it/templates/reusable-templates\">Template e @render</a>",
+          "td19": "<code>&lt;template name(…)&gt;</code> e <code>@render name(…)</code>, con parametri tipizzati; passati a un altro componente come content, letti con <code>@Query.contentTemplate</code>, o come input tipizzato <code>TemplateRef</code>: vedi <a href=\"#/it/templates/reusable-templates\">Template e @render</a>",
           "td20": "<code>@let</code>, chiamata anche variabile di template, un valore letto come <code>nome</code>, come in Angular, tenuto aggiornato con ciò che legge: vedi <a href=\"#/it/templates/let\">@let</a>",
           "td21": "Stessa sintassi: <code>[class.x]=\"{ condizione }\"</code>, con il valore tra graffe. Vedi <a href=\"#/it/templates/binding\">Binding</a>."
         },
@@ -1700,7 +1700,7 @@
           "li4": "<strong>I template sono rigorosi.</strong> I listener chiamano un solo metodo, le espressioni non possono assegnare né creare oggetti, e alcuni caratteri vanno trattati con l’escape. Vedi <a href=\"#/it/reference/template-syntax\">il prontuario</a>.",
           "callout1": {
             "heading": "Non disponibile",
-            "body": "Dependency injection, un router, un modulo per i form, un client HTTP, il two-way binding, i modificatori degli eventi come <code>(keydown.enter)</code>, <code>@empty</code> e i template passati ad altri componenti. La sezione <a href=\"#/it/patterns/forms\">Pattern</a> mostra come coprire i casi comuni con signal e direttive."
+            "body": "Dependency injection, un router, un modulo per i form, un client HTTP, il two-way binding e i modificatori degli eventi come <code>(keydown.enter)</code>. La sezione <a href=\"#/it/patterns/forms\">Pattern</a> mostra come coprire i casi comuni con signal e direttive."
           }
         }
       },
@@ -1727,7 +1727,7 @@
         },
         "controlFlow": {
           "title": "Control flow",
-          "p1": "Le variabili di <code>@for</code> sono l’elemento, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e <code>$odd</code>, valori letti senza parentesi. Vedi <a href=\"#/it/templates/if\">@if</a>, <a href=\"#/it/templates/for\">@for</a>, <a href=\"#/it/templates/switch\">@switch</a>, <a href=\"#/it/templates/try\">@try</a> e <a href=\"#/it/templates/defer\">@defer</a>, e <a href=\"#/it/tools/ssr/progressive-hydration\">Rendering lato server</a> per <code>@hydrate</code>."
+          "p1": "Le variabili di <code>@for</code> sono l’elemento, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code>, <code>$odd</code> e <code>$count</code>, valori letti senza parentesi, e il blocco può essere seguito da un <code>@empty</code>. Si può iterare qualunque iterabile, una <code>Map</code> o un <code>Set</code> compresi. Vedi <a href=\"#/it/templates/if\">@if</a>, <a href=\"#/it/templates/for\">@for</a>, <a href=\"#/it/templates/switch\">@switch</a>, <a href=\"#/it/templates/try\">@try</a> e <a href=\"#/it/templates/defer\">@defer</a>, e <a href=\"#/it/tools/ssr/progressive-hydration\">Rendering lato server</a> per <code>@hydrate</code>."
         },
         "templates": {
           "title": "Template e @render",
@@ -1759,7 +1759,6 @@
           "th2": "Al suo posto",
           "td1": "<code>prop=\"{ … }\"</code> e un listener; una direttiva che scrive la proprietà",
           "td2": "Un filtro nel metodo: <code>(keydown.enter)</code> ascolta un evento con quel nome",
-          "td3": "<code>@if</code> intorno al <code>@for</code>",
           "td4": "Pipe",
           "td5": "Metodi e computed"
         }
@@ -2091,7 +2090,7 @@
         "bindingAttributes": {
           "title": "Legare gli attributi",
           "example1": "Quattro attributi legati alla stessa pagina",
-          "p1": "L’intero valore deve essere un’unica espressione: un template literal quando serve del testo intorno. Il valore viene convertito in stringa e scritto con <code>setAttribute</code>, quindi <code>class</code> e <code>style</code> si legano come qualsiasi altro attributo, come mostrato in <a href=\"#/it/components/styling\">Stili</a>; <code>null</code> e <code>undefined</code> invece rimuovono l’attributo."
+          "p1": "L’intero valore deve essere un’unica espressione: un template literal quando serve del testo intorno. Il valore viene convertito in stringa e scritto con <code>setAttribute</code>, quindi <code>class</code> e <code>style</code> si legano come qualsiasi altro attributo, mentre <code>[class.name]</code> e <code>[style.name]</code> legano una sola classe e una sola proprietà, come mostrato in <a href=\"#/it/components/styling\">Stili</a>; <code>null</code> e <code>undefined</code> invece rimuovono l’attributo."
         },
         "whichExpressionsAreReactive": {
           "title": "Quali espressioni sono reattive",
@@ -2104,6 +2103,12 @@
           "p1": "<code>[class.nome]=\"{ espressione }\"</code> dà all’elemento la classe <code>nome</code> finché il valore dell’espressione è truthy, e gliela toglie altrimenti. Il valore può essere di qualsiasi tipo. Funziona sugli elementi nativi, sui tag dei componenti, dove la classe va sull’elemento stesso, e dentro i <a href=\"#/it/templates/conditional-bindings\">binding condizionali</a>, dove la classe viene tolta quando il suo ramo non è più selezionato. Dopo il punto va qualsiasi nome di classe senza spazi, <code>[class.is-active]</code> compreso.",
           "example1": "Un attributo class legato e due binding di classe",
           "p2": "I binding di classe e l’attributo <code>class</code> funzionano insieme, anche quando è legato: ogni volta che <code>class</code> viene riscritto, le classi dei binding vengono applicate sopra, e un binding con valore falsy toglie la sua classe anche quando <code>class</code> la elenca. Un binding di classe segue i signal che legge, come un attributo."
+        },
+        "settingAStyle": {
+          "title": "Impostare una proprietà di stile",
+          "p1": "<code>[style.name]=\"{ expression }\"</code> imposta la proprietà di stile <code>name</code> al valore dell’espressione, una stringa o un numero, e la rimuove per <code>null</code>, <code>undefined</code> e <code>false</code>. La proprietà si scrive in kebab-case o in camelCase, <code>[style.background-color]</code> o <code>[style.backgroundColor]</code>, e può essere seguita da un’unità, che il valore riceve: <code>[style.width.px]=\"{ 120 }\"</code> scrive <code>120px</code>. Una custom property si imposta come è scritta: <code>[style.--accent]</code>.",
+          "example1": "Una barra con una larghezza in percentuale, una custom property e una proprietà rimossa da null",
+          "p2": "Gli style binding e l’attributo <code>style</code> lavorano insieme, anche quando è legato: ogni volta che <code>style</code> viene riscritto, le proprietà dei binding vengono applicate sopra. Funzionano sui tag dei componenti e dentro i binding condizionali, dove la proprietà viene rimossa quando il suo ramo non è più selezionato, e <code>@HostProperty('style.width.px')</code> ne lega una sull’elemento host."
         },
         "bindingTheInputsOf": {
           "title": "Legare gli input dei componenti",
@@ -2133,7 +2138,7 @@
           },
           "callout5": {
             "heading": "Un binding di classe richiede un’espressione",
-            "p1": "Il valore di <code>[class.nome]</code> è sempre un’espressione tra graffe: un valore statico, o nessun valore, non compila. Le parentesi quadre legano solo classi: anche <code>[style.color]</code> o <code>[title]</code> sono errori."
+            "p1": "Il valore di <code>[class.name]</code> e di <code>[style.name]</code> è sempre un’espressione tra graffe: un valore statico, o nessun valore, non compila. Le parentesi quadre legano solo classi e proprietà di stile: <code>[title]</code> o <code>[attr.title]</code> sono errori."
           },
           "callout6": {
             "heading": "Le classi si attivano sull’elemento, non nelle direttive",
@@ -2150,7 +2155,8 @@
           "td4": "Un attributo presente solo finché vale la condizione.",
           "td5": "<code>input=\"{ expression }\"</code> su un componente",
           "td6": "Imposta l’input, con il valore così com’è.",
-          "td7": "La classe <code>name</code>, presente finché il valore è truthy."
+          "td7": "La classe <code>name</code>, presente finché il valore è truthy.",
+          "td8": "La proprietà di stile <code>name</code>, con la sua unità se c’è, rimossa per <code>null</code>, <code>undefined</code> e <code>false</code>."
         }
       },
       "conditionalBindings": {
@@ -2285,17 +2291,23 @@
       "for": {
         "eyebrow": "Template",
         "title": "Liste con @for",
-        "lead": "<code>@for</code> renderizza il suo blocco una volta per ogni elemento di un array, oppure un certo numero di volte. Ogni riga è identificata da una chiave, data da <code>track</code>: quando l’array cambia, le righe la cui chiave è ancora presente vengono mantenute, spostate se serve, e solo le altre vengono create o rimosse.",
+        "lead": "<code>@for</code> renderizza il suo blocco una volta per ogni item di un array o di qualunque altro iterabile, una <code>Map</code>, un <code>Set</code>, un generatore, oppure un certo numero di volte, e il contenuto del suo <code>@empty</code> quando non ce ne sono. Ogni riga è identificata da una chiave, data da <code>track</code>: quando gli item cambiano, le righe la cui chiave c’è ancora vengono mantenute, spostate se serve, e solo le altre vengono create o rimosse.",
         "itemsKeysAndContext": {
           "title": "Elementi, chiavi e contesto",
           "example1": "Il contesto di ogni riga",
-          "p1": "Dentro il blocco, l’elemento e <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code> e <code>$odd</code> sono valori, letti senza parentesi, come in <code>task.title</code>. Quando la sua riga viene riusata per un nuovo oggetto con la stessa chiave, l’elemento diventa il nuovo oggetto, e quando vengono aggiunte o rimosse righe prima, cambiano le variabili della posizione, come mostrano le righe alternate: la riga non viene renderizzata di nuovo, si aggiornano solo i nodi che le leggono. Un event handler le legge quando l’evento scatta, quindi riceve sempre l’elemento attuale: passato a un metodo, <code>task</code> è l’elemento stesso. <code>position = $index</code> dà a una delle variabili della posizione un altro nome, ed è il modo per raggiungere l’indice di un ciclo esterno da uno interno.",
+          "p1": "Dentro il blocco, l’elemento e <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code>, <code>$odd</code> e <code>$count</code>, il numero degli item, sono valori, letti senza parentesi, come in <code>task.title</code>. Quando la sua riga viene riusata per un nuovo oggetto con la stessa chiave, l’elemento diventa il nuovo oggetto, e quando vengono aggiunte o rimosse righe prima, cambiano le variabili della posizione, come mostrano le righe alternate: la riga non viene renderizzata di nuovo, si aggiornano solo i nodi che le leggono. Un event handler le legge quando l’evento scatta, quindi riceve sempre l’elemento attuale: passato a un metodo, <code>task</code> è l’elemento stesso. <code>position = $index</code> dà a una delle variabili della posizione un altro nome, ed è il modo per raggiungere l’indice di un ciclo esterno da uno interno.",
           "p2": "La chiave è un’espressione dell’elemento, che <code>track</code> legge come il blocco: una proprietà, come in <code>track task.id</code>, oppure l’elemento stesso con <code>track task</code>. Senza <code>track</code> la chiave è l’elemento stesso."
         },
         "repeatingANumberOf": {
           "title": "Ripetere un certo numero di volte",
           "p1": "Un numero al posto di un array ripete il blocco: <code>@for (5)</code> senza variabile, oppure <code>@for (step of count())</code> con <code>step</code> che va da <code>0</code> a <code>count() - 1</code>. Il numero può venire da un signal, e le righe lo seguono.",
           "example1": "Cinque punti e una valutazione"
+        },
+        "iterables": {
+          "title": "Iterabili: Map, Set e generatori",
+          "p1": "Si può iterare qualunque iterabile, una <code>Map</code>, un <code>Set</code> o il risultato di un generatore: l’item è ciò che l’iterabile produce, le voci <code>[chiave, valore]</code> di una <code>Map</code>, tipizzate come le tipizza TypeScript. I suoi valori vengono letti a ogni esecuzione, e le righe li seguono come seguono un array. Poiché una <code>Map</code> produce ogni volta una voce nuova, tracciala per la sua chiave, <code>track entry[0]</code>.",
+          "example1": "I punteggi di una Map, contati con $count",
+          "p2": "Una stringa non è accettata, anche se è iterabile: iterata per errore, renderizzerebbe una riga per carattere. Non sono accettati neanche <code>null</code> e <code>undefined</code>: il type-check li segnala, e il runtime lancia un errore che dice cosa ha ricevuto."
         },
         "nestedLoops": {
           "title": "Cicli annidati",
@@ -2304,7 +2316,7 @@
         },
         "emptyLists": {
           "title": "Liste vuote",
-          "p1": "Non esiste un blocco <code>@empty</code>: avvolgi il ciclo in un <code>@if</code> sulla lunghezza dell’array.",
+          "p1": "<code>@empty { … }</code>, subito dopo il blocco del <code>@for</code>, viene renderizzato mentre non ci sono item, e rimosso appena ce n’è uno. Il suo contenuto legge il punto in cui si trova il <code>@for</code>, non le variabili del ciclo.",
           "example1": "Una lista di messaggi che può essere vuota"
         },
         "edgeCases": {
@@ -2317,7 +2329,7 @@
           "p3": "Una chiave ripetuta nella lista ha una riga per ogni occorrenza, abbinate in ordine, quindi le righe seguono l’array a ogni cambiamento: premi il pulsante qualche volta. Le righe con la stessa chiave si distinguono solo per il loro ordine, quindi le chiavi uniche restano la scelta sicura quando le righe hanno uno stato.",
           "callout1": {
             "heading": "Cosa si può iterare, e cosa no",
-            "p1": "Solo array e numeri: un <code>Set</code>, una <code>Map</code> o una stringa vanno prima convertiti in array, per esempio con <code>[...set]</code> in un computed. Non esiste <code>$count</code>: usa la lunghezza dell’array. L’espressione di <code>track</code> legge l’elemento, le variabili implicite, i membri del componente e gli import, ma nessun element ref. Un numero negativo non renderizza nulla."
+            "p1": "Array, numeri e qualunque altro iterabile, tranne le stringhe. L’espressione di <code>track</code> legge l’item, le variabili implicite, i membri del componente e gli import, ma nessun element ref. Un numero negativo non renderizza niente."
           }
         },
         "summary": {
@@ -2327,8 +2339,10 @@
           "td1": "Una riga per ogni elemento, identificata dalla sua chiave.",
           "td2": "La chiave è l’elemento stesso.",
           "td3": "Ripete il blocco, con <code>step</code> da <code>0</code>.",
-          "td4": "La posizione della riga, come valori.",
-          "td5": "Un alias per una variabile di contesto."
+          "td4": "La posizione della riga e il numero degli item, come valori.",
+          "td5": "Un alias per una variabile di contesto.",
+          "td6": "Renderizzato mentre non ci sono item.",
+          "td7": "Qualunque iterabile tranne una stringa: qui le voci di una <code>Map</code>."
         }
       },
       "if": {
@@ -3631,7 +3645,7 @@
   },
   "errors": {
     "[Lexer] Unknown flow-control keyword": {
-      "cause": "Una @ nel testo apre un blocco: una keyword senza spazio prima della parentesi (@if(…)), una keyword inesistente (@unless, @empty), o una semplice @, come in un indirizzo email.",
+      "cause": "Una @ nel testo apre un blocco: una keyword scritta senza spazio prima della parentesi (@if(…)), una keyword che non esiste (@unless, @foreach), o una @ semplice, come in un indirizzo email.",
       "fix": "Scrivi uno spazio dopo la keyword, e &commat; o un’interpolazione come { '@' } per una @ letterale."
     },
     "[Lexer] Comment never closed: '<!--' without '-->'": {
@@ -3697,10 +3711,6 @@
     "[Parser] [class.on] toggles the class by the value of an expression: [class.on]=\"{expression}\"": {
       "cause": "Un binding di classe con un valore statico, o senza valore.",
       "fix": "Legalo a un’espressione tra graffe: [class.on]=\"{ active() }\"."
-    },
-    "[Parser] \"[style.color]\" is not a binding: a class is toggled with [class.name]=\"{expression}\"": {
-      "cause": "Un nome di attributo tra parentesi quadre diverso da [class.nome]: le parentesi quadre attivano solo classi.",
-      "fix": "Lega l’attributo senza parentesi quadre, ad esempio style=\"{ … }\", oppure attiva una classe con [class.nome]."
     },
     "[Parser] [class.on] cannot be bound inside a directive: bind it on the element": {
       "cause": "Un binding di classe tra le parentesi di una direttiva, o in un binding condizionale al loro interno, che legano solo le proprietà della direttiva.",
@@ -3773,14 +3783,6 @@
     "This comparison appears to be unintentional because the types '1' and '2' have no overlap.": {
       "cause": "Un membro readonly inizializzato con un letterale ha un tipo letterale, e il template viene controllato con quello.",
       "fix": "Annota il membro con un tipo più ampio."
-    },
-    "Argument of type 'Set<number>' is not assignable to parameter of type 'number | readonly unknown[]'.": {
-      "cause": "@for su qualcosa che non è né un array né un numero: un Set, una Map, una stringa.",
-      "fix": "Convertilo in un array, per esempio in un computed."
-    },
-    "Property '$count' does not exist on type 'XList'.": {
-      "cause": "$count non è una delle variabili di @for.",
-      "fix": "Leggi la lunghezza della lista."
     },
     "Cannot find name 'first'.": {
       "cause": "Un membro del componente come valore di un @case, che accetta solo letterali.",
@@ -4277,6 +4279,42 @@
     "Argument of type 'string' is not assignable to parameter of type '__Template<unknown[]>'.": {
       "cause": "Un @render che chiama un nome che non è un template dichiarato nel suo scope o in uno esterno, né ne contiene uno: un membro, un import o un element ref, renderizzato allora come il template che dovrebbe contenere.",
       "fix": "Dichiara il template dove il @render lo vede, oppure chiama un’espressione il cui valore è un TemplateRef, ad esempio @render row()(item) per una query o un input."
+    },
+    "[Parser] \"[attr.color]\" is not a binding: a class is toggled with [class.name]=\"{expression}\", a style property is set with [style.name]=\"{expression}\"": {
+      "cause": "Un nome di attributo tra parentesi quadre diverso da [class.name] e [style.name]: le parentesi quadre attivano solo classi e impostano solo proprietà di stile.",
+      "fix": "Lega l’attributo senza parentesi quadre, ad esempio title=\"{ … }\", oppure usa [class.name] o [style.name]."
+    },
+    "[Parser] [style.color] sets the style property by the value of an expression: [style.color]=\"{expression}\"": {
+      "cause": "Uno style binding con un valore statico, o senza valore.",
+      "fix": "Metti il valore tra graffe, [style.color]=\"{ 'red' }\", oppure scrivilo nell’attributo style."
+    },
+    "[Parser] [style.width.PX] does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. [style.width.px], or a custom property, e.g. [style.--accent]": {
+      "cause": "Uno style binding la cui proprietà contiene caratteri che una proprietà non può avere, o la cui unità non è fatta di lettere minuscole o %, o è seguita da più di un’unità.",
+      "fix": "Scrivi la proprietà in kebab-case o camelCase, e al più un’unità in minuscolo: [style.width.px], [style.height.%]."
+    },
+    "[Parser] Style property \"width\" is bound more than once on <div>": {
+      "cause": "La stessa proprietà di stile impostata due volte su un elemento, anche con unità diverse, o sull’elemento e in uno dei suoi binding condizionali.",
+      "fix": "Legala una volta sola, o in rami diversi della stessa condizione."
+    },
+    "[Parser] [style.color] cannot be bound inside a directive: bind it on the element": {
+      "cause": "Uno style binding tra le parentesi di una direttiva, che legano solo le sue proprietà.",
+      "fix": "Scrivilo sull’elemento, oppure imposta la proprietà dalla direttiva con @HostProperty('style.color')."
+    },
+    "[Parser] @empty must follow the block of a @for": {
+      "cause": "Un @empty che non segue la graffa di chiusura di un @for, all’inizio del template o dopo un altro blocco.",
+      "fix": "Scrivilo subito dopo il blocco del @for: } @empty { … }."
+    },
+    "[Parser] @empty takes no parameters: it is rendered while the @for has no items": {
+      "cause": "Un @empty seguito da parentesi.",
+      "fix": "Toglile: @empty { … }."
+    },
+    "Argument of type 'string' is not assignable to parameter of type 'never'.": {
+      "cause": "Un @for che itera una stringa, che renderizzerebbe una riga per carattere.",
+      "fix": "Itera un array di ciò che ti serve, ad esempio [...word] in un computed signal."
+    },
+    "@for iterates an array, a number or an iterable (a Map, a Set…), not a string": {
+      "cause": "Un @for la cui espressione dà, a runtime, una stringa, null, undefined o un oggetto non iterabile: il type-check non l’ha visto, tipizzato come any.",
+      "fix": "Dai al @for un array, un numero o un iterabile, ad esempio un array vuoto invece di null."
     }
   }
 }

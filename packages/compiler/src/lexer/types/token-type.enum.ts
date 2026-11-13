@@ -165,6 +165,10 @@ export enum TokenType {
    */
   ERROR,
   /**
+   * Opening keyword of an `@empty` block, following the block of a `@for`, e.g. `@empty` in `@empty { … }`.
+   */
+  EMPTY,
+  /**
    * The type an interpolation or a parameter of an event handler is cast to, following the INTERPOLATION_EXPRESSION or
    * the EVENT_PARAMETER token, e.g. `string` in `{ value() as string }`.
    */

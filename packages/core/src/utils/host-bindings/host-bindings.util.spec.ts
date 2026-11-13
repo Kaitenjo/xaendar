@@ -104,6 +104,22 @@ describe('_bindHost', () => {
     expect(element.classList.contains('active')).toBe(false);
   });
 
+  it('sets a style property followed by its unit, removing it for null and when the context is cleared', async () => {
+    const width = signal<number | null>(120);
+    const owner = createOwner({ width, color: 'red' }, { width: 'style.width.px', color: 'style.backgroundColor' });
+    const { element, context } = bind(owner);
+    const { style } = element as HTMLElement;
+    expect(style.getPropertyValue('width')).toBe('120px');
+    expect(style.getPropertyValue('background-color')).toBe('red');
+
+    width.set(null);
+    await flush();
+    expect(style.getPropertyValue('width')).toBe('');
+
+    clear(context);
+    expect(style.getPropertyValue('background-color')).toBe('');
+  });
+
   it('keeps the classes of the class bindings when it writes the class attribute', () => {
     const element = document.createElement('div');
     toggleClass(element, 'selected', true);

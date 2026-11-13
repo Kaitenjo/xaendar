@@ -7,6 +7,7 @@ import type { ClientNode } from './nodes/client-node.type';
 import type { HydrateNode } from './nodes/hydrate-node.type';
 import type { PlaceholderNode } from './nodes/placeholder-node.type';
 import type { CatchNode } from './nodes/catch-node.type';
+import type { EmptyNode } from './nodes/empty-node.type';
 import type { TryNode } from './nodes/try-node.type';
 import type { DeferNode } from './nodes/defer-node.type';
 import type { LoadingNode } from './nodes/loading-node.type';
@@ -42,6 +43,7 @@ export type ASTNode =
   | PlaceholderNode
   | TryNode
   | CatchNode
+  | EmptyNode
   | DeferNode
   | LoadingNode
   | ErrorNode;

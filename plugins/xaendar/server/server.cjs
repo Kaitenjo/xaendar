@@ -20290,6 +20290,8 @@ var ASTNodeType = /* @__PURE__ */ ((ASTNodeType2) => {
   ASTNodeType2[ASTNodeType2["Defer"] = 26] = "Defer";
   ASTNodeType2[ASTNodeType2["Loading"] = 27] = "Loading";
   ASTNodeType2[ASTNodeType2["Error"] = 28] = "Error";
+  ASTNodeType2[ASTNodeType2["Empty"] = 29] = "Empty";
+  ASTNodeType2[ASTNodeType2["StyleBinding"] = 30] = "StyleBinding";
   return ASTNodeType2;
 })(ASTNodeType || {});
 
@@ -21205,7 +21207,7 @@ function mapDefaultOptions(options) {
 }
 
 // ../packages/compiler/src/parser/utils/for-variables/for-variables.utils.ts
-var FOR_IMPLICIT_VARIABLES = ["$index", "$first", "$last", "$even", "$odd"];
+var FOR_IMPLICIT_VARIABLES = ["$index", "$first", "$last", "$even", "$odd", "$count"];
 function getForVariables(node) {
   const variables = new Array();
   if (node.itemAlias) {
@@ -21386,12 +21388,19 @@ var TemplateWalker = class {
         this._visitor.expression?.(attribute.value.expression, variables);
       }
     }
-    const { classBindings, directives, structuralDirectives } = bindings;
+    const { classBindings, styleBindings, directives, structuralDirectives } = bindings;
     if (classBindings?.length) {
       for (let i2 = 0; i2 < classBindings.length; i2++) {
         const classBinding = classBindings[i2];
         this._visitor.classBinding?.(classBinding);
         this._visitor.expression?.(classBinding.value.expression, variables);
+      }
+    }
+    if (styleBindings?.length) {
+      for (let i2 = 0; i2 < styleBindings.length; i2++) {
+        const styleBinding = styleBindings[i2];
+        this._visitor.styleBinding?.(styleBinding);
+        this._visitor.expression?.(styleBinding.value.expression, variables);
       }
     }
     if (!this._server) {
@@ -21573,7 +21582,8 @@ var TemplateWalker = class {
   }
   /**
    * Walks a `@for` block: the iterable in the enclosing scope, the track expression and the children in the scope
-   * declaring the variables of the loop.
+   * declaring the variables of the loop, then the content of its `@empty`, if any, a scope of its own in the enclosing
+   * one.
    *
    * @param node - The `@for` block.
    * @param variables - The variables declared in the scope enclosing the block.
@@ -21584,6 +21594,9 @@ var TemplateWalker = class {
     const loopVariables = /* @__PURE__ */ new Set([...variables, ...getForVariables(node)]);
     this._visitor.expression?.(node.trackExpression, loopVariables);
     this.walkScope(node.children, loopVariables);
+    if (node.empty) {
+      this.walkScope(node.empty.children, variables);
+    }
   }
 };
 function declareVariable(scopeVariables, variables, name) {
@@ -21687,8 +21700,9 @@ var TokenType = /* @__PURE__ */ ((TokenType2) => {
   TokenType2[TokenType2["DEFER"] = 37] = "DEFER";
   TokenType2[TokenType2["LOADING"] = 38] = "LOADING";
   TokenType2[TokenType2["ERROR"] = 39] = "ERROR";
-  TokenType2[TokenType2["CAST"] = 40] = "CAST";
-  TokenType2[TokenType2["EOF"] = 41] = "EOF";
+  TokenType2[TokenType2["EMPTY"] = 40] = "EMPTY";
+  TokenType2[TokenType2["CAST"] = 41] = "CAST";
+  TokenType2[TokenType2["EOF"] = 42] = "EOF";
   return TokenType2;
 })(TokenType || {});
 
@@ -22126,7 +22140,7 @@ function lexCast(cursor, context) {
   if (!type) {
     throw 'A cast needs a type after "as", e.g. { value() as string }';
   }
-  const tokens = [{ type: 40 /* CAST */, parts: [type] }];
+  const tokens = [{ type: 41 /* CAST */, parts: [type] }];
   if (isInterpolation) {
     return { state: closeInterpolation(cursor, context), tokens, popState: true };
   }
@@ -22574,6 +22588,9 @@ function lexFlowControl(cursor, _context) {
       }],
       pushState: true
     };
+  } else if (cursor.peekMatch("empty ")) {
+    cursor.advance(6);
+    retVal = lexBlockWithParameters(cursor, 40 /* EMPTY */);
   } else if (cursor.peekMatch("else ")) {
     cursor.advance(5);
     retVal = {
@@ -23560,7 +23577,7 @@ function separatesInlineNodes(text, lineBreak, previousToken, nextState) {
 function isInlineNodeEnd(type) {
   switch (type) {
     case 10 /* INTERPOLATION_EXPRESSION */:
-    case 40 /* CAST */:
+    case 41 /* CAST */:
     case 4 /* TAG_CLOSE_NAME */:
     case 2 /* TAG_SELF_CLOSE */:
       return true;
@@ -23829,7 +23846,7 @@ var ParserCursor = class extends Cursor {
    * giving EOF instead of starting over from the first token.
    */
   _currentToken = {
-    value: { type: 41 /* EOF */ },
+    value: { type: 42 /* EOF */ },
     index: -1
   };
   /**
@@ -23853,7 +23870,7 @@ var ParserCursor = class extends Cursor {
     }
     const newIndex = this._currentToken.index + chars;
     if (newIndex >= this._tokens.length) {
-      this._currentToken.value = { type: 41 /* EOF */ };
+      this._currentToken.value = { type: 42 /* EOF */ };
       this._currentToken.index = this._tokens.length;
     } else {
       this._currentToken.index = newIndex;
@@ -23900,7 +23917,7 @@ var ParserCursor = class extends Cursor {
    * Peeks a single token at the given absolute index.
    */
   peekOneToken(index) {
-    return index < this._tokens.length ? this._tokens[index] : { type: 41 /* EOF */ };
+    return index < this._tokens.length ? this._tokens[index] : { type: 42 /* EOF */ };
   }
 };
 
@@ -24335,7 +24352,7 @@ var EncodingMode;
 // ../packages/compiler/src/parser/states/parse-cast/parse-cast.state.ts
 function parseCast(cursor) {
   const token = cursor.peek();
-  if (token.type !== 40 /* CAST */) {
+  if (token.type !== 41 /* CAST */) {
     return void 0;
   }
   cursor.advance();
@@ -24438,27 +24455,38 @@ function isBooleanAttributeSuccessor(type) {
 
 // ../packages/compiler/src/parser/states/parse-class-binding/parse-class-binding.state.ts
 var CLASS_BINDING_RE = /^\[class\.([^\s[\]]+)\]$/;
+var STYLE_BINDING_RE = /^\[style\.([^\s[\]]+)\]$/;
+var STYLE_PROPERTY_RE = /^([a-zA-Z][a-zA-Z-]*)(?:\.([a-z]+|%))?$/;
 function isBracketBinding(token) {
   return token.parts[0].startsWith("[");
 }
-function parseClassBinding(cursor, parseNode, token) {
+function parseBracketBinding(cursor, parseNode, token) {
   const { name, nameSpan, value, span } = parseAttribute(cursor, parseNode, token);
   const className = CLASS_BINDING_RE.exec(name)?.[1];
-  if (!className) {
-    throw new Error(`"${name}" is not a binding: a class is toggled with [class.name]="{expression}"`, { cause: nameSpan });
+  const style = className ? void 0 : STYLE_BINDING_RE.exec(name)?.[1];
+  if (!className && !style) {
+    throw new Error(`"${name}" is not a binding: a class is toggled with [class.name]="{expression}", a style property is set with [style.name]="{expression}"`, { cause: nameSpan });
   }
   if (typeof value === "string") {
-    throw new Error(`${name} toggles the class by the value of an expression: ${name}="{expression}"`, { cause: span });
+    throw new Error(`${name} ${className ? "toggles the class" : "sets the style property"} by the value of an expression: ${name}="{expression}"`, { cause: span });
   }
-  return {
-    type: 20 /* ClassBinding */,
-    className,
-    nameSpan,
-    value,
-    span
-  };
+  if (className) {
+    return { type: 20 /* ClassBinding */, className, nameSpan, value, span };
+  }
+  const node = { type: 30 /* StyleBinding */, property: style, nameSpan, value, span };
+  if (!style.startsWith("--")) {
+    const match = STYLE_PROPERTY_RE.exec(style);
+    if (!match) {
+      throw new Error(`${name} does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. [style.width.px], or a custom property, e.g. [style.--accent]`, { cause: nameSpan });
+    }
+    node.property = match[1].replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+    if (match[2]) {
+      node.unit = match[2];
+    }
+  }
+  return node;
 }
-function assertNoClassBindings(attributes, conditionalBindings) {
+function assertNoBracketBindings(attributes, conditionalBindings) {
   for (let i2 = 0; i2 < attributes.length; i2++) {
     const { name, nameSpan } = attributes[i2];
     if (name.startsWith("[")) {
@@ -24473,10 +24501,14 @@ function assertNoBranchClassBindings(conditionalBindings) {
   for (let i2 = 0; i2 < conditionalBindings.length; i2++) {
     const { branches } = conditionalBindings[i2];
     for (let j = 0; j < branches.length; j++) {
-      const { classBindings } = branches[j];
+      const { classBindings, styleBindings } = branches[j];
       if (classBindings.length) {
         const { className, nameSpan } = classBindings[0];
         throw new Error(`[class.${className}] cannot be bound inside a directive: bind it on the element`, { cause: nameSpan });
+      }
+      if (styleBindings.length) {
+        const { property, nameSpan } = styleBindings[0];
+        throw new Error(`[style.${property}] cannot be bound inside a directive: bind it on the element`, { cause: nameSpan });
       }
       assertNoBranchClassBindings(branches[j].conditionalBindings);
     }
@@ -24598,7 +24630,7 @@ function parseDirective(cursor, parseNode, token) {
         throw new Error("Unexpected token in directive");
     }
   }
-  assertNoClassBindings(attributes, conditionalBindings);
+  assertNoBracketBindings(attributes, conditionalBindings);
   const selectorSpan = cursor.findSpan(token.parts[0], startOffset);
   const node = {
     type: 15 /* Directive */,
@@ -24638,7 +24670,7 @@ function parseStructuralDirective(cursor, parseNode, token) {
         throw new Error("Unexpected token in structural directive");
     }
   }
-  assertNoClassBindings(attributes);
+  assertNoBracketBindings(attributes);
   const selectorSpan = cursor.findSpan(token.parts[0], startOffset);
   const node = {
     type: 16 /* StructuralDirective */,
@@ -24738,6 +24770,7 @@ function parseBranch(cursor, parseNode, start, condition, conditionSpans) {
   consumeBlockOpen(cursor);
   const attributes = new Array();
   const classBindings = new Array();
+  const styleBindings = new Array();
   const events = new Array();
   const conditionalBindings = new Array();
   const directives = new Array();
@@ -24748,7 +24781,8 @@ function parseBranch(cursor, parseNode, start, condition, conditionSpans) {
     switch (token.type) {
       case 5 /* ATTRIBUTE */:
         if (isBracketBinding(token)) {
-          classBindings.push(parseClassBinding(cursor, parseNode, token));
+          const binding = parseBracketBinding(cursor, parseNode, token);
+          binding.type === 20 /* ClassBinding */ ? classBindings.push(binding) : styleBindings.push(binding);
         } else {
           attributes.push(parseAttribute(cursor, parseNode, token));
         }
@@ -24780,6 +24814,7 @@ function parseBranch(cursor, parseNode, start, condition, conditionSpans) {
     conditionSpans,
     attributes,
     classBindings,
+    styleBindings,
     events,
     conditionalBindings,
     directives,
@@ -24878,7 +24913,7 @@ function serializeNodes(nodes, parentTag) {
 }
 function serializeElement(element) {
   const { tagName, attributes } = element;
-  const binding = element.ref ?? element.typeArguments?.[0] ?? element.classBindings[0] ?? element.events[0] ?? element.conditionalBindings[0] ?? element.directives[0] ?? element.structuralDirectives[0] ?? attributes.find(({ value }) => typeof value !== "string");
+  const binding = element.ref ?? element.typeArguments?.[0] ?? element.classBindings[0] ?? element.styleBindings[0] ?? element.events[0] ?? element.conditionalBindings[0] ?? element.directives[0] ?? element.structuralDirectives[0] ?? attributes.find(({ value }) => typeof value !== "string");
   if (binding) {
     throw new Error(`<${tagName}> is in the content of a <template>, static HTML which the code using the template clones: it takes only static attributes`, { cause: binding.span });
   }
@@ -24991,6 +25026,7 @@ function parseElement(cursor, parseNode, token) {
   const nameSpan = cursor.findSpan(tagName, token.span.start);
   const attributes = new Array();
   const classBindings = new Array();
+  const styleBindings = new Array();
   const events = new Array();
   const conditionalBindings = new Array();
   const directives = new Array();
@@ -25016,7 +25052,8 @@ function parseElement(cursor, parseNode, token) {
         break;
       case 5 /* ATTRIBUTE */:
         if (isBracketBinding(token2)) {
-          classBindings.push(parseClassBinding(cursor, parseNode, token2));
+          const binding = parseBracketBinding(cursor, parseNode, token2);
+          binding.type === 20 /* ClassBinding */ ? classBindings.push(binding) : styleBindings.push(binding);
         } else {
           attributes.push(parseAttribute(cursor, parseNode, token2));
         }
@@ -25040,12 +25077,13 @@ function parseElement(cursor, parseNode, token) {
   }
   assertUniqueAttributes(attributes, conditionalBindings, (name) => `Attribute "${name}" is bound more than once on <${tagName}>`);
   assertUniqueClassBindings(classBindings, conditionalBindings, tagName);
+  assertUniqueStyleBindings(styleBindings, conditionalBindings, tagName);
   assertUniqueDirectives(tagName, directives, conditionalBindings, (branch) => branch.directives);
   assertUniqueDirectives(tagName, structuralDirectives, conditionalBindings, (branch) => branch.structuralDirectives);
   const typeArguments = token.parts[1] === void 0 ? void 0 : parseTypeArguments(token.parts[1], nameSpan.end + 1);
   let node;
   if (tagName === "template" && declaration) {
-    const binding = typeArguments?.[0] ?? ref ?? attributes[0] ?? classBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
+    const binding = typeArguments?.[0] ?? ref ?? attributes[0] ?? classBindings[0] ?? styleBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
     if (binding) {
       throw new Error("A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it", { cause: binding.span });
     }
@@ -25057,6 +25095,7 @@ function parseElement(cursor, parseNode, token) {
       nameSpan,
       attributes,
       classBindings,
+      styleBindings,
       events,
       children: [],
       conditionalBindings,
@@ -25125,6 +25164,16 @@ function assertUniqueClassBindings(classBindings, conditionalBindings, tagName, 
   }
   assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniqueClassBindings(branch.classBindings, branch.conditionalBindings, tagName, boundInBranch));
 }
+function assertUniqueStyleBindings(styleBindings, conditionalBindings, tagName, bound = /* @__PURE__ */ new Set()) {
+  for (let i2 = 0; i2 < styleBindings.length; i2++) {
+    const { property, span } = styleBindings[i2];
+    if (bound.has(property)) {
+      throw new Error(`Style property "${property}" is bound more than once on <${tagName}>`, { cause: span });
+    }
+    bound.add(property);
+  }
+  assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniqueStyleBindings(branch.styleBindings, branch.conditionalBindings, tagName, boundInBranch));
+}
 function assertUniqueDirectives(tagName, directives, conditionalBindings, getDirectives, applied = /* @__PURE__ */ new Set()) {
   for (let i2 = 0; i2 < directives.length; i2++) {
     const directive = directives[i2];
@@ -25176,7 +25225,7 @@ function assertNameableElement(element, ref) {
 function isTagClose(cursor, tagName) {
   const nextToken = cursor.peek();
   switch (nextToken.type) {
-    case 41 /* EOF */:
+    case 42 /* EOF */:
       throw new Error(`Expected closing tag ${tagName} while file is over`);
     case 4 /* TAG_CLOSE_NAME */:
       const tokenTagName = nextToken.parts[0];
@@ -25194,7 +25243,7 @@ function isTagClose(cursor, tagName) {
 function parseBlockChildren(cursor, parseNode) {
   const children = new Array();
   while (cursor.peek().type !== 20 /* BLOCK_CLOSE */) {
-    if (cursor.peek().type === 41 /* EOF */) {
+    if (cursor.peek().type === 42 /* EOF */) {
       throw "Unexpected end of template: expected BLOCK_CLOSE";
     }
     const child = parseNode();
@@ -25216,7 +25265,22 @@ function parseForControlFlow(cursor, parseNode, _token) {
   const expression = parseForExpression(conditionToken.parts[0], cursor.findConditionSpan(conditionToken).start);
   cursor.advance(2);
   const children = parseBlockChildren(cursor, parseNode);
-  return { type: 8 /* For */, ...expression, children };
+  let empty = null;
+  const next = cursor.peek();
+  if (next.type === 40 /* EMPTY */) {
+    cursor.advance();
+    const parameters = cursor.peek();
+    if (parameters.type === 18 /* CONDITION */) {
+      throw new Error("@empty takes no parameters: it is rendered while the @for has no items", { cause: cursor.findConditionSpan(parameters) });
+    }
+    cursor.advance();
+    const emptyChildren = parseBlockChildren(cursor, parseNode);
+    empty = { type: 29 /* Empty */, children: emptyChildren, span: { start: next.span.start, end: cursor.getCurrentToken().value.span.end } };
+  }
+  return { type: 8 /* For */, ...expression, children, empty };
+}
+function parseOrphanEmpty(_cursor, _parseNode, token) {
+  throw new Error("@empty must follow the block of a @for", { cause: token.span });
 }
 function parseForExpression(source, offset = 0) {
   const sections = splitTopLevel(source, ";").map(({ text, start }) => ({ text, offset: offset + start }));
@@ -25270,7 +25334,7 @@ function parseForExpression(source, offset = 0) {
 }
 function parseImplicitAliases({ text, offset }, out, spans) {
   const entries = splitTopLevel(text);
-  const IMPLICIT_VARIABLES = /* @__PURE__ */ new Set(["$index", "$last", "$first", "$even", "$odd"]);
+  const IMPLICIT_VARIABLES = new Set(FOR_IMPLICIT_VARIABLES);
   for (let i2 = 0; i2 < entries.length; i2++) {
     const { text: trimmed, start } = entries[i2];
     const trimmedOffset = offset + start;
@@ -25317,8 +25381,9 @@ function findNodeEvent(node) {
     case 5 /* If */:
     case 7 /* ElseIf */:
       return findEvent(node.children) ?? (node.alternate ? findNodeEvent(node.alternate) : void 0);
-    case 6 /* Else */:
     case 8 /* For */:
+      return findEvent(node.children) ?? (node.empty ? findEvent(node.empty.children) : void 0);
+    case 6 /* Else */:
     case 9 /* Switch */:
     case 10 /* Case */:
     case 17 /* Template */:
@@ -25958,6 +26023,7 @@ var Parser = class {
     [37 /* DEFER */]: parseDefer,
     [38 /* LOADING */]: parseOrphanLoading,
     [39 /* ERROR */]: parseOrphanError,
+    [40 /* EMPTY */]: parseOrphanEmpty,
     [21 /* IMPORT */]: parseImport,
     [28 /* RENDER */]: parseRender,
     [30 /* LET */]: parseLet
@@ -25982,7 +26048,7 @@ var Parser = class {
    */
   parse() {
     const nodes = new Array();
-    while (this._cursor.peek().type !== 41 /* EOF */) {
+    while (this._cursor.peek().type !== 42 /* EOF */) {
       const parseNode = this.parseNode();
       if (parseNode) {
         nodes.push(parseNode);
@@ -25999,7 +26065,7 @@ var Parser = class {
    */
   parseNode() {
     const token = this._cursor.peek();
-    if (token.type === 41 /* EOF */) {
+    if (token.type === 42 /* EOF */) {
       return void 0;
     }
     const startOffset = token.span.start;
@@ -26030,7 +26096,7 @@ var Parser = class {
       this.thrown = true;
       const message = err instanceof Error ? err.message : `${err}`;
       const currentToken = this._cursor.peek();
-      const stateEndIndex = currentToken.type !== 41 /* EOF */ ? currentToken.span.end : this._input.length;
+      const stateEndIndex = currentToken.type !== 42 /* EOF */ ? currentToken.span.end : this._input.length;
       const span = err instanceof Error && isSpan(err.cause) ? err.cause : { start: startOffset, end: stateEndIndex };
       throw new TemplateError(`[Parser] ${this._cursor.getPositionFromCharacterIndex(startOffset + 1)} - ${message}
  ---> ${slice(this._input, startOffset, stateEndIndex)}`, span, message);
@@ -27447,6 +27513,7 @@ function typeCheckComponentBindings(node, declaredMetadata, nativeEventType, con
     return [
       ...typeCheckComponentAttributes(branch.attributes, metadata, context),
       ...typeCheckClassBindings(branch.classBindings, context),
+      ...typeCheckStyleBindings(branch.styleBindings, context),
       ...typeCheckComponentEvents(branch.events, metadata, nativeEventType, context),
       ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEventType, context)
     ];
@@ -27463,6 +27530,7 @@ function typeCheckComponentBindings(node, declaredMetadata, nativeEventType, con
  \u25CF ${Array.from(requiredProperties.values()).join("\n \u25CF ")}`, { cause: node.span });
   }
   lines.push(...typeCheckClassBindings(node.classBindings, context));
+  lines.push(...typeCheckStyleBindings(node.styleBindings, context));
   lines.push(...typeCheckComponentEvents(node.events, metadata, nativeEventType, context));
   lines.push(...conditionalBindingLines);
   if (!declarations) {
@@ -27702,10 +27770,12 @@ function typeCheckNativeBindings(node, nativeEventType, context) {
   return [
     ...typeCheckNativeAttributes(node.attributes, context),
     ...typeCheckClassBindings(node.classBindings, context),
+    ...typeCheckStyleBindings(node.styleBindings, context),
     ...typeCheckNativeEvents(node.events, nativeEventType, context),
     ...typeCheckConditionalBindings(node.conditionalBindings, context, (branch) => [
       ...typeCheckNativeAttributes(branch.attributes, context),
       ...typeCheckClassBindings(branch.classBindings, context),
+      ...typeCheckStyleBindings(branch.styleBindings, context),
       ...typeCheckNativeEvents(branch.events, nativeEventType, context),
       ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEventType, context)
     ])
@@ -27727,6 +27797,14 @@ function typeCheckClassBindings(classBindings, context) {
   for (let i2 = 0; i2 < classBindings.length; i2++) {
     const { value } = classBindings[i2];
     lines.push(line(mappedInterpolation(value, context, ";")));
+  }
+  return lines;
+}
+function typeCheckStyleBindings(styleBindings, context) {
+  const lines = new Array();
+  for (let i2 = 0; i2 < styleBindings.length; i2++) {
+    const { value } = styleBindings[i2];
+    lines.push(line("(", mappedInterpolation(value, context, ") satisfies string | number | null | undefined | false;")));
   }
   return lines;
 }
@@ -27841,21 +27919,15 @@ function typeArgumentOf(probedName, probed, index) {
 }
 
 // ../packages/compiler/src/type-checker/states/type-check-for/type-check-for.state.ts
-var FOR_ITERABLE = "(<T extends number | readonly unknown[]>(iterable: T): T extends number ? number[] : T => iterable as never)";
+var FOR_ITERABLE = "(<T extends number | Iterable<unknown>>(iterable: T & (T extends string ? never : unknown)): T extends number ? number[] : T => iterable as never)";
 var FOR_VALUE = "$$item";
 function typeCheckFor(node, processNode, context) {
   const forContext = new TypeCheckContext(context);
-  const indexName = resolveImplicit(node, "$index");
-  const firstName = resolveImplicit(node, "$first");
-  const lastName = resolveImplicit(node, "$last");
-  const evenName = resolveImplicit(node, "$even");
-  const oddName = resolveImplicit(node, "$odd");
   if (node.itemAlias) {
     forContext.addUnresolvableIdentifier(node.itemAlias, "variable");
   }
-  const identifiers = [indexName, firstName, lastName, evenName, oddName];
-  for (let i2 = 0; i2 < identifiers.length; i2++) {
-    forContext.addUnresolvableIdentifier(identifiers[i2], "variable");
+  for (let i2 = 0; i2 < FOR_IMPLICIT_VARIABLES.length; i2++) {
+    forContext.addUnresolvableIdentifier(resolveImplicit(node, FOR_IMPLICIT_VARIABLES[i2]), "variable");
   }
   const lines = new Array();
   lines.push(line(`for (const ${FOR_VALUE} of ${FOR_ITERABLE}(`, mappedExpression(node.iterableExpression, context, node.span), ")) {"));
@@ -27863,13 +27935,10 @@ function typeCheckFor(node, processNode, context) {
   if (node.itemAlias) {
     body.push(declareVariable2(node.itemAlias, node.itemAliasSpan, `typeof ${FOR_VALUE}`));
   }
-  body.push(
-    declareVariable2(indexName, node.implicitAliasSpans.get("$index"), "number"),
-    declareVariable2(firstName, node.implicitAliasSpans.get("$first"), "boolean"),
-    declareVariable2(lastName, node.implicitAliasSpans.get("$last"), "boolean"),
-    declareVariable2(evenName, node.implicitAliasSpans.get("$even"), "boolean"),
-    declareVariable2(oddName, node.implicitAliasSpans.get("$odd"), "boolean")
-  );
+  for (let i2 = 0; i2 < FOR_IMPLICIT_VARIABLES.length; i2++) {
+    const variable = FOR_IMPLICIT_VARIABLES[i2];
+    body.push(declareVariable2(resolveImplicit(node, variable), node.implicitAliasSpans.get(variable), variable === "$index" || variable === "$count" ? "number" : "boolean"));
+  }
   const { declarations, lines: content } = typeCheckScope(node.children, forContext, processNode);
   body.push(
     ...declarations,
@@ -27878,6 +27947,10 @@ function typeCheckFor(node, processNode, context) {
   );
   lines.push(...indentLines(body));
   lines.push(plain("}"));
+  if (node.empty) {
+    const empty = typeCheckScope(node.empty.children, new TypeCheckContext(context), processNode);
+    lines.push(plain("{"), ...indentLines(empty.declarations.concat(empty.lines)), plain("}"));
+  }
   return lines;
 }
 function declareVariable2(name, span, type) {
@@ -28215,9 +28288,10 @@ function getNestedNodes(node) {
       return node.alternate ? [node.children, [node.alternate]] : [node.children];
     case 9 /* Switch */:
       return node.children.map(({ children }) => children);
+    case 8 /* For */:
+      return node.empty ? [node.children, node.empty.children] : [node.children];
     case 0 /* Element */:
     case 6 /* Else */:
-    case 8 /* For */:
     case 17 /* Template */:
     case 21 /* Hydrate */:
       return [node.children];
@@ -28480,10 +28554,16 @@ function checkElement(node, check) {
 }
 function checkBindings(bindings, check) {
   checkAttributes(bindings.attributes, check);
-  const { classBindings, directives, structuralDirectives } = bindings;
+  const { classBindings, styleBindings, directives, structuralDirectives } = bindings;
   if (classBindings?.length) {
     for (let i2 = 0; i2 < classBindings.length; i2++) {
       const { value, span } = classBindings[i2];
+      checkReads(value.expression, span, check);
+    }
+  }
+  if (styleBindings?.length) {
+    for (let i2 = 0; i2 < styleBindings.length; i2++) {
+      const { value, span } = styleBindings[i2];
       checkReads(value.expression, span, check);
     }
   }
@@ -28549,6 +28629,9 @@ function checkFor(node, check) {
   }
   checkNodes(node.children, check);
   check.scopes.pop();
+  if (node.empty) {
+    checkScope(node.empty.children, check);
+  }
 }
 function checkErrorScope({ name, children }, check) {
   const names = /* @__PURE__ */ new Map();
@@ -28906,7 +28989,7 @@ function findWrittenParts(source, offset) {
   } catch {
     return void 0;
   }
-  const lastToken = tokens.findLast((token) => token.type !== 41 /* EOF */);
+  const lastToken = tokens.findLast((token) => token.type !== 42 /* EOF */);
   switch (lexer.state === "flow-control-condition" /* FLOW_CONTROL_CONDITION */ ? lastToken?.type : void 0) {
     case 37 /* DEFER */:
     case 32 /* HYDRATE */:
@@ -28939,7 +29022,7 @@ function getExpressionContext(source, offset) {
   const partial = PARTIAL_IDENTIFIER.exec(before)[0];
   const span = { start: offset - partial.length, end: offset };
   const head = `${before}${partial ? "" : PLACEHOLDER}`;
-  const lastToken = tokens.findLast((token) => token.type !== 41 /* EOF */);
+  const lastToken = tokens.findLast((token) => token.type !== 42 /* EOF */);
   switch (lexer.state) {
     case "interpolation" /* INTERPOLATION */: {
       const closed = closeExpression(source, before.indexOf("{", lastToken?.span.end ?? 0) + 1, offset, "}");
@@ -29249,6 +29332,9 @@ function getKeywordContext(source, offset) {
     case 14 /* ELSE_IF */:
       keywords.push("else", "else if");
       break;
+    case 12 /* FOR */:
+      keywords.push("empty");
+      break;
     case 33 /* CLIENT */:
       keywords.push("placeholder");
       return { keywords, span, clientPlaceholder: true };
@@ -29360,8 +29446,9 @@ function getSelectorContext(source, offset) {
 // ../packages/compiler/src/lexer/utils/template-layout/template-layout.utils.ts
 var RAW_ELEMENTS = /* @__PURE__ */ new Set(["pre", "textarea", "script", "style"]);
 var VOID_ELEMENTS2 = /* @__PURE__ */ new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"]);
-var UNCONDITIONAL_BRANCHES = /* @__PURE__ */ new Set(["else", "default", "client", "placeholder", "try", "catch", "loading", "error", "hydrate", "defer"]);
+var UNCONDITIONAL_BRANCHES = /* @__PURE__ */ new Set(["else", "empty", "default", "client", "placeholder", "try", "catch", "loading", "error", "hydrate", "defer"]);
 var FOLLOWING_BRANCHES = /* @__PURE__ */ new Map([
+  ["for", ["empty"]],
   ["client", ["placeholder"]],
   ["try", ["catch"]],
   ["defer", ["placeholder", "loading", "error"]]
@@ -30440,6 +30527,9 @@ function getErrorSpan(error, ast) {
       classBinding: (node) => {
         named.push({ span: node.span, name: node.nameSpan });
       },
+      styleBinding: (node) => {
+        named.push({ span: node.span, name: node.nameSpan });
+      },
       event: (node) => {
         named.push({ span: node.span, name: node.nameSpan });
       }
@@ -31316,6 +31406,7 @@ var KEYWORD_SNIPPETS = {
   "else": "@else {\n	$0\n}",
   "else if": "@else if ($1) {\n	$0\n}",
   "for": "@for (item of $1) {\n	$0\n}",
+  "empty": "@empty {\n	$0\n}",
   "switch": "@switch ($1) {\n	@case ($2) {\n		$0\n	}\n}",
   "case": "@case ($1) {\n	$0\n}",
   "default": "@default {\n	$0\n}",

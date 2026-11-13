@@ -83,7 +83,7 @@ describe('Generator', () => {
       '  return this.items;',
       '}',
       '',
-      'function for0$track(context, item, $index, $first, $last, $even, $odd) {',
+      'function for0$track(context, item, $index, $first, $last, $even, $odd, $count) {',
       '  return item;',
       '}',
       '',
@@ -168,7 +168,7 @@ describe('Generator', () => {
       expect(code.match(/const for0Variables/g)).toHaveLength(1);
       expect(code).toContain('_for(root, context, null, for0$for);');
       expect(code).toMatch(/_iterationVariables\(context, items0, i0, for0Variables\);[\s\S]*return context;\n\}/);
-      expect(code).toContain('function for0$track(context, item, i, $first, $last, $even, $odd) {');
+      expect(code).toContain('function for0$track(context, item, i, $first, $last, $even, $odd, $count) {');
       expect(code).not.toContain('$index: \'$index\'');
     });
 
@@ -640,7 +640,7 @@ describe('Generator', () => {
     expect(code).toContain('events: [{ name: \'click\', handler: for0__td0$on_click }],');
     expect(code).toContain('function for0__td0$on_click(context, $event) {\n  this.select($event, _read(context, 0, 5).id, _read(context, 0, 6));\n}');
     expect(code).toContain('function for0$items(context) {\n  return this.rows();\n}');
-    expect(code).toContain('function for0$track(context, row, $index, $first, $last, $even, $odd) {\n  return row.id;\n}');
+    expect(code).toContain('function for0$track(context, row, $index, $first, $last, $even, $odd, $count) {\n  return row.id;\n}');
 
     // Every function of the module is declared at its top level, none inside the render code
     const functions = code.match(/function [\w$]+\(/g);

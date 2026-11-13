@@ -11,7 +11,7 @@ export type KeywordContext = {
    * `loading` and `error` not written yet right after a `@defer` block or one of them, only `case` and `default` in a
    * `@switch` block, `import` before anything else.
    */
-  readonly keywords: readonly ('if' | 'else' | 'else if' | 'for' | 'switch' | 'case' | 'default' | 'hydrate' | 'client' | 'placeholder' | 'try' | 'catch' | 'defer' | 'loading' | 'error' | 'import' | 'render' | 'let')[];
+  readonly keywords: readonly ('if' | 'else' | 'else if' | 'for' | 'empty' | 'switch' | 'case' | 'default' | 'hydrate' | 'client' | 'placeholder' | 'try' | 'catch' | 'defer' | 'loading' | 'error' | 'import' | 'render' | 'let')[];
   /**
    * The span of the `@` and of the part of the keyword written so far.
    */

@@ -61,9 +61,11 @@ function getNestedNodes(node: ASTNode): Array<readonly ASTNode[]> | undefined {
     case ASTNodeType.Switch:
       return node.children.map(({ children }) => children);
 
+    case ASTNodeType.For:
+      return node.empty ? [node.children, node.empty.children] : [node.children];
+
     case ASTNodeType.Element:
     case ASTNodeType.Else:
-    case ASTNodeType.For:
     case ASTNodeType.Template:
     case ASTNodeType.Hydrate:
       return [node.children];

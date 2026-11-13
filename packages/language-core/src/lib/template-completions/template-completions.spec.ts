@@ -95,14 +95,14 @@ describe('getTemplateExpressionCompletions', () => {
   }, TIMEOUT);
 
   it('proposes the variables of the template in scope first, in the order they are declared, a member named like one of them left out', async () => {
-    expect((await sortedCompletionsOf('@for (title of items; track title.id) { { | } }')).slice(0, 8)).toEqual([
-      'title:let:0000', '$index:let:0001', '$first:let:0002', '$last:let:0003', '$even:let:0004', '$odd:let:0005',
+    expect((await sortedCompletionsOf('@for (title of items; track title.id) { { | } }')).slice(0, 9)).toEqual([
+      'title:let:0000', '$index:let:0001', '$first:let:0002', '$last:let:0003', '$even:let:0004', '$odd:let:0005', '$count:let:0006',
       'items:property:1', 'select:method:2'
     ]);
   }, TIMEOUT);
 
   it('proposes only the variables of the template on one of them, and only the members of an object after its dot', async () => {
-    expect(await completionsOf(`${FOR}{ item| } }`)).toEqual(['item:let:0000@40-44', '$index:let:0001@40-44', '$first:let:0002@40-44', '$last:let:0003@40-44', '$even:let:0004@40-44', '$odd:let:0005@40-44']);
+    expect(await completionsOf(`${FOR}{ item| } }`)).toEqual(['item:let:0000@40-44', '$index:let:0001@40-44', '$first:let:0002@40-44', '$last:let:0003@40-44', '$even:let:0004@40-44', '$odd:let:0005@40-44', '$count:let:0006@40-44']);
     expect(await completionsOf(`${FOR}{ items[0].| } }`)).toEqual(['id:property:11@49-49', 'name:property:11@49-49']);
   }, TIMEOUT);
 

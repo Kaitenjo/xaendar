@@ -4,6 +4,7 @@ import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
 import { ASTNodeType } from '../node.enum';
 import { AttributeNode } from './attribute-node.type';
 import type { ClassBindingNode } from './class-binding-node.type';
+import type { StyleBindingNode } from './style-binding-node.type';
 import { ConditionalBindingNode } from './conditional-binding-node.type';
 import { DirectiveNode } from './directive-node.type';
 import { EventNode } from './event-node.type';
@@ -46,6 +47,10 @@ export type ElementNode = ASTNodeWithSpan<{
    * Classes toggled on this element, `[class.name]="{expression}"`.
    */
   classBindings: ClassBindingNode[];
+  /**
+   * Style properties set on this element, `[style.name]="{expression}"`.
+   */
+  styleBindings: StyleBindingNode[];
   /**
    * Event binding nodes attached to this element.
    */

@@ -2,7 +2,7 @@ import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 
 /**
- * A list with an empty state, written with @if and @else around the loop.
+ * A list with an empty state, written with the @empty following the loop.
  */
 @WebComponent({
   selector: 'ex-for-empty',

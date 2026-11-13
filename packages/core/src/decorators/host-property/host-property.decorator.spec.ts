@@ -17,12 +17,18 @@ describe('HostProperty decorator', () => {
   it('stores an attribute binding, reading the decorated member', () => {
     const [binding] = decorate('aria-label')[INTERNAL_HOST_PROPERTIES]!;
 
-    expect(binding).toEqual({ name: 'aria-label', isClass: false, read: expect.any(Function) });
+    expect(binding).toEqual({ name: 'aria-label', kind: 'attribute', read: expect.any(Function) });
     expect(binding.read({ value: 'Close' } as never)).toBe('Close');
   });
 
   it('stores a class binding for a name starting with class.', () => {
-    expect(decorate('class.is-active')[INTERNAL_HOST_PROPERTIES]).toEqual([{ name: 'is-active', isClass: true, read: expect.any(Function) }]);
+    expect(decorate('class.is-active')[INTERNAL_HOST_PROPERTIES]).toEqual([{ name: 'is-active', kind: 'class', read: expect.any(Function) }]);
+  });
+
+  it('stores a style binding for a name starting with style., in kebab-case or camelCase, with its unit, or a custom property', () => {
+    expect(decorate('style.width.px')[INTERNAL_HOST_PROPERTIES]).toEqual([{ name: 'width', kind: 'style', unit: 'px', read: expect.any(Function) }]);
+    expect(decorate('style.backgroundColor')[INTERNAL_HOST_PROPERTIES]).toEqual([{ name: 'background-color', kind: 'style', read: expect.any(Function) }]);
+    expect(decorate('style.--accent')[INTERNAL_HOST_PROPERTIES]).toEqual([{ name: '--accent', kind: 'style', read: expect.any(Function) }]);
   });
 
   it('adds the bindings of a class to the ones of its parent, leaving the parent untouched', () => {
@@ -37,6 +43,8 @@ describe('HostProperty decorator', () => {
   it('throws for a name naming no attribute or no class', () => {
     expect(() => HostProperty('')).toThrow('@HostProperty(\'\') names no attribute');
     expect(() => HostProperty('class.')).toThrow('@HostProperty(\'class.\') names no class');
+    expect(() => HostProperty('style.')).toThrow('@HostProperty(\'style.\') names no style property');
+    expect(() => HostProperty('style.width.px.em')).toThrow('@HostProperty(\'style.width.px.em\') names no style property');
   });
 
   it('throws for a static member', () => {

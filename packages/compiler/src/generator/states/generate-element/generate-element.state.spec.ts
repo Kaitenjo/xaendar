@@ -370,6 +370,34 @@ describe('generateElement', () => {
     expect(functionsToProcess?.get('foreignObject0Children')?.fn.context.namespace).toBe('html');
   });
 
+  it('generates the style properties set on the element after its classes and before its attributes, with their unit, and the ones of a conditional binding removed with it', async () => {
+    const context = new GeneratorContext(cache);
+    context.addSignalClassField('width');
+    const result = await run('<div style="color: red" [style.width.px]="{width()}" [class.on]="{1}" [style.--accent]="{\'blue\'}" @if (x) { [style.top.%]="{5}" }></div>', context);
+
+    const element = result.constants.find(constant => constant.startsWith('const div0$element'))!;
+    expect(element).toContain([
+      '  attributes: [',
+      '    { name: \'on\', value: div0$class_on, setter: _setExpressionClass },',
+      '    div0$style_width$binding,',
+      '    { name: \'--accent\', value: div0$style___accent, setter: _setExpressionStyle },',
+      '    { name: \'style\', value: \'color: red\', setter: _setProperty }',
+      '  ],'
+    ].join('\n'));
+    expect(result.constants.join('\n')).toContain('{ name: \'top\', unit: \'%\', value: div0$style_top, setter: _setExpressionStyle, unbind: _removeStyle }');
+    expect(result.constants[0]).toBe([
+      'const div0$style_width$binding = {',
+      '  name: \'width\',',
+      '  unit: \'px\',',
+      '  value: div0$style_width,',
+      '  setter: _setReactiveStyle,',
+      '  update: _setExpressionStyle,',
+      '  effect: 0',
+      '};'
+    ].join('\n'));
+    expectValidJavascript(result);
+  });
+
   it('generates the classes toggled on the element before its attributes, with a setter toggling them, so that writing class finds them', async () => {
     const context = new GeneratorContext(cache);
     context.addSignalClassField('active');

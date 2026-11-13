@@ -16,8 +16,9 @@ import type { TemplateNode } from '../../types/nodes/template-node.type';
 import type { ElementRefNode } from '../../types/nodes/element-ref-node.type';
 import type { TemplateDeclarationNode } from '../../types/nodes/template-declaration-node.type';
 import type { ClassBindingNode } from '../../types/nodes/class-binding-node.type';
+import type { StyleBindingNode } from '../../types/nodes/style-binding-node.type';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
-import { isBracketBinding, parseClassBinding } from '../parse-class-binding/parse-class-binding.state';
+import { isBracketBinding, parseBracketBinding } from '../parse-class-binding/parse-class-binding.state';
 import { parseConditionalBinding } from '../parse-conditional-binding/parse-conditional-binding.state';
 import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseEvent } from '../parse-event/parse-event.state';
@@ -51,6 +52,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
 
   const attributes = new Array<AttributeNode>();
   const classBindings = new Array<ClassBindingNode>();
+  const styleBindings = new Array<StyleBindingNode>();
   const events = new Array<EventNode>();
   const conditionalBindings = new Array<ConditionalBindingNode>();
   const directives = new Array<DirectiveNode>();
@@ -81,7 +83,8 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
 
       case TokenType.ATTRIBUTE:
         if (isBracketBinding(token)) {
-          classBindings.push(parseClassBinding(cursor, parseNode, token));
+          const binding = parseBracketBinding(cursor, parseNode, token);
+          binding.type === ASTNodeType.ClassBinding ? classBindings.push(binding) : styleBindings.push(binding);
         } else {
           attributes.push(parseAttribute(cursor, parseNode, token));
         }
@@ -111,6 +114,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
 
   assertUniqueAttributes(attributes, conditionalBindings, name => `Attribute "${name}" is bound more than once on <${tagName}>`);
   assertUniqueClassBindings(classBindings, conditionalBindings, tagName);
+  assertUniqueStyleBindings(styleBindings, conditionalBindings, tagName);
   assertUniqueDirectives(tagName, directives, conditionalBindings, branch => branch.directives);
   assertUniqueDirectives(tagName, structuralDirectives, conditionalBindings, branch => branch.structuralDirectives);
 
@@ -118,7 +122,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   const typeArguments = token.parts[1] === undefined ? undefined : parseTypeArguments(token.parts[1], nameSpan.end + 1);
   let node: MaybeASTNodeWithSpan<ElementNode> | MaybeASTNodeWithSpan<TemplateNode>;
   if (tagName === 'template' && declaration) {
-    const binding = typeArguments?.[0] ?? ref ?? attributes[0] ?? classBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
+    const binding = typeArguments?.[0] ?? ref ?? attributes[0] ?? classBindings[0] ?? styleBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
     if (binding) {
       throw new Error('A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it', { cause: binding.span });
     }
@@ -131,6 +135,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
       nameSpan,
       attributes,
       classBindings,
+      styleBindings,
       events,
       children: [],
       conditionalBindings,
@@ -252,6 +257,31 @@ function assertUniqueClassBindings(classBindings: ClassBindingNode[], conditiona
   }
 
   assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniqueClassBindings(branch.classBindings, branch.conditionalBindings, tagName, boundInBranch));
+}
+
+/**
+ * Ensures every style property is set at most once at a time on an element, across the element itself and all of its
+ * (nested) conditional bindings, as {@link assertUniqueAttributes} does for the attributes: the branches of a
+ * conditional binding can set the same property, since only one of them is applied at a time. A property set with
+ * different units counts once.
+ *
+ * @param styleBindings - Style binding nodes to check.
+ * @param conditionalBindings - Conditional bindings whose style bindings are checked recursively.
+ * @param tagName - Tag name of the element, used in the error message.
+ * @param bound - Names of the properties already set on the element.
+ * @throws If a property is set more than once.
+ */
+function assertUniqueStyleBindings(styleBindings: StyleBindingNode[], conditionalBindings: ConditionalBindingNode[], tagName: string, bound = new Set<string>()): void {
+  for (let i = 0; i < styleBindings.length; i++) {
+    const { property, span } = styleBindings[i];
+    if (bound.has(property)) {
+      throw new Error(`Style property "${property}" is bound more than once on <${tagName}>`, { cause: span });
+    }
+
+    bound.add(property);
+  }
+
+  assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniqueStyleBindings(branch.styleBindings, branch.conditionalBindings, tagName, boundInBranch));
 }
 
 /**

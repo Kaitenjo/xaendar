@@ -1,5 +1,5 @@
 import { dropsLeadingNewline, escapeAttribute, isValidCustomElementName, isVoidElement } from '@xaendar/common';
-import { appendBlockPosition, ASTNodeType, declareExpression, mapContentTemplates, GeneratorContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ClassBindingNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
+import { appendBlockPosition, ASTNodeType, declareExpression, mapContentTemplates, GeneratorContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ClassBindingNode, type StyleBindingNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
 import type { Function } from '@xaendar/types';
 import type { ServerCodePiece } from '../../types/server-code-piece.type';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
@@ -107,7 +107,7 @@ function toContentPieces(content: string): ServerCodePiece[] {
  * @returns The code of the element.
  */
 function writeElement(node: ElementNode, id: string, generatorContext: GeneratorContext, children: readonly ServerCodePiece[]): ServerCodePiece[] {
-  const { tagName, attributes, classBindings, ref } = node;
+  const { tagName, attributes, classBindings, styleBindings, ref } = node;
   const owner: DescriptorOwner = { name: id, generatorContext };
   const isHtml = getElementNamespace(tagName, generatorContext.namespace) === 'html';
   const isComponent = isValidCustomElementName(tagName, false) && !generatorContext.isForeignElement(tagName);
@@ -123,10 +123,11 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
 
   registerEvents(node, generatorContext);
 
-  if (isComponent || classBindings.length || conditionalBindings.length || directives?.length) {
+  if (isComponent || classBindings.length || styleBindings.length || conditionalBindings.length || directives?.length) {
     const descriptors = mapAttributes(attributes, owner, isComponent ? tagName : undefined);
     appendSubmitMark(descriptors, node);
     appendClassBindings(descriptors, classBindings, owner);
+    appendStyleBindings(descriptors, styleBindings, owner);
     const members = [`tagName: '${tagName}'`];
     appendList(members, 'attributes', descriptors);
     appendList(members, 'conditionalBindings', conditionalBindings);
@@ -294,6 +295,27 @@ function appendClassBindings(descriptors: string[], classBindings: ClassBindingN
 }
 
 /**
+ * Appends to the descriptors of the attributes the ones of the style properties the element sets, with their unit, if
+ * any, as the client does.
+ *
+ * @param descriptors - The code of the descriptors of the attributes.
+ * @param styleBindings - The style binding nodes.
+ * @param owner - The element, which the functions of the expressions are named after.
+ */
+function appendStyleBindings(descriptors: string[], styleBindings: StyleBindingNode[], owner: DescriptorOwner): void {
+  for (let i = 0; i < styleBindings.length; i++) {
+    const { property, unit, value } = styleBindings[i];
+    const members = [`name: ${toStringLiteral(property)}`];
+    if (unit) {
+      members.push(`unit: ${toStringLiteral(unit)}`);
+    }
+
+    members.push(`value: ${declareElementExpression(owner, `style_${toRoleName(property)}`, value.expression)}`, 'setter: _setExpressionStyle');
+    descriptors.push(toObjectLiteral(members));
+  }
+}
+
+/**
  * Maps conditional binding nodes to the descriptors the runtime selects the branch of: the branches, each one mapped by
  * `mapBranch`, and, for a `@switch`, the expression whose value selects the branch.
  *
@@ -371,6 +393,7 @@ function mapBranch(branch: ConditionalBindingBranchNode, condition: string | und
   const attributes = mapAttributes(branch.attributes, owner, component);
   appendSubmitMark(attributes, branch);
   appendClassBindings(attributes, branch.classBindings, owner);
+  appendStyleBindings(attributes, branch.styleBindings, owner);
   const members = condition ? [condition] : new Array<string>();
   appendList(members, 'attributes', attributes);
   if (withDirectives) {
@@ -444,8 +467,8 @@ function toDirectiveDescriptor(selector: string, attributes: AttributeNode[], ow
  * @returns `true` when the branch writes nothing.
  */
 function isEmptyBranch(branch: ConditionalBindingBranchNode, withDirectives: boolean): boolean {
-  const { attributes, classBindings, directives, conditionalBindings } = branch;
-  return !attributes.length && !classBindings.length && !listensToSubmit(branch) && !(withDirectives && directives.length) && conditionalBindings.every(({ branches }) => branches.every(nested => isEmptyBranch(nested, withDirectives)));
+  const { attributes, classBindings, styleBindings, directives, conditionalBindings } = branch;
+  return !attributes.length && !classBindings.length && !styleBindings.length && !listensToSubmit(branch) && !(withDirectives && directives.length) && conditionalBindings.every(({ branches }) => branches.every(nested => isEmptyBranch(nested, withDirectives)));
 }
 
 /**

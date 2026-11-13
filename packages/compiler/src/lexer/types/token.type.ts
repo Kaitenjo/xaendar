@@ -15,6 +15,7 @@ import type { ElementRefToken } from './tokens/element-ref-token.type';
 import type { ElseIfToken } from './tokens/else-if-token.type';
 import type { ElseToken } from './tokens/else-token.type';
 import type { EOFToken } from './tokens/eof-token.type';
+import type { EmptyToken } from './tokens/empty-token.type';
 import type { ErrorToken } from './tokens/error-token.type';
 import type { EventHandlerToken } from './tokens/event-handler-token.type';
 import type { EventParAmeterToken } from './tokens/event-parameter-token.type';
@@ -85,5 +86,6 @@ export type Token =
   | DeferToken
   | LoadingToken
   | ErrorToken
+  | EmptyToken
   | CastToken
   | EOFToken;

@@ -12,4 +12,5 @@ export type ForImplicitVariables =
   | '$last'
   | '$first'
   | '$even'
-  | '$odd';
+  | '$odd'
+  | '$count';

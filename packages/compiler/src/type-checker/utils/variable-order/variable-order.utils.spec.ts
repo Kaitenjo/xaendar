@@ -164,6 +164,16 @@ describe('checkVariableOrder', () => {
       expect(errorsOf(template)?.map(([, read]) => read)).toEqual(['field', 'field', 'field', 'field', 'field', 'field']);
     });
 
+    it('checks the style bindings, of the element and of its conditional bindings', () => {
+      const template = '<p [style.width.px]="{ field.width }" @if (other) { [style.color]="{ field.value }" }></p><input #field />';
+
+      expect(errorsOf(template)?.map(([, read]) => read)).toEqual(['field', 'field']);
+    });
+
+    it('checks the content of the @empty of a @for in the enclosing scope, without the variables of the loop', () => {
+      expect(errorsOf('@for (item of items; track item) { } @empty { <p>{ field.value }</p> }<input #field />')).toEqual([[readBefore('field'), 'field']]);
+    });
+
     it('checks the class bindings, of the element and of its conditional bindings', () => {
       const template = '<p [class.on]="{ field.checked }" @if (other) { [class.big]="{ field.value }" }></p><input #field />';
 

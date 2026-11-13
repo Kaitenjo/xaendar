@@ -6,7 +6,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `[Lexer] Unknown flow-control keyword`
 
-- **Cause:** An @ in text starts a block: a keyword written without a space before its parenthesis (@if(…)), a keyword that does not exist (@unless, @empty), or a plain @, as in an email address.
+- **Cause:** An @ in text starts a block: a keyword written without a space before its parenthesis (@if(…)), a keyword that does not exist (@unless, @foreach), or a plain @, as in an email address.
 - **Fix:** Write a space after the keyword, and &commat; or an interpolation such as { '@' } for a literal @.
 
 ### `[Lexer] Comment never closed: '<!--' without '-->'`
@@ -131,10 +131,30 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A class binding with a static value, or without a value.
 - **Fix:** Bind it to an expression in braces: [class.on]="{ active() }".
 
-### `[Parser] "[style.color]" is not a binding: a class is toggled with [class.name]="{expression}"`
+### `[Parser] "[attr.color]" is not a binding: a class is toggled with [class.name]="{expression}", a style property is set with [style.name]="{expression}"`
 
-- **Cause:** An attribute name in brackets other than [class.name]: brackets only toggle classes.
-- **Fix:** Bind the attribute without brackets, e.g. style="{ … }", or toggle a class with [class.name].
+- **Cause:** An attribute name in brackets other than [class.name] and [style.name]: brackets only toggle classes and set style properties.
+- **Fix:** Bind the attribute without brackets, e.g. title="{ … }", or use [class.name] or [style.name].
+
+### `[Parser] [style.color] sets the style property by the value of an expression: [style.color]="{expression}"`
+
+- **Cause:** A style binding with a static value, or without a value.
+- **Fix:** Put the value in braces, [style.color]="{ 'red' }", or write it in the style attribute.
+
+### `[Parser] [style.width.PX] does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. [style.width.px], or a custom property, e.g. [style.--accent]`
+
+- **Cause:** A style binding whose property holds characters a property cannot, or whose unit is not lowercase letters or %, or is followed by more than one unit.
+- **Fix:** Write the property in kebab-case or camelCase, and at most one unit in lowercase.
+
+### `[Parser] Style property "width" is bound more than once on <div>`
+
+- **Cause:** The same style property set twice on an element, also with different units, or on the element and in one of its conditional bindings.
+- **Fix:** Bind it once, or in different branches of the same condition.
+
+### `[Parser] [style.color] cannot be bound inside a directive: bind it on the element`
+
+- **Cause:** A style binding in the parentheses of a directive, which only bind its properties.
+- **Fix:** Write it on the element, or set it from the directive with @HostProperty('style.color').
 
 ### `[Parser] [class.on] cannot be bound inside a directive: bind it on the element`
 
@@ -463,15 +483,25 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A readonly member initialized with a literal has a literal type, and the template is checked with it.
 - **Fix:** Annotate the member with a wider type.
 
-### `Argument of type 'Set<number>' is not assignable to parameter of type 'number | readonly unknown[]'.`
+### `Argument of type 'string' is not assignable to parameter of type 'never'.`
 
-- **Cause:** @for over something that is neither an array nor a number: a Set, a Map, a string.
-- **Fix:** Convert it to an array, for instance in a computed signal.
+- **Cause:** A @for iterating a string, which would render a row per character.
+- **Fix:** Iterate an array of what you need, e.g. [...word] in a computed signal.
 
-### `Property '$count' does not exist on type 'XList'.`
+### `[Parser] @empty must follow the block of a @for`
 
-- **Cause:** $count is not one of the variables of @for.
-- **Fix:** Read the length of the list.
+- **Cause:** An @empty that does not follow the closing brace of a @for.
+- **Fix:** Write it right after the block of the @for: } @empty { … }.
+
+### `[Parser] @empty takes no parameters: it is rendered while the @for has no items`
+
+- **Cause:** An @empty followed by parentheses.
+- **Fix:** Remove them: @empty { … }.
+
+### `Error: @for iterates an array, a number or an iterable (a Map, a Set…), not a string`
+
+- **Cause:** A @for whose expression gives, at runtime, a string, null, undefined or a value that is not iterable, typed as any.
+- **Fix:** Give it an array, a number or an iterable, e.g. an empty array instead of null.
 
 ### `'task' is a template variable, not a signal: remove the parentheses and read it as task, since the variables of a template (@for, @let, parameters of a template) hold their values`
 

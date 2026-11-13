@@ -95,6 +95,14 @@ describe('generateServerElement', () => {
     expect(functions).toEqual([expressionFunction('user_card0$label', 'this.on()')]);
   });
 
+  it('writes the start tag of an element setting style properties through _ssrStartTag, with their unit, in its branches too', () => {
+    const { code, constants } = generate('<div [style.width.px]="{ on() }" @if (mode()) { [style.--accent]="{ 1 }" }></div>');
+
+    expect(code).toEqual(['_ssrStartTag(out, context, div0$element);', 'out.push(\'</div>\');']);
+    expect(constants[0]).toContain('{ name: \'width\', unit: \'px\', value: div0$style_width, setter: _setExpressionStyle }');
+    expect(constants[0]).toContain('{ name: \'--accent\', value: div0$style___accent, setter: _setExpressionStyle }');
+  });
+
   it('writes a custom element of another library like a native element', () => {
     const context = new GeneratorContext(cache);
     context.addCustomElementPatterns('sl-*');

@@ -6,7 +6,7 @@ import { TemplateError } from '../../models/template-error/template-error.model.
 import { isSpan } from '../../utils/span/span.utils.js';
 import { ParserCursor } from '../models/parser-cursor/parser-cursor.model.js';
 import { parseElement } from '../states/parse-element/parse-element.state.js';
-import { parseForControlFlow } from '../states/parse-for/parse-for.state.js';
+import { parseForControlFlow, parseOrphanEmpty } from '../states/parse-for/parse-for.state.js';
 import { parseClient, parseOrphanPlaceholder } from '../states/parse-client/parse-client.state.js';
 import { parseDefer, parseOrphanError, parseOrphanLoading } from '../states/parse-defer/parse-defer.state.js';
 import { parseHydrate } from '../states/parse-hydrate/parse-hydrate.state.js';
@@ -58,6 +58,7 @@ export class Parser {
     [TokenType.DEFER]: parseDefer,
     [TokenType.LOADING]: parseOrphanLoading,
     [TokenType.ERROR]: parseOrphanError,
+    [TokenType.EMPTY]: parseOrphanEmpty,
     [TokenType.IMPORT]: parseImport,
     [TokenType.RENDER]: parseRender,
     [TokenType.LET]: parseLet

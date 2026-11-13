@@ -20,8 +20,9 @@ import type { StructuralDirectiveNode } from '../../types/nodes/structural-direc
 import type { SwitchBindingNode } from '../../types/nodes/switch-binding-node.type';
 import { validateExpression } from '../../utils/expression-validator/expression-validator';
 import type { ClassBindingNode } from '../../types/nodes/class-binding-node.type';
+import type { StyleBindingNode } from '../../types/nodes/style-binding-node.type';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
-import { isBracketBinding, parseClassBinding } from '../parse-class-binding/parse-class-binding.state';
+import { isBracketBinding, parseBracketBinding } from '../parse-class-binding/parse-class-binding.state';
 import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseEvent } from '../parse-event/parse-event.state';
 import { parseStructuralDirective } from '../parse-structural-directive/parse-structural-directive.state';
@@ -193,6 +194,7 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
 
   const attributes = new Array<AttributeNode>();
   const classBindings = new Array<ClassBindingNode>();
+  const styleBindings = new Array<StyleBindingNode>();
   const events = new Array<EventNode>();
   const conditionalBindings = new Array<ConditionalBindingNode>();
   const directives = new Array<DirectiveNode>();
@@ -204,7 +206,8 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
     switch (token.type) {
       case TokenType.ATTRIBUTE:
         if (isBracketBinding(token)) {
-          classBindings.push(parseClassBinding(cursor, parseNode, token));
+          const binding = parseBracketBinding(cursor, parseNode, token);
+          binding.type === ASTNodeType.ClassBinding ? classBindings.push(binding) : styleBindings.push(binding);
         } else {
           attributes.push(parseAttribute(cursor, parseNode, token));
         }
@@ -243,6 +246,7 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
     conditionSpans,
     attributes,
     classBindings,
+    styleBindings,
     events,
     conditionalBindings,
     directives,

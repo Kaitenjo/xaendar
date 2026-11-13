@@ -22,7 +22,7 @@ describe('getKeywordContext', () => {
     ['nothing written yet', '<p>a</p>\n@', 'if,for,switch,hydrate,client,try,defer,render,let@9-10'],
     ['a partial keyword', '<p>a</p>\n@fo', 'if,for,switch,hydrate,client,try,defer,render,let@9-12'],
     ['a block nested in another one', '@for (item of items) {\n  @', 'if,for,switch,hydrate,client,try,defer,render,let@25-26'],
-    ['a block after a @for block', '@for (item of items) {\n}\n@', 'if,for,switch,hydrate,client,try,defer,render,let@25-26'],
+    ['a block after a @for block, or its @empty', '@for (item of items) {\n}\n@', 'if,for,switch,hydrate,client,try,defer,render,let,empty@25-26'],
     ['a block in a @case block', '@switch (a) {\n  @case (1) {\n    @', 'if,for,switch,hydrate,client,try,defer,render,let@32-33'],
     ['a block in a @else block', '@if (a) {\n} @else {\n  @', 'if,for,switch,hydrate,client,try,defer,render,let@22-23'],
     ['a block after a @else block', '@if (a) {\n} @else {\n}\n@', 'if,for,switch,hydrate,client,try,defer,render,let@22-23'],

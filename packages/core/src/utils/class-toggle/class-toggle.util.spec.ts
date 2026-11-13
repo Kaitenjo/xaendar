@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { restoreToggledClasses, toggleClass, untoggleClass, updateAttribute } from './class-toggle.util';
+import { restoreBindings, setStyle, toggleClass, untoggleClass, unsetStyle, updateAttribute } from './class-toggle.util';
 
 const classesOf = (element: Element) => [...element.classList].sort().join(' ');
 
@@ -21,11 +21,11 @@ describe('class toggles', () => {
     toggleClass(element, 'off', false);
 
     element.setAttribute('class', 'a off');
-    restoreToggledClasses(element, 'class');
+    restoreBindings(element, 'class');
     expect(classesOf(element)).toBe('a on');
 
     element.removeAttribute('class');
-    restoreToggledClasses(element, 'class');
+    restoreBindings(element, 'class');
     expect(classesOf(element)).toBe('on');
   });
 
@@ -33,12 +33,12 @@ describe('class toggles', () => {
     const toggled = document.createElement('div');
     toggleClass(toggled, 'on', true);
     toggled.setAttribute('class', 'a');
-    restoreToggledClasses(toggled, 'title');
+    restoreBindings(toggled, 'title');
     expect(classesOf(toggled)).toBe('a');
 
     const plain = document.createElement('div');
     plain.setAttribute('class', 'a');
-    restoreToggledClasses(plain, 'class');
+    restoreBindings(plain, 'class');
     expect(classesOf(plain)).toBe('a');
   });
 
@@ -50,7 +50,7 @@ describe('class toggles', () => {
     expect(classesOf(element)).toBe('');
 
     element.setAttribute('class', 'a');
-    restoreToggledClasses(element, 'class');
+    restoreBindings(element, 'class');
     expect(classesOf(element)).toBe('a');
   });
 
@@ -105,5 +105,73 @@ describe('class toggles', () => {
       updateAttribute(element, 'class', null);
       expect(classesOf(element)).toBe('on');
     });
+  });
+});
+
+describe('style properties', () => {
+  it('sets a style property, writing it only when the element does not hold the value, and removes it for null', () => {
+    const element = document.createElement('div');
+    setStyle(element, 'width', '10px');
+    expect(element.style.getPropertyValue('width')).toBe('10px');
+
+    const setProperty = vi.spyOn(element.style, 'setProperty');
+    setStyle(element, 'width', '10px');
+    expect(setProperty).not.toHaveBeenCalled();
+
+    setStyle(element, 'width', null);
+    expect(element.style.getPropertyValue('width')).toBe('');
+  });
+
+  it('removes a style property set, and nothing on an element without it', () => {
+    const element = document.createElement('div');
+    const removeProperty = vi.spyOn(element.style, 'removeProperty');
+    unsetStyle(element, 'color');
+    expect(removeProperty).not.toHaveBeenCalled();
+
+    setStyle(element, '--accent', 'red');
+    unsetStyle(element, '--accent');
+    expect(element.style.getPropertyValue('--accent')).toBe('');
+  });
+
+  it('sets the style properties again after the style attribute is written, winning over the ones it declares', () => {
+    const element = document.createElement('div');
+    setStyle(element, 'color', 'red');
+
+    element.setAttribute('style', 'color: blue; width: 10px');
+    restoreBindings(element, 'style');
+    expect(element.style.getPropertyValue('color')).toBe('red');
+    expect(element.style.getPropertyValue('width')).toBe('10px');
+
+    restoreBindings(document.createElement('div'), 'style');
+    restoreBindings(element, 'title');
+  });
+
+  it('writes the style attribute only when the element does not hold the properties it declares, bound ones included', () => {
+    const element = document.createElement('div');
+    setStyle(element, 'color', 'red');
+    element.setAttribute('style', 'width: 10px; color: red;');
+    const setAttribute = vi.spyOn(element, 'setAttribute');
+
+    updateAttribute(element, 'style', 'width: 10px; color: blue');
+    expect(setAttribute).not.toHaveBeenCalled();
+
+    updateAttribute(element, 'style', 'width: 20px');
+    expect(element.style.getPropertyValue('width')).toBe('20px');
+    expect(element.style.getPropertyValue('color')).toBe('red');
+
+    updateAttribute(element, 'style', 'width: 20px; height: 5px');
+    expect(element.style.getPropertyValue('height')).toBe('5px');
+  });
+
+  it('compares the style attribute as a text on an element setting no style property', () => {
+    const element = document.createElement('div');
+    element.setAttribute('style', 'width: 10px;');
+    const setAttribute = vi.spyOn(element, 'setAttribute');
+
+    updateAttribute(element, 'style', 'width: 10px;');
+    expect(setAttribute).not.toHaveBeenCalled();
+
+    updateAttribute(element, 'style', 'width: 10px');
+    expect(setAttribute).toHaveBeenCalledOnce();
   });
 });

@@ -66,8 +66,14 @@ function collectSelectors(nodes: readonly ASTNode[], selectors: Set<string>): bo
         }
         break;
 
-      case ASTNodeType.Else:
       case ASTNodeType.For:
+        client = collectSelectors(node.children, selectors) || client;
+        if (node.empty) {
+          client = collectSelectors(node.empty.children, selectors) || client;
+        }
+        break;
+
+      case ASTNodeType.Else:
       case ASTNodeType.Switch:
       case ASTNodeType.Case:
       case ASTNodeType.Template:

@@ -6,7 +6,7 @@ import { ElementNode } from '../../types/nodes/element-node.type';
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse() as ElementNode[];
 
-describe('parseClassBinding', () => {
+describe('parseBracketBinding', () => {
   it('parses a class toggled on an element apart from its attributes', () => {
     const [node] = parse('<div class="a" [class.is-active]="{active()}"></div>');
 
@@ -31,12 +31,52 @@ describe('parseClassBinding', () => {
   });
 
   it.each([
-    ['another binding in brackets', '<div [style.color]="{c}"></div>', '"[style.color]" is not a binding'],
+    ['another binding in brackets', '<div [attr.color]="{c}"></div>', '"[attr.color]" is not a binding: a class is toggled with [class.name]="{expression}", a style property is set with [style.name]="{expression}"'],
+    ['an empty style property', '<div [style.]="{c}"></div>', '"[style.]" is not a binding'],
     ['an empty class name', '<div [class.]="{c}"></div>', '"[class.]" is not a binding'],
     ['a class name with brackets', '<div [class.a[b]]="{c}"></div>', '"[class.a[b]]" is not a binding'],
     ['an unclosed bracket', '<div [class.a="{c}"></div>', '"[class.a" is not a binding']
   ])('rejects %s', (_name, template, message) => {
     expect(() => parse(template)).toThrow(message);
+  });
+
+  it('parses the style properties set on an element, in kebab-case or camelCase, with their unit, and the custom properties', () => {
+    const [node] = parse('<div [style.color]="{c()}" [style.backgroundColor]="{b}" [style.width.px]="{w}" [style.height.%]="{h}" [style.--accent]="{a}" @if (x) { [style.top.em]="{t}" }></div>');
+
+    expect(node.styleBindings.map(({ property, unit }) => [property, unit])).toEqual([['color', undefined], ['background-color', undefined], ['width', 'px'], ['height', '%'], ['--accent', undefined]]);
+    expect(node.styleBindings[0]).toMatchObject({ type: ASTNodeType.StyleBinding, nameSpan: { start: 5, end: 18 } });
+    expect(node.conditionalBindings[0].branches[0].styleBindings.map(({ property, unit }) => [property, unit])).toEqual([['top', 'em']]);
+    expect(node.classBindings).toEqual([]);
+  });
+
+  it.each([
+    ['a name with digits', '<div [style.1x]="{c}"></div>'],
+    ['a unit in uppercase', '<div [style.width.PX]="{c}"></div>'],
+    ['more than one unit', '<div [style.width.px.em]="{c}"></div>']
+  ])('rejects a style property named by %s', (_name, template) => {
+    expect(() => parse(template)).toThrow('does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. [style.width.px], or a custom property, e.g. [style.--accent]');
+  });
+
+  it('rejects a style property set by a static value', () => {
+    expect(() => parse('<div [style.color]="red"></div>')).toThrow('[style.color] sets the style property by the value of an expression: [style.color]="{expression}"');
+  });
+
+  it.each([
+    ['in a conditional binding of a directive', '<div @@tint(@if (a()) { [style.color]="{a}" })></div>'],
+    ['in the parentheses of a directive', '<div @@tint([style.color]="{a}")></div>']
+  ])('rejects a style property set %s', (_name, template) => {
+    expect(() => parse(template)).toThrow('[style.color] cannot be bound inside a directive: bind it on the element');
+  });
+
+  it.each([
+    ['twice on the element', '<div [style.width.px]="{a}" [style.width.%]="{b}"></div>'],
+    ['on the element and in a conditional binding', '<div [style.color]="{a}" @if (x) { [style.color]="{b}" }></div>']
+  ])('rejects a style property set %s', (_name, template) => {
+    expect(() => parse(template)).toThrow(/Style property "(width|color)" is bound more than once on <div>/);
+  });
+
+  it('accepts the branches of a conditional binding setting the same style property', () => {
+    expect(() => parse('<div @if (x) { [style.color]="{a}" } @else { [style.color]="{b}" }></div>')).not.toThrow();
   });
 
   it.each([

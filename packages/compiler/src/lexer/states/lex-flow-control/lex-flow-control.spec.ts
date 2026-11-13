@@ -18,6 +18,14 @@ describe('lexFlowControl', () => {
     });
   });
 
+  it('recognises @empty', () => {
+    const cursor = new LexerCursor('@empty {');
+    expect(lexFlowControl(cursor, context)).toEqual({
+      state: LexerState.FLOW_CONTROL_BLOCK,
+      tokens: [{ type: TokenType.EMPTY }]
+    });
+  });
+
   it('recognises @if', () => {
     const cursor = new LexerCursor('@if (x) {');
     expect(lexFlowControl(cursor, context)).toEqual({

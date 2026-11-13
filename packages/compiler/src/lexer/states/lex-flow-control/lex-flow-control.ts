@@ -6,9 +6,9 @@ import { LexerTransitionFunctionReturnType } from '../../types/transition-functi
 
 /**
  * Dispatches on a `@keyword` to determine which flow-control directive begins here.
- * Recognises `@if`, `@for`, `@else`, `@switch`, `@case`, `@default`, `@hydrate`, `@client`, `@placeholder`, `@try`,
+ * Recognises `@if`, `@for`, `@empty`, `@else`, `@switch`, `@case`, `@default`, `@hydrate`, `@client`, `@placeholder`, `@try`,
  * `@catch`, `@defer`, `@loading`, `@error`, `@render`, `@let` and `@import`. The parentheses following `@catch`, `@error`,
- * `@defer`, `@hydrate`, `@placeholder` and `@loading` are optional (see {@link lexBlockWithParameters}).
+ * `@defer`, `@hydrate`, `@placeholder`, `@loading` and `@empty` are optional (see {@link lexBlockWithParameters}).
  * Advances the cursor past the keyword and transitions to the appropriate next state.
  *
  * @param cursor - The lexer cursor positioned on the `@` character.
@@ -48,6 +48,10 @@ export function lexFlowControl(cursor: LexerCursor, _context: LexerTransitionFun
       }],
       pushState: true
     };
+  } else if (cursor.peekMatch('empty ')) {
+    cursor.advance(6);
+    // Read with its parentheses, if any, which the parser rejects: @empty takes no parameters
+    retVal = lexBlockWithParameters(cursor, TokenType.EMPTY);
   } else if (cursor.peekMatch('else ')) {
     cursor.advance(5);
     retVal = {
@@ -153,7 +157,7 @@ export function lexFlowControl(cursor: LexerCursor, _context: LexerTransitionFun
  * @param type - The token of the keyword.
  * @returns Transition result reading the parameters as a condition, when there are some, or the block.
  */
-function lexBlockWithParameters(cursor: LexerCursor, type: TokenType.CATCH | TokenType.ERROR | TokenType.DEFER | TokenType.HYDRATE | TokenType.PLACEHOLDER | TokenType.LOADING): LexerTransitionFunctionReturnType {
+function lexBlockWithParameters(cursor: LexerCursor, type: TokenType.CATCH | TokenType.ERROR | TokenType.DEFER | TokenType.HYDRATE | TokenType.PLACEHOLDER | TokenType.LOADING | TokenType.EMPTY): LexerTransitionFunctionReturnType {
   if (!cursor.peekMatchAfterSpaces('(')) {
     return { state: LexerState.FLOW_CONTROL_BLOCK, tokens: [{ type }] };
   }

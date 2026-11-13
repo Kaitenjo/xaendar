@@ -1,6 +1,7 @@
 import type { AttributeNode } from '../parser/types/nodes/attribute-node.type';
 import type { CaseNode } from '../parser/types/nodes/case-node.type';
 import type { ClassBindingNode } from '../parser/types/nodes/class-binding-node.type';
+import type { StyleBindingNode } from '../parser/types/nodes/style-binding-node.type';
 import type { ClientNode } from '../parser/types/nodes/client-node.type';
 import type { DeferNode } from '../parser/types/nodes/defer-node.type';
 import type { DirectiveNode } from '../parser/types/nodes/directive-node.type';
@@ -45,6 +46,10 @@ export type TemplateVisitor = {
    * Invoked for every class toggled on an element (`[class.name]`), conditional bindings included.
    */
   readonly classBinding?: (node: ClassBindingNode) => void;
+  /**
+   * Invoked for every style property set on an element (`[style.name]`), conditional bindings included.
+   */
+  readonly styleBinding?: (node: StyleBindingNode) => void;
   /**
    * Invoked for every event bound on an element or on a directive, conditional bindings included, with the metadata
    * of the component or directive it is bound to, `undefined` for the events of any other element, and the names of

@@ -36,8 +36,10 @@ function findNodeEvent(node: ASTNode): EventNode | undefined {
     case ASTNodeType.ElseIf:
       return findEvent(node.children) ?? (node.alternate ? findNodeEvent(node.alternate) : undefined);
 
-    case ASTNodeType.Else:
     case ASTNodeType.For:
+      return findEvent(node.children) ?? (node.empty ? findEvent(node.empty.children) : undefined);
+
+    case ASTNodeType.Else:
     case ASTNodeType.Switch:
     case ASTNodeType.Case:
     case ASTNodeType.Template:

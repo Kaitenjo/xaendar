@@ -7,20 +7,7 @@ await vi.hoisted(async () => {
   loadServerDom();
 });
 
-const { _ssrItemMarker, _ssrItems } = await import('./ssr-items.util');
-
-describe('_ssrItems', () => {
-  it('iterates the items of an array', () => {
-    const items = ['a', 'b'];
-
-    expect(_ssrItems(items)).toBe(items);
-  });
-
-  it('iterates 0, 1, …, n - 1 for a number n', () => {
-    expect(_ssrItems(3)).toEqual([0, 1, 2]);
-    expect(_ssrItems(0)).toEqual([]);
-  });
-});
+const { _ssrItemMarker } = await import('./ssr-items.util');
 
 describe('_ssrItemMarker', () => {
   it('writes the key of a number and of a string apart, so that 1 and \'1\' stay distinct', () => {

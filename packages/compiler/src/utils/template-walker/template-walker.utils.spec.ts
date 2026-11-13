@@ -64,16 +64,35 @@ describe('walkTemplate', () => {
       'expression p []',
       'for item',
       'expression items []',
-      'expression item.id [item,i,$first,$last,$even,$odd]',
-      'expression item [item,i,$first,$last,$even,$odd]',
+      'expression item.id [item,i,$first,$last,$even,$odd,$count]',
+      'expression item [item,i,$first,$last,$even,$odd,$count]',
       'for undefined',
-      'expression q [item,i,$first,$last,$even,$odd]',
-      'expression $index [item,i,$first,$last,$even,$odd,$index]',
-      'expression r [item,i,$first,$last,$even,$odd,$index]',
+      'expression q [item,i,$first,$last,$even,$odd,$count]',
+      'expression $index [item,i,$first,$last,$even,$odd,$count,$index]',
+      'expression r [item,i,$first,$last,$even,$odd,$count,$index]',
       'expression s []',
       'expression t []',
       'expression u []'
     ]);
+  });
+
+  it('visits the style properties set on the elements and in their conditional bindings, with their expressions', () => {
+    const visits = new Array<string>();
+    walkTemplate(parseTemplate('<p [style.width.px]="{a}" @if (b) { [style.--x]="{c}" }></p>'), [], {
+      styleBinding: node => visits.push(`style ${node.property}`),
+      expression: expression => visits.push(`expression ${expression.getText()}`)
+    });
+
+    expect(visits).toEqual(['style width', 'expression a', 'expression b', 'style --x', 'expression c']);
+  });
+
+  it('visits the content of the @empty of a @for with the variables of the enclosing scope', () => {
+    const visits = new Array<string>();
+    walkTemplate(parseTemplate('@for (item of items; track item) { } @empty { { none } }'), [], {
+      expression: (expression, variables) => visits.push(`${expression.getText()} [${[...variables].join(',')}]`)
+    });
+
+    expect(visits.at(-1)).toBe('none []');
   });
 
   it('visits the classes toggled on the elements and in their conditional bindings, with their expressions', () => {
@@ -226,8 +245,8 @@ describe('walkTemplate', () => {
       'expression inBranch [field,inBranch]',
       'ref inBranch',
       'expression items [field]',
-      'expression item [field,item,$index,$first,$last,$even,$odd]',
-      'expression inRow [field,item,$index,$first,$last,$even,$odd,inRow]',
+      'expression item [field,item,$index,$first,$last,$even,$odd,$count]',
+      'expression inRow [field,item,$index,$first,$last,$even,$odd,$count,inRow]',
       'ref inRow',
       'expression b [field]',
       'expression inCase [field,inCase]',

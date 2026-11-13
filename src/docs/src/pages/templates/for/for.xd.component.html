@@ -6,6 +6,7 @@
 @import { ForNumbersComponent } from '../../../examples/templates/for/for-numbers/for-numbers.xd.component.ts'
 @import { ForNestedComponent } from '../../../examples/templates/for/for-nested/for-nested.xd.component.ts'
 @import { ForEmptyComponent } from '../../../examples/templates/for/for-empty/for-empty.xd.component.ts'
+@import { ForIterablesComponent } from '../../../examples/templates/for/for-iterables/for-iterables.xd.component.ts'
 @import { KeyedStateComponent } from '../../../examples/templates/for/keyed-state/keyed-state.xd.component.ts'
 @import { ReplacedObjectComponent } from '../../../examples/templates/for/replaced-object/replaced-object.xd.component.ts'
 @import { DuplicateKeysComponent } from '../../../examples/templates/for/duplicate-keys/duplicate-keys.xd.component.ts'
@@ -39,6 +40,15 @@
   heading="{translations().pages.templates.for.repeatingANumberOf.example1}">
   <ex-for-numbers />
 </docs-example>
+
+<h2>
+  { t(translations(), 'pages.templates.for.iterables.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.for.iterables.p1") />
+<docs-example name="templates/for/for-iterables" heading="{translations().pages.templates.for.iterables.example1}">
+  <ex-for-iterables />
+</docs-example>
+<p @@htmlTranslation(key="pages.templates.for.iterables.p2") />
 
 <h2>
   { t(translations(), 'pages.templates.for.nestedLoops.title') }
@@ -130,10 +140,27 @@
           <code>$first</code>,
           <code>$last</code>,
           <code>$even</code>,
-          <code>$odd</code>
+          <code>$odd</code>,
+          <code>$count</code>
         </td>
         <td>
           { t(translations(), 'pages.templates.for.summary.td4') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ '} @empty { … }' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.templates.for.summary.td6') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@for (entry of map(); track entry[0])' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.templates.for.summary.td7') }
         </td>
       </tr>
       <tr>

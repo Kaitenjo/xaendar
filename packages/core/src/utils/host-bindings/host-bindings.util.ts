@@ -3,7 +3,7 @@ import { _bindEffect } from '../../signals/effect/effect';
 import type { EventHost } from '../../types/event/event-host.type';
 import type { HostPropertyBinding } from '../../types/host/host-property-binding.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
-import { toggleClass, untoggleClass } from '../class-toggle/class-toggle.util';
+import { setStyle, toggleClass, untoggleClass, unsetStyle } from '../class-toggle/class-toggle.util';
 import { writeAttribute } from '../write-attribute/write-attribute.util';
 import type { _Context } from '../../types/context.type';
 import { addCleanup } from '../context/context.util';
@@ -76,30 +76,63 @@ export function _applyHostProperties(owner: EventHost, element: Element): void {
 }
 
 /**
- * Binds an attribute or a class of the host element to a member of the owner (see {@link applyProperty}).
+ * Binds an attribute, a class or a style property of the host element to a member of the owner (see
+ * {@link applyProperty}).
  *
  * @param owner - The web component or the custom directive.
  * @param element - Its host element.
- * @param binding - The attribute or the class, and how to read the member.
+ * @param binding - The attribute, the class or the style property, and how to read the member.
  * @param context - The context the binding lives in.
  */
 function bindProperty(owner: EventHost, element: Element, binding: HostPropertyBinding, context: _Context): void {
-  const { name, isClass } = binding;
   _bindEffect(context, applyProperty, owner, element, binding);
-  addCleanup(context, isClass ? () => untoggleClass(element, name) : () => writeAttribute(element, name, null));
+  addCleanup(context, () => unbindProperty(element, binding));
 }
 
 /**
- * Writes an attribute or toggles a class of the host element by the value of a member of the owner. A member holding a
- * function, such as a signal, is called to get the value.
+ * Removes what a binding wrote on the host element: the attribute, the class, or the style property.
+ *
+ * @param element - The host element.
+ * @param binding - The binding.
+ */
+function unbindProperty(element: Element, { name, kind }: HostPropertyBinding): void {
+  switch (kind) {
+    case 'class':
+      untoggleClass(element, name);
+      break;
+
+    case 'style':
+      unsetStyle(element, name);
+      break;
+
+    default:
+      writeAttribute(element, name, null);
+  }
+}
+
+/**
+ * Writes an attribute, toggles a class or sets a style property of the host element by the value of a member of the
+ * owner. A member holding a function, such as a signal, is called to get the value. A style property is removed for
+ * `null`, `undefined` and `false`, otherwise written followed by the unit of the binding, if any.
  *
  * @param owner - The web component or the custom directive.
  * @param element - Its host element.
- * @param binding - The attribute or the class, and how to read the member.
+ * @param binding - The attribute, the class or the style property, and how to read the member.
  */
-function applyProperty(owner: EventHost, element: Element, { name, isClass, read }: HostPropertyBinding): void {
+function applyProperty(owner: EventHost, element: Element, { name, kind, unit, read }: HostPropertyBinding): void {
   const member = read(owner);
   const value = typeof member === 'function' ? member() : member;
-  isClass ? toggleClass(element, name, Boolean(value)) : writeAttribute(element, name, value);
+  switch (kind) {
+    case 'class':
+      toggleClass(element, name, Boolean(value));
+      break;
+
+    case 'style':
+      setStyle(element, name, value === null || value === undefined || value === false ? null : `${value}${unit ?? ''}`);
+      break;
+
+    default:
+      writeAttribute(element, name, value);
+  }
 }
 

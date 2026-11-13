@@ -19,6 +19,7 @@ const KEYWORD_SNIPPETS: Readonly<Record<KeywordContext['keywords'][number], stri
   'else': '@else {\n\t$0\n}',
   'else if': '@else if ($1) {\n\t$0\n}',
   'for': '@for (item of $1) {\n\t$0\n}',
+  'empty': '@empty {\n\t$0\n}',
   'switch': '@switch ($1) {\n\t@case ($2) {\n\t\t$0\n\t}\n}',
   'case': '@case ($1) {\n\t$0\n}',
   'default': '@default {\n\t$0\n}',

@@ -2258,3 +2258,88 @@ describe('templates passed as content', () => {
     expect(pickerElement.shadowRoot!.querySelector('p')!.innerHTML).toBe('<i>x</i>');
   });
 });
+
+describe('@for over iterables, with @empty', () => {
+  it('renders the entries of a Map with $count, or the content of the @empty, on the server, and adopts them in the browser', async () => {
+    /**
+     * A list of the scores of a Map, emptied and filled again.
+     */
+    class Scores extends CustomElement {
+      public scores = signal(new Map([['ada', 3], ['bob', 5]]));
+    }
+
+    const scores = await register('scores', Scores, () => '<ul>@for (entry of scores(); track entry[0]) {<li>{ entry[0] }: { entry[1] } of { $count }</li>} @empty {<p>No scores</p>}</ul>', ['scores']);
+    const host = load(await renderToString(scores.Server));
+    const root = host.shadowRoot!;
+    const rows = Array.from(root.querySelectorAll('li'));
+    expect(rows.map(row => row.textContent)).toEqual(['ada: 3 of 2', 'bob: 5 of 2']);
+
+    onServer = false;
+    scores.define();
+    await flush();
+
+    expect(Array.from(root.querySelectorAll('li'))).toEqual(rows);
+    expect(console.warn).not.toHaveBeenCalled();
+
+    (host as Scores).scores.set(new Map());
+    await flush();
+    expect(root.querySelector('li')).toBeNull();
+    expect(root.querySelector('p')?.textContent).toBe('No scores');
+
+    (host as Scores).scores.set(new Map([['eve', 1]]));
+    await flush();
+    expect(root.querySelector('p')).toBeNull();
+    expect(root.querySelector('li')?.textContent).toBe('eve: 1 of 1');
+  });
+
+  it('adopts the content of the @empty the server rendered', async () => {
+    /**
+     * A list without items.
+     */
+    class Nothing extends CustomElement {
+      public items = signal(new Set<string>());
+    }
+
+    const nothing = await register('nothing', Nothing, () => '<ul>@for (item of items(); track item) {<li>{ item }</li>} @empty {<p>None</p>}</ul>', ['items']);
+    const host = load(await renderToString(nothing.Server));
+    const paragraph = host.shadowRoot!.querySelector('p');
+    expect(paragraph?.textContent).toBe('None');
+
+    onServer = false;
+    nothing.define();
+    await flush();
+
+    expect(host.shadowRoot!.querySelector('p')).toBe(paragraph);
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+});
+
+describe('style bindings', () => {
+  it('writes the style properties on the server, with their unit and the custom properties, and adopts them in the browser without writing them again', async () => {
+    /**
+     * A bar whose width and colour are bound.
+     */
+    class Bar extends CustomElement {
+      public width = signal(40);
+      public accent = signal('red');
+    }
+
+    const bar = await register('bar', Bar, () => '<div style="height: 4px;" [style.width.%]="{width()}" [style.--accent]="{accent()}" [style.color]="{null}"></div>', ['width', 'accent']);
+    const html = await renderToString(bar.Server);
+    expect(html).toContain('<div style="height: 4px; width: 40%; --accent: red;"></div>');
+
+    const host = load(html);
+    const div = host.shadowRoot!.querySelector('div')!;
+    const records = observe(div);
+    bar.define();
+    await flush();
+
+    expect(records()).toEqual([]);
+    expect(console.warn).not.toHaveBeenCalled();
+
+    (host as Bar).width.set(75);
+    await flush();
+    expect(div.style.getPropertyValue('width')).toBe('75%');
+    expect(div.style.getPropertyValue('height')).toBe('4px');
+  });
+});

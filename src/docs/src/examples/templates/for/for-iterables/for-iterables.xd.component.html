@@ -1,0 +1,10 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ul class="scores">
+  @for (entry of scores(); track entry[0]) {
+    <li (click)="score(entry[0])">{ entry[0] }: { entry[1] } ({ $index + 1 } of { $count })</li>
+  } @empty {
+    <p class="empty">No players yet.</p>
+  }
+</ul>
+<ex-button (click)="next()">next()</ex-button>

@@ -11,7 +11,7 @@ describe('getForVariables', () => {
     const [withAlias] = parse('@for (item of items; track item; f = $first) {}') as ForNode[];
     const [withoutAlias] = parse('@for (3) {}') as ForNode[];
 
-    expect(getForVariables(withAlias)).toEqual(['item', '$index', 'f', '$last', '$even', '$odd']);
-    expect(getForVariables(withoutAlias)).toEqual(['$index', '$first', '$last', '$even', '$odd']);
+    expect(getForVariables(withAlias)).toEqual(['item', '$index', 'f', '$last', '$even', '$odd', '$count']);
+    expect(getForVariables(withoutAlias)).toEqual(['$index', '$first', '$last', '$even', '$odd', '$count']);
   });
 });

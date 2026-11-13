@@ -16,6 +16,7 @@ import type { ElementRefToken } from './tokens/element-ref-token.type';
 import type { ElseIfToken } from './tokens/else-if-token.type';
 import type { ElseToken } from './tokens/else-token.type';
 import type { ErrorToken } from './tokens/error-token.type';
+import type { EmptyToken } from './tokens/empty-token.type';
 import type { EventHandlerToken } from './tokens/event-handler-token.type';
 import type { EventParAmeterToken } from './tokens/event-parameter-token.type';
 import type { EventToken } from './tokens/event-token.type';
@@ -86,4 +87,5 @@ export type TokenWithOptionalSpan =
   | MaybeTokenWithSpan<DeferToken>
   | MaybeTokenWithSpan<LoadingToken>
   | MaybeTokenWithSpan<CastToken>
-  | MaybeTokenWithSpan<ErrorToken>;
+  | MaybeTokenWithSpan<ErrorToken>
+  | MaybeTokenWithSpan<EmptyToken>;

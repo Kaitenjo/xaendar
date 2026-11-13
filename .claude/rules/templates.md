@@ -18,7 +18,7 @@ After the tag name, write the items of the opening tag in this order:
 4. conditional directives: `@if (…) { @@name(…) }`
 5. directives: `@@name(…)`
 6. conditional attributes (and component inputs): `@if (…) { name="…" }`
-7. attributes (and component inputs), then class bindings: `name="…"`, `[class.name]="{…}"`
+7. attributes (and component inputs), then class bindings, then style bindings: `name="…"`, `[class.name]="{…}"`, `[style.name]="{…}"`
 8. conditional events: `@if (…) { (name)="…" }`
 9. events: `(name)="…"`
 
@@ -89,7 +89,7 @@ Use a `@let`, also called a template variable, to name a part of a signal the te
 The language server formats the templates (Format Document, `xaendar.format.printWidth` for the width of the lines) and applies these rules:
 - An interpolation in a property binding has no spaces inside its braces: `title="{title()}"`, not `title="{ title() }"`. This holds in the parentheses of a directive too.
 - An interpolation in the text has one space on each side: `{ title() }`, not `{title()}`.
-- A control-flow keyword is followed by a space before its parenthesis: `@if (x)`, not `@if(x)`. The braces follow JavaScript: `{` after a space on the line of the keyword, `}` on a line of its own, except the one before an `@else`, a `@placeholder`, a `@catch`, a `@loading` or an `@error` (`} @else {`, `} @placeholder {`, `} @catch (error) {`, `} @loading {`, `} @error (error) {`).
+- A control-flow keyword is followed by a space before its parenthesis: `@if (x)`, not `@if(x)`. The braces follow JavaScript: `{` after a space on the line of the keyword, `}` on a line of its own, except the one before an `@else`, an `@empty`, a `@placeholder`, a `@catch`, a `@loading` or an `@error` (`} @else {`, `} @empty {`, `} @placeholder {`, `} @catch (error) {`, `} @loading {`, `} @error (error) {`).
 
 ## Names
 

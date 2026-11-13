@@ -14,6 +14,7 @@ describe('findEvent', () => {
     ['in a @else if', '@if (a) { } @else if (b) { <b (x)="f()"></b> }'],
     ['in a @else', '@if (a) { } @else { <b (x)="f()"></b> }'],
     ['in a @for', '@for (item of items; track item) { <b (x)="f()"></b> }'],
+    ['in the @empty of a @for', '@for (item of items; track item) { <b></b> } @empty { <b (x)="f()"></b> }'],
     ['in a @case', '@switch (a) { @case (1) { <b (x)="f()"></b> } }'],
     ['in a @default', '@switch (a) { @default { <b (x)="f()"></b> } }'],
     ['in a template', '<template row()><b (x)="f()"></b></template>'],
@@ -41,6 +42,7 @@ describe('findEvent', () => {
     ['in nodes without listeners', '<a b="1" c="{d}"><p>text { e }</p></a>'],
     ['in the bindings of an element without listeners', '<a @if (b) { c="1" } @@tip(d="1")></a>'],
     ['in a @if without an alternate', '@if (a) { <b></b> }'],
+    ['in a @for without @empty, and in one with an @empty without listeners', '@for (item of items; track item) { <b></b> } @for (item of items; track item) { } @empty { <b></b> }'],
     ['in a @defer without the blocks following it', '@defer (idle) { <b></b> }'],
     ['in a @render, a @let and an interpolation', '@let a = 1; { a } @render row()']
   ])('finds nothing %s', (_case, template) => {

@@ -144,9 +144,14 @@ function collectComponents(nodes: readonly ASTNode[], position: Pick<ComponentUs
         break;
       }
 
-      case ASTNodeType.For:
-        collectComponents(node.children, { ...position, dynamic: position.dynamic || isReactive(node.iterableExpression, reactive) }, metadatas, reactive, components);
+      case ASTNodeType.For: {
+        const forPosition = { ...position, dynamic: position.dynamic || isReactive(node.iterableExpression, reactive) };
+        collectComponents(node.children, forPosition, metadatas, reactive, components);
+        if (node.empty) {
+          collectComponents(node.empty.children, forPosition, metadatas, reactive, components);
+        }
         break;
+      }
 
       case ASTNodeType.Switch:
         collectComponents(node.children, { ...position, dynamic: position.dynamic || isReactive(node.expression, reactive) }, metadatas, reactive, components);

@@ -30,7 +30,7 @@ describe('toTemplateSpan', () => {
 });
 
 describe('getErrorSpan', () => {
-  const template = '<my-el label="a" [class.on]="{b}" (picked)="f()" @@tip></my-el>';
+  const template = '<my-el label="a" [class.on]="{b}" [style.top.px]="{c}" (picked)="f()" @@tip></my-el>';
   const ast = parseTemplate(template);
   const errorOn = (text: string, length = text.length) => new TemplateError('', { start: template.indexOf(text), end: template.indexOf(text) + length }, '');
   const textOf = (span: { start: number, end: number }) => template.slice(span.start, span.end);
@@ -40,6 +40,7 @@ describe('getErrorSpan', () => {
     expect(textOf(getErrorSpan(errorOn('tip'), ast))).toBe('tip');
     expect(textOf(getErrorSpan(errorOn('label="a"'), ast))).toBe('label');
     expect(textOf(getErrorSpan(errorOn('[class.on]="{b}"'), ast))).toBe('[class.on]');
+    expect(textOf(getErrorSpan(errorOn('[style.top.px]="{c}"'), ast))).toBe('[style.top.px]');
     expect(textOf(getErrorSpan(errorOn('(picked)="f()"'), ast))).toBe('picked');
   });
 

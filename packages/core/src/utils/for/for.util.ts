@@ -8,6 +8,7 @@ import { blockAnchor, blockParent, clear, containerSlot, forEachChild, forEachIn
 import type { ForConfig } from '../../types/for-config.type';
 import type { InlineBranch } from '../../types/inline-branch.type';
 import type { NodeBlock } from '../../types/node-block.type';
+import { _forItems } from '../for-items/for-items.util';
 
 /**
  * The block a `@for` opened, read by its first run, which adopts the items of the server (see `renderItems`).
@@ -17,6 +18,15 @@ import type { NodeBlock } from '../../types/node-block.type';
  * only by the first run, and its anchor is kept in the container. Do not keep the block.
  */
 let openedBlock: NodeBlock | null = null;
+
+/**
+ * The rows and the keys of a `@for` whose `@empty` is shown, read by its next run as the ones of the previous run.
+ *
+ * N.B. Deliberate, to save memory: shared frozen empty arrays, only read, instead of the arrays a run would create to
+ * stand for no rows. Do not write them.
+ */
+const NO_ROWS: readonly _Context[] = Object.freeze([]);
+const NO_KEYS: ReadonlyArray<string | number> = Object.freeze([]);
 
 /**
  * The first node, in DOM order, of the item whose bounds {@link findItemBounds} found last, `null` when it renders none.
@@ -50,6 +60,10 @@ export let lastNode: Node | null = null;
  *
  * The items and their keys are read by a binding (see `_bindSite`): the `@for` runs again whenever a signal, or a
  * variable of the template, they read changes.
+ *
+ * The items are an array, a number or any other iterable but a string (see `_forItems`). While there are none, the
+ * content of the `@empty` following the `@for` is rendered, if any: its scope is in the container in place of the rows,
+ * and its keys are `null`, so that the container is read as the one of a block holding a single scope.
  *
  * The first run renders the items in order, getting their nodes with the strategy of the context: in the hydration of a
  * component, the items the server rendered are adopted when it rendered the same keys in the same order, otherwise
@@ -85,13 +99,12 @@ export function _for(parentNode: HTMLElement, parentContext: _Context, reference
  */
 export function _runFor(context: _Context, _target: unknown, config: ForConfig): void {
   const component = context[COMPONENT];
-  const iterable = config.items.call(component, context);
-  const items = typeof iterable === 'number' ? Array.from({ length: iterable }, (_, i) => i) : iterable;
+  const items = _forItems(config.items.call(component, context));
   // The track expression reads the item, the index and the implicit variables as the body does: as values
-  const last = items.length - 1;
-  const newKeys = new Array<string | number>(items.length);
-  for (let i = 0; i < items.length; i++) {
-    newKeys[i] = config.track.call(component, context, items[i], i, i === 0, i === last, i % 2 === 0, i % 2 !== 0);
+  const count = items.length;
+  const newKeys = new Array<string | number>(count);
+  for (let i = 0; i < count; i++) {
+    newKeys[i] = config.track.call(component, context, items[i], i, i === 0, i === count - 1, i % 2 === 0, i % 2 !== 0, count);
   }
 
   const container = containerSlot(context, config.container);
@@ -100,7 +113,9 @@ export function _runFor(context: _Context, _target: unknown, config: ForConfig):
 
 /**
  * Renders the items of the first run, run synchronously by {@link _for}, in order before the anchor, getting their nodes
- * with the strategy of the context: in a hydration, they are adopted when the server rendered the same keys.
+ * with the strategy of the context: in a hydration, they are adopted when the server rendered the same keys. Without
+ * items, the content of the `@empty` is rendered instead, if any, adopted in a hydration when the server rendered no item
+ * either.
  *
  * @param context - The context holding the `@for`.
  * @param config - The `@for`.
@@ -113,14 +128,20 @@ function renderItems(context: _Context, config: ForConfig, container: number, it
   openedBlock = null;
   const parentNode = blockParent(context[container + POSITION] as Node) as HTMLElement;
   const nodeStrategy = getNodeStrategy(context);
-  const rows = new Array<_Context>(items.length);
   const itemNodeStrategy = nodeStrategy.adoptItems(parentNode, block, newKeys);
-  for (let i = 0; i < items.length; i++) {
-    rows[i] = config.block(parentNode, context, items, i, block.anchor, itemNodeStrategy);
+  if (!items.length && config.empty) {
+    context[container + KEYS] = null;
+    context[container + CONTENT] = config.empty(parentNode, context, block.anchor, itemNodeStrategy);
+  } else {
+    const rows = new Array<_Context>(items.length);
+    for (let i = 0; i < items.length; i++) {
+      rows[i] = config.block(parentNode, context, items, i, block.anchor, itemNodeStrategy);
+    }
+
+    context[container + CONTENT] = rows;
+    context[container + KEYS] = newKeys;
   }
 
-  context[container + CONTENT] = rows;
-  context[container + KEYS] = newKeys;
   nodeStrategy.close(parentNode, block);
 }
 
@@ -131,6 +152,9 @@ function renderItems(context: _Context, config: ForConfig, container: number, it
  *
  * A key repeated in the items has a row per occurrence: the n-th occurrence of a key reuses the row of its n-th
  * occurrence in the previous run, and the occurrences beyond its new count are destroyed.
+ *
+ * The content of the `@empty`, while it is shown, is destroyed once there are items, and rendered again, before the
+ * anchor, once there are none: it stays as it is while there are none.
  *
  * N.B. Deliberate, to save memory: the rows to reuse are found through a `Map` of this run, by key, holding the first
  * occurrence of each key, and a second one, created only when a key repeats, holding the others: both are dropped once
@@ -147,8 +171,18 @@ function updateItems(parentContext: _Context, config: ForConfig, container: numb
   const position = parentContext[container + POSITION] as Node;
   const parentNode = blockParent(position) as HTMLElement;
   const { variables } = config;
-  const oldRows = parentContext[container + CONTENT] as _Context[];
-  const oldKeys = parentContext[container + KEYS] as Array<string | number>;
+  const shownKeys = parentContext[container + KEYS] as Array<string | number> | null;
+  // The @empty shown: its scope is in place of the rows
+  if (!shownKeys) {
+    if (!items.length) {
+      return;
+    }
+
+    clear(parentContext[container + CONTENT] as _Context);
+  }
+
+  const oldRows = shownKeys ? parentContext[container + CONTENT] as _Context[] : NO_ROWS;
+  const oldKeys = shownKeys ?? NO_KEYS;
   const occurrences = countOccurrences(newKeys);
   const oldOccurrences = countOccurrences(oldKeys);
   // The rows kept, by key: the first occurrence of each key, then the following ones of a key repeated
@@ -168,6 +202,12 @@ function updateItems(parentContext: _Context, config: ForConfig, container: numb
       const others = repeated.get(key);
       others ? others.push(oldRows[i]) : repeated.set(key, [oldRows[i]]);
     }
+  }
+
+  if (!items.length && config.empty) {
+    parentContext[container + KEYS] = null;
+    parentContext[container + CONTENT] = config.empty(parentNode, parentContext, blockAnchor(position), getNodeStrategy(parentContext));
+    return;
   }
 
   const rows = new Array<_Context>(items.length);
@@ -213,7 +253,7 @@ function updateItems(parentContext: _Context, config: ForConfig, container: numb
  * @param keys - The keys of the items, in order.
  * @returns For each item, the index of its occurrence among the items with the same key, and the count of the occurrences of each key.
  */
-function countOccurrences(keys: Array<string | number>): { indexes: number[], counts: Map<string | number, number> } {
+function countOccurrences(keys: ReadonlyArray<string | number>): { indexes: number[], counts: Map<string | number, number> } {
   const counts = new Map<string | number, number>();
   const indexes = keys.map(key => {
     const occurrence = counts.get(key) ?? 0;
@@ -380,7 +420,7 @@ function updateIterationVariables(context: _Context, { used, ids }: IterationVar
  * @param items - The full array being iterated.
  * @param index - The index of the item.
  * @returns The item for `item`, its index for `$index`, whether it is the first, the last, at an even or an odd index
- *   for the other variables.
+ *   for `$first`, `$last`, `$even` and `$odd`, and the number of the items for `$count`.
  */
 function iterationValue(variable: IterationVariable, items: unknown[], index: number): unknown {
   switch (variable) {
@@ -394,7 +434,9 @@ function iterationValue(variable: IterationVariable, items: unknown[], index: nu
       return index === items.length - 1;
     case '$even':
       return index % 2 === 0;
-    default:
+    case '$odd':
       return index % 2 !== 0;
+    default:
+      return items.length;
   }
 }

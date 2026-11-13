@@ -1,9 +1,15 @@
 @for (task of tasks(); track task.id) {                   <!-- an array, and the key of each item -->
-  <li>{ $index + 1 }. { task.title }</li>                <!-- context variables are signals: call them -->
+  <li>{ $index + 1 } of { $count }. { task.title }</li>  <!-- the variables of the loop are values -->
+} @empty {                                               <!-- rendered while there are no items -->
+  <li>Nothing to do</li>
 }
 
 @for (task of tasks(); track task.id; position = $index) { <!-- an alias: name = variable -->
   <li>{ position }</li>
+}
+
+@for (entry of scores(); track entry[0]) {               <!-- any iterable: the entries of a Map -->
+  <li>{ entry[0] }: { entry[1] }</li>
 }
 
 @for (5) {                                                <!-- repeat a block -->

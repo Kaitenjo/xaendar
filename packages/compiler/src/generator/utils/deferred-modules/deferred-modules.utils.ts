@@ -145,8 +145,14 @@ function collectTags(nodes: readonly ASTNode[], eager: Set<string>, deferred: Ma
         break;
       }
 
-      case ASTNodeType.Else:
       case ASTNodeType.For:
+        collectTags(node.children, eager, deferred, generatorContext, current);
+        if (node.empty) {
+          collectTags(node.empty.children, eager, deferred, generatorContext, current);
+        }
+        break;
+
+      case ASTNodeType.Else:
       case ASTNodeType.Switch:
       case ASTNodeType.Case:
       case ASTNodeType.Template:

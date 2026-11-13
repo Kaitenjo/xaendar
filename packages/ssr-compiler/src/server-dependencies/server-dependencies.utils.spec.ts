@@ -66,6 +66,12 @@ describe('getServerDependencies', () => {
     expect(await dependenciesOf(template, ['inside', 'outside', 'helper'])).toEqual(['/src/outside.ts']);
   });
 
+  it('reads the content of a @for and of its @empty', async () => {
+    const template = `${IMPORTS}@for (item of items; track item) { <x-outside></x-outside> } @empty { <x-inside></x-inside> }@client { { helper() } }`;
+
+    expect(await dependenciesOf(template, ['inside', 'outside', 'helper'])).toEqual(['/src/inside.ts', '/src/outside.ts']);
+  });
+
   it('keeps the module of a component rendered both inside and outside of the content', async () => {
     const template = '@import { Both } from \'./both.ts\';\n<x-both></x-both>@client { <x-both></x-both> }';
 

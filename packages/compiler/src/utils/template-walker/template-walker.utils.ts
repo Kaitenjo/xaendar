@@ -214,7 +214,7 @@ class TemplateWalker {
    * @param owner - The component or directive the attributes and events are bound to, if any.
    * @param variables - The variables declared in the scope of the bindings.
    */
-  private _walkBindings(bindings: Pick<ConditionalBindingBranchNode, 'attributes' | 'events' | 'conditionalBindings'> & Partial<Pick<ConditionalBindingBranchNode, 'classBindings' | 'directives' | 'structuralDirectives'>>, owner: ComponentOrDirectiveMetadata | undefined, variables: ReadonlySet<string>): void {
+  private _walkBindings(bindings: Pick<ConditionalBindingBranchNode, 'attributes' | 'events' | 'conditionalBindings'> & Partial<Pick<ConditionalBindingBranchNode, 'classBindings' | 'styleBindings' | 'directives' | 'structuralDirectives'>>, owner: ComponentOrDirectiveMetadata | undefined, variables: ReadonlySet<string>): void {
     for (let i = 0; i < bindings.attributes.length; i++) {
       const attribute = bindings.attributes[i];
       this._visitor.attribute?.(attribute, owner);
@@ -223,12 +223,20 @@ class TemplateWalker {
       }
     }
 
-    const { classBindings, directives, structuralDirectives } = bindings;
+    const { classBindings, styleBindings, directives, structuralDirectives } = bindings;
     if (classBindings?.length) {
       for (let i = 0; i < classBindings.length; i++) {
         const classBinding = classBindings[i];
         this._visitor.classBinding?.(classBinding);
         this._visitor.expression?.(classBinding.value.expression, variables);
+      }
+    }
+
+    if (styleBindings?.length) {
+      for (let i = 0; i < styleBindings.length; i++) {
+        const styleBinding = styleBindings[i];
+        this._visitor.styleBinding?.(styleBinding);
+        this._visitor.expression?.(styleBinding.value.expression, variables);
       }
     }
 
@@ -435,7 +443,8 @@ class TemplateWalker {
 
   /**
    * Walks a `@for` block: the iterable in the enclosing scope, the track expression and the children in the scope
-   * declaring the variables of the loop.
+   * declaring the variables of the loop, then the content of its `@empty`, if any, a scope of its own in the enclosing
+   * one.
    *
    * @param node - The `@for` block.
    * @param variables - The variables declared in the scope enclosing the block.
@@ -447,6 +456,9 @@ class TemplateWalker {
     const loopVariables = new Set([...variables, ...getForVariables(node)]);
     this._visitor.expression?.(node.trackExpression, loopVariables);
     this.walkScope(node.children, loopVariables);
+    if (node.empty) {
+      this.walkScope(node.empty.children, variables);
+    }
   }
 }
 

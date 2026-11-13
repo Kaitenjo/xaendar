@@ -84,6 +84,10 @@ export function getKeywordContext(source: string, offset: number): KeywordContex
       keywords.push('else', 'else if');
       break;
 
+    case TokenType.FOR:
+      keywords.push('empty');
+      break;
+
     case TokenType.CLIENT:
       keywords.push('placeholder');
       return { keywords, span, clientPlaceholder: true };

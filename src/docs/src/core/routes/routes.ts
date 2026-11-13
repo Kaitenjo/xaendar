@@ -181,7 +181,7 @@ export const NAV: readonly NavSection[] = [
         page('templates/binding', 'binding attribute property class style'),
         page('templates/events', 'event click $event handler'),
         page('templates/if', 'if else conditional'),
-        page('templates/for', 'for track $index $first $last $even $odd loop'),
+        page('templates/for', 'for track $index $first $last $even $odd $count empty iterable map set loop'),
         page('templates/switch', 'switch case default'),
         page('templates/imports', 'import'),
         page('templates/let', 'let variable alias getter computed derived value'),

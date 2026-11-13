@@ -8,6 +8,7 @@ import type { HydrateNode } from './nodes/hydrate-node.type';
 import type { PlaceholderNode } from './nodes/placeholder-node.type';
 import type { TryNode } from './nodes/try-node.type';
 import type { CatchNode } from './nodes/catch-node.type';
+import type { EmptyNode } from './nodes/empty-node.type';
 import type { DeferNode } from './nodes/defer-node.type';
 import type { LoadingNode } from './nodes/loading-node.type';
 import type { ErrorNode } from './nodes/error-node.type';
@@ -43,6 +44,7 @@ export type ASTNodeWithOptionalSpan =
 | MaybeASTNodeWithSpan<PlaceholderNode>
 | MaybeASTNodeWithSpan<TryNode>
 | MaybeASTNodeWithSpan<CatchNode>
+| MaybeASTNodeWithSpan<EmptyNode>
 | MaybeASTNodeWithSpan<DeferNode>
 | MaybeASTNodeWithSpan<LoadingNode>
 | MaybeASTNodeWithSpan<ErrorNode>;
