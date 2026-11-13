@@ -9,7 +9,7 @@
 | `input()`, `@Input` / `input.required()` | `@Property(default)` / `@Property.required()` on `public accessor x!: InputSignal<T>` |
 | `output()`, `@Output` + `EventEmitter` | `@Event()` on `public accessor x!: Output<T>`, `this.x.emit(value)`: a DOM `CustomEvent`, `$event.detail` in the parent |
 | `model()`, `[(ngModel)]`, two-way binding | an input plus an output; for fields, `(input)` + a directive writing the property (patterns.md, Forms) |
-| `host: {...}`, `@HostBinding`, `@HostListener` | `@HostProperty('attr' \| 'class.x' \| 'style.x')`, `@HostEvent('event')` |
+| `host: {...}`, `@HostBinding`, `@HostListener` | `@HostProperty('attr' \| 'class.x' \| 'style.x')`, `@HostListener('event' \| 'window:event' \| 'document:event')` |
 | `signal`, `computed`, `effect`, `untracked` | the same names from `@xaendar/core/signals`; `this.effect()` for effects bound to the component |
 | `viewChild`, `viewChild.required`, `viewChildren` | `@Query`, `@Query.required`, `@Query.all`, `@Query.ref('name')` on `accessor x!: QuerySignal<…>` |
 | `contentChild`, `contentChild.required`, `contentChildren` | `@Query.content`, `@Query.contentRequired`, `@Query.contentAll`: the content passed to the component (its light DOM), whether a slot renders it or not; `{ descendants }` with the same defaults (`true` for the single ones, `false` for `@Query.contentAll`); `[slot="x"]` in the selector for the content of a slot |

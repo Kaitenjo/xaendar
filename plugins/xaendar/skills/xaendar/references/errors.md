@@ -807,19 +807,19 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @HostProperty with class. and no class after it. Thrown when the class is defined, as soon as its module is imported; an empty name throws @HostProperty('') names no attribute.
 - **Fix:** Name the attribute, or the class after class.: @HostProperty('class.on').
 
-### `Error: @HostEvent() names no event`
+### `Error: @HostListener('') names no event`
 
-- **Cause:** A @HostEvent with an empty name. Thrown when the class is defined.
-- **Fix:** Name the event: @HostEvent('click').
+- **Cause:** A @HostListener with an empty name, or with nothing after window: or document:. Thrown when the class is defined.
+- **Fix:** Name the event: @HostListener('click'), @HostListener('window:resize').
 
 ### `Error: @HostProperty('role') cannot decorate the static member defaultRole`
 
 - **Cause:** A @HostProperty on a static field, getter or accessor: the host element belongs to an instance.
 - **Fix:** Decorate an instance member, which may read the static one.
 
-### `Error: @HostEvent('click') cannot decorate the static method handle`
+### `Error: @HostListener('click') cannot decorate the static method handle`
 
-- **Cause:** A @HostEvent on a static method: the host element belongs to an instance.
+- **Cause:** A @HostListener on a static method: the host element belongs to an instance.
 - **Fix:** Decorate an instance method.
 
 ### `NotSupportedError: Failed to execute 'define' on 'CustomElementRegistry': the name "x-card" has already been used with this registry`

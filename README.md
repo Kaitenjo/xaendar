@@ -10,7 +10,7 @@ Xaendar is a TypeScript framework for building native Web Components. A componen
 - **No virtual DOM.** Templates compile to imperative code that creates the DOM once and updates single nodes afterwards.
 - **Signals.** State is held in signals based on the [TC39 Signals proposal](https://github.com/tc39/proposal-signals), with `computed` values and `effect`s disposed with the component.
 - **Type-checked templates.** Bindings, events, `$event` and the inputs of child components are checked against the component class at build time.
-- **Familiar decorators.** `@WebComponent`, `@Property` for inputs, `@Event` for outputs, `@Query` for the elements of the shadow DOM and of the projected content, `@HostProperty` and `@HostEvent` for the host element.
+- **Familiar decorators.** `@WebComponent`, `@Property` for inputs, `@Event` for outputs, `@Query` for the elements of the shadow DOM and of the projected content, `@HostProperty` and `@HostListener` for the host element.
 - **Directives.** Attribute directives (`@@name`) add behavior to an element, structural directives (`*name`) decide whether it exists.
 - **Tooling included.** A Vite plugin, a CLI that scaffolds, serves, builds and tests projects, a language server with a VS Code extension, and Sass and Less support.
 

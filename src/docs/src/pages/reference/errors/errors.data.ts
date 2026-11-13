@@ -735,7 +735,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Runtime',
-    message: 'Error: @HostEvent() names no event',
+    message: "Error: @HostListener('') names no event",
     page: 'components/host-bindings'
   },
   {
@@ -745,7 +745,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Runtime',
-    message: "Error: @HostEvent('click') cannot decorate the static method handle",
+    message: "Error: @HostListener('click') cannot decorate the static method handle",
     page: 'components/host-bindings'
   },
   {

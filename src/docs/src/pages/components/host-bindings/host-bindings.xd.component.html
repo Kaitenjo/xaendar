@@ -5,7 +5,7 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { ToggleSwitchComponent } from '../../../examples/components/host-bindings/toggle-switch/toggle-switch.xd.component.ts'
-@import { HOST_BINDINGS_DIRECTIVE, HOST_EVENT, HOST_PROPERTY_VALUES } from '../../reference/api/packages/core.snippets.ts'
+@import { HOST_BINDINGS_DIRECTIVE, HOST_LISTENER, HOST_LISTENER_TARGETS, HOST_PROPERTY_VALUES } from '../../reference/api/packages/core.snippets.ts'
 @import { translate as t } from '../../../core/i18n/i18n.utils.ts'
 @import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
@@ -31,8 +31,10 @@
   { t(translations(), 'pages.components.hostBindings.events.title') }
 </h2>
 <p @@htmlTranslation(key="pages.components.hostBindings.events.p1") />
-<docs-code snippet="{HOST_EVENT}" />
+<docs-code snippet="{HOST_LISTENER}" />
 <p @@htmlTranslation(key="pages.components.hostBindings.events.p2") />
+<p @@htmlTranslation(key="pages.components.hostBindings.events.p3") />
+<docs-code snippet="{HOST_LISTENER_TARGETS}" />
 
 <h2>
   { t(translations(), 'pages.components.hostBindings.values.title') }
@@ -112,8 +114,8 @@
       </tr>
       <tr>
         <td>
-          <a href="{`#/${currentLang()}/reference/api/core/HostEvent`}">
-            <code>{ "@HostEvent('name', options?)" }</code>
+          <a href="{`#/${currentLang()}/reference/api/core/HostListener`}">
+            <code>{ "@HostListener('[window:|document:]name', options?)" }</code>
           </a>
         </td>
         <td>

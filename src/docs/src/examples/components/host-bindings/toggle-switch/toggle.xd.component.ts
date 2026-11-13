@@ -1,11 +1,11 @@
-import { CustomElement, Event, HostEvent, HostProperty, Property, WebComponent } from '@xaendar/core';
+import { CustomElement, Event, HostListener, HostProperty, Property, WebComponent } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 import type { InputSignal } from '@xaendar/core/signals';
 
 /**
  * A switch drawn by its own element: the role, the state and the focus are attributes of the host, kept in sync by
- * `@HostProperty`, and the clicks and the keys are heard on the host with `@HostEvent`.
+ * `@HostProperty`, and the clicks and the keys are heard on the host with `@HostListener`.
  */
 @WebComponent({
   selector: 'ex-toggle',
@@ -70,7 +70,7 @@ export class ToggleComponent extends CustomElement {
    * Turns the switch on or off, unless it is locked, and tells the parent. Called by the clicks on the host, the
    * projected label included.
    */
-  @HostEvent('click')
+  @HostListener('click')
   public toggle(): void {
     if (!this.locked()) {
       this.on.update(on => !on);
@@ -83,7 +83,7 @@ export class ToggleComponent extends CustomElement {
    *
    * @param event - The key pressed while the host has the focus.
    */
-  @HostEvent('keydown')
+  @HostListener('keydown')
   public onKeydown(event: KeyboardEvent): void {
     switch (event.key) {
       case ' ':

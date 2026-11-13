@@ -154,7 +154,7 @@
       },
       "directives": {
         "title": "In una direttiva custom",
-        "body": "<p>Una direttiva custom lega l’elemento a cui è applicata: gli attributi vengono scritti subito dopo il suo <code>onInit</code>, e rimossi quando la direttiva viene distrutta. Insieme a <a href=\"#/it/reference/api/core/HostEvent\"><code>@HostEvent</code></a>, sostituisce gli effetti e i listener preparati in <code>onInit</code> e la pulizia in <code>onDestroy</code>.</p>"
+        "body": "<p>Una direttiva custom lega l’elemento a cui è applicata: gli attributi vengono scritti subito dopo il suo <code>onInit</code>, e rimossi quando la direttiva viene distrutta. Insieme a <a href=\"#/it/reference/api/core/HostListener\"><code>@HostListener</code></a>, sostituisce gli effetti e i listener preparati in <code>onInit</code> e la pulizia in <code>onDestroy</code>.</p>"
       },
       "errors": {
         "title": "Errori",
@@ -162,11 +162,11 @@
       }
     }
   },
-  "HostEvent": {
+  "HostListener": {
     "summary": "Ascolta un evento dell’elemento host di un componente o di una direttiva custom con un metodo della classe.",
-    "description": "<p>Il decoratore va su un metodo, non statico, di una classe che estende <a href=\"#/it/reference/api/core/CustomElement\"><code>CustomElement</code></a> o <a href=\"#/it/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>. Il listener viene aggiunto all’elemento host, il componente stesso o l’elemento a cui la direttiva è applicata, ogni volta che l’elemento viene connesso, o la direttiva avviata, e rimosso quando l’elemento viene disconnesso, o la direttiva distrutta. Una <a href=\"#/it/reference/api/core/StructuralDirective\"><code>StructuralDirective</code></a> non ha un elemento, e lì TypeScript rifiuta il decoratore.</p><p>Il metodo viene chiamato sull’istanza, con l’evento come unico argomento: non prende parametri, oppure ne prende uno, del tipo dell’evento che si aspetta (<code>KeyboardEvent</code>, <code>CustomEvent&lt;number&gt;</code>). Il nome dell’evento è una semplice stringa, quindi TypeScript non lo confronta con quel tipo: un parametro <code>KeyboardEvent</code> su <code>click</code> compila. Lo stesso metodo può ascoltare più eventi, con un decoratore per ciascuno.</p>",
+    "description": "<p>Il decoratore va su un metodo, non statico, di una classe che estende <a href=\"#/it/reference/api/core/CustomElement\"><code>CustomElement</code></a> o <a href=\"#/it/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>. Il listener viene aggiunto all’elemento host, il componente stesso o l’elemento a cui la direttiva è applicata, ogni volta che l’elemento viene connesso, o la direttiva avviata, e rimosso quando l’elemento viene disconnesso, o la direttiva distrutta. Una <a href=\"#/it/reference/api/core/StructuralDirective\"><code>StructuralDirective</code></a> non ha un elemento, e lì TypeScript rifiuta il decoratore. Con il prefisso <code>window:</code> o <code>document:</code> (<code>window:resize</code>, <code>document:keydown</code>) il listener va invece sulla finestra o sul documento, con la stessa durata.</p><p>Il metodo viene chiamato sull’istanza, con l’evento come unico argomento: non prende parametri, oppure ne prende uno, del tipo dell’evento che si aspetta (<code>KeyboardEvent</code>, <code>CustomEvent&lt;number&gt;</code>). TypeScript tipizza l’evento dal suo nome: l’evento di <code>HTMLElementEventMap</code> per un evento dell’elemento (<code>MouseEvent</code> per <code>click</code>), di <code>WindowEventMap</code> dopo <code>window:</code>, di <code>DocumentEventMap</code> dopo <code>document:</code>, e <code>Event</code> per qualsiasi altro nome, come un output. Il parametro può dichiarare quell’evento, uno più ampio o uno più ristretto (<code>CustomEvent&lt;number&gt;</code> per un output), mentre uno senza relazione, come <code>KeyboardEvent</code> su <code>click</code>, è un errore di tipo. Lo stesso metodo può ascoltare più eventi, con un decoratore per ciascuno.</p>",
     "members": {
-      "name": "<p>Il nome dell’evento, che distingue maiuscole e minuscole: un evento nativo (<code>click</code>, <code>keydown</code>), un output del componente o di una direttiva applicata all’elemento (<code>valueChange</code>), o qualsiasi altro evento inviato sull’elemento. Un nome vuoto lancia un errore quando la classe viene definita.</p>",
+      "name": "<p>Il nome dell’evento, che distingue maiuscole e minuscole: un evento nativo (<code>click</code>, <code>keydown</code>), un output del componente o di una direttiva applicata all’elemento (<code>valueChange</code>), o qualsiasi altro evento inviato sull’elemento. Con il prefisso <code>window:</code> o <code>document:</code>, un evento della finestra o del documento (<code>window:resize</code>, <code>document:visibilitychange</code>); qualsiasi altro prefisso fa parte del nome (<code>htmx:load</code>). Un nome vuoto, o niente dopo il prefisso, lancia un errore quando la classe viene definita.</p>",
       "capture": "<p>Se il listener viene eseguito nella fase di capture, prima dei listener dei discendenti dell’host. Per default viene eseguito nella fase di bubbling.</p>",
       "once": "<p>Se il listener viene rimosso dopo il primo evento. Viene aggiunto di nuovo alla successiva connessione dell’elemento.</p>",
       "passive": "<p>Se il listener promette di non chiamare <code>preventDefault()</code>, così il browser non lo aspetta per scorrere su <code>touchstart</code>, <code>wheel</code> ed eventi simili. Un listener passivo non può annullare l’evento.</p>"
@@ -175,6 +175,10 @@
       "declaring": {
         "title": "Dichiarare un listener",
         "body": "<p>Un metodo ascolta gli eventi dell’host come farebbe un binding <code>(name)</code> sul suo tag, ma dall’interno della classe: ogni istanza lo ha, chiunque usi il componente. Il metodo resta un membro come gli altri: anche il template e gli altri metodi possono chiamarlo.</p>"
+      },
+      "targets": {
+        "title": "La finestra e il documento",
+        "body": "<p>Con il prefisso <code>window:</code> o <code>document:</code> il metodo ascolta la finestra o il documento mentre l’host è connesso, senza <code>addEventListener</code> in <code>onInit</code> né <code>removeEventListener</code> in <code>onDestroy</code>: gli eventi della pagina fuori dal componente, come un clic altrove o un resize. L’evento è tipizzato attraverso <code>WindowEventMap</code> e <code>DocumentEventMap</code>. Sul server nessun listener gira, e l’event contract non registra questi eventi prima dell’hydration.</p>"
       },
       "reach": {
         "title": "Quali eventi arrivano",
@@ -186,11 +190,11 @@
       },
       "directives": {
         "title": "In una direttiva custom",
-        "body": "<p>Una direttiva custom ascolta l’elemento a cui è applicata: i listener vengono aggiunti subito dopo il suo <code>onInit</code> e rimossi quando la direttiva viene distrutta, senza arrow function stabili né <code>removeEventListener</code> in <code>onDestroy</code>. I listener su altri target, come il documento, passano ancora da <code>addEventListener</code>.</p>"
+        "body": "<p>Una direttiva custom ascolta l’elemento a cui è applicata: i listener vengono aggiunti subito dopo il suo <code>onInit</code> e rimossi quando la direttiva viene distrutta, senza arrow function stabili né <code>removeEventListener</code> in <code>onDestroy</code>. La finestra e il documento si raggiungono con <code>window:</code> e <code>document:</code>; solo gli altri target passano ancora da <code>addEventListener</code>.</p>"
       },
       "errors": {
         "title": "Errori",
-        "body": "<p>Un nome vuoto e un metodo statico lanciano un errore quando la classe viene definita, cioè quando il suo modulo viene importato. Una direttiva strutturale e un metodo con più di un parametro vengono rifiutati da TypeScript.</p>"
+        "body": "<p>Un nome vuoto, un prefisso che non nomina un evento (<code>window:</code>) e un metodo statico lanciano un errore quando la classe viene definita, cioè quando il suo modulo viene importato. Una direttiva strutturale, un metodo con più di un parametro e un parametro senza relazione con l’evento del nome vengono rifiutati da TypeScript.</p>"
       }
     }
   },

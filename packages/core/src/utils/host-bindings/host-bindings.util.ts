@@ -1,4 +1,4 @@
-import { INTERNAL_HOST_EVENTS, INTERNAL_HOST_PROPERTIES } from '../../costants';
+import { INTERNAL_HOST_LISTENERS, INTERNAL_HOST_PROPERTIES } from '../../costants';
 import { _bindEffect } from '../../signals/effect/effect';
 import type { EventHost } from '../../types/event/event-host.type';
 import type { HostPropertyBinding } from '../../types/host/host-property-binding.type';
@@ -17,7 +17,7 @@ import { addCleanup } from '../context/context.util';
  * @param key - The key of the list.
  * @param entry - The binding or the listener to add.
  */
-export function _addHostMetadata<Key extends typeof INTERNAL_HOST_PROPERTIES | typeof INTERNAL_HOST_EVENTS, Entry>(metadata: { [K in Key]?: NoInfer<Entry>[] }, key: Key, entry: Entry): void {
+export function _addHostMetadata<Key extends typeof INTERNAL_HOST_PROPERTIES | typeof INTERNAL_HOST_LISTENERS, Entry>(metadata: { [K in Key]?: NoInfer<Entry>[] }, key: Key, entry: Entry): void {
   let entries = metadata[key];
   if (!entries || !Object.hasOwn(metadata, key)) {
     entries = entries ? entries.slice() : new Array<Entry>();
@@ -28,10 +28,10 @@ export function _addHostMetadata<Key extends typeof INTERNAL_HOST_PROPERTIES | t
 }
 
 /**
- * Binds the host element of a web component or of a custom directive as its `@HostProperty` and `@HostEvent` declare:
- * each attribute and class is written inside an effect, so it is written again only when it reads a signal, and each
- * listener is added to the element. When the context is cleared the effects are disposed, the attributes removed, the
- * classes taken away and the listeners removed.
+ * Binds the host element of a web component or of a custom directive as its `@HostProperty` and `@HostListener`
+ * declare: each attribute and class is written inside an effect, so it is written again only when it reads a signal,
+ * and each listener is added to the element, or to the window or the document it names. When the context is cleared the
+ * effects are disposed, the attributes removed, the classes taken away and the listeners removed.
  *
  * @param owner - The web component or the custom directive.
  * @param element - Its host element: the component itself, or the element the directive is applied to.
@@ -47,13 +47,14 @@ export function _bindHost(owner: EventHost, element: Element, context: _Context)
     }
   }
 
-  const events = metadata?.[INTERNAL_HOST_EVENTS];
-  if (events?.length) {
-    for (let i = 0; i < events.length; i++) {
-      const { name, options, read } = events[i];
+  const listeners = metadata?.[INTERNAL_HOST_LISTENERS];
+  if (listeners?.length) {
+    for (let i = 0; i < listeners.length; i++) {
+      const { name, target, options, read } = listeners[i];
+      const eventTarget: EventTarget = target ? globalThis[target] : element;
       const listener = (event: Event) => read(owner).call(owner, event);
-      element.addEventListener(name, listener, options);
-      addCleanup(context, () => element.removeEventListener(name, listener, options));
+      eventTarget.addEventListener(name, listener, options);
+      addCleanup(context, () => eventTarget.removeEventListener(name, listener, options));
     }
   }
 }

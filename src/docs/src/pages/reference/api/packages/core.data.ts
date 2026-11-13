@@ -10,7 +10,7 @@ import { CONSTRUCTOR_ACCESS, HOST_DIRECTIVE } from '../../../directives/custom/c
 import { DIRECTIVE_REGISTRATION } from '../../../directives/overview/overview.snippets';
 import { HYDRATE_COMPONENT } from '../../../tools/ssr/progressive-hydration/progressive-hydration.snippets';
 import { TRANSFER_STATE_COMPONENT, TRANSFER_STATE_ENTRY } from '../../../tools/ssr/transfer-state/transfer-state.snippets';
-import { CANCELABLE_EVENT, CREATE_COMPONENT_DIRECTIVES, CREATE_COMPONENT_GROUPS, CUSTOM_DIRECTIVE, DIRECTIVE_CREATE_COMPONENT, DIRECTIVE_KINDS, HOST_BINDINGS_DIRECTIVE, HOST_DIRECTIVE_MEMBERS, HOST_EVENT, HOST_PROPERTY, HOST_PROPERTY_VALUES, OUTPUT_EMIT, QUERY_CONTENT, QUERY_CONTENT_OPTIONS, QUERY_READ, QUERY_TIMING, STRUCTURAL_DIRECTIVE } from './core.snippets';
+import { CANCELABLE_EVENT, CREATE_COMPONENT_DIRECTIVES, CREATE_COMPONENT_GROUPS, CUSTOM_DIRECTIVE, DIRECTIVE_CREATE_COMPONENT, DIRECTIVE_KINDS, HOST_BINDINGS_DIRECTIVE, HOST_DIRECTIVE_MEMBERS, HOST_LISTENER, HOST_LISTENER_TARGETS, HOST_PROPERTY, HOST_PROPERTY_VALUES, OUTPUT_EMIT, QUERY_CONTENT, QUERY_CONTENT_OPTIONS, QUERY_READ, QUERY_TIMING, STRUCTURAL_DIRECTIVE } from './core.snippets';
 
 /**
  * The symbols of `@xaendar/core`.
@@ -268,14 +268,14 @@ export const CORE_API: ApiPackage = {
       guides: ['components/host-bindings', 'components/styling', 'directives/custom']
     },
     {
-      name: 'HostEvent',
+      name: 'HostListener',
       kind: 'decorator',
-      signature: 'function HostEvent(name: string, options?: Pick<AddEventListenerOptions, \'capture\' | \'once\' | \'passive\'>): HostEventDecorator\n\ntype HostEventDecorator = <This extends CustomElement | CustomDirective, EventType extends Event>(value: (this: This, event: EventType) => unknown, context: ClassMethodDecoratorContext<This, (this: This, event: EventType) => unknown>) => void;',
+      signature: 'function HostListener<Name extends string>(name: Name, options?: Pick<AddEventListenerOptions, \'capture\' | \'once\' | \'passive\'>): HostListenerDecorator<HostListenerEvent<Name>>\n\ntype HostListenerEvent<Name extends string> =\n  Name extends `window:${infer EventName}` ? EventName extends keyof WindowEventMap ? WindowEventMap[EventName] : Event\n  : Name extends `document:${infer EventName}` ? EventName extends keyof DocumentEventMap ? DocumentEventMap[EventName] : Event\n  : Name extends keyof HTMLElementEventMap ? HTMLElementEventMap[Name] : Event;\n\ntype HostListenerDecorator<EventType extends Event> = <This extends CustomElement | CustomDirective>(value: (this: This, event: EventType) => unknown, context: ClassMethodDecoratorContext<This, (this: This, event: EventType) => unknown>) => void;',
       members: [
         {
           name: 'name',
           group: 'parameters',
-          signature: 'name: string'
+          signature: 'name: Name'
         },
         {
           name: 'capture',
@@ -294,7 +294,8 @@ export const CORE_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'declaring', snippets: [HOST_EVENT] },
+        { key: 'declaring', snippets: [HOST_LISTENER] },
+        { key: 'targets', snippets: [HOST_LISTENER_TARGETS] },
         { key: 'reach' },
         { key: 'timing' },
         { key: 'directives', snippets: [HOST_BINDINGS_DIRECTIVE] },

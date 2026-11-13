@@ -672,8 +672,8 @@
       },
       "hostBindings": {
         "eyebrow": "Components",
-        "title": "Host bindings with @HostProperty and @HostEvent",
-        "lead": "A component is an element of the page: the template using it can set its attributes and listen to its events. Some of them, though, belong to the component, whoever uses it: the role of a switch and its state for assistive technologies, a class its stylesheet reads with <code>:host(.on)</code>, the clicks and the keys that operate it. <code>@HostProperty</code> and <code>@HostEvent</code> declare them on the members of the class, and keep them on the host element.",
+        "title": "Host bindings with @HostProperty and @HostListener",
+        "lead": "A component is an element of the page: the template using it can set its attributes and listen to its events. Some of them, though, belong to the component, whoever uses it: the role of a switch and its state for assistive technologies, a class its stylesheet reads with <code>:host(.on)</code>, the clicks and the keys that operate it. <code>@HostProperty</code> and <code>@HostListener</code> declare them on the members of the class, and keep them on the host element.",
         "attributesAndClasses": {
           "title": "Attributes and classes",
           "p1": "<code>@HostProperty('name')</code> on a field, a getter or an accessor writes its value in the attribute <code>name</code> of the host element; <code>@HostProperty('class.name')</code> toggles the class <code>name</code>, which the element has while the value is truthy. The member is read inside an effect: a value that reads no signal is written once, while a signal, or a getter reading signals, is written again each time they change.",
@@ -682,8 +682,9 @@
         },
         "events": {
           "title": "Events of the host",
-          "p1": "<code>@HostEvent('name')</code> on a method listens to the event on the host element, from the connection to the disconnection. The method receives the event, typed by its parameter, or takes no parameter at all. In the switch, the clicks call <code>toggle</code>, those on the projected label included, and <code>onKeydown</code> turns Space and Enter into a toggle. The options are the ones of <code>addEventListener</code>: <code>capture</code>, <code>once</code> and <code>passive</code>.",
-          "p2": "The listener hears the native events of the host, the events dispatched on it, the outputs of the component included, and the events bubbling from its content. From its shadow root only the composed events come out, such as <code>click</code> and <code>keydown</code>: <code>change</code> and the outputs of the children stay inside, and are listened to in the template. See <a href=\"#/en/reference/api/core/HostEvent\"><code>HostEvent</code></a>."
+          "p1": "<code>@HostListener('name')</code> on a method listens to the event on the host element, from the connection to the disconnection. The method receives the event, whose type TypeScript takes from the name (<code>KeyboardEvent</code> for <code>keydown</code>, <code>Event</code> for an output, which the parameter can narrow to <code>CustomEvent&lt;boolean&gt;</code>), or takes no parameter at all. In the switch, the clicks call <code>toggle</code>, those on the projected label included, and <code>onKeydown</code> turns Space and Enter into a toggle. The options are the ones of <code>addEventListener</code>: <code>capture</code>, <code>once</code> and <code>passive</code>.",
+          "p2": "The listener hears the native events of the host, the events dispatched on it, the outputs of the component included, and the events bubbling from its content. From its shadow root only the composed events come out, such as <code>click</code> and <code>keydown</code>: <code>change</code> and the outputs of the children stay inside, and are listened to in the template. See <a href=\"#/en/reference/api/core/HostListener\"><code>HostListener</code></a>.",
+          "p3": "With the prefix <code>window:</code> or <code>document:</code> the method listens to the window or to the document, from the connection to the disconnection of the host: a menu closing on a click elsewhere in the page, a layout following the size of the window. The event is typed through <code>WindowEventMap</code> and <code>DocumentEventMap</code>, and a parameter unrelated to it is a type error. On the server they are not listened to, as every listener, and the event contract does not record them before the hydration."
         },
         "values": {
           "title": "From values to attributes",
@@ -714,11 +715,11 @@
           },
           "callout4": {
             "heading": "Nothing is bound yet in onInit",
-            "p1": "The bindings of a component start after the render: in <code>onInit</code> the host has none of its attributes, and the events dispatched there do not reach the <code>@HostEvent</code> methods. The listeners of the parent template, added before the element is inserted, run before them for the same event."
+            "p1": "The bindings of a component start after the render: in <code>onInit</code> the host has none of its attributes, and the events dispatched there do not reach the <code>@HostListener</code> methods. The listeners of the parent template, added before the element is inserted, run before them for the same event."
           },
           "callout5": {
             "heading": "Errors",
-            "p1": "TypeScript rejects the decorators on a structural directive, and <code>@HostEvent</code> on a method with more than one parameter. An empty name, <code>class.</code> alone and a static member throw when the class is defined."
+            "p1": "TypeScript rejects the decorators on a structural directive, and <code>@HostListener</code> on a method with more than one parameter, or whose parameter is unrelated to the event of the name. An empty name, a prefix naming no event (<code>window:</code>), <code>class.</code> alone and a static member throw when the class is defined."
           }
         },
         "summary": {
@@ -727,7 +728,7 @@
           "th2": "Description",
           "td1": "Writes the value of a field, a getter or an accessor in an attribute of the host: removed for <code>null</code> and <code>undefined</code>; a boolean adds it empty or removes it, or is written as <code>\"true\"</code> or <code>\"false\"</code> on the <code>aria-*</code> and enumerated attributes.",
           "td2": "Toggles a class of the host while the value is truthy.",
-          "td3": "Listens to an event of the host with a method, which receives the event."
+          "td3": "Listens to an event of the host, or of the window or of the document with the prefix window: or document:, with a method, which receives the event typed by its name."
         }
       },
       "queries": {
@@ -980,7 +981,7 @@
         },
         "hostBindings": {
           "title": "Binding the element",
-          "p1": "<code>@HostProperty</code> and <code>@HostEvent</code> work in a directive as in a component, on the element it is applied to: the attributes are written and the listeners added right after <code>onInit</code>, and everything is undone when the directive is destroyed. This directive copies a text when its element is clicked, with no <code>onInit</code> and no <code>onDestroy</code>:",
+          "p1": "<code>@HostProperty</code> and <code>@HostListener</code> work in a directive as in a component, on the element it is applied to: the attributes are written and the listeners added right after <code>onInit</code>, and everything is undone when the directive is destroyed. This directive copies a text when its element is clicked, with no <code>onInit</code> and no <code>onDestroy</code>:",
           "p2": "The values, the timing and the edge cases are described in <a href=\"#/en/components/host-bindings\">Host bindings</a>."
         },
         "svgElements": {
@@ -3080,7 +3081,7 @@
             "server4": "the custom directives of the native elements: their constructor, their inputs, <code>onInit</code> and their <code>@HostProperty</code>.",
             "p2": "What reacts or listens runs in the browser only:",
             "browser1": "the effects of <code>this.effect()</code>, <code>afterRender</code> and <code>onDestroy</code>;",
-            "browser2": "the listeners of the templates, of <code>@HostEvent</code> and of the directives;",
+            "browser2": "the listeners of the templates, of <code>@HostListener</code> and of the directives;",
             "browser3": "the host directives, and the custom directives applied to a component;",
             "browser4": "the queries, which keep their initial value, the element refs, <code>undefined</code> on the server, and the render of a component created with <code>createComponent</code>, which is only constructed.",
             "directives": {
@@ -3173,7 +3174,7 @@
           "eventReplay": {
             "title": "Events before the hydration",
             "p1": "The page can be clicked before its scripts run. So that nothing the user does is lost, <code>renderToString()</code> writes a small script after the root of the page, the event contract: it records the events until the runtime arrives, and once the components holding their targets are hydrated they are dispatched again, in order, with their default action prevented, since the browser already performed it. An event on a node that no longer exists is dropped. It needs no code of yours.",
-            "p2": "It records the events the templates and the <code>@HostEvent</code> of the page listen to, on the document and on every shadow root, since <code>change</code> and <code>submit</code> do not leave a shadow root. A click recorded on content waiting for <code>interaction</code> counts: it hydrates the content without a second click.",
+            "p2": "It records the events the templates and the <code>@HostListener</code> of the page listen to, on the document and on every shadow root, since <code>change</code> and <code>submit</code> do not leave a shadow root. A click recorded on content waiting for <code>interaction</code> counts: it hydrates the content without a second click.",
             "submit": {
               "title": "Forms",
               "p1": "A submission cannot wait, since the browser would leave the page. The server marks with <code>data-xd-submit</code> a form that is, or is inside, an element with <code>(submit)</code>: the contract holds its submission and replays it. Any other form is submitted as usual."
@@ -3192,7 +3193,7 @@
             },
             "callout2": {
               "heading": "What the event contract cannot do",
-              "body": "<p>The default action of an event happens before the runtime is there: a link whose <code>(click)</code> calls <code>preventDefault()</code> is followed, and a <code>submit</code> listened to only with <code>@HostEvent</code> or by a directive leaves the page, as neither is on an element the server can mark. The contract keeps the first 256 events, which covers the page that never loads the runtime, being made only of static components.</p>"
+              "body": "<p>The default action of an event happens before the runtime is there: a link whose <code>(click)</code> calls <code>preventDefault()</code> is followed, and a <code>submit</code> listened to only with <code>@HostListener</code> or by a directive leaves the page, as neither is on an element the server can mark. The contract keeps the first 256 events, which covers the page that never loads the runtime, being made only of static components.</p>"
             }
           }
         },
@@ -3322,7 +3323,7 @@
             "title": "What makes a component interactive"
           },
           "p3": "A component is static when the build can prove it does nothing in the browser. What the build cannot read counts as logic, since keeping a component in the bundle is always correct:",
-          "li1": "<strong>In the class</strong>, or in the classes it inherits from: <code>@Event</code>, <code>@Query</code>, <code>@HostEvent</code>, <code>hostDirectives</code>, <code>onInit</code>, <code>afterRender</code>, <code>onDestroy</code>, a constructor running code, a <code>signal()</code>, <code>effect()</code>, <code>createComponent()</code>, a read of a global only the browser has or of a signal of a module, and a field initialized by a function of the application, whose code may start anything. Inputs, <code>computed</code>, <code>@HostProperty</code> and the methods the template calls do not count.",
+          "li1": "<strong>In the class</strong>, or in the classes it inherits from: <code>@Event</code>, <code>@Query</code>, <code>@HostListener</code>, <code>hostDirectives</code>, <code>onInit</code>, <code>afterRender</code>, <code>onDestroy</code>, a constructor running code, a <code>signal()</code>, <code>effect()</code>, <code>createComponent()</code>, a read of a global only the browser has or of a signal of a module, and a field initialized by a function of the application, whose code may start anything. Inputs, <code>computed</code>, <code>@HostProperty</code> and the methods the template calls do not count.",
           "li2": "<strong>In the template</strong>: a listener, a directive, an element ref, a <code>@hydrate</code>, a <code>@client</code>, a custom element of another library, an <code>@import lazy</code>, and a read of a signal of a module or of a global only the browser has.",
           "li3": "<strong>In the module</strong>: code running when it is evaluated, an import written for its effects, or other code reading something from it, which may create the component in the browser: every component it renders, at any depth, then stays in the bundle too. <code>import './app.xd.component'</code> reads nothing, and the specs and the entry of the server do not count.",
           "li4": "<strong>Around it</strong>: an interactive component binding a signal to one of its inputs, or rendering it in a block depending on a signal, in a <code>&lt;template&gt;</code> or in a <code>@client</code>, where the browser may have to create it. What the browser may create brings along every component its template renders, at any depth: a page a router renders keeps in the bundle all the components it holds. The components sharing a module or a template stay on the same side.",
@@ -4196,16 +4197,16 @@
       "cause": "A @HostProperty with class. and no class after it. Thrown when the class is defined, as soon as its module is imported; an empty name throws @HostProperty('') names no attribute.",
       "fix": "Name the attribute, or the class after class.: @HostProperty('class.on')."
     },
-    "Error: @HostEvent() names no event": {
-      "cause": "A @HostEvent with an empty name. Thrown when the class is defined.",
-      "fix": "Name the event: @HostEvent('click')."
+    "Error: @HostListener('') names no event": {
+      "cause": "A @HostListener with an empty name, or with nothing after window: or document:. Thrown when the class is defined.",
+      "fix": "Name the event: @HostListener('click'), @HostListener('window:resize')."
     },
     "Error: @HostProperty('role') cannot decorate the static member defaultRole": {
       "cause": "A @HostProperty on a static field, getter or accessor: the host element belongs to an instance.",
       "fix": "Decorate an instance member, which may read the static one."
     },
-    "Error: @HostEvent('click') cannot decorate the static method handle": {
-      "cause": "A @HostEvent on a static method: the host element belongs to an instance.",
+    "Error: @HostListener('click') cannot decorate the static method handle": {
+      "cause": "A @HostListener on a static method: the host element belongs to an instance.",
       "fix": "Decorate an instance method."
     },
     "ReferenceError: HTMLElement is not defined": {

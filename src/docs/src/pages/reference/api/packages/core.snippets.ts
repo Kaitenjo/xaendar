@@ -242,7 +242,7 @@ export class CopyDirective extends CustomDirective<HTMLButtonElement> {
   /**
    * Copies the text. Listens to the clicks on the element until the directive is destroyed.
    */
-  @HostEvent('click')
+  @HostListener('click')
   public async copy(): Promise<void> {
     const text = this.text();
     await navigator.clipboard.writeText(text);
@@ -274,25 +274,25 @@ export class FieldComponent extends CustomElement {}`
 };
 
 /**
- * The snippet `host-event.ts`, shown by the page components/host-bindings and the API reference of core.
+ * The snippet `host-listener.ts`, shown by the page components/host-bindings and the API reference of core.
  */
-export const HOST_EVENT: SourceFile = {
-  name: 'host-event.ts',
+export const HOST_LISTENER: SourceFile = {
+  name: 'host-listener.ts',
   lang: 'ts',
   code: `/**
  * A method without parameters: the event is not needed.
  */
-@HostEvent('click')
+@HostListener('click')
 public toggle(): void {
   this.on.update(on => !on);
 }
 
 /**
- * The parameter gives the type of the event.
+ * The name gives the type of the event: KeyboardEvent for keydown, MouseEvent for click.
  *
  * @param event - The key pressed while the host has the focus.
  */
-@HostEvent('keydown')
+@HostListener('keydown')
 public onKeydown(event: KeyboardEvent): void {
   switch (event.key) {
     case ' ':
@@ -308,7 +308,7 @@ public onKeydown(event: KeyboardEvent): void {
  *
  * @param event - The output, with its detail.
  */
-@HostEvent('checkedChange')
+@HostListener('checkedChange')
 public log(event: CustomEvent<boolean>): void {
   console.log(event.detail);
 }
@@ -316,11 +316,45 @@ public log(event: CustomEvent<boolean>): void {
 /**
  * The options of addEventListener: capture, once and passive. The same method can listen to several events.
  */
-@HostEvent('pointerup', { passive: true })
-@HostEvent('pointercancel', { passive: true })
+@HostListener('pointerup', { passive: true })
+@HostListener('pointercancel', { passive: true })
 public release(): void {
   this.pressed.set(false);
 }`
+};
+
+/**
+ * The snippet `host-listener-targets.ts`, shown by the page components/host-bindings and the API reference of core.
+ */
+export const HOST_LISTENER_TARGETS: SourceFile = {
+  name: 'host-listener-targets.ts',
+  lang: 'ts',
+  code: `/**
+ * Closes the menu on a click anywhere in the page, outside of it. The listener is on the document while the host is
+ * connected.
+ *
+ * @param event - The click, a MouseEvent of DocumentEventMap.
+ */
+@HostListener('document:click')
+public closeOutside(event: MouseEvent): void {
+  if (!event.composedPath().includes(this)) {
+    this.open.set(false);
+  }
+}
+
+/**
+ * Follows the width of the window. The listener is on the window while the host is connected.
+ *
+ * @param event - The resize, a UIEvent of WindowEventMap.
+ */
+@HostListener('window:resize', { passive: true })
+public onResize(_event: UIEvent): void {
+  this.compact.set(window.innerWidth < 600);
+}
+
+// ✗ a type error: a click is a MouseEvent, not a KeyboardEvent
+@HostListener('click')
+public onClick(event: KeyboardEvent): void { … }`
 };
 
 /**

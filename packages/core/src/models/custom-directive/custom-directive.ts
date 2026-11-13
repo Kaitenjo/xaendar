@@ -82,7 +82,7 @@ export abstract class CustomDirective<T extends Element = Element> {
   /**
    * Starts the directive, invoked by the template runtime once its inputs have been bound.
    * Invokes `onInit`, if declared, then binds the attributes, the classes and the events of the element declared by
-   * `@HostProperty` and `@HostEvent`.
+   * `@HostProperty` and `@HostListener`.
    *
    * @param context - The context of the element the directive is applied to: the effects created via {@link effect}
    *   and the components created via {@link createComponent} are registered on it, so they are disposed when it is cleared.

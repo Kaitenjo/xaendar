@@ -154,7 +154,7 @@
       },
       "directives": {
         "title": "In a custom directive",
-        "body": "<p>A custom directive binds the element it is applied to: the attributes are written right after its <code>onInit</code>, and removed when the directive is destroyed. Together with <a href=\"#/en/reference/api/core/HostEvent\"><code>@HostEvent</code></a>, it replaces the effects and the listeners set up in <code>onInit</code> and the cleanup in <code>onDestroy</code>.</p>"
+        "body": "<p>A custom directive binds the element it is applied to: the attributes are written right after its <code>onInit</code>, and removed when the directive is destroyed. Together with <a href=\"#/en/reference/api/core/HostListener\"><code>@HostListener</code></a>, it replaces the effects and the listeners set up in <code>onInit</code> and the cleanup in <code>onDestroy</code>.</p>"
       },
       "errors": {
         "title": "Errors",
@@ -162,11 +162,11 @@
       }
     }
   },
-  "HostEvent": {
-    "summary": "Listens to an event of the host element of a component or of a custom directive with a method of the class.",
-    "description": "<p>The decorator goes on a method, not static, of a class extending <a href=\"#/en/reference/api/core/CustomElement\"><code>CustomElement</code></a> or <a href=\"#/en/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>. The listener is added to the host element, the component itself or the element the directive is applied to, each time the element is connected, or the directive started, and removed when the element is disconnected, or the directive destroyed. A <a href=\"#/en/reference/api/core/StructuralDirective\"><code>StructuralDirective</code></a> holds no element, and TypeScript rejects the decorator there.</p><p>The method is called on the instance, with the event as its only argument: it takes no parameter, or one, typed as the event it expects (<code>KeyboardEvent</code>, <code>CustomEvent&lt;number&gt;</code>). The name of the event is a plain string, so TypeScript does not match it with that type: a <code>KeyboardEvent</code> parameter on <code>click</code> compiles. The same method can listen to several events, with one decorator each.</p>",
+  "HostListener": {
+    "summary": "Listens to an event of the host element of a component or of a custom directive, or of the window or of the document, with a method of the class.",
+    "description": "<p>The decorator goes on a method, not static, of a class extending <a href=\"#/en/reference/api/core/CustomElement\"><code>CustomElement</code></a> or <a href=\"#/en/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>. The listener is added to the host element, the component itself or the element the directive is applied to, each time the element is connected, or the directive started, and removed when the element is disconnected, or the directive destroyed. A <a href=\"#/en/reference/api/core/StructuralDirective\"><code>StructuralDirective</code></a> holds no element, and TypeScript rejects the decorator there. With the prefix <code>window:</code> or <code>document:</code> (<code>window:resize</code>, <code>document:keydown</code>) the listener goes on the window or on the document instead, with the same lifetime.</p><p>The method is called on the instance, with the event as its only argument: it takes no parameter, or one, typed as the event it expects (<code>KeyboardEvent</code>, <code>CustomEvent&lt;number&gt;</code>). TypeScript types the event by its name: the event of <code>HTMLElementEventMap</code> for an event of the element (<code>MouseEvent</code> for <code>click</code>), of <code>WindowEventMap</code> after <code>window:</code>, of <code>DocumentEventMap</code> after <code>document:</code>, and <code>Event</code> for any other name, such as an output. The parameter can declare that event, a broader one or a narrower one (<code>CustomEvent&lt;number&gt;</code> for an output), while an unrelated one, as <code>KeyboardEvent</code> on <code>click</code>, is a type error. The same method can listen to several events, with one decorator each.</p>",
     "members": {
-      "name": "<p>The name of the event, case-sensitive: a native event (<code>click</code>, <code>keydown</code>), an output of the component or of a directive applied to the element (<code>valueChange</code>), or any other event dispatched on the element. An empty name throws when the class is defined.</p>",
+      "name": "<p>The name of the event, case-sensitive: a native event (<code>click</code>, <code>keydown</code>), an output of the component or of a directive applied to the element (<code>valueChange</code>), or any other event dispatched on the element. Prefixed by <code>window:</code> or <code>document:</code>, an event of the window or of the document (<code>window:resize</code>, <code>document:visibilitychange</code>); any other prefix is part of the name (<code>htmx:load</code>). An empty name, or nothing after the prefix, throws when the class is defined.</p>",
       "capture": "<p>Whether the listener runs in the capture phase, before the listeners of the descendants of the host. By default it runs in the bubbling phase.</p>",
       "once": "<p>Whether the listener is removed after the first event. It is added again the next time the element is connected.</p>",
       "passive": "<p>Whether the listener promises not to call <code>preventDefault()</code>, so the browser does not wait for it to scroll on <code>touchstart</code>, <code>wheel</code> and similar events. A passive listener cannot cancel the event.</p>"
@@ -175,6 +175,10 @@
       "declaring": {
         "title": "Declaring a listener",
         "body": "<p>A method listens to the events of the host as a <code>(name)</code> binding would on its tag, but from inside the class: every instance has it, whoever uses the component. The method stays a member like any other: the template and the other methods can call it too.</p>"
+      },
+      "targets": {
+        "title": "The window and the document",
+        "body": "<p>With the prefix <code>window:</code> or <code>document:</code> the method listens to the window or to the document while the host is connected, with no <code>addEventListener</code> in <code>onInit</code> and no <code>removeEventListener</code> in <code>onDestroy</code>: the events of the page outside of the component, as a click elsewhere or a resize. The event is typed through <code>WindowEventMap</code> and <code>DocumentEventMap</code>. On the server no listener runs, and the event contract does not record these events before the hydration.</p>"
       },
       "reach": {
         "title": "Which events arrive",
@@ -186,11 +190,11 @@
       },
       "directives": {
         "title": "In a custom directive",
-        "body": "<p>A custom directive listens to the element it is applied to: the listeners are added right after its <code>onInit</code> and removed when the directive is destroyed, with no stable arrow function and no <code>removeEventListener</code> in <code>onDestroy</code>. Listeners on other targets, such as the document, still go through <code>addEventListener</code>.</p>"
+        "body": "<p>A custom directive listens to the element it is applied to: the listeners are added right after its <code>onInit</code> and removed when the directive is destroyed, with no stable arrow function and no <code>removeEventListener</code> in <code>onDestroy</code>. The window and the document are reached with <code>window:</code> and <code>document:</code>; only other targets still go through <code>addEventListener</code>.</p>"
       },
       "errors": {
         "title": "Errors",
-        "body": "<p>An empty name and a static method throw when the class is defined, that is when its module is imported. A structural directive and a method with more than one parameter are rejected by TypeScript.</p>"
+        "body": "<p>An empty name, a prefix naming no event (<code>window:</code>) and a static method throw when the class is defined, that is when its module is imported. A structural directive, a method with more than one parameter and a parameter unrelated to the event of the name are rejected by TypeScript.</p>"
       }
     }
   },

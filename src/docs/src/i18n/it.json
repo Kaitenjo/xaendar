@@ -672,8 +672,8 @@
       },
       "hostBindings": {
         "eyebrow": "Componenti",
-        "title": "Binding dell’host con @HostProperty e @HostEvent",
-        "lead": "Un componente è un elemento della pagina: il template che lo usa può impostarne gli attributi e ascoltarne gli eventi. Alcuni di questi, però, appartengono al componente, chiunque lo usi: il ruolo di un interruttore e il suo stato per le tecnologie assistive, una classe che il suo foglio di stile legge con <code>:host(.on)</code>, i clic e i tasti che lo azionano. <code>@HostProperty</code> e <code>@HostEvent</code> li dichiarano sui membri della classe, e li mantengono sull’elemento host.",
+        "title": "Binding dell’host con @HostProperty e @HostListener",
+        "lead": "Un componente è un elemento della pagina: il template che lo usa può impostarne gli attributi e ascoltarne gli eventi. Alcuni di questi, però, appartengono al componente, chiunque lo usi: il ruolo di un interruttore e il suo stato per le tecnologie assistive, una classe che il suo foglio di stile legge con <code>:host(.on)</code>, i clic e i tasti che lo azionano. <code>@HostProperty</code> e <code>@HostListener</code> li dichiarano sui membri della classe, e li mantengono sull’elemento host.",
         "attributesAndClasses": {
           "title": "Attributi e classi",
           "p1": "<code>@HostProperty('name')</code> su un campo, un getter o un accessor scrive il suo valore nell’attributo <code>name</code> dell’elemento host; <code>@HostProperty('class.name')</code> attiva e disattiva la classe <code>name</code>, che l’elemento ha finché il valore è truthy. Il membro viene letto dentro un effetto: un valore che non legge signal viene scritto una volta sola, mentre un signal, o un getter che legge signal, viene riscritto ogni volta che cambiano.",
@@ -682,8 +682,9 @@
         },
         "events": {
           "title": "Gli eventi dell’host",
-          "p1": "<code>@HostEvent('name')</code> su un metodo ascolta l’evento sull’elemento host, dalla connessione alla disconnessione. Il metodo riceve l’evento, tipizzato dal suo parametro, oppure non prende parametri. Nell’interruttore i clic chiamano <code>toggle</code>, compresi quelli sull’etichetta proiettata, e <code>onKeydown</code> trasforma Spazio e Invio in un cambio di stato. Le opzioni sono quelle di <code>addEventListener</code>: <code>capture</code>, <code>once</code> e <code>passive</code>.",
-          "p2": "Il listener sente gli eventi nativi dell’host, gli eventi inviati su di esso, compresi gli output del componente, e gli eventi che risalgono dal suo contenuto. Dal suo shadow root escono solo gli eventi composed, come <code>click</code> e <code>keydown</code>: <code>change</code> e gli output dei figli restano dentro, e si ascoltano nel template. Vedi <a href=\"#/it/reference/api/core/HostEvent\"><code>HostEvent</code></a>."
+          "p1": "<code>@HostListener('name')</code> su un metodo ascolta l’evento sull’elemento host, dalla connessione alla disconnessione. Il metodo riceve l’evento, il cui tipo TypeScript ricava dal nome (<code>KeyboardEvent</code> per <code>keydown</code>, <code>Event</code> per un output, che il parametro può restringere a <code>CustomEvent&lt;boolean&gt;</code>), oppure non prende parametri. Nell’interruttore i clic chiamano <code>toggle</code>, compresi quelli sull’etichetta proiettata, e <code>onKeydown</code> trasforma Spazio e Invio in un cambio di stato. Le opzioni sono quelle di <code>addEventListener</code>: <code>capture</code>, <code>once</code> e <code>passive</code>.",
+          "p2": "Il listener sente gli eventi nativi dell’host, gli eventi inviati su di esso, compresi gli output del componente, e gli eventi che risalgono dal suo contenuto. Dal suo shadow root escono solo gli eventi composed, come <code>click</code> e <code>keydown</code>: <code>change</code> e gli output dei figli restano dentro, e si ascoltano nel template. Vedi <a href=\"#/it/reference/api/core/HostListener\"><code>HostListener</code></a>.",
+          "p3": "Con il prefisso <code>window:</code> o <code>document:</code> il metodo ascolta la finestra o il documento, dalla connessione alla disconnessione dell’host: un menu che si chiude a un clic altrove nella pagina, un layout che segue la dimensione della finestra. L’evento è tipizzato attraverso <code>WindowEventMap</code> e <code>DocumentEventMap</code>, e un parametro senza relazione con esso è un errore di tipo. Sul server non vengono ascoltati, come ogni listener, e l’event contract non li registra prima dell’hydration."
         },
         "values": {
           "title": "Dai valori agli attributi",
@@ -714,11 +715,11 @@
           },
           "callout4": {
             "heading": "In onInit non è ancora legato nulla",
-            "p1": "I binding di un componente partono dopo il render: in <code>onInit</code> l’host non ha nessuno dei suoi attributi, e gli eventi inviati lì non raggiungono i metodi con <code>@HostEvent</code>. I listener del template del padre, aggiunti prima che l’elemento venga inserito, vengono eseguiti prima di loro per lo stesso evento."
+            "p1": "I binding di un componente partono dopo il render: in <code>onInit</code> l’host non ha nessuno dei suoi attributi, e gli eventi inviati lì non raggiungono i metodi con <code>@HostListener</code>. I listener del template del padre, aggiunti prima che l’elemento venga inserito, vengono eseguiti prima di loro per lo stesso evento."
           },
           "callout5": {
             "heading": "Errori",
-            "p1": "TypeScript rifiuta i decoratori su una direttiva strutturale, e <code>@HostEvent</code> su un metodo con più di un parametro. Un nome vuoto, <code>class.</code> da solo e un membro statico lanciano un errore quando la classe viene definita."
+            "p1": "TypeScript rifiuta i decoratori su una direttiva strutturale, e <code>@HostListener</code> su un metodo con più di un parametro, o il cui parametro non ha relazione con l’evento del nome. Un nome vuoto, un prefisso che non nomina un evento (<code>window:</code>), <code>class.</code> da solo e un membro statico lanciano un errore quando la classe viene definita."
           }
         },
         "summary": {
@@ -727,7 +728,7 @@
           "th2": "Descrizione",
           "td1": "Scrive il valore di un campo, di un getter o di un accessor in un attributo dell’host: rimosso per <code>null</code> e <code>undefined</code>; un booleano lo aggiunge vuoto o lo rimuove, oppure viene scritto come <code>\"true\"</code> o <code>\"false\"</code> sugli attributi <code>aria-*</code> ed enumerati.",
           "td2": "Attiva una classe dell’host finché il valore è truthy.",
-          "td3": "Ascolta un evento dell’host con un metodo, che riceve l’evento."
+          "td3": "Ascolta un evento dell’host, o della finestra o del documento con il prefisso window: o document:, con un metodo, che riceve l’evento tipizzato dal suo nome."
         }
       },
       "queries": {
@@ -980,7 +981,7 @@
         },
         "hostBindings": {
           "title": "Legare l’elemento",
-          "p1": "<code>@HostProperty</code> e <code>@HostEvent</code> funzionano in una direttiva come in un componente, sull’elemento a cui è applicata: gli attributi vengono scritti e i listener aggiunti subito dopo <code>onInit</code>, e tutto viene annullato quando la direttiva viene distrutta. Questa direttiva copia un testo quando si fa clic sul suo elemento, senza <code>onInit</code> né <code>onDestroy</code>:",
+          "p1": "<code>@HostProperty</code> e <code>@HostListener</code> funzionano in una direttiva come in un componente, sull’elemento a cui è applicata: gli attributi vengono scritti e i listener aggiunti subito dopo <code>onInit</code>, e tutto viene annullato quando la direttiva viene distrutta. Questa direttiva copia un testo quando si fa clic sul suo elemento, senza <code>onInit</code> né <code>onDestroy</code>:",
           "p2": "I valori, i tempi e i casi limite sono descritti in <a href=\"#/it/components/host-bindings\">Binding dell’host</a>."
         },
         "svgElements": {
@@ -3080,7 +3081,7 @@
             "server4": "le direttive custom degli elementi nativi: costruttore, input, <code>onInit</code> e <code>@HostProperty</code>.",
             "p2": "Ciò che reagisce o ascolta gira solo nel browser:",
             "browser1": "gli effect di <code>this.effect()</code>, <code>afterRender</code> e <code>onDestroy</code>;",
-            "browser2": "i listener dei template, di <code>@HostEvent</code> e delle direttive;",
+            "browser2": "i listener dei template, di <code>@HostListener</code> e delle direttive;",
             "browser3": "le host directive, e le direttive custom applicate a un componente;",
             "browser4": "le query, che restano al valore iniziale, gli element ref, <code>undefined</code> sul server, e il render di un componente creato con <code>createComponent</code>, che viene solo costruito.",
             "directives": {
@@ -3173,7 +3174,7 @@
           "eventReplay": {
             "title": "Eventi prima dell’hydration",
             "p1": "La pagina si può cliccare prima che giri il suo codice. Perché nulla di ciò che fa l’utente vada perso, <code>renderToString()</code> scrive un piccolo script dopo la radice della pagina, l’event contract: registra gli eventi finché non arriva il runtime, e quando i componenti che contengono i loro target sono idratati li invia di nuovo, in ordine, con l’azione predefinita impedita, perché il browser l’ha già eseguita. Un evento su un nodo che non esiste più viene scartato. Non serve scrivere codice.",
-            "p2": "Registra gli eventi che i template e gli <code>@HostEvent</code> della pagina ascoltano, sul documento e su ogni shadow root, perché <code>change</code> e <code>submit</code> non escono da uno shadow root. Un clic registrato su un contenuto che aspetta <code>interaction</code> conta: idrata il contenuto senza un secondo clic.",
+            "p2": "Registra gli eventi che i template e gli <code>@HostListener</code> della pagina ascoltano, sul documento e su ogni shadow root, perché <code>change</code> e <code>submit</code> non escono da uno shadow root. Un clic registrato su un contenuto che aspetta <code>interaction</code> conta: idrata il contenuto senza un secondo clic.",
             "submit": {
               "title": "Form",
               "p1": "Un invio non può aspettare, perché il browser lascerebbe la pagina. Il server segna con <code>data-xd-submit</code> un form che è, o sta dentro, un elemento con <code>(submit)</code>: il contract ne trattiene l’invio e lo ripete. Ogni altro form viene inviato normalmente."
@@ -3192,7 +3193,7 @@
             },
             "callout2": {
               "heading": "Cosa non può fare l’event contract",
-              "body": "<p>L’azione predefinita di un evento avviene prima che arrivi il runtime: un link il cui <code>(click)</code> chiama <code>preventDefault()</code> viene seguito, e un <code>submit</code> ascoltato solo con <code>@HostEvent</code> o da una direttiva lascia la pagina, perché nessuno dei due è su un elemento che il server può marcare. Il contract tiene i primi 256 eventi, il che copre la pagina che non carica mai il runtime, perché fatta solo di componenti statici.</p>"
+              "body": "<p>L’azione predefinita di un evento avviene prima che arrivi il runtime: un link il cui <code>(click)</code> chiama <code>preventDefault()</code> viene seguito, e un <code>submit</code> ascoltato solo con <code>@HostListener</code> o da una direttiva lascia la pagina, perché nessuno dei due è su un elemento che il server può marcare. Il contract tiene i primi 256 eventi, il che copre la pagina che non carica mai il runtime, perché fatta solo di componenti statici.</p>"
             }
           }
         },
@@ -3322,7 +3323,7 @@
             "title": "Cosa rende interattivo un componente"
           },
           "p3": "Un componente è statico quando la build riesce a dimostrare che non fa nulla nel browser. Ciò che la build non riesce a leggere conta come logica, perché tenere un componente nel bundle è sempre corretto:",
-          "li1": "<strong>Nella classe</strong>, o nelle classi da cui eredita: <code>@Event</code>, <code>@Query</code>, <code>@HostEvent</code>, <code>hostDirectives</code>, <code>onInit</code>, <code>afterRender</code>, <code>onDestroy</code>, un costruttore che esegue codice, un <code>signal()</code>, <code>effect()</code>, <code>createComponent()</code>, la lettura di un globale che ha solo il browser o di un signal di un modulo, e un campo inizializzato da una funzione dell’applicazione, il cui codice può avviare qualsiasi cosa. Gli input, <code>computed</code>, <code>@HostProperty</code> e i metodi chiamati dal template non contano.",
+          "li1": "<strong>Nella classe</strong>, o nelle classi da cui eredita: <code>@Event</code>, <code>@Query</code>, <code>@HostListener</code>, <code>hostDirectives</code>, <code>onInit</code>, <code>afterRender</code>, <code>onDestroy</code>, un costruttore che esegue codice, un <code>signal()</code>, <code>effect()</code>, <code>createComponent()</code>, la lettura di un globale che ha solo il browser o di un signal di un modulo, e un campo inizializzato da una funzione dell’applicazione, il cui codice può avviare qualsiasi cosa. Gli input, <code>computed</code>, <code>@HostProperty</code> e i metodi chiamati dal template non contano.",
           "li2": "<strong>Nel template</strong>: un listener, una direttiva, un element ref, un <code>@hydrate</code>, un <code>@client</code>, un custom element di un’altra libreria, un <code>@import lazy</code>, e la lettura di un signal di un modulo o di un globale che ha solo il browser.",
           "li3": "<strong>Nel modulo</strong>: codice eseguito quando viene valutato, un import scritto per i suoi effetti, o altro codice che ne legge qualcosa, che può creare il componente nel browser: allora resta nel bundle anche ogni componente che renderizza, a qualsiasi profondità. <code>import './app.xd.component'</code> non legge nulla, e gli spec e l’entry del server non contano.",
           "li4": "<strong>Attorno</strong>: un componente interattivo che lega un signal a uno dei suoi input, o che lo renderizza in un blocco che dipende da un signal, in un <code>&lt;template&gt;</code> o in un <code>@client</code>, dove il browser può doverlo creare. Ciò che il browser può creare si porta dietro ogni componente renderizzato dal suo template, a qualsiasi profondità: una pagina renderizzata da un router tiene nel bundle tutti i componenti che contiene. I componenti che condividono un modulo o un template stanno dalla stessa parte.",
@@ -4196,16 +4197,16 @@
       "cause": "Un @HostProperty con class. senza una classe dopo. Viene lanciato quando la classe viene definita, appena il suo modulo viene importato; un nome vuoto lancia @HostProperty('') names no attribute.",
       "fix": "Indica il nome dell’attributo, o quello della classe dopo class.: @HostProperty('class.on')."
     },
-    "Error: @HostEvent() names no event": {
-      "cause": "Un @HostEvent con un nome vuoto. Viene lanciato quando la classe viene definita.",
-      "fix": "Indica il nome dell’evento: @HostEvent('click')."
+    "Error: @HostListener('') names no event": {
+      "cause": "Un @HostListener con un nome vuoto, o senza niente dopo window: o document:. Viene lanciato quando la classe viene definita.",
+      "fix": "Indica il nome dell’evento: @HostListener('click'), @HostListener('window:resize')."
     },
     "Error: @HostProperty('role') cannot decorate the static member defaultRole": {
       "cause": "Un @HostProperty su un campo, un getter o un accessor statico: l’elemento host appartiene a un’istanza.",
       "fix": "Decora un membro d’istanza, che può leggere quello statico."
     },
-    "Error: @HostEvent('click') cannot decorate the static method handle": {
-      "cause": "Un @HostEvent su un metodo statico: l’elemento host appartiene a un’istanza.",
+    "Error: @HostListener('click') cannot decorate the static method handle": {
+      "cause": "Un @HostListener su un metodo statico: l’elemento host appartiene a un’istanza.",
       "fix": "Decora un metodo d’istanza."
     },
     "ReferenceError: HTMLElement is not defined": {

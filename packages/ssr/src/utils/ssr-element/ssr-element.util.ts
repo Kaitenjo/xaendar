@@ -242,8 +242,10 @@ export function _renderComponent<Component extends CustomElement>(out: ServerOut
 }
 
 /**
- * Adds the events a component listens to, in its template and with `@HostEvent`, to the ones the event contract of the
- * page records. Rendered outside of a page, by code calling the helpers by itself, there is no contract to tell.
+ * Adds the events a component listens to, in its template and with `@HostListener` on its element, to the ones the
+ * event contract of the page records. A `@HostListener` of the window or of the document is left out: it hears the
+ * events from when it is added, and there is no element of the component to replay them to. Rendered outside of a page,
+ * by code calling the helpers by itself, there is no contract to tell.
  *
  * @param Component - The class of the component.
  * @param definition - What the server renders the component with.
@@ -260,10 +262,13 @@ function collectEvents(Component: Constructor<CustomElement>, { render }: Server
     }
   }
 
-  const hostEvents = (Component as unknown as Record<symbol, { hostEvents?: Array<{ name: string }> } | undefined>)[Symbol.for('Symbol.metadata')]?.hostEvents;
-  if (hostEvents?.length) {
-    for (let i = 0; i < hostEvents.length; i++) {
-      pageEvents.add(hostEvents[i].name);
+  const hostListeners = (Component as unknown as Record<symbol, { hostListeners?: Array<{ name: string, target?: string }> } | undefined>)[Symbol.for('Symbol.metadata')]?.hostListeners;
+  if (hostListeners?.length) {
+    for (let i = 0; i < hostListeners.length; i++) {
+      const { name, target } = hostListeners[i];
+      if (!target) {
+        pageEvents.add(name);
+      }
     }
   }
 }

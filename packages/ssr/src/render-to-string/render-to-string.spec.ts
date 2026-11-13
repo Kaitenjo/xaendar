@@ -483,10 +483,10 @@ describe('renderToString', () => {
     expect(await renderToString(BareElement)).toBe('<bare-root data-xd-client=""></bare-root>');
   });
 
-  it('writes the event contract right after the element, before the transfer state, with the events of the components of the page', async () => {
+  it('writes the event contract right after the element, before the transfer state, with the events of the components of the page, but the ones of the window and of the document', async () => {
     class Listening extends CustomElement { }
     class Nested extends CustomElement { }
-    Object.defineProperty(Nested, Symbol.for('Symbol.metadata'), { value: { hostEvents: [{ name: 'pointerenter' }] } });
+    Object.defineProperty(Nested, Symbol.for('Symbol.metadata'), { value: { hostListeners: [{ name: 'pointerenter' }, { name: 'resize', target: 'window' }, { name: 'wheel', target: 'document' }] } });
     customElements.define('listening-root', Listening);
     customElements.define('listening-nested', Nested);
     _defineServerRender(Listening, await compile('<button (pointerdown)="noop()"></button><listening-nested></listening-nested>'));
@@ -495,6 +495,8 @@ describe('renderToString', () => {
     const html = await ssr.renderToString(Listening, undefined, { state: { a: 1 } });
 
     expect(html).toMatch(/<\/listening-root><script>\(.*"pointerdown","pointerenter".*<\/script><script type="application\/json" data-xd-state>/s);
+    expect(html).not.toContain('"resize"');
+    expect(html).not.toContain('"wheel"');
   });
 
   it('writes the nonce of the response on the script of the event contract', async () => {

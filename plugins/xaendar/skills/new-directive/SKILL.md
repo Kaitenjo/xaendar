@@ -36,7 +36,7 @@ The first argument is the selector, in camelCase (`appTooltip`); the second the 
    ```
    - `this.element` (typed by the argument of `CustomDirective`, SVG and MathML elements included) is set after the constructor: use it from `onInit`, which runs once the inputs are bound and the element is in the document, before its children are rendered (wait a microtask to read them).
    - Effects created with `this.effect` are disposed with the directive. Undo in `onDestroy` what `onInit` did outside the element (nodes appended to `document.body`, listeners on `document`), and leave the element as you found it: a directive applied by a condition is destroyed when its branch is left.
-   - Prefer `@HostProperty('attr' | 'class.x' | 'style.x')` and `@HostEvent('event')` to listeners and attributes set by hand: they bind the element after `onInit` and are removed when the directive stops.
+   - Prefer `@HostProperty('attr' | 'class.x' | 'style.x')` and `@HostListener('event')` to listeners and attributes set by hand: they bind the element after `onInit` and are removed when the directive stops.
    - Outputs are dispatched on the element; the template listens to them inside the parentheses of the directive.
 
    Structural directive:

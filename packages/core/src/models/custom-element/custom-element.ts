@@ -193,7 +193,7 @@ export class CustomElement extends HTMLElement {
    * function registered for it, which builds the Shadow DOM tree, or adopts the one the server rendered, and sets up
    * reactive signal subscriptions, then invokes the internal connected hooks
    * (e.g. the ones of the query signals), binds the attributes, the classes and the events declared by `@HostProperty`
-   * and `@HostEvent`, and finally invokes `afterRender`, if declared.
+   * and `@HostListener`, and finally invokes `afterRender`, if declared.
    *
    * Mounted by a template inside a `@try`, its error is thrown by the template, which the `@try` catches (see
    * `runConnection`).

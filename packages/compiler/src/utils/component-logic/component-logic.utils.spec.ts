@@ -100,7 +100,7 @@ describe('findComponentLogic', () => {
   it.each([
     ['@Event', '@Event() public accessor picked!: Output<void>;', 'declares @Event'],
     ['@Query', '@Query(\'a\') public accessor a!: QuerySignal<Element>;', 'declares @Query'],
-    ['@HostEvent', '@HostEvent(\'click\') public onClick(): void { }', 'declares @HostEvent'],
+    ['@HostListener', '@HostListener(\'click\') public onClick(): void { }', 'declares @HostListener'],
     ['a decorator without arguments', '@Marked public a = 1;', 'declares @Marked'],
     ['onInit', 'public onInit(): void { }', 'declares onInit'],
     ['afterRender', 'public afterRender(): void { }', 'declares afterRender'],

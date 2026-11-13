@@ -20,10 +20,10 @@ export const INTERNAL_HOST_DIRECTIVES = 'hostDirectives';
  */
 export const INTERNAL_HOST_PROPERTIES = 'hostProperties';
 /**
- * Internal metadata key holding the events a web component or a custom directive listens to on its host element
- * (see `HostEvent`).
+ * Internal metadata key holding the events a web component or a custom directive listens to, on its host element, the
+ * window or the document (see `HostListener`).
  */
-export const INTERNAL_HOST_EVENTS = 'hostEvents';
+export const INTERNAL_HOST_LISTENERS = 'hostListeners';
 /**
  * Key of the trigger a `@WebComponent` declares in the metadata of its class (see `WebComponentOptions`).
  */

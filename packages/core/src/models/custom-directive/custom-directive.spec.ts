@@ -2,7 +2,7 @@
 import { loadSignals } from '@xaendar/signals';
 import { describe, expect, it, vi } from 'vitest';
 import { CLEANUP, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
-import { HostEvent } from '../../decorators/host-event/host-event.decorator';
+import { HostListener } from '../../decorators/host-listener/host-listener.decorator';
 import { HostProperty } from '../../decorators/host-property/host-property.decorator';
 import { effect } from '../../signals/effect/effect';
 import { EMPTY_LAYOUT, _scope, forEachChild, addCleanup, clear } from '../../utils/context/context.util';
@@ -102,7 +102,7 @@ describe('CustomDirective', () => {
     const metadata: DecoratorMetadataObject = {};
     const handle = vi.fn();
     (HostProperty('class.on') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'on', static: false, metadata, access: { get: () => calls.push('binding') } });
-    (HostEvent('click') as unknown as (value: unknown, context: unknown) => void)(handle, { kind: 'method', name: 'handle', static: false, metadata, access: { get: () => handle } });
+    (HostListener('click') as unknown as (value: unknown, context: unknown) => void)(handle, { kind: 'method', name: 'handle', static: false, metadata, access: { get: () => handle } });
     Object.defineProperty(Klass, Symbol.for('Symbol.metadata'), { value: metadata });
     const element = document.createElement('div');
     const directive = create(Klass, element);

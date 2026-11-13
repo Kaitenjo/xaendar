@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { HostEvent } from '../../decorators/host-event/host-event.decorator';
+import { HostListener } from '../../decorators/host-listener/host-listener.decorator';
 import { HostProperty } from '../../decorators/host-property/host-property.decorator';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { toggleClass } from '../class-toggle/class-toggle.util';
@@ -34,7 +34,7 @@ function createOwner(members: Record<string, unknown>, bindings: Record<string, 
     (HostProperty(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: member, static: false, metadata, access: access(member) });
   }
   for (const [member, [name, options]] of Object.entries(listeners)) {
-    (HostEvent(name, options) as unknown as (value: unknown, context: unknown) => void)(members[member], { kind: 'method', name: member, static: false, metadata, access: access(member) });
+    (HostListener(name, options) as unknown as (value: unknown, context: unknown) => void)(members[member], { kind: 'method', name: member, static: false, metadata, access: access(member) });
   }
 
   const Klass = class extends Owner { };
@@ -166,6 +166,27 @@ describe('_bindHost', () => {
 
     clear(context);
     expect(remove).toHaveBeenCalledWith('click', add.mock.calls[0][1], { capture: true, passive: true });
+  });
+
+  it('listens to the events of the window and of the document, not of the element, until the context is cleared', () => {
+    const calls = new Array<string>();
+    const owner = createOwner(
+      { onResize(event: Event) { calls.push(`window ${event.type}`); }, onKeydown(event: Event) { calls.push(`document ${event.type}`); } },
+      {},
+      { onResize: ['window:resize'], onKeydown: ['document:keydown', { capture: true }] }
+    );
+    const { element, context } = bind(owner);
+
+    element.dispatchEvent(new Event('resize'));
+    element.dispatchEvent(new Event('keydown'));
+    window.dispatchEvent(new Event('resize'));
+    document.dispatchEvent(new Event('keydown'));
+    expect(calls).toEqual(['window resize', 'document keydown']);
+
+    clear(context);
+    window.dispatchEvent(new Event('resize'));
+    document.dispatchEvent(new Event('keydown'));
+    expect(calls).toHaveLength(2);
   });
 });
 
