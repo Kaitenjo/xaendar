@@ -24,6 +24,16 @@ describe('resolveWorkspaceLibraries()', () => {
     ], '/ws')).toEqual(LIBRARIES);
   });
 
+  it('keeps strictEvents only when the library declares it, the option of the project applying otherwise', () => {
+    const [declared, inherited] = resolveWorkspaceLibraries([
+      { name: '@acme/ui', root: 'libraries/ui', strictEvents: false },
+      { name: 'charts', root: 'libraries/charts' }
+    ], '/ws')!;
+
+    expect(declared.strictEvents).toBe(false);
+    expect(inherited).not.toHaveProperty('strictEvents');
+  });
+
   it('resolves nothing without libraries', () => {
     expect(resolveWorkspaceLibraries(undefined, '/ws')).toBeUndefined();
     expect(resolveWorkspaceLibraries([], '/ws')).toBeUndefined();

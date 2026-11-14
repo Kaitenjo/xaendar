@@ -654,15 +654,16 @@
           "p3": "<code>emit</code> non restituisce nulla, quindi il figlio non può sapere se un listener ha chiamato <code>preventDefault()</code>. Perché un evento annullabile serva a qualcosa, dichiaralo con <code>@Event</code>, così che i template possano ascoltarlo, e invialo tu con <code>dispatchEvent</code>, che restituisce <code>false</code> quando l’evento è stato annullato. I listener vengono eseguiti in modo sincrono, quindi il risultato è pronto alla riga successiva. L’evento porta come detail la modalità della nota.",
           "callout2": {
             "heading": "I nomi degli eventi distinguono maiuscole e minuscole",
-            "p1": "Il nome dell’evento è il nome dell’accessor, lettera per lettera. Gli attributi HTML non distinguono maiuscole e minuscole, i binding degli eventi sì: <code>(valuechange)</code> non corrisponde a <code>valueChange</code>."
+            "p1": "Il nome dell’evento è il nome dell’accessor, lettera per lettera. Gli attributi HTML non distinguono maiuscole e minuscole, i binding degli eventi sì: <code>(valuechange)</code> non corrisponde a <code>valueChange</code>, e la build lo segnala con un warning, come ogni evento che l’elemento non dichiara."
           },
           "callout3": {
             "heading": "Eventi custom sugli elementi nativi",
-            "p1": "Su un elemento nativo un template può legare solo gli eventi di <code>HTMLElementEventMap</code>, quindi non può intercettare un evento custom che risale fino a un antenato del figlio. Aggiungi il listener con <code>addEventListener</code>, come fa il frame nel secondo esempio."
+            "p1": "Un elemento nativo può ascoltare qualsiasi evento, anche uno che manca in <code>HTMLElementEventMap</code>, come un evento custom che risale da un figlio: il frame del secondo esempio lega <code>(bubbling)</code> e <code>(escaping)</code>. <code>$event</code> è allora un <code>Event</code>, che un argomento può restringere con un cast, <code>onFrame($event as CustomEvent&lt;string&gt;)</code>. Il compilatore non può distinguere un evento così da uno scritto male, quindi la build e l’editor lo segnalano con un warning, senza fallire.",
+            "p2": "Un progetto che lega eventi così di proposito disattiva il warning nel suo <code>xaendar.json</code>, per la build e per l’editor; una libreria di un workspace può impostarlo nella sua voce di <code>libs</code>."
           },
           "callout4": {
             "heading": "Eventi nativi sul tag di un componente",
-            "p1": "Un evento che il componente non dichiara è un evento nativo del suo elemento: <code>(click)</code> sul tag di un componente compila, con <code>$event</code> tipato tramite <code>HTMLElementEventMap</code>, e un nome che non è né un output né un evento nativo fa fallire la build. Il listener riceve solo gli eventi che raggiungono il tag: gli eventi nativi composed, come <code>click</code>, escono dallo shadow root del componente, mentre gli altri, come <code>change</code>, restano al suo interno."
+            "p1": "Un evento che il componente non dichiara è un evento nativo del suo elemento: <code>(click)</code> sul tag di un componente compila, con <code>$event</code> tipato tramite <code>HTMLElementEventMap</code>, e un nome che non è né un output né un evento nativo dà un warning, con <code>$event</code> tipato come <code>Event</code>. Il listener riceve solo gli eventi che raggiungono il tag: gli eventi nativi composed, come <code>click</code>, escono dallo shadow root del componente, mentre gli altri, come <code>change</code>, restano al suo interno."
           },
           "callout6": {
             "heading": "Nomi già usati da HTMLElement",
@@ -3057,7 +3058,7 @@
         "configuration": {
           "title": "Configurazione",
           "p1": "L’ordine conta. Babel compila prima i decoratori standard, e il plugin lavora poi sul suo output: cerca i blocchi statici che Babel genera in ogni classe decorata, e aggiunge la sua registrazione prima di essi. Con i plugin nell’ordine sbagliato, ogni componente fallisce con il messaggio mostrato in <a href=\"#/it/installation\">Installazione</a>.",
-          "p2": "L’opzione <code>customElements</code> del plugin contiene i pattern dei tag dei custom element di altre librerie, come <code>['sl-*']</code>, che i template usano come elementi nativi, senza importarli. La CLI passa la lista dichiarata in <code>xaendar.json</code>. Vedi <a href=\"#/it/reference/api/build-tools/XaendarPluginOptions\"><code>XaendarPluginOptions</code></a> e <a href=\"#/it/components/registration\">Selettori e registrazione</a>. Legge <code>tsconfig.json</code> dalla cartella da cui viene avviato Vite, e ne usa le opzioni del compilatore, comprese quelle strict, per il type check dei template. Un’app costruita con un altro framework aggiunge gli stessi due plugin: vedi <a href=\"#/it/tools/integrations\">Integrazioni</a>.",
+          "p2": "L’opzione <code>customElements</code> del plugin contiene i pattern dei tag dei custom element di altre librerie, come <code>['sl-*']</code>, che i template usano come elementi nativi, senza importarli. La CLI passa la lista dichiarata in <code>xaendar.json</code>. L’opzione <code>strictEvents</code>, <code>true</code> di default, fa segnalare al type check con un warning gli eventi che gli elementi di un template non dichiarano; la CLI passa quella di <code>xaendar.json</code>. Vedi <a href=\"#/it/reference/api/build-tools/XaendarPluginOptions\"><code>XaendarPluginOptions</code></a> e <a href=\"#/it/components/registration\">Selettori e registrazione</a>. Legge <code>tsconfig.json</code> dalla cartella da cui viene avviato Vite, e ne usa le opzioni del compilatore, comprese quelle strict, per il type check dei template. Un’app costruita con un altro framework aggiunge gli stessi due plugin: vedi <a href=\"#/it/tools/integrations\">Integrazioni</a>.",
           "p3": "Con la sua opzione <code>ssr</code>, il plugin renderizza le pagine sul server: i moduli valutati sul server registrano template compilati in HTML, e il dev server renderizza ogni pagina con l’entry che l’opzione indica. Vedi <a href=\"#/it/tools/ssr/deployment\">Rendering lato server</a>."
         },
         "whatThePluginDoes": {
@@ -3821,9 +3822,9 @@
       "cause": "Un input required legato solo in alcuni rami.",
       "fix": "Aggiungi un ramo @else o @default che lo lega, o legalo fuori dalla condizione."
     },
-    "Property 'valuechange' does not exist on type 'HTMLElementEventMap'.": {
-      "cause": "Un listener per un evento che non è né un output del componente né un evento nativo del suo elemento: maiuscole diverse, o un nome sbagliato.",
-      "fix": "Usa il nome dell’accessor, lettera per lettera."
+    "'valuechange' is not an event of <ex-quantity-picker>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set \"strictEvents\": false in xaendar.json to turn this warning off.": {
+      "cause": "Un listener per un evento che non è né un output del componente né un evento del suo elemento: maiuscole diverse, un nome sbagliato, o un evento che risale dal contenuto dell’elemento. È un warning: la build non fallisce.",
+      "fix": "Usa il nome dell’accessor, lettera per lettera. Per un evento che risale di proposito, tieni il binding, o imposta \"strictEvents\": false in xaendar.json."
     },
     "[TypeChecker] Unknown property \"shade\" on @@exTint (TintDirective has no @Property with this name).": {
       "cause": "Un input che la direttiva non dichiara.",
@@ -3848,10 +3849,6 @@
     "[TypeChecker] [(value)] binds the input \"value\" and its event \"valueChange\", which QuantityLabelComponent does not both declare: declare a model with @Model, or an input and an event with these names.": {
       "cause": "Il componente o la direttiva non dichiara l’input, o il suo evento di cambiamento.",
       "fix": "Dichiara il model con @Model, oppure il @Property o l’@Event che manca."
-    },
-    "Property 'bubbly' does not exist on type 'HTMLElementEventMap'.": {
-      "cause": "Un listener per un evento sconosciuto su un elemento nativo.",
-      "fix": "Ascolta gli eventi custom sul componente che li emette, o su un componente che li riemette."
     },
     "Type 'string' does not satisfy the expected type 'number'.": {
       "cause": "Un valore statico, sempre una stringa, legato a un input di un altro tipo.",

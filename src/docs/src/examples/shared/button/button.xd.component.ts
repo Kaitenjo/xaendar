@@ -1,4 +1,4 @@
-import { CustomElement, WebComponent } from '@xaendar/core';
+import { CustomElement, HostListener, WebComponent } from '@xaendar/core';
 
 /**
  * The button of the live examples, styled like the buttons of the home page. The host itself is the button: it takes
@@ -30,10 +30,6 @@ export class ButtonComponent extends CustomElement {
     if (this._internals) {
       this._internals.role = 'button';
     }
-
-
-    this.addEventListener('click', event => this._stopWhenDisabled(event));
-    this.addEventListener('keydown', event => this._press(event));
   }
 
   /**
@@ -67,7 +63,8 @@ export class ButtonComponent extends CustomElement {
    *
    * @param event - The click.
    */
-  private _stopWhenDisabled(event: MouseEvent): void {
+  @HostListener('click')
+  public stopWhenDisabled(event: MouseEvent): void {
     if (this.hasAttribute('disabled')) {
       event.stopImmediatePropagation();
     }
@@ -78,7 +75,8 @@ export class ButtonComponent extends CustomElement {
    *
    * @param event - The key pressed while the button has the focus.
    */
-  private _press(event: KeyboardEvent): void {
+  @HostListener('keyup')
+  public press(event: KeyboardEvent): void {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       this.click();

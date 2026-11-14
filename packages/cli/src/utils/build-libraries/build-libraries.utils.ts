@@ -13,7 +13,8 @@ import { createBabelPlugin } from '../plugins';
  * `@xaendar/build-tools`), into the `outDir` of its entry, `dist/<folder>` by default: every library, or only the one
  * named, by the name of its package or of its folder, with the libraries of the workspace it depends on. A library is
  * built after the ones it depends on, which it reads from their builds, as an application installing them does; the
- * others in the order of the `libs` of `xaendar.json`.
+ * others in the order of the `libs` of `xaendar.json`. A library not declaring `strictEvents` takes the one of the
+ * workspace.
  *
  * Exits the process with code `1` when no library has the name given, or a library depends on itself through the
  * libraries it depends on.
@@ -35,9 +36,9 @@ export async function buildLibraries(project: XaendarProject, name?: string): Pr
   const outDirs = new Map<string, string>();
   for (const [libraryName, dependencies] of order.ordered) {
     const { root } = order.libraries.get(libraryName)!;
-    const { outDir, ssr, customElements, entry } = libs[libraryName];
+    const { outDir, ssr, customElements, strictEvents = project.config.strictEvents, entry } = libs[libraryName];
     const libraryOutDir = resolve(project.dir, outDir ?? `dist/${basename(root)}`);
-    const options = { name: libraryName, root, entry, outDir: libraryOutDir, ssr: ssr === true, customElements, plugins: [createBabelPlugin()], xaendarVersion: version };
+    const options = { name: libraryName, root, entry, outDir: libraryOutDir, ssr: ssr === true, customElements, strictEvents, plugins: [createBabelPlugin()], xaendarVersion: version };
     await buildLibrary(dependencies.length ? Object.assign(options, { dependencies: toBuildDependencies(dependencies, outDirs) }) : options);
     outDirs.set(libraryName, libraryOutDir);
     console.log(`✔  ${libraryName} → ${libraryOutDir}`);

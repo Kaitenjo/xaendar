@@ -54,6 +54,7 @@ function createState(): XaendarPluginState {
     compilerOptions: {} as XaendarPluginState['compilerOptions'],
     projectFileNames: [],
     customElements: [],
+    strictEvents: true,
     minifyStyles: false,
     isBuild: false,
     root: '/project',

@@ -16,4 +16,8 @@ export type XaendarLibraryConfig = {
    * the project.
    */
   readonly customElements?: readonly string[];
+  /**
+   * Whether its templates warn about the events their elements do not declare, in place of the option of the project.
+   */
+  readonly strictEvents?: boolean;
 };

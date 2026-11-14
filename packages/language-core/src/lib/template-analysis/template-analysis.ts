@@ -9,7 +9,7 @@ import { resolveModulePath } from '../utils/module-path/module-path.utils';
 import { normalizeFileName, toPosixPath } from '../utils/path/path.utils';
 import { createShim } from '../utils/shim/shim.utils';
 import { getSymbolKind } from '../utils/symbol-kind/symbol-kind.utils';
-import { readCustomElements, readSsr } from '../utils/xaendar-config/xaendar-config.utils';
+import { readCustomElements, readSsr, readStrictEvents } from '../utils/xaendar-config/xaendar-config.utils';
 import type { TemplateImport } from '../types/template-import.type';
 import type { ImportCandidate } from '../types/import-candidate.type';
 import type { ExportCandidate } from '../types/export-candidate.type';
@@ -29,7 +29,8 @@ const metadataCaches = new Map<ProjectLanguageService, TemplateMetadataCache>();
 /**
  * Analyzes a template with a single compilation: parses it, resolves the components and directives it imports,
  * type-checks it, the tags matching the `customElements` patterns of the nearest `xaendar.json` checked like native
- * elements and the `@hydrate` and `@client` blocks rejected when that file declares no `ssr`, and registers its shim in
+ * elements, the `@hydrate` and `@client` blocks rejected when that file declares no `ssr` and the names of the events
+ * the elements do not declare checked unless it sets `"strictEvents": false`, and registers its shim in
  * the LanguageService of its TypeScript project.
  *
  * @param templatePath - The path of the template.
@@ -85,7 +86,7 @@ async function analyze(templatePath: string, source: string, components: Readonl
     const { imports, symbols, errors: importErrors } = await resolveImports(ast, templateDir, cache, options);
     const metadatas = imports.map(({ metadata }) => metadata);
     const ssr = readSsr(templateDir);
-    const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers, readCustomElements(templateDir), symbols, reactiveMembers, ssr);
+    const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers, readCustomElements(templateDir), symbols, reactiveMembers, ssr, readStrictEvents(templateDir));
     const shim = createShim(componentFiles, typeCheck, project, shimName);
     
     const analysis: TemplateAnalysis = {

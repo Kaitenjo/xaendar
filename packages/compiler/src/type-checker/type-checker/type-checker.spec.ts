@@ -27,9 +27,20 @@ describe('TypeChecker', () => {
     expect(text).toBe([
       'function typeCheck() {',
       '  let name!: (HTMLElementTagNameMap extends { \'input\': infer Type } ? Type : HTMLElement);',
+      '  \'click\' satisfies keyof HTMLElementEventMap;',
       '  root.pick(name);',
       '}'
     ].join('\n'));
+  });
+
+  it('gives the checks of the names of the native events with the result, unless strictEvents is false', async () => {
+    const template = '<div (bubbling)="f()"></div>';
+    const checked = await new TypeChecker(template, parse(template)).generate([]);
+    const unchecked = await new TypeChecker(template, parse(template)).generate([], [], [], [], [], undefined, false);
+
+    expect(checked.eventChecks).toEqual([expect.objectContaining({ nameSpan: { start: 6, end: 14 } })]);
+    expect(unchecked.eventChecks).toBeUndefined();
+    expect(unchecked.text).toBe('function typeCheck() {\n  root.f();\n}');
   });
 
   it('declares the templates at the start of their scope, checks their content in an arrow function and their @render as a call, with the helpers they need before the function', async () => {
@@ -84,6 +95,7 @@ describe('TypeChecker', () => {
       `  let doubled!: typeof __let${at('@let doubled')};`,
       `  let counted!: typeof __let${at('@let counted')};`,
       `  let label!: typeof __let${at('@let label')};`,
+      '  \'click\' satisfies keyof HTMLElementEventMap;',
       '  root.pick(label);',
       `  const __let${at('@let total')} = root.price() * 2;`,
       `  const __let${at('@let doubled')} = total * 2;`,

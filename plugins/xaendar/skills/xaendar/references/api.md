@@ -448,10 +448,10 @@ The low-level API of the proposal: watchers and introspection. It works on `Sign
 ### xaendarPlugin (function)
 
 ```ts
-xaendarPlugin({ customElements?: readonly string[]; ssr?: { entry: string }; libraries?: XaendarLibraryOptions[] }?): Plugin
+xaendarPlugin({ customElements?: readonly string[]; strictEvents?: boolean; ssr?: { entry: string }; libraries?: XaendarLibraryOptions[] }?): Plugin
 ```
 
-The Vite plugin `xd start`/`build`/`test` add themselves, with `customElements`, `ssr` and `libraries` read from `xaendar.json`. A project running Vite directly lists it after the decorators transform:
+The Vite plugin `xd start`/`build`/`test` add themselves, with `customElements`, `strictEvents`, `ssr` and `libraries` read from `xaendar.json`. `strictEvents` (default `true`) makes the type check warn about the events the elements of a template do not declare (`$event` is then an `Event`); `false` turns the warning off, in the editor too. A project running Vite directly lists it after the decorators transform:
 
 ```ts
 // vite.config.ts
@@ -471,12 +471,12 @@ It compiles the `*.xd.component.ts` files (template, stylesheet, selector), type
 
 `ssr: { entry }` renders the pages on the server. The modules evaluated by the server environments of Vite register templates compiled into HTML (no type check there); the dev server renders every page with the `render(url)` exported by `entry` (absolute, or relative to the root of Vite) in place of `<!--xd-ssr-->` in `index.html`, `url` being the path of the request with its query string, starting with a single slash (`toSameOriginPath` of `@xaendar/common`), and sets the Vite application type to `custom`. The build of the server is `vite build --ssr <entry>`. The CLI passes the `ssr` of `xaendar.json`, its entry resolved against the project.
 
-`libraries: [{ name, root, entry?, ssr?, customElements? }]` are the libraries of the workspace the project imports from its sources: the name of the package leads to `entry` (default `src/public-api.ts`, relative to `root`) and `name/<path>` to the files beside it, as the `paths` of `tsconfig.json` do for TypeScript; the files under `root` are compiled with the `ssr` (default `false`) and the `customElements` of the library. The CLI passes the `libs` of `xaendar.json`.
+`libraries: [{ name, root, entry?, ssr?, customElements?, strictEvents? }]` are the libraries of the workspace the project imports from its sources: the name of the package leads to `entry` (default `src/public-api.ts`, relative to `root`) and `name/<path>` to the files beside it, as the `paths` of `tsconfig.json` do for TypeScript; the files under `root` are compiled with the `ssr` (default `false`) and the `customElements` of the library. The CLI passes the `libs` of `xaendar.json`.
 
 ### buildLibrary (function)
 
 ```ts
-buildLibrary({ name: string; root: string; entry?: string; outDir: string; ssr?: boolean; customElements?: readonly string[]; plugins?: readonly PluginOption[]; xaendarVersion: string; dependencies?: Record<string, string> }): Promise<void>
+buildLibrary({ name: string; root: string; entry?: string; outDir: string; ssr?: boolean; customElements?: readonly string[]; strictEvents?: boolean; plugins?: readonly PluginOption[]; xaendarVersion: string; dependencies?: Record<string, string> }): Promise<void>
 ```
 
 What `xd build` runs for each library of a workspace: it compiles the library ahead of time into `outDir` (emptied first), a package ready for `npm publish`. It writes an ES module for the entry (`public-api.js`) and one for each module declaring a component or a directive, the shared code in `chunks/`, not minified, with `@xaendar/*` and the dependencies of the library left as imports; the declarations, emitted by TypeScript with the `tsconfig.json` of `root`, their paths relative with `.js`; `xaendar-manifest.json` (the components and directives, their selectors, inputs and events); the `package.json` (`exports` of the entry and of each module the entry exports, `sideEffects`, `@xaendar/core` `^xaendarVersion` as a peer dependency); the README and the license. With `ssr: true`, it also writes the code of the server into `server/` (the condition `xaendar-server` of `exports`), with `@xaendar/ssr` as an optional peer dependency. `plugins` run before the Xaendar plugin (the Babel transform of the decorators). `dependencies` maps the libraries of the workspace it depends on to the folders of their builds, written before: it reads them from their declarations and manifests, as an application does, and imports them by name. It fails before writing on a component or a directive outside the folder of `entry`, a selector declared twice, or the type of an input or of an event reading a name its module does not export.

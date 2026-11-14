@@ -1,7 +1,7 @@
 import { CLEANUP, COMPONENT, CONTAINER_SLOTS, CONTENT, HEADER, KEYS, LAYOUT, PARENT, PARENT_NODE } from '../../costants';
 import { _runBinding } from '../../models/effect/effect';
-import type { Binding } from '../../types/binding.type';
 import type { BindingSite } from '../../types/binding-site.type';
+import type { Binding } from '../../types/binding.type';
 import type { Cleanup } from '../../types/cleanup.type';
 import type { Container } from '../../types/container.type';
 import type { _Context } from '../../types/context.type';

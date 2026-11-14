@@ -29,12 +29,17 @@ const directiveMetadata = (properties: Record<string, ComponentPropertyMetadata>
   events: new Map(Object.entries(events).map(([name, type]) => [name, { type }]))
 }) as unknown as DirectiveMetadata;
 
-const run = (template: string, ...imports: Array<ComponentMetadata | DirectiveMetadata>): Line[] => {
+const runChecking = (strictEvents: boolean, template: string, ...imports: Array<ComponentMetadata | DirectiveMetadata>): Line[] => {
   const context = new TypeCheckContext();
+  context.strictEvents = strictEvents;
   context.addImport(...imports);
 
   return typeCheckElement(parse(template), processNode, context);
 };
+
+// The checks of the names of the native events are left out, but in the specs checking them (`runStrict`)
+const run = (template: string, ...imports: Array<ComponentMetadata | DirectiveMetadata>): Line[] => runChecking(false, template, ...imports);
+const runStrict = (template: string, ...imports: Array<ComponentMetadata | DirectiveMetadata>): Line[] => runChecking(true, template, ...imports);
 
 const text = (lines: Line[]) => lines.map(l => l.text);
 
@@ -51,14 +56,14 @@ describe('typeCheckElement', () => {
       expect(text(lines)).toEqual([
         'root.heading;',
         '{',
-        '  let $event!: HTMLElementEventMap[\'click\'];',
+        '  let $event!: (HTMLElementEventMap extends { \'click\': infer Event } ? Event : Event);',
         '  root.f($event, root.b);',
         '}'
       ]);
       expect(lines[0].mappings![0]).toBeDefined();
       expect(lines[3].mappings![0]).toEqual({ columnStart: 2, columnEnd: 25, original: { start: template.indexOf('(click)'), end: template.indexOf('></div>') } });
-      // The declaration of $event is mapped too, so that an event the element doesn't dispatch is reported on the binding
-      expect(lines[2].mappings![0]).toEqual({ columnStart: 2, columnEnd: 44, original: { start: template.indexOf('(click)'), end: template.indexOf('></div>') } });
+      // The declaration of $event is mapped too
+      expect(lines[2].mappings![0]).toEqual({ columnStart: 2, columnEnd: 86, original: { start: template.indexOf('(click)'), end: template.indexOf('></div>') } });
       expect([lines[1], lines[4]].every(l => !l.mappings)).toBe(true);
     });
 
@@ -88,11 +93,11 @@ describe('typeCheckElement', () => {
     it('declares $event in a separate block for each event, so that every handler gets its own', () => {
       expect(text(run('<div (click)="f($event)" (input)="g($event)"></div>'))).toEqual([
         '{',
-        '  let $event!: HTMLElementEventMap[\'click\'];',
+        '  let $event!: (HTMLElementEventMap extends { \'click\': infer Event } ? Event : Event);',
         '  root.f($event);',
         '}',
         '{',
-        '  let $event!: HTMLElementEventMap[\'input\'];',
+        '  let $event!: (HTMLElementEventMap extends { \'input\': infer Event } ? Event : Event);',
         '  root.g($event);',
         '}'
       ]);
@@ -112,7 +117,7 @@ describe('typeCheckElement', () => {
     ])('declares $event when an argument reads %s', (_description, handler, call) => {
       expect(text(run(`<div (click)="${handler}"></div>`))).toEqual([
         '{',
-        '  let $event!: HTMLElementEventMap[\'click\'];',
+        '  let $event!: (HTMLElementEventMap extends { \'click\': infer Event } ? Event : Event);',
         `  ${call}`,
         '}'
       ]);
@@ -121,7 +126,7 @@ describe('typeCheckElement', () => {
     it.each(['$', '$e', '$ev', '$even'])('declares $event while its beginning %s is being written, so that it is proposed', beginning => {
       expect(text(run(`<div (click)="f(${beginning})"></div>`))).toEqual([
         '{',
-        '  let $event!: HTMLElementEventMap[\'click\'];',
+        '  let $event!: (HTMLElementEventMap extends { \'click\': infer Event } ? Event : Event);',
         `  root.f(${beginning});`,
         '}'
       ]);
@@ -134,6 +139,7 @@ describe('typeCheckElement', () => {
 
     it('calls a handler on a variable of the template as written, as the generated code does, and any other one on the component', () => {
       const context = new TypeCheckContext();
+      context.strictEvents = false;
       context.addUnresolvableIdentifier('item', 'signal');
 
       expect(text(typeCheckElement(parse('<div (click)="item.set(1)" (input)="items.clear()"></div>'), processNode, context))).toEqual(['item.set(1);', 'root.items.clear();']);
@@ -146,7 +152,7 @@ describe('typeCheckElement', () => {
         'if (root.cond()) {',
         '  root.heading;',
         '  {',
-        '    let $event!: HTMLElementEventMap[\'click\'];',
+        '    let $event!: (HTMLElementEventMap extends { \'click\': infer Event } ? Event : Event);',
         '    root.f($event);',
         '  }',
         '  if (root.inner) {',
@@ -203,6 +209,46 @@ describe('typeCheckElement', () => {
       expect(text(run('<div @switch (mode()) { }></div>'))).toEqual(['switch (root.mode()) {', '}']);
     });
 
+    describe('strictEvents', () => {
+      it('checks the name of a native event against the event map of the element, recording the check of the binding', () => {
+        const template = '<div (bubbling)="f($event)" (click)="g()"></div>';
+        const context = new TypeCheckContext();
+
+        expect(text(typeCheckElement(parse(template), processNode, context))).toEqual([
+          '\'bubbling\' satisfies keyof HTMLElementEventMap;',
+          '{',
+          '  let $event!: (HTMLElementEventMap extends { \'bubbling\': infer Event } ? Event : Event);',
+          '  root.f($event);',
+          '}',
+          '\'click\' satisfies keyof HTMLElementEventMap;',
+          'root.g();'
+        ]);
+        expect(context.eventChecks![0]).toEqual({
+          span: { start: template.indexOf('(bubbling)'), end: template.indexOf(' (click)') },
+          nameSpan: { start: template.indexOf('bubbling'), end: template.indexOf('bubbling') + 8 },
+          message: '\'bubbling\' is not an event of <div>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set "strictEvents": false in xaendar.json to turn this warning off.'
+        });
+        expect(context.eventChecks).toHaveLength(2);
+      });
+
+      it('records the checks of the nested scopes in the outermost one', () => {
+        const context = new TypeCheckContext();
+        const processChild: ProcessNode = (child, scope) => typeCheckElement(child as ElementNode, processChild, new TypeCheckContext(scope));
+        typeCheckElement(parse('<div><span (bubbling)="f()"></span></div>'), processChild, context);
+
+        expect(context.eventChecks).toHaveLength(1);
+        expect(new TypeCheckContext(context).eventChecks).toBe(context.eventChecks);
+      });
+
+      it('neither checks nor records the names of the events when the option is off', () => {
+        const context = new TypeCheckContext();
+        context.strictEvents = false;
+
+        expect(text(typeCheckElement(parse('<div (bubbling)="f()"></div>'), processNode, context))).toEqual(['root.f();']);
+        expect(context.eventChecks).toBeUndefined();
+      });
+    });
+
     describe('event maps', () => {
       const processChild: ProcessNode = (child, context) => typeCheckElement(child as ElementNode, processChild, context);
       const runTree = (template: string) => text(typeCheckElement(parse(template), processChild, new TypeCheckContext()));
@@ -213,13 +259,15 @@ describe('typeCheckElement', () => {
 
       it('types the events of an <svg> and of its descendants through SVGElementEventMap', () => {
         expect(runTree('<svg (click)="f($event)"><g><circle @if (cond) { (click)="g($event)" }></circle></g></svg>')).toEqual([
+          '\'click\' satisfies keyof SVGElementEventMap;',
           '{',
-          '  let $event!: SVGElementEventMap[\'click\'];',
+          '  let $event!: (SVGElementEventMap extends { \'click\': infer Event } ? Event : Event);',
           '  root.f($event);',
           '}',
           'if (root.cond) {',
+          '  \'click\' satisfies keyof SVGElementEventMap;',
           '  {',
-          '    let $event!: SVGElementEventMap[\'click\'];',
+          '    let $event!: (SVGElementEventMap extends { \'click\': infer Event } ? Event : Event);',
           '    root.g($event);',
           '  }',
           '}'
@@ -228,8 +276,9 @@ describe('typeCheckElement', () => {
 
       it('types the events of a <math> and of its descendants through MathMLElementEventMap', () => {
         expect(runTree('<math><mi (click)="f($event)"></mi></math>')).toEqual([
+          '\'click\' satisfies keyof MathMLElementEventMap;',
           '{',
-          '  let $event!: MathMLElementEventMap[\'click\'];',
+          '  let $event!: (MathMLElementEventMap extends { \'click\': infer Event } ? Event : Event);',
           '  root.f($event);',
           '}'
         ]);
@@ -237,12 +286,14 @@ describe('typeCheckElement', () => {
 
       it('types the events of a <foreignObject> through SVGElementEventMap, and of its descendants through HTMLElementEventMap', () => {
         expect(runTree('<svg><foreignObject (click)="f($event)"><div><button (click)="g($event)"></button></div></foreignObject></svg>')).toEqual([
+          '\'click\' satisfies keyof SVGElementEventMap;',
           '{',
-          '  let $event!: SVGElementEventMap[\'click\'];',
+          '  let $event!: (SVGElementEventMap extends { \'click\': infer Event } ? Event : Event);',
           '  root.f($event);',
           '}',
+          '\'click\' satisfies keyof HTMLElementEventMap;',
           '{',
-          '  let $event!: HTMLElementEventMap[\'click\'];',
+          '  let $event!: (HTMLElementEventMap extends { \'click\': infer Event } ? Event : Event);',
           '  root.g($event);',
           '}'
         ]);
@@ -250,8 +301,9 @@ describe('typeCheckElement', () => {
 
       it('types the events of the siblings of an <svg> through HTMLElementEventMap', () => {
         expect(runTree('<div><svg><svg></svg></svg><span (click)="f($event)"></span></div>')).toEqual([
+          '\'click\' satisfies keyof HTMLElementEventMap;',
           '{',
-          '  let $event!: HTMLElementEventMap[\'click\'];',
+          '  let $event!: (HTMLElementEventMap extends { \'click\': infer Event } ? Event : Event);',
           '  root.f($event);',
           '}'
         ]);
@@ -332,23 +384,23 @@ describe('typeCheckElement', () => {
     });
 
     it('types the events the component does not declare as native events of its element, checking their name even without $event', () => {
-      expect(text(run('<my-el (click)="f($event)" (nope)="g()"></my-el>', metadata({})))).toEqual([
+      expect(text(runStrict('<my-el (click)="f($event)" (nope)="g()"></my-el>', metadata({})))).toEqual([
+        '\'click\' satisfies keyof HTMLElementEventMap;',
         '{',
-        '  let $event!: HTMLElementEventMap[\'click\'];',
+        '  let $event!: (HTMLElementEventMap extends { \'click\': infer Event } ? Event : Event);',
         '  root.f($event);',
         '}',
-        'null! satisfies HTMLElementEventMap[\x27nope\x27];',
+        '\'nope\' satisfies keyof HTMLElementEventMap;',
         'root.g();'
       ]);
     });
 
-    it('types a key event as the native event it names first, even when the component declares an @Event with its name', () => {
-      expect(text(run('<my-el (keydown.enter)="f($event)" (keyup.escape)="g()"></my-el>', metadata({}, { 'keydown.enter': 'number' })))).toEqual([
+    it('types a key event as the native event it names first, even when the component declares an @Event with its name, without checking its name', () => {
+      expect(text(runStrict('<my-el (keydown.enter)="f($event)" (keyup.escape)="g()"></my-el>', metadata({}, { 'keydown.enter': 'number' })))).toEqual([
         '{',
-        '  let $event!: HTMLElementEventMap[\'keydown\'];',
+        '  let $event!: (HTMLElementEventMap extends { \'keydown\': infer Event } ? Event : Event);',
         '  root.f($event);',
         '}',
-        'null! satisfies HTMLElementEventMap[\x27keyup\x27];',
         'root.g();'
       ]);
     });
@@ -403,7 +455,7 @@ describe('typeCheckElement', () => {
       expect(text(run('<my-el @if (cond) { (click)="f($event)" }></my-el>', metadata({})))).toEqual([
         'if (root.cond) {',
         '  {',
-        '    let $event!: HTMLElementEventMap[\'click\'];',
+        '    let $event!: (HTMLElementEventMap extends { \'click\': infer Event } ? Event : Event);',
         '    root.f($event);',
         '  }',
         '}'
@@ -678,18 +730,19 @@ describe('typeCheckElement directives', () => {
 
   it('types an event not declared as @Event as a native event of the element the directive is applied to', () => {
     const directive = directiveMetadata({}, { toggled: 'boolean' });
-    const lines = run('<div @@myDirective((toggled)="f($event)" (click)="g($event)" (nope)="h()")></div>', directive);
+    const lines = runStrict('<div @@myDirective((toggled)="f($event)" (click)="g($event)" (nope)="h()")></div>', directive);
 
     expect(text(lines)).toEqual([
       '{',
       '  let $event!: CustomEvent<boolean>;',
       '  root.f($event);',
       '}',
+      '\'click\' satisfies keyof HTMLElementEventMap;',
       '{',
-      '  let $event!: HTMLElementEventMap[\'click\'];',
+      '  let $event!: (HTMLElementEventMap extends { \'click\': infer Event } ? Event : Event);',
       '  root.g($event);',
       '}',
-      'null! satisfies HTMLElementEventMap[\x27nope\x27];',
+      '\'nope\' satisfies keyof HTMLElementEventMap;',
       'root.h();'
     ]);
   });
@@ -697,7 +750,7 @@ describe('typeCheckElement directives', () => {
   it('types the native events bound in a directive through the event map of its element', () => {
     expect(text(run('<svg @@myDirective((click)="f($event)")></svg>', directiveMetadata({})))).toEqual([
       '{',
-      '  let $event!: SVGElementEventMap[\'click\'];',
+      '  let $event!: (SVGElementEventMap extends { \'click\': infer Event } ? Event : Event);',
       '  root.f($event);',
       '}'
     ]);
@@ -761,7 +814,7 @@ describe('typeCheckElement directives', () => {
     expect(text(lines)).toEqual([
       'if (root.cond()) {',
       '  {',
-      '    let $event!: HTMLElementEventMap[\'click\'];',
+      '    let $event!: (HTMLElementEventMap extends { \'click\': infer Event } ? Event : Event);',
       '    root.f($event);',
       '  }',
       '}'
@@ -897,6 +950,7 @@ describe('typeCheckElement structural directives', () => {
     const processChild: ProcessNode = (child, context) => typeCheckElement(child as ElementNode, processChild, context);
     const runTree = (template: string) => {
       const context = new TypeCheckContext();
+      context.strictEvents = false;
       context.addImport(directiveMetadata({}));
       return text(typeCheckElement(parse(template), processChild, context));
     };
@@ -966,15 +1020,15 @@ describe('typeCheckElement structural directives', () => {
       expect(call.mappings).toContainEqual({ columnStart: 22, columnEnd: 26, original: at(template, 'item') });
       expect(call.mappings).toContainEqual({ columnStart: 28, columnEnd: 34, original: at(template, '$event') });
       // The event name quoted in the type of $event
-      expect(declaration.mappings).toContainEqual({ columnStart: 36, columnEnd: 41, original: at(template, 'click') });
+      expect(declaration.mappings).toContainEqual({ columnStart: 47, columnEnd: 52, original: at(template, 'click') });
     });
 
     it('types a key event by its event, mapping the event onto the beginning of its name', () => {
       const template = '<input (keydown.enter)="save($event.key)" />';
       const [, declaration] = run(template);
 
-      expect(declaration.text).toBe('  let $event!: HTMLElementEventMap[\'keydown\'];');
-      expect(declaration.mappings).toContainEqual({ columnStart: 36, columnEnd: 43, original: at(template, 'keydown') });
+      expect(declaration.text).toBe('  let $event!: (HTMLElementEventMap extends { \'keydown\': infer Event } ? Event : Event);');
+      expect(declaration.mappings).toContainEqual({ columnStart: 47, columnEnd: 54, original: at(template, 'keydown') });
     });
 
     it('casts the arguments of an event, each type written as is and mapped onto the template', () => {
@@ -998,12 +1052,13 @@ describe('typeCheckElement structural directives', () => {
       expect(property.mappings).toContainEqual({ columnStart: 24, columnEnd: 29, original: at(template, 'Label') });
     });
 
-    it('maps the name of a native event bound on a component and not passed $event', () => {
+    it('maps the check of the name of a native event bound on a component and not passed $event onto the binding and its name', () => {
       const template = '<my-el (clik)="f()"></my-el>';
-      const [check] = run(template, metadata({}));
+      const [check] = runStrict(template, metadata({}));
 
-      expect(check.text).toBe('null! satisfies HTMLElementEventMap[\'clik\'];');
-      expect(check.mappings).toContainEqual({ columnStart: 37, columnEnd: 41, original: at(template, 'clik') });
+      expect(check.text).toBe('\'clik\' satisfies keyof HTMLElementEventMap;');
+      expect(check.mappings).toContainEqual({ columnStart: 0, columnEnd: 43, original: { start: template.indexOf('(clik)'), end: template.indexOf('></my-el>') } });
+      expect(check.mappings).toContainEqual({ columnStart: 1, columnEnd: 5, original: at(template, 'clik') });
     });
 
     it('maps the expressions bound to the properties of a component and the conditions of the conditional bindings', () => {

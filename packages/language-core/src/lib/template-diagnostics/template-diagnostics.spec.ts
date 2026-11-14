@@ -74,6 +74,15 @@ describe('getTemplateDiagnostics', () => {
     it('says nothing about where the project renders without a xaendar.json', async () => {
       expect(await diagnoseIn('without-config', '@client { { document.title } }')).toEqual([]);
     }, TIMEOUT);
+
+    it('warns about an event the element does not declare on its name, typing its $event as Event, unless strictEvents is false', async () => {
+      const source = '<div (bubbling)="select($event.timeStamp)" (click)="select(1)"></div>';
+
+      expect(await diagnoseIn('strict-events', source)).toEqual([
+        ['bubbling', '\'bubbling\' is not an event of <div>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set "strictEvents": false in xaendar.json to turn this warning off.', DiagnosticCategory.Warning]
+      ]);
+      expect(await diagnoseIn('loose-events', source, { strictEvents: false })).toEqual([]);
+    }, TIMEOUT);
   });
 
   it('types the error of a @catch as TypeScript types the one of a catch, unknown until it is narrowed', async () => {
@@ -682,7 +691,7 @@ describe('getTemplateDiagnostics host directives', () => {
 
   it('treats what the component does not expose as an attribute and a native event of the element', async () => {
     expect(await diagnose('@import { Field } from \'./field\';\n<my-field text="a" (nope)="select(1)"></my-field>')).toEqual([
-      ['(nope)="select(1)"', 'Property \'nope\' does not exist on type \'HTMLElementEventMap\'.', DiagnosticCategory.Error]
+      ['nope', '\'nope\' is not an event of <my-field>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set "strictEvents": false in xaendar.json to turn this warning off.', DiagnosticCategory.Warning]
     ]);
   }, TIMEOUT);
 });

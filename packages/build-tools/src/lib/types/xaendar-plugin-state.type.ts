@@ -29,6 +29,10 @@ export type XaendarPluginState = {
    */
   customElements: readonly string[];
   /**
+   * Whether the templates warn about the events their elements do not declare, unless their library decides it.
+   */
+  strictEvents: boolean;
+  /**
    * The root of Vite, set once the Vite config is resolved.
    */
   root: string;

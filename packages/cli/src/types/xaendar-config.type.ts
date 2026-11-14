@@ -10,6 +10,12 @@ export type XaendarConfig = {
    */
   customElements?: string[];
   /**
+   * Whether the templates warn about the events their elements do not declare (`(bubbling)` on a `<div>`), which a
+   * binding hears only when they are dispatched on the element or bubble up to it: `false` turns the warning off, in
+   * the build and in the editor. Defaults to `true`.
+   */
+  strictEvents?: boolean;
+  /**
    * The rendering on the server, when the project renders its pages there.
    */
   ssr?: XaendarSsrConfig;

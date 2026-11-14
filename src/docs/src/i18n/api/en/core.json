@@ -122,7 +122,7 @@
       },
       "names": {
         "title": "The name of the event is the name of the accessor",
-        "body": "<p>Event bindings are case-sensitive, unlike HTML attributes: <code>(valuechange)</code> does not match <code>valueChange</code>, and fails the build. A component is an <code>HTMLElement</code>, so an output named <code>remove</code>, <code>click</code> or <code>focus</code> would replace a member of the element: TypeScript rejects the class. Choose another name.</p>"
+        "body": "<p>Event bindings are case-sensitive, unlike HTML attributes: <code>(valuechange)</code> does not match <code>valueChange</code>, and the build warns about it. A component is an <code>HTMLElement</code>, so an output named <code>remove</code>, <code>click</code> or <code>focus</code> would replace a member of the element: TypeScript rejects the class. Choose another name.</p>"
       }
     }
   },

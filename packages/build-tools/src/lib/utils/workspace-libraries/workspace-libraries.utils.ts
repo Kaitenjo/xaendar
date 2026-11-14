@@ -25,9 +25,10 @@ export function resolveWorkspaceLibraries(libraries: readonly XaendarLibraryOpti
     return undefined;
   }
 
-  return libraries.map(({ name, root, entry = DEFAULT_ENTRY, ssr = false, customElements = [] }) => {
+  return libraries.map(({ name, root, entry = DEFAULT_ENTRY, ssr = false, customElements = [], strictEvents }) => {
     const resolvedRoot = resolvePosixPath(cwd, root);
-    return { name, root: resolvedRoot, entry: resolvePosixPath(resolvedRoot, entry), ssr, customElements };
+    const library: WorkspaceLibrary = { name, root: resolvedRoot, entry: resolvePosixPath(resolvedRoot, entry), ssr, customElements };
+    return strictEvents === undefined ? library : Object.assign(library, { strictEvents });
   });
 }
 

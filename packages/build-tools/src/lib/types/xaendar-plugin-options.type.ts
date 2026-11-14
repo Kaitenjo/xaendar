@@ -12,6 +12,12 @@ export type XaendarPluginOptions = {
    */
   readonly customElements?: CompileOptions['customElements'];
   /**
+   * Whether the templates warn about the events their elements do not declare (`(bubbling)` on a `<div>`), which a
+   * binding hears only when they are dispatched on the element or bubble up to it: `false` turns the warning off.
+   * Defaults to `true`.
+   */
+  readonly strictEvents?: CompileOptions['strictEvents'];
+  /**
    * Renders the pages on the server. The modules evaluated on the server, the ones of the `ssr` environment of Vite,
    * register templates compiled into HTML, with `@xaendar/ssr`, and the dev server renders each page it serves with the
    * entry. Without it, every environment gets the templates of the browser.

@@ -37,6 +37,20 @@ export function readSsr(fromDir: string): boolean | undefined {
 }
 
 /**
+ * Reads whether the templates warn about the events their elements do not declare (`"strictEvents": false` turns the
+ * warning off) from the nearest `xaendar.json`, walking up from a directory. A directory of a library of the workspace
+ * (`libs`) reads the option of the library, the one of the project when the library does not declare it.
+ *
+ * @param fromDir - Directory to start searching for `xaendar.json` from, typically the directory of the template.
+ * @returns `false` when the option is off, `true` otherwise, also when the file cannot be found or read.
+ */
+export function readStrictEvents(fromDir: string): boolean {
+  const config = readConfig(fromDir);
+  const library = config && findLibrary(config, fromDir);
+  return (library?.strictEvents ?? config?.config.strictEvents) !== false;
+}
+
+/**
  * Reads the nearest `xaendar.json`, walking up from a directory.
  *
  * @param fromDir - Directory to start searching for `xaendar.json` from.

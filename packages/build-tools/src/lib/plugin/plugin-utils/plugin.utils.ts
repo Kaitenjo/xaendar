@@ -1,5 +1,5 @@
 import { slice } from '@xaendar/common';
-import { type CompilerHost, ComponentOrDirectiveMetadata, type ContextCache, Cursor, describeSelectorConflict, describeVariableCall, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, type ImportNode, isReactiveExport, type LibraryComponentMetadata, type LibraryDirectiveMetadata, readLibraryMetadata, resolveExportedClass, resolveTemplateSpan, TypeCheckResult } from '@xaendar/compiler';
+import { type CompilerHost, ComponentOrDirectiveMetadata, type ContextCache, Cursor, describeSelectorConflict, describeVariableCall, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, findEventCheck, type ImportedSymbol, type ImportNode, isReactiveExport, type LibraryComponentMetadata, type LibraryDirectiveMetadata, readLibraryMetadata, resolveExportedClass, resolveTemplateSpan, type Span, TypeCheckResult } from '@xaendar/compiler';
 import { resolveModule, resolveModulePath, type TemplateWarning } from '@xaendar/language-core';
 import type MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
@@ -353,27 +353,52 @@ export function injectTemplate(code: MagicString, sourceFile: SourceFile, module
  *   offending template snippet when the diagnostic can be mapped back to the template.
  */
 export function describeDiagnostic(templateSource: string, diagnostic: Diagnostic, bodyLineOffset: number, typeCheck: Pick<TypeCheckResult, 'mappingTable' | 'variableCalls'>): string {
-  const { mappingTable } = typeCheck;
   let message = typeof diagnostic.messageText === 'string' ? diagnostic.messageText : diagnostic.messageText.messageText;
-  const cursor = new Cursor(templateSource);
-  if (!diagnostic.file || diagnostic.start === undefined) {
-    return message;
-  }
-
-  const shimPosition = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-  const bodyLine = shimPosition.line - bodyLineOffset;
-  if (bodyLine < 0) {
-    return message;
-  }
-
-  const templateSpan = resolveTemplateSpan(mappingTable, { line: bodyLine, character: shimPosition.character });
+  const templateSpan = locateDiagnostic(diagnostic, bodyLineOffset, typeCheck.mappingTable);
   if (!templateSpan) {
     return message;
   }
 
   message = describeVariableCall(typeCheck, templateSpan, diagnostic.code) ?? message;
-  const templatePosition = cursor.getPositionFromCharacterIndex(templateSpan.start);
+  const templatePosition = new Cursor(templateSource).getPositionFromCharacterIndex(templateSpan.start);
   return `${templatePosition} - ${message}\n ---> ${slice(templateSource, templateSpan.start, templateSpan.end)}`;
+}
+
+/**
+ * Describes a TS diagnostic reported on the shim of a template as a warning, when it rejects the name of an event the
+ * element does not declare (see `findEventCheck`): the binding hears it when it bubbles up to the element, so it does
+ * not fail the compilation.
+ *
+ * @param templateSource - The raw content of the template the shim was generated from.
+ * @param diagnostic - The TS diagnostic reported on the shim.
+ * @param bodyLineOffset - The line of the shim where the template body starts.
+ * @param typeCheck - The type-check code of the template: the mapping from shim positions to template spans, and the
+ *   checks of the names of its events.
+ * @returns The warning, prefixed with its template position and followed by the name of the event, `undefined` when the
+ *   diagnostic is not the one of the name of an event.
+ */
+export function describeEventCheckDiagnostic(templateSource: string, diagnostic: Diagnostic, bodyLineOffset: number, typeCheck: Pick<TypeCheckResult, 'mappingTable' | 'eventChecks'>): string | undefined {
+  const templateSpan = typeCheck.eventChecks && locateDiagnostic(diagnostic, bodyLineOffset, typeCheck.mappingTable);
+  const check = templateSpan && findEventCheck(typeCheck, templateSpan, diagnostic.code);
+  return check ? describeTemplateWarning(templateSource, { span: check.nameSpan, message: check.message }) : undefined;
+}
+
+/**
+ * Locates a TS diagnostic reported on the shim of a template in the template.
+ *
+ * @param diagnostic - The TS diagnostic reported on the shim.
+ * @param bodyLineOffset - The line of the shim where the template body starts.
+ * @param mappingTable - The mapping from shim positions to template spans.
+ * @returns The span of the template, `undefined` when the diagnostic falls outside of the mapped lines.
+ */
+function locateDiagnostic(diagnostic: Diagnostic, bodyLineOffset: number, mappingTable: TypeCheckResult['mappingTable']): Span | undefined {
+  if (!diagnostic.file || diagnostic.start === undefined) {
+    return undefined;
+  }
+
+  const shimPosition = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+  const bodyLine = shimPosition.line - bodyLineOffset;
+  return bodyLine < 0 ? undefined : resolveTemplateSpan(mappingTable, { line: bodyLine, character: shimPosition.character });
 }
 
 /**

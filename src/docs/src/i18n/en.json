@@ -654,15 +654,16 @@
           "p3": "<code>emit</code> returns nothing, so the child cannot know whether a listener called <code>preventDefault()</code>. To make a cancelable event useful, declare it with <code>@Event</code>, so that templates can listen to it, and dispatch it yourself with <code>dispatchEvent</code>, which returns <code>false</code> when the event was canceled. Listeners run synchronously, so the result is ready on the next line. The event carries the mode of the note as its detail.",
           "callout2": {
             "heading": "Event names are case-sensitive",
-            "p1": "The name of the event is the name of the accessor, letter by letter. HTML attributes are case-insensitive, but event bindings are not: <code>(valuechange)</code> does not match <code>valueChange</code>."
+            "p1": "The name of the event is the name of the accessor, letter by letter. HTML attributes are case-insensitive, but event bindings are not: <code>(valuechange)</code> does not match <code>valueChange</code>, and the build warns about it, as about any event the element does not declare."
           },
           "callout3": {
             "heading": "Custom events on native elements",
-            "p1": "On a native element a template can only bind the events of <code>HTMLElementEventMap</code>, so it cannot catch a bubbling custom event on an ancestor of the child. Add the listener with <code>addEventListener</code>, as the frame does in the second example."
+            "p1": "A native element can listen to any event, also one missing from <code>HTMLElementEventMap</code>, such as a custom event bubbling up from a child: the frame of the second example binds <code>(bubbling)</code> and <code>(escaping)</code>. <code>$event</code> is then an <code>Event</code>, which an argument can narrow with a cast, <code>onFrame($event as CustomEvent&lt;string&gt;)</code>. The compiler cannot tell such an event from a misspelled one, so the build and the editor warn about it, without failing.",
+            "p2": "A project binding such events on purpose turns the warning off in its <code>xaendar.json</code>, for the build and for the editor alike; a library of a workspace can set it in its entry of <code>libs</code>."
           },
           "callout4": {
             "heading": "Native events on a component tag",
-            "p1": "An event the component does not declare is a native event of its element: <code>(click)</code> on a component tag compiles, with <code>$event</code> typed through <code>HTMLElementEventMap</code>, and a name that is neither an output nor a native event fails the build. The listener receives only the events that reach the tag: native events that are composed, like <code>click</code>, leave the shadow root of the component, while the others, like <code>change</code>, stay inside it."
+            "p1": "An event the component does not declare is a native event of its element: <code>(click)</code> on a component tag compiles, with <code>$event</code> typed through <code>HTMLElementEventMap</code>, and a name that is neither an output nor a native event is a warning, with <code>$event</code> typed as <code>Event</code>. The listener receives only the events that reach the tag: native events that are composed, like <code>click</code>, leave the shadow root of the component, while the others, like <code>change</code>, stay inside it."
           },
           "callout6": {
             "heading": "Names already taken by HTMLElement",
@@ -3057,7 +3058,7 @@
         "configuration": {
           "title": "Configuration",
           "p1": "The order matters. Babel compiles the standard decorators first, and the plugin then works on its output: it looks for the static blocks Babel generates in each decorated class, and adds its own registration before them. With the plugins in the wrong order, every component fails with the message shown in <a href=\"#/en/installation\">Installation</a>.",
-          "p2": "The option <code>customElements</code> of the plugin holds the patterns of the tags of the custom elements of other libraries, such as <code>['sl-*']</code>, which templates use like native elements, without importing them. The CLI passes the list declared in <code>xaendar.json</code>. See <a href=\"#/en/reference/api/build-tools/XaendarPluginOptions\"><code>XaendarPluginOptions</code></a> and <a href=\"#/en/components/registration\">Selectors and registration</a>. It reads <code>tsconfig.json</code> from the folder Vite is started from, and uses its compiler options, including the strict ones, to type-check the templates. An app built with another framework adds the same two plugins: see <a href=\"#/en/tools/integrations\">Integrations</a>.",
+          "p2": "The option <code>customElements</code> of the plugin holds the patterns of the tags of the custom elements of other libraries, such as <code>['sl-*']</code>, which templates use like native elements, without importing them. The CLI passes the list declared in <code>xaendar.json</code>. The option <code>strictEvents</code>, <code>true</code> by default, makes the type check warn about the events the elements of a template do not declare; the CLI passes the one of <code>xaendar.json</code>. See <a href=\"#/en/reference/api/build-tools/XaendarPluginOptions\"><code>XaendarPluginOptions</code></a> and <a href=\"#/en/components/registration\">Selectors and registration</a>. It reads <code>tsconfig.json</code> from the folder Vite is started from, and uses its compiler options, including the strict ones, to type-check the templates. An app built with another framework adds the same two plugins: see <a href=\"#/en/tools/integrations\">Integrations</a>.",
           "p3": "With its option <code>ssr</code>, the plugin renders the pages on the server: the modules evaluated on the server register templates compiled into HTML, and the dev server renders each page with the entry the option names. See <a href=\"#/en/tools/ssr/deployment\">Server-side rendering</a>."
         },
         "whatThePluginDoes": {
@@ -3821,9 +3822,9 @@
       "cause": "A required input bound only in some branches.",
       "fix": "Add an @else or @default branch binding it, or bind it outside the condition."
     },
-    "Property 'valuechange' does not exist on type 'HTMLElementEventMap'.": {
-      "cause": "A listener for an event that is neither an output of the component nor a native event of its element: a different case, or a misspelled name.",
-      "fix": "Match the name of the accessor, letter by letter."
+    "'valuechange' is not an event of <ex-quantity-picker>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set \"strictEvents\": false in xaendar.json to turn this warning off.": {
+      "cause": "A listener for an event that is neither an output of the component nor an event of its element: a different case, a misspelled name, or an event bubbling up from the content of the element. It is a warning: the build does not fail.",
+      "fix": "Match the name of the accessor, letter by letter. For an event that bubbles up on purpose, keep the binding, or set \"strictEvents\": false in xaendar.json."
     },
     "[TypeChecker] Unknown property \"shade\" on @@exTint (TintDirective has no @Property with this name).": {
       "cause": "An input the directive does not declare.",
@@ -3848,10 +3849,6 @@
     "[TypeChecker] [(value)] binds the input \"value\" and its event \"valueChange\", which QuantityLabelComponent does not both declare: declare a model with @Model, or an input and an event with these names.": {
       "cause": "The component or the directive does not declare the input, or its event of change.",
       "fix": "Declare the model with @Model, or the missing @Property or @Event."
-    },
-    "Property 'bubbly' does not exist on type 'HTMLElementEventMap'.": {
-      "cause": "A listener for an unknown event on a native element.",
-      "fix": "Listen to custom events on the component emitting them, or on a component re-emitting them."
     },
     "Type 'string' does not satisfy the expected type 'number'.": {
       "cause": "A static value, always a string, bound to an input of another type.",

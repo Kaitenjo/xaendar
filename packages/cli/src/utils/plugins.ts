@@ -55,7 +55,8 @@ export function createBabelPlugin(): PluginOption {
 
 /**
  * Reads the options of the Xaendar plugin from the `xaendar.json` of the project in the working directory: the
- * patterns of the custom elements of other libraries (`"customElements": ["sl-*"]`), the entry of the rendering on
+ * patterns of the custom elements of other libraries (`"customElements": ["sl-*"]`), whether the templates warn about
+ * the events their elements do not declare (`"strictEvents": false` turns the warning off), the entry of the rendering on
  * the server, resolved against the project, when the project renders its pages there, with whether the build searches
  * the static components (`staticComponents`, `false` unless the file sets it to `true`), and the libraries of the
  * workspace (`libs`), which the project imports from their sources.
@@ -67,6 +68,7 @@ function readPluginOptions(): XaendarPluginOptions {
   const ssr = config?.ssr && { entry: resolveSsrPaths(config.ssr).entry, staticComponents: config.ssr.staticComponents === true };
   return {
     customElements: config?.customElements,
+    strictEvents: config?.strictEvents,
     ssr,
     libraries: config?.libs && readLibraries(config.libs)
   };
@@ -82,7 +84,7 @@ function readPluginOptions(): XaendarPluginOptions {
 function readLibraries(libs: NonNullable<XaendarConfig['libs']>): XaendarPluginOptions['libraries'] {
   const names = Object.keys(libs);
   return names.map(name => {
-    const { root, entry, ssr, customElements } = libs[name];
-    return { name, root: resolve(process.cwd(), root), entry, ssr: ssr === true, customElements };
+    const { root, entry, ssr, customElements, strictEvents } = libs[name];
+    return { name, root: resolve(process.cwd(), root), entry, ssr: ssr === true, customElements, strictEvents };
   });
 }

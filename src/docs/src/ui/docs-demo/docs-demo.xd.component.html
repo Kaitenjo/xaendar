@@ -16,7 +16,7 @@
     </button>
   </figcaption>
   <div class="stage">
-    <iframe class="frame" src="{src()}" title="{heading()}" loading="lazy" />
+    <iframe class="frame" src="{src()}" title="{heading()}" loading="lazy" (load)="fit($event.target as HTMLIFrameElement)" />
   </div>
   @if (open()) {
     <div class="source">

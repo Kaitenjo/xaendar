@@ -206,7 +206,7 @@ export const CORE_API: ApiPackage = {
       ],
       usage: [
         { key: 'declaring', snippets: [EVENT_DECLARATION] },
-        { key: 'names', snippets: ['components/unknown-event-error.txt', MEMBER_NAME_CLASH] }
+        { key: 'names', snippets: ['components/unknown-event-warning.txt', MEMBER_NAME_CLASH] }
       ],
       guides: ['components/outputs', 'templates/events', 'directives/custom']
     },

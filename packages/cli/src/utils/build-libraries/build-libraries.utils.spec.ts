@@ -70,6 +70,17 @@ describe('buildLibraries()', () => {
     expect(console.log).toHaveBeenCalledWith(`✔  charts → ${resolve(dir, 'out/charts')}`);
   });
 
+  it('builds a library with its strictEvents, the one of the workspace when it declares none', async () => {
+    const project = writeWorkspace({
+      '@acme/ui': [{ root: 'libraries/ui' }, {}],
+      charts: [{ root: 'libraries/charts', strictEvents: true }, {}]
+    });
+
+    await buildLibraries({ ...project, config: { ...project.config, strictEvents: false } });
+
+    expect(vi.mocked(buildLibrary).mock.calls.map(([options]) => options.strictEvents)).toEqual([false, true]);
+  });
+
   it('builds only the library named, by the name of its folder', async () => {
     const project = writeWorkspace({
       '@acme/ui': [{ root: 'libraries/ui' }, {}],

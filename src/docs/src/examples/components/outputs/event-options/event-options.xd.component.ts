@@ -1,6 +1,5 @@
-import { CustomElement, Query, WebComponent } from '@xaendar/core';
+import { CustomElement, HostListener, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
-import type { QuerySignal } from '@xaendar/core/signals';
 
 /**
  * Listens to the events of a child at four levels, from the tag of the child up to the document.
@@ -31,43 +30,35 @@ export class EventOptionsComponent extends CustomElement {
    * The table: a row for each emission, a cell for each level.
    */
   public readonly rows = computed(() => this._computeRows());
-  /**
-   * The element around the child, in the template of this component.
-   */
-  @Query('.frame')
-  public accessor frame!: QuerySignal<HTMLElement | null>;
-  /**
-   * The names of the events emitted by the source.
-   */
-  private readonly _eventNames = ['plain', 'bubbling', 'escaping'];
+
   /**
    * Records an event reaching the frame.
    */
-  private readonly _onFrame = (event: Event): void => this._record('frame', event);
+  public onFrame(event: Event): void {
+    this._record('frame', event);
+  }
+  
   /**
    * Records an event reaching the host of this component.
    */
-  private readonly _onHost = (event: Event): void => this._record('host', event);
+  @HostListener('plain')
+  @HostListener('bubbling')
+  @HostListener('escaping')
+  public onHost(event: Event): void {
+    this._record('host', event);
+  }
+
   /**
    * Records an event reaching the document, with the target it sees.
    */
-  private readonly _onDocument = (event: Event): void => {
+  @HostListener('document:plain')
+  @HostListener('document:bubbling')
+  @HostListener('document:escaping')
+  public onDocument(event: CustomEvent<string>) {
     this._record('document', event);
     const first = event.composedPath()[0] as Element;
     this.documentView.set('target <' + (event.target as Element).localName + '>, composedPath()[0] <' + first.localName + '>');
   };
-
-  /**
-   * Listens on the host and on the document, until the component is removed, and on the frame, which exists only once
-   * the template is rendered. `afterRender` runs only in the browser: the server has no document.
-   */
-  public afterRender(): void {
-    for (const name of this._eventNames) {
-      this.addEventListener(name, this._onHost);
-      document.addEventListener(name, this._onDocument);
-      this.frame()?.addEventListener(name, this._onFrame);
-    }
-  }
 
   /**
    * Records an event reaching the tag of the child, through a template binding.
@@ -107,15 +98,5 @@ export class EventOptionsComponent extends CustomElement {
   private _record(level: string, event: Event): void {
     const emission = String((event as CustomEvent<string>).detail);
     this.hits.update(hits => hits[emission]?.includes(level) ? hits : { ...hits, [emission]: [...hits[emission] ?? [], level] });
-  }
-
-  /**
-   * Stops listening on the host and on the document. The frame goes away with the template.
-   */
-  public onDestroy(): void {
-    for (const name of this._eventNames) {
-      this.removeEventListener(name, this._onHost);
-      document.removeEventListener(name, this._onDocument);
-    }
   }
 }

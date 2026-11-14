@@ -79,6 +79,13 @@ export type CompileOptions = {
    */
   ssr?: boolean;
   /**
+   * Whether the type-check checks the names of the events an element does not declare in its event map, nor as an
+   * `@Event` of its component or of its directives (`(bubbling)` on a `<div>`): their `$event` is an `Event`, and the
+   * binding hears them only when they are dispatched on the element or bubble up to it, so TypeScript rejecting the
+   * name is a warning (see `findEventCheck`). `false` leaves them unchecked. Defaults to `true`.
+   */
+  strictEvents?: boolean;
+  /**
    * Optional caching layer for component and directive metadata.
    *
    * Improves compilation performance by caching extracted metadata,

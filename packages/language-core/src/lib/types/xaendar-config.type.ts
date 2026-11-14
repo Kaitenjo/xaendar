@@ -13,6 +13,11 @@ export type XaendarConfig = {
    */
   readonly ssr?: unknown;
   /**
+   * Whether the templates warn about the events their elements do not declare (`(bubbling)` on a `<div>`): `false`
+   * turns the warning off. Defaults to `true`.
+   */
+  readonly strictEvents?: boolean;
+  /**
    * The libraries of the workspace, keyed by the name of their package: the files of a library are compiled with its
    * own options.
    */

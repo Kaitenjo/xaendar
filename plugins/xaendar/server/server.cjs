@@ -26361,6 +26361,16 @@ var TypeCheckContext = class extends CompilerContext {
    */
   _variableCalls = null;
   /**
+   * The checks of the names of the events the elements do not declare (see {@link recordEventCheck}): kept by the
+   * outermost scope, for the whole template, `null` while there is none.
+   */
+  _eventChecks = null;
+  /**
+   * Whether the names of the events the elements do not declare are checked, warning about them: kept by the
+   * outermost scope, for the whole template.
+   */
+  _strictEvents = true;
+  /**
    * Whether the type-check code reads the declarations of the template helpers, as the one of a template does: kept by
    * the outermost scope, for the whole template.
    */
@@ -26382,6 +26392,33 @@ var TypeCheckContext = class extends CompilerContext {
    */
   get variableCalls() {
     return this.parent ? this.parent.variableCalls : this._variableCalls ?? void 0;
+  }
+  /**
+   * The checks of the names of the events the elements do not declare (see {@link recordEventCheck}), read from the
+   * outermost scope.
+   *
+   * @returns The checks, `undefined` when the template binds no such event.
+   */
+  get eventChecks() {
+    return this.parent ? this.parent.eventChecks : this._eventChecks ?? void 0;
+  }
+  /**
+   * Whether the names of the events the elements do not declare are checked, warning about them, read from the
+   * outermost scope.
+   *
+   * @returns `true` unless the `strictEvents` option is `false`.
+   */
+  get strictEvents() {
+    return this.parent ? this.parent.strictEvents : this._strictEvents;
+  }
+  /**
+   * Sets whether the names of the events the elements do not declare are checked: set on the outermost scope, which
+   * the others read.
+   *
+   * @param value - `false` to leave them unchecked.
+   */
+  set strictEvents(value) {
+    this._strictEvents = value;
   }
   /**
    * Returns the event map of the elements declared in this scope: the one of their namespace (see `namespace`).
@@ -26431,6 +26468,19 @@ var TypeCheckContext = class extends CompilerContext {
       this.parent.recordVariableCall(call);
     } else {
       this._variableCalls ? this._variableCalls.push(call) : this._variableCalls = [call];
+    }
+  }
+  /**
+   * Records in the outermost scope the check of the name of an event binding the element does not declare: when
+   * TypeScript rejects it, the error is a warning (see `findEventCheck`).
+   *
+   * @param check - The spans of the binding and of its name, and the message of the warning.
+   */
+  recordEventCheck(check) {
+    if (this.parent) {
+      this.parent.recordEventCheck(check);
+    } else {
+      this._eventChecks ? this._eventChecks.push(check) : this._eventChecks = [check];
     }
   }
   /**
@@ -27525,6 +27575,23 @@ function extractBindingType(member, name, accessorOwner, event) {
   return typeNode.typeArguments[0].kind === import_typescript16.SyntaxKind.VoidKeyword ? defaultValue : `(${accessor} extends import('@xaendar/core').Output<infer Value> ? Value : never)`;
 }
 
+// ../packages/compiler/src/type-checker/utils/cast/cast.utils.ts
+var CAST_OPENING = "((";
+function castExpression(expression, resolved, segments, { text, span }) {
+  for (let i2 = 0; i2 < segments.length; i2++) {
+    const { columnStart, columnEnd, original } = segments[i2];
+    segments[i2] = { columnStart: columnStart + CAST_OPENING.length, columnEnd: columnEnd + CAST_OPENING.length, original };
+  }
+  const head = `${CAST_OPENING}${resolved}) as `;
+  const end = head.length + text.length;
+  const expressionSpan = getTemplateSpan(expression);
+  if (expressionSpan) {
+    segments.push({ columnStart: 1, columnEnd: end, original: { start: expressionSpan.start, end: span.end } });
+  }
+  segments.push({ columnStart: head.length, columnEnd: end, original: span });
+  return `${head}${text})`;
+}
+
 // ../packages/compiler/src/type-checker/utils/line-builder/line-builder.utils.ts
 function mapped(text, span) {
   return { text, span };
@@ -27566,23 +27633,6 @@ function indentLines(lines) {
       columnEnd: mapping.columnEnd + 2
     }))
   }));
-}
-
-// ../packages/compiler/src/type-checker/utils/cast/cast.utils.ts
-var CAST_OPENING = "((";
-function castExpression(expression, resolved, segments, { text, span }) {
-  for (let i2 = 0; i2 < segments.length; i2++) {
-    const { columnStart, columnEnd, original } = segments[i2];
-    segments[i2] = { columnStart: columnStart + CAST_OPENING.length, columnEnd: columnEnd + CAST_OPENING.length, original };
-  }
-  const head = `${CAST_OPENING}${resolved}) as `;
-  const end = head.length + text.length;
-  const expressionSpan = getTemplateSpan(expression);
-  if (expressionSpan) {
-    segments.push({ columnStart: 1, columnEnd: end, original: { start: expressionSpan.start, end: span.end } });
-  }
-  segments.push({ columnStart: head.length, columnEnd: end, original: span });
-  return `${head}${text})`;
 }
 
 // ../packages/compiler/src/type-checker/utils/mapped-expression/mapped-expression.utils.ts
@@ -27685,24 +27735,24 @@ function typeCheckElement(node, processNode, context) {
   const { tagName } = node;
   const namespace = getElementNamespace(tagName, context.namespace);
   const eventMap = getEventMap(namespace);
-  let nativeEventType = (name) => getNativeEventType(eventMap, name);
+  let nativeEvents = { eventMap, tagName, foreign: false };
   if (isCustomElementTag(tagName)) {
     const metadata = context.getImportBySelector(tagName);
     const isForeign = context.isForeignElement(tagName);
     if (metadata && isForeign) {
       throw new Error(`${tagName} is both imported as a WebComponent and declared in customElements`, { cause: node.span });
     } else if (metadata) {
-      lines.push(...typeCheckComponentBindings(node, metadata, nativeEventType, context));
+      lines.push(...typeCheckComponentBindings(node, metadata, nativeEvents, context));
     } else if (isForeign) {
-      nativeEventType = (name) => getForeignEventType(eventMap, name);
-      lines.push(...typeCheckNativeBindings(node, nativeEventType, context));
+      nativeEvents = { eventMap, tagName, foreign: true };
+      lines.push(...typeCheckNativeBindings(node, nativeEvents, context));
     } else {
       throw new Error(`${tagName} selector is not associated to any WebComponent imported in the template, nor declared in customElements`, { cause: node.span });
     }
   } else {
-    lines.push(...typeCheckNativeBindings(node, nativeEventType, context));
+    lines.push(...typeCheckNativeBindings(node, nativeEvents, context));
   }
-  lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], tagName, nativeEventType, context));
+  lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], tagName, nativeEvents, context));
   if (node.ref && context.getImportBySelector(tagName)?.typeParameters) {
     context.addInstantiation(node.span.start);
   }
@@ -27722,7 +27772,7 @@ function typeCheckElement(node, processNode, context) {
   }
   return lines;
 }
-function typeCheckComponentBindings(node, declaredMetadata, nativeEventType, context) {
+function typeCheckComponentBindings(node, declaredMetadata, nativeEvents, context) {
   assertTypeArguments(node.typeArguments, declaredMetadata, `<${node.tagName}>`);
   const suffix = node.ref ? getInstantiationSuffix(node) : void 0;
   const { metadata, declarations } = instantiateTypeParameters(declaredMetadata, node.typeArguments, node.attributes, node.nameSpan, context, suffix);
@@ -27735,8 +27785,8 @@ function typeCheckComponentBindings(node, declaredMetadata, nativeEventType, con
       ...typeCheckComponentAttributes(branch.attributes, metadata, context),
       ...typeCheckClassBindings(branch.classBindings, context),
       ...typeCheckStyleBindings(branch.styleBindings, context),
-      ...typeCheckComponentEvents(branch.events, metadata, nativeEventType, context),
-      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEventType, context)
+      ...typeCheckComponentEvents(branch.events, metadata, nativeEvents, context),
+      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEvents, context)
     ];
   });
   for (let i2 = 0; i2 < node.attributes.length; i2++) {
@@ -27752,14 +27802,14 @@ function typeCheckComponentBindings(node, declaredMetadata, nativeEventType, con
   }
   lines.push(...typeCheckClassBindings(node.classBindings, context));
   lines.push(...typeCheckStyleBindings(node.styleBindings, context));
-  lines.push(...typeCheckComponentEvents(node.events, metadata, nativeEventType, context));
+  lines.push(...typeCheckComponentEvents(node.events, metadata, nativeEvents, context));
   lines.push(...conditionalBindingLines);
   if (!declarations) {
     return lines;
   }
   return suffix === void 0 ? [plain("{"), ...indentLines([...declarations, ...lines]), plain("}")] : [...declarations, ...lines];
 }
-function typeCheckDirectives(directives, tagName, nativeEventType, context) {
+function typeCheckDirectives(directives, tagName, nativeEvents, context) {
   const lines = new Array();
   for (let i2 = 0; i2 < directives.length; i2++) {
     const directive = directives[i2];
@@ -27779,7 +27829,7 @@ function typeCheckDirectives(directives, tagName, nativeEventType, context) {
       assertRequiredPropertiesAlwaysBound(branch.attributes, metadata, owner, alwaysBoundAttributes);
       return [
         ...typeCheckComponentAttributes(branch.attributes, metadata, context),
-        ...typeCheckComponentEvents(branch.events, metadata, nativeEventType, context)
+        ...typeCheckComponentEvents(branch.events, metadata, nativeEvents, context)
       ];
     });
     const requiredProperties = new Set(metadata.properties.entries().filter(([_2, value]) => value.required).map(([key]) => key));
@@ -27795,7 +27845,7 @@ function typeCheckDirectives(directives, tagName, nativeEventType, context) {
     }
     const directiveLines = [
       ...typeCheckComponentAttributes(attributes, metadata, context),
-      ...typeCheckComponentEvents(events, metadata, nativeEventType, context),
+      ...typeCheckComponentEvents(events, metadata, nativeEvents, context),
       ...conditionalBindingLines
     ];
     if (declarations) {
@@ -27978,21 +28028,16 @@ function typeCheckComponentAttributes(attributes, metadata, context) {
   }
   return lines;
 }
-function typeCheckComponentEvents(events, metadata, nativeEventType, context) {
+function typeCheckComponentEvents(events, metadata, nativeEvents, context) {
   const lines = new Array();
   for (let i2 = 0; i2 < events.length; i2++) {
-    const { name, parameters, key } = events[i2];
-    const event = key ? void 0 : metadata.events.get(name);
-    if (event) {
-      lines.push(...typeCheckEvent(events[i2], `CustomEvent<${event.type === "void" ? "null" : event.type}>`, context));
-    } else {
-      const eventType = nativeEventType(key?.event ?? name);
-      passesEvent(parameters) ? lines.push(...typeCheckEvent(events[i2], eventType, context)) : lines.push(line(mappedEventName(`null! satisfies ${eventType};`, events[i2])), ...typeCheckEvent(events[i2], eventType, context));
-    }
+    const event = events[i2];
+    const declared = event.key ? void 0 : metadata.events.get(event.name);
+    lines.push(...declared ? typeCheckEvent(event, `CustomEvent<${declared.type === "void" ? "null" : declared.type}>`, context) : typeCheckNativeEvent(event, nativeEvents, context));
   }
   return lines;
 }
-function typeCheckNativeBindings(node, nativeEventType, context) {
+function typeCheckNativeBindings(node, nativeEvents, context) {
   if (node.typeArguments) {
     throw new Error(`<${node.tagName}> declares type arguments, but only a WebComponent imported in the template can declare them.`, { cause: getTypeArgumentsSpan(node.typeArguments) });
   }
@@ -28000,13 +28045,13 @@ function typeCheckNativeBindings(node, nativeEventType, context) {
     ...typeCheckNativeAttributes(node.attributes, node.tagName, context),
     ...typeCheckClassBindings(node.classBindings, context),
     ...typeCheckStyleBindings(node.styleBindings, context),
-    ...typeCheckNativeEvents(node.events, nativeEventType, context),
+    ...typeCheckNativeEvents(node.events, nativeEvents, context),
     ...typeCheckConditionalBindings(node.conditionalBindings, context, (branch) => [
       ...typeCheckNativeAttributes(branch.attributes, node.tagName, context),
       ...typeCheckClassBindings(branch.classBindings, context),
       ...typeCheckStyleBindings(branch.styleBindings, context),
-      ...typeCheckNativeEvents(branch.events, nativeEventType, context),
-      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEventType, context)
+      ...typeCheckNativeEvents(branch.events, nativeEvents, context),
+      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEvents, context)
     ])
   ];
 }
@@ -28040,8 +28085,21 @@ function typeCheckStyleBindings(styleBindings, context) {
   }
   return lines;
 }
-function typeCheckNativeEvents(events, nativeEventType, context) {
-  return events.flatMap((event) => typeCheckEvent(event, nativeEventType(event.key?.event ?? event.name), context));
+function typeCheckNativeEvents(events, nativeEvents, context) {
+  return events.flatMap((event) => typeCheckNativeEvent(event, nativeEvents, context));
+}
+function typeCheckNativeEvent(event, nativeEvents, context) {
+  const { name, key, span, nameSpan } = event;
+  const lines = typeCheckEvent(event, getNativeEventType(nativeEvents, key?.event ?? name), context);
+  if (key || nativeEvents.foreign || !context.strictEvents) {
+    return lines;
+  }
+  context.recordEventCheck({
+    span,
+    nameSpan,
+    message: `'${name}' is not an event of <${nativeEvents.tagName}>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set "strictEvents": false in xaendar.json to turn this warning off.`
+  });
+  return [line(mappedEventName(`'${name}' satisfies keyof ${nativeEvents.eventMap};`, event)), ...lines];
 }
 function typeCheckEvent(event, eventType, context) {
   const { handler, handlerSpan, parameters, casts, span } = event;
@@ -28136,11 +28194,8 @@ function typeCheckSwitchBinding(node, context, bindings) {
   lines.push(plain("}"));
   return lines;
 }
-function getNativeEventType(eventMap, name) {
-  return `${eventMap}['${name}']`;
-}
-function getForeignEventType(eventMap, name) {
-  return `(${eventMap} extends { '${name}': infer Event } ? Event : any)`;
+function getNativeEventType({ eventMap, foreign }, name) {
+  return `(${eventMap} extends { '${name}': infer Event } ? Event : ${foreign ? "any" : "Event"})`;
 }
 function isCustomElementTag(tagName) {
   return /^[a-z][a-z0-9._\-]*-[a-z0-9._\-]*$/.test(tagName);
@@ -28954,7 +29009,8 @@ var TypeChecker = class {
    * `$event` is not declared at the top of the shim: every event binding passing it
    * to its handler gets its own block declaring it, as `CustomEvent<payload type>` for a component or directive
    * `@Event` carrying a payload, and through the event map of the element for a native event, e.g.
-   * `HTMLElementEventMap['click']` or, inside an `<svg>`, `SVGElementEventMap['click']`.
+   * the type `HTMLElementEventMap` or, inside an `<svg>`, `SVGElementEventMap` declares for its name, `Event` for a name
+   * the map doesn't declare, whose check is a warning (see `findEventCheck`).
    *
    * @param metadatas - Metadata of the components and directives imported in the template, used to check the elements and directives using their selectors.
    * @param shadowingMembers - Class members named like a global identifier, read from the component instead of the global scope.
@@ -28962,12 +29018,13 @@ var TypeChecker = class {
    * @param symbols - The symbols the template imports from modules, which its expressions and type arguments read.
    * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
    * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
+   * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws If the template fails type-checking, e.g. it uses a selector not imported in it, with the error message prefixed by `[TypeChecker]` and, when the error carries its span, the slice of the template it refers to.
    */
-  async generate(metadatas, shadowingMembers = [], customElements = [], symbols = [], reactiveMembers = [], ssr) {
+  async generate(metadatas, shadowingMembers = [], customElements = [], symbols = [], reactiveMembers = [], ssr, strictEvents = true) {
     try {
-      return this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr);
+      return this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents);
     } catch (err) {
       throw catchErrorWithPrefix("TypeChecker", this._input, err);
     }
@@ -28983,14 +29040,15 @@ var TypeChecker = class {
    * @param symbols - The symbols the template imports from modules, which its expressions and type arguments read.
    * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
    * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
+   * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
    * @returns The text of the shim and its mapping table, together with the errors of the nodes that failed, formatted like the ones thrown by {@link generate}.
    * @throws If a node has no transition function, with the error message prefixed by `[TypeChecker]`.
    */
-  async generateTolerant(metadatas, shadowingMembers = [], customElements = [], symbols = [], reactiveMembers = [], ssr) {
+  async generateTolerant(metadatas, shadowingMembers = [], customElements = [], symbols = [], reactiveMembers = [], ssr, strictEvents = true) {
     const errors = new Array();
     this._errors = errors;
     try {
-      return { ...this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr), errors };
+      return { ...this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents), errors };
     } catch (err) {
       throw catchErrorWithPrefix("TypeChecker", this._input, err);
     } finally {
@@ -29006,16 +29064,18 @@ var TypeChecker = class {
    * @param symbols - The symbols the template imports from modules.
    * @param reactiveMembers - Class members that can read a signal.
    * @param ssr - Whether the project renders on the server, `undefined` when it is not known.
+   * @param strictEvents - Whether the names of the events the elements do not declare are checked.
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws The error of the first node failing, when the errors are not being collected.
    */
-  _generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr) {
+  _generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents) {
     this._context.addImport(...metadatas);
     this._context.addSymbolImport(...symbols);
     for (let i2 = 0; i2 < shadowingMembers.length; i2++) {
       this._context.addShadowingMember(shadowingMembers[i2]);
     }
     this._context.addCustomElementPatterns(...customElements);
+    this._context.strictEvents = strictEvents;
     for (let i2 = 0; i2 < reactiveMembers.length; i2++) {
       this._context.addSignalClassField(reactiveMembers[i2]);
     }
@@ -29032,9 +29092,12 @@ var TypeChecker = class {
       text: lines.map((line2) => line2.text).join("\n"),
       mappingTable: this.buildMappingTable(lines)
     };
-    const { variableCalls } = this._context;
+    const { variableCalls, eventChecks } = this._context;
     if (variableCalls?.length) {
       result.variableCalls = variableCalls;
+    }
+    if (eventChecks?.length) {
+      result.eventChecks = eventChecks;
     }
     return result;
   }
@@ -29099,8 +29162,8 @@ var TypeChecker = class {
 function parseTemplate(input) {
   return new Parser(input, new Lexer(input).tokenize()).parse();
 }
-async function typeCheckTemplateTolerant(input, nodes, metadatas, shadowingMembers = [], customElements = [], symbols = [], reactiveMembers = [], ssr) {
-  return await new TypeChecker(input, nodes).generateTolerant(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr);
+async function typeCheckTemplateTolerant(input, nodes, metadatas, shadowingMembers = [], customElements = [], symbols = [], reactiveMembers = [], ssr, strictEvents = true) {
+  return await new TypeChecker(input, nodes).generateTolerant(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents);
 }
 
 // ../packages/compiler/src/lexer/utils/binding-context/binding-context.utils.ts
@@ -30425,6 +30488,22 @@ function toSpecifiers(source, { parts: [raw], span }) {
   }
 }
 
+// ../packages/compiler/src/type-checker/utils/event-checks/event-checks.utils.ts
+var NOT_SATISFIED = 1360;
+function findEventCheck(typeCheck, span, code) {
+  const checks = code === NOT_SATISFIED ? typeCheck.eventChecks : void 0;
+  if (!checks?.length) {
+    return void 0;
+  }
+  for (let i2 = 0; i2 < checks.length; i2++) {
+    const check = checks[i2];
+    if (span.start >= check.span.start && span.end <= check.span.end) {
+      return check;
+    }
+  }
+  return void 0;
+}
+
 // ../packages/compiler/src/type-checker/utils/mapping-resolver/mapping-resolver.utils.ts
 function findTemplateMapping(table, position) {
   const mappings = table.get(position.line);
@@ -31370,6 +31449,11 @@ function readSsr(fromDir) {
   const library = findLibrary2(config, fromDir);
   return library ? library.ssr === true : !!config.config.ssr;
 }
+function readStrictEvents(fromDir) {
+  const config = readConfig(fromDir);
+  const library = config && findLibrary2(config, fromDir);
+  return (library?.strictEvents ?? config?.config.strictEvents) !== false;
+}
 function readConfig(fromDir) {
   const configPath = (0, import_typescript28.findConfigFile)(fromDir, import_typescript28.sys.fileExists, "xaendar.json");
   if (configPath) {
@@ -31412,7 +31496,7 @@ async function analyze(templatePath, source, components, shimName) {
     const { imports, symbols, errors: importErrors } = await resolveImports(ast, templateDir, cache, options);
     const metadatas = imports.map(({ metadata }) => metadata);
     const ssr = readSsr(templateDir);
-    const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers, readCustomElements(templateDir), symbols, reactiveMembers, ssr);
+    const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers, readCustomElements(templateDir), symbols, reactiveMembers, ssr, readStrictEvents(templateDir));
     const shim = createShim(componentFiles, typeCheck, project, shimName);
     const analysis = {
       templatePath,
@@ -32247,6 +32331,10 @@ function getTemplateDiagnostics({ analysis, error, ast }) {
     ...errors.map((templateError) => toTemplateDiagnostic(templateError, ast)),
     ...shimDiagnostics.map((diagnostic) => {
       const span = locateDiagnostic(analysis, diagnostic);
+      const eventCheck = findEventCheck(analysis.typeCheck, span, diagnostic.code);
+      if (eventCheck) {
+        return { span: eventCheck.nameSpan, message: eventCheck.message, category: import_typescript35.DiagnosticCategory.Warning };
+      }
       return {
         span,
         message: describeVariableCall(analysis.typeCheck, span, diagnostic.code) ?? (0, import_typescript35.flattenDiagnosticMessageText)(diagnostic.messageText, "\n"),

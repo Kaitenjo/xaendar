@@ -1,3 +1,4 @@
+import type { EventCheck } from './event-check.type';
 import type { LineMapping } from './line-mapping.type';
 import type { VariableCall } from './variable-call.type';
 
@@ -19,4 +20,10 @@ export type TypeCheckResult = {
    * described with them (see `describeVariableCall`). `undefined` when the template calls none.
    */
   variableCalls?: readonly VariableCall[];
+  /**
+   * The checks of the names of the events the elements do not declare (`(bubbling)` on a `<div>`): the error
+   * TypeScript reports on one is a warning (see `findEventCheck`). `undefined` when the template binds none, or when
+   * the `strictEvents` option is `false`.
+   */
+  eventChecks?: readonly EventCheck[];
 }

@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { readCustomElements, readSsr } from './xaendar-config.utils';
+import { readCustomElements, readSsr, readStrictEvents } from './xaendar-config.utils';
 
 let root: string;
 let counter = 0;
@@ -94,5 +94,31 @@ describe('readCustomElements()', () => {
 
     expect(readCustomElements(withoutField)).toBeUndefined();
     expect(readCustomElements(malformed)).toBeUndefined();
+  });
+});
+
+describe('readStrictEvents()', () => {
+  it('is true unless the nearest xaendar.json sets strictEvents to false, also without a readable file', () => {
+    const malformed = freshDir();
+    writeFileSync(join(malformed, 'xaendar.json'), '{');
+    const loose = freshDir();
+    writeFileSync(join(loose, 'xaendar.json'), JSON.stringify({ strictEvents: false }));
+
+    expect(readStrictEvents(freshDir())).toBe(true);
+    expect(readStrictEvents(malformed)).toBe(true);
+    expect(readStrictEvents(loose)).toBe(false);
+  });
+
+  it('reads the option of a library, the one of the project when the library does not declare it', () => {
+    const dir = freshDir();
+    writeFileSync(join(dir, 'xaendar.json'), JSON.stringify({
+      strictEvents: false,
+      libs: { ui: { root: 'libraries/ui' }, charts: { root: 'libraries/charts', strictEvents: true } }
+    }));
+    mkdirSync(join(dir, 'libraries', 'ui'), { recursive: true });
+    mkdirSync(join(dir, 'libraries', 'charts'), { recursive: true });
+
+    expect(readStrictEvents(join(dir, 'libraries', 'ui'))).toBe(false);
+    expect(readStrictEvents(join(dir, 'libraries', 'charts'))).toBe(true);
   });
 });

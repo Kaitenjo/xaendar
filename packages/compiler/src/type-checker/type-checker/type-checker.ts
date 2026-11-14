@@ -105,7 +105,8 @@ export class TypeChecker {
    * `$event` is not declared at the top of the shim: every event binding passing it
    * to its handler gets its own block declaring it, as `CustomEvent<payload type>` for a component or directive
    * `@Event` carrying a payload, and through the event map of the element for a native event, e.g.
-   * `HTMLElementEventMap['click']` or, inside an `<svg>`, `SVGElementEventMap['click']`.
+   * the type `HTMLElementEventMap` or, inside an `<svg>`, `SVGElementEventMap` declares for its name, `Event` for a name
+   * the map doesn't declare, whose check is a warning (see `findEventCheck`).
    *
    * @param metadatas - Metadata of the components and directives imported in the template, used to check the elements and directives using their selectors.
    * @param shadowingMembers - Class members named like a global identifier, read from the component instead of the global scope.
@@ -113,12 +114,13 @@ export class TypeChecker {
    * @param symbols - The symbols the template imports from modules, which its expressions and type arguments read.
    * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
    * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
+   * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws If the template fails type-checking, e.g. it uses a selector not imported in it, with the error message prefixed by `[TypeChecker]` and, when the error carries its span, the slice of the template it refers to.
    */
-  public async generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean): Promise<TypeCheckResult> {
+  public async generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean, strictEvents = true): Promise<TypeCheckResult> {
     try {
-      return this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr);
+      return this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents);
     } catch (err) {
       throw catchErrorWithPrefix('TypeChecker', this._input, err);
     }
@@ -135,14 +137,15 @@ export class TypeChecker {
    * @param symbols - The symbols the template imports from modules, which its expressions and type arguments read.
    * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
    * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
+   * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
    * @returns The text of the shim and its mapping table, together with the errors of the nodes that failed, formatted like the ones thrown by {@link generate}.
    * @throws If a node has no transition function, with the error message prefixed by `[TypeChecker]`.
    */
-  public async generateTolerant(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean): Promise<TypeCheckTolerantResult> {
+  public async generateTolerant(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean, strictEvents = true): Promise<TypeCheckTolerantResult> {
     const errors = new Array<Error>();
     this._errors = errors;
     try {
-      return { ...this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr), errors };
+      return { ...this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents), errors };
     } catch (err) {
       throw catchErrorWithPrefix('TypeChecker', this._input, err);
     } finally {
@@ -159,16 +162,18 @@ export class TypeChecker {
    * @param symbols - The symbols the template imports from modules.
    * @param reactiveMembers - Class members that can read a signal.
    * @param ssr - Whether the project renders on the server, `undefined` when it is not known.
+   * @param strictEvents - Whether the names of the events the elements do not declare are checked.
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws The error of the first node failing, when the errors are not being collected.
    */
-  private _generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[], customElements: readonly string[], symbols: readonly SymbolImport[], reactiveMembers: readonly string[], ssr: boolean | undefined): TypeCheckResult {
+  private _generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[], customElements: readonly string[], symbols: readonly SymbolImport[], reactiveMembers: readonly string[], ssr: boolean | undefined, strictEvents: boolean): TypeCheckResult {
     this._context.addImport(...metadatas);
     this._context.addSymbolImport(...symbols);
     for (let i = 0; i < shadowingMembers.length; i++) {
       this._context.addShadowingMember(shadowingMembers[i]);
     }
     this._context.addCustomElementPatterns(...customElements);
+    this._context.strictEvents = strictEvents;
     for (let i = 0; i < reactiveMembers.length; i++) {
       this._context.addSignalClassField(reactiveMembers[i]);
     }
@@ -188,9 +193,13 @@ export class TypeChecker {
       text: lines.map(line => line.text).join('\n'),
       mappingTable: this.buildMappingTable(lines)
     };
-    const { variableCalls } = this._context;
+    const { variableCalls, eventChecks } = this._context;
     if (variableCalls?.length) {
       result.variableCalls = variableCalls;
+    }
+
+    if (eventChecks?.length) {
+      result.eventChecks = eventChecks;
     }
 
     return result;

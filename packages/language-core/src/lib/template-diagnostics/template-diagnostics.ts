@@ -1,4 +1,4 @@
-import { type ASTNode, describeVariableCall, resolveTemplateSpan, type Span, TemplateError } from '@xaendar/compiler';
+import { type ASTNode, describeVariableCall, findEventCheck, resolveTemplateSpan, type Span, TemplateError } from '@xaendar/compiler';
 import { type Diagnostic, DiagnosticCategory, flattenDiagnosticMessageText } from 'typescript';
 import type { TemplateAnalysisResult } from '../types/template-analysis-result.type';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
@@ -17,7 +17,8 @@ import type { TemplateDiagnostic } from '../types/template-diagnostic.type';
  * A TypeScript diagnostic falls on the narrowest part of the template it comes from: the exact characters of an
  * identifier or of a piece of an expression, or the whole binding otherwise. A diagnostic of a line of the shim not
  * mapped onto the template falls on the tag name of the element enclosing the closest mapped line before it. The call of
- * a variable of the template whose value is not a function is told as such (see `describeVariableCall`).
+ * a variable of the template whose value is not a function is told as such (see `describeVariableCall`), and the name of
+ * an event its element does not declare is a warning on the name (see `findEventCheck`).
  *
  * @param result - The analysis of the template.
  * @returns The problems found.
@@ -39,6 +40,11 @@ export function getTemplateDiagnostics({ analysis, error, ast }: TemplateAnalysi
     ...shimDiagnostics
       .map(diagnostic => {
         const span = locateDiagnostic(analysis!, diagnostic);
+        const eventCheck = findEventCheck(analysis!.typeCheck, span, diagnostic.code);
+        if (eventCheck) {
+          return { span: eventCheck.nameSpan, message: eventCheck.message, category: DiagnosticCategory.Warning };
+        }
+
         return {
           span,
           message: describeVariableCall(analysis!.typeCheck, span, diagnostic.code) ?? flattenDiagnosticMessageText(diagnostic.messageText, '\n'),

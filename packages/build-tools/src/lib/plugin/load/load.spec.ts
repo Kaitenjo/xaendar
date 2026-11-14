@@ -57,6 +57,7 @@ function createState(files: Record<string, string>): XaendarPluginState {
     compilerOptions: {},
     projectFileNames: [],
     customElements: [],
+    strictEvents: true,
     minifyStyles: false,
     isBuild: false,
     root: '/project',

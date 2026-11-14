@@ -26,4 +26,8 @@ export type XaendarLibraryConfig = {
    * The patterns of the tag names of the custom elements of other libraries its templates use (`sl-*`).
    */
   customElements?: string[];
+  /**
+   * Whether its templates warn about the events their elements do not declare. Defaults to the one of the workspace.
+   */
+  strictEvents?: boolean;
 };

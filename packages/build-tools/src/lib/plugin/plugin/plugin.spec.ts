@@ -173,6 +173,14 @@ describe('xaendarPlugin()', () => {
     expect(vi.mocked(createTransformHook).mock.calls[1][0].customElements).toEqual([]);
   });
 
+  it('stores whether the templates warn about the events the elements do not declare in the state, true by default', () => {
+    xaendarPlugin({ strictEvents: false });
+    xaendarPlugin();
+
+    expect(vi.mocked(createTransformHook).mock.calls[0][0].strictEvents).toBe(false);
+    expect(vi.mocked(createTransformHook).mock.calls[1][0].strictEvents).toBe(true);
+  });
+
   it('stores the rendering on the server in the state, none by default', () => {
     xaendarPlugin({ ssr: { entry: 'src/entry-server.ts' } });
     xaendarPlugin();

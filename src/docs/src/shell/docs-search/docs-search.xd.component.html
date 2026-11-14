@@ -9,13 +9,13 @@
   <input class="field" type="search" autocomplete="off" spellcheck="false"
     placeholder="{translations().search.placeholder}" aria-label="{translations().search.label}"
     (input)="onInput($event)" (keydown.arrowdown)="onKeydownArrowDown($event)" (keydown.arrowup)="onKeydownArrowUp($event)" 
-    (keydown.enter)="onKeydownEnter($event)" (keydown.escape)="onKeydownEscape($event)" (focus)="open()" (blur)="close()" />
+    (keydown.enter)="onKeydownEnter()" (keydown.escape)="onKeydownEscape()" (focus)="open()" (blur)="close()" />
   <kbd class="kbd">/</kbd>
   @if (expanded() && query()) {
     <ul class="results" role="listbox">
-      @for (result of results(); track result.path; index = $index) {
+      @for (result of results(); track result.path) {
         <li>
-          <a class="result" [class.result--active]="{index === active()}"
+          <a class="result" [class.result--active]="{$index === active()}"
             href="{`#/${currentLang()}/${result.path}`}" (mousedown)="go(result.path)">
             <span class="result__title">{ result.title }</span>
             <span class="result__path">{ result.detail }</span>

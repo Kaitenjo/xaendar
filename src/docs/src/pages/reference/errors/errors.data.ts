@@ -470,7 +470,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
-    message: "Property 'valuechange' does not exist on type 'HTMLElementEventMap'.",
+    message: '\'valuechange\' is not an event of <ex-quantity-picker>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set "strictEvents": false in xaendar.json to turn this warning off.',
     page: 'components/outputs'
   },
   {
@@ -501,11 +501,6 @@ export const ERRORS: readonly ErrorEntry[] = [
   {
     phase: 'TypeChecker',
     message: '[TypeChecker] [(value)] binds the input "value" and its event "valueChange", which QuantityLabelComponent does not both declare: declare a model with @Model, or an input and an event with these names.',
-    page: 'components/outputs'
-  },
-  {
-    phase: 'TypeChecker',
-    message: "Property 'bubbly' does not exist on type 'HTMLElementEventMap'.",
     page: 'components/outputs'
   },
   {

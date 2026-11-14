@@ -6,6 +6,7 @@ import type { ImportSpecifier } from '../../../parser/types/nodes/import-specifi
 import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { SymbolImport } from '../../../types/symbol-import.type';
 import type { ElementEventMap } from '../../types/element-event-map.type';
+import type { EventCheck } from '../../types/event-check.type';
 import type { VariableCall } from '../../types/variable-call.type';
 import { getEventMap } from '../../utils/namespace-types/namespace-types.utils';
 
@@ -44,6 +45,16 @@ export class TypeCheckContext extends CompilerContext {
    */
   private _variableCalls: VariableCall[] | null = null;
   /**
+   * The checks of the names of the events the elements do not declare (see {@link recordEventCheck}): kept by the
+   * outermost scope, for the whole template, `null` while there is none.
+   */
+  private _eventChecks: EventCheck[] | null = null;
+  /**
+   * Whether the names of the events the elements do not declare are checked, warning about them: kept by the
+   * outermost scope, for the whole template.
+   */
+  private _strictEvents = true;
+  /**
    * Whether the type-check code reads the declarations of the template helpers, as the one of a template does: kept by
    * the outermost scope, for the whole template.
    */
@@ -67,6 +78,36 @@ export class TypeCheckContext extends CompilerContext {
    */
   public get variableCalls(): readonly VariableCall[] | undefined {
     return this.parent ? this.parent.variableCalls : this._variableCalls ?? undefined;
+  }
+
+  /**
+   * The checks of the names of the events the elements do not declare (see {@link recordEventCheck}), read from the
+   * outermost scope.
+   *
+   * @returns The checks, `undefined` when the template binds no such event.
+   */
+  public get eventChecks(): readonly EventCheck[] | undefined {
+    return this.parent ? this.parent.eventChecks : this._eventChecks ?? undefined;
+  }
+
+  /**
+   * Whether the names of the events the elements do not declare are checked, warning about them, read from the
+   * outermost scope.
+   *
+   * @returns `true` unless the `strictEvents` option is `false`.
+   */
+  public get strictEvents(): boolean {
+    return this.parent ? this.parent.strictEvents : this._strictEvents;
+  }
+
+  /**
+   * Sets whether the names of the events the elements do not declare are checked: set on the outermost scope, which
+   * the others read.
+   *
+   * @param value - `false` to leave them unchecked.
+   */
+  public set strictEvents(value: boolean) {
+    this._strictEvents = value;
   }
 
   /**
@@ -121,6 +162,20 @@ export class TypeCheckContext extends CompilerContext {
       this.parent.recordVariableCall(call);
     } else {
       this._variableCalls ? this._variableCalls.push(call) : this._variableCalls = [call];
+    }
+  }
+
+  /**
+   * Records in the outermost scope the check of the name of an event binding the element does not declare: when
+   * TypeScript rejects it, the error is a warning (see `findEventCheck`).
+   *
+   * @param check - The spans of the binding and of its name, and the message of the warning.
+   */
+  public recordEventCheck(check: EventCheck): void {
+    if (this.parent) {
+      this.parent.recordEventCheck(check);
+    } else {
+      this._eventChecks ? this._eventChecks.push(check) : this._eventChecks = [check];
     }
   }
 

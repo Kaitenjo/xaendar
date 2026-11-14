@@ -122,7 +122,7 @@
       },
       "names": {
         "title": "Il nome dell’evento è il nome dell’accessor",
-        "body": "<p>I binding degli eventi distinguono maiuscole e minuscole, a differenza degli attributi HTML: <code>(valuechange)</code> non corrisponde a <code>valueChange</code>, e fa fallire la build. Un componente è un <code>HTMLElement</code>, quindi un output chiamato <code>remove</code>, <code>click</code> o <code>focus</code> sostituirebbe un membro dell’elemento: TypeScript rifiuta la classe. Scegli un altro nome.</p>"
+        "body": "<p>I binding degli eventi distinguono maiuscole e minuscole, a differenza degli attributi HTML: <code>(valuechange)</code> non corrisponde a <code>valueChange</code>, e la build lo segnala con un warning. Un componente è un <code>HTMLElement</code>, quindi un output chiamato <code>remove</code>, <code>click</code> o <code>focus</code> sostituirebbe un membro dell’elemento: TypeScript rifiuta la classe. Scegli un altro nome.</p>"
       }
     }
   },

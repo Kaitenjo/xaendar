@@ -29,4 +29,9 @@ export type XaendarLibraryOptions = {
    * the ones of the project. Defaults to none.
    */
   readonly customElements?: readonly string[];
+  /**
+   * Whether its templates warn about the events their elements do not declare, in place of the option of the project
+   * (see `XaendarPluginOptions['strictEvents']`). Defaults to the option of the project.
+   */
+  readonly strictEvents?: boolean;
 };

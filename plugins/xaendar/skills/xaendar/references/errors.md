@@ -478,10 +478,10 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A required input bound only in some branches.
 - **Fix:** Add an @else or @default branch binding it, or bind it outside the condition.
 
-### `Property 'valuechange' does not exist on type 'HTMLElementEventMap'.`
+### `'valuechange' is not an event of <ex-quantity-picker>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set "strictEvents": false in xaendar.json to turn this warning off.`
 
-- **Cause:** A listener for an event that is neither an output of the component nor a native event of its element: a different case, or a misspelled name.
-- **Fix:** Match the name of the accessor, letter by letter.
+- **Cause:** A warning, not an error: a listener for an event that is neither an output of the component nor an event of its element: a different case, a misspelled name, or an event bubbling up from the content of the element.
+- **Fix:** Match the name of the accessor, letter by letter. For an event that bubbles up on purpose, keep the binding (narrow `$event` with `$event as CustomEvent<T>`), or set `"strictEvents": false` in xaendar.json.
 
 ### `[TypeChecker] [(value)] binds the input "value" and its event "valueChange", which XCounter does not both declare: declare a model with @Model, or an input and an event with these names.`
 
@@ -507,11 +507,6 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** A template binding an input by the name of its property, while the input declares an alias: the name of the property would be an attribute of the element, which the input never reads.
 - **Fix:** Bind the input by its alias.
-
-### `Property 'bubbly' does not exist on type 'HTMLElementEventMap'.`
-
-- **Cause:** A listener for an unknown event on a native element.
-- **Fix:** Listen to custom events on the component emitting them, or on a component re-emitting them.
 
 ### `Type 'string' does not satisfy the expected type 'number'.`
 

@@ -1,8 +1,8 @@
-import { CustomElement, Property, Query, WebComponent } from '@xaendar/core';
+import { CustomElement, Property, WebComponent } from '@xaendar/core';
+import type { InputSignal } from '@xaendar/core/signals';
 import { computed, signal, untracked } from '@xaendar/core/signals';
-import type { InputSignal, QuerySignal } from '@xaendar/core/signals';
-import { loadDemoFiles } from '../../core/sources/sources';
 import type { SourceFile } from '../../core/sources/source-files.utils';
+import { loadDemoFiles } from '../../core/sources/sources';
 
 /**
  * A demo application, running in an iframe, next to its source files.
@@ -30,11 +30,6 @@ export class DocsDemoComponent extends CustomElement {
    */
   @Property('')
   public accessor heading!: InputSignal<string>;
-  /**
-   * The frame the application runs in.
-   */
-  @Query('.frame')
-  public accessor frame!: QuerySignal<HTMLIFrameElement | null>;
   /**
    * Whether the source files are shown.
    */
@@ -71,15 +66,6 @@ export class DocsDemoComponent extends CustomElement {
         untracked(() => this._load(name));
       }
     });
-  }
-
-  /**
-   * Measures the page of the frame once it is loaded. The frame comes from the same origin, so its document is
-   * readable: this is how the frame is sized without the applications having to report their height.
-   */
-  public afterRender(): void {
-    const frame = this.frame();
-    frame?.addEventListener('load', () => this._fit(frame));
   }
 
   /**
@@ -143,7 +129,7 @@ export class DocsDemoComponent extends CustomElement {
    *
    * @param frame - The frame the application runs in.
    */
-  private _fit(frame: HTMLIFrameElement): void {
+  public fit(frame: HTMLIFrameElement): void {
     const body = frame.contentDocument?.body;
     if (!body) {
       return;

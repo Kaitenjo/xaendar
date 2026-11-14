@@ -1,7 +1,7 @@
 @import { EventSourceComponent } from './event-source.xd.component.ts'
 @import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
-<div class="frame">
+<div class="frame" (bubbling)="onFrame($event)" (escaping)="onFrame($event)" >
   <ex-event-source (plain)="fromTag($event)" (bubbling)="fromTag($event)" (escaping)="fromTag($event)" />
 </div>
 <div class="table-wrap">

@@ -65,12 +65,22 @@ describe('createPlugins()', () => {
     expect(xaendarPlugin).toHaveBeenCalledWith({ customElements: ['sl-*'] });
   });
 
+  it('passes the strictEvents of the xaendar.json of the project and of its libraries to the xaendar plugin', () => {
+    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ name: 'ws', strictEvents: false, libs: { ui: { root: 'libraries/ui', strictEvents: true } } }));
+    createPlugins();
+
+    expect(xaendarPlugin).toHaveBeenCalledWith(expect.objectContaining({
+      strictEvents: false,
+      libraries: [expect.objectContaining({ name: 'ui', strictEvents: true })]
+    }));
+  });
+
   it('passes no custom elements nor rendering on the server when xaendar.json declares none or is missing', () => {
     createPlugins();
     writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ name: 'app' }));
     createPlugins();
 
-    expect(vi.mocked(xaendarPlugin).mock.calls).toStrictEqual([[{ customElements: undefined, ssr: undefined, libraries: undefined, staticReport: undefined }], [{ customElements: undefined, ssr: undefined, libraries: undefined, staticReport: undefined }]]);
+    expect(vi.mocked(xaendarPlugin).mock.calls).toStrictEqual([[{ customElements: undefined, strictEvents: undefined, ssr: undefined, libraries: undefined, staticReport: undefined }], [{ customElements: undefined, strictEvents: undefined, ssr: undefined, libraries: undefined, staticReport: undefined }]]);
   });
 
   it('passes the libraries of the workspace, their folders resolved against it', () => {

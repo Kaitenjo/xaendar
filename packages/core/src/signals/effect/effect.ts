@@ -51,8 +51,8 @@ import { EffectOptions } from '../types/effect-options.type';
  * @throws The exception thrown by `fn` on the initial execution.
  */
 export function effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {
-  const node = createEffect(fn, options);
-  return () => node.dispose();
+  const effect = createEffect(fn, options);
+  return () => effect.dispose();
 }
 
 /**

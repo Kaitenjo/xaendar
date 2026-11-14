@@ -22,6 +22,12 @@ export const BUILD_TOOLS_API: ApiPackage = {
           snippets: [BUILD_TOOLS_VITE_CONFIG, 'components/not-imported-error.txt', 'api/build-tools/imported-and-declared-error.txt']
         },
         {
+          name: 'strictEvents',
+          group: 'options',
+          signature: 'strictEvents?: boolean',
+          snippets: ['components/native-element-event-warning.txt', 'components/strict-events-config.json']
+        },
+        {
           name: 'ssr',
           group: 'options',
           signature: 'ssr?: { readonly entry: string; readonly staticComponents?: boolean }',
@@ -48,6 +54,7 @@ export const BUILD_TOOLS_API: ApiPackage = {
       signature: [
         'type XaendarPluginOptions = {',
         '  readonly customElements?: readonly string[];',
+        '  readonly strictEvents?: boolean;',
         '  readonly ssr?: {',
         '    readonly entry: string;',
         '    readonly staticComponents?: boolean;',
@@ -60,6 +67,11 @@ export const BUILD_TOOLS_API: ApiPackage = {
           name: 'customElements',
           group: 'options',
           signature: 'readonly customElements?: readonly string[]'
+        },
+        {
+          name: 'strictEvents',
+          group: 'options',
+          signature: 'readonly strictEvents?: boolean'
         },
         {
           name: 'ssr',
@@ -85,6 +97,7 @@ export const BUILD_TOOLS_API: ApiPackage = {
         '  readonly outDir: string;',
         '  readonly ssr?: boolean;',
         '  readonly customElements?: readonly string[];',
+        '  readonly strictEvents?: boolean;',
         '  readonly plugins?: readonly PluginOption[];',
         '  readonly xaendarVersion: string;',
         '  readonly dependencies?: Readonly<Record<string, string>>;',
@@ -120,6 +133,11 @@ export const BUILD_TOOLS_API: ApiPackage = {
           name: 'customElements',
           group: 'options',
           signature: 'readonly customElements?: readonly string[]'
+        },
+        {
+          name: 'strictEvents',
+          group: 'options',
+          signature: 'readonly strictEvents?: boolean'
         },
         {
           name: 'plugins',

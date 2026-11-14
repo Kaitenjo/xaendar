@@ -1,4 +1,4 @@
-import { CustomElement, WebComponent } from '@xaendar/core';
+import { CustomElement, HostListener, WebComponent } from '@xaendar/core';
 import { effect, signal } from '@xaendar/core/signals';
 
 /**
@@ -23,23 +23,18 @@ export class EffectErrorsComponent extends CustomElement {
    * Whether the effect reacting to `value` was created.
    */
   public readonly created = signal(false);
+
   /**
    * Reports the errors that escape the effect: they reach the global error handler.
    */
-  private readonly _onUncaughtError = (event: ErrorEvent): void => {
+  @HostListener('window:error')
+  public onUncaughtError(event: ErrorEvent): void {
     if (String(event.message).includes('odd value')) {
       // Marks the error as handled, so that the browser does not log it
       event.preventDefault();
       this._write(`uncaught: ${event.message}`);
     }
   };
-
-  /**
-   * Starts listening to uncaught errors, in the browser only: on the server `afterRender` does not run.
-   */
-  public afterRender(): void {
-    globalThis.addEventListener('error', this._onUncaughtError);
-  }
 
   /**
    * Creates an effect that throws on its first run: effect() itself throws, and returns no disposer.
@@ -83,12 +78,5 @@ export class EffectErrorsComponent extends CustomElement {
    */
   private _write(text: string): void {
     this.log.update(log => [...log, { id: log.length, text }]);
-  }
-
-  /**
-   * Stops listening to uncaught errors.
-   */
-  public onDestroy(): void {
-    globalThis.removeEventListener('error', this._onUncaughtError);
   }
 }

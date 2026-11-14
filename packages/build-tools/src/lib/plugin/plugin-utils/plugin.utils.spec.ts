@@ -42,7 +42,7 @@ import { type CompilerOptions, createProgram, createSourceFile, Diagnostic, Modu
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import { getLibrarySelectorOwner, getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
 import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
-import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, describeTemplateWarning, extractImportedComponentPaths, generateServerStyleModule, generateServerTemplateModule, generateStaticModule, generateStyleModule, generateTemplateModule, getImportOrExtract, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, resolveTemplateModules, stripCssComments } from './plugin.utils';
+import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, describeEventCheckDiagnostic, describeTemplateWarning, extractImportedComponentPaths, generateServerStyleModule, generateServerTemplateModule, generateStaticModule, generateStyleModule, generateTemplateModule, getImportOrExtract, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, resolveTemplateModules, stripCssComments } from './plugin.utils';
 import { Span } from '../../../../../compiler/src/types/span.type';
 
 function createMetadata(selector: string, className = 'Foo', ownerFile = '/src/foo.ts'): ComponentOrDirectiveMetadata {
@@ -1148,5 +1148,30 @@ describe('compiled libraries', () => {
     const nodes = parseTemplate('@import { Card } from \'@acme/ui\'').filter((node): node is ImportNode => node.type === ASTNodeType.Import);
 
     expect(await resolveTemplateModules(nodes, '/src', { getImport: async () => card }, { fileExists: () => true })).toEqual({ imported: ['@acme/ui/card'], watched: [] });
+  });
+});
+
+describe('describeEventCheckDiagnostic()', () => {
+  const templateSource = '<div (bubbling)="go()"></div>';
+  const eventChecks = [{ span: { start: 5, end: 22 }, nameSpan: { start: 6, end: 14 }, message: '\'bubbling\' is not an event of <div>' }];
+  const diagnostic = (code: number) => ({
+    code,
+    messageText: 'Type \'"bubbling"\' does not satisfy the expected type \'keyof HTMLElementEventMap\'.',
+    file: { getLineAndCharacterOfPosition: vi.fn().mockReturnValue({ line: 3, character: 0 }) },
+    start: 10
+  }) as unknown as Diagnostic;
+
+  it('describes the rejected name of an event the element does not declare as a warning on the name', () => {
+    vi.mocked(resolveTemplateSpan).mockReturnValue({ start: 5, end: 22 });
+
+    expect(describeEventCheckDiagnostic(templateSource, diagnostic(1360), 1, { mappingTable: new Map(), eventChecks })).toBe('[Ln 1, Col 7] - \'bubbling\' is not an event of <div>\n ---> bubbling');
+  });
+
+  it('describes nothing for another diagnostic, one outside of the template, or a template checking no event', () => {
+    vi.mocked(resolveTemplateSpan).mockReturnValue({ start: 5, end: 22 });
+
+    expect(describeEventCheckDiagnostic(templateSource, diagnostic(2339), 1, { mappingTable: new Map(), eventChecks })).toBeUndefined();
+    expect(describeEventCheckDiagnostic(templateSource, diagnostic(1360), 5, { mappingTable: new Map(), eventChecks })).toBeUndefined();
+    expect(describeEventCheckDiagnostic(templateSource, diagnostic(1360), 1, { mappingTable: new Map() })).toBeUndefined();
   });
 });

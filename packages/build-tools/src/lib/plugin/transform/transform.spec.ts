@@ -70,6 +70,7 @@ vi.mock('../plugin-utils/plugin.utils', () => ({
   createStyleModuleSpecifier: vi.fn(),
   createTemplateModuleSpecifier: vi.fn(),
   describeDiagnostic: vi.fn(),
+  describeEventCheckDiagnostic: vi.fn(),
   extractImportedComponentPaths: vi.fn(),
   generateServerStyleModule: vi.fn(),
   generateServerTemplateModule: vi.fn(),
@@ -93,7 +94,7 @@ import { registerTemplatePath, removeComponentPath } from '../../registry/templa
 import { resolvePosixPath } from '../../utils/path/path.utils';
 import { collectProjectDependencies } from '../../utils/project-dependencies/project-dependencies.utils';
 import { collectFileDiagnostics, formatTypeDiagnostics } from '../../utils/type-check/type-check.utils';
-import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, generateStaticModule, getImportOrExtract, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
+import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, describeEventCheckDiagnostic, extractImportedComponentPaths, generateStaticModule, getImportOrExtract, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 import { createTransformHook } from './transform';
 
 /**
@@ -150,6 +151,7 @@ function createState(overrides: Partial<{ fileExists: (path: string) => boolean;
     compilerOptions: {} as XaendarPluginState['compilerOptions'],
     projectFileNames: ['/project/src/globals.d.ts'],
     customElements: [],
+    strictEvents: true,
     minifyStyles: false,
     isBuild: false,
     root: '/project',
@@ -483,9 +485,9 @@ describe('createTransformHook()', () => {
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     const templatePath = resolvePosixPath(dirname(COMPONENT_PATH), './foo.xd.component.html');
-    expect(compile).toHaveBeenCalledWith('template source', { baseDir: dirname(templatePath), shadowingMembers: ['name'], reactiveMembers: ['count'], customElements: [], ssr: false, cache: expect.any(Object) });
+    expect(compile).toHaveBeenCalledWith('template source', { baseDir: dirname(templatePath), shadowingMembers: ['name'], reactiveMembers: ['count'], customElements: [], ssr: false, strictEvents: true, cache: expect.any(Object) });
     // The baseDir resolves the @import paths used as metadata owner file keys, which are posix
-    expect(compile).toHaveBeenCalledWith('template source', { baseDir: expect.not.stringContaining('\\'), shadowingMembers: ['name'], reactiveMembers: ['count'], customElements: [], ssr: false, cache: expect.any(Object) });
+    expect(compile).toHaveBeenCalledWith('template source', { baseDir: expect.not.stringContaining('\\'), shadowingMembers: ['name'], reactiveMembers: ['count'], customElements: [], ssr: false, strictEvents: true, cache: expect.any(Object) });
     expect(createTemplateModuleSpecifier).toHaveBeenCalledWith(templatePath, ['count'], ['name']);
   });
 
@@ -503,12 +505,12 @@ describe('createTransformHook()', () => {
   it('compiles a component of a library of the workspace with the options of the library', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
-    const library = { name: '@acme/ui', root: dirname(dirname(COMPONENT_PATH)), entry: '/src/public-api.ts', ssr: true, customElements: ['sl-*'] };
+    const library = { name: '@acme/ui', root: dirname(dirname(COMPONENT_PATH)), entry: '/src/public-api.ts', ssr: true, customElements: ['sl-*'], strictEvents: false };
     const hook = createTransformHook({ ...createState(), libraries: [library] });
 
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
-    expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: ['sl-*'], ssr: true }));
+    expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: ['sl-*'], ssr: true, strictEvents: false }));
     expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, true);
   });
 
@@ -520,7 +522,7 @@ describe('createTransformHook()', () => {
 
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
-    expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: [], ssr: false }));
+    expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: [], ssr: false, strictEvents: true }));
     expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, false);
   });
 
@@ -668,6 +670,24 @@ describe('createTransformHook()', () => {
     expect(result).toBeNull();
     expect(state.logError).toHaveBeenCalledWith('', expect.stringContaining('first problem'));
     expect(state.logError).toHaveBeenCalledWith('', expect.stringContaining('second problem'));
+  });
+
+  it('warns about the events the elements do not declare without failing, failing on the other diagnostics only', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
+    vi.mocked(getLanguageService).mockReturnValue({
+      getSemanticDiagnostics: vi.fn().mockReturnValue(['event-diag']),
+      getProgram: vi.fn().mockReturnValue(PROGRAM)
+    } as unknown as ReturnType<typeof getLanguageService>);
+    vi.mocked(describeEventCheckDiagnostic).mockReturnValueOnce('1:6 - \'bubbling\' is not an event of <div>');
+    const state = createState();
+    const context = createPluginContext();
+
+    const result = await createTransformHook(state).call(context, 'original code', COMPONENT_PATH, undefined);
+
+    expect(result).not.toBeNull();
+    expect(context.warn).toHaveBeenCalledWith(expect.stringContaining('\'bubbling\' is not an event of <div>'));
+    expect(state.logError).not.toHaveBeenCalled();
   });
 
   it('fails on a symbol the template imports under the name of a member of the component', async () => {

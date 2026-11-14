@@ -99,6 +99,7 @@ export function xaendarPlugin(options: XaendarPluginOptions = {}): Plugin {
     compilerOptions: withLibraryDependencies(tsConfig.options, options.library?.dependencies),
     projectFileNames: tsConfig.fileNames,
     customElements: options.customElements ?? [],
+    strictEvents: options.strictEvents ?? true,
     minifyStyles: false,
     isBuild: false,
     root: process.cwd(),

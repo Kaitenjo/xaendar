@@ -17,7 +17,7 @@ import { resolvePosixPath } from '../../utils/path/path.utils';
 import { findWorkspaceLibrary } from '../../utils/workspace-libraries/workspace-libraries.utils';
 import { collectProjectDependencies } from '../../utils/project-dependencies/project-dependencies.utils';
 import { collectFileDiagnostics, formatTypeDiagnostics } from '../../utils/type-check/type-check.utils';
-import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, extractImportedComponentPaths, generateStaticModule, getImportOrExtract, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
+import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, describeEventCheckDiagnostic, extractImportedComponentPaths, generateStaticModule, getImportOrExtract, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 
 /**
  * Vite plugin `transform` hook: for every Xaendar component declared in a `.xd.component.ts`
@@ -188,6 +188,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
             reactiveMembers: componentMembers.reactiveMembers,
             customElements: library ? library.customElements : state.customElements,
             ssr,
+            strictEvents: library?.strictEvents ?? state.strictEvents,
             cache: {
               getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
               getImport: (imported, local, baseDir, path) => getImportOrExtract(imported, local, baseDir, path, state.compilerOptions),
@@ -247,11 +248,20 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         }
       }
 
+      // The events the elements do not declare are warnings: the binding hears them when they bubble up to the element
+      let failed = false;
       for (let i = 0; i < diagnostics.length; i++) {
-        state.logError('', `[TypeChecker] Failed to compile template - ${templatePath}\n${describeDiagnostic(templateSource, diagnostics[i], shim.bodyLineOffset, typecheckBody)}`);
+        const diagnostic = diagnostics[i];
+        const warning = describeEventCheckDiagnostic(templateSource, diagnostic, shim.bodyLineOffset, typecheckBody);
+        if (warning) {
+          this.warn(`${templatePath}\n${warning}`);
+        } else {
+          failed = true;
+          state.logError('', `[TypeChecker] Failed to compile template - ${templatePath}\n${describeDiagnostic(templateSource, diagnostic, shim.bodyLineOffset, typecheckBody)}`);
+        }
       }
 
-      if (diagnostics.length) {
+      if (failed) {
         return fail();
       }
     }
