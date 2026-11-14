@@ -31,6 +31,7 @@ import type { NativeEvents } from '../../types/native-events.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
 import { castExpression } from '../../utils/cast/cast.utils';
 import { indentLines, line, mapped, mappedSegments, plain } from '../../utils/line-builder/line-builder.utils';
+import { typeCheckExhaustiveDefault, typeCheckSwitchHeader } from '../../utils/exhaustive-switch/exhaustive-switch.utils';
 import { mappedExpression, mappedInterpolation } from '../../utils/mapped-expression/mapped-expression.utils';
 import { getEventMap } from '../../utils/namespace-types/namespace-types.utils';
 import { getInstantiationSuffix, INSTANCE, typeCheckScope } from '../../utils/scope/scope.utils';
@@ -982,7 +983,8 @@ function typeCheckIfBinding(node: IfBindingNode, context: TypeCheckContext, bind
  * Type-checks a `@switch` conditional binding as a real TypeScript `switch` statement, which validates
  * each `@case` value against the type of the expression and narrows the expression inside each branch.
  *
- * The `@case`s sharing a branch are emitted as stacked `case` labels sharing the same body.
+ * The `@case`s sharing a branch are emitted as stacked `case` labels sharing the same body. A `@switch` ending with
+ * `@default never;` requires its cases to cover every value of the expression (see `typeCheckExhaustiveDefault`).
  *
  * @param node - The `@switch` conditional binding to type-check.
  * @param context - Current type-check scope.
@@ -990,9 +992,8 @@ function typeCheckIfBinding(node: IfBindingNode, context: TypeCheckContext, bind
  * @returns The generated type-check lines.
  */
 function typeCheckSwitchBinding(node: SwitchBindingNode, context: TypeCheckContext, bindings: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
-  const lines = [line('switch (', mappedExpression(node.expression, context, node.span), ') {')];
-
-  const { branches } = node;
+  const { branches, exhaustive, span } = node;
+  const lines = typeCheckSwitchHeader(node.expression, span, !!exhaustive, context);
   for (let i = 0; i < branches.length; i++) {
     const branch = branches[i];
     const labels = branch.condition?.map((condition, index) => line('case ', mapped(condition, branch.conditionSpans[index]), ':')) ?? [plain('default:')];
@@ -1002,6 +1003,10 @@ function typeCheckSwitchBinding(node: SwitchBindingNode, context: TypeCheckConte
       ...typeCheckBranch(branch, context, bindings),
       ...indentLines([plain('break;')])
     ]));
+  }
+
+  if (exhaustive) {
+    lines.push(...indentLines(typeCheckExhaustiveDefault(span, exhaustive, context)));
   }
 
   lines.push(plain('}'));

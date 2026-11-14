@@ -8,14 +8,17 @@ import { LexerTransitionFunctionReturnType } from '../../types/transition-functi
  * Dispatches on a `@keyword` to determine which flow-control directive begins here.
  * Recognises `@if`, `@for`, `@empty`, `@else`, `@switch`, `@case`, `@default`, `@hydrate`, `@client`, `@placeholder`, `@try`,
  * `@catch`, `@defer`, `@loading`, `@error`, `@render`, `@let` and `@import`. The parentheses following `@catch`, `@error`,
- * `@defer`, `@hydrate`, `@placeholder`, `@loading` and `@empty` are optional (see {@link lexBlockWithParameters}).
+ * `@defer`, `@hydrate`, `@placeholder`, `@loading` and `@empty` are optional (see {@link lexBlockWithParameters}), and
+ * `@default never;` is a statement without block (see {@link lexDefault}).
  * Advances the cursor past the keyword and transitions to the appropriate next state.
  *
  * @param cursor - The lexer cursor positioned on the `@` character.
- * @param _context - Unused lexer context.
+ * @param context - The lexer context, whose history tells whether a `@default never;` is declared among the bindings
+ *   of a tag.
  * @returns Transition result with the matching flow-control token and next state.
+ * @throws If the keyword is unknown, or `@default never` is not followed by `;`.
  */
-export function lexFlowControl(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+export function lexFlowControl(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let retVal!: LexerTransitionFunctionReturnType;
 
   // Consume '@' character
@@ -80,12 +83,7 @@ export function lexFlowControl(cursor: LexerCursor, _context: LexerTransitionFun
     };
   } else if (cursor.peekMatch('default ')) {
     cursor.advance(8);
-    retVal = {
-      state: LexerState.FLOW_CONTROL_BLOCK,
-      tokens: [{
-        type: TokenType.DEFAULT
-      }]
-    };
+    retVal = lexDefault(cursor, context);
   } else if (cursor.peekMatch('hydrate ')) {
     cursor.advance(8);
     retVal = lexBlockWithParameters(cursor, TokenType.HYDRATE);
@@ -146,6 +144,40 @@ export function lexFlowControl(cursor: LexerCursor, _context: LexerTransitionFun
   }
 
   return retVal
+}
+
+/**
+ * Lexes what follows `@default`: the block of its branch, or `never;`, the statement of an exhaustive `@switch`, which
+ * declares no branch and returns to the content, or to the bindings of the tag, holding the `@switch`.
+ *
+ * @param cursor - The lexer cursor positioned after `@default `.
+ * @param context - The lexer context, whose history tells whether the `@switch` is declared among the bindings of a tag.
+ * @returns Transition result with the DEFAULT token, flagged `never` for `@default never;`.
+ * @throws If `@default never` is not followed by `;`.
+ */
+function lexDefault(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
+  if (!cursor.peekMatchAfterSpaces('never')) {
+    return { state: LexerState.FLOW_CONTROL_BLOCK, tokens: [{ type: TokenType.DEFAULT }] };
+  }
+
+  cursor.skipSpaces();
+  if (!cursor.peekMatch(/^never(?![\w$])/, 6)) {
+    return { state: LexerState.FLOW_CONTROL_BLOCK, tokens: [{ type: TokenType.DEFAULT }] };
+  }
+
+  cursor.advance(5);
+  if (!cursor.peekMatchAfterSpaces(';')) {
+    throw '@default never declares no branch: end it with a semicolon, as in @default never;';
+  }
+
+  cursor.skipSpaces();
+  // consume ';'
+  cursor.advance();
+  return {
+    // The state opening a tag stays on the state stack until the tag is closed.
+    state: context.history.includes(LexerState.TAG_OPEN_NAME) ? LexerState.CONDITIONAL_BINDING_BODY : LexerState.TEXT,
+    tokens: [{ type: TokenType.DEFAULT, never: true }]
+  };
 }
 
 /**

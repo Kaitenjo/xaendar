@@ -650,6 +650,20 @@ describe('describeDiagnostic()', () => {
 
     expect(result).toBe('[Ln 1, Col 1] - \'line\' is a template variable, not a signal: remove the parentheses and read it as line, since the variables of a template (@for, @let, parameters of a template) hold their values\n ---> line');
   });
+
+  it('names the values the cases of a @switch ending with @default never; leave uncovered', () => {
+    vi.mocked(resolveTemplateSpan).mockReturnValue({ start: 0, end: 4 } as unknown as Span);
+    const diagnostic = {
+      code: 1360,
+      messageText: 'Type \'"error"\' does not satisfy the expected type \'never\'.',
+      file: { getLineAndCharacterOfPosition: vi.fn().mockReturnValue({ line: 3, character: 3 }) },
+      start: 10
+    } as unknown as Diagnostic;
+
+    const result = describeDiagnostic(templateSource, diagnostic, 1, { mappingTable: new Map(), exhaustiveSwitches: [{ start: 0, end: 4 }] });
+
+    expect(result).toBe('[Ln 1, Col 1] - @switch is not exhaustive: no @case covers "error". Add the missing @case, or replace @default never; with a @default branch.\n ---> line');
+  });
 });
 
 describe('getMetadataOrExtract()', () => {

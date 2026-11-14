@@ -327,3 +327,11 @@ describe('ServerGenerator', () => {
     expect(() => generate('<p></p>', [], [], [], [symbol('root')])).toThrow('"root" is reserved in templates');
   });
 });
+
+describe('ServerGenerator of an exhaustive @switch', () => {
+  it('writes for @default never; nothing more than for a @switch without @default, in the content and in a tag', () => {
+    const exhaustive = '<p>@switch (m) { @case (1) { <b></b> } @default never; }</p><i @switch (m) { @case (1) { title="a" } @default never; }></i>';
+
+    expect(generate(exhaustive)).toBe(generate(exhaustive.replace(/ @default never;/g, '')));
+  });
+});

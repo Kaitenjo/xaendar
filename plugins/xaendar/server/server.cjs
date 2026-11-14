@@ -22685,7 +22685,7 @@ function lexEvent(cursor, context) {
 }
 
 // ../packages/compiler/src/lexer/states/lex-flow-control/lex-flow-control.ts
-function lexFlowControl(cursor, _context) {
+function lexFlowControl(cursor, context) {
   let retVal;
   cursor.advance();
   if (cursor.peekMatch("for ")) {
@@ -22746,12 +22746,7 @@ function lexFlowControl(cursor, _context) {
     };
   } else if (cursor.peekMatch("default ")) {
     cursor.advance(8);
-    retVal = {
-      state: "flow-control-block" /* FLOW_CONTROL_BLOCK */,
-      tokens: [{
-        type: 17 /* DEFAULT */
-      }]
-    };
+    retVal = lexDefault(cursor, context);
   } else if (cursor.peekMatch("hydrate ")) {
     cursor.advance(8);
     retVal = lexBlockWithParameters(cursor, 32 /* HYDRATE */);
@@ -22811,6 +22806,26 @@ function lexFlowControl(cursor, _context) {
     throw "Unknown flow-control keyword";
   }
   return retVal;
+}
+function lexDefault(cursor, context) {
+  if (!cursor.peekMatchAfterSpaces("never")) {
+    return { state: "flow-control-block" /* FLOW_CONTROL_BLOCK */, tokens: [{ type: 17 /* DEFAULT */ }] };
+  }
+  cursor.skipSpaces();
+  if (!cursor.peekMatch(/^never(?![\w$])/, 6)) {
+    return { state: "flow-control-block" /* FLOW_CONTROL_BLOCK */, tokens: [{ type: 17 /* DEFAULT */ }] };
+  }
+  cursor.advance(5);
+  if (!cursor.peekMatchAfterSpaces(";")) {
+    throw "@default never declares no branch: end it with a semicolon, as in @default never;";
+  }
+  cursor.skipSpaces();
+  cursor.advance();
+  return {
+    // The state opening a tag stays on the state stack until the tag is closed.
+    state: context.history.includes("tag-open-name" /* TAG_OPEN_NAME */) ? "conditional-binding-body" /* CONDITIONAL_BINDING_BODY */ : "text" /* TEXT */,
+    tokens: [{ type: 17 /* DEFAULT */, never: true }]
+  };
 }
 function lexBlockWithParameters(cursor, type) {
   if (!cursor.peekMatchAfterSpaces("(")) {
@@ -24646,6 +24661,23 @@ function assertNoBranchClassBindings(conditionalBindings) {
   }
 }
 
+// ../packages/compiler/src/parser/utils/default-never/default-never.utils.ts
+var WITH_DEFAULT = "@default never; cannot be declared with a @default branch: it states that the @case branches cover every value of the @switch";
+function parseDefaultNever(cursor, span, declaresDefault2) {
+  if (declaresDefault2) {
+    throw new Error(WITH_DEFAULT, { cause: span });
+  }
+  cursor.advance();
+  const next = cursor.peek();
+  if (next.type === 17 /* DEFAULT */) {
+    throw new Error(WITH_DEFAULT, { cause: next.span });
+  }
+  if (next.type !== 20 /* BLOCK_CLOSE */) {
+    throw new Error("@default never; must be the last item of a @switch", { cause: span });
+  }
+  return span;
+}
+
 // ../packages/compiler/src/parser/states/parse-two-way-binding/parse-two-way-binding.state.ts
 var import_typescript9 = require("typescript");
 var TWO_WAY_BINDING_RE = /^\[\(([^\s()[\]]+)\)\]$/;
@@ -24917,12 +24949,18 @@ function parseSwitchBinding(cursor, parseNode, token) {
   const expression = validateExpression(conditionToken.parts[0], cursor.findConditionSpan(conditionToken).start).node;
   consumeBlockOpen(cursor);
   const branches = new Array();
+  let exhaustive;
   let read = true;
   while (read) {
     const branchToken = cursor.peek();
     switch (branchToken.type) {
-      case 16 /* CASE */:
       case 17 /* DEFAULT */:
+        if (branchToken.never) {
+          exhaustive = parseDefaultNever(cursor, branchToken.span, branches.at(-1)?.condition === null);
+          break;
+        }
+      // falls through: a `@default` branch is read like the `@case` ones
+      case 16 /* CASE */:
         if (branches.at(-1)?.condition === null) {
           throw new Error("@default must be the last branch of a @switch");
         }
@@ -24937,7 +24975,7 @@ function parseSwitchBinding(cursor, parseNode, token) {
         throw new Error(`Unexpected ${TokenType[branchToken.type]} inside SWITCH, expected CASE or DEFAULT`);
     }
   }
-  return {
+  const node = {
     type: 13 /* SwitchBinding */,
     expression,
     branches,
@@ -24946,6 +24984,10 @@ function parseSwitchBinding(cursor, parseNode, token) {
       end: cursor.getCurrentToken().value.span.end
     }
   };
+  if (exhaustive) {
+    node.exhaustive = exhaustive;
+  }
+  return node;
 }
 function parseCases(cursor) {
   if (cursor.peek().type === 17 /* DEFAULT */) {
@@ -26093,6 +26135,7 @@ function parseSwitchControlFlow(cursor, parseNode, _token) {
   const expression = validateExpression(conditionToken.parts[0], cursor.findConditionSpan(conditionToken).start).node;
   cursor.advance(2);
   const cases = new Array();
+  let exhaustive;
   while (cursor.peek().type !== 20 /* BLOCK_CLOSE */) {
     const token = cursor.peek();
     switch (token.type) {
@@ -26127,6 +26170,10 @@ function parseSwitchControlFlow(cursor, parseNode, _token) {
         });
         break;
       case 17 /* DEFAULT */:
+        if (token.never) {
+          exhaustive = parseDefaultNever(cursor, token.span, cases.some(({ condition: condition2 }) => condition2 === null));
+          break;
+        }
         if (cases.some(({ condition: condition2 }) => condition2 === null)) {
           throw new Error("A @switch can declare only one @default", { cause: token.span });
         }
@@ -26149,11 +26196,15 @@ function parseSwitchControlFlow(cursor, parseNode, _token) {
     }
   }
   cursor.advance();
-  return {
+  const node = {
     type: 9 /* Switch */,
     expression,
     children: cases
   };
+  if (exhaustive) {
+    node.exhaustive = exhaustive;
+  }
+  return node;
 }
 
 // ../packages/compiler/src/parser/states/parse-text/parse-text.state.ts
@@ -26366,6 +26417,11 @@ var TypeCheckContext = class extends CompilerContext {
    */
   _eventChecks = null;
   /**
+   * The spans of the `@default never;` of the template (see {@link recordExhaustiveSwitch}): kept by the outermost scope,
+   * for the whole template, `null` while there is none.
+   */
+  _exhaustiveSwitches = null;
+  /**
    * Whether the names of the events the elements do not declare are checked, warning about them: kept by the
    * outermost scope, for the whole template.
    */
@@ -26401,6 +26457,15 @@ var TypeCheckContext = class extends CompilerContext {
    */
   get eventChecks() {
     return this.parent ? this.parent.eventChecks : this._eventChecks ?? void 0;
+  }
+  /**
+   * The spans of the `@default never;` of the template (see {@link recordExhaustiveSwitch}), read from the outermost
+   * scope.
+   *
+   * @returns The spans, `undefined` when the template declares none.
+   */
+  get exhaustiveSwitches() {
+    return this.parent ? this.parent.exhaustiveSwitches : this._exhaustiveSwitches ?? void 0;
   }
   /**
    * Whether the names of the events the elements do not declare are checked, warning about them, read from the
@@ -26481,6 +26546,19 @@ var TypeCheckContext = class extends CompilerContext {
       this.parent.recordEventCheck(check);
     } else {
       this._eventChecks ? this._eventChecks.push(check) : this._eventChecks = [check];
+    }
+  }
+  /**
+   * Records in the outermost scope the `@default never;` of a `@switch`: the error TypeScript reports on it names the
+   * values no `@case` covers (see `describeExhaustiveSwitch`).
+   *
+   * @param span - The span of `@default never;`.
+   */
+  recordExhaustiveSwitch(span) {
+    if (this.parent) {
+      this.parent.recordExhaustiveSwitch(span);
+    } else {
+      this._exhaustiveSwitches ? this._exhaustiveSwitches.push(span) : this._exhaustiveSwitches = [span];
     }
   }
   /**
@@ -27657,6 +27735,38 @@ function recordCall(context, callee) {
   }
 }
 
+// ../packages/compiler/src/type-checker/utils/exhaustive-switch/exhaustive-switch.utils.ts
+var NOT_SATISFIED = 1360;
+var UNCOVERED = /^Type '(.+)' does not satisfy the expected type 'never'\.$/;
+function typeCheckSwitchHeader(expression, span, exhaustive, context) {
+  if (!exhaustive) {
+    return [line("switch (", mappedExpression(expression, context, span), ") {")];
+  }
+  const name = getSwitchConstant(span);
+  return [line(`const ${name} = `, mappedExpression(expression, context, span, ";")), plain(`switch (${name}) {`)];
+}
+function typeCheckExhaustiveDefault(span, exhaustive, context) {
+  context.recordExhaustiveSwitch(exhaustive);
+  return [plain("default:"), ...indentLines([line(mapped(`${getSwitchConstant(span)} satisfies never;`, exhaustive))])];
+}
+function describeExhaustiveSwitch(typeCheck, span, code, message) {
+  const switches = code === NOT_SATISFIED ? typeCheck.exhaustiveSwitches : void 0;
+  if (!switches?.length) {
+    return void 0;
+  }
+  for (let i2 = 0; i2 < switches.length; i2++) {
+    const { start, end } = switches[i2];
+    if (span.start >= start && span.end <= end) {
+      const uncovered = UNCOVERED.exec(message.split("\n")[0])?.[1];
+      return `@switch is not exhaustive: no @case covers ${uncovered ?? "every value of its expression"}. Add the missing @case, or replace @default never; with a @default branch.`;
+    }
+  }
+  return void 0;
+}
+function getSwitchConstant(span) {
+  return `__switch${span.start}`;
+}
+
 // ../packages/compiler/src/type-checker/utils/template-types/template-types.utils.ts
 var TEMPLATE = "__Template";
 var RENDER = "__render";
@@ -28180,8 +28290,8 @@ function typeCheckIfBinding(node, context, bindings) {
   return lines;
 }
 function typeCheckSwitchBinding(node, context, bindings) {
-  const lines = [line("switch (", mappedExpression(node.expression, context, node.span), ") {")];
-  const { branches } = node;
+  const { branches, exhaustive, span } = node;
+  const lines = typeCheckSwitchHeader(node.expression, span, !!exhaustive, context);
   for (let i2 = 0; i2 < branches.length; i2++) {
     const branch = branches[i2];
     const labels = branch.condition?.map((condition, index) => line("case ", mapped(condition, branch.conditionSpans[index]), ":")) ?? [plain("default:")];
@@ -28190,6 +28300,9 @@ function typeCheckSwitchBinding(node, context, bindings) {
       ...typeCheckBranch(branch, context, bindings),
       ...indentLines([plain("break;")])
     ]));
+  }
+  if (exhaustive) {
+    lines.push(...indentLines(typeCheckExhaustiveDefault(span, exhaustive, context)));
   }
   lines.push(plain("}"));
   return lines;
@@ -28441,8 +28554,8 @@ function typeCheckHydrate(node, processNode, context) {
 
 // ../packages/compiler/src/type-checker/states/type-check-switch/type-check-switch.state.ts
 function typeCheckSwitch(node, processNode, context) {
-  const lines = [line("switch (", mappedExpression(node.expression, context, node.span), ") {")];
-  const children = node.children;
+  const { children, exhaustive, span } = node;
+  const lines = typeCheckSwitchHeader(node.expression, span, !!exhaustive, context);
   for (let i2 = 0; i2 < children.length; i2++) {
     const caseNode = children[i2];
     const conditions = caseNode.condition;
@@ -28458,6 +28571,9 @@ function typeCheckSwitch(node, processNode, context) {
     lines.push(...indentLines(
       indentLines(declarations.length ? [plain("{"), ...indentLines(body), plain("}")] : body)
     ));
+  }
+  if (exhaustive) {
+    lines.push(...indentLines(typeCheckExhaustiveDefault(span, exhaustive, context)));
   }
   lines.push(plain("}"));
   return lines;
@@ -29092,12 +29208,15 @@ var TypeChecker = class {
       text: lines.map((line2) => line2.text).join("\n"),
       mappingTable: this.buildMappingTable(lines)
     };
-    const { variableCalls, eventChecks } = this._context;
+    const { variableCalls, eventChecks, exhaustiveSwitches } = this._context;
     if (variableCalls?.length) {
       result.variableCalls = variableCalls;
     }
     if (eventChecks?.length) {
       result.eventChecks = eventChecks;
+    }
+    if (exhaustiveSwitches?.length) {
+      result.exhaustiveSwitches = exhaustiveSwitches;
     }
     return result;
   }
@@ -29752,6 +29871,7 @@ var FOLLOWING_BRANCHES = /* @__PURE__ */ new Map([
   ["defer", ["placeholder", "loading", "error"]]
 ]);
 var NAME = /[^\s=<>/(){}"'@*]+/y;
+var NEVER = /^\s*never\s*;/;
 var TAG_NAME = /[^\s/>(]+/y;
 var TemplateLayoutError = class extends Error {
 };
@@ -30098,7 +30218,13 @@ function readSwitch(reader, readBody) {
     if (keyword !== "case" && keyword !== "default") {
       fail(`@${keyword} is not a case`);
     }
-    branches.push(readBranch(reader, keyword, readBody, keyword === "case"));
+    const never = keyword === "default" ? NEVER.exec(reader.source.slice(reader.position)) : null;
+    if (never) {
+      reader.position += never[0].length;
+      branches.push({ keyword, never: true });
+    } else {
+      branches.push(readBranch(reader, keyword, readBody, keyword === "case"));
+    }
   }
 }
 function readBranch(reader, keyword, readBody, stackable = false) {
@@ -30266,7 +30392,7 @@ ${pad(level + 1, options)}${printItem(item, level + 1, options)}`).join("");
 ${pad(level, options)}${closer}`;
 }
 function printBranchHeader(branch) {
-  return `@${branch.keyword}${branch.condition === void 0 ? "" : ` (${branch.condition})`}`;
+  return branch.never ? "@default never;" : `@${branch.keyword}${branch.condition === void 0 ? "" : ` (${branch.condition})`}`;
 }
 function printBlock(block, level, options, printBody) {
   if (block.keyword === "switch") {
@@ -30489,9 +30615,9 @@ function toSpecifiers(source, { parts: [raw], span }) {
 }
 
 // ../packages/compiler/src/type-checker/utils/event-checks/event-checks.utils.ts
-var NOT_SATISFIED = 1360;
+var NOT_SATISFIED2 = 1360;
 function findEventCheck(typeCheck, span, code) {
-  const checks = code === NOT_SATISFIED ? typeCheck.eventChecks : void 0;
+  const checks = code === NOT_SATISFIED2 ? typeCheck.eventChecks : void 0;
   if (!checks?.length) {
     return void 0;
   }
@@ -32335,9 +32461,10 @@ function getTemplateDiagnostics({ analysis, error, ast }) {
       if (eventCheck) {
         return { span: eventCheck.nameSpan, message: eventCheck.message, category: import_typescript35.DiagnosticCategory.Warning };
       }
+      const message = (0, import_typescript35.flattenDiagnosticMessageText)(diagnostic.messageText, "\n");
       return {
         span,
-        message: describeVariableCall(analysis.typeCheck, span, diagnostic.code) ?? (0, import_typescript35.flattenDiagnosticMessageText)(diagnostic.messageText, "\n"),
+        message: describeVariableCall(analysis.typeCheck, span, diagnostic.code) ?? describeExhaustiveSwitch(analysis.typeCheck, span, diagnostic.code, message) ?? message,
         category: diagnostic.category,
         code: diagnostic.code
       };

@@ -108,6 +108,7 @@ export * from './type-checker/types/type-checker-result.type';
 export * from './type-checker/types/type-checker-tolerant-result.type';
 export type * from './type-checker/types/variable-call.type';
 export * from './type-checker/utils/event-checks/event-checks.utils';
+export * from './type-checker/utils/exhaustive-switch/exhaustive-switch.utils';
 export * from './type-checker/utils/mapping-resolver/mapping-resolver.utils';
 export * from './type-checker/utils/variable-calls/variable-calls.utils';
 export * from './types';

@@ -1,4 +1,4 @@
-import { type ASTNode, describeVariableCall, findEventCheck, resolveTemplateSpan, type Span, TemplateError } from '@xaendar/compiler';
+import { type ASTNode, describeExhaustiveSwitch, describeVariableCall, findEventCheck, resolveTemplateSpan, type Span, TemplateError } from '@xaendar/compiler';
 import { type Diagnostic, DiagnosticCategory, flattenDiagnosticMessageText } from 'typescript';
 import type { TemplateAnalysisResult } from '../types/template-analysis-result.type';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
@@ -18,7 +18,8 @@ import type { TemplateDiagnostic } from '../types/template-diagnostic.type';
  * identifier or of a piece of an expression, or the whole binding otherwise. A diagnostic of a line of the shim not
  * mapped onto the template falls on the tag name of the element enclosing the closest mapped line before it. The call of
  * a variable of the template whose value is not a function is told as such (see `describeVariableCall`), and the name of
- * an event its element does not declare is a warning on the name (see `findEventCheck`).
+ * an event its element does not declare is a warning on the name (see `findEventCheck`), and the values the cases of a
+ * `@switch` ending with `@default never;` leave uncovered are named (see `describeExhaustiveSwitch`).
  *
  * @param result - The analysis of the template.
  * @returns The problems found.
@@ -45,9 +46,10 @@ export function getTemplateDiagnostics({ analysis, error, ast }: TemplateAnalysi
           return { span: eventCheck.nameSpan, message: eventCheck.message, category: DiagnosticCategory.Warning };
         }
 
+        const message = flattenDiagnosticMessageText(diagnostic.messageText, '\n');
         return {
           span,
-          message: describeVariableCall(analysis!.typeCheck, span, diagnostic.code) ?? flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
+          message: describeVariableCall(analysis!.typeCheck, span, diagnostic.code) ?? describeExhaustiveSwitch(analysis!.typeCheck, span, diagnostic.code, message) ?? message,
           category: diagnostic.category,
           code: diagnostic.code
         };

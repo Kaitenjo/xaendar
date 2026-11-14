@@ -193,13 +193,17 @@ export class TypeChecker {
       text: lines.map(line => line.text).join('\n'),
       mappingTable: this.buildMappingTable(lines)
     };
-    const { variableCalls, eventChecks } = this._context;
+    const { variableCalls, eventChecks, exhaustiveSwitches } = this._context;
     if (variableCalls?.length) {
       result.variableCalls = variableCalls;
     }
 
     if (eventChecks?.length) {
       result.eventChecks = eventChecks;
+    }
+
+    if (exhaustiveSwitches?.length) {
+      result.exhaustiveSwitches = exhaustiveSwitches;
     }
 
     return result;

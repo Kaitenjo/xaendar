@@ -558,6 +558,26 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A member of the component as the value of an @case, which only accepts literals.
 - **Fix:** Write the literal, or use @if.
 
+### `@switch is not exhaustive: no @case covers "delivered". Add the missing @case, or replace @default never; with a @default branch.`
+
+- **Cause:** A @switch ending with @default never; whose cases do not cover every value of the type of its expression: a missing case, or a type no list of cases can cover, such as string.
+- **Fix:** Add a @case for each value named, or replace @default never; with a @default block.
+
+### `[Parser] @default never; cannot be declared with a @default branch: it states that the @case branches cover every value of the @switch`
+
+- **Cause:** A @switch declaring both @default never; and a @default block.
+- **Fix:** Keep one of the two: @default never; to check the cases, the @default block to render the other values.
+
+### `[Parser] @default never; must be the last item of a @switch`
+
+- **Cause:** A @case written after @default never;.
+- **Fix:** Move @default never; to the end of the @switch.
+
+### `[Lexer] @default never declares no branch: end it with a semicolon, as in @default never;`
+
+- **Cause:** @default never written without its semicolon, or followed by a block.
+- **Fix:** Write @default never; without block, or a @default block without never.
+
 ### `'root.prices.coffee' is possibly 'undefined'.`
 
 - **Cause:** The strict options of tsconfig.json, such as noUncheckedIndexedAccess, apply to templates too.

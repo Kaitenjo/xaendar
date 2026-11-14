@@ -48,6 +48,11 @@ const FOLLOWING_BRANCHES: ReadonlyMap<string, readonly string[]> = new Map([
 const NAME = /[^\s=<>/(){}"'@*]+/y;
 
 /**
+ * What follows `@default` in `@default never;`, the statement closing an exhaustive `@switch`.
+ */
+const NEVER = /^\s*never\s*;/;
+
+/**
  * The name of an element.
  */
 const TAG_NAME = /[^\s/>(]+/y;
@@ -628,7 +633,7 @@ function readFollowingBranches<Body>(reader: Reader, keywords: readonly string[]
 }
 
 /**
- * Reads a `@switch` block, after its keyword.
+ * Reads a `@switch` block, after its keyword. A `@default never;` is a branch without body.
  *
  * @param reader - The reader, after `@switch`.
  * @param readBody - Reads what the braces of a case hold.
@@ -659,7 +664,13 @@ function readSwitch<Body>(reader: Reader, readBody: (reader: Reader) => Body): L
       fail(`@${keyword} is not a case`);
     }
 
-    branches.push(readBranch(reader, keyword, readBody, keyword === 'case'));
+    const never = keyword === 'default' ? NEVER.exec(reader.source.slice(reader.position)) : null;
+    if (never) {
+      reader.position += never[0].length;
+      branches.push({ keyword, never: true });
+    } else {
+      branches.push(readBranch(reader, keyword, readBody, keyword === 'case'));
+    }
   }
 }
 

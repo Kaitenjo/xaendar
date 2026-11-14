@@ -18,6 +18,7 @@ import type { EventNode } from '../../types/nodes/event-node.type';
 import type { IfBindingNode } from '../../types/nodes/if-binding-node.type';
 import type { StructuralDirectiveNode } from '../../types/nodes/structural-directive-node.type';
 import type { SwitchBindingNode } from '../../types/nodes/switch-binding-node.type';
+import { parseDefaultNever } from '../../utils/default-never/default-never.utils';
 import { validateExpression } from '../../utils/expression-validator/expression-validator';
 import type { ClassBindingNode } from '../../types/nodes/class-binding-node.type';
 import type { StyleBindingNode } from '../../types/nodes/style-binding-node.type';
@@ -91,8 +92,11 @@ function parseIfBinding(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode 
  * @param parseNode - Parser function for recursive child parsing.
  * @param token - The SWITCH token.
  * @returns The parsed `SwitchBindingNode`.
+ * A `@default never;` declares no branch: it is kept as the `exhaustive` span of the node (see `parseDefaultNever`).
+ *
  * @throws If the expression is missing or is not a valid expression, anything but a `@case` or a `@default` branch
- *   is declared in the block, or a branch is declared after the `@default` one.
+ *   is declared in the block, a branch is declared after the `@default` one, or a `@default never;` is not the last
+ *   item or is declared with a `@default` branch.
  */
 function parseSwitchBinding(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: SwitchToken): SwitchBindingNode {
   // consume SWITCH
@@ -102,13 +106,19 @@ function parseSwitchBinding(cursor: ParserCursor, parseNode: NoArgsFunction<ASTN
   consumeBlockOpen(cursor);
 
   const branches = new Array<ConditionalBindingBranchNode<string[]>>();
+  let exhaustive: Span | undefined;
   let read = true;
 
   while (read) {
     const branchToken = cursor.peek();
     switch (branchToken.type) {
-      case TokenType.CASE:
       case TokenType.DEFAULT:
+        if (branchToken.never) {
+          exhaustive = parseDefaultNever(cursor, branchToken.span, branches.at(-1)?.condition === null);
+          break;
+        }
+      // falls through: a `@default` branch is read like the `@case` ones
+      case TokenType.CASE:
         /*
           The `@default` branch is selected whenever it is reached,
           so a branch declared after it would never be.
@@ -131,7 +141,7 @@ function parseSwitchBinding(cursor: ParserCursor, parseNode: NoArgsFunction<ASTN
     }
   }
 
-  return {
+  const node: SwitchBindingNode = {
     type: ASTNodeType.SwitchBinding,
     expression,
     branches,
@@ -140,6 +150,11 @@ function parseSwitchBinding(cursor: ParserCursor, parseNode: NoArgsFunction<ASTN
       end: cursor.getCurrentToken().value.span.end,
     }
   };
+  if (exhaustive) {
+    node.exhaustive = exhaustive;
+  }
+
+  return node;
 }
 
 /**

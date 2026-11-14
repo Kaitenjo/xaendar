@@ -1,4 +1,5 @@
 import type { EventCheck } from './event-check.type';
+import type { Span } from '../../types/span.type';
 import type { LineMapping } from './line-mapping.type';
 import type { VariableCall } from './variable-call.type';
 
@@ -26,4 +27,9 @@ export type TypeCheckResult = {
    * the `strictEvents` option is `false`.
    */
   eventChecks?: readonly EventCheck[];
+  /**
+   * The spans of the `@default never;` of the template: the error TypeScript reports on one names the values its
+   * `@case` branches leave uncovered (see `describeExhaustiveSwitch`). `undefined` when the template declares none.
+   */
+  exhaustiveSwitches?: readonly Span[];
 }

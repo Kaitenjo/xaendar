@@ -266,6 +266,16 @@ describe('xaendar-template grammar', () => {
     expect(scopesOf(template, '\'a\'')).toContain('string.quoted.single.ts');
   });
 
+  it('colors @default never; of an exhaustive @switch, in the content and among the bindings of a tag', () => {
+    const template = '@switch (kind) { @case (\'a\') { A } @default never; }\n<p @switch (kind) { @case (\'a\') { title="a" } @default never; }></p>';
+
+    for (const occurrence of [0, 1]) {
+      expect(scopesOf(template, '@default', occurrence)).toContain('keyword.control.xaendar');
+      expect(scopesOf(template, 'never', occurrence)).toContain('support.type.primitive.xaendar');
+      expect(scopesOf(template, '; }', occurrence)).toContain('punctuation.terminator.statement.xaendar');
+    }
+  });
+
   it('colors a @try and its @catch, with the name of the error as a constant', () => {
     const template = '@try { x } @catch (failure) { { failure } } @try { y } @catch { z }';
 

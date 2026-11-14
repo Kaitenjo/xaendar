@@ -15,4 +15,8 @@ export type LayoutBranch<Body> = {
    * The content between the braces, `undefined` for a `@case` stacked on the next one.
    */
   readonly body?: Body;
+  /**
+   * Set for `@default never;` of an exhaustive `@switch`, which has no body.
+   */
+  readonly never?: true;
 };

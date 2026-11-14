@@ -134,6 +134,27 @@ describe('formatTemplate', () => {
       ));
     });
 
+    it('writes @default never; on a line of its own, in the content and among the bindings of a tag', () => {
+      expect(format('@switch(status()){@case(\'a\'){<p>x</p>}@default   never ;}')).toBe(lines(
+        '@switch (status()) {',
+        '  @case (\'a\') {',
+        '    <p>x</p>',
+        '  }',
+        '  @default never;',
+        '}'
+      ));
+      expect(format('<p @switch(a){@case(1){dir="ltr"}@default never;}></p>')).toBe(lines(
+        '<p',
+        '  @switch (a) {',
+        '    @case (1) {',
+        '      dir="ltr"',
+        '    }',
+        '    @default never;',
+        '  }',
+        '></p>'
+      ));
+    });
+
     it('writes a block with no content, or only whitespace, on two lines', () => {
       expect(format('@if (a) {}')).toBe(lines('@if (a) {', '}'));
       expect(format('<p>@if (a) {   }</p>')).toBe(lines('<p>', '  @if (a) {', '  }', '</p>'));

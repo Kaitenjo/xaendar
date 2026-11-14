@@ -33,6 +33,13 @@ describe('TypeChecker', () => {
     ].join('\n'));
   });
 
+  it('gives the spans of the @default never; of the template with the result', async () => {
+    const template = '@switch (mode) { @case (1) { a } @default never; }';
+    const { exhaustiveSwitches } = await new TypeChecker(template, parse(template)).generate([]);
+
+    expect(exhaustiveSwitches).toEqual([{ start: template.indexOf('@default'), end: template.indexOf(';') + 1 }]);
+  });
+
   it('gives the checks of the names of the native events with the result, unless strictEvents is false', async () => {
     const template = '<div (bubbling)="f()"></div>';
     const checked = await new TypeChecker(template, parse(template)).generate([]);

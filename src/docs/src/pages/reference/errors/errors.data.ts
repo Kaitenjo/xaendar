@@ -535,6 +535,26 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'TypeChecker',
+    message: '@switch is not exhaustive: no @case covers "delivered". Add the missing @case, or replace @default never; with a @default branch.',
+    page: 'templates/switch'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] @default never; cannot be declared with a @default branch: it states that the @case branches cover every value of the @switch',
+    page: 'templates/switch'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] @default never; must be the last item of a @switch',
+    page: 'templates/switch'
+  },
+  {
+    phase: 'Lexer',
+    message: '[Lexer] @default never declares no branch: end it with a semicolon, as in @default never;',
+    page: 'templates/switch'
+  },
+  {
+    phase: 'TypeChecker',
     message: "'root.prices.coffee' is possibly 'undefined'.",
     page: 'templates/expressions'
   },

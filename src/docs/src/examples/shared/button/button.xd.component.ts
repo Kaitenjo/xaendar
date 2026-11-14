@@ -75,11 +75,11 @@ export class ButtonComponent extends CustomElement {
    *
    * @param event - The key pressed while the button has the focus.
    */
-  @HostListener('keyup')
+  @HostListener('keyup.enter')
+  @HostListener('keyup.space')
   public press(event: KeyboardEvent): void {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      this.click();
-    }
+    event.stopPropagation();
+    event.preventDefault();
+    this.click();
   }
 }

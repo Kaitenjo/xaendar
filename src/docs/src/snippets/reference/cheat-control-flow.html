@@ -32,6 +32,12 @@
   }
 }
 
+@switch (state()) {                    <!-- state(): 'idle' | 'error' -->
+  @case ('idle') { … }
+  @case ('error') { … }
+  @default never;                      <!-- every value has a @case: checked by the build -->
+}
+
 @try {                                                    <!-- the first render only -->
   <p>{ settings().theme.name }</p>
 } @catch (error) {                                         <!-- or @catch { … } -->

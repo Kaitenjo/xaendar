@@ -9,6 +9,7 @@ import { ASTNodeType } from '../../types/node.enum';
 import { CaseNode } from '../../types/nodes/case-node.type';
 import { SwitchNode } from '../../types/nodes/switch-node.type';
 import { validateExpression } from '../../utils/expression-validator/expression-validator';
+import { parseDefaultNever } from '../../utils/default-never/default-never.utils';
 import { parseBlockChildren } from '../parse-block-children/parse-block-children.state';
 
 /**
@@ -19,8 +20,10 @@ import { parseBlockChildren } from '../parse-block-children/parse-block-children
  * @param parseNode - Parser function for recursive child parsing.
  * @param _token - The SWITCH token (consumed for position advancement).
  * @returns The parsed `SwitchNode`.
+ * A `@default never;` declares no branch: it is kept as the `exhaustive` span of the node (see `parseDefaultNever`).
+ *
  * @throws If the condition or a case condition is missing, anything but a `@case` or a `@default` branch is declared
- *   in the block, or a second `@default` is.
+ *   in the block, a second `@default` is, or a `@default never;` is not the last item or is declared with a `@default`.
  */
 export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, _token: SwitchToken): MaybeASTNodeWithSpan<SwitchNode> {
   // consume SWITCH
@@ -36,6 +39,7 @@ export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFu
   cursor.advance(2);
 
   const cases = new Array<CaseNode>;
+  let exhaustive: Span | undefined;
 
   while (cursor.peek().type !== TokenType.BLOCK_CLOSE) {
     const token = cursor.peek();
@@ -92,6 +96,11 @@ export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFu
         break;
 
       case TokenType.DEFAULT:
+        if (token.never) {
+          exhaustive = parseDefaultNever(cursor, token.span, cases.some(({ condition }) => condition === null));
+          break;
+        }
+
         // A second `@default` would replace the first one, which is selected whenever no case matches
         if (cases.some(({ condition }) => condition === null)) {
           throw new Error('A @switch can declare only one @default', { cause: token.span });
@@ -122,9 +131,14 @@ export function parseSwitchControlFlow(cursor: ParserCursor, parseNode: NoArgsFu
   // consume outer BLOCK_CLOSE
   cursor.advance();
 
-  return {
+  const node: MaybeASTNodeWithSpan<SwitchNode> = {
     type: ASTNodeType.Switch,
     expression,
     children: cases
   };
+  if (exhaustive) {
+    node.exhaustive = exhaustive;
+  }
+
+  return node;
 }

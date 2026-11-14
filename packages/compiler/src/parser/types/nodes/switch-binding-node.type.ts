@@ -1,4 +1,5 @@
 import type { Expression } from 'typescript';
+import type { Span } from '../../../types/span.type';
 import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
 import type { ASTNodeType } from '../node.enum';
 import type { ConditionalBindingBranchNode } from './conditional-binding-branch-node.type';
@@ -21,4 +22,9 @@ export type SwitchBindingNode = ASTNodeWithSpan<{
    * of the expression among its conditions, the `@default` branch being the only one without conditions.
    */
   branches: ConditionalBindingBranchNode<string[]>[];
+  /**
+   * The span of `@default never;`, when the `@switch` ends with it: it declares no branch, and the type-check requires
+   * the `@case` branches to cover every value of the expression.
+   */
+  exhaustive?: Span;
 }>

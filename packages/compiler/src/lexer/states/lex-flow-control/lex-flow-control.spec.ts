@@ -78,6 +78,29 @@ describe('lexFlowControl', () => {
     });
   });
 
+  it('reads @default never; as a statement without block, returning to the content or to the bindings of the tag', () => {
+    expect(lexFlowControl(new LexerCursor('@default  never ; }'), context)).toEqual({
+      state: LexerState.TEXT,
+      tokens: [{ type: TokenType.DEFAULT, never: true }]
+    });
+    expect(lexFlowControl(new LexerCursor('@default never;}'), { history: [LexerState.TAG_OPEN_NAME], tokens: [] })).toEqual({
+      state: LexerState.CONDITIONAL_BINDING_BODY,
+      tokens: [{ type: TokenType.DEFAULT, never: true }]
+    });
+  });
+
+  it('reads a @default whose block follows a name starting like never as a @default', () => {
+    expect(lexFlowControl(new LexerCursor('@default neverland {'), context)).toEqual({
+      state: LexerState.FLOW_CONTROL_BLOCK,
+      tokens: [{ type: TokenType.DEFAULT }]
+    });
+  });
+
+  it('throws on @default never without a semicolon', () => {
+    expect(() => lexFlowControl(new LexerCursor('@default never }'), context)).toThrow('@default never declares no branch: end it with a semicolon, as in @default never;');
+    expect(() => lexFlowControl(new LexerCursor('@default never'), context)).toThrow('@default never declares no branch');
+  });
+
   it('recognises @try', () => {
     const cursor = new LexerCursor('@try {');
     expect(lexFlowControl(cursor, context)).toEqual({

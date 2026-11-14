@@ -2,8 +2,8 @@ import { SwitchNode } from '../../../parser/types/nodes/switch-node.type';
 import { TypeCheckContext } from '../../models/context/context';
 import type { Line } from '../../types/line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
+import { typeCheckExhaustiveDefault, typeCheckSwitchHeader } from '../../utils/exhaustive-switch/exhaustive-switch.utils';
 import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';
-import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
 import { typeCheckScope } from '../../utils/scope/scope.utils';
 
 /**
@@ -22,11 +22,19 @@ import { typeCheckScope } from '../../utils/scope/scope.utils';
  * JS/TS fallthrough syntax directly.
  *
  * Each body is a scope of its own, starting with the declarations of the element refs it declares.
+ *
+ * A `@switch` ending with `@default never;` requires its cases to cover every value of the expression: its value is
+ * kept in a constant the cases narrow, and the `default` requires what is left to be `never` (see
+ * `typeCheckExhaustiveDefault`).
+ *
+ * @param node - The `@switch` to type-check.
+ * @param processNode - Type-checks each node of the bodies.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines.
  */
 export function typeCheckSwitch(node: SwitchNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
-  const lines = [line('switch (', mappedExpression(node.expression, context, node.span), ') {')];
-
-  const children = node.children;
+  const { children, exhaustive, span } = node;
+  const lines = typeCheckSwitchHeader(node.expression, span, !!exhaustive, context);
   for (let i = 0; i < children.length; i++) {
     const caseNode = children[i];
     const conditions = caseNode.condition;
@@ -44,6 +52,10 @@ export function typeCheckSwitch(node: SwitchNode, processNode: ProcessNode, cont
     lines.push(...indentLines(
       indentLines(declarations.length ? [plain('{'), ...indentLines(body), plain('}')] : body)
     ));
+  }
+
+  if (exhaustive) {
+    lines.push(...indentLines(typeCheckExhaustiveDefault(span, exhaustive, context)));
   }
 
   lines.push(plain('}'));

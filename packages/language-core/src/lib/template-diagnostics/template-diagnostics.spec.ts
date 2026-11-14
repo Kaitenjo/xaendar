@@ -695,3 +695,61 @@ describe('getTemplateDiagnostics host directives', () => {
     ]);
   }, TIMEOUT);
 });
+
+describe('getTemplateDiagnostics of an exhaustive @switch', () => {
+  beforeAll(() => {
+    project.write('src/status.ts', [
+      'import { CustomElement, WebComponent } from \'@xaendar/core\';',
+      'import type { Signal } from \'@xaendar/core/signals\';',
+      'import { Status } from \'./utils\';',
+      '@WebComponent({ selector: \'my-status\', templateUrl: \'./status.html\' })',
+      'export class StatusView extends CustomElement {',
+      '  declare state: Signal<\'idle\' | \'loading\' | \'error\'>;',
+      '  declare level: Signal<1 | 2>;',
+      '  declare kind: Signal<Status>;',
+      '  declare label: Signal<string>;',
+      '}',
+      ''
+    ].join('\n'));
+  });
+
+  /**
+   * Analyzes a source as the template of `StatusView` and returns its diagnostics as the text they are reported on and
+   * their message.
+   */
+  const diagnoseStatus = async (source: string) => {
+    const analysis = await analyzeTemplate(project.path('src/status.html'), source, new Map([[project.path('src/status.ts'), ['StatusView']]]));
+    return getTemplateDiagnostics(analysis).map(({ span, message, category }) => [source.slice(span.start, span.end), message, category]);
+  };
+
+  it('reports nothing when the cases cover every value of a union', async () => {
+    expect(await diagnoseStatus([
+      '@import { Status } from \'./utils\';',
+      '@switch (state()) { @case (\'idle\') @case (\'loading\') { a } @case (\'error\') { b } @default never; }',
+      '@switch (level()) { @case (1) { a } @case (2) { b } @default never; }',
+      '@switch (kind()) { @case (Status.Active) { a } @case (Status.Archived) { b } @default never; }',
+      '<p @switch (level()) { @case (1) { title="a" } @case (2) { title="b" } @default never; }></p>'
+    ].join('\n'))).toEqual([]);
+  }, TIMEOUT);
+
+  it('names the values the cases leave uncovered on @default never;, in the content and among the bindings of a tag', async () => {
+    expect(await diagnoseStatus([
+      '@import { Status } from \'./utils\';',
+      '@switch (state()) { @case (\'idle\') { a } @default never; }',
+      '@switch (level()) { @case (1) { a } @default never; }',
+      '@switch (kind()) { @case (Status.Active) { a } @default never; }',
+      '<p @switch (state()) { @case (\'idle\') @case (\'loading\') { title="a" } @default never; }></p>'
+    ].join('\n'))).toEqual([
+      ['@default never;', '@switch is not exhaustive: no @case covers "loading" | "error". Add the missing @case, or replace @default never; with a @default branch.', DiagnosticCategory.Error],
+      ['@default never;', '@switch is not exhaustive: no @case covers 2. Add the missing @case, or replace @default never; with a @default branch.', DiagnosticCategory.Error],
+      ['@default never;', '@switch is not exhaustive: no @case covers Status.Archived. Add the missing @case, or replace @default never; with a @default branch.', DiagnosticCategory.Error],
+      ['@default never;', '@switch is not exhaustive: no @case covers "error". Add the missing @case, or replace @default never; with a @default branch.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports a type no case can cover, as string', async () => {
+    expect(await diagnoseStatus('@switch (label()) { @case (\'a\') { a } @default never; }')).toEqual([
+      ['@default never;', '@switch is not exhaustive: no @case covers string. Add the missing @case, or replace @default never; with a @default branch.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+});

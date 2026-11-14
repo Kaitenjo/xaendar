@@ -1756,7 +1756,7 @@
         },
         "controlFlow": {
           "title": "Control flow",
-          "p1": "The variables of <code>@for</code> are the item, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code>, <code>$odd</code> and <code>$count</code>, values read without parentheses, and an <code>@empty</code> follows the block. Any iterable can be iterated, a <code>Map</code> or a <code>Set</code> included. See <a href=\"#/en/templates/if\">@if</a>, <a href=\"#/en/templates/for\">@for</a>, <a href=\"#/en/templates/switch\">@switch</a>, <a href=\"#/en/templates/try\">@try</a> and <a href=\"#/en/templates/defer\">@defer</a>, and <a href=\"#/en/tools/ssr/progressive-hydration\">Server-side rendering</a> for <code>@hydrate</code>."
+          "p1": "The variables of <code>@for</code> are the item, <code>$index</code>, <code>$first</code>, <code>$last</code>, <code>$even</code>, <code>$odd</code> and <code>$count</code>, values read without parentheses, and an <code>@empty</code> follows the block. Any iterable can be iterated, a <code>Map</code> or a <code>Set</code> included. <code>@default never;</code> in place of the <code>@default</code> block makes the build check that the cases of a <code>@switch</code> cover every value of its type. See <a href=\"#/en/templates/if\">@if</a>, <a href=\"#/en/templates/for\">@for</a>, <a href=\"#/en/templates/switch\">@switch</a>, <a href=\"#/en/templates/try\">@try</a> and <a href=\"#/en/templates/defer\">@defer</a>, and <a href=\"#/en/tools/ssr/progressive-hydration\">Server-side rendering</a> for <code>@hydrate</code>."
         },
         "templates": {
           "title": "Templates and @render",
@@ -2621,6 +2621,12 @@
           "example1": "The status of an order",
           "p1": "The comparison is strict, <code>===</code>: <code>@case (1)</code> does not match the string <code>'1'</code>. Cases written one after the other without a block share the block of the last one, as <em>pending</em> and <em>paid</em> do. As with <code>@if</code>, the block is rendered again only when another case wins."
         },
+        "exhaustive": {
+          "title": "Exhaustive cases",
+          "p1": "When the value has a finite type, such as a union of strings or numbers, or an enum, <code>@default never;</code> in place of the <code>@default</code> block asks the build to check that the cases cover every value. It has no block and renders nothing: when no case matches, nothing is rendered, as in a <code>@switch</code> without <code>@default</code>.",
+          "p2": "A value no case covers is an error, in the build and in the editor, reported on <code>@default never;</code> with the values left out. Without the <code>delivered</code> case, the same <code>@switch</code> fails the build:",
+          "p3": "<code>@default never;</code> ends the <code>@switch</code>, and cannot be written together with a <code>@default</code> block. A value of a type no list of cases can cover, such as <code>string</code>, <code>number</code> or <code>any</code>, is always an error: keep a <code>@default</code> block there. It works the same way in a <code>@switch</code> among the bindings of a tag (see <a href=\"#/en/templates/conditional-bindings\">Conditional bindings</a>)."
+        },
         "edgeCases": {
           "title": "Edge cases",
           "example1": "A @default before the cases",
@@ -2639,7 +2645,8 @@
           "td1": "Compares the value with the cases, in order.",
           "td2": "Rendered when the value is <code>=== 'a'</code>.",
           "td3": "One block for several values.",
-          "td4": "Rendered when no case matches, wherever it is written."
+          "td4": "Rendered when no case matches, wherever it is written.",
+          "td5": "No block: the cases must cover every value of the type, or the build fails."
         }
       },
       "elementRefs": {
@@ -4413,6 +4420,22 @@
     "Error: @HostProperty('class.on') on second binds the class on, which another member binds already": {
       "cause": "Two members of a class, or of the classes it extends, binding the same class, the same style property or the same string of class or style with @HostProperty. Thrown when the class is defined.",
       "fix": "Bind each class and each property with one member, computing its value from the others in a getter."
+    },
+    "@switch is not exhaustive: no @case covers \"delivered\". Add the missing @case, or replace @default never; with a @default branch.": {
+      "cause": "A @switch ending with @default never; whose cases do not cover every value of the type of its expression: a missing case, or a type no list of cases can cover, such as string.",
+      "fix": "Add a @case for each value named, or replace @default never; with a @default block."
+    },
+    "[Parser] @default never; cannot be declared with a @default branch: it states that the @case branches cover every value of the @switch": {
+      "cause": "A @switch declaring both @default never; and a @default block: the first states that the cases cover every value, the second renders the values they do not cover.",
+      "fix": "Keep one of the two: @default never; to check the cases, the @default block to render the other values."
+    },
+    "[Parser] @default never; must be the last item of a @switch": {
+      "cause": "A @case written after @default never;.",
+      "fix": "Move @default never; to the end of the @switch."
+    },
+    "[Lexer] @default never declares no branch: end it with a semicolon, as in @default never;": {
+      "cause": "@default never written without the semicolon closing it, or followed by a block.",
+      "fix": "Write @default never; with its semicolon and without block, or a @default block without never."
     }
   }
 }

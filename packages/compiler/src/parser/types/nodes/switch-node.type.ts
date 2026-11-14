@@ -1,4 +1,5 @@
 import { Expression } from 'typescript';
+import type { Span } from '../../../types/span.type';
 import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
 import { ASTNodeType } from '../node.enum';
 import { CaseNode } from './case-node.type';
@@ -19,4 +20,9 @@ export type SwitchNode = ASTNodeWithSpan<{
    * The list of `@case` and `@default` branches.
    */
   children: CaseNode[];
+  /**
+   * The span of `@default never;`, when the `@switch` ends with it: it declares no branch, so nothing is rendered for
+   * it, and the type-check requires the `@case` branches to cover every value of the expression.
+   */
+  exhaustive?: Span;
 }>

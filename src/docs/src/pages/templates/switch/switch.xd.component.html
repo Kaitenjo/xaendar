@@ -25,6 +25,15 @@
 </docs-example>
 <p @@htmlTranslation(key="pages.templates.switch.cases.p1") />
 
+<h2>
+  { t(translations(), 'pages.templates.switch.exhaustive.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.switch.exhaustive.p1") />
+<docs-code snippet="templates/switch-exhaustive.html" />
+<p @@htmlTranslation(key="pages.templates.switch.exhaustive.p2") />
+<docs-code snippet="templates/switch-exhaustive-error.txt" />
+<p @@htmlTranslation(key="pages.templates.switch.exhaustive.p3") />
+
 <section class="edge-cases">
   <h2>
     { t(translations(), 'pages.templates.switch.edgeCases.title') }
@@ -93,6 +102,14 @@
         </td>
         <td>
           { t(translations(), 'pages.templates.switch.summary.td4') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@default never;' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.templates.switch.summary.td5') }
         </td>
       </tr>
     </tbody>

@@ -31,6 +31,32 @@ describe('typeCheckSwitch', () => {
     expect(lines[0].mappings![0]).toBeDefined();
   });
 
+  it('keeps the value of an exhaustive switch in a constant, whose default must be never, mapped onto @default never; and recorded', () => {
+    const template = '@switch (mode()) { @case (\'idle\') { <a></a> } @default never; }';
+    const context = new TypeCheckContext();
+    const lines = typeCheckSwitch(parse(template), processNode, context);
+    const exhaustive = { start: template.indexOf('@default'), end: template.indexOf(';') + 1 };
+
+    expect(lines.map(l => l.text)).toEqual([
+      'const __switch0 = root.mode();',
+      'switch (__switch0) {',
+      '  case \'idle\':',
+      '    child;',
+      '    break;',
+      '  default:',
+      '    __switch0 satisfies never;',
+      '}'
+    ]);
+    expect(lines[0].mappings![0]).toBeDefined();
+    expect(lines[6].mappings).toEqual([{ columnStart: 4, columnEnd: 30, original: exhaustive }]);
+    expect(context.exhaustiveSwitches).toEqual([exhaustive]);
+    expect(new TypeCheckContext(context).exhaustiveSwitches).toBe(context.exhaustiveSwitches);
+
+    // A @switch of a nested scope is recorded in the outermost one
+    typeCheckSwitch(parse(template), processNode, new TypeCheckContext(context));
+    expect(context.exhaustiveSwitches).toEqual([exhaustive, exhaustive]);
+  });
+
   it('writes the body of a case declaring element refs in a block of its own, starting with their declarations', () => {
     const template = '@switch (x) { @case (1) { <input #field /> } @default { <select #field /> } }';
     const lines = typeCheckSwitch(parse(template), processNode, new TypeCheckContext());

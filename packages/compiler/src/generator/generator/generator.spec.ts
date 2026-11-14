@@ -689,3 +689,11 @@ describe('Generator', () => {
     await expect(new Generator('hello', ast, cache).generate([])).rejects.toThrow('[Generator] No transition function for ASTNode of type Case');
   });
 });
+
+describe('Generator of an exhaustive @switch', () => {
+  it('writes for @default never; nothing more than for a @switch without @default, in the content and in a tag', async () => {
+    const exhaustive = '<p>@switch (m) { @case (1) { <b></b> } @default never; }</p><i @switch (m) { @case (1) { title="a" } @default never; }></i>';
+
+    expect(await generate(exhaustive)).toBe(await generate(exhaustive.replace(/ @default never;/g, '')));
+  });
+});

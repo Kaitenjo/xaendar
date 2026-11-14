@@ -1,5 +1,5 @@
 import { slice } from '@xaendar/common';
-import { type CompilerHost, ComponentOrDirectiveMetadata, type ContextCache, Cursor, describeSelectorConflict, describeVariableCall, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, findEventCheck, type ImportedSymbol, type ImportNode, isReactiveExport, type LibraryComponentMetadata, type LibraryDirectiveMetadata, readLibraryMetadata, resolveExportedClass, resolveTemplateSpan, type Span, TypeCheckResult } from '@xaendar/compiler';
+import { type CompilerHost, ComponentOrDirectiveMetadata, type ContextCache, Cursor, describeExhaustiveSwitch, describeSelectorConflict, describeVariableCall, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, findEventCheck, type ImportedSymbol, type ImportNode, isReactiveExport, type LibraryComponentMetadata, type LibraryDirectiveMetadata, readLibraryMetadata, resolveExportedClass, resolveTemplateSpan, type Span, TypeCheckResult } from '@xaendar/compiler';
 import { resolveModule, resolveModulePath, type TemplateWarning } from '@xaendar/language-core';
 import type MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
@@ -348,18 +348,19 @@ export function injectTemplate(code: MagicString, sourceFile: SourceFile, module
  * @param diagnostic - The TS diagnostic reported on the shim.
  * @param bodyLineOffset - The line of the shim where the template body starts.
  * @param typeCheck - The type-check code of the template: the mapping from shim positions to template spans, and the
- *   calls of the variables of the template, whose error is told as such (see `describeVariableCall`).
+ *   calls of the variables of the template, whose error is told as such (see `describeVariableCall`), and its
+ *   `@default never;`, whose error names the values left uncovered (see `describeExhaustiveSwitch`).
  * @returns The diagnostic message, prefixed with its template position and followed by the
  *   offending template snippet when the diagnostic can be mapped back to the template.
  */
-export function describeDiagnostic(templateSource: string, diagnostic: Diagnostic, bodyLineOffset: number, typeCheck: Pick<TypeCheckResult, 'mappingTable' | 'variableCalls'>): string {
+export function describeDiagnostic(templateSource: string, diagnostic: Diagnostic, bodyLineOffset: number, typeCheck: Pick<TypeCheckResult, 'mappingTable' | 'variableCalls' | 'exhaustiveSwitches'>): string {
   let message = typeof diagnostic.messageText === 'string' ? diagnostic.messageText : diagnostic.messageText.messageText;
   const templateSpan = locateDiagnostic(diagnostic, bodyLineOffset, typeCheck.mappingTable);
   if (!templateSpan) {
     return message;
   }
 
-  message = describeVariableCall(typeCheck, templateSpan, diagnostic.code) ?? message;
+  message = describeVariableCall(typeCheck, templateSpan, diagnostic.code) ?? describeExhaustiveSwitch(typeCheck, templateSpan, diagnostic.code, message) ?? message;
   const templatePosition = new Cursor(templateSource).getPositionFromCharacterIndex(templateSpan.start);
   return `${templatePosition} - ${message}\n ---> ${slice(templateSource, templateSpan.start, templateSpan.end)}`;
 }

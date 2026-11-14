@@ -7,6 +7,7 @@ import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { SymbolImport } from '../../../types/symbol-import.type';
 import type { ElementEventMap } from '../../types/element-event-map.type';
 import type { EventCheck } from '../../types/event-check.type';
+import type { Span } from '../../../types/span.type';
 import type { VariableCall } from '../../types/variable-call.type';
 import { getEventMap } from '../../utils/namespace-types/namespace-types.utils';
 
@@ -50,6 +51,11 @@ export class TypeCheckContext extends CompilerContext {
    */
   private _eventChecks: EventCheck[] | null = null;
   /**
+   * The spans of the `@default never;` of the template (see {@link recordExhaustiveSwitch}): kept by the outermost scope,
+   * for the whole template, `null` while there is none.
+   */
+  private _exhaustiveSwitches: Span[] | null = null;
+  /**
    * Whether the names of the events the elements do not declare are checked, warning about them: kept by the
    * outermost scope, for the whole template.
    */
@@ -88,6 +94,16 @@ export class TypeCheckContext extends CompilerContext {
    */
   public get eventChecks(): readonly EventCheck[] | undefined {
     return this.parent ? this.parent.eventChecks : this._eventChecks ?? undefined;
+  }
+
+  /**
+   * The spans of the `@default never;` of the template (see {@link recordExhaustiveSwitch}), read from the outermost
+   * scope.
+   *
+   * @returns The spans, `undefined` when the template declares none.
+   */
+  public get exhaustiveSwitches(): readonly Span[] | undefined {
+    return this.parent ? this.parent.exhaustiveSwitches : this._exhaustiveSwitches ?? undefined;
   }
 
   /**
@@ -176,6 +192,20 @@ export class TypeCheckContext extends CompilerContext {
       this.parent.recordEventCheck(check);
     } else {
       this._eventChecks ? this._eventChecks.push(check) : this._eventChecks = [check];
+    }
+  }
+
+  /**
+   * Records in the outermost scope the `@default never;` of a `@switch`: the error TypeScript reports on it names the
+   * values no `@case` covers (see `describeExhaustiveSwitch`).
+   *
+   * @param span - The span of `@default never;`.
+   */
+  public recordExhaustiveSwitch(span: Span): void {
+    if (this.parent) {
+      this.parent.recordExhaustiveSwitch(span);
+    } else {
+      this._exhaustiveSwitches ? this._exhaustiveSwitches.push(span) : this._exhaustiveSwitches = [span];
     }
   }
 

@@ -63,6 +63,30 @@ describe('parseSwitchControlFlow', () => {
     expect((parse('@switch (x) { @default { a } @case (1) { b } }') as SwitchNode[])[0].children.map(({ condition }) => condition)).toEqual([null, ['1']]);
   });
 
+  it('keeps @default never; as the span of an exhaustive switch, declaring no case', () => {
+    const template = '@switch (x) { @case (1) { a } @default never; }';
+    const [node] = parse(template) as SwitchNode[];
+
+    expect(node.children.map(({ condition }) => condition)).toEqual([['1']]);
+    expect(node.exhaustive).toEqual({ start: template.indexOf('@default'), end: template.indexOf(';') + 1 });
+    expect((parse('@switch (x) { @case (1) { a } }') as SwitchNode[])[0]).not.toHaveProperty('exhaustive');
+  });
+
+  it.each([
+    ['after a @default branch', '@switch (x) { @default { a } @default never; }', '@default never;'],
+    ['before a @default branch', '@switch (x) { @default never; @default { a } }', '@default {']
+  ])('throws on @default never; %s', (_description, template, located) => {
+    const start = template.indexOf(located);
+    expect(() => parse(template)).toThrow(expect.objectContaining({
+      detail: '@default never; cannot be declared with a @default branch: it states that the @case branches cover every value of the @switch',
+      span: { start, end: start + (located === '@default never;' ? located.length : '@default '.length) }
+    }));
+  });
+
+  it('throws on @default never; followed by a case', () => {
+    expect(() => parse('@switch (x) { @default never; @case (1) { a } }')).toThrow('@default never; must be the last item of a @switch');
+  });
+
   it('locates the expression and the case conditions in the template', () => {
     const template = '@switch (kind()) { @case (\'a\') @case (Kind.B) { x } @default { y } }';
     const [node] = parse(template) as SwitchNode[];

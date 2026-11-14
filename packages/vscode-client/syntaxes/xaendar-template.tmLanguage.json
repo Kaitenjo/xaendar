@@ -17,6 +17,7 @@
     { "include": "#block-parameters" },
     { "include": "#control-flow" },
     { "include": "#catch" },
+    { "include": "#default-never" },
     { "include": "#control-flow-bare" },
     { "include": "#render" },
     { "include": "#let" },
@@ -165,6 +166,7 @@
           "patterns": [
             { "include": "#event" },
             { "include": "#control-flow" },
+            { "include": "#default-never" },
             { "include": "#control-flow-bare" },
             { "include": "#block-close" },
             { "include": "#directive-attribute" }
@@ -373,6 +375,14 @@
         "3": { "name": "variable.other.constant.xaendar" },
         "4": { "name": "punctuation.section.parens.end.xaendar" },
         "5": { "name": "punctuation.section.block.begin.xaendar" }
+      }
+    },
+    "default-never": {
+      "match": "(@default)\\s+(never)\\s*(;)",
+      "captures": {
+        "1": { "name": "keyword.control.xaendar" },
+        "2": { "name": "support.type.primitive.xaendar" },
+        "3": { "name": "punctuation.terminator.statement.xaendar" }
       }
     },
     "control-flow-bare": {

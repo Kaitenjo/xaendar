@@ -136,6 +136,22 @@ describe('parseConditionalBinding', () => {
     ])('throws when %s is declared after the @default branch', (_description, template) => {
       expect(() => parse(template)).toThrow('@default must be the last branch of a @switch');
     });
+
+    it('keeps @default never; as the span of an exhaustive switch, declaring no branch', () => {
+      const template = '<div @switch (mode()) { @case (1) { title="x" } @default never; }></div>';
+      const node = parse(template)[0].conditionalBindings[0] as SwitchBindingNode;
+
+      expect(node.branches.map(({ condition }) => condition)).toEqual([['1']]);
+      expect(node.exhaustive).toEqual({ start: template.indexOf('@default'), end: template.indexOf(';') + 1 });
+    });
+
+    it.each([
+      ['after a @default branch', '<div @switch (mode()) { @default { title="x" } @default never; }></div>', '@default never; cannot be declared with a @default branch'],
+      ['before a @default branch', '<div @switch (mode()) { @default never; @default { title="x" } }></div>', '@default never; cannot be declared with a @default branch'],
+      ['before a @case', '<div @switch (mode()) { @default never; @case (1) { title="x" } }></div>', '@default never; must be the last item of a @switch']
+    ])('throws on @default never; %s', (_description, template, message) => {
+      expect(() => parse(template)).toThrow(message);
+    });
   });
 
   it('parses the directives applied inside a conditional binding', () => {

@@ -274,13 +274,13 @@ function printItems(items: readonly LayoutItem[], level: number, options: Templa
 }
 
 /**
- * Writes the header of a branch of a block: `@if (condition)`, `@else`.
+ * Writes the header of a branch of a block: `@if (condition)`, `@else`, or the whole `@default never;`.
  *
  * @param branch - The branch.
  * @returns The header.
  */
 function printBranchHeader<Body>(branch: LayoutBranch<Body>): string {
-  return `@${branch.keyword}${branch.condition === undefined ? '' : ` (${branch.condition})`}`;
+  return branch.never ? '@default never;' : `@${branch.keyword}${branch.condition === undefined ? '' : ` (${branch.condition})`}`;
 }
 
 /**

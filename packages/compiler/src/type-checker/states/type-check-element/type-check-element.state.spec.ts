@@ -205,6 +205,22 @@ describe('typeCheckElement', () => {
       expect(lines[0].mappings![0]).toEqual({ columnStart: 8, columnEnd: 19, original: { start: template.indexOf('@switch'), end: template.lastIndexOf('}') + 1 } });
     });
 
+    it('type-checks a @switch ending with @default never; requiring what its cases leave to be never', () => {
+      const template = '<div @switch (mode()) { @case (\'a\') { title="{x}" } @default never; }></div>';
+      const start = template.indexOf('@switch');
+
+      expect(text(run(template))).toEqual([
+        `const __switch${start} = root.mode();`,
+        `switch (__switch${start}) {`,
+        '  case \'a\':',
+        '    root.x;',
+        '    break;',
+        '  default:',
+        `    __switch${start} satisfies never;`,
+        '}'
+      ]);
+    });
+
     it('type-checks a @switch without branches', () => {
       expect(text(run('<div @switch (mode()) { }></div>'))).toEqual(['switch (root.mode()) {', '}']);
     });
