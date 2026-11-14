@@ -1,7 +1,7 @@
 {
   "name": "xaendar",
   "displayName": "Xaendar",
-  "version": "1.2.7",
+  "version": "1.2.9",
   "description": "Write Xaendar Web Components: template language, API, patterns and conventions, xd CLI commands to scaffold, check and test, a component reviewer and the Xaendar language server",
   "author": {
     "name": "Kaitenjo"
