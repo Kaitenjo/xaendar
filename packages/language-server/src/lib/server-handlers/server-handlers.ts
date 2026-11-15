@@ -443,7 +443,7 @@ export class XaendarLanguageServer {
     await this._connection.sendDiagnostics({
       uri,
       version,
-      diagnostics: diagnostics.map(({ span, message }): Diagnostic => ({ range: toRange(document, span), message, severity: DiagnosticSeverity.Error, source: 'xaendar' }))
+      diagnostics: diagnostics.map(({ span, message, warning }): Diagnostic => ({ range: toRange(document, span), message, severity: warning ? DiagnosticSeverity.Warning : DiagnosticSeverity.Error, source: 'xaendar' }))
     });
   }
 

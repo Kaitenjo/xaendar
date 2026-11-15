@@ -12,7 +12,7 @@ import { CONSTRUCTOR_ACCESS, HOST_DIRECTIVE } from '../../../directives/custom/c
 import { DIRECTIVE_REGISTRATION } from '../../../directives/overview/overview.snippets';
 import { HYDRATE_COMPONENT } from '../../../tools/ssr/progressive-hydration/progressive-hydration.snippets';
 import { TRANSFER_STATE_COMPONENT, TRANSFER_STATE_ENTRY } from '../../../tools/ssr/transfer-state/transfer-state.snippets';
-import { CANCELABLE_EVENT, CREATE_COMPONENT_DIRECTIVES, CREATE_COMPONENT_GROUPS, CUSTOM_DIRECTIVE, DIRECTIVE_CREATE_COMPONENT, DIRECTIVE_KINDS, HOST_BINDINGS_DIRECTIVE, HOST_DIRECTIVE_MEMBERS, HOST_LISTENER, HOST_LISTENER_KEYS, HOST_LISTENER_TARGETS, HOST_PROPERTY, HOST_PROPERTY_VALUES, MODEL_CREATE_COMPONENT, MODEL_DIRECTIVE, MODEL_HOST_DIRECTIVE, OUTPUT_EMIT, QUERY_CONTENT, QUERY_CONTENT_OPTIONS, QUERY_READ, QUERY_TIMING, STRUCTURAL_DIRECTIVE } from './core.snippets';
+import { CANCELABLE_EVENT, CREATE_COMPONENT_DIRECTIVES, CREATE_COMPONENT_GROUPS, CUSTOM_DIRECTIVE, DIRECTIVE_CREATE_COMPONENT, DIRECTIVE_KINDS, HOST_BINDINGS_DIRECTIVE, HOST_DIRECTIVE_MEMBERS, HOST_LISTENER, HOST_LISTENER_KEYS, HOST_LISTENER_TARGETS, HOST_ATTRIBUTE, HOST_ATTRIBUTE_VALUES, MODEL_CREATE_COMPONENT, MODEL_DIRECTIVE, MODEL_HOST_DIRECTIVE, OUTPUT_EMIT, QUERY_CONTENT, QUERY_CONTENT_OPTIONS, QUERY_READ, QUERY_TIMING, STRUCTURAL_DIRECTIVE } from './core.snippets';
 
 /**
  * The symbols of `@xaendar/core`.
@@ -300,9 +300,9 @@ export const CORE_API: ApiPackage = {
       guides: ['components/queries', 'components/content-queries', 'components/content-projection', 'components/dom-apis', 'templates/element-refs']
     },
     {
-      name: 'HostProperty',
+      name: 'HostAttribute',
       kind: 'decorator',
-      signature: 'function HostProperty<Name extends string>(name: Name): HostPropertyDecorator<HostPropertyValue<Name>>\n\ntype HostPropertyValue<Name extends string> =\n  Name extends \'class\' | \'style\' ? string | null | undefined\n  : Name extends `style.--${string}` ? string | number | null | undefined\n  : Name extends `style.${string}.${string}` ? number | null | undefined\n  : Name extends `style.${string}` ? string | number | null | undefined\n  : unknown;\n\ntype HostPropertyDecorator<Allowed> = {\n  <This extends CustomElement | CustomDirective, Value extends Allowed | (() => Allowed)>(value: undefined, context: ClassFieldDecoratorContext<This, Value>): void;\n  <This extends CustomElement | CustomDirective, Value extends Allowed | (() => Allowed)>(value: (this: This) => Value, context: ClassGetterDecoratorContext<This, Value>): void;\n  <This extends CustomElement | CustomDirective, Value extends Allowed | (() => Allowed)>(value: ClassAccessorDecoratorTarget<This, Value>, context: ClassAccessorDecoratorContext<This, Value>): void;\n};',
+      signature: 'function HostAttribute<Name extends string>(name: Name): HostAttributeDecorator<HostAttributeValue<Name>>\n\ntype HostAttributeValue<Name extends string> =\n  Name extends \'class\' | \'style\' ? string | null | undefined\n  : Name extends `style.--${string}` ? string | number | null | undefined\n  : Name extends `style.${string}.${string}` ? number | null | undefined\n  : Name extends `style.${string}` ? string | number | null | undefined\n  : unknown;\n\ntype HostAttributeDecorator<Allowed> = {\n  <This extends CustomElement | CustomDirective, Value extends Allowed | (() => Allowed)>(value: undefined, context: ClassFieldDecoratorContext<This, Value>): void;\n  <This extends CustomElement | CustomDirective, Value extends Allowed | (() => Allowed)>(value: (this: This) => Value, context: ClassGetterDecoratorContext<This, Value>): void;\n  <This extends CustomElement | CustomDirective, Value extends Allowed | (() => Allowed)>(value: ClassAccessorDecoratorTarget<This, Value>, context: ClassAccessorDecoratorContext<This, Value>): void;\n};',
       members: [
         {
           name: 'name',
@@ -311,8 +311,8 @@ export const CORE_API: ApiPackage = {
         }
       ],
       usage: [
-        { key: 'declaring', snippets: [HOST_PROPERTY] },
-        { key: 'values', snippets: [HOST_PROPERTY_VALUES] },
+        { key: 'declaring', snippets: [HOST_ATTRIBUTE] },
+        { key: 'values', snippets: [HOST_ATTRIBUTE_VALUES] },
         { key: 'timing' },
         { key: 'conflicts' },
         { key: 'directives', snippets: [HOST_BINDINGS_DIRECTIVE] },

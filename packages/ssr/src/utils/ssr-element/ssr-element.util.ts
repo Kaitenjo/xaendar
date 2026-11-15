@@ -1,5 +1,5 @@
 import { escapeAttribute, escapeRawText } from '@xaendar/common';
-import { _applyHostProperties, _COMPONENT, _createStylingState, _DIRECTIVE_ORDER, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setContentTemplates, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
+import { _applyHostAttributes, _COMPONENT, _createStylingState, _DIRECTIVE_ORDER, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _mergeAttributes, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setContentTemplates, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
 import type { Constructor, Dictionary, Function } from '@xaendar/types';
 import { ServerElement } from '../../dom/server-element/server-element';
 import type { ClientComponentOptions } from '../../types/client-component-options.type';
@@ -16,7 +16,7 @@ import type { ServerRuntime } from '../../types/server-runtime.type';
  * Writes the start tag of an element with its bindings, applied as the client applies them: the attributes and the
  * classes in order, through the setters of the client, then the ones of the branches the conditional bindings select.
  * Then the custom directives are applied, the ones of the element first, then the ones of the selected branches: each
- * one is constructed, its properties are set, `onInit` runs and the attributes and the classes of its `@HostProperty`
+ * one is constructed, its properties are set, `onInit` runs and the attributes and the classes of its `@HostAttribute`
  * are written. Its effects do not run, its events are not listened to and `onDestroy` never runs: the browser applies
  * it again. The content a directive assigns to `innerHTML` is written right after the start tag, as it is: the
  * children of the template follow it, so an element whose content a directive assigns has none.
@@ -203,7 +203,7 @@ function renderOrWriteComponent(out: ServerOutput, context: _Context, config: Se
 /**
  * Renders a component as the client does when it connects it, writing its start tag and its declarative shadow root:
  * the component is constructed and bound, then `onInit` runs and the template is rendered into the shadow root, the
- * stylesheet first, and the attributes and the classes `@HostProperty` declares are written once the template is
+ * stylesheet first, and the attributes and the classes `@HostAttribute` declares are written once the template is
  * rendered, before the start tag is, with the trigger hydrating the element its `@WebComponent` declares, if other than
  * `load`, in `data-xd-hydrate`. `afterRender` does not run, since nothing is rendered into a document.
  *
@@ -231,7 +231,7 @@ export function _renderComponent<Component extends CustomElement>(out: ServerOut
   definition.render.call(element, out);
   out.push('</template>');
 
-  _applyHostProperties(element, element);
+  _applyHostAttributes(element, element);
   const hydrate = getSsrMetadata(Component)?.hydrate;
   if (hydrate && hydrate !== 'load') {
     element.setAttribute(_HYDRATE_ATTRIBUTE, hydrate);
@@ -278,14 +278,16 @@ function collectEvents(Component: Constructor<CustomElement>, { render }: Server
 
 /**
  * Creates the states merging the sources of the `class` and of the `style` of an element written through the runtime,
- * before its bindings are applied: its template, its directives and the component it is all write them once, merged
- * with the precedence of the client, whatever the order they are applied in.
+ * before its bindings are applied, and merges its other attributes, whose states are created when a source first writes
+ * them (see `_mergeAttributes`): its template, its directives and the component it is all write them once, merged with
+ * the precedence of the client, whatever the order they are applied in, so that the final value is written.
  *
  * @param element - The element.
  */
 function prepareStyling(element: Element): void {
   _createStylingState(element, 'class');
   _createStylingState(element, 'style');
+  _mergeAttributes(element);
 }
 
 /**
@@ -339,7 +341,7 @@ function valueOf({ value }: ServerAttribute, context: _Context): unknown {
 /**
  * Applies custom directives to an element, as the client does once its bindings are applied (see {@link _ssrStartTag}):
  * each one is constructed and given the element, its properties are set, then `onInit` runs and the attributes and the
- * classes of its `@HostProperty` are written.
+ * classes of its `@HostAttribute` are written.
  *
  * @param element - The element.
  * @param context - The runtime context of the element.
@@ -361,7 +363,7 @@ function applyDirectives(element: ServerElement, context: _Context, directives: 
     }
 
     directive.onInit?.();
-    _applyHostProperties(directive, element as unknown as Element);
+    _applyHostAttributes(directive, element as unknown as Element);
   }
 }
 

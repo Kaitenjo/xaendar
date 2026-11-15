@@ -35,9 +35,9 @@ import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { _selectBranch } from '../select-branch/select-branch.util';
 import { connectChild } from '../try-scope/try-scope.util';
 import { _setContentTemplates } from '../content-templates/content-templates.util';
+import { _prepareAttributes, removeTemplateAttribute, writeTemplateAttribute } from '../attribute-binding/attribute-binding.util';
 import { _prepareStyling } from '../styling-binding/styling-binding.util';
 import { ensureStylingState } from '../styling-state/styling-state.util';
-import { writeAttribute } from '../write-attribute/write-attribute.util';
 
 /**
  * Creates a DOM element, applies attributes and event listeners, appends it
@@ -105,6 +105,11 @@ function renderElement(parentNode: Element, context: _Context, anchor: Comment |
   // The states merging the sources of `class` and `style` exist before the bindings of the template write them
   if (config.styling) {
     _prepareStyling(element, config.styling, directives);
+  }
+
+  // The same for the other attributes the component or the directives may write
+  if (config.shared) {
+    _prepareAttributes(element, config.shared, !!config.sharedAlways, directives);
   }
 
   if (attributes?.length) {
@@ -591,7 +596,7 @@ function bindStructuralDirectives(context: _Context, structuralDirectives: reado
  * @throws When the name is the one of an input of the target, or the target is a directive.
  */
 export function _setProperty(_context: _Context, target: Element | BindingHost, attribute: RenderElementAttribute): void {
-  updateProperty(target, attribute.name, attribute.value);
+  updateProperty(target, attribute, attribute.value);
 }
 
 /**
@@ -605,7 +610,7 @@ export function _setProperty(_context: _Context, target: Element | BindingHost, 
  * @throws When the name is the one of an input of the target, or the target is a directive.
  */
 export function _setExpressionProperty(context: _Context, target: Element | BindingHost, attribute: RenderElementAttribute): void {
-  updateProperty(target, attribute.name, evaluate(attribute, context));
+  updateProperty(target, attribute, evaluate(attribute, context));
 }
 
 /**
@@ -666,14 +671,15 @@ export function _setReactiveInput(context: _Context, target: Element | BindingHo
 }
 
 /**
- * Removes an attribute from an HTML element.
+ * Removes an attribute from an HTML element, when the branch binding it is no longer selected: an attribute merged with
+ * the directives and the component writing it gets back the value of the sources below (see `removeTemplateAttribute`).
  *
  * @param _context - The current template execution scope.
  * @param element - The element to remove the attribute from.
  * @param attribute - The attribute to remove.
  */
 export function _removeAttribute(_context: _Context, element: Element, attribute: RenderElementAttribute): void {
-  element.removeAttribute(attribute.name);
+  removeTemplateAttribute(element, attribute);
 }
 
 /**
@@ -730,22 +736,24 @@ function updateInput(target: Element | BindingHost, name: string, newValue: unkn
 
 /**
  * Updates an attribute of an HTML element, only when the value differs from the one the element holds, as an element
- * adopted from the HTML of the server does: the value is written as `@HostProperty` writes it (see `_attributeValue`),
- * `null` and `undefined` removing it.
+ * adopted from the HTML of the server does: the value is written as `@HostAttribute` writes it (see `_attributeValue`),
+ * `null` and `undefined` having no opinion, which removes it, or gives it back to the directives and the component
+ * writing it too (see `writeTemplateAttribute`).
  *
  * An input is never written by it: the compiler binds the inputs it knows through the setters of the inputs, so an
  * input found here is one it did not recognize, e.g. the name of the property of an input declaring an alias.
  * @param target - The HTML element whose attribute is being updated.
- * @param name - The name of the attribute.
+ * @param attribute - The attribute.
  * @param newValue - The new value to set for the attribute.
- * @throws When `name` is the one of an input of the target, or the target is a directive.
+ * @throws When the name of the attribute is the one of an input of the target, or the target is a directive.
  */
-function updateProperty(target: Element | BindingHost, name: string, newValue: unknown): void {
+function updateProperty(target: Element | BindingHost, attribute: RenderElementAttribute, newValue: unknown): void {
+  const { name } = attribute;
   if (inputOf(target, name)) {
-    throw new Error(`"${name}" is an input of ${target.constructor.name}, bound as an attribute: an input declaring an alias is bound by its alias`);
+    throw new Error(`"${name}" is an input of ${target.constructor.name}, bound as an attribute: an input declaring an alias is bound by its alias, and the attribute of the element is written with attr.${name}`);
   }
 
-  writeAttribute(target as Element, name, newValue);
+  writeTemplateAttribute(target as Element, attribute, newValue);
 }
 
 /**

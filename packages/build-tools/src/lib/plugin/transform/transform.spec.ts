@@ -351,6 +351,19 @@ describe('createTransformHook()', () => {
     expect(registerMetadata).toHaveBeenCalledWith('FooComponent', metadata);
   });
 
+  it('warns about an input named like an attribute every element reflects, only in the environment type-checking', async () => {
+    vi.mocked(readFile).mockResolvedValue('@WebComponent({ selector: \'foo-el\', templateUrl: \'./foo.xd.component.html\' })\nclass FooComponent {\n  @Property(\'\') public accessor title!: InputSignal<string>;\n}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map());
+    const client = createPluginContext();
+    const server = createPluginContext('server');
+
+    await createTransformHook(createState()).call(client, 'original code', COMPONENT_PATH, undefined);
+    await createTransformHook(createState()).call(server, 'original code', COMPONENT_PATH, undefined);
+
+    expect(client.warn).toHaveBeenCalledWith(`The input "title" of FooComponent has the name of an attribute every element reflects: title="…" on its element sets the input, so the native attribute is written with attr.title="…" - ${COMPONENT_PATH}`);
+    expect(server.warn).not.toHaveBeenCalled();
+  });
+
   it('logs an error and returns null when the template file cannot be found', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     const metadata = createMetadata();

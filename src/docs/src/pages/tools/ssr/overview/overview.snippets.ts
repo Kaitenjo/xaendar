@@ -99,7 +99,7 @@ export class ThemeToggleComponent extends CustomElement {
 export const SERVER_DIRECTIVE: SourceFile = {
   name: 'sr-label.directive.ts',
   lang: 'ts',
-  code: `import { CustomDirective, Directive, HostProperty, Property } from '@xaendar/core';
+  code: `import { CustomDirective, Directive, HostAttribute, Property } from '@xaendar/core';
 import type { InputSignal } from '@xaendar/core/signals';
 
 /**
@@ -121,7 +121,7 @@ export class SrLabelDirective extends CustomDirective<HTMLElement> {
    *
    * @returns The text to announce.
    */
-  @HostProperty('aria-label')
+  @HostAttribute('aria-label')
   public get label(): string {
     return this.text();
   }

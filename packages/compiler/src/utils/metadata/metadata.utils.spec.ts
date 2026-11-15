@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { createSourceFile, ModuleKind, ModuleResolutionKind, ScriptTarget, SourceFile, SyntaxKind } from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
-import { describeSelectorConflict, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, findWebComponentErrors, getOwnerType } from './metadata.utils';
+import { describeSelectorConflict, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, findReflectedInputs, findWebComponentErrors, getOwnerType } from './metadata.utils';
 
 const sourceFileOf = (code: string): SourceFile => createSourceFile('component.ts', code, ScriptTarget.Latest, true);
 const extract = (code: string) => extractComponentsMetadataFromSourceFile(sourceFileOf(code));
@@ -617,5 +617,35 @@ describe('getOwnerType', () => {
 
     expect(metadata.modulePath).toBe('/src/list.directive.ts');
     expect(metadata.properties.get('items')!.type).toBe(`ReturnType<${getOwnerType(metadata, true)}['items']>`);
+  });
+});
+
+describe('findReflectedInputs', () => {
+  it('warns about the inputs bound by the name of an attribute every element reflects, by their name or by their alias, on it', () => {
+    const sourceFile = sourceFileOf(component([
+      '  @Property(\'\') public accessor title!: InputSignal<string>;',
+      '  @Property.required({ alias: \'tabIndex\' }) public accessor order!: InputSignal<number>;',
+      '  @Model(\'\', { alias: \'aria-label\' }) public accessor label!: ModelSignal<string>;',
+      '  @Property(false) public accessor ariaExpanded!: InputSignal<boolean>;',
+      '  @Property(\'\', { alias: \'heading\' }) public accessor id!: InputSignal<string>;',
+      '  @Property(\'\', { transform: String }) public accessor kind!: InputSignal<string>;',
+      '  @Event() public accessor hidden!: Output<void>;',
+      '  public readonly lang = \'it\';',
+      '  public [\'dir\'] = \'ltr\';',
+      '  public method(): void { }'
+    ].join('\n')));
+    const warnings = findReflectedInputs(sourceFile);
+
+    expect(warnings.map(({ message }) => message)).toEqual([
+      'The input "title" of MyEl has the name of an attribute every element reflects: title="…" on its element sets the input, so the native attribute is written with attr.title="…"',
+      'The input "tabIndex" of MyEl has the name of an attribute every element reflects: tabIndex="…" on its element sets the input, so the native attribute is written with attr.tabindex="…"',
+      'The input "aria-label" of MyEl has the name of an attribute every element reflects: aria-label="…" on its element sets the input, so the native attribute is written with attr.aria-label="…"',
+      'The input "ariaExpanded" of MyEl has the name of an attribute every element reflects: ariaExpanded="…" on its element sets the input, so the native attribute is written with attr.aria-expanded="…"'
+    ]);
+    expect(warnings.map(({ span }) => sourceFile.text.slice(span.start, span.end))).toEqual(['title', '\'tabIndex\'', '\'aria-label\'', 'ariaExpanded']);
+  });
+
+  it('finds nothing in a file without components', () => {
+    expect(findReflectedInputs(sourceFileOf('class Plain { @Property(\'\') public accessor title!: InputSignal<string>; }'))).toEqual([]);
   });
 });

@@ -24523,7 +24523,25 @@ function parseInterpolation(cursor, _parseNode, token) {
 }
 
 // ../packages/compiler/src/parser/states/parse-attribute/parse-attribute.state.ts
+var ATTRIBUTE_PREFIX = "attr.";
 function parseAttribute(cursor, parseNode, token) {
+  const node = readAttribute(cursor, parseNode, token);
+  const { name, nameSpan } = node;
+  if (!name.startsWith(ATTRIBUTE_PREFIX)) {
+    return node;
+  }
+  const attribute = name.slice(ATTRIBUTE_PREFIX.length);
+  switch (attribute) {
+    case "":
+      throw new Error(`${name} names no attribute: write attr. followed by the name of the attribute, e.g. attr.title="\u2026"`, { cause: nameSpan });
+    case "class":
+    case "style":
+      throw new Error(`${name} cannot be written: ${attribute} is merged with the directives and the component writing it, bound with ${attribute}="\u2026" and [${attribute}.name]="{ expression }"`, { cause: nameSpan });
+  }
+  node.attribute = attribute;
+  return node;
+}
+function readAttribute(cursor, parseNode, token) {
   const startOffset = token.span.start;
   cursor.advance();
   const name = token.parts[0];
@@ -24634,8 +24652,8 @@ function parseBracketBinding(cursor, parseNode, token) {
 }
 function assertNoBracketBindings(attributes, conditionalBindings) {
   for (let i2 = 0; i2 < attributes.length; i2++) {
-    const { name, nameSpan } = attributes[i2];
-    if (name.startsWith("[")) {
+    const { name, nameSpan, attribute } = attributes[i2];
+    if (name.startsWith("[") || attribute !== void 0) {
       throw new Error(`${name} cannot be bound inside a directive: bind it on the element`, { cause: nameSpan });
     }
   }
@@ -24647,7 +24665,11 @@ function assertNoBranchClassBindings(conditionalBindings) {
   for (let i2 = 0; i2 < conditionalBindings.length; i2++) {
     const { branches } = conditionalBindings[i2];
     for (let j = 0; j < branches.length; j++) {
-      const { classBindings, styleBindings } = branches[j];
+      const { classBindings, styleBindings, attributes } = branches[j];
+      const written = attributes.find(({ attribute }) => attribute !== void 0);
+      if (written) {
+        throw new Error(`${written.name} cannot be bound inside a directive: bind it on the element`, { cause: written.nameSpan });
+      }
       if (classBindings.length) {
         const { className, nameSpan } = classBindings[0];
         throw new Error(`[class.${className}] cannot be bound inside a directive: bind it on the element`, { cause: nameSpan });
@@ -24689,6 +24711,9 @@ function parseTwoWayBinding(cursor, parseNode, token) {
   const name = TWO_WAY_BINDING_RE.exec(bracketed)?.[1];
   if (!name) {
     throw new Error(`"${bracketed}" is not a two-way binding: write [(name)]="signal"`, { cause: bracketedSpan });
+  }
+  if (name.startsWith("attr.")) {
+    throw new Error(`[(${name})] binds a model of a component or of a directive, while attr. writes an attribute of the element, which has no event of change: write ${name}="{ expression }"`, { cause: bracketedSpan });
   }
   if (bare || typeof value !== "string" || !value.trim()) {
     throw new Error(`[(${name})] binds a writable signal, named without braces nor call: [(${name})]="signal"`, { cause: span });
@@ -25174,6 +25199,34 @@ function serializeElement(element) {
   return `${html}${serializeNodes(element.children, tagName)}</${tagName}>`;
 }
 
+// ../packages/compiler/src/parser/utils/unique-attributes/unique-attributes.utils.ts
+function assertUniqueAttributes(attributes, conditionalBindings, keyOf, describeDuplicate, bound = /* @__PURE__ */ new Set()) {
+  for (let i2 = 0; i2 < attributes.length; i2++) {
+    const key = keyOf(attributes[i2]);
+    if (bound.has(key)) {
+      throw new Error(describeDuplicate(key), { cause: attributes[i2].span });
+    }
+    bound.add(key);
+  }
+  assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniqueAttributes(branch.attributes, branch.conditionalBindings, keyOf, describeDuplicate, boundInBranch));
+}
+function assertUniqueInBranches(conditionalBindings, declared, assertUnique) {
+  for (let i2 = 0; i2 < conditionalBindings.length; i2++) {
+    const { branches } = conditionalBindings[i2];
+    const declaredInBranches = /* @__PURE__ */ new Set();
+    for (let j = 0; j < branches.length; j++) {
+      const declaredInBranch = new Set(declared);
+      assertUnique(branches[j], declaredInBranch);
+      for (const name of declaredInBranch) {
+        declaredInBranches.add(name);
+      }
+    }
+    for (const name of declaredInBranches) {
+      declared.add(name);
+    }
+  }
+}
+
 // ../packages/compiler/src/parser/utils/template-parameters/template-parameters.utils.ts
 var import_typescript11 = require("typescript");
 var FUNCTION_PREFIX = "function __template(";
@@ -25321,7 +25374,7 @@ function parseElement(cursor, parseNode, token) {
         read = false;
     }
   }
-  assertUniqueAttributes(attributes, conditionalBindings, (name) => `Attribute "${name}" is bound more than once on <${tagName}>`);
+  assertUniqueAttributes(attributes, conditionalBindings, isValidCustomElementName(tagName, false) ? writtenAttributeKey : nativeAttributeKey, (name) => `Attribute "${name}" is bound more than once on <${tagName}>`);
   assertUniqueClassBindings(classBindings, conditionalBindings, tagName);
   assertUniqueStyleBindings(styleBindings, conditionalBindings, tagName);
   assertUniqueDirectives(tagName, directives, conditionalBindings, (branch) => branch.directives);
@@ -25390,15 +25443,11 @@ function setTemplateContent(node) {
     node.content = serializeTemplateContent(node.children);
   }
 }
-function assertUniqueAttributes(attributes, conditionalBindings, describeDuplicate, bound = /* @__PURE__ */ new Set()) {
-  for (let i2 = 0; i2 < attributes.length; i2++) {
-    const { name, span } = attributes[i2];
-    if (bound.has(name)) {
-      throw new Error(describeDuplicate(name), { cause: span });
-    }
-    bound.add(name);
-  }
-  assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniqueAttributes(branch.attributes, branch.conditionalBindings, describeDuplicate, boundInBranch));
+function nativeAttributeKey({ name, attribute }) {
+  return attribute ?? name;
+}
+function writtenAttributeKey({ name }) {
+  return name;
 }
 function assertUniqueClassBindings(classBindings, conditionalBindings, tagName, bound = /* @__PURE__ */ new Set()) {
   for (let i2 = 0; i2 < classBindings.length; i2++) {
@@ -25429,25 +25478,9 @@ function assertUniqueDirectives(tagName, directives, conditionalBindings, getDir
       throw new Error(`${kind} "${selector}" is applied more than once on <${tagName}>`, { cause: span });
     }
     applied.add(selector);
-    assertUniqueAttributes(attributes, type === 15 /* Directive */ ? directive.conditionalBindings : [], (name) => `Property "${name}" of ${property} "${selector}" is bound more than once on <${tagName}>`);
+    assertUniqueAttributes(attributes, type === 15 /* Directive */ ? directive.conditionalBindings : [], writtenAttributeKey, (name) => `Property "${name}" of ${property} "${selector}" is bound more than once on <${tagName}>`);
   }
   assertUniqueInBranches(conditionalBindings, applied, (branch, appliedInBranch) => assertUniqueDirectives(tagName, getDirectives(branch), branch.conditionalBindings, getDirectives, appliedInBranch));
-}
-function assertUniqueInBranches(conditionalBindings, declared, assertUnique) {
-  for (let i2 = 0; i2 < conditionalBindings.length; i2++) {
-    const { branches } = conditionalBindings[i2];
-    const declaredInBranches = /* @__PURE__ */ new Set();
-    for (let j = 0; j < branches.length; j++) {
-      const declaredInBranch = new Set(declared);
-      assertUnique(branches[j], declaredInBranch);
-      for (const name of declaredInBranch) {
-        declaredInBranches.add(name);
-      }
-    }
-    for (const name of declaredInBranches) {
-      declared.add(name);
-    }
-  }
 }
 function toTemplateNode(nameSpan, declaration, parameters) {
   if (parameters === void 0) {
@@ -27172,6 +27205,45 @@ async function extractComponentsMetadataFromSourceFile(sourceFile, compilerOptio
   }
   return metadatas;
 }
+var REFLECTED_ATTRIBUTES = /* @__PURE__ */ new Set(["id", "title", "hidden", "lang", "dir", "tabindex", "slot", "inert", "accesskey", "autocapitalize", "autofocus", "draggable", "spellcheck", "translate", "popover", "nonce"]);
+function findReflectedInputs(sourceFile) {
+  const warnings = new Array();
+  const declarations = getWebComponentDeclarations(sourceFile);
+  for (let i2 = 0; i2 < declarations.length; i2++) {
+    const { klass } = declarations[i2];
+    const { members } = klass;
+    for (let j = 0; j < members.length; j++) {
+      const member = members[j];
+      if (!(0, import_typescript16.isPropertyDeclaration)(member) || !(0, import_typescript16.isIdentifier)(member.name)) {
+        continue;
+      }
+      const nameNode = member.name;
+      let required = false;
+      const decorator = member.modifiers?.find((modifier) => {
+        const result = isPropertyDecorator(modifier);
+        required = !!result.required;
+        return result.decorator;
+      });
+      if (!decorator) {
+        continue;
+      }
+      const alias = findAliasLiteral(decorator, required);
+      const bound = alias?.text ?? nameNode.text;
+      const attribute = toReflectedAttribute(bound);
+      if (attribute) {
+        reportAt(warnings, sourceFile, `The input "${bound}" of ${klass.name.text} has the name of an attribute every element reflects: ${bound}="\u2026" on its element sets the input, so the native attribute is written with attr.${attribute}="\u2026"`, alias ?? nameNode);
+      }
+    }
+  }
+  return warnings;
+}
+function toReflectedAttribute(name) {
+  const lowerCase = name.toLowerCase();
+  if (REFLECTED_ATTRIBUTES.has(lowerCase) || lowerCase.startsWith("aria-")) {
+    return lowerCase;
+  }
+  return /^aria[A-Z]/.test(name) ? `aria-${lowerCase.slice(4)}` : void 0;
+}
 function reportAt(errors, sourceFile, message, node) {
   errors.push({ message, span: { start: node.getStart(sourceFile), end: node.getEnd() } });
 }
@@ -27511,6 +27583,15 @@ function toInputDecorator(name, required) {
   }
   return result;
 }
+function findAliasLiteral(decorator, required) {
+  const args = decorator.expression.arguments;
+  const options = required ? args[0] : args[1];
+  if (!options || !(0, import_typescript16.isObjectLiteralExpression)(options)) {
+    return void 0;
+  }
+  const alias = options.properties.find((prop) => (0, import_typescript16.isPropertyAssignment)(prop) && (0, import_typescript16.isIdentifier)(prop.name) && prop.name.text === "alias" && (0, import_typescript16.isStringLiteral)(prop.initializer));
+  return alias?.initializer;
+}
 function extractPropertyMetadata(property, nameNode, name, decorator, required, accessorOwner, sourceFile) {
   const args = decorator.expression.arguments;
   const metadata = new ComponentPropertyMetadataWithSpan({ start: nameNode.getStart(), end: nameNode.getEnd() }, sourceFile, name, extractBindingType(property, name, accessorOwner, false));
@@ -27522,9 +27603,8 @@ function extractPropertyMetadata(property, nameNode, name, decorator, required, 
     if (incomingType) {
       metadata.type = qualifyType(incomingType, sourceFile);
     }
-    const aliasNode = options && (0, import_typescript16.isObjectLiteralExpression)(options) && options?.properties?.find((prop) => (0, import_typescript16.isPropertyAssignment)(prop) && (0, import_typescript16.isIdentifier)(prop.name) && prop.name.text === "alias" && (0, import_typescript16.isStringLiteral)(prop.initializer));
-    if (aliasNode) {
-      const initializer = aliasNode.initializer;
+    const initializer = findAliasLiteral(decorator, required);
+    if (initializer) {
       metadata.alias = initializer.text;
       metadata.span = {
         start: initializer.getStart(),
@@ -27854,6 +27934,7 @@ function typeCheckElement(node, processNode, context) {
     } else if (metadata) {
       lines.push(...typeCheckComponentBindings(node, metadata, nativeEvents, context));
     } else if (isForeign) {
+      assertUniqueForeignAttributes(node);
       nativeEvents = { eventMap, tagName, foreign: true };
       lines.push(...typeCheckNativeBindings(node, nativeEvents, context));
     } else {
@@ -27886,6 +27967,7 @@ function typeCheckComponentBindings(node, declaredMetadata, nativeEvents, contex
   assertTypeArguments(node.typeArguments, declaredMetadata, `<${node.tagName}>`);
   const suffix = node.ref ? getInstantiationSuffix(node) : void 0;
   const { metadata, declarations } = instantiateTypeParameters(declaredMetadata, node.typeArguments, node.attributes, node.nameSpan, context, suffix);
+  assertUniqueComponentAttributes(node, metadata);
   const requiredProperties = new Set(metadata.properties.entries().filter(([_2, value]) => value.required).map(([key]) => key));
   const alwaysBoundAttributes = getAlwaysBoundAttributes(node.conditionalBindings);
   const lines = typeCheckComponentAttributes(node.attributes, metadata, context);
@@ -27918,6 +28000,20 @@ function typeCheckComponentBindings(node, declaredMetadata, nativeEvents, contex
     return lines;
   }
   return suffix === void 0 ? [plain("{"), ...indentLines([...declarations, ...lines]), plain("}")] : [...declarations, ...lines];
+}
+function assertUniqueComponentAttributes(node, metadata) {
+  assertUniqueAttributes(
+    node.attributes,
+    node.conditionalBindings,
+    ({ name, attribute }) => attribute === void 0 && metadata.properties.has(name) ? name : `attr.${attribute ?? name}`,
+    (key) => {
+      const name = key.slice("attr.".length);
+      return `Attribute "${name}" is written more than once on <${node.tagName}>: "${name}" is not an input of ${metadata.className}, so ${name}="\u2026" and attr.${name}="\u2026" write the same attribute of the element`;
+    }
+  );
+}
+function assertUniqueForeignAttributes(node) {
+  assertUniqueAttributes(node.attributes, node.conditionalBindings, ({ name, attribute }) => attribute ?? name, (name) => `Attribute "${name}" is written more than once on <${node.tagName}>: it is not a component imported in the template, so ${name}="\u2026" and attr.${name}="\u2026" write the same attribute of the element`);
 }
 function typeCheckDirectives(directives, tagName, nativeEvents, context) {
   const lines = new Array();
@@ -28084,7 +28180,8 @@ function assertTwoWayBindable({ name, span, twoWay }, metadata) {
 function assertNotAliasedProperty({ name, span }, metadata) {
   for (const property of metadata.properties.values()) {
     if (property.name === name && property.alias && !property.exposed) {
-      throw new Error(`"${name}" is the property of an input of ${metadata.className} declaring the alias "${property.alias}": bind it as ${property.alias}="\u2026".`, { cause: span });
+      const attribute = metadata.type === "component" ? `, or write the attribute of the element with attr.${name}="\u2026"` : "";
+      throw new Error(`"${name}" is the property of an input of ${metadata.className} declaring the alias "${property.alias}": bind it as ${property.alias}="\u2026"${attribute}.`, { cause: span });
     }
   }
 }
@@ -28118,7 +28215,13 @@ function getAlwaysBoundAttributes(conditionalBindings) {
 function typeCheckComponentAttributes(attributes, metadata, context) {
   const lines = new Array();
   for (let i2 = 0; i2 < attributes.length; i2++) {
-    const { name, value, span, bare } = attributes[i2];
+    const { name, value, span, bare, attribute } = attributes[i2];
+    if (attribute !== void 0) {
+      if (typeof value !== "string") {
+        lines.push(line(mappedInterpolation(value, context, ";")));
+      }
+      continue;
+    }
     assertTwoWayBindable(attributes[i2], metadata);
     const property = metadata.properties.get(name);
     if (!property) {
@@ -31801,6 +31904,10 @@ async function getComponentDiagnostics(fileName, text) {
   if (errors.length) {
     diagnostics.push(...errors);
   }
+  const reflected = findReflectedInputs(sourceFile);
+  for (let i2 = 0; i2 < reflected.length; i2++) {
+    diagnostics.push({ message: reflected[i2].message, span: reflected[i2].span, warning: true });
+  }
   const conflicts = getWebComponentDeclarations(sourceFile).length ? await findSelectorConflicts(fileName) : void 0;
   if (conflicts?.length) {
     diagnostics.push(...conflicts);
@@ -33517,7 +33624,7 @@ var XaendarLanguageServer = class {
     await this._connection.sendDiagnostics({
       uri,
       version,
-      diagnostics: diagnostics.map(({ span, message }) => ({ range: toRange(document, span), message, severity: import_node42.DiagnosticSeverity.Error, source: "xaendar" }))
+      diagnostics: diagnostics.map(({ span, message, warning }) => ({ range: toRange(document, span), message, severity: warning ? import_node42.DiagnosticSeverity.Warning : import_node42.DiagnosticSeverity.Error, source: "xaendar" }))
     });
   }
   /**

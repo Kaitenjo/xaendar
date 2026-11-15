@@ -11,7 +11,7 @@
 | `model()`, `model.required()` | `@Model(default)` / `@Model.required()` on `public accessor x!: ModelSignal<T>`, `this.x.set(v)` dispatching `xChange` (a DOM `CustomEvent`, `$event.detail`) |
 | `[(x)]="sig"` two-way binding | the same: `[(x)]="sig"`, `sig` a writable signal named without `()`; Angular's assignment to a plain field (`[(x)]="field"`) does not exist |
 | `[(ngModel)]` on native fields | `(input)` + a directive writing the property (patterns.md, Forms) |
-| `host: {...}`, `@HostBinding`, `@HostListener` | `@HostProperty('attr' \| 'class.x' \| 'style.x')`, `@HostListener('event' \| 'window:event' \| 'document:event')`, key events included (`@HostListener('document:keydown.escape')`) |
+| `host: {...}`, `@HostBinding`, `@HostListener` | `@HostAttribute('attr' \| 'class.x' \| 'style.x')`, `@HostListener('event' \| 'window:event' \| 'document:event')`, key events included (`@HostListener('document:keydown.escape')`) |
 | `(keydown.enter)`, `(keyup.control.shift.z)`, `(keydown.code.keya)` | the same key events; `control` (not `ctrl`), `esc` for `escape`, `space`, `dot`; modifiers matched exactly; no `.prevent`/`.stop` (call it on `$event`) |
 | `signal`, `computed`, `effect`, `untracked` | the same names from `@xaendar/core/signals`; `this.effect()` for effects bound to the component |
 | `viewChild`, `viewChild.required`, `viewChildren` | `@Query`, `@Query.required`, `@Query.all`, `@Query.ref('name')` on `accessor x!: QuerySignal<…>` |
@@ -24,10 +24,11 @@
 | `{{ expr }}` | `{ expr }` |
 | `[innerHTML]="html"`, `DomSanitizer` | `@@innerHtml(html="{html}")` of `@xaendar/directives`, sanitized as Angular does (`options` changes what is kept, `sanitizer` replaces the sanitizer); `bypassSecurityTrustHtml(x)` → `trustHtml(x)`; `sanitize(SecurityContext.HTML, x)` → `sanitizeHtml(x)` |
 | `[attr]="expr"`, `[prop]="expr"` | `attr="{expr}"`: an attribute on native elements, an input on components |
+| `[attr.x]="expr"` | `attr.x="{expr}"`: always the attribute, never the input named `x`; merged with the host bindings (template > directives > component, `null` no opinion) |
 | `[class.x]="cond"` | `[class.x]="{cond}"` |
 | `[style.x]`, `[style.width.px]` | the same syntax with braces: `[style.x]="{value}"`, `[style.width.px]="{n}"`, `[style.--var]="{v}"`; merged with directives and host bindings with the precedence of Angular (template > directives > component, a key > the string) |
-| `[class]="{…}"`, `[style]="{…}"`, `[ngClass]`, `[ngStyle]` | no object bindings: one `[class.x]` / `[style.x]` per key, or the string `class="{`a ${b()}`}"` |
-| `[ngClass]`, `[ngStyle]` | `class="{`a ${b()}`}"`, `style="{…}"`, or a conditional binding |
+| `[class]="{…}"`, `[style]="{…}"` | no object bindings on the attributes: one `[class.x]` / `[style.x]` per key, the string `class="{`a ${b()}`}"`, or `@@class` / `@@style` |
+| `[ngClass]="expr"`, `[ngStyle]="expr"` | `@@class(value="{expr}")`, `@@style(value="{expr}")` of `@xaendar/directives`, with the same values (`ngStyle`'s `'width.px'` keys included); for a few keys known in advance, `[class.x]` / `[style.x]` are lighter |
 | `@if`, `@for`, `@switch` | the same blocks, `@for` with `@empty` and `$count`, over any iterable, its variables read as in Angular (`item.name`, `$index`) |
 | `@defer (on …)` with `@placeholder`, `@loading`, `@error` | `@defer (triggers) { … }` with the same blocks, written once each in any order, triggers separated by commas without `on`: `load` (`immediate`), `idle`/`idle(500)`, `timer(2s)`, `visible` (`viewport`), `interaction`, `hover`, `when expr`; no parentheses waits for `idle`. An element: `hover(ref)`, `visible(ref, { rootMargin: '200px' })` (Angular's `viewport({ trigger: ref, … })`). `prefetch idle`, `prefetch when expr` (Angular's `prefetch on idle`). `@placeholder (minimum 500ms)`, `@loading (after 100ms, minimum 1s)`, commas between the parameters. `@error (error)` receives the error |
 | `@defer (hydrate on …)` | `@hydrate (triggers) { … }` (the triggers of `@defer` without element refs, `never`, and `prefetch`): only for content rendered on the server, in the browser the content renders at once |
@@ -53,7 +54,7 @@
 
 ## What works differently
 
-- Bindings on native elements call `setAttribute`: a boolean adds the attribute empty or removes it (`disabled="{busy()}"` works), except on `aria-*` and enumerated attributes (`draggable`, `spellcheck`, `contenteditable`), which get `"true"`/`"false"`; `null` removes the attribute as `[attr.name]` does; `value`/`checked` are only the initial state.
+- Bindings on native elements call `setAttribute`: a boolean adds the attribute empty or removes it (`disabled="{busy()}"` works), except on `aria-*` and enumerated attributes (`draggable`, `spellcheck`, `contenteditable`), which get `"true"`/`"false"`; `null` removes the attribute as `[attr.name]` does, unless a directive or the component writes it, whose value comes back; `value`/`checked` are only the initial state.
 - A removed element is destroyed, and rendered again as a new instance: never move or reattach elements with the DOM APIs.
 - Inputs are never written by attributes set from outside the templates, and the hooks run at every connection, not once.
 - Expressions cannot assign, create objects with `new`, or declare functions: logic belongs in the class.

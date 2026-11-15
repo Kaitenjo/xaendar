@@ -73,11 +73,13 @@
   },
   "nav": {
     "home": "Home",
+    "back": "Tutte le sezioni",
+    "close": "Chiudi",
     "sections": {
       "introduction": "Introduzione",
       "inDepthGuides": "Guide approfondite",
       "developerTools": "Strumenti",
-      "reference": "Riferimento"
+      "reference": "Riferimenti"
     },
     "groups": {
       "essentials": "Fondamenti",
@@ -155,7 +157,7 @@
       "tools/ssr/deployment": "Build e deploy",
       "tools/integrations": "Integrazioni",
       "tools/language-service": "Language service e VS Code",
-      "reference/api": "Riferimento API",
+      "reference/api": "Riferimenti API",
       "reference/template-syntax": "Prontuario della sintassi",
       "reference/errors": "Enciclopedia degli errori",
       "reference/coming-from-angular": "Arrivando da Angular"
@@ -550,6 +552,10 @@
           "callout5": {
             "heading": "Un componente definito dopo il render del padre",
             "body": "Un componente caricato più tardi, per esempio con un import dinamico, riceve i binding come attributi stringa finché non viene definito, e i suoi valori di default dopo. Vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>."
+          },
+          "callout6": {
+            "heading": "Un input con il nome di un attributo nativo",
+            "body": "Un input chiamato <code>title</code>, <code>id</code>, <code>hidden</code>, <code>tabIndex</code>, <code>ariaLabel</code> o come un altro attributo che ogni elemento riflette prende i binding con quel nome: <code>title=\"…\"</code> sul tag imposta l’input, e non scrive più il tooltip dell’elemento. La build e l’editor lo segnalano con un avviso. Da fuori, l’attributo nativo si scrive con <code>attr.title=\"…\"</code>, che non tocca mai l’input: vedi <a href=\"#/it/templates/binding\">Binding</a>."
           }
         },
         "summary": {
@@ -659,7 +665,7 @@
           },
           "callout6": {
             "heading": "Nomi già usati da HTMLElement",
-            "p1": "Un componente è un <code>HTMLElement</code>, quindi un evento chiamato <code>remove</code>, <code>click</code> o <code>focus</code> sostituirebbe un metodo dell’elemento. TypeScript lo rifiuta, e lo stesso vale per un input o un signal chiamato <code>title</code>, <code>lang</code> o <code>hidden</code>. Scegli un altro nome, oppure mantieni il nome nei template con un <code>alias</code>."
+            "p1": "Un componente è un <code>HTMLElement</code>, quindi un evento chiamato <code>remove</code>, <code>click</code> o <code>focus</code> sostituirebbe un metodo dell’elemento. TypeScript lo rifiuta, e lo stesso vale per un input o un signal chiamato <code>title</code>, <code>lang</code> o <code>hidden</code>. Scegli un altro nome. Un <code>alias</code> che mantiene il nome nei template compila, ma il binding <code>lang=\"…\"</code> imposta allora l’input invece dell’attributo dell’elemento, che si scrive con <code>attr.lang</code>: la build e l’editor lo segnalano con un avviso."
           }
         },
         "summary": {
@@ -717,14 +723,15 @@
       },
       "hostBindings": {
         "eyebrow": "Componenti",
-        "title": "Binding dell’host con @HostProperty e @HostListener",
-        "lead": "Un componente è un elemento della pagina: il template che lo usa può impostarne gli attributi e ascoltarne gli eventi. Alcuni di questi, però, appartengono al componente, chiunque lo usi: il ruolo di un interruttore e il suo stato per le tecnologie assistive, una classe che il suo foglio di stile legge con <code>:host(.on)</code>, i clic e i tasti che lo azionano. <code>@HostProperty</code> e <code>@HostListener</code> li dichiarano sui membri della classe, e li mantengono sull’elemento host.",
+        "title": "Binding dell’host con @HostAttribute e @HostListener",
+        "lead": "Un componente è un elemento della pagina: il template che lo usa può impostarne gli attributi e ascoltarne gli eventi. Alcuni di questi, però, appartengono al componente, chiunque lo usi: il ruolo di un interruttore e il suo stato per le tecnologie assistive, una classe che il suo foglio di stile legge con <code>:host(.on)</code>, i clic e i tasti che lo azionano. <code>@HostAttribute</code> e <code>@HostListener</code> li dichiarano sui membri della classe, e li mantengono sull’elemento host.",
         "attributesAndClasses": {
           "title": "Attributi e classi",
-          "p1": "<code>@HostProperty('name')</code> su un campo, un getter o un accessor scrive il suo valore nell’attributo <code>name</code> dell’elemento host; <code>@HostProperty('class.name')</code> attiva e disattiva la classe <code>name</code>, che l’elemento ha finché il valore è truthy. Il membro viene letto dentro un effetto: un valore che non legge signal viene scritto una volta sola, mentre un signal, o un getter che legge signal, viene riscritto ogni volta che cambiano.",
+          "p1": "<code>@HostAttribute('name')</code> su un campo, un getter o un accessor scrive il suo valore nell’attributo <code>name</code> dell’elemento host; <code>@HostAttribute('class.name')</code> attiva e disattiva la classe <code>name</code>, che l’elemento ha finché il valore è truthy. Il membro viene letto dentro un effetto: un valore che non legge signal viene scritto una volta sola, mentre un signal, o un getter che legge signal, viene riscritto ogni volta che cambiano.",
           "example1": "Un interruttore disegnato dal proprio elemento",
           "p2": "Fai clic sugli interruttori, oppure raggiungili con Tab e premi Spazio. <code>role</code> non legge signal e viene scritto una volta sola. <code>on</code> contiene un signal, e l’host ha la classe <code>on</code> finché è <code>true</code>: il foglio di stile disegna l’interruttore a partire da <code>:host(.on)</code>. I getter di <code>aria-checked</code>, <code>aria-disabled</code> e <code>tabindex</code> vengono riscritti quando cambiano <code>on</code> o <code>locked</code>. <code>locked</code> è un input riflesso sull’host: il padre lo lega, e il foglio di stile legge <code>:host([locked])</code>. Ispeziona l’interruttore del Wi-Fi con gli strumenti per sviluppatori per vederne cambiare gli attributi mentre attivi la modalità aereo.",
-          "p3": "<code>@HostProperty('class')</code> e <code>@HostProperty('style')</code> scrivono una stringa di classi, o di dichiarazioni, e <code>@HostProperty('style.name')</code> una proprietà, seguita dalla sua unità se c’è (<code>'style.width.px'</code>). Vengono fusi chiave per chiave con il template che renderizza l’elemento e con le sue direttive, che vincono sul componente: il template può sovrascrivere una classe o una proprietà che il componente scrive, e restituirla legando <code>null</code>. TypeScript controlla il membro in base al nome: una stringa per <code>class</code> e <code>style</code>, un numero per una proprietà con unità. Vedi <a href=\"#/it/templates/binding\">Binding</a>."
+          "p3": "<code>@HostAttribute('class')</code> e <code>@HostAttribute('style')</code> scrivono una stringa di classi, o di dichiarazioni, e <code>@HostAttribute('style.name')</code> una proprietà, seguita dalla sua unità se c’è (<code>'style.width.px'</code>). Vengono fusi chiave per chiave con il template che renderizza l’elemento e con le sue direttive, che vincono sul componente: il template può sovrascrivere una classe o una proprietà che il componente scrive, e restituirla legando <code>null</code>. TypeScript controlla il membro in base al nome: una stringa per <code>class</code> e <code>style</code>, un numero per una proprietà con unità. Vedi <a href=\"#/it/templates/binding\">Binding</a>.",
+          "p4": "Anche gli attributi vengono fusi, per intero: il template che renderizza l’elemento, che li scrive con <code>attr.nome</code> (o <code>nome</code>, quando il componente non ha un input con quel nome), vince sulle direttive, che vincono sul componente, e una sorgente con <code>null</code> lascia l’attributo a quelle sotto. Vedi <a href=\"#/it/templates/binding\">Binding</a>."
         },
         "events": {
           "title": "Gli eventi dell’host",
@@ -734,12 +741,12 @@
         },
         "values": {
           "title": "Dai valori agli attributi",
-          "p1": "<code>null</code> e <code>undefined</code> rimuovono l’attributo, e ogni valore che non sia un booleano viene scritto come stringa. Un booleano aggiunge l’attributo vuoto per <code>true</code> e lo rimuove per <code>false</code>, come serve a un attributo booleano quale <code>hidden</code>, tranne sugli attributi <code>aria-*</code> e su quelli enumerati che accettano <code>false</code> (<code>draggable</code>, <code>spellcheck</code>, <code>contenteditable</code>), che ricevono il testo <code>\"true\"</code> o <code>\"false\"</code>: l’interruttore restituisce il suo stato così com’è per <code>aria-checked</code>. I binding dei template seguono la stessa regola."
+          "p1": "<code>null</code> e <code>undefined</code> non esprimono un’opinione: rimuovono l’attributo, a meno che lo scriva il template o una direttiva, e ogni valore che non sia un booleano viene scritto come stringa. Un booleano aggiunge l’attributo vuoto per <code>true</code> e lo rimuove per <code>false</code>, come serve a un attributo booleano quale <code>hidden</code>, tranne sugli attributi <code>aria-*</code> e su quelli enumerati che accettano <code>false</code> (<code>draggable</code>, <code>spellcheck</code>, <code>contenteditable</code>), che ricevono il testo <code>\"true\"</code> o <code>\"false\"</code>: l’interruttore restituisce il suo stato così com’è per <code>aria-checked</code>. I binding dei template seguono la stessa regola."
         },
         "timing": {
           "title": "Quando vengono applicati",
           "p1": "In un componente gli attributi, le classi e i listener vengono applicati dopo il render e dopo l’aggiornamento delle query, subito prima di <code>afterRender</code>: un getter può leggere una query, e <code>afterRender</code> trova l’host pronto, mentre <code>onInit</code> no. I cambiamenti dei signal vengono scritti un microtask dopo, come in ogni effetto.",
-          "p2": "Alla disconnessione tutto viene annullato: gli attributi vengono rimossi, le classi tolte, i listener rimossi. Un componente spostato nel documento li perde, e li riottiene alla nuova connessione."
+          "p2": "Alla disconnessione tutto viene annullato: gli attributi e le classi del componente vengono tolti, tornando il valore che scrivono il template o le direttive, e i listener rimossi. Un componente spostato nel documento li perde, e li riottiene alla nuova connessione."
         },
         "directives": {
           "title": "Nelle direttive custom",
@@ -757,7 +764,7 @@
           },
           "callout3": {
             "heading": "Il padre lega lo stesso attributo",
-            "p1": "L’host è anche un tag nel template del padre, che può scrivere lo stesso attributo, come può farlo una direttiva applicata all’elemento. Un attributo non viene fuso: vince l’ultima scrittura, un attributo statico del padre viene sovrascritto alla connessione e rimosso alla disconnessione. Lascia ogni attributo a un solo proprietario, oppure prendi il valore del padre da un input riflesso con <code>@HostProperty</code>, come fa <code>locked</code>. <code>class</code> e <code>style</code> invece vengono fusi, una classe o una proprietà alla volta: il template del padre vince sulle direttive, che vincono sul componente, e quando il componente viene distrutto vengono tolte solo le sue chiavi."
+            "p1": "L’host è anche un tag nel template del padre, che può scrivere lo stesso attributo, come può farlo una direttiva applicata all’elemento. Ogni attributo viene fuso: il template del padre vince sulle direttive, che vincono sul componente, qualunque sia l’ordine in cui scrivono; una sorgente che lega <code>null</code> lascia l’attributo a quelle sotto, e quando il componente viene distrutto vengono tolte solo le sue opinioni. <code>class</code> e <code>style</code> vengono fusi una classe o una proprietà alla volta. Quando il componente dichiara un input con il nome dell’attributo, il padre scrive l’attributo con <code>attr.nome</code>."
           },
           "callout4": {
             "heading": "In onInit non è ancora legato nulla",
@@ -772,7 +779,7 @@
           "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
-          "td1": "Scrive il valore di un campo, di un getter o di un accessor in un attributo dell’host: rimosso per <code>null</code> e <code>undefined</code>; un booleano lo aggiunge vuoto o lo rimuove, oppure viene scritto come <code>\"true\"</code> o <code>\"false\"</code> sugli attributi <code>aria-*</code> ed enumerati.",
+          "td1": "Scrive il valore di un campo, di un getter o di un accessor in un attributo dell’host, fuso con il template e le direttive, che vincono: nessuna opinione per <code>null</code> e <code>undefined</code>; un booleano lo aggiunge vuoto o lo rimuove, oppure viene scritto come <code>\"true\"</code> o <code>\"false\"</code> sugli attributi <code>aria-*</code> ed enumerati.",
           "td2": "Attiva una classe dell’host finché il valore è truthy, fusa con le classi che scrivono il template e le direttive.",
           "td3": "Ascolta un evento dell’host, o della finestra o del documento con il prefisso window: o document:, con un metodo, che riceve l’evento tipizzato dal suo nome."
         }
@@ -906,7 +913,7 @@
           "title": "Lo stile dell’host",
           "p1": "Dentro il foglio di stile, <code>:host</code> colpisce l’elemento del componente stesso. Un custom element è <code>display: inline</code> per default, quindi la maggior parte dei componenti imposta qui un display. <code>:host(selettore)</code> colpisce l’host solo quando corrisponde anche al selettore: una classe, un attributo o uno stato impostati dall’esterno.",
           "example1": ":host, :host(.selected), :host([tone='danger'])",
-          "p2": "Il padre imposta solo una classe e un attributo; è il chip a decidere come appaiono. Ogni chip ascolta il proprio <code>(click)</code>: un evento nativo legato sul tag di un componente viene aggiunto al suo elemento, come su un elemento nativo. Vedi i casi limite di <a href=\"#/it/components/outputs\">Output</a>. Un componente può anche impostare classi e attributi sul proprio host, con <code>@HostProperty</code>: vedi <a href=\"#/it/components/host-bindings\">Binding dell’host</a>."
+          "p2": "Il padre imposta solo una classe e un attributo; è il chip a decidere come appaiono. Ogni chip ascolta il proprio <code>(click)</code>: un evento nativo legato sul tag di un componente viene aggiunto al suo elemento, come su un elemento nativo. Vedi i casi limite di <a href=\"#/it/components/outputs\">Output</a>. Un componente può anche impostare classi e attributi sul proprio host, con <code>@HostAttribute</code>: vedi <a href=\"#/it/components/host-bindings\">Binding dell’host</a>."
         },
         "themingWithCustomProperties": {
           "title": "Temi con le custom property",
@@ -1073,7 +1080,7 @@
         },
         "hostBindings": {
           "title": "Legare l’elemento",
-          "p1": "<code>@HostProperty</code> e <code>@HostListener</code> funzionano in una direttiva come in un componente, sull’elemento a cui è applicata: gli attributi vengono scritti e i listener aggiunti subito dopo <code>onInit</code>, e tutto viene annullato quando la direttiva viene distrutta. Questa direttiva copia un testo quando si fa clic sul suo elemento, senza <code>onInit</code> né <code>onDestroy</code>:",
+          "p1": "<code>@HostAttribute</code> e <code>@HostListener</code> funzionano in una direttiva come in un componente, sull’elemento a cui è applicata: gli attributi vengono scritti e i listener aggiunti subito dopo <code>onInit</code>, e tutto viene annullato quando la direttiva viene distrutta. Questa direttiva copia un testo quando si fa clic sul suo elemento, senza <code>onInit</code> né <code>onDestroy</code>:",
           "p2": "I valori, i tempi e i casi limite sono descritti in <a href=\"#/it/components/host-bindings\">Binding dell’host</a>."
         },
         "svgElements": {
@@ -1738,8 +1745,8 @@
     },
     "reference": {
       "api": {
-        "eyebrow": "Riferimento",
-        "title": "Riferimento API",
+        "eyebrow": "Riferimenti",
+        "title": "Riferimenti API",
         "lead": "Ogni simbolo esportato dai pacchetti di Xaendar, raggruppato per pacchetto. Ognuno porta alla sua pagina: cosa fa, la sua firma, le sue opzioni e i suoi membri uno per uno, ed esempi. Filtra per nome o per tipo.",
         "packages": {
           "@xaendar/core": "Componenti, direttive, i loro decoratori e le loro classi base.",
@@ -1787,11 +1794,12 @@
           "td21": "Stessa sintassi: <code>[class.x]=\"{ condizione }\"</code>, con il valore tra graffe, fusa classe per classe con le direttive e il componente come in Angular. Non esiste <code>[class]</code> legato a un oggetto: <code>class=\"{`a ${b()}`}\"</code> lega la stringa. Vedi <a href=\"#/it/templates/binding\">Binding</a>.",
           "td22": "<code>@Model</code> e <code>@Model.required</code> su un accessor tipizzato <code>ModelSignal</code>: <code>set</code> e <code>update</code> inviano l’evento di cambiamento, <code>valueChange</code>",
           "td23": "La stessa sintassi, <code>[(value)]=\"signal\"</code>, con il signal indicato senza chiamata, su componenti e direttive. I campi nativi non hanno model: vedi <a href=\"#/it/patterns/forms\">Form</a>.",
-          "td24": "Gli stessi eventi di tasto: il tasto dopo l’evento, <code>(keyup.escape)</code>, i modificatori <code>alt</code>, <code>control</code>, <code>meta</code> e <code>shift</code> prima di esso, che devono corrispondere esattamente, e <code>code</code> per <code>event.code</code>; anche in <code>@HostListener('document:keydown.escape')</code>. Vedi <a href=\"#/it/templates/events\">Gestione degli eventi</a>."
+          "td24": "Gli stessi eventi di tasto: il tasto dopo l’evento, <code>(keyup.escape)</code>, i modificatori <code>alt</code>, <code>control</code>, <code>meta</code> e <code>shift</code> prima di esso, che devono corrispondere esattamente, e <code>code</code> per <code>event.code</code>; anche in <code>@HostListener('document:keydown.escape')</code>. Vedi <a href=\"#/it/templates/events\">Gestione degli eventi</a>.",
+          "td25": "Lo stesso prefisso, senza parentesi quadre: <code>attr.title=\"{ hint() }\"</code> scrive l’attributo, mai l’input con lo stesso nome. <code>null</code> non esprime un’opinione, e l’attributo viene fuso con gli host binding delle direttive e del componente, vincendo il template. Vedi <a href=\"#/it/templates/binding\">Binding</a>."
         },
         "whatWorksDifferently": {
           "title": "Cosa funziona diversamente",
-          "li2": "<strong>I binding impostano attributi.</strong> Sugli elementi nativi un binding chiama <code>setAttribute</code>: un <code>value</code> smette di contare quando l’utente digita. Un booleano aggiunge o rimuove l’attributo, quindi <code>disabled=\"{ busy() }\"</code> funziona, tranne sugli attributi <code>aria-*</code> ed enumerati, che ricevono <code>\"true\"</code> o <code>\"false\"</code>, e <code>null</code> rimuove l’attributo, come con <code>[attr.name]</code>. Vedi <a href=\"#/it/templates/binding\">Binding</a> e <a href=\"#/it/patterns/forms\">Form</a>.",
+          "li2": "<strong>I binding impostano attributi.</strong> Sugli elementi nativi un binding chiama <code>setAttribute</code>: un <code>value</code> smette di contare quando l’utente digita. Un booleano aggiunge o rimuove l’attributo, quindi <code>disabled=\"{ busy() }\"</code> funziona, tranne sugli attributi <code>aria-*</code> ed enumerati, che ricevono <code>\"true\"</code> o <code>\"false\"</code>, e <code>null</code> rimuove l’attributo, come con <code>[attr.name]</code>, a meno che lo scriva una direttiva o il componente, il cui valore torna. Vedi <a href=\"#/it/templates/binding\">Binding</a> e <a href=\"#/it/patterns/forms\">Form</a>.",
           "li3": "<strong>Un elemento rimosso viene distrutto.</strong> Quando un template rimuove un elemento, la sua istanza è persa, e renderizzarlo di nuovo ne crea una nuova. Spostare o riattaccare elementi con le API del DOM non è supportato. Vedi <a href=\"#/it/components/lifecycle\">Ciclo di vita</a>.",
           "li4": "<strong>I template sono rigorosi.</strong> I listener chiamano un solo metodo, le espressioni non possono assegnare né creare oggetti, e alcuni caratteri vanno trattati con l’escape. Vedi <a href=\"#/it/reference/template-syntax\">il prontuario</a>.",
           "callout1": {
@@ -2182,11 +2190,11 @@
       "binding": {
         "eyebrow": "Template",
         "title": "Binding di attributi e proprietà",
-        "lead": "Un attributo il cui valore è un’espressione tra graffe è legato: il compilatore lo imposta quando l’elemento viene creato, e di nuovo ogni volta che il valore cambia. Su un elemento nativo un binding imposta un attributo; sul tag di un componente imposta l’input con lo stesso nome.",
+        "lead": "Un attributo il cui valore è un’espressione tra graffe è legato: il compilatore lo imposta quando l’elemento viene creato, e di nuovo ogni volta che il valore cambia. Su un elemento nativo un binding imposta un attributo; sul tag di un componente imposta l’input con lo stesso nome, e <code>attr.nome</code> scrive invece l’attributo.",
         "bindingAttributes": {
           "title": "Legare gli attributi",
           "example1": "Quattro attributi legati alla stessa pagina",
-          "p1": "L’intero valore deve essere un’unica espressione: un template literal quando serve del testo intorno. Il valore viene convertito in stringa e scritto con <code>setAttribute</code>, quindi <code>class</code> e <code>style</code> si legano come qualsiasi altro attributo, mentre <code>[class.name]</code> e <code>[style.name]</code> legano una sola classe e una sola proprietà, come mostrato in <a href=\"#/it/components/styling\">Stili</a>; <code>null</code> e <code>undefined</code> invece rimuovono l’attributo."
+          "p1": "L’intero valore deve essere un’unica espressione: un template literal quando serve del testo intorno. Il valore viene convertito in stringa e scritto con <code>setAttribute</code>, quindi <code>class</code> e <code>style</code> si legano come qualsiasi altro attributo, mentre <code>[class.name]</code> e <code>[style.name]</code> legano una sola classe e una sola proprietà, come mostrato in <a href=\"#/it/components/styling\">Stili</a>; <code>null</code> e <code>undefined</code> invece non esprimono un’opinione, e rimuovono l’attributo, a meno che lo scriva anche una direttiva o il componente (vedi sotto)."
         },
         "whichExpressionsAreReactive": {
           "title": "Quali espressioni sono reattive",
@@ -2204,11 +2212,11 @@
           "title": "Impostare una proprietà di stile",
           "p1": "<code>[style.name]=\"{ expression }\"</code> imposta la proprietà di stile <code>name</code> al valore dell’espressione, una stringa o un numero; <code>null</code>, <code>undefined</code> e una stringa vuota non hanno opinione, e lasciano la proprietà alle altre sorgenti che la scrivono, oppure la rimuovono. La proprietà si scrive in kebab-case o in camelCase, <code>[style.background-color]</code> o <code>[style.backgroundColor]</code>, e può essere seguita da un’unità del CSS, che il valore riceve e che accetta un numero: <code>[style.width.px]=\"{ 120 }\"</code> scrive <code>120px</code>. Una custom property si imposta come è scritta: <code>[style.--accent]</code>. Un valore che termina con <code>!important</code> viene impostato con quella priorità.",
           "example1": "Una barra con una larghezza in percentuale, una custom property e una proprietà rimossa da null",
-          "p2": "Gli style binding e l’attributo <code>style</code> lavorano insieme, anche quando è legato: vengono fusi proprietà per proprietà, e i binding vincono sulla stringa. La stringa viene letta come una lista di dichiarazioni, compresi i <code>;</code> dentro <code>url(…)</code> o tra virgolette. Funzionano sui tag dei componenti e dentro i binding condizionali, dove la proprietà viene rimossa quando il suo ramo non è più selezionato, e <code>@HostProperty('style.width.px')</code> ne lega una sull’elemento host."
+          "p2": "Gli style binding e l’attributo <code>style</code> lavorano insieme, anche quando è legato: vengono fusi proprietà per proprietà, e i binding vincono sulla stringa. La stringa viene letta come una lista di dichiarazioni, compresi i <code>;</code> dentro <code>url(…)</code> o tra virgolette. Funzionano sui tag dei componenti e dentro i binding condizionali, dove la proprietà viene rimossa quando il suo ramo non è più selezionato, e <code>@HostAttribute('style.width.px')</code> ne lega una sull’elemento host."
         },
         "merging": {
           "title": "Fondere class e style",
-          "p1": "La <code>class</code> e lo <code>style</code> di un elemento possono essere scritti da più sorgenti: il template che lo renderizza, le direttive che applica, comprese le sue host directive, e il componente che è, con <code>@HostProperty</code>. Vengono fusi chiave per chiave, una classe o una proprietà alla volta, e per ogni chiave vince la sorgente più forte che ha un’opinione: il template, poi le direttive, poi il componente. In ognuna di esse una chiave legata da sola (<code>[class.on]</code>, <code>@HostProperty('style.width.px')</code>) vince sulla stringa (<code>class=\"…\"</code>, <code>@HostProperty('style')</code>). Tra due direttive vince quella applicata dopo: prima le host directive, nell’ordine in cui il componente le dichiara, poi quelle del template, nell’ordine in cui compaiono.",
+          "p1": "La <code>class</code> e lo <code>style</code> di un elemento possono essere scritti da più sorgenti: il template che lo renderizza, le direttive che applica, comprese le sue host directive, e il componente che è, con <code>@HostAttribute</code>. Vengono fusi chiave per chiave, una classe o una proprietà alla volta, e per ogni chiave vince la sorgente più forte che ha un’opinione: il template, poi le direttive, poi il componente. In ognuna di esse una chiave legata da sola (<code>[class.on]</code>, <code>@HostAttribute('style.width.px')</code>) vince sulla stringa (<code>class=\"…\"</code>, <code>@HostAttribute('style')</code>). Tra due direttive vince quella applicata dopo: prima le host directive, nell’ordine in cui il componente le dichiara, poi quelle del template, nell’ordine in cui compaiono.",
           "p2": "Una sorgente senza opinione su una chiave la lascia a quelle sotto: un template che lega <code>[style.width]=\"{ null }\"</code> lascia valere la larghezza di una direttiva o del componente. Per una classe <code>false</code> è un’opinione, <code>null</code> no: <code>[class.on]=\"{ false }\"</code> toglie la classe anche quando il componente la aggiunge, <code>[class.on]=\"{ null }\"</code> la lascia al componente. Quando una sorgente sparisce (un ramo non più selezionato, una direttiva distrutta) le chiavi che scriveva prendono il valore delle sorgenti sotto, e le chiavi delle altre restano.",
           "p3": "L’ordine in cui le sorgenti girano non conta: il risultato dipende solo dal loro livello. Vengono scritte solo le chiavi il cui valore cambia, con <code>classList</code> e <code>style.setProperty</code>, mai scrivendo l’attributo intero, così un elemento adottato dall’HTML del server che ha già gli stessi valori non viene riscritto. Le classi e le proprietà che altro codice scrive sull’elemento non vengono tracciate: il runtime tocca solo le chiavi che ha scritto, e rimuove una chiave su cui nessuna sorgente ha un’opinione solo se l’aveva scritta lui.",
           "p4": "Un elemento scritto solo dal suo template, il caso più comune, non costa niente in più: la sua classe e il suo stile vengono scritti direttamente. Lo stato della fusione viene tenuto solo per gli elementi scritti da più di una sorgente."
@@ -2216,6 +2224,19 @@
         "bindingTheInputsOf": {
           "title": "Legare gli input dei componenti",
           "p1": "Sul tag di un componente la stessa sintassi imposta un input, con valori di qualsiasi tipo, controllati rispetto al tipo dell’input. Un valore statico è sempre una stringa. Vedi <a href=\"#/it/components/inputs\">Input</a>."
+        },
+        "writingTheAttribute": {
+          "title": "Scrivere l’attributo di un componente: attr.",
+          "p1": "Sul tag di un componente, un nome che è un input imposta l’input. <code>attr.nome</code> scrive invece l’attributo <code>nome</code> dell’elemento, qualunque cosa dichiari il componente: <code>attr.title=\"…\"</code> imposta l’attributo <code>title</code> anche quando il componente ha un input chiamato <code>title</code>, che mantiene il suo valore. Il valore segue le regole degli altri attributi, statico o un’espressione, compresi <code>null</code> e i booleani, anche nei rami di un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a>. Su un elemento nativo <code>attr.title</code> equivale a <code>title</code>: rende solo esplicita l’intenzione.",
+          "p2": "<code>attr.class</code> e <code>attr.style</code> non compilano: li scrivono <code>class</code>, <code>style</code>, <code>[class.name]</code> e <code>[style.name]</code>, fusi chiave per chiave. Il template di un elemento scrive un attributo una volta sola: <code>title</code> e <code>attr.title</code> sono lo stesso attributo quando <code>title</code> non è un input, e scriverli entrambi è un errore, come scrivere due volte <code>attr.title</code>. <code>attr.</code> non si può scrivere tra le parentesi di una direttiva, che lega solo le sue proprietà, né in un binding bidirezionale.",
+          "p3": "Un componente che dichiara un input, o un alias, con il nome di un attributo che ogni elemento riflette (<code>id</code>, <code>title</code>, <code>hidden</code>, <code>lang</code>, <code>dir</code>, <code>tabindex</code>, <code>slot</code>, <code>inert</code>, <code>draggable</code>, <code>spellcheck</code>, <code>popover</code>, <code>aria-*</code>…) riceve un avviso dalla build e dall’editor: i template che legano quel nome impostano l’input, e scrivono l’attributo nativo con <code>attr.nome</code>."
+        },
+        "attributePrecedence": {
+          "title": "Attributi scritti da più sorgenti",
+          "p1": "Anche ogni altro attributo può essere scritto da più sorgenti: il template che renderizza l’elemento (<code>attr.nome</code>, o <code>nome</code> quando non è un input), le direttive che applica e il componente che è, con <code>@HostAttribute</code>. Un attributo viene fuso per intero, con la precedenza di <code>class</code> e <code>style</code>: vince la sorgente più forte che ha un’opinione, il template, poi le direttive (prima le host directive, nell’ordine in cui il componente le dichiara, poi quelle del template, nell’ordine in cui compaiono, vincendo l’ultima), poi il componente. L’ordine in cui le sorgenti vengono applicate, o scrivono, non conta.",
+          "example1": "Un ruolo scritto dal template, da una direttiva e dal componente",
+          "p2": "<code>null</code> e <code>undefined</code> non esprimono un’opinione: l’attributo passa alla sorgente sotto, e viene rimosso quando nessuna sorgente ne ha una, solo se l’aveva scritto il runtime. <code>false</code> è un valore: rimuove l’attributo anche quando lo scrive il componente, tranne sugli attributi <code>aria-*</code> ed enumerati, che ricevono <code>\"false\"</code>. Quando una sorgente sparisce (un ramo non più selezionato, una direttiva distrutta, il componente disconnesso) l’attributo riprende il valore delle sorgenti sotto.",
+          "p3": "Un attributo scritto da una sola sorgente, quasi tutti, costa quanto prima: viene scritto direttamente, e lo stato della fusione viene tenuto solo per gli attributi che scrive un secondo livello. Il server applica la stessa precedenza e scrive il valore finale, che il browser adotta senza riscriverlo. Gli attributi che altro codice scrive sull’elemento non vengono tracciati."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -2229,7 +2250,7 @@
           },
           "callout2": {
             "heading": "null e undefined",
-            "body": "Un attributo legato a <code>null</code> o <code>undefined</code> viene rimosso, e il server non lo scrive: <code>aria-describedby=\"{ error() ? 'hint' : null }\"</code> c’è solo finché c’è un errore. Viene riscritto appena il valore è un altro. <code>0</code> è un valore come gli altri, scritto come il testo <code>\"0\"</code>; un booleano segue la regola vista sopra."
+            "body": "Un attributo legato a <code>null</code> o <code>undefined</code> non esprime un’opinione: viene rimosso, a meno che lo scriva anche una direttiva o il componente, e il server non lo scrive: <code>aria-describedby=\"{ error() ? 'hint' : null }\"</code> c’è solo finché c’è un errore. Viene riscritto appena il valore è un altro. <code>0</code> è un valore come gli altri, scritto come il testo <code>\"0\"</code>; un booleano segue la regola vista sopra."
           },
           "callout3": {
             "heading": "Un attributo legato due volte",
@@ -2241,7 +2262,7 @@
           },
           "callout5": {
             "heading": "Un binding di classe richiede un’espressione",
-            "p1": "Il valore di <code>[class.name]</code> e di <code>[style.name]</code> è sempre un’espressione tra graffe: un valore statico, o nessun valore, non compila. Le parentesi quadre legano solo classi e proprietà di stile: <code>[title]</code> o <code>[attr.title]</code> sono errori."
+            "p1": "Il valore di <code>[class.name]</code> e di <code>[style.name]</code> è sempre un’espressione tra graffe: un valore statico, o nessun valore, non compila. Le parentesi quadre legano solo classi e proprietà di stile: <code>[title]</code> o <code>[attr.title]</code> sono errori, e l’attributo si scrive <code>title</code> o <code>attr.title</code>."
           },
           "callout6": {
             "heading": "Le classi si attivano sull’elemento, non nelle direttive",
@@ -2259,7 +2280,8 @@
           "td5": "<code>input=\"{ expression }\"</code> su un componente",
           "td6": "Imposta l’input, con il valore così com’è.",
           "td7": "La classe <code>name</code>, presente finché il valore è truthy.",
-          "td8": "La proprietà di stile <code>name</code>, con la sua unità se c’è; <code>null</code>, <code>undefined</code> e una stringa vuota la lasciano alle altre sorgenti."
+          "td8": "La proprietà di stile <code>name</code>, con la sua unità se c’è; <code>null</code>, <code>undefined</code> e una stringa vuota la lasciano alle altre sorgenti.",
+          "td9": "L’attributo <code>name</code> dell’elemento, mai l’input con lo stesso nome; su un elemento nativo equivale a <code>name</code>."
         }
       },
       "conditionalBindings": {
@@ -3199,7 +3221,7 @@
           },
           "output": {
             "title": "Cosa scrive il server",
-            "p1": "Ogni componente è scritto come il suo elemento, con gli attributi dei suoi <code>@HostProperty</code>, seguito da un declarative shadow root con il suo <code>&lt;style&gt;</code> e il suo template, poi il contenuto che proietta negli slot. Il browser trasforma il template in uno shadow root mentre legge la pagina, quindi i componenti appaiono, con i loro stili, prima dei loro script:",
+            "p1": "Ogni componente è scritto come il suo elemento, con gli attributi dei suoi <code>@HostAttribute</code>, seguito da un declarative shadow root con il suo <code>&lt;style&gt;</code> e il suo template, poi il contenuto che proietta negli slot. Il browser trasforma il template in uno shadow root mentre legge la pagina, quindi i componenti appaiono, con i loro stili, prima dei loro script:",
             "p2": "I commenti segnano le parti dinamiche che il browser adotta: <code>&lt;!----&gt;</code> prima di ogni interpolazione, <code>&lt;!--xd-if:0--&gt;</code> … <code>&lt;!--/xd-if--&gt;</code> attorno a un blocco con l’indice del suo ramo, e lo stesso per <code>@switch</code>, per <code>@for</code>, i cui elementi portano la chiave di <code>track</code>, e per le direttive strutturali. L’ultimo blocco di un elemento, o di uno shadow root, non ha il commento di chiusura: il browser lo renderizza senza ancora, aggiungendo in fondo ciò che renderizza. Nessuno viene scritto dentro <code>&lt;textarea&gt;</code>, <code>&lt;title&gt;</code>, <code>&lt;style&gt;</code> e <code>&lt;script&gt;</code>.",
             "p3": "Un custom element di cui il server non ha la classe, come uno di un’altra libreria o un componente importato con <code>@import lazy</code>, è scritto senza shadow root: il browser lo renderizza quando la sua classe è definita. Testi e attributi vengono escapati, e un attributo legato a <code>null</code> o <code>undefined</code> non viene scritto, come il browser lo rimuove."
           },
@@ -3209,7 +3231,7 @@
             "server1": "il costruttore e gli inizializzatori dei campi, poi gli input e <code>onInit</code>;",
             "server2": "il template, leggendo ogni signal una volta, <code>computed</code> compresi;",
             "server3": "le direttive strutturali, di cui si attende il risultato asincrono: una promise rifiutata non renderizza nulla;",
-            "server4": "le direttive custom degli elementi nativi: costruttore, input, <code>onInit</code> e <code>@HostProperty</code>.",
+            "server4": "le direttive custom degli elementi nativi: costruttore, input, <code>onInit</code> e <code>@HostAttribute</code>.",
             "p2": "Ciò che reagisce o ascolta gira solo nel browser:",
             "browser1": "gli effect di <code>this.effect()</code>, <code>afterRender</code> e <code>onDestroy</code>;",
             "browser2": "i listener dei template, di <code>@HostListener</code> e delle direttive;",
@@ -3217,7 +3239,7 @@
             "browser4": "le query, che restano al valore iniziale, gli element ref, <code>undefined</code> sul server, e il render di un componente creato con <code>createComponent</code>, che viene solo costruito.",
             "directives": {
               "title": "Direttive sul server",
-              "p1": "Ciò che una direttiva custom scrive su un elemento nativo, in <code>onInit</code> o con <code>@HostProperty</code>, è nell’HTML della pagina. Usala per ciò che deve esserci prima degli script, come un attributo letto dagli screen reader o dai motori di ricerca:"
+              "p1": "Ciò che una direttiva custom scrive su un elemento nativo, in <code>onInit</code> o con <code>@HostAttribute</code>, è nell’HTML della pagina. Usala per ciò che deve esserci prima degli script, come un attributo letto dagli screen reader o dai motori di ricerca:"
             },
             "globals": {
               "title": "I globali del browser",
@@ -3454,7 +3476,7 @@
             "title": "Cosa rende interattivo un componente"
           },
           "p3": "Un componente è statico quando la build riesce a dimostrare che non fa nulla nel browser. Ciò che la build non riesce a leggere conta come logica, perché tenere un componente nel bundle è sempre corretto:",
-          "li1": "<strong>Nella classe</strong>, o nelle classi da cui eredita: <code>@Event</code>, <code>@Query</code>, <code>@HostListener</code>, <code>hostDirectives</code>, <code>onInit</code>, <code>afterRender</code>, <code>onDestroy</code>, un costruttore che esegue codice, un <code>signal()</code>, <code>effect()</code>, <code>createComponent()</code>, la lettura di un globale che ha solo il browser o di un signal di un modulo, e un campo inizializzato da una funzione dell’applicazione, il cui codice può avviare qualsiasi cosa. Gli input, <code>computed</code>, <code>@HostProperty</code> e i metodi chiamati dal template non contano.",
+          "li1": "<strong>Nella classe</strong>, o nelle classi da cui eredita: <code>@Event</code>, <code>@Query</code>, <code>@HostListener</code>, <code>hostDirectives</code>, <code>onInit</code>, <code>afterRender</code>, <code>onDestroy</code>, un costruttore che esegue codice, un <code>signal()</code>, <code>effect()</code>, <code>createComponent()</code>, la lettura di un globale che ha solo il browser o di un signal di un modulo, e un campo inizializzato da una funzione dell’applicazione, il cui codice può avviare qualsiasi cosa. Gli input, <code>computed</code>, <code>@HostAttribute</code> e i metodi chiamati dal template non contano.",
           "li2": "<strong>Nel template</strong>: un listener, una direttiva, un element ref, un <code>@hydrate</code>, un <code>@client</code>, un custom element di un’altra libreria, un <code>@import lazy</code>, e la lettura di un signal di un modulo o di un globale che ha solo il browser.",
           "li3": "<strong>Nel modulo</strong>: codice eseguito quando viene valutato, un import scritto per i suoi effetti, o altro codice che ne legge qualcosa, che può creare il componente nel browser: allora resta nel bundle anche ogni componente che renderizza, a qualsiasi profondità. <code>import './app.xd.component'</code> non legge nulla, e gli spec e l’entry del server non contano.",
           "li4": "<strong>Attorno</strong>: un componente interattivo che lega un signal a uno dei suoi input, o che lo renderizza in un blocco che dipende da un signal, in un <code>&lt;template&gt;</code> o in un <code>@client</code>, dove il browser può doverlo creare. Ciò che il browser può creare si porta dietro ogni componente renderizzato dal suo template, a qualsiasi profondità: una pagina renderizzata da un router tiene nel bundle tutti i componenti che contiene. I componenti che condividono un modulo o un template stanno dalla stessa parte.",
@@ -4348,9 +4370,9 @@
       "cause": "createComponent o renderToString legano un input con il nome della sua proprietà, mentre l’input dichiara un alias: il codice fuori dalla classe lega un input con il nome che usano i template.",
       "fix": "Lega l’input con il suo alias."
     },
-    "Error: @HostProperty('class.') names no class": {
-      "cause": "Un @HostProperty con class. senza una classe dopo. Viene lanciato quando la classe viene definita, appena il suo modulo viene importato; un nome vuoto lancia @HostProperty('') names no attribute.",
-      "fix": "Indica il nome dell’attributo, o quello della classe dopo class.: @HostProperty('class.on')."
+    "Error: @HostAttribute('class.') names no class": {
+      "cause": "Un @HostAttribute con class. senza una classe dopo. Viene lanciato quando la classe viene definita, appena il suo modulo viene importato; un nome vuoto lancia @HostAttribute('') names no attribute.",
+      "fix": "Indica il nome dell’attributo, o quello della classe dopo class.: @HostAttribute('class.on')."
     },
     "Error: @HostListener('') names no event": {
       "cause": "Un @HostListener con un nome vuoto, o senza niente dopo window: o document:. Viene lanciato quando la classe viene definita.",
@@ -4360,8 +4382,8 @@
       "cause": "Un @HostListener su un evento di tasto con una parte che non è un modificatore. Un nome senza tasto (keydown.) o con un modificatore ripetuto lancia gli altri messaggi degli eventi di tasto, dopo lo stesso prefisso. Viene lanciato quando la classe viene definita.",
       "fix": "Usa alt, control, meta, shift e code, una volta ciascuno, poi il tasto: @HostListener('document:keydown.control.s')."
     },
-    "Error: @HostProperty('role') cannot decorate the static member defaultRole": {
-      "cause": "Un @HostProperty su un campo, un getter o un accessor statico: l’elemento host appartiene a un’istanza.",
+    "Error: @HostAttribute('role') cannot decorate the static member defaultRole": {
+      "cause": "Un @HostAttribute su un campo, un getter o un accessor statico: l’elemento host appartiene a un’istanza.",
       "fix": "Decora un membro d’istanza, che può leggere quello statico."
     },
     "Error: @HostListener('click') cannot decorate the static method handle": {
@@ -4458,7 +4480,7 @@
     },
     "[Parser] [style.color] cannot be bound inside a directive: bind it on the element": {
       "cause": "Uno style binding tra le parentesi di una direttiva, che legano solo le sue proprietà.",
-      "fix": "Scrivilo sull’elemento, oppure imposta la proprietà dalla direttiva con @HostProperty('style.color')."
+      "fix": "Scrivilo sull’elemento, oppure imposta la proprietà dalla direttiva con @HostAttribute('style.color')."
     },
     "[Parser] @empty must follow the block of a @for": {
       "cause": "Un @empty che non segue la graffa di chiusura di un @for, all’inizio del template o dopo un altro blocco.",
@@ -4480,12 +4502,12 @@
       "cause": "Uno style binding la cui unità non è un’unità del CSS.",
       "fix": "Scrivi un’unità del CSS in minuscolo, oppure lega la proprietà senza unità e scrivi l’unità nel valore: [style.width.px], [style.width]=\"{ `${w}px` }\"."
     },
-    "Error: @HostProperty('style.width.foo') sets width in \"foo\", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh": {
-      "cause": "Un @HostProperty di una proprietà di stile la cui unità non è un’unità del CSS. Viene lanciato quando la classe viene definita.",
-      "fix": "Scrivi un’unità del CSS in minuscolo: @HostProperty('style.width.px')."
+    "Error: @HostAttribute('style.width.foo') sets width in \"foo\", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh": {
+      "cause": "Un @HostAttribute di una proprietà di stile la cui unità non è un’unità del CSS. Viene lanciato quando la classe viene definita.",
+      "fix": "Scrivi un’unità del CSS in minuscolo: @HostAttribute('style.width.px')."
     },
-    "Error: @HostProperty('class.on') on second binds the class on, which another member binds already": {
-      "cause": "Due membri di una classe, o delle classi che estende, che legano con @HostProperty la stessa classe, la stessa proprietà di stile o la stessa stringa di class o style. Viene lanciato quando la classe viene definita.",
+    "Error: @HostAttribute('class.on') on second binds the class on, which another member binds already": {
+      "cause": "Due membri di una classe, o delle classi che estende, che legano con @HostAttribute la stessa classe, la stessa proprietà di stile o la stessa stringa di class o style. Viene lanciato quando la classe viene definita.",
       "fix": "Lega ogni classe e ogni proprietà con un solo membro, calcolando il suo valore dagli altri in un getter."
     },
     "@switch is not exhaustive: no @case covers \"delivered\". Add the missing @case, or replace @default never; with a @default branch.": {

@@ -75,6 +75,73 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
 }
 
 /**
+ * The attributes every HTML element reflects as properties of `HTMLElement`, the `aria-*` ones apart: an input of a
+ * component with one of these names takes the binding of the template, which then no longer writes the attribute.
+ */
+const REFLECTED_ATTRIBUTES: ReadonlySet<string> = new Set(['id', 'title', 'hidden', 'lang', 'dir', 'tabindex', 'slot', 'inert', 'accesskey', 'autocapitalize', 'autofocus', 'draggable', 'spellcheck', 'translate', 'popover', 'nonce']);
+
+/**
+ * Finds the inputs of the components of a source file bound by the name of an attribute `HTMLElement` reflects (`id`,
+ * `title`, `hidden`, `tabIndex`, `aria-label`, `ariaLabel`…), by their name or by their alias: a template binding that
+ * name on the element of the component sets the input, so the native attribute is written from outside with `attr.`.
+ * Only the inputs the class itself declares are reported, where they are declared.
+ *
+ * @param sourceFile - The source file declaring the components.
+ * @returns A warning on the name or on the alias of each such input.
+ */
+export function findReflectedInputs(sourceFile: SourceFile): WebComponentError[] {
+  const warnings = new Array<WebComponentError>();
+  const declarations = getWebComponentDeclarations(sourceFile);
+  for (let i = 0; i < declarations.length; i++) {
+    const { klass } = declarations[i];
+    const { members } = klass;
+    for (let j = 0; j < members.length; j++) {
+      const member = members[j];
+      if (!isPropertyDeclaration(member) || !isIdentifier(member.name)) {
+        continue;
+      }
+
+      const nameNode = member.name;
+
+      let required = false;
+      const decorator = member.modifiers?.find((modifier): modifier is PropertyDecorator => {
+        const result = isPropertyDecorator(modifier);
+        required = !!result.required;
+        return result.decorator;
+      });
+      if (!decorator) {
+        continue;
+      }
+
+      const alias = findAliasLiteral(decorator, required);
+      const bound = alias?.text ?? nameNode.text;
+      const attribute = toReflectedAttribute(bound);
+      if (attribute) {
+        reportAt(warnings, sourceFile, `The input "${bound}" of ${klass.name.text} has the name of an attribute every element reflects: ${bound}="…" on its element sets the input, so the native attribute is written with attr.${attribute}="…"`, alias ?? nameNode);
+      }
+    }
+  }
+
+  return warnings;
+}
+
+/**
+ * Gives the attribute `HTMLElement` reflects a name an input is bound with stands for, compared without case: the
+ * attribute itself, or the `aria-*` attribute of an ARIA property (`ariaLabel`).
+ *
+ * @param name - The name the input is bound with.
+ * @returns The attribute, `undefined` when the name is not one of them.
+ */
+function toReflectedAttribute(name: string): string | undefined {
+  const lowerCase = name.toLowerCase();
+  if (REFLECTED_ATTRIBUTES.has(lowerCase) || lowerCase.startsWith('aria-')) {
+    return lowerCase;
+  }
+
+  return /^aria[A-Z]/.test(name) ? `aria-${lowerCase.slice(4)}` : undefined;
+}
+
+/**
  * Records an error of a `@WebComponent`, spanning the node it is about.
  *
  * @param errors - The errors, filled.
@@ -652,6 +719,25 @@ function toInputDecorator(name: PropertyDecorator['expression']['expression']['t
 }
 
 /**
+ * Finds the alias the options of a decorator declaring an input give the input, written as a string literal.
+ *
+ * @param decorator - The `@Property` or `@Model` decorator.
+ * @param required - Whether the decorator is `@Property.required` or `@Model.required`, whose options are its first
+ *   argument instead of the second.
+ * @returns The literal of the alias, `undefined` when the input declares none.
+ */
+function findAliasLiteral(decorator: PropertyDecorator, required: boolean): StringLiteral | undefined {
+  const args = decorator.expression.arguments;
+  const options = required ? args[0] : args[1];
+  if (!options || !isObjectLiteralExpression(options)) {
+    return undefined;
+  }
+
+  const alias = options.properties.find((prop): prop is Omit<PropertyAssignment, 'initializer'> & { initializer: StringLiteral } => isPropertyAssignment(prop) && isIdentifier(prop.name) && prop.name.text === 'alias' && isStringLiteral(prop.initializer));
+  return alias?.initializer;
+}
+
+/**
  * Extracts property metadata from a @Property, @Property.required, @Model or @Model.required decorator.
  *
  * @param property - The accessor decorated with `@Property` or `@Model`.
@@ -682,9 +768,8 @@ function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identi
       metadata.type = qualifyType(incomingType, sourceFile);
     }
 
-    const aliasNode = options && isObjectLiteralExpression(options) && options?.properties?.find((prop): prop is Omit<PropertyAssignment, 'initializer'> & { initializer: StringLiteral } => isPropertyAssignment(prop) && isIdentifier(prop.name) && prop.name.text === 'alias' && isStringLiteral(prop.initializer));
-    if (aliasNode) {
-      const initializer = aliasNode.initializer;
+    const initializer = findAliasLiteral(decorator, required);
+    if (initializer) {
       metadata.alias = initializer.text;
       metadata.span = {
         start: initializer.getStart(),

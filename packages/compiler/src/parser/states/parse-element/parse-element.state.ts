@@ -1,4 +1,5 @@
-import type { Function, NoArgsFunction, VoidFunction } from '@xaendar/types';
+import { isValidCustomElementName } from '@xaendar/common';
+import type { Function, NoArgsFunction } from '@xaendar/types';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { TagOpenNameToken } from '../../../lexer/types/tokens/tag-open-name-token.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
@@ -28,6 +29,7 @@ import { parseTemplateDeclaration } from '../parse-template-declaration/parse-te
 import { isTwoWayBinding, parseTwoWayBinding } from '../parse-two-way-binding/parse-two-way-binding.state';
 import { isStructuralElement } from '../../utils/scope-declarations/scope-declarations.utils';
 import { assertStandardTemplate, serializeTemplateContent } from '../../utils/template-content/template-content.utils';
+import { assertUniqueAttributes, assertUniqueInBranches } from '../../utils/unique-attributes/unique-attributes.utils';
 import { parseTemplateParameters } from '../../utils/template-parameters/template-parameters.utils';
 import { parseTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 
@@ -118,7 +120,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
     }
   }
 
-  assertUniqueAttributes(attributes, conditionalBindings, name => `Attribute "${name}" is bound more than once on <${tagName}>`);
+  assertUniqueAttributes(attributes, conditionalBindings, isValidCustomElementName(tagName, false) ? writtenAttributeKey : nativeAttributeKey, name => `Attribute "${name}" is bound more than once on <${tagName}>`);
   assertUniqueClassBindings(classBindings, conditionalBindings, tagName);
   assertUniqueStyleBindings(styleBindings, conditionalBindings, tagName);
   assertUniqueDirectives(tagName, directives, conditionalBindings, branch => branch.directives);
@@ -211,34 +213,25 @@ function setTemplateContent(node: MaybeASTNodeWithSpan<ElementNode> | MaybeASTNo
 }
 
 /**
- * Ensures every attribute/property is bound at most once at a time on an element or on a directive,
- * across the element (or the directive) itself and all of its (nested) conditional bindings.
+ * Gives what an attribute of a native element binds: `title` and `attr.title` write the same attribute, which no input
+ * takes.
  *
- * A conditional binding cannot share an attribute with its owner or with
- * another conditional binding: when its selected branch changes the runtime
- * unbinds the attribute (removing it or restoring the property's default),
- * which would clobber the value set by the other binding.
- * The branches of a conditional binding can instead bind the same attribute,
- * since only one of them is applied at a time.
- * Events are not checked, since an element may listen to the same event more than once.
- *
- * @param attributes - Attribute nodes to check.
- * @param conditionalBindings - Conditional bindings whose attributes are checked recursively.
- * @param describeDuplicate - Builds the error message for an attribute bound more than once.
- * @param bound - Attribute names already bound on the owner.
- * @throws If an attribute is bound more than once.
+ * @param attribute - The attribute.
+ * @returns The name of the attribute it writes.
  */
-function assertUniqueAttributes(attributes: AttributeNode[], conditionalBindings: ConditionalBindingNode[], describeDuplicate: Function<[name: string], string>, bound = new Set<string>()): void {
-  for (let i = 0; i < attributes.length; i++) {
-    const { name, span } = attributes[i];
-    if (bound.has(name)) {
-      throw new Error(describeDuplicate(name), { cause: span });
-    }
+function nativeAttributeKey({ name, attribute }: AttributeNode): string {
+  return attribute ?? name;
+}
 
-    bound.add(name);
-  }
-
-  assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniqueAttributes(branch.attributes, branch.conditionalBindings, describeDuplicate, boundInBranch));
+/**
+ * Gives what an attribute of a custom element binds, as far as the parser knows: the name as written, since `title` may
+ * be an input of the component, which the type-check knows (see `assertUniqueComponentAttributes`).
+ *
+ * @param attribute - The attribute.
+ * @returns The name as written.
+ */
+function writtenAttributeKey({ name }: AttributeNode): string {
+  return name;
 }
 
 /**
@@ -320,41 +313,10 @@ function assertUniqueDirectives(tagName: string, directives: (DirectiveNode | St
 
     applied.add(selector);
     // A structural directive declares no conditional binding of its own
-    assertUniqueAttributes(attributes, type === ASTNodeType.Directive ? directive.conditionalBindings : [], name => `Property "${name}" of ${property} "${selector}" is bound more than once on <${tagName}>`);
+    assertUniqueAttributes(attributes, type === ASTNodeType.Directive ? directive.conditionalBindings : [], writtenAttributeKey, name =>`Property "${name}" of ${property} "${selector}" is bound more than once on <${tagName}>`);
   }
 
   assertUniqueInBranches(conditionalBindings, applied, (branch, appliedInBranch) => assertUniqueDirectives(tagName, getDirectives(branch), branch.conditionalBindings, getDirectives, appliedInBranch));
-}
-
-/**
- * Runs a uniqueness check on every branch of a list of conditional bindings.
- *
- * The branches of a conditional binding are mutually exclusive, so they can declare the same names.
- * Each branch is therefore checked against its own copy of the names declared so far: only once all the
- * branches of a conditional binding have been checked the names they declare are added to the given ones,
- * so that the following conditional bindings cannot declare them again.
- *
- * @param conditionalBindings - The conditional bindings whose branches are checked.
- * @param declared - The names declared so far, updated with the ones declared by the branches.
- * @param assertUnique - Checks a branch against the given names, adding to them the ones the branch declares.
- */
-function assertUniqueInBranches(conditionalBindings: ConditionalBindingNode[], declared: Set<string>, assertUnique: VoidFunction<[branch: ConditionalBindingBranchNode, declared: Set<string>]>): void {
-  for (let i = 0; i < conditionalBindings.length; i++) {
-    const { branches } = conditionalBindings[i];
-    const declaredInBranches = new Set<string>();
-
-    for (let j = 0; j < branches.length; j++) {
-      const declaredInBranch = new Set(declared);
-      assertUnique(branches[j], declaredInBranch);
-      for (const name of declaredInBranch) {
-        declaredInBranches.add(name);
-      }
-    }
-
-    for (const name of declaredInBranches) {
-      declared.add(name);
-    }
-  }
 }
 
 /**

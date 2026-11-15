@@ -136,6 +136,26 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** An attribute name in brackets other than [class.name] and [style.name]: brackets only toggle classes and set style properties.
 - **Fix:** Bind the attribute without brackets, e.g. title="{ … }", or use [class.name] or [style.name].
 
+### `[Parser] attr.class cannot be written: class is merged with the directives and the component writing it, bound with class="…" and [class.name]="{ expression }"`
+
+- **Cause:** attr.class or attr.style: class and style are merged key by key, never written whole.
+- **Fix:** Write class="…" / style="…", [class.name] or [style.name].
+
+### `[Parser] attr. names no attribute: write attr. followed by the name of the attribute, e.g. attr.title="…"`
+
+- **Cause:** attr. with nothing after the dot.
+- **Fix:** Name the attribute: attr.title="…".
+
+### `[Parser] attr.title cannot be bound inside a directive: bind it on the element`
+
+- **Cause:** attr.x in the parentheses of a directive or of a structural directive, or in one of their conditional bindings: a directive binds only its properties.
+- **Fix:** Write attr.title on the element.
+
+### `[Parser] [(attr.title)] binds a model of a component or of a directive, while attr. writes an attribute of the element, which has no event of change: write attr.title="{ expression }"`
+
+- **Cause:** A two-way binding of attr.x.
+- **Fix:** Bind the attribute one way, attr.title="{ … }", or bind a model [(value)].
+
 ### `[Parser] "[(value)x]" is not a two-way binding: write [(name)]="signal"`
 
 - **Cause:** An attribute name starting with [( that is not [(name)]: something after the )], spaces or brackets in the name, or an empty name.
@@ -174,7 +194,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 ### `[Parser] [style.color] cannot be bound inside a directive: bind it on the element`
 
 - **Cause:** A style binding in the parentheses of a directive, which only bind its properties.
-- **Fix:** Write it on the element, or set it from the directive with @HostProperty('style.color').
+- **Fix:** Write it on the element, or set it from the directive with @HostAttribute('style.color').
 
 ### `[Parser] [class.on] cannot be bound inside a directive: bind it on the element`
 
@@ -503,10 +523,15 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** An input the directive does not declare.
 - **Fix:** Use the name of a @Property of the directive.
 
-### `[TypeChecker] "showValue" is the property of an input of XCard declaring the alias "show-value": bind it as show-value="…".`
+### `[TypeChecker] "showValue" is the property of an input of XCard declaring the alias "show-value": bind it as show-value="…", or write the attribute of the element with attr.showValue="…".`
 
 - **Cause:** A template binding an input by the name of its property, while the input declares an alias: the name of the property would be an attribute of the element, which the input never reads.
-- **Fix:** Bind the input by its alias.
+- **Fix:** Bind the input by its alias, or write attr.showValue when the attribute of the element is meant.
+
+### `[TypeChecker] Attribute "lang" is written more than once on <x-card>: "lang" is not an input of XCard, so lang="…" and attr.lang="…" write the same attribute of the element`
+
+- **Cause:** x and attr.x on the same element (or one in a conditional binding) when x is not an input: both write the attribute. On a custom element of another library it reads "it is not a component imported in the template".
+- **Fix:** Keep one of them.
 
 ### `Type 'string' does not satisfy the expected type 'number'.`
 
@@ -674,6 +699,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Fix:** Remove them: only the tags of imported generic components take type arguments.
 
 ## Build
+
+### `The input "title" of XCard has the name of an attribute every element reflects: title="…" on its element sets the input, so the native attribute is written with attr.title="…" - <path>`
+
+- **Cause:** A warning, not an error (build and editor): an input, or an alias, named id, title, hidden, lang, dir, tabindex, slot, inert, accesskey, autocapitalize, autofocus, draggable, spellcheck, translate, popover, nonce or aria-* (any case, ariaLabel included): the templates binding that name set the input, not the native attribute.
+- **Fix:** Rename the input (heading, tip, language…); if the name stays, write the native attribute with attr.title.
 
 ### `Invalid custom element name "laberr" in component XCard - <path>`
 
@@ -867,20 +897,20 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @Query.contentRequired was read while no element of the content matched it: before the parent passed its content, afterRender included, or while the element was not passed.
 - **Fix:** Read it in event handlers. If the content is optional, or to follow it as it arrives, use @Query.content.
 
-### `Error: @HostProperty('style.width.foo') sets width in "foo", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh`
+### `Error: @HostAttribute('style.width.foo') sets width in "foo", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh`
 
-- **Cause:** A @HostProperty of a style property whose unit is not one of CSS. Thrown when the class is defined.
-- **Fix:** Write a unit of CSS in lowercase: @HostProperty('style.width.px').
+- **Cause:** A @HostAttribute of a style property whose unit is not one of CSS. Thrown when the class is defined.
+- **Fix:** Write a unit of CSS in lowercase: @HostAttribute('style.width.px').
 
-### `Error: @HostProperty('class.on') on second binds the class on, which another member binds already`
+### `Error: @HostAttribute('class.on') on second binds the class on, which another member binds already`
 
-- **Cause:** Two members of a class, or of the classes it extends, binding the same class, style property or string of class/style with @HostProperty. Thrown when the class is defined.
+- **Cause:** Two members of a class, or of the classes it extends, binding the same class, style property or string of class/style with @HostAttribute. Thrown when the class is defined.
 - **Fix:** Bind each class and property with one member, computing its value in a getter.
 
-### `Error: @HostProperty('class.') names no class`
+### `Error: @HostAttribute('class.') names no class`
 
-- **Cause:** A @HostProperty with class. and no class after it. Thrown when the class is defined, as soon as its module is imported; an empty name throws @HostProperty('') names no attribute.
-- **Fix:** Name the attribute, or the class after class.: @HostProperty('class.on').
+- **Cause:** A @HostAttribute with class. and no class after it. Thrown when the class is defined, as soon as its module is imported; an empty name throws @HostAttribute('') names no attribute.
+- **Fix:** Name the attribute, or the class after class.: @HostAttribute('class.on').
 
 ### `Error: @HostListener('') names no event`
 
@@ -892,9 +922,9 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @HostListener on a key event naming a part that is not a modifier, no key (`keydown.`: The key event "keydown." names no key…) or a modifier twice (names "shift" twice). Thrown when the class is defined; the name after the prefix is checked (`document:keydown.ctrl.s` reports keydown.ctrl.s).
 - **Fix:** Use `alt`, `control`, `meta`, `shift`, `code` once each, then the key: @HostListener('document:keydown.control.s').
 
-### `Error: @HostProperty('role') cannot decorate the static member defaultRole`
+### `Error: @HostAttribute('role') cannot decorate the static member defaultRole`
 
-- **Cause:** A @HostProperty on a static field, getter or accessor: the host element belongs to an instance.
+- **Cause:** A @HostAttribute on a static field, getter or accessor: the host element belongs to an instance.
 - **Fix:** Decorate an instance member, which may read the static one.
 
 ### `Error: @HostListener('click') cannot decorate the static method handle`

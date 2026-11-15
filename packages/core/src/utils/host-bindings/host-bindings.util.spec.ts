@@ -1,12 +1,12 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
 import { HostListener } from '../../decorators/host-listener/host-listener.decorator';
-import { HostProperty } from '../../decorators/host-property/host-property.decorator';
+import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { _hasStylingState } from '../styling-state/styling-state.util';
 import { EMPTY_LAYOUT, _scope, clear } from '../context/context.util';
 import type { _Context } from '../../types/context.type';
-import { _applyHostProperties, _bindHost } from './host-bindings.util';
+import { _applyHostAttributes, _bindHost } from './host-bindings.util';
 import { CLEANUP } from '../../costants';
 
 await vi.hoisted(async () => {
@@ -31,7 +31,7 @@ function createOwner(members: Record<string, unknown>, bindings: Record<string, 
   const metadata: DecoratorMetadataObject = {};
   const access = (member: string) => ({ get: (owner: Record<string, unknown>) => owner[member] });
   for (const [member, name] of Object.entries(bindings)) {
-    (HostProperty(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: member, static: false, metadata, access: access(member) });
+    (HostAttribute(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: member, static: false, metadata, access: access(member) });
   }
   for (const [member, [name, options]] of Object.entries(listeners)) {
     (HostListener(name, options) as unknown as (value: unknown, context: unknown) => void)(members[member], { kind: 'method', name: member, static: false, metadata, access: access(member) });
@@ -222,22 +222,22 @@ describe('_bindHost', () => {
   });
 });
 
-describe('_applyHostProperties', () => {
+describe('_applyHostAttributes', () => {
   it('writes the classes and the style alone, or the attributes alone, the same class writing them again', () => {
     const Styled = class extends Owner { };
     const metadata: DecoratorMetadataObject = {};
-    (HostProperty('style') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'layout', static: false, metadata, access: { get: () => 'display: flex' } });
-    (HostProperty('class.on') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'on', static: false, metadata, access: { get: () => true } });
+    (HostAttribute('style') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'layout', static: false, metadata, access: { get: () => 'display: flex' } });
+    (HostAttribute('class.on') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'on', static: false, metadata, access: { get: () => true } });
     Object.defineProperty(Styled, Symbol.for('Symbol.metadata'), { value: metadata });
     for (let i = 0; i < 2; i++) {
       const element = document.createElement('div');
-      _applyHostProperties(new Styled(), element);
+      _applyHostAttributes(new Styled(), element);
       expect(element.getAttribute('style')).toBe('display: flex;');
       expect(element.className).toBe('on');
     }
 
     const element = document.createElement('div');
-    _applyHostProperties(createOwner({ role: 'switch' }, { role: 'role' }), element);
+    _applyHostAttributes(createOwner({ role: 'switch' }, { role: 'role' }), element);
     expect(element.getAttribute('role')).toBe('switch');
     expect(element.hasAttribute('class')).toBe(false);
   });
@@ -250,7 +250,7 @@ describe('_applyHostProperties', () => {
     element.setAttribute('disabled', '');
     element.addEventListener = add;
 
-    _applyHostProperties(owner, element);
+    _applyHostAttributes(owner, element);
     expect(element.getAttribute('aria-label')).toBe('One');
     expect(element.className).toBe('on');
     expect(element.hasAttribute('disabled')).toBe(false);
@@ -261,10 +261,10 @@ describe('_applyHostProperties', () => {
     expect(element.getAttribute('aria-label')).toBe('One');
   });
 
-  it('writes nothing for a class declaring no host property', () => {
+  it('writes nothing for a class declaring no host attribute', () => {
     const element = document.createElement('div');
 
-    _applyHostProperties(new (class extends Owner { })(), element);
+    _applyHostAttributes(new (class extends Owner { })(), element);
 
     expect(element.attributes).toHaveLength(0);
   });

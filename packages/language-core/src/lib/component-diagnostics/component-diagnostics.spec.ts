@@ -49,6 +49,15 @@ describe('getComponentDiagnostics', () => {
     ]);
   }, TIMEOUT);
 
+  it('warns about an input named like an attribute every element reflects, on its name', async () => {
+    const text = '@WebComponent({ selector: \'x-card\', templateUrl: \'./card.xd.component.html\' })\nexport class Card {\n  @Property(\'\') public accessor title!: InputSignal<string>;\n}\n';
+    const diagnostics = await getComponentDiagnostics(project.path(COMPONENT_FILE), text);
+
+    expect(diagnostics.map(({ span, message, warning }) => [text.slice(span.start, span.end), message, warning])).toEqual([
+      ['title', 'The input "title" of Card has the name of an attribute every element reflects: title="…" on its element sets the input, so the native attribute is written with attr.title="…"', true]
+    ]);
+  }, TIMEOUT);
+
   it('reports a selector that is not a valid custom element name', async () => {
     expect(await diagnose('@WebComponent({ selector: \'card\', templateUrl: \'./card.xd.component.html\' })')).toEqual([
       ['\'card\'', 'Invalid custom element name "card" in component Card']

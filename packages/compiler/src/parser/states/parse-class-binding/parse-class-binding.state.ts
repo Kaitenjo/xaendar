@@ -91,19 +91,20 @@ export function parseBracketBinding(cursor: ParserCursor, parseNode: NoArgsFunct
 }
 
 /**
- * Ensures a directive declares no binding in brackets, in its parentheses or in the branches of its conditional
- * bindings: a directive only binds its own properties, while a class is toggled, and a style property set, on the
- * element.
+ * Ensures a directive declares no binding in brackets nor attribute written with `attr.`, in its parentheses or in the
+ * branches of its conditional bindings: a directive only binds its own properties, while a class is toggled, a style
+ * property set, and an attribute written, on the element.
  *
  * @param attributes - The attributes declared in the parentheses of the directive.
  * @param conditionalBindings - The conditional bindings of the directive, whose branches are checked recursively:
  *   none for a structural directive.
- * @throws If an attribute is a binding in brackets, or a branch declares a class or a style binding.
+ * @throws If an attribute is a binding in brackets or is written with `attr.`, or a branch declares a class or a style
+ *   binding, or an attribute written with `attr.`.
  */
 export function assertNoBracketBindings(attributes: AttributeNode[], conditionalBindings?: ConditionalBindingNode[]): void {
   for (let i = 0; i < attributes.length; i++) {
-    const { name, nameSpan } = attributes[i];
-    if (name.startsWith('[')) {
+    const { name, nameSpan, attribute } = attributes[i];
+    if (name.startsWith('[') || attribute !== undefined) {
       throw new Error(`${name} cannot be bound inside a directive: bind it on the element`, { cause: nameSpan });
     }
   }
@@ -115,16 +116,22 @@ export function assertNoBracketBindings(attributes: AttributeNode[], conditional
 
 /**
  * Ensures the branches of the conditional bindings of a directive, nested ones included, declare no class nor style
- * binding. Their bindings in brackets are parsed as class or style bindings, so their attributes need no check.
+ * binding, nor attribute written with `attr.`. Their bindings in brackets are parsed as class or style bindings, so
+ * their attributes need no check of the brackets.
  *
  * @param conditionalBindings - The conditional bindings.
- * @throws If a branch declares a class or a style binding.
+ * @throws If a branch declares a class or a style binding, or an attribute written with `attr.`.
  */
 function assertNoBranchClassBindings(conditionalBindings: ConditionalBindingNode[]): void {
   for (let i = 0; i < conditionalBindings.length; i++) {
     const { branches } = conditionalBindings[i];
     for (let j = 0; j < branches.length; j++) {
-      const { classBindings, styleBindings } = branches[j];
+      const { classBindings, styleBindings, attributes } = branches[j];
+      const written = attributes.find(({ attribute }) => attribute !== undefined);
+      if (written) {
+        throw new Error(`${written.name} cannot be bound inside a directive: bind it on the element`, { cause: written.nameSpan });
+      }
+
       if (classBindings.length) {
         const { className, nameSpan } = classBindings[0];
         throw new Error(`[class.${className}] cannot be bound inside a directive: bind it on the element`, { cause: nameSpan });

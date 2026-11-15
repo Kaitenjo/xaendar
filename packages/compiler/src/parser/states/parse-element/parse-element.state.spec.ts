@@ -114,6 +114,42 @@ describe('parseElement', () => {
     expect(() => parse(template)).toThrow('Attribute "title" is bound more than once on <div>');
   });
 
+  describe('attributes written with attr.', () => {
+    it('keeps the name as written and the attribute it writes, static, bound or bare, in the branches too', () => {
+      const [node] = parse('<my-el attr.title="Close" attr.aria-label="{ label() }" attr.hidden @if (cond()) { attr.id="x" }></my-el>') as ElementNode[];
+      expect(node.attributes.map(({ name, attribute }) => [name, attribute])).toEqual([['attr.title', 'title'], ['attr.aria-label', 'aria-label'], ['attr.hidden', 'hidden']]);
+      expect(node.attributes[0].nameSpan).toEqual({ start: 7, end: 17 });
+      expect(node.conditionalBindings[0].branches[0].attributes[0].attribute).toBe('id');
+    });
+
+    it.each([
+      ['attr.', 'attr. names no attribute: write attr. followed by the name of the attribute'],
+      ['attr.class', 'attr.class cannot be written: class is merged with the directives and the component writing it, bound with class="…" and [class.name]="{ expression }"'],
+      ['attr.style', 'attr.style cannot be written: style is merged']
+    ])('rejects %s', (name, message) => {
+      expect(() => parse(`<div ${name}="x"></div>`)).toThrow(message);
+    });
+
+    it('counts x and attr.x as the same attribute of a native element, in the branches too', () => {
+      expect(() => parse('<div title="a" attr.title="b"></div>')).toThrow('Attribute "title" is bound more than once on <div>');
+      expect(() => parse('<div attr.title="a" @if (cond()) { title="b" }></div>')).toThrow('Attribute "title" is bound more than once on <div>');
+    });
+
+    it('tells x and attr.x apart on a custom element, whose x may be an input, but not attr.x twice', () => {
+      expect(() => parse('<my-el title="a" attr.title="b"></my-el>')).not.toThrow();
+      expect(() => parse('<my-el attr.title="a" attr.title="b"></my-el>')).toThrow('Attribute "attr.title" is bound more than once on <my-el>');
+    });
+
+    it.each([
+      ['in the parentheses of a directive', '<div @@tip(attr.title="x")></div>', 'attr.title cannot be bound inside a directive: bind it on the element'],
+      ['in a branch of a directive', '<div @@tip(@if (cond()) { attr.title="x" })></div>', 'attr.title cannot be bound inside a directive: bind it on the element'],
+      ['in a structural directive', '<div *when(attr.title="x")></div>', 'attr.title cannot be bound inside a directive: bind it on the element'],
+      ['in a two-way binding', '<my-el [(attr.title)]="title"></my-el>', '[(attr.title)] binds a model of a component or of a directive, while attr. writes an attribute of the element']
+    ])('rejects one %s', (_description, template, message) => {
+      expect(() => parse(template)).toThrow(message);
+    });
+  });
+
   it.each([
     ['an @if chain', '<div @if (a()) { title="x" } @else if (b()) { title="y" } @else { title="z" }></div>'],
     ['a @switch', '<div @switch (mode()) { @case (1) { title="x" } @case (2) { title="y" } @default { title="z" } }></div>'],

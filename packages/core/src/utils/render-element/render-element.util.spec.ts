@@ -66,6 +66,7 @@ const { _defineDirective } = await import('../directive-registry/directive-regis
 const { _removeStyling, _setExpressionStyling, _setStyling } = await import('../styling-binding/styling-binding.util');
 const { _getAppliedDirectives } = await import('../applied-directives/applied-directives.util');
 const { _getElementRef } = await import('../element-refs/element-refs.util');
+const { _hasAttributeState } = await import('../attribute-state/attribute-state.util');
 
 type Context = _Context;
 
@@ -283,7 +284,7 @@ describe('property setters', () => {
     expect(element.getAttributeNames()).toEqual([]);
   });
 
-  it('_setExpressionProperty writes a boolean as @HostProperty does, and 0 as text', () => {
+  it('_setExpressionProperty writes a boolean as @HostAttribute does, and 0 as text', () => {
     const element = document.createElement('div');
     element.setAttribute('title', 'a');
     _setExpressionProperty(createRoot(), element, attributeOf('title', () => false));
@@ -833,6 +834,27 @@ describe('_renderElement', () => {
       await flush();
       expect(element.className).toBe('base wide');
       expect((element as HTMLElement).style.getPropertyValue('width')).toBe('1px');
+    });
+
+    it('merges an attribute of a branch with the one a directive of the element writes, giving the value of the directive back when the branch is no longer selected', async () => {
+      const TitledDirective = class extends CustomDirective { };
+      Object.defineProperty(TitledDirective, Symbol.for('Symbol.metadata'), { value: { hostAttributes: [{ name: 'title', kind: 'attribute', read: () => 'directive' }] } });
+      _defineDirective('titled', TitledDirective);
+      const enabled = signal(true);
+      const element = render(document.createElement('div'), createRoot(), {
+        shared: ['title'],
+        directives: [{ selector: 'titled' }],
+        conditionalBindings: [ifBinding({ condition: () => enabled(), attributes: [{ name: 'title', value: 'branch', setter: _setProperty, unbind: _removeAttribute, shared: true }] })]
+      });
+      expect(element.getAttribute('title')).toBe('branch');
+
+      enabled.set(false);
+      await flush();
+      expect(element.getAttribute('title')).toBe('directive');
+
+      // A branch applying directives makes the runtime create the states of every attribute the template shares
+      const always = render(document.createElement('div'), createRoot(), { shared: ['lang'], sharedAlways: true });
+      expect(_hasAttributeState(always, 'lang')).toBe(true);
     });
 
     it('gives the directives of the template their order after the host directives', () => {

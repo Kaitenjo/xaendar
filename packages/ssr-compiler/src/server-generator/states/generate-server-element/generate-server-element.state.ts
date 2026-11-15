@@ -144,7 +144,9 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
   } else {
     pieces.push({ html: `<${tagName}` });
     for (let i = 0; i < attributes.length; i++) {
-      const { name, value } = attributes[i];
+      // An attribute written with `attr.` is the attribute it names
+      const { attribute, value } = attributes[i];
+      const name = attribute ?? attributes[i].name;
       typeof value === 'string'
         ? pieces.push({ html: ` ${name}="${escapeAttribute(value)}"` })
         : pieces.push({ value: `_ssrAttribute('${name}', ${resolve(value.expression, generatorContext)})` });
@@ -253,7 +255,8 @@ function toClientOptions({ selector, clientOnly }: ComponentMetadata, generatorC
  * an input of a component or of a directive the template imports is set by the name of its property, never by its
  * alias, the one it is exposed with for an input of a host directive, through the setters of the inputs, as the client
  * does. The value of an expression is a function of the module named after the element and the attribute, as on the
- * client.
+ * client. An attribute written with `attr.` is always the attribute of the element, written with the setters of the
+ * attributes (`_setAttribute`, `_setExpressionAttribute`), even when the component declares an input with its name.
  *
  * @param attributes - The attribute nodes.
  * @param owner - The element, which the functions of the expressions are named after.
@@ -266,8 +269,8 @@ function toClientOptions({ selector, clientOnly }: ComponentMetadata, generatorC
 function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, target: string | undefined): string[] {
   const { generatorContext } = owner;
   const metadata = target && attributes.length ? generatorContext.getImportedMetadata(target) : undefined;
-  return attributes.map(({ name, value, span, twoWay }) => {
-    const input = metadata?.properties.get(name);
+  return attributes.map(({ name, value, span, twoWay, attribute }) => {
+    const input = attribute === undefined ? metadata?.properties.get(name) : undefined;
     if (twoWay && !input) {
       throw new Error(`[(${name})] binds a model of a component or of a directive: ${target ?? 'a native element'} has no input "${name}"`, { cause: span });
     }
@@ -276,13 +279,15 @@ function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, targ
       throw new Error(`Unable to resolve the metadata of property "${name}" of ${target}`, { cause: span });
     }
 
-    const property = input && !input.exposed ? input.name : name;
+    const property = attribute ?? (input && !input.exposed ? input.name : name);
+    // The family of the setters: an input, an attribute written with `attr.`, or any other attribute
+    const kind = input ? 'Input' : attribute === undefined ? 'Property' : 'Attribute';
     if (typeof value === 'string') {
-      return toObjectLiteral([`name: ${toStringLiteral(property)}`, `value: ${toStringLiteral(value)}`, `setter: ${input ? '_setInput' : '_setProperty'}`]);
+      return toObjectLiteral([`name: ${toStringLiteral(property)}`, `value: ${toStringLiteral(value)}`, `setter: _set${kind}`]);
     }
 
-    const role = metadata?.type === 'directive' ? `${toRoleName(target!.slice(2))}_${toRoleName(property)}` : toRoleName(property);
-    return toObjectLiteral([`name: ${toStringLiteral(property)}`, `value: ${declareElementExpression(owner, role, value.expression)}`, `setter: ${input ? '_setExpressionInput' : '_setExpressionProperty'}`]);
+    const role = metadata?.type === 'directive' ? `${toRoleName(target!.slice(2))}_${toRoleName(property)}` : toRoleName(attribute === undefined ? property : name);
+    return toObjectLiteral([`name: ${toStringLiteral(property)}`, `value: ${declareElementExpression(owner, role, value.expression)}`, `setter: _setExpression${kind}`]);
   });
 }
 

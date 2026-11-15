@@ -179,8 +179,9 @@ describe('generateElement', () => {
         '    { name: \'title\', value: my_el0$title, setter: _setExpressionInput },',
         '    my_el0$count$binding,',
         '    { name: \'tone\', value: \'dark\', setter: _setInput },',
-        '    { name: \'id\', value: \'main\', setter: _setProperty }',
-        '  ]',
+        '    { name: \'id\', shared: true, value: \'main\', setter: _setProperty }',
+        '  ],',
+        '  shared: [\'id\']',
         '};'
       ].join('\n')]);
       expect(result.functions).toEqual([
@@ -188,6 +189,67 @@ describe('generateElement', () => {
         'function my_el0$count(context) {\n  return this.count();\n}'
       ]);
       expectValidJavascript(result);
+    });
+
+    it('writes an attribute written with attr. through the setters of the attributes, never the input of its name, merged with the component', async () => {
+      const context = new GeneratorContext(cache);
+      context.addSignalClassField('hint');
+      const result = await run('<my-el attr.title="Close" title="{\'heading\'}" attr.aria-label="{hint()}" @if (cond()) { attr.lang="it" }></my-el>', context);
+
+      expect(result.constants).toEqual([
+        [
+          'const my_el0$attr_aria_label$binding = {',
+          '  name: \'aria-label\',',
+          '  shared: true,',
+          '  value: my_el0$attr_aria_label,',
+          '  setter: _setReactiveAttribute,',
+          '  update: _setExpressionAttribute,',
+          '  effect: 0',
+          '};'
+        ].join('\n'),
+        [
+          'const my_el0$conditional$binding = {',
+          '  branches: [',
+          '    {',
+          '      condition: my_el0$if,',
+          '      attributes: [{ name: \'lang\', shared: true, value: \'it\', setter: _setAttribute, unbind: _removeAttribute }]',
+          '    }',
+          '  ],',
+          '  update: _runConditionalBinding,',
+          '  effect: 1',
+          '};'
+        ].join('\n'),
+        [
+          'const my_el0$element = {',
+          '  tagName: \'my-el\',',
+          '  attributes: [',
+          '    { name: \'title\', shared: true, value: \'Close\', setter: _setAttribute },',
+          '    { name: \'title\', value: my_el0$title, setter: _setExpressionInput },',
+          '    my_el0$attr_aria_label$binding',
+          '  ],',
+          '  conditionalBindings: [my_el0$conditional$binding],',
+          '  shared: [\'title\', \'aria-label\', \'lang\']',
+          '};'
+        ].join('\n')
+      ]);
+      expectValidJavascript(result);
+    });
+
+    it('lists once an attribute every branch of a conditional binding writes', async () => {
+      const { constants } = await run('<my-el @if (cond()) { attr.lang="it" } @else { attr.lang="en" }></my-el>', new GeneratorContext(cache));
+
+      expect(constants.at(-1)).toContain('shared: [\'lang\']');
+    });
+
+    it('writes an attribute written with attr. on a native element as any other, without merging it', async () => {
+      const { constants } = await run('<div attr.title="{ 1 }"></div>', new GeneratorContext(cache));
+
+      expect(constants).toEqual([[
+        'const div0$element = {',
+        '  tagName: \'div\',',
+        '  attributes: [{ name: \'title\', value: div0$attr_title, setter: _setExpressionAttribute }]',
+        '};'
+      ].join('\n')]);
     });
 
     it('resets an input bound by a conditional binding by the name of its property', async () => {
@@ -787,7 +849,7 @@ describe('generateElement', () => {
         '  branches: [',
         '    {',
         '      condition: div0$if,',
-        '      attributes: [{ name: \'title\', value: \'x\', setter: _setProperty, unbind: _removeAttribute }],',
+        '      attributes: [{ name: \'title\', shared: true, value: \'x\', setter: _setProperty, unbind: _removeAttribute }],',
         '      conditionalBindings: [',
         '        {',
         '          branches: [',
@@ -810,7 +872,15 @@ describe('generateElement', () => {
         '  update: _runConditionalBinding,',
         '  effect: 0',
         '};'
-      ].join('\n'), 'const div0$element = { tagName: \'div\', conditionalBindings: [div0$conditional$binding] };']);
+      ].join('\n'), [
+        // A branch applies directives: the runtime creates the states of every attribute the template shares
+        'const div0$element = {',
+        '  tagName: \'div\',',
+        '  conditionalBindings: [div0$conditional$binding],',
+        '  shared: [\'title\'],',
+        '  sharedAlways: true',
+        '};'
+      ].join('\n')]);
       expectValidJavascript(result);
     });
 

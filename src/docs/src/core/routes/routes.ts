@@ -52,6 +52,11 @@ export type NavItem = {
 };
 
 /**
+ * A group entry of a navigation section.
+ */
+export type NavGroup = Extract<NavItem, { readonly pages: readonly DocsPage[] }>;
+
+/**
  * A titled section of the navigation.
  */
 export type NavSection = {
@@ -59,6 +64,11 @@ export type NavSection = {
    * The key of the title of the section in the `nav.sections` texts.
    */
   readonly key: keyof Messages['nav']['sections'];
+  /**
+   * The icon of the section: the path of an SVG of the public folder, used as a mask, so it is drawn in the color
+   * of the text.
+   */
+  readonly iconUrl: string;
   /**
    * The entries of the section, in order.
    */
@@ -136,6 +146,7 @@ export const API_REFERENCE_PATH: PagePath = 'reference/api';
 export const NAV: readonly NavSection[] = [
   {
     key: 'introduction',
+    iconUrl: 'document.svg',
     items: [
       link(page('overview', 'introduction granular reactivity virtual dom')),
       link(page('installation', 'setup install loadSignals tsconfig babel decorators vite')),
@@ -150,6 +161,7 @@ export const NAV: readonly NavSection[] = [
   },
   {
     key: 'inDepthGuides',
+    iconUrl: 'guides.svg',
     items: [
       group('signals', [
         page('signals/overview', 'signal set update get equals'),
@@ -167,7 +179,7 @@ export const NAV: readonly NavSection[] = [
         page('components/inputs', 'Property input alias transform required InputSignal'),
         page('components/outputs', 'Event output emit CustomEvent detail bubbles composed'),
         page('components/two-way-binding', 'Model ModelSignal model two-way binding bind input output signal'),
-        page('components/host-bindings', 'HostProperty HostListener host attribute class listener HostBinding window document role aria keydown shortcut'),
+        page('components/host-bindings', 'HostAttribute HostListener host attribute class listener HostBinding window document role aria keydown shortcut'),
         page('components/lifecycle', 'onInit afterRender onDestroy connectedCallback'),
         page('components/content-projection', 'slot ng-content fallback named'),
         page('components/queries', 'Query viewChild querySelector'),
@@ -213,6 +225,7 @@ export const NAV: readonly NavSection[] = [
   },
   {
     key: 'developerTools',
+    iconUrl: 'developer-tools.svg',
     items: [
       link(page('tools/cli', 'xd new start build generate')),
       link(page('tools/build', 'vite plugin xaendarPlugin babel hmr')),
@@ -231,6 +244,7 @@ export const NAV: readonly NavSection[] = [
   },
   {
     key: 'reference',
+    iconUrl: 'reference.svg',
     items: [
       link(page(API_REFERENCE_PATH, 'api exports symbols packages')),
       link(page('reference/template-syntax', 'cheat sheet syntax')),

@@ -314,6 +314,8 @@ a.card:hover {
   color: var(--xd-text);
   font-weight: 600;
   text-decoration: none;
+  transition: ease-in-out border-color .15s,
+              ease-in-out color .15s;
 }
 
 .button:hover {

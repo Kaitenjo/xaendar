@@ -609,6 +609,31 @@ describe('typeCheckElement', () => {
     });
   });
 
+  describe('attributes written with attr.', () => {
+    const component = metadata({ title: new ComponentPropertyMetadata('title', 'number', { required: true }) });
+
+    it('checks the expression as on a native element, never against the input of the same name, which stays required', () => {
+      expect(text(run('<my-el title="{ 1 }" attr.title="{ hint }" attr.lang="it"></my-el>', component))).toEqual([
+        '{',
+        '  (1) satisfies number;',
+        '}',
+        'root.hint;'
+      ]);
+      expect(() => run('<my-el attr.title="x"></my-el>', component)).toThrow('my-el is missing the following required properties:\n ● title');
+    });
+
+    it('throws when an attribute that is not an input is written also with attr., in the branches too', () => {
+      expect(() => run('<my-el title="{ 1 }" lang="it" attr.lang="en"></my-el>', component)).toThrow('Attribute "lang" is written more than once on <my-el>: "lang" is not an input of MyEl, so lang="…" and attr.lang="…" write the same attribute of the element');
+      expect(() => run('<my-el title="{ 1 }" attr.id="a" @if (cond) { id="b" }></my-el>', component)).toThrow('Attribute "id" is written more than once on <my-el>');
+    });
+
+    it('throws on a custom element of another library, which has no input', () => {
+      const context = new TypeCheckContext();
+      context.addCustomElementPatterns('sl-*');
+      expect(() => typeCheckElement(parse('<sl-button title="a" attr.title="b"></sl-button>'), processNode, context)).toThrow('Attribute "title" is written more than once on <sl-button>: it is not a component imported in the template, so title="…" and attr.title="…" write the same attribute of the element');
+    });
+  });
+
   describe('custom elements of other libraries', () => {
     const runForeign = (template: string, ...imports: Array<ComponentMetadata | DirectiveMetadata>): Line[] => {
       const context = new TypeCheckContext();
@@ -730,7 +755,7 @@ describe('typeCheckElement directives', () => {
       hint: new ComponentPropertyMetadata('text', 'string', { alias: 'hint', exposed: true })
     });
 
-    expect(() => run('<my-el internalValue="x"></my-el>', component)).toThrow('"internalValue" is the property of an input of MyEl declaring the alias "value": bind it as value="…".');
+    expect(() => run('<my-el internalValue="x"></my-el>', component)).toThrow('"internalValue" is the property of an input of MyEl declaring the alias "value": bind it as value="…", or write the attribute of the element with attr.internalValue="…".');
     expect(() => run('<my-el @if (cond) { internalValue="x" } @else { value="y" }></my-el>', component)).toThrow('"internalValue" is the property of an input of MyEl declaring the alias "value"');
     // The name of the property of an input is the alias of another one, and the property of an exposed input an attribute
     expect(text(run('<my-el value="x" text="y" title="z"></my-el>', component))).toContain('  x satisfies string;');

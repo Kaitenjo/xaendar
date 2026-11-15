@@ -11,7 +11,7 @@ await vi.hoisted(async () => {
   loadServerDom();
 });
 
-const { _scope, _setExpressionInput, _setExpressionStyling, _setExpressionProperty, _setInput, _setProperty, CustomElement, HostProperty, Property, Query } = await import('@xaendar/core');
+const { _scope, _setExpressionInput, _setExpressionStyling, _setExpressionProperty, _setInput, _setProperty, CustomElement, HostAttribute, Property, Query } = await import('@xaendar/core');
 
 /**
  * The layout of a scope holding its header alone, whose 5 slots the runtime reserves.
@@ -187,7 +187,7 @@ describe('_ssrComponent', () => {
   it('renders a component: its inputs set, onInit run before the template, its stylesheet first, and its host attributes written on the start tag', () => {
     const metadata: DecoratorMetadataObject = {};
     const label = (Property('default', { alias: 'card-label' }) as unknown as (target: unknown, context: unknown) => { init(this: object): () => string })({}, { name: 'label', metadata });
-    (HostProperty('role') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'role', static: false, metadata, access: { get: (owner: { role: string }) => owner.role } });
+    (HostAttribute('role') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'role', static: false, metadata, access: { get: (owner: { role: string }) => owner.role } });
 
     class CardElement extends CustomElement {
       public label = label.init.call(this);

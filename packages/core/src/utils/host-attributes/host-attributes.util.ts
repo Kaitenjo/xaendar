@@ -1,0 +1,145 @@
+import { INTERNAL_HOST_DIRECTIVES, INTERNAL_HOST_ATTRIBUTES } from '../../costants';
+import type { HostAttributeRun } from '../../models/host-attribute-run/host-attribute-run';
+import { addHostAttributeSource, createAttributeState, findAttributeState, getAttributeState, hasHostAttributeSource, removeAttributeOpinion, removeHostAttributeSource, setAttributeOpinion } from '../attribute-state/attribute-state.util';
+import { getWebComponentMetadata } from '../get-metadata/get-metadata.util';
+import { _attributeValue, writeAttribute } from '../write-attribute/write-attribute.util';
+
+/**
+ * The attributes, other than `class` and `style`, each class writes with its host attributes, computed once per class.
+ */
+const attributeNames = new WeakMap<object, readonly string[] | null>();
+
+/**
+ * Registers a run of host attributes of attributes on its element, as a source of each attribute: for an attribute
+ * another run bound on the element before writes too, when the element has no state for it yet, the state merging them
+ * is created, holding the opinion of the one bound before.
+ *
+ * @param run - The run, not run yet.
+ */
+export function registerHostAttributes(run: HostAttributeRun): void {
+  const { element, bindings } = run;
+  for (let i = 0; i < bindings.length; i++) {
+    const { name } = bindings[i];
+    // The state takes the runs registered before this one, which registers in it once it runs
+    if (!getAttributeState(element, name) && hasHostAttributeSource(element, name)) {
+      createAttributeState(element, name);
+    }
+  }
+
+  addHostAttributeSource(run);
+}
+
+/**
+ * Computes the value of a host attribute of a run, reading the member of its owner (a member holding a signal or any
+ * function is called), and writes it: through the state of the attribute, when the element has one, otherwise directly
+ * (see `writeAttribute`). The callback of the effect of the property.
+ *
+ * @param run - The run.
+ * @param index - The index of the property among the ones of the run.
+ */
+export function applyHostAttribute(run: HostAttributeRun, index: number): void {
+  const { host, element, bindings, values } = run;
+  const { name, read } = bindings[index];
+  const member = read(host);
+  const value = typeof member === 'function' ? member() : member;
+  values[index] = value;
+  const state = findAttributeState(element, name);
+  state ? setAttributeOpinion(state, element, run, run, value) : writeAttribute(element, name, value);
+}
+
+/**
+ * Removes the opinions of a run, unregistering it: through the state of each attribute, which writes again the value of
+ * the sources below, or directly, removing an attribute the run wrote, unless other code wrote it since.
+ *
+ * @param run - The run.
+ */
+export function removeHostAttributes(run: HostAttributeRun): void {
+  const { element, bindings, values } = run;
+  removeHostAttributeSource(run);
+  for (let i = 0; i < bindings.length; i++) {
+    const { name } = bindings[i];
+    const state = getAttributeState(element, name);
+    if (state) {
+      removeAttributeOpinion(state, element, run);
+    } else {
+      const text = _attributeValue(name, values[i]);
+      if (text !== null && element.getAttribute(name) === text) {
+        element.removeAttribute(name);
+      }
+    }
+
+    values[i] = undefined;
+  }
+}
+
+/**
+ * Gives the attributes, other than `class` and `style`, a class of a directive or of a component writes with its host
+ * properties, and, for a component, the ones its host directives write, computed once per class.
+ *
+ * @param klass - The class.
+ * @returns The names, `null` for none.
+ */
+export function _hostAttributeNames(klass: object): readonly string[] | null {
+  let names = attributeNames.get(klass);
+  if (names === undefined) {
+    names = computeNames(klass);
+    attributeNames.set(klass, names);
+  }
+
+  return names;
+}
+
+/**
+ * Computes the names of {@link _hostAttributeNames}.
+ *
+ * @param klass - The class.
+ * @returns The names, `null` for none.
+ */
+function computeNames(klass: object): readonly string[] | null {
+  const metadata = getWebComponentMetadata(klass);
+  let names: string[] | null = null;
+  const properties = metadata?.[INTERNAL_HOST_ATTRIBUTES];
+  if (properties?.length) {
+    for (let i = 0; i < properties.length; i++) {
+      const { kind, name } = properties[i];
+      if (kind === 'attribute') {
+        names = addName(names, name);
+      }
+    }
+  }
+
+  // The host directives belong to the class declaring them, as `_createHostDirectives` reads them
+  const directives = metadata && Object.hasOwn(metadata, INTERNAL_HOST_DIRECTIVES) ? metadata[INTERNAL_HOST_DIRECTIVES] : undefined;
+  if (directives?.length) {
+    for (let i = 0; i < directives.length; i++) {
+      const declaration = directives[i];
+      const directiveNames = _hostAttributeNames(typeof declaration === 'function' ? declaration : declaration.directive);
+      if (directiveNames?.length) {
+        for (let j = 0; j < directiveNames.length; j++) {
+          names = addName(names, directiveNames[j]);
+        }
+      }
+    }
+  }
+
+  return names;
+}
+
+/**
+ * Adds a name to a list of names, once.
+ *
+ * @param names - The names, `null` for none.
+ * @param name - The name.
+ * @returns The names.
+ */
+function addName(names: string[] | null, name: string): string[] {
+  if (!names) {
+    return [name];
+  }
+
+  if (!names.includes(name)) {
+    names.push(name);
+  }
+
+  return names;
+}

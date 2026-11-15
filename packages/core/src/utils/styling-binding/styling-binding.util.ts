@@ -88,7 +88,7 @@ export function _removeStyling(_context: _Context, target: Element | BindingHost
  * - `1` and `2`: the template writes `class` (`style`) on the element and in the branches of its conditional bindings,
  *   or through directives they apply, or the element applies structural directives;
  * - `4` and `8`: the template writes `class` (`style`) on a custom element or on an element applying directives,
- *   which write it too when their classes declare host properties on it (`_hostStylingFlags`), as a custom element not
+ *   which write it too when their classes declare host attributes on it (`_hostStylingFlags`), as a custom element not
  *   defined yet may.
  *
  * N.B. Deliberate, to save memory: the state is created when the element is rendered, as soon as a second source is

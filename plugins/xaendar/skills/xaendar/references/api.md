@@ -133,13 +133,13 @@ type TemplateRef<Params extends unknown[] = []> = { readonly __template: (...par
 
 A template declared by `<template name(…)>` as a value: read by an expression of the template declaring it (`input="{row}"`) or by `@Query.contentTemplate`, rendered by `@render value(args)` anywhere, its content reading the scope and the component declaring it. Type an input holding one as `@Property<InputSignal<TemplateRef<[item: Item]> | null>>(null)`. `__template` exists only in the types.
 
-### HostProperty (decorator)
+### HostAttribute (decorator)
 
 ```ts
-@HostProperty('aria-checked' | 'class' | 'class.on' | 'style' | 'style.width.px') field = value | signal(…); get member(): T; accessor name!: InputSignal<T>
+@HostAttribute('aria-checked' | 'class' | 'class.on' | 'style' | 'style.width.px') field = value | signal(…); get member(): T; accessor name!: InputSignal<T>
 ```
 
-Binds an attribute, the class string (`'class'`), a class (`'class.name'`), the style string (`'style'`) or a style property (`'style.name'`, with a unit of CSS `'style.width.px'`, or a custom property `'style.--accent'`) of the host element: the component itself, or the element a custom directive is applied to (not on a StructuralDirective: type error). Decorates a non-static field, getter or accessor, `@Property` ones included to reflect an input. The member is read in an effect each time the element connects (a directive: after its onInit; a component: after the render and the query hooks, before afterRender): written again when a signal it reads changes, otherwise once. A member holding a signal or any function is called. `null`, `undefined` remove the attribute; a boolean adds it empty (`true`) or removes it (`false`), except on `aria-*` and enumerated attributes (`draggable`, `spellcheck`, `contenteditable`, `writingsuggestions`), which get `"true"`/`"false"`; other values `String(value)`. Template bindings follow the same rule. `class` and `style` are merged key by key with the template and the directives (template > directives > component; a single key > the string; `null`/`undefined` no opinion, `false` absent for a class): only this owner's keys are removed at disconnection / destruction, giving back the value below. Typed by the name: `'class'`/`'style'` take `string | null | undefined`, `'style.x.unit'` `number | null | undefined`, `'style.x'` `string | number | null | undefined` (or a signal / function returning them). Any other attribute bound by the parent too: last write wins. Throws for an empty name, `'class.'`, `'style.'`, a style property that is not valid, a unit CSS does not have, the same class / property / string bound twice by the class, or a static member.
+Binds an attribute, the class string (`'class'`), a class (`'class.name'`), the style string (`'style'`) or a style property (`'style.name'`, with a unit of CSS `'style.width.px'`, or a custom property `'style.--accent'`) of the host element: the component itself, or the element a custom directive is applied to (not on a StructuralDirective: type error). Decorates a non-static field, getter or accessor, `@Property` ones included to reflect an input. The member is read in an effect each time the element connects (a directive: after its onInit; a component: after the render and the query hooks, before afterRender): written again when a signal it reads changes, otherwise once. A member holding a signal or any function is called. `null`, `undefined` are no opinion (removed when nothing else writes the attribute); a boolean adds it empty (`true`) or removes it (`false`), except on `aria-*` and enumerated attributes (`draggable`, `spellcheck`, `contenteditable`, `writingsuggestions`), which get `"true"`/`"false"`; other values `String(value)`. Template bindings follow the same rule. `class` and `style` are merged key by key with the template and the directives (template > directives > component; a single key > the string; `null`/`undefined` no opinion, `false` absent for a class): only this owner's keys are removed at disconnection / destruction, giving back the value below. Typed by the name: `'class'`/`'style'` take `string | null | undefined`, `'style.x.unit'` `number | null | undefined`, `'style.x'` `string | number | null | undefined` (or a signal / function returning them). Any other attribute is merged as a whole the same way, whatever the order the sources write in: the parent template (`attr.x`, or `x` when not an input) > the directives > the component, and at disconnection / destruction only this owner's opinion goes away (an attribute nothing else writes is removed). Throws for an empty name, `'class.'`, `'style.'`, a style property that is not valid, a unit CSS does not have, the same class / property / string bound twice by the class, or a static member.
 
 ### HostListener (decorator)
 
@@ -147,7 +147,7 @@ Binds an attribute, the class string (`'class'`), a class (`'class.name'`), the 
 @HostListener('keydown' | 'window:resize' | 'document:click', { capture?, once?, passive? }) method(event?: KeyboardEvent): void
 ```
 
-Listens to an event of the host element (component, or element of a custom directive; not StructuralDirective) with a non-static method taking no parameter or the event; with the prefix `window:` or `document:` it listens to the window or the document instead, for the same lifetime (any other prefix, as `htmx:load`, is part of the name). The event is typed by the name: `HTMLElementEventMap[name]`, `WindowEventMap`/`DocumentEventMap` after the prefix, `Event` for any other name (outputs: narrow it to `CustomEvent<T>`); a narrower or broader parameter compiles, an unrelated one (`KeyboardEvent` on `click`) is a type error. A key event names its key after a dot, as in templates: `keydown.enter`, `document:keydown.escape`, `window:keyup.control.z`, `keydown.code.keya`: the method is called only for that key with exactly those modifiers, and receives a `KeyboardEvent` (typed by `keydown`/`keyup`). Window and document listeners are not in the event contract of `renderToString`. Added at connection / directive start (same timing as HostProperty), removed at disconnection / destruction. Hears native events, events dispatched on the element (the outputs of the component and of its directives included) and events bubbling from its content; from the shadow root only composed events (`click`, `keydown`, not `change` or child outputs). Replaces `addEventListener` in onInit + `removeEventListener` in onDestroy for the host, the window and the document. Throws for an empty name, nothing after the prefix (`window:`), a key event naming no key or a modifier that does not exist (`@HostListener('keydown.ctrl.s'): "ctrl" is not a modifier…`) or a static method.
+Listens to an event of the host element (component, or element of a custom directive; not StructuralDirective) with a non-static method taking no parameter or the event; with the prefix `window:` or `document:` it listens to the window or the document instead, for the same lifetime (any other prefix, as `htmx:load`, is part of the name). The event is typed by the name: `HTMLElementEventMap[name]`, `WindowEventMap`/`DocumentEventMap` after the prefix, `Event` for any other name (outputs: narrow it to `CustomEvent<T>`); a narrower or broader parameter compiles, an unrelated one (`KeyboardEvent` on `click`) is a type error. A key event names its key after a dot, as in templates: `keydown.enter`, `document:keydown.escape`, `window:keyup.control.z`, `keydown.code.keya`: the method is called only for that key with exactly those modifiers, and receives a `KeyboardEvent` (typed by `keydown`/`keyup`). Window and document listeners are not in the event contract of `renderToString`. Added at connection / directive start (same timing as HostAttribute), removed at disconnection / destruction. Hears native events, events dispatched on the element (the outputs of the component and of its directives included) and events bubbling from its content; from the shadow root only composed events (`click`, `keydown`, not `change` or child outputs). Replaces `addEventListener` in onInit + `removeEventListener` in onDestroy for the host, the window and the document. Throws for an empty name, nothing after the prefix (`window:`), a key event naming no key or a modifier that does not exist (`@HostListener('keydown.ctrl.s'): "ctrl" is not a modifier…`) or a static method.
 
 ### Directive (decorator)
 
@@ -205,7 +205,7 @@ Base class of the directives acting on the element they are applied to. `element
 class X extends StructuralDirective { shouldRender(): boolean | Promise<boolean> }
 ```
 
-Base class of the directives deciding whether the element they are applied to is rendered. `shouldRender` runs in an effect: it is evaluated again when a signal read before its first `await` changes, and the element exists while every structural directive on it returns `true`. A pending promise keeps the current state, and only the latest evaluation decides. No element, no outputs, no hooks, no `@HostProperty`/`@HostListener`, and no conditional inputs.
+Base class of the directives deciding whether the element they are applied to is rendered. `shouldRender` runs in an effect: it is evaluated again when a signal read before its first `await` changes, and the element exists while every structural directive on it returns `true`. A pending promise keeps the current state, and only the latest evaluation decides. No element, no outputs, no hooks, no `@HostAttribute`/`@HostListener`, and no conditional inputs.
 
 ### Output (class)
 
@@ -273,7 +273,7 @@ Registers the function called when an `@if`, `@switch`, `@for` or structural dir
 
 ## `@xaendar/directives`
 
-The built-in directives, imported by the templates (`@import { AnimationDirective } from '@xaendar/directives'`), and the sanitizer of HTML. `@xaendar/core` is a peer.
+The built-in directives, imported by the templates (`@import { AnimationDirective } from '@xaendar/directives'`), and the sanitizer of HTML. `@xaendar/core` is a peer, `@xaendar/common` a dependency.
 
 ### AnimationDirective (`@@animation`)
 
@@ -294,6 +294,32 @@ type ElementAnimation = string | ((element: HTMLElement) => Promise<unknown> | v
 ```
 
 The `enter` and the `leave` of `@@animation`: a CSS class, or a function animating the element.
+
+### ClassDirective (`@@class`)
+
+```html
+<li @@class(value="{ ({ active: item.id === selected(), done: item.done }) }")>…</li>
+<div class="card" @@class(value="{theme().classes}")>…</div>
+```
+
+Angular's `[ngClass]`: `value` (`ElementClasses`, none by default) is a string of classes, a list or a set of classes, or an object whose keys are classes (several separated by spaces) given while their value is truthy. On a change the classes it no longer holds are removed. Its classes are a source of `class` at the level of the directives: the template's `class` and `[class.x]` win over it, it wins over the component's `@HostAttribute`, and a class it does not give is left to the others. Written into the page on the server. For a few classes known in advance, `[class.x]="{…}"` is lighter.
+
+### StyleDirective (`@@style`)
+
+```html
+<div @@style(value="{ ({ 'width.px': width(), backgroundColor: color(), '--accent': accent() }) }")>…</div>
+```
+
+Angular's `[ngStyle]`: `value` (`ElementStyles`, none by default) is an object of properties, in kebab-case or camelCase, followed by their unit if any (`'width.px'`), or custom properties (`'--accent'`), set to a string or a number, with `!important` when the value ends with it; `null`, `undefined` and `''` set nothing. A key that is not a property, or a unit CSS does not have, throws; a value holding a `;` outside parentheses and quotes is left out. On a change the properties it no longer sets are removed. Merged with the other sources of `style` as `@@class` is with `class`; written into the page on the server. For a few properties known in advance, `[style.x]="{…}"` is lighter.
+
+### ElementClasses, ElementStyles (types)
+
+```ts
+type ElementClasses = string | readonly string[] | ReadonlySet<string> | Readonly<Record<string, unknown>> | null | undefined
+type ElementStyles = Readonly<Record<string, string | number | null | undefined>> | null | undefined
+```
+
+The `value` of `@@class` and of `@@style`.
 
 ### InnerHtmlDirective (`@@innerHtml`)
 
@@ -557,7 +583,7 @@ What `xd build` runs for each library of a workspace: it compiles the library ah
 renderToString<Component extends CustomElement>(component: Constructor<Component>, inputs?: RenderInputs<Component>, options?: RenderOptions): Promise<string>
 ```
 
-Renders a component to HTML on the server: its element with the attributes of its `@HostProperty`, a `<template shadowrootmode="open">` holding its stylesheet and its template, and its end tag; the components it renders are written the same way, and a custom element the server does not define (`@import lazy`, other libraries) without shadow root. The component is constructed, `inputs` are assigned to their properties (by property name, not alias; the `transform` applies), `onInit` runs and the template is rendered once. Effects, `afterRender`, `onDestroy`, listeners, `@HostListener`, custom and host directives and queries do not run; `createComponent` constructs without rendering; element refs are `undefined`. Structural directives run, the asynchronous ones are awaited, and a rejected one renders nothing.
+Renders a component to HTML on the server: its element with the attributes of its `@HostAttribute`, a `<template shadowrootmode="open">` holding its stylesheet and its template, and its end tag; the components it renders are written the same way, and a custom element the server does not define (`@import lazy`, other libraries) without shadow root. The component is constructed, `inputs` are assigned to their properties (by property name, not alias; the `transform` applies), `onInit` runs and the template is rendered once. Effects, `afterRender`, `onDestroy`, listeners, `@HostListener`, custom and host directives and queries do not run; `createComponent` constructs without rendering; element refs are `undefined`. Structural directives run, the asynchronous ones are awaited, and a rejected one renders nothing.
 
 Comments mark the dynamic parts for the browser (`<!---->` before interpolations, `<!--xd-if:0-->…<!--/xd-if-->`, `xd-switch`, `xd-for` with `<!--xd-item:KEY-->` per item, `xd-s` for structural directives; the last block of an element or of a shadow root has no closing comment, the browser appending its content): never strip them. `inputs` are written as JSON into `data-xd-inputs` on the element, which the browser assigns before the component renders; `options.state` into a `<script type="application/json" data-xd-state>` after it, read by `getTransferState`. Both carry JSON plus `undefined`, `NaN`, `±Infinity`, `bigint`, `Date`, `Map`, `Set`. The promise rejects when the class is not defined, when its module was not built for the server, when an input or a state value is a function, a symbol, an instance of another class or contains itself (the error names its path, e.g. `inputs.product.onSave`), or when the code of a component throws.
 

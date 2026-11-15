@@ -1,8 +1,9 @@
-import { type ComponentMetadata, describeSelectorConflict, findWebComponentErrors, getWebComponentDeclarations, type WebComponentError } from '@xaendar/compiler';
+import { type ComponentMetadata, describeSelectorConflict, findReflectedInputs, findWebComponentErrors, getWebComponentDeclarations, type WebComponentError } from '@xaendar/compiler';
 import { existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { createSourceFile, ScriptTarget, type SourceFile, type StringLiteral } from 'typescript';
 import { resolveDeclarations } from '../template-analysis/template-analysis';
+import type { ComponentDiagnostic } from '../types/component-diagnostic.type';
 import { findStringOptions } from '../utils/component-options/component-options.utils';
 import { normalizeFileName, resolvePosixPath } from '../utils/path/path.utils';
 import { readSsr } from '../utils/xaendar-config/xaendar-config.utils';
@@ -12,19 +13,25 @@ import { readSsr } from '../utils/xaendar-config/xaendar-config.utils';
  * position: the options it cannot read (see `findWebComponentErrors`), the `ssr` option in a project whose nearest
  * `xaendar.json` declares no `ssr` (nothing without the file), a `templateUrl` or a `styleUrl` leading to a
  * missing file, and a selector declared by another component of the TypeScript project of the file, which the build
- * finds only among the components it reaches.
+ * finds only among the components it reaches. The inputs named like an attribute every element reflects are warnings,
+ * as the build reports them (see `findReflectedInputs`).
  *
  * @param fileName - The path of the component file.
  * @param text - The current text of the component file, unsaved changes included.
  * @returns The problems found.
  */
-export async function getComponentDiagnostics(fileName: string, text: string): Promise<WebComponentError[]> {
+export async function getComponentDiagnostics(fileName: string, text: string): Promise<ComponentDiagnostic[]> {
   const sourceFile = createSourceFile(fileName, text, ScriptTarget.Latest, true);
-  const diagnostics = findMissingFiles(sourceFile);
+  const diagnostics: ComponentDiagnostic[] = findMissingFiles(sourceFile);
 
   const errors = findWebComponentErrors(sourceFile, true, readSsr(dirname(fileName)));
   if (errors.length) {
     diagnostics.push(...errors);
+  }
+
+  const reflected = findReflectedInputs(sourceFile);
+  for (let i = 0; i < reflected.length; i++) {
+    diagnostics.push({ message: reflected[i].message, span: reflected[i].span, warning: true });
   }
 
   // The project is read only for a file declaring a component

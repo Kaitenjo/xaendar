@@ -192,7 +192,7 @@ export class CustomElement extends HTMLElement {
    * and invokes `onInit`, if declared. Then triggers the render by invoking the compiler-generated render
    * function registered for it, which builds the Shadow DOM tree, or adopts the one the server rendered, and sets up
    * reactive signal subscriptions, then invokes the internal connected hooks
-   * (e.g. the ones of the query signals), binds the attributes, the classes and the events declared by `@HostProperty`
+   * (e.g. the ones of the query signals), binds the attributes, the classes and the events declared by `@HostAttribute`
    * and `@HostListener`, and finally invokes `afterRender`, if declared.
    *
    * Mounted by a template inside a `@try`, its error is thrown by the template, which the `@try` catches (see
@@ -327,7 +327,7 @@ export class CustomElement extends HTMLElement {
       }
     }
 
-    // Bound once the queries are up to date, so a `@HostProperty` can read them
+    // Bound once the queries are up to date, so a `@HostAttribute` can read them
     _bindHost(this, this, this._context);
     this.afterRender?.();
     if (hydrating) {

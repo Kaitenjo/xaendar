@@ -1,5 +1,5 @@
 /**
- * The units a style binding can follow its property with (`[style.width.px]`, `@HostProperty('style.width.px')`): the
+ * The units a style binding can follow its property with (`[style.width.px]`, `@HostAttribute('style.width.px')`): the
  * lengths, the angles, the times, the frequencies, the resolutions and the flex fraction of CSS, and `%`.
  */
 export const CSS_UNITS: ReadonlySet<string> = new Set([

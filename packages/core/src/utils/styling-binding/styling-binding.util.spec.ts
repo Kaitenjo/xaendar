@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
 import { DIRECTIVE_ORDER, HEADER } from '../../costants';
-import { HostProperty } from '../../decorators/host-property/host-property.decorator';
+import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { _Context } from '../../types/context.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
@@ -43,12 +43,12 @@ function scopeOf(styling: _RenderStyling): _Context {
 }
 
 /**
- * Creates the class of a directive declaring host properties, as its decorators would.
+ * Creates the class of a directive declaring host attributes, as its decorators would.
  */
 function directiveOf(properties: Record<string, string>, members: Record<string, unknown>): new () => CustomDirective {
   const metadata: DecoratorMetadataObject = {};
   for (const [member, name] of Object.entries(properties)) {
-    (HostProperty(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: member, static: false, metadata, access: { get: (owner: Record<string, unknown>) => owner[member] } });
+    (HostAttribute(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: member, static: false, metadata, access: { get: (owner: Record<string, unknown>) => owner[member] } });
   }
 
   const Klass = class extends CustomDirective {
@@ -62,7 +62,7 @@ function directiveOf(properties: Record<string, string>, members: Record<string,
 }
 
 /**
- * Binds the host properties of a directive on an element, as the runtime does once the directive is applied, with its
+ * Binds the host attributes of a directive on an element, as the runtime does once the directive is applied, with its
  * order among the directives of the element.
  */
 function bindDirective(element: Element, Directive: new () => CustomDirective, order: number): _Context {
@@ -74,12 +74,12 @@ function bindDirective(element: Element, Directive: new () => CustomDirective, o
 }
 
 /**
- * Binds host properties as the component the element is: the owner is the element itself.
+ * Binds host attributes as the component the element is: the owner is the element itself.
  */
 function bindComponent(element: Element, properties: Record<string, string>, members: Record<string, unknown>): _Context {
   const metadata: DecoratorMetadataObject = {};
   for (const [member, name] of Object.entries(properties)) {
-    (HostProperty(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: member, static: false, metadata, access: { get: () => members[member] } });
+    (HostAttribute(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: member, static: false, metadata, access: { get: () => members[member] } });
   }
 
   Object.defineProperty(element, 'constructor', { value: { [Symbol.for('Symbol.metadata')]: metadata } });
@@ -222,7 +222,7 @@ describe('_prepareStyling', () => {
     expect(_hasStylingState(element, 'style')).toBe(true);
   });
 
-  it('creates the states of the attributes the directives of the element write with their host properties', () => {
+  it('creates the states of the attributes the directives of the element write with their host attributes', () => {
     const Directive = directiveOf({ width: 'style.width.px' }, { width: 1 });
     _defineDirective('prepareStyling', Directive);
     const element = document.createElement('div');
@@ -242,7 +242,7 @@ describe('_prepareStyling', () => {
     expect(_hasStylingState(native, 'class')).toBe(false);
   });
 
-  it('creates the states of the attributes a component writes with its host properties or its host directives', () => {
+  it('creates the states of the attributes a component writes with its host attributes or its host directives', () => {
     const Host = directiveOf({ kind: 'class' }, { kind: 'x' });
     const Plain = directiveOf({}, {});
     const metadata: DecoratorMetadataObject = { hostDirectives: [Plain, { directive: Host }] };

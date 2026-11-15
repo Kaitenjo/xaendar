@@ -47,7 +47,10 @@ import { declareExpression, toArrayLiteral, toObjectLiteral, toRoleName } from '
  * A standard `<template>` element has no function of the children: its constant holds the HTML of its static content
  * (`content`), which the runtime assigns to the `innerHTML` of a `<template>` it creates.
  * Its `class` and its `style` are described one each (see `mapStyling`), merged key by key with the other sources writing
- * them: `styling` flags the states the runtime creates before applying them (see `stylingFlags`).
+ * them: `styling` flags the states the runtime creates before applying them (see `stylingFlags`). The other attributes
+ * of a component, or of an element applying directives, are merged with the ones the component and the directives write
+ * with their host attributes: `shared` lists them, each flagged in its descriptor, and `sharedAlways` tells the runtime
+ * to create the states of all of them, when a branch applies directives (see `_prepareAttributes`).
  * The conditional bindings declared on the element are split in two lists: the descriptors of the element bindings
  * leave out the structural directives, the ones of the structural conditional bindings keep only them.
  *
@@ -75,9 +78,12 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   */
   const elementOwner: DescriptorOwner = structural ? { name: nodeName, generatorContext: new GeneratorContext(generatorContext, undefined, 'runtime') } : owner;
   orderDirectives(node);
-  const [attributes, written] = await mapBindings(node, elementOwner, tagName, isCustomElement, false, false);
+  // The attributes the component or the directives may write too, collected while the bindings are mapped
+  const branchDirectives = !!(branchStyling(node.conditionalBindings) & 4);
+  const shared = isCustomElement || node.directives.length || branchDirectives ? new Array<string>() : undefined;
+  const [attributes, written] = await mapBindings(node, elementOwner, tagName, isCustomElement, false, false, shared);
   const events = mapEvents(node.events, elementOwner);
-  const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, elementOwner, tagName, isCustomElement);
+  const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, elementOwner, tagName, isCustomElement, false, shared);
   const directives = await mapDirectives(node.directives, elementOwner);
   const structuralDirectives = await mapStructuralDirectives(node.structuralDirectives, owner);
   const structuralConditionalBindings = await mapStructuralConditionalBindings(node.conditionalBindings, owner);
@@ -100,6 +106,13 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   const styling = stylingFlags(node, written, structural);
   if (styling) {
     members.push(`styling: ${styling}`);
+  }
+
+  if (shared?.length) {
+    members.push(`shared: ${toArrayLiteral(shared.map(toStringLiteral))}`);
+    if (branchDirectives) {
+      members.push('sharedAlways: true');
+    }
   }
 
   if (hasChildren) {
@@ -220,6 +233,11 @@ function declareElementExpression(owner: DescriptorOwner, role: string, expressi
  * the metadata of its owner, is reset at runtime to the default value its owner declares, any other
  * attribute is removed.
  * A required property gets no `unbind`, since the branch selected next binds it again.
+ * An attribute written with `attr.` (`attr.title`) is always the attribute of the element, written with the setters of
+ * the attributes (`_setAttribute`, `_setExpressionAttribute`, `_setReactiveAttribute`), which look up no input, even
+ * when the component declares one with its name.
+ * The attributes of an element whose component or directives may write them too are flagged `shared` and collected,
+ * so that the runtime merges them with the host attributes writing them (see `_prepareAttributes`).
  *
  * @param attributes - The attribute nodes to map onto the element or the directive.
  * @param owner - The element, which the functions of the expressions are named after.
@@ -227,17 +245,19 @@ function declareElementExpression(owner: DescriptorOwner, role: string, expressi
  * @param isCustomElement - Whether the owner is a custom element.
  * @param isDirective - Whether the owner is a directive.
  * @param conditional - Whether the attributes are declared inside a conditional binding.
+ * @param shared - Collects the attributes, which are not inputs, other sources may write too: `undefined` when no other
+ *   source writes the attributes of the element.
  * @returns The code of the descriptors, one per attribute.
  * @throws If the metadata of a directive property can't be resolved, or a two-way binding binds no input.
  */
-async function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, target: string, isCustomElement: boolean, isDirective: boolean, conditional: boolean): Promise<string[]> {
+async function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, target: string, isCustomElement: boolean, isDirective: boolean, conditional: boolean, shared?: string[]): Promise<string[]> {
   const mappedAttributes = new Array<string>();
   const { generatorContext } = owner;
   // Native elements have no metadata
   const metadata = attributes.length && (isCustomElement || isDirective) ? await generatorContext.cache?.getOrInsert(target) : undefined;
   for (let i = 0; i < attributes.length; i++) {
-    const { name, value, twoWay } = attributes[i];
-    const input = metadata?.properties.get(name);
+    const { name, value, twoWay, attribute } = attributes[i];
+    const input = attribute === undefined ? metadata?.properties.get(name) : undefined;
     if (twoWay && !input) {
       throw new Error(`[(${name})] binds a model of a component or of a directive: ${target} has no input "${name}"`, { cause: attributes[i].span });
     }
@@ -247,25 +267,34 @@ async function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner
       throw new Error(`Unable to resolve the metadata of property "${name}" of ${target}`, { cause: attributes[i].span });
     }
 
-    const property = input && !input.exposed ? input.name : name;
+    const property = attribute ?? (input && !input.exposed ? input.name : name);
     const members = [`name: '${property}'`];
+    if (shared && !input) {
+      members.push('shared: true');
+      if (!shared.includes(property)) {
+        shared.push(property);
+      }
+    }
+
+    // The family of the setters: an input, an attribute written with `attr.`, or any other attribute
+    const kind = input ? 'Input' : attribute === undefined ? 'Property' : 'Attribute';
     // The setter evaluating the expression once, which runs a binding again too: `undefined` for a descriptor written once
     let update: string | undefined;
     let role = '';
     let reads: string | undefined;
     if (typeof value === 'string') {
-      members.push(`value: ${toStringLiteral(value)}`, `setter: ${input ? '_setInput' : '_setProperty'}`);
+      members.push(`value: ${toStringLiteral(value)}`, `setter: _set${kind}`);
     } else {
       const { expression, variables } = resolveExpression(value.expression, generatorContext);
-      const once = input ? '_setExpressionInput' : '_setExpressionProperty';
-      role = isDirective ? `${toRoleName(target.slice(2))}_${toRoleName(property)}` : toRoleName(property);
+      const once = `_setExpression${kind}`;
+      role = isDirective ? `${toRoleName(target.slice(2))}_${toRoleName(property)}` : toRoleName(attribute === undefined ? property : name);
       members.push(`value: ${declareElementExpression(owner, role, expression)}`);
       if (isConstantExpression(value.expression)) {
         members.push(`setter: ${once}`);
       } else {
         update = once;
         reads = generatorContext.getReads(variables);
-        members.push(`setter: ${input ? '_setReactiveInput' : '_setReactiveProperty'}`);
+        members.push(`setter: _setReactive${kind}`);
         appendReads(members, reads);
       }
     }
@@ -317,10 +346,11 @@ function declareAttribute(owner: DescriptorOwner, role: string, update: string, 
  * @param isCustomElement - Whether the owner is a custom element.
  * @param isDirective - Whether the owner is a directive.
  * @param conditional - Whether the bindings are declared inside a conditional binding.
+ * @param shared - Collects the attributes other sources may write too (see {@link mapAttributes}).
  * @returns The code of the descriptors, and what they write: `1` for `class`, `2` for `style`.
  * @throws If the metadata of a directive property can't be resolved.
  */
-async function mapBindings({ attributes, classBindings, styleBindings }: Pick<ElementNode, 'attributes' | 'classBindings' | 'styleBindings'>, owner: DescriptorOwner, target: string, isCustomElement: boolean, isDirective: boolean, conditional: boolean): Promise<[descriptors: string[], styling: number]> {
+async function mapBindings({ attributes, classBindings, styleBindings }: Pick<ElementNode, 'attributes' | 'classBindings' | 'styleBindings'>, owner: DescriptorOwner, target: string, isCustomElement: boolean, isDirective: boolean, conditional: boolean, shared?: string[]): Promise<[descriptors: string[], styling: number]> {
   if (isDirective) {
     return [await mapAttributes(attributes, owner, target, false, true, conditional), 0];
   }
@@ -342,7 +372,7 @@ async function mapBindings({ attributes, classBindings, styleBindings }: Pick<El
     styling |= 2;
   }
 
-  return [mapped.concat(await mapAttributes(rest, owner, target, isCustomElement, false, conditional)), styling];
+  return [mapped.concat(await mapAttributes(rest, owner, target, isCustomElement, false, conditional, shared)), styling];
 }
 
 /**
@@ -622,10 +652,11 @@ function resolveHandler(handler: string, generatorContext: GeneratorContext): st
  * @param target - The tag name of the element, or the selector of the directive as applied in templates (`@@selector`), the conditional bindings are declared in.
  * @param isCustomElement - Whether the target is a custom element.
  * @param isDirective - Whether the target is a directive.
+ * @param shared - Collects the attributes other sources may write too (see {@link mapAttributes}).
  * @returns The code of the descriptors, one per conditional binding.
  */
-async function mapConditionalBindings(conditionalBindings: ConditionalBindingNode[], owner: DescriptorOwner, target: string, isCustomElement = false, isDirective = false): Promise<string[]> {
-  return mapConditionalBindingDescriptors(conditionalBindings, owner, isEmptyBranch, (branch, condition, branchOwner) => mapBranch(branch, condition, branchOwner, target, isCustomElement, isDirective));
+async function mapConditionalBindings(conditionalBindings: ConditionalBindingNode[], owner: DescriptorOwner, target: string, isCustomElement = false, isDirective = false, shared?: string[]): Promise<string[]> {
+  return mapConditionalBindingDescriptors(conditionalBindings, owner, isEmptyBranch, (branch, condition, branchOwner) => mapBranch(branch, condition, branchOwner, target, isCustomElement, isDirective, shared));
 }
 
 /**
@@ -763,12 +794,13 @@ function mapCondition(conditionalBinding: ConditionalBindingNode, index: number,
  * @param target - The tag name of the element, or the selector of the directive as applied in templates (`@@selector`), the branch is declared in.
  * @param isCustomElement - Whether the target is a custom element.
  * @param isDirective - Whether the target is a directive.
+ * @param shared - Collects the attributes other sources may write too (see {@link mapAttributes}).
  * @returns The code of the descriptor of the branch.
  */
-async function mapBranch(branch: ConditionalBindingBranchNode, condition: string | undefined, owner: DescriptorOwner, target: string, isCustomElement: boolean, isDirective: boolean): Promise<string> {
+async function mapBranch(branch: ConditionalBindingBranchNode, condition: string | undefined, owner: DescriptorOwner, target: string, isCustomElement: boolean, isDirective: boolean, shared: string[] | undefined): Promise<string> {
   const { events, conditionalBindings, directives } = branch;
   const members = condition ? [condition] : new Array<string>();
-  const [attributes, styling] = await mapBindings(branch, owner, target, isCustomElement, isDirective, true);
+  const [attributes, styling] = await mapBindings(branch, owner, target, isCustomElement, isDirective, true, shared);
   appendList(members, 'attributes', attributes);
   // A branch writing `class` or `style` is a source that comes and goes, merged by the state of the element
   if (styling) {
@@ -776,7 +808,7 @@ async function mapBranch(branch: ConditionalBindingBranchNode, condition: string
   }
 
   appendList(members, 'events', mapEvents(events, owner, isDirective ? `${toRoleName(target.slice(2))}_` : ''));
-  appendList(members, 'conditionalBindings', await mapConditionalBindings(conditionalBindings, owner, target, isCustomElement, isDirective));
+  appendList(members, 'conditionalBindings', await mapConditionalBindings(conditionalBindings, owner, target, isCustomElement, isDirective, shared));
 
   // A conditional binding declared inside a directive cannot apply other directives
   if (!isDirective) {

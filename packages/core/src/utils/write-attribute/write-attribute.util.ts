@@ -7,7 +7,7 @@ const ENUMERATED_ATTRIBUTES: ReadonlySet<string> = new Set(['contenteditable', '
 
 /**
  * Converts the value of a binding to the text of the attribute it writes, the same wherever the binding is written: in a
- * template, by `@HostProperty`, and by the server rendering either one.
+ * template, by `@HostAttribute`, and by the server rendering either one.
  * - `null` and `undefined` remove the attribute;
  * - a boolean on an `aria-*` attribute or on an enumerated one whose keywords include `false` (`draggable`,
  *   `spellcheck`, `contenteditable`, `writingsuggestions`) is written as `"true"` or `"false"`: `aria-expanded="false"`

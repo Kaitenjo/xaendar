@@ -15,7 +15,7 @@ const core = await import('@xaendar/core');
 const ssr = await import('@xaendar/ssr');
 const { signal } = await import('@xaendar/core/signals');
 const { compileServer } = await import('@xaendar/ssr-compiler');
-const { CustomDirective, CustomElement, HostProperty, Property, StructuralDirective, _defineDirective, _getComponentRuntime, getTransferState } = core;
+const { CustomDirective, CustomElement, HostAttribute, Property, StructuralDirective, _defineDirective, _getComponentRuntime, getTransferState } = core;
 const { _defineServerRender } = ssr;
 
 /**
@@ -84,7 +84,7 @@ class DelayDirective extends StructuralDirective {
 _defineDirective('delay', DelayDirective);
 
 const badgeMetadata: DecoratorMetadataObject = {};
-(HostProperty('class.admin') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'admin', static: false, metadata: badgeMetadata, access: { get: (owner: { admin: () => boolean }) => owner.admin } });
+(HostAttribute('class.admin') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'admin', static: false, metadata: badgeMetadata, access: { get: (owner: { admin: () => boolean }) => owner.admin } });
 
 /**
  * A component rendered by the root, writing a class on its own tag.
@@ -286,10 +286,10 @@ describe('renderToString', () => {
     ].join(''));
   });
 
-  it('applies the custom directives of a native element, the ones of its selected branches included: onInit and @HostProperty run, the effects do not, the content assigned to innerHTML follows the start tag', async () => {
+  it('applies the custom directives of a native element, the ones of its selected branches included: onInit and @HostAttribute run, the effects do not, the content assigned to innerHTML follows the start tag', async () => {
     const directiveEffect = vi.fn();
     const fillMetadata: DecoratorMetadataObject = {};
-    (HostProperty('class.filled') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'filled', static: false, metadata: fillMetadata, access: { get: (owner: { filled: boolean }) => owner.filled } });
+    (HostAttribute('class.filled') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'filled', static: false, metadata: fillMetadata, access: { get: (owner: { filled: boolean }) => owner.filled } });
 
     /**
      * A directive filling its element with the HTML of its input, on the server only.
@@ -342,7 +342,7 @@ describe('renderToString', () => {
     const directiveOf = (selector: string, properties: Record<string, [name: string, value: unknown]>) => {
       const metadata: DecoratorMetadataObject = {};
       for (const [member, [name, value]] of Object.entries(properties)) {
-        (HostProperty(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: member, static: false, metadata, access: { get: () => value } });
+        (HostAttribute(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: member, static: false, metadata, access: { get: () => value } });
       }
 
       const Directive = class extends CustomDirective { };

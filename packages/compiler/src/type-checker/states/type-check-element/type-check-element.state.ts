@@ -15,6 +15,7 @@ import type { StructuralDirectiveNode } from '../../../parser/types/nodes/struct
 import type { StyleBindingNode } from '../../../parser/types/nodes/style-binding-node.type';
 import type { SwitchBindingNode } from '../../../parser/types/nodes/switch-binding-node.type';
 import { isStructuralElement } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
+import { assertUniqueAttributes } from '../../../parser/utils/unique-attributes/unique-attributes.utils';
 import type { ComponentEventMetadata } from '../../../types/component-event-metadata.type';
 import { ComponentMetadata } from '../../../types/component-metadata.type';
 import type { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
@@ -76,6 +77,7 @@ export function typeCheckElement(node: ElementNode, processNode: ProcessNode, co
     } else if (metadata) {
       lines.push(...typeCheckComponentBindings(node, metadata, nativeEvents, context));
     } else if (isForeign) {
+      assertUniqueForeignAttributes(node);
       nativeEvents = { eventMap, tagName, foreign: true };
       lines.push(...typeCheckNativeBindings(node, nativeEvents, context));
     } else {
@@ -137,6 +139,7 @@ function typeCheckComponentBindings(node: ElementNode, declaredMetadata: Compone
   // The instantiation of a component named by an element ref is declared in the scope of the ref, which is typed with it
   const suffix = node.ref ? getInstantiationSuffix(node) : undefined;
   const { metadata, declarations } = instantiateTypeParameters(declaredMetadata, node.typeArguments, node.attributes, node.nameSpan, context, suffix);
+  assertUniqueComponentAttributes(node, metadata);
   const requiredProperties = new Set(metadata.properties.entries().filter(([_, value]) => value.required).map(([key]) => key));
   const alwaysBoundAttributes = getAlwaysBoundAttributes(node.conditionalBindings);
   const lines = typeCheckComponentAttributes(node.attributes, metadata, context);
@@ -184,6 +187,38 @@ function typeCheckComponentBindings(node: ElementNode, declaredMetadata: Compone
     or in the scope of the element ref naming the element, under names of its own
   */
   return suffix === undefined ? [plain('{'), ...indentLines([...declarations, ...lines]), plain('}')] : [...declarations, ...lines];
+}
+
+/**
+ * Ensures an attribute of the element of a component is written once at a time (see `assertUniqueAttributes`): an
+ * attribute that is not an input of the component and the same one written with `attr.` (`title` and `attr.title`)
+ * write the same attribute of the element, while an input and the attribute of its name (`attr.title`) are two things.
+ *
+ * @param node - The element of the component.
+ * @param metadata - Metadata of the component.
+ * @throws If an attribute is written twice.
+ */
+function assertUniqueComponentAttributes(node: ElementNode, metadata: ComponentMetadata): void {
+  assertUniqueAttributes(
+    node.attributes,
+    node.conditionalBindings,
+    ({ name, attribute }) => attribute === undefined && metadata.properties.has(name) ? name : `attr.${attribute ?? name}`,
+    key => {
+      const name = key.slice('attr.'.length);
+      return `Attribute "${name}" is written more than once on <${node.tagName}>: "${name}" is not an input of ${metadata.className}, so ${name}="…" and attr.${name}="…" write the same attribute of the element`;
+    }
+  );
+}
+
+/**
+ * Ensures an attribute of a custom element of another library is written once at a time (see
+ * `assertUniqueAttributes`): without metadata, it has no input, so `title` and `attr.title` write the same attribute.
+ *
+ * @param node - The element.
+ * @throws If an attribute is written twice.
+ */
+function assertUniqueForeignAttributes(node: ElementNode): void {
+  assertUniqueAttributes(node.attributes, node.conditionalBindings, ({ name, attribute }) => attribute ?? name, name => `Attribute "${name}" is written more than once on <${node.tagName}>: it is not a component imported in the template, so ${name}="…" and attr.${name}="…" write the same attribute of the element`);
 }
 
 /**
@@ -524,7 +559,9 @@ function assertTwoWayBindable({ name, span, twoWay }: AttributeNode, metadata: C
 function assertNotAliasedProperty({ name, span }: AttributeNode, metadata: ComponentOrDirectiveMetadata): void {
   for (const property of metadata.properties.values()) {
     if (property.name === name && property.alias && !property.exposed) {
-      throw new Error(`"${name}" is the property of an input of ${metadata.className} declaring the alias "${property.alias}": bind it as ${property.alias}="…".`, { cause: span });
+      // A directive has no attribute of its own: only the element of a component has one with the name of the property
+      const attribute = metadata.type === 'component' ? `, or write the attribute of the element with attr.${name}="…"` : '';
+      throw new Error(`"${name}" is the property of an input of ${metadata.className} declaring the alias "${property.alias}": bind it as ${property.alias}="…"${attribute}.`, { cause: span });
     }
   }
 }
@@ -590,6 +627,7 @@ function getAlwaysBoundAttributes(conditionalBindings: ConditionalBindingNode[])
  * `satisfies` the property's declared type. Expression values are checked
  * against the resolved expression, literal values as a `string`. Attributes
  * that don't match a property are ignored, unless they are the name of the property of an input declaring an alias.
+ * An attribute written with `attr.` is never a property: its expression is checked as on a native element.
  *
  * A property is an input, so it always needs a value: the form without one (`<my-el label>`), which is only valid
  * for the attributes of a native element, is rejected.
@@ -605,7 +643,16 @@ function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: Com
   const lines = new Array<Line>();
 
   for (let i = 0; i < attributes.length; i++) {
-    const { name, value, span, bare } = attributes[i];
+    const { name, value, span, bare, attribute } = attributes[i];
+    // Written with `attr.`, the attribute of the element takes any value, as on a native element
+    if (attribute !== undefined) {
+      if (typeof value !== 'string') {
+        lines.push(line(mappedInterpolation(value, context, ';')));
+      }
+
+      continue;
+    }
+
     assertTwoWayBindable(attributes[i], metadata);
     const property = metadata.properties.get(name);
     if (!property) {

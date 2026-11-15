@@ -244,7 +244,7 @@ export class CopyDirective extends CustomDirective<HTMLButtonElement> {
    *
    * @returns The tooltip of the element.
    */
-  @HostProperty('title')
+  @HostAttribute('title')
   public get hint(): string {
     return \`Copy "\${this.text()}"\`;
   }
@@ -404,17 +404,17 @@ public quickSave(): void { … }`
 };
 
 /**
- * The snippet `host-property-values.ts`, shown by the page components/host-bindings and the API reference of core.
+ * The snippet `host-attribute-values.ts`, shown by the page components/host-bindings and the API reference of core.
  */
-export const HOST_PROPERTY_VALUES: SourceFile = {
-  name: 'host-property-values.ts',
+export const HOST_ATTRIBUTE_VALUES: SourceFile = {
+  name: 'host-attribute-values.ts',
   lang: 'ts',
   code: `/**
  * true writes hidden="", false removes it: the way of boolean attributes.
  *
  * @returns Whether the host is hidden.
  */
-@HostProperty('hidden')
+@HostAttribute('hidden')
 public get collapsed(): boolean {
   return !this.open();
 }
@@ -424,7 +424,7 @@ public get collapsed(): boolean {
  *
  * @returns Whether the content is expanded.
  */
-@HostProperty('aria-expanded')
+@HostAttribute('aria-expanded')
 public get expandedState(): boolean {
   return this.open();
 }
@@ -434,32 +434,32 @@ public get expandedState(): boolean {
  *
  * @returns The number of items, or null when there is none.
  */
-@HostProperty('data-count')
+@HostAttribute('data-count')
 public get count(): number | null {
   return this.items().length || null;
 }`
 };
 
 /**
- * The snippet `host-property.ts`, shown by the API reference of core.
+ * The snippet `host-attribute.ts`, shown by the API reference of core.
  */
-export const HOST_PROPERTY: SourceFile = {
-  name: 'host-property.ts',
+export const HOST_ATTRIBUTE: SourceFile = {
+  name: 'host-attribute.ts',
   lang: 'ts',
   code: `/**
  * Reads no signal: written once, each time the element is connected.
  */
-@HostProperty('role')
+@HostAttribute('role')
 public readonly hostRole = 'switch';
 /**
  * Holds a signal: called to get the value, and written again when it changes. The host has the class on while it is true.
  */
-@HostProperty('class.on')
+@HostAttribute('class.on')
 public readonly on = signal(false);
 /**
  * An input reflected on the host: the accessor holds an InputSignal, called as well.
  */
-@HostProperty('size')
+@HostAttribute('size')
 @Property<InputSignal<'small' | 'large'>>('small')
 public accessor size!: InputSignal<'small' | 'large'>;
 
@@ -468,7 +468,7 @@ public accessor size!: InputSignal<'small' | 'large'>;
  *
  * @returns The label read by assistive technologies.
  */
-@HostProperty('aria-label')
+@HostAttribute('aria-label')
 public get stateLabel(): string {
   return this.on() ? 'Turn off' : 'Turn on';
 }`

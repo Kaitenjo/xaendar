@@ -15,7 +15,7 @@ const LIFECYCLE_HOOKS: ReadonlySet<string> = new Set(['onInit', 'afterRender', '
 /**
  * The decorators of the members of a component that only describe what the server renders too.
  */
-const SERVER_DECORATORS: ReadonlySet<string> = new Set(['Property', 'HostProperty']);
+const SERVER_DECORATORS: ReadonlySet<string> = new Set(['Property', 'HostAttribute']);
 
 /**
  * The members of a component creating what lives in the browser.

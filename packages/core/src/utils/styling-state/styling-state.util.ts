@@ -3,6 +3,7 @@ import type { StylingAttribute } from '../../types/styling/styling-attribute.typ
 import type { StylingOpinions } from '../../types/styling/styling-opinions.type';
 import type { StylingSource } from '../../types/styling/styling-source.type';
 import type { StylingState } from '../../types/styling/styling-state.type';
+import { insertRanked, removeRanked } from '../source-rank/source-rank.util';
 
 /**
  * The states of the elements whose `class` is written by more than one source.
@@ -15,13 +16,13 @@ const classStates = new WeakMap<Element, StylingState>();
 const styleStates = new WeakMap<Element, StylingState>();
 
 /**
- * The host properties of `class` bound on each element (see `HostStylingRun`), so that the state created by the second
+ * The host attributes of `class` bound on each element (see `HostStylingRun`), so that the state created by the second
  * source finds the ones bound before.
  */
 const classHostSources = new WeakMap<Element, StylingSource | StylingSource[]>();
 
 /**
- * The host properties of `style` bound on each element, as {@link classHostSources}.
+ * The host attributes of `style` bound on each element, as {@link classHostSources}.
  */
 const styleHostSources = new WeakMap<Element, StylingSource | StylingSource[]>();
 
@@ -49,7 +50,7 @@ export function _hasStylingState(element: Element, attribute: StylingAttribute):
 }
 
 /**
- * Creates the state merging the sources of an attribute of an element, holding the host properties bound on it so far,
+ * Creates the state merging the sources of an attribute of an element, holding the host attributes bound on it so far,
  * whose keys are the ones the runtime wrote: a single one, since a second one creates the state. The template registers
  * its own bindings when they run, the state being created before (see `_prepareStyling`).
  *
@@ -85,7 +86,7 @@ export function ensureStylingState(element: Element, attribute: StylingAttribute
 }
 
 /**
- * Tells whether host property sources of an attribute are bound on an element.
+ * Tells whether host attribute sources of an attribute are bound on an element.
  *
  * @param element - The element.
  * @param attribute - The attribute.
@@ -96,7 +97,7 @@ export function hasHostStylingSources(element: Element, attribute: StylingAttrib
 }
 
 /**
- * Registers a host property source bound on an element, so that a state created later holds it.
+ * Registers a host attribute source bound on an element, so that a state created later holds it.
  *
  * @param element - The element.
  * @param attribute - The attribute it writes.
@@ -115,7 +116,7 @@ export function addHostStylingSource(element: Element, attribute: StylingAttribu
 }
 
 /**
- * Unregisters a host property source of an element.
+ * Unregisters a host attribute source of an element.
  *
  * @param element - The element.
  * @param attribute - The attribute it writes.
@@ -196,14 +197,7 @@ export function removeStylingSource(state: StylingState, element: Element, owner
     return;
   }
 
-  const { sources } = state;
-  if (Array.isArray(sources)) {
-    sources.splice(sources.indexOf(source), 1);
-    state.sources = sources.length === 1 ? sources[0] : sources;
-  } else {
-    state.sources = null;
-  }
-
+  state.sources = removeRanked(state.sources, source);
   forEachKey(source.keys, source.string, null, null, key => writeResolved(state, element, key));
 }
 
@@ -271,41 +265,13 @@ export function resolveOpinion(keys: StylingOpinions | null, string: StylingOpin
 }
 
 /**
- * Inserts a source among the ones of a state, keeping them from the strongest: by level, then from the greatest order.
+ * Inserts a source among the ones of a state, keeping them from the strongest (see `insertRanked`).
  *
  * @param state - The state.
  * @param source - The source.
  */
 function insertSource(state: StylingState, source: StylingSource): void {
-  const { sources } = state;
-  if (!sources) {
-    state.sources = source;
-    return;
-  }
-
-  // The second source gets an array of exactly two items: a push into an empty array would reserve room for many more
-  if (!Array.isArray(sources)) {
-    state.sources = isStronger(source, sources) ? [source, sources] : [sources, source];
-    return;
-  }
-
-  let index = 0;
-  while (index < sources.length && !isStronger(source, sources[index])) {
-    index++;
-  }
-
-  sources.splice(index, 0, source);
-}
-
-/**
- * Tells whether a source wins over another one: of a lower level, or, in the same level, of a greater order.
- *
- * @param source - The source.
- * @param other - The other source.
- * @returns `true` when the source wins.
- */
-function isStronger(source: StylingSource, other: StylingSource): boolean {
-  return source.tier < other.tier || (source.tier === other.tier && source.order > other.order);
+  state.sources = insertRanked(state.sources, source);
 }
 
 /**

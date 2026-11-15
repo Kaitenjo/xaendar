@@ -29,6 +29,12 @@ export type AttributeNode = ASTNodeWithSpan<{
    */
   bare?: true;
   /**
+   * The attribute an attribute written with `attr.` writes (`title` of `attr.title="…"`): always the attribute of the
+   * element, never an input of its component, whatever its name. Left out for any other attribute, whose name is the
+   * attribute, or the input, it binds.
+   */
+  attribute?: string;
+  /**
    * Set on the input a two-way binding binds (`value` of `[(value)]="count"`), whose value is the call of the signal
    * (`count()`): the listener of its event of change is the event node marked the same way.
    */

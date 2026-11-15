@@ -2,6 +2,7 @@ export * from './lib/component-definition/component-definition';
 export * from './lib/component-diagnostics/component-diagnostics';
 export * from './lib/language-service/language-service';
 export * from './lib/template-analysis/template-analysis';
+export type * from './lib/types/component-diagnostic.type';
 export type * from './lib/types/export-candidate.type';
 export type * from './lib/types/import-candidate.type';
 export type * from './lib/types/template-analysis.type';

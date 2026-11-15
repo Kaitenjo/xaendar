@@ -4,7 +4,7 @@ import { loadSignals } from '@xaendar/signals';
 import { Constructor, NoArgsVoidFunction } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
 import { CLEANUP, CONNECTED_HOOKS, DISCONNECTED_HOOKS, HEADER, HYDRATE } from '../../costants';
-import { HostProperty } from '../../decorators/host-property/host-property.decorator';
+import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
 import { effect } from '../../signals/effect/effect';
 import { ClaimNodes } from '../../utils/claim-nodes/claim-nodes.util';
 import { _bindEffect } from '../../signals/effect/effect';
@@ -571,7 +571,7 @@ describe('CustomElement', () => {
         calls.push('binding');
         return 'switch';
       };
-      (HostProperty('role') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'role', static: false, metadata, access: { get: read } });
+      (HostAttribute('role') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'role', static: false, metadata, access: { get: read } });
       Object.defineProperty(element.constructor, Symbol.for('Symbol.metadata'), { value: metadata });
 
       document.body.appendChild(element);

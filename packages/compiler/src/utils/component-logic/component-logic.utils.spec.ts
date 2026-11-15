@@ -9,7 +9,7 @@ import type { WebComponentDecorator } from '../../types/typescript-decorator-nod
 import { findComponentLogic, findModuleLogic } from './component-logic.utils';
 
 const IMPORTS = [
-  'import { CustomElement, getTransferState, HostProperty, Property, WebComponent } from \'@xaendar/core\';',
+  'import { CustomElement, getTransferState, HostAttribute, Property, WebComponent } from \'@xaendar/core\';',
   'import { computed, effect, signal } from \'@xaendar/core/signals\';'
 ].join('\n');
 
@@ -43,7 +43,7 @@ describe('findComponentLogic', () => {
     ['nothing', ''],
     ['an input', '@Property(\'\') public accessor label!: InputSignal<string>;'],
     ['a required input', '@Property.required() public accessor label!: InputSignal<string>;'],
-    ['a host property', '@HostProperty(\'class.on\') public get on(): boolean { return true; }'],
+    ['a host attribute', '@HostAttribute(\'class.on\') public get on(): boolean { return true; }'],
     ['a field without a value', 'public a?: string;'],
     ['a constructor only calling super', 'constructor() { super(); }'],
     ['a constructor without a body', 'constructor();'],

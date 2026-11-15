@@ -41,7 +41,7 @@ export function isTwoWayBinding(token: AttributeToken): boolean {
  * @param parseNode - Parser function for recursive child parsing.
  * @param token - The ATTRIBUTE token, whose name starts with `[(`.
  * @returns The attribute and the event.
- * @throws If the name is not `[(name)]`, the binding has no value, its value is an interpolation, or it does not name a
+ * @throws If the name is not `[(name)]` or starts with `attr.`, the binding has no value, its value is an interpolation, or it does not name a
  *   signal.
  */
 export function parseTwoWayBinding(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: AttributeToken): TwoWayBinding {
@@ -49,6 +49,10 @@ export function parseTwoWayBinding(cursor: ParserCursor, parseNode: NoArgsFuncti
   const name = TWO_WAY_BINDING_RE.exec(bracketed)?.[1];
   if (!name) {
     throw new Error(`"${bracketed}" is not a two-way binding: write [(name)]="signal"`, { cause: bracketedSpan });
+  }
+
+  if (name.startsWith('attr.')) {
+    throw new Error(`[(${name})] binds a model of a component or of a directive, while attr. writes an attribute of the element, which has no event of change: write ${name}="{ expression }"`, { cause: bracketedSpan });
   }
 
   if (bare || typeof value !== 'string' || !value.trim()) {

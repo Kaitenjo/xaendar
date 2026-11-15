@@ -91,4 +91,16 @@ export type RenderElement = BlockPosition & {
    * or its directives write them. Left out for an element its template alone writes, nearly every one.
    */
   readonly styling?: number;
+  /**
+   * The attributes, other than `class` and `style`, the template writes on the element, or in the branches of its
+   * conditional bindings, when the component it is or the directives it applies may write them too: the runtime
+   * creates, before the bindings are applied, the state merging the sources of the ones they write (see
+   * `_prepareAttributes`). Left out for an element its template alone writes, nearly every one.
+   */
+  readonly shared?: readonly string[];
+  /**
+   * Set when a branch of a conditional binding of the element applies directives, which the runtime does not know
+   * before the branch is selected: the states of every attribute of {@link shared} are created.
+   */
+  readonly sharedAlways?: true;
 };

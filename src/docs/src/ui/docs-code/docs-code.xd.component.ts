@@ -1,6 +1,6 @@
 import { CustomElement, Property, WebComponent } from '@xaendar/core';
 import { computed, signal, untracked } from '@xaendar/core/signals';
-import type { Aliased, InputSignal } from '@xaendar/core/signals';
+import type { InputSignal } from '@xaendar/core/signals';
 import type { CodeLang } from '../../core/highlight/highlight';
 import { describeSnippet, loadSnippet } from '../../core/sources/sources';
 import type { SourceFile } from '../../core/sources/source-files.utils';
@@ -8,7 +8,7 @@ import type { SourceFile } from '../../core/sources/source-files.utils';
 /**
  * A highlighted block of code, with a copy button.
  *
- * The code is either passed directly (`code` and `lang`) or given as a snippet (`snippet`): a `SourceFile`
+ * The code is either passed directly (`code` and `language`) or given as a snippet (`snippet`): a `SourceFile`
  * exported by the `*.snippets.ts` module of a page, or the path of a file read from `src/snippets`. An `error`
  * shows the output of the compiler below the code, for snippets that do not compile on purpose.
  */
@@ -24,14 +24,14 @@ export class DocsCodeComponent extends CustomElement {
   @Property('')
   public accessor code!: InputSignal<string>;
   /**
-   * The language of `code`, one of {@link CodeLang} (`text` when unknown). Bound as `lang`: a member
-   * named `lang` would clash with the `lang` property of `HTMLElement`.
+   * The language of `code`, one of {@link CodeLang} (`text` when unknown). Not named `lang`, the attribute of every
+   * element, which the templates write with `attr.lang`.
    */
-  @Property<Aliased<InputSignal<CodeLang>, 'lang'>>('ts', { alias: 'lang' })
-  public accessor language!: Aliased<InputSignal<CodeLang>, 'lang'>;
+  @Property<InputSignal<CodeLang>>('ts')
+  public accessor language!: InputSignal<CodeLang>;
   /**
-   * The snippet whose content and language replace `code` and `lang`, and whose name is shown when `filename` is empty:
-   * a source file, or the path of a file in `src/snippets`, loaded when a page shows it.
+   * The snippet whose content and language replace `code` and `language`, and whose name is shown when `filename` is
+   * empty: a source file, or the path of a file in `src/snippets`, loaded when a page shows it.
    */
   @Property<InputSignal<SourceFile | string>>('')
   public accessor snippet!: InputSignal<SourceFile | string>;

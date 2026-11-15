@@ -1,4 +1,4 @@
-/* Every rule reads the host: its class and attributes are written by @HostProperty */
+/* Every rule reads the host: its class and attributes are written by @HostAttribute */
 :host {
   display: inline-flex;
   align-items: center;

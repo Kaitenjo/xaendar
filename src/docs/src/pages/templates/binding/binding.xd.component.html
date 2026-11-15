@@ -75,6 +75,23 @@
 </h2>
 <p @@htmlTranslation(key="pages.templates.binding.bindingTheInputsOf.p1") />
 
+<h2>
+  { t(translations(), 'pages.templates.binding.writingTheAttribute.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.binding.writingTheAttribute.p1") />
+<docs-code snippet="templates/attr-prefix.html" />
+<p @@htmlTranslation(key="pages.templates.binding.writingTheAttribute.p2") />
+<docs-code snippet="templates/attr-prefix-errors.txt" />
+<p @@htmlTranslation(key="pages.templates.binding.writingTheAttribute.p3") />
+
+<h2>
+  { t(translations(), 'pages.templates.binding.attributePrecedence.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.binding.attributePrecedence.p1") />
+<docs-code snippet="templates/attribute-precedence.html" />
+<p @@htmlTranslation(key="pages.templates.binding.attributePrecedence.p2") />
+<p @@htmlTranslation(key="pages.templates.binding.attributePrecedence.p3") />
+
 <section class="edge-cases">
   <h2>
     { t(translations(), 'pages.templates.binding.edgeCases.title') }
@@ -166,6 +183,12 @@
         <td>
           { t(translations(), 'pages.templates.binding.summary.td6') }
         </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ 'attr.name="{ expression }"' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.templates.binding.summary.td9") />
       </tr>
       <tr>
         <td>

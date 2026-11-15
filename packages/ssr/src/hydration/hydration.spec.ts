@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // @vitest-environment happy-dom
 import type { _Context } from '@xaendar/core';
 import type { Constructor } from '@xaendar/types';
@@ -90,6 +91,7 @@ const testInputs: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   counter: { start: 'start' },
   crossed: { value: 'internalValue', initialValue: 'value' },
   picker: { template: 'template' },
+  titled: { title: 'title' },
   '@@later': { allow: 'allow' },
   '@@hydratedFill': { content: 'content' }
 };
@@ -2343,7 +2345,7 @@ describe('style bindings', () => {
     expect(div.style.getPropertyValue('height')).toBe('4px');
   });
 
-  it('merges the class and the style a template binds on a component with the ones of its host properties, the template winning, and adopts them without writing them again', async () => {
+  it('merges the class and the style a template binds on a component with the ones of its host attributes, the template winning, and adopts them without writing them again', async () => {
     /**
      * A tile writing its own classes and style on its element.
      */
@@ -2352,7 +2354,7 @@ describe('style bindings', () => {
     const members: Record<string, unknown> = { layout: 'display: flex; gap: 1px; width: 10px', kind: 'tile base', on: true };
     const properties: Record<string, string> = { layout: 'style', kind: 'class', on: 'class.on' };
     for (const [member, name] of Object.entries(properties)) {
-      (core.HostProperty(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: member, static: false, metadata, access: { get: () => members[member] } });
+      (core.HostAttribute(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: member, static: false, metadata, access: { get: () => members[member] } });
     }
 
     Object.defineProperty(Tile, Symbol.for('Symbol.metadata'), { value: metadata });
@@ -2384,5 +2386,73 @@ describe('style bindings', () => {
     await flush();
     expect(element.style.getPropertyValue('gap')).toBe('1px');
     expect(element.className).toBe('extra tile base');
+  });
+});
+
+describe('attribute precedence', () => {
+  it('writes on the server the attribute of the strongest level, attr. writing the attribute of an input, and adopts it in the browser without writing it again', async () => {
+    /**
+     * A component writing its own attributes on its element, with an input named like a native attribute.
+     */
+    class Titled extends CustomElement {
+      public declare title: any;
+
+      constructor() {
+        super();
+        initTitle(this);
+      }
+    }
+
+    const metadata: DecoratorMetadataObject = {};
+    const members: Record<string, unknown> = { id: 'component', hidden: true, role: 'note' };
+    const properties: Record<string, string> = { id: 'id', hidden: 'aria-hidden', role: 'role' };
+    for (const [member, name] of Object.entries(properties)) {
+      (core.HostAttribute(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: member, static: false, metadata, access: { get: () => members[member] } });
+    }
+
+    Object.defineProperty(Titled, Symbol.for('Symbol.metadata'), { value: metadata });
+    const initTitle = declareInput(Titled, 'title', '');
+    const titled = await register('titled', Titled, () => '<p>{ title() }</p>', ['title']);
+
+    /**
+     * A directive writing the title of its element.
+     */
+    class TitleDirective extends CustomDirective { }
+    const directiveMetadata: DecoratorMetadataObject = {};
+    (core.HostAttribute('title') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'title', static: false, metadata: directiveMetadata, access: { get: () => 'directive' } });
+    Object.defineProperty(TitleDirective, Symbol.for('Symbol.metadata'), { value: directiveMetadata });
+    _defineDirective('precedenceTitle', TitleDirective);
+
+    /**
+     * A page binding the attributes of the component and of an element applying the directive.
+     */
+    class Page extends CustomElement {
+      public id = signal<string | null>('template') as any;
+      public tip = signal<string | null>(null);
+    }
+
+    const page = await register('page', Page, child => `<${child('titled')} title="{ 'input' }" attr.title="native" attr.id="{ id() }" attr.aria-hidden="{ false }"></${child('titled')}><span @@precedenceTitle attr.title="{ tip() }"></span>`, ['id', 'tip']);
+    const html = await renderToString(page.Server);
+    expect(html).toMatch(/<server-titled-\d+ title="native" id="template" aria-hidden="false" role="note">/);
+    expect(html).toContain('<p><!---->input</p>');
+    expect(html).toContain('<span title="directive"></span>');
+
+    const host = load(html);
+    const element = host.shadowRoot!.firstElementChild!;
+    const span = host.shadowRoot!.querySelector('span')!;
+    const records = observe(element, span);
+    titled.define();
+    page.define();
+    await flush();
+
+    expect(records().filter(record => record.type === 'attributes')).toEqual([]);
+    expect(console.warn).not.toHaveBeenCalled();
+    expect((element as Titled).title()).toBe('input');
+
+    (host as Page).id.set(null);
+    (host as Page).tip.set('template');
+    await flush();
+    expect(element.getAttribute('id')).toBe('component');
+    expect(span.getAttribute('title')).toBe('template');
   });
 });

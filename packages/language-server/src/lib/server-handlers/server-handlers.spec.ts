@@ -338,7 +338,7 @@ describe('XaendarLanguageServer', () => {
     it('publishes the problems of its decorators, as errors of the server, after the user stops typing', async () => {
       const document = component();
       const { server, connection } = setup(document);
-      vi.mocked(getComponentDiagnostics).mockResolvedValue([{ span: { start: 1, end: 13 }, message: 'wrong' }]);
+      vi.mocked(getComponentDiagnostics).mockResolvedValue([{ span: { start: 1, end: 13 }, message: 'wrong' }, { span: { start: 1, end: 2 }, message: 'reflected', warning: true }]);
 
       await server.onDidChangeContent(document);
       expect(getComponentDiagnostics).not.toHaveBeenCalled();
@@ -348,7 +348,7 @@ describe('XaendarLanguageServer', () => {
       expect(connection.sendDiagnostics).toHaveBeenCalledExactlyOnceWith({
         uri: COMPONENT_URI,
         version: 1,
-        diagnostics: [{ range: { start: { line: 0, character: 1 }, end: { line: 0, character: 13 } }, message: 'wrong', severity: DiagnosticSeverity.Error, source: 'xaendar' }]
+        diagnostics: [{ range: { start: { line: 0, character: 1 }, end: { line: 0, character: 13 } }, message: 'wrong', severity: DiagnosticSeverity.Error, source: 'xaendar' }, { range: { start: { line: 0, character: 1 }, end: { line: 0, character: 2 } }, message: 'reflected', severity: DiagnosticSeverity.Warning, source: 'xaendar' }]
       });
     });
 

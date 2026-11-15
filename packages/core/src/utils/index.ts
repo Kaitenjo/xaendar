@@ -1,5 +1,7 @@
 export { _prepareStyling, _removeStyling, _setExpressionStyling, _setReactiveStyling, _setStyling } from './styling-binding/styling-binding.util';
 export { _hasStylingState, createStylingState as _createStylingState } from './styling-state/styling-state.util';
+export { _prepareAttributes, _setAttribute, _setExpressionAttribute, _setReactiveAttribute } from './attribute-binding/attribute-binding.util';
+export { _hasAttributeState, _mergeAttributes } from './attribute-state/attribute-state.util';
 export type * from '../types/styling/render-styling.type';
 export type * from '../types/render-element-binding.type';
 export * from './component-runtime/component-runtime.util';
@@ -16,7 +18,7 @@ export { _client } from './client/client.util';
 export { _try } from './try/try.util';
 export { _defer } from './defer/defer.util';
 export { _hydrate } from './hydrate/hydrate.util';
-export { _applyHostProperties } from './host-bindings/host-bindings.util';
+export { _applyHostAttributes } from './host-bindings/host-bindings.util';
 export { _attributeValue } from './write-attribute/write-attribute.util';
 export { _assertRequiredInputs } from './required-inputs/required-inputs.util';
 export { _toPropertyName } from './input-names/input-names.util';

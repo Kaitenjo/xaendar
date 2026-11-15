@@ -1,4 +1,4 @@
-import { INTERNAL_HOST_DIRECTIVES, INTERNAL_HOST_PROPERTIES } from '../../costants';
+import { INTERNAL_HOST_DIRECTIVES, INTERNAL_HOST_ATTRIBUTES } from '../../costants';
 import type { HostStylingRun } from '../../models/host-styling-run/host-styling-run';
 import type { StylingOpinions } from '../../types/styling/styling-opinions.type';
 import { getWebComponentMetadata } from '../get-metadata/get-metadata.util';
@@ -6,12 +6,12 @@ import { addHostStylingSource, applyDirectStyling, createStylingState, getStylin
 import { keyOpinion, stringOpinions, toExactLength } from '../styling-opinions/styling-opinions.util';
 
 /**
- * The flags of the host properties of `class` and `style` each class declares, computed once per class.
+ * The flags of the host attributes of `class` and `style` each class declares, computed once per class.
  */
 const stylingFlags = new WeakMap<object, number>();
 
 /**
- * Registers a run of host properties of `class` or of `style` on its element, as a source of the attribute: when
+ * Registers a run of host attributes of `class` or of `style` on its element, as a source of the attribute: when
  * another host source of the attribute was bound on the element before, and the element has no state yet, the state
  * merging them is created, holding the one bound before.
  *
@@ -28,7 +28,7 @@ export function registerHostStyling(run: HostStylingRun): void {
 }
 
 /**
- * Computes the opinions of the host properties of a run, reading the members of its owner (a member holding a signal or
+ * Computes the opinions of the host attributes of a run, reading the members of its owner (a member holding a signal or
  * any function is called), and writes them: through the state of the element, when it has one, otherwise directly, only
  * the keys whose value changed since the last run. The callback of the effect of the run.
  *
@@ -89,7 +89,7 @@ export function removeHostStyling(run: HostStylingRun): void {
 }
 
 /**
- * Gives the attributes merged key by key a class of a directive or of a component writes with its host properties, and,
+ * Gives the attributes merged key by key a class of a directive or of a component writes with its host attributes, and,
  * for a component, the ones its host directives write: `1` for `class`, `2` for `style`, computed once per class.
  *
  * @param klass - The class.
@@ -114,7 +114,7 @@ export function _hostStylingFlags(klass: object): number {
 function computeFlags(klass: object): number {
   const metadata = getWebComponentMetadata(klass);
   let flags = 0;
-  const properties = metadata?.[INTERNAL_HOST_PROPERTIES];
+  const properties = metadata?.[INTERNAL_HOST_ATTRIBUTES];
   if (properties?.length) {
     for (let i = 0; i < properties.length; i++) {
       switch (properties[i].kind) {

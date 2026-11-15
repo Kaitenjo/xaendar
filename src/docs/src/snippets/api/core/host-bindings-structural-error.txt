@@ -1,4 +1,4 @@
-@HostProperty('role') in a class extending StructuralDirective
+@HostAttribute('role') in a class extending StructuralDirective
 error TS1240: Unable to resolve signature of property decorator when called as an expression.
 
 @HostListener('click') in a class extending StructuralDirective

@@ -16,9 +16,9 @@ export const INTERNAL_SELECTOR = 'selector';
 export const INTERNAL_HOST_DIRECTIVES = 'hostDirectives';
 /**
  * Internal metadata key holding the attributes and the classes a web component or a custom directive binds on its host
- * element (see `HostProperty`).
+ * element (see `HostAttribute`).
  */
-export const INTERNAL_HOST_PROPERTIES = 'hostProperties';
+export const INTERNAL_HOST_ATTRIBUTES = 'hostAttributes';
 /**
  * Internal metadata key holding the events a web component or a custom directive listens to, on its host element, the
  * window or the document (see `HostListener`).

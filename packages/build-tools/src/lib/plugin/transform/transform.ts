@@ -1,4 +1,4 @@
-import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers, ComponentMembers, findWebComponentErrors, TypeCheckResult } from '@xaendar/compiler';
+import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers, ComponentMembers, findReflectedInputs, findWebComponentErrors, TypeCheckResult } from '@xaendar/compiler';
 import { createShim, getImportConflictDiagnostics, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
@@ -87,6 +87,14 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
 
     if (!componentFile) {
       return code;
+    }
+
+    // An input named like an attribute every element reflects is a warning, once, in the environment type-checking
+    if (strategy.typeCheck) {
+      const reflected = findReflectedInputs(tsSource);
+      for (let i = 0; i < reflected.length; i++) {
+        this.warn(`${reflected[i].message} - ${componentPath}`);
+      }
     }
 
     const metadatas = await extractComponentsMetadataFromSourceFile(tsSource, state.compilerOptions);

@@ -3,13 +3,13 @@ import type { EventHost } from '../event/event-host.type';
 import type { WebComponentMetadata } from '../web-component/web-component-metadata.type';
 
 /**
- * The decorator `@HostProperty` returns: it decorates a field, a getter or an accessor of a web component or of a custom
+ * The decorator `@HostAttribute` returns: it decorates a field, a getter or an accessor of a web component or of a custom
  * directive, not static, leaving it unchanged. The member gives a value of the type the name allows (see
- * `HostPropertyValue`), or a function returning it, such as a signal.
+ * `HostAttributeValue`), or a function returning it, such as a signal.
  *
  * @template Allowed - The values the name allows.
  */
-export type HostPropertyDecorator<Allowed = unknown> = {
+export type HostAttributeDecorator<Allowed = unknown> = {
   /**
    * Decorates a field.
    */

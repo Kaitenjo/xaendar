@@ -26,8 +26,15 @@ export type RenderElementAttribute = BindingSite & {
    */
   readonly value: string | TemplateExpression<unknown>;
   /**
+   * Set on an attribute of an element whose component or directives may write it too (see `RenderElement.shared`): its
+   * value is the opinion of the template in the state merging them, when the element has one (see `AttributeState`).
+   * Left out for the others, which write the attribute directly without looking a state up.
+   */
+  readonly shared?: true;
+  /**
    * Writes the value on the target: `_setProperty`, `_setExpressionProperty` or `_setReactiveProperty` for an attribute
-   * or a property, `_setInput`, `_setExpressionInput` or `_setReactiveInput` for an input.
+   * or a property, `_setAttribute`, `_setExpressionAttribute` or `_setReactiveAttribute` for an attribute written with
+   * `attr.`, never an input whatever its name, `_setInput`, `_setExpressionInput` or `_setReactiveInput` for an input.
    *
    * It is a method signature, so that each setter fits it while taking only the kind of target it is paired with, as
    * methods compare their parameters bivariantly.
@@ -38,8 +45,9 @@ export type RenderElementAttribute = BindingSite & {
    */
   setter(context: _Context, target: Element | BindingHost, attribute: RenderElementAttribute): void;
   /**
-   * Removes the attribute, or resets the property, when the branch binding it is no longer the selected one, or its
-   * context is destroyed: `_removeAttribute` or `_resetProperty`.
+   * Removes the attribute, giving it back to the sources below when it is merged with them, or resets the property,
+   * when the branch binding it is no longer the selected one, or its context is destroyed: `_removeAttribute` or
+   * `_resetProperty`.
    *
    * @param context - The context the binding lived in.
    * @param target - The element, or the directive whose input was bound.

@@ -1,0 +1,10 @@
+<!-- <ex-dialog> declares an input named title -->
+<ex-dialog title="{heading()}" />                         <!-- sets the input -->
+<ex-dialog attr.title="Close with Esc" />                 <!-- writes the title attribute of the element -->
+<ex-dialog title="{heading()}" attr.title="{hint()}" />   <!-- both: the input and the attribute -->
+<ex-dialog
+  @if (open()) {
+    attr.aria-modal="true"                                <!-- in a conditional binding too -->
+  }
+/>
+<div attr.role="note" />                                  <!-- on a native element, the same as role="note" -->

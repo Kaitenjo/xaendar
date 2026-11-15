@@ -1,6 +1,10 @@
 export { AnimationDirective } from './directives/animation/animation.directive';
+export { ClassDirective } from './directives/class/class.directive';
 export { InnerHtmlDirective } from './directives/inner-html/inner-html.directive';
+export { StyleDirective } from './directives/style/style.directive';
 export type { ElementAnimation } from './types/element-animation.type';
+export type { ElementClasses } from './types/element-classes.type';
+export type { ElementStyles } from './types/element-styles.type';
 export type { HtmlContent } from './types/html-content.type';
 export type { HtmlSanitizeReport } from './types/html-sanitize-report.type';
 export type { HtmlSanitizer } from './types/html-sanitizer.type';

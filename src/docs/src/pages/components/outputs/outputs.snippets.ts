@@ -49,8 +49,9 @@ public readonly title = signal('Dr.');
 public accessor removed!: Output<number>;
 
 /**
- * ✓ Another name for the member: templates still bind lang="…".
+ * ✓ Another name: templates bind language="…", and write the native lang attribute.
+ * An alias keeping lang="…" compiles, with a warning: lang="…" would set the input, the attribute written with attr.lang.
  */
-@Property('ts', { alias: 'lang' })
-public accessor language!: Aliased<InputSignal<string>, 'lang'>;`
+@Property('ts')
+public accessor language!: InputSignal<string>;`
 };

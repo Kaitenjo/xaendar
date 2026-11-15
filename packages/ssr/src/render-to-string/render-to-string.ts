@@ -15,7 +15,7 @@ import { _isClientComponent, _renderComponent, _writeClientRoot } from '../utils
 const LESS_THAN_ESCAPE = `${String.fromCharCode(92)}u003c`;
 
 /**
- * Renders a component to HTML on the server: its element, with the attributes `@HostProperty` writes on it, and its
+ * Renders a component to HTML on the server: its element, with the attributes `@HostAttribute` writes on it, and its
  * shadow root as a declarative shadow root (`<template shadowrootmode="open">`), holding its stylesheet and its template,
  * the components it renders rendered the same way. A browser shows it before any script runs.
  *
@@ -24,7 +24,7 @@ const LESS_THAN_ESCAPE = `${String.fromCharCode(92)}u003c`;
  * once. Its effects, the ones of `this.effect()`, do not run, a component it creates with `createComponent` is not
  * rendered, its events are not listened to and the custom directives of its components are not applied: the browser
  * does it all. The custom directives of a native element are applied up to `onInit`: their properties are set,
- * `onInit` runs and their `@HostProperty` are written, and the content one assigns to `innerHTML` is written as the
+ * `onInit` runs and their `@HostAttribute` are written, and the content one assigns to `innerHTML` is written as the
  * content of the element. The structural directives run, since they decide what is rendered, and the asynchronous ones
  * are awaited. An expression
  * reading a global of the browser reads it through `globalThis`, `undefined` on the server.

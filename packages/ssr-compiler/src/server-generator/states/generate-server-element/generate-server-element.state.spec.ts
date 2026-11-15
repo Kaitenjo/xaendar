@@ -118,6 +118,20 @@ describe('generateServerElement', () => {
     expect(generate('<x-input class="a"></x-input>', context).constants[0]).toContain('{ name: \'class\', value: \'a\', setter: _setInput }');
   });
 
+  it('writes an attribute written with attr. through the setters of the attributes, never the input of its name, and as HTML on a native element', () => {
+    const context = new GeneratorContext(cache);
+    context.addImportedMetadata({ type: 'component', selector: 'x-input', properties: new Map([['title', { name: 'title' }]]) } as never);
+    const { constants, functions } = generate('<x-input title="t" attr.title="Close" attr.lang="{ on() }"></x-input>', context);
+
+    expect(constants[0]).toContain([
+      '    { name: \'title\', value: \'t\', setter: _setInput },',
+      '    { name: \'title\', value: \'Close\', setter: _setAttribute },',
+      '    { name: \'lang\', value: x_input0$attr_lang, setter: _setExpressionAttribute }'
+    ].join('\n'));
+    expect(functions).toEqual([expressionFunction('x_input0$attr_lang', 'this.on()')]);
+    expect(generate('<p attr.title="a" attr.lang="{ on() }">t</p>').code).toEqual(['out.push(\'<p title="a"\' + _ssrAttribute(\'lang\', this.on()) + \'>{children of p0}</p>\');']);
+  });
+
   it('sets the input a two-way binding binds from the signal, writing nothing of its listener, and throws for one binding no input', () => {
     const withInput = () => {
       const context = new GeneratorContext(cache);

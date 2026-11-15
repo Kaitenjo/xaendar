@@ -26,8 +26,46 @@ import { AttributeNode } from '../../types/nodes/attribute-node.type';
 import { parseInterpolation } from '../parse-interpolation/parse-interpolation.state';
 
 /**
+ * The prefix of an attribute always written as the attribute of the element, never as an input (`attr.title`).
+ */
+const ATTRIBUTE_PREFIX = 'attr.';
+
+/**
  * Parses an ATTRIBUTE token into an `AttributeNode`.
- * Handles boolean attributes (no `=`), string values, and interpolation values.
+ * Handles boolean attributes (no `=`), string values, and interpolation values. An attribute written with `attr.`
+ * (`attr.title="Close"`) keeps its name as written and gets the name of the attribute it writes (`attribute`), which no
+ * input of a component takes.
+ *
+ * @param cursor - Parser cursor; advanced past the ATTRIBUTE token.
+ * @param parseNode - Parser function for recursive child parsing.
+ * @param token - The ATTRIBUTE token to parse.
+ * @returns The parsed `AttributeNode`.
+ * @throws If the attribute is followed by a token that is neither a value nor another binding or the end of the tag, or
+ *   `attr.` names no attribute, or `class` or `style`.
+ */
+export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: AttributeToken): AttributeNode {
+  const node = readAttribute(cursor, parseNode, token);
+  const { name, nameSpan } = node;
+  if (!name.startsWith(ATTRIBUTE_PREFIX)) {
+    return node;
+  }
+
+  const attribute = name.slice(ATTRIBUTE_PREFIX.length);
+  switch (attribute) {
+    case '':
+      throw new Error(`${name} names no attribute: write attr. followed by the name of the attribute, e.g. attr.title="…"`, { cause: nameSpan });
+
+    case 'class':
+    case 'style':
+      throw new Error(`${name} cannot be written: ${attribute} is merged with the directives and the component writing it, bound with ${attribute}="…" and [${attribute}.name]="{ expression }"`, { cause: nameSpan });
+  }
+
+  node.attribute = attribute;
+  return node;
+}
+
+/**
+ * Reads an ATTRIBUTE token and its value, if any, into an `AttributeNode` (see {@link parseAttribute}).
  *
  * @param cursor - Parser cursor; advanced past the ATTRIBUTE token.
  * @param parseNode - Parser function for recursive child parsing.
@@ -35,7 +73,7 @@ import { parseInterpolation } from '../parse-interpolation/parse-interpolation.s
  * @returns The parsed `AttributeNode`.
  * @throws If the attribute is followed by a token that is neither a value nor another binding or the end of the tag.
  */
-export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: AttributeToken): AttributeNode {
+function readAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: AttributeToken): AttributeNode {
   const startOffset = token.span.start;
 
   // consume Attribute token

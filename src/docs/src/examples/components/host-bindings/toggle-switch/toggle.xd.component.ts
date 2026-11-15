@@ -1,11 +1,11 @@
-import { CustomElement, Event, HostListener, HostProperty, Property, WebComponent } from '@xaendar/core';
+import { CustomElement, Event, HostListener, HostAttribute, Property, WebComponent } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 import type { InputSignal } from '@xaendar/core/signals';
 
 /**
  * A switch drawn by its own element: the role, the state and the focus are attributes of the host, kept in sync by
- * `@HostProperty`, and the clicks and the keys are heard on the host with `@HostListener`.
+ * `@HostAttribute`, and the clicks and the keys are heard on the host with `@HostListener`.
  */
 @WebComponent({
   selector: 'ex-toggle',
@@ -17,7 +17,7 @@ export class ToggleComponent extends CustomElement {
    * Whether the switch ignores clicks and keys. The input is reflected on the host as the `locked` attribute: present,
    * and empty, while it is `true`.
    */
-  @HostProperty('locked')
+  @HostAttribute('locked')
   @Property<InputSignal<boolean>>(false)
   public accessor locked!: InputSignal<boolean>;
   /**
@@ -28,12 +28,12 @@ export class ToggleComponent extends CustomElement {
   /**
    * Whether the switch is on. The host has the `on` class while it is `true`.
    */
-  @HostProperty('class.on')
+  @HostAttribute('class.on')
   public readonly on = signal(false);
   /**
    * The ARIA role of the host. It reads no signal, so it is written once per connection.
    */
-  @HostProperty('role')
+  @HostAttribute('role')
   public readonly hostRole = 'switch';
 
   /**
@@ -41,7 +41,7 @@ export class ToggleComponent extends CustomElement {
    *
    * @returns Whether the switch is on.
    */
-  @HostProperty('aria-checked')
+  @HostAttribute('aria-checked')
   public get checkedState(): boolean {
     return this.on();
   }
@@ -51,7 +51,7 @@ export class ToggleComponent extends CustomElement {
    *
    * @returns Whether the switch is locked.
    */
-  @HostProperty('aria-disabled')
+  @HostAttribute('aria-disabled')
   public get lockedState(): boolean {
     return this.locked();
   }
@@ -61,7 +61,7 @@ export class ToggleComponent extends CustomElement {
    *
    * @returns `-1` while the switch is locked, otherwise `0`.
    */
-  @HostProperty('tabindex')
+  @HostAttribute('tabindex')
   public get focusOrder(): number {
     return this.locked() ? -1 : 0;
   }

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { HostProperty } from '../../decorators/host-property/host-property.decorator';
+import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
 import { EMPTY_LAYOUT, _scope } from '../context/context.util';
@@ -35,11 +35,11 @@ function throughTemplate(name: string, value: unknown): string | null {
 }
 
 /**
- * Writes a value through a `@HostProperty` of a directive, returning the attribute its host element holds.
+ * Writes a value through a `@HostAttribute` of a directive, returning the attribute its host element holds.
  */
-function throughHostProperty(name: string, value: unknown): string | null {
+function throughHostAttribute(name: string, value: unknown): string | null {
   const metadata: DecoratorMetadataObject = {};
-  (HostProperty(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'member', static: false, metadata, access: { get: () => value } });
+  (HostAttribute(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'member', static: false, metadata, access: { get: () => value } });
   const Klass = class extends CustomDirective { };
   Object.defineProperty(Klass, Symbol.for('Symbol.metadata'), { value: metadata });
   const element = document.createElement('div');
@@ -93,7 +93,7 @@ describe('writeAttribute', () => {
     expect(element.hasAttribute('aria-expanded')).toBe(false);
   });
 
-  it('writes the same attribute in a template and through @HostProperty, for every value and every kind of attribute', () => {
+  it('writes the same attribute in a template and through @HostAttribute, for every value and every kind of attribute', () => {
     const expected: Record<string, Array<string | null>> = {
       'hidden': [null, null, '', null, 'text'],
       'aria-expanded': [null, null, 'true', 'false', 'text'],
@@ -103,7 +103,7 @@ describe('writeAttribute', () => {
     for (let i = 0; i < NAMES.length; i++) {
       const name = NAMES[i];
       expect(VALUES.map(value => throughTemplate(name, value))).toEqual(expected[name]);
-      expect(VALUES.map(value => throughHostProperty(name, value))).toEqual(expected[name]);
+      expect(VALUES.map(value => throughHostAttribute(name, value))).toEqual(expected[name]);
     }
   });
 });
