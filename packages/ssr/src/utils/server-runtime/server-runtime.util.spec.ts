@@ -27,6 +27,14 @@ describe('_createServerRuntime', () => {
     expect(ref.destroy()).toBeUndefined();
   });
 
+  it('registers no handler with onLeave', () => {
+    const runtime = _createServerRuntime(undefined);
+    const element = {} as Element;
+
+    expect(runtime.onLeave(element, vi.fn())).toBeUndefined();
+    expect(Object.getOwnPropertySymbols(element)).toEqual([]);
+  });
+
   it('reads the transfer state of the page, its own keys only', () => {
     const runtime = _createServerRuntime({ product: 42 });
 

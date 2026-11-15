@@ -1,10 +1,8 @@
-import babel from '@rolldown/plugin-babel';
 import { xaendarPlugin } from '@xaendar/build-tools';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { importBabelHelpers } from './babel-helpers/babel-helpers.utils';
 import { createPlugins } from './plugins';
 
 vi.mock('@rolldown/plugin-babel', () => ({
@@ -37,19 +35,6 @@ describe('createPlugins()', () => {
 
     expect(plugins.flat().map(plugin => (plugin as { name: string }).name)).toEqual(['babel', 'xaendar:babel-helpers', 'xaendar']);
     expect(xaendarPlugin).toHaveBeenCalledTimes(1);
-  });
-
-  it('configures babel with the decorators preset importing its helpers, filtered on "@"', () => {
-    createPlugins();
-    const babelCall = vi.mocked(babel).mock.calls[0][0] as {
-      presets: [{ preset: () => { plugins: unknown[] }, rolldown: { filter: { code: string } } }]
-    };
-    const [presetEntry] = babelCall.presets;
-
-    expect(presetEntry.preset()).toEqual({
-      plugins: [['@babel/plugin-proposal-decorators', { version: '2023-11' }], importBabelHelpers]
-    });
-    expect(presetEntry.rolldown.filter.code).toBe('@');
   });
 
   it('tells the xaendar plugin to report what keeps the components in the bundle', () => {

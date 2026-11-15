@@ -261,6 +261,38 @@ getTransferState<Value>(key: string): Value | undefined
 
 Reads a value of the transfer state of a page rendered on the server, with the same code on both sides: on the server, the one of the key in the `state` `renderToString` renders the page with (it belongs to the request); in the browser, the one the server wrote into the page. `undefined` when the page was not rendered on the server (a navigation in the browser) or the key is missing: the code then loads the data itself. The values stay until the page reloads.
 
+### onLeave (function)
+
+```ts
+onLeave(element: Element, handler: (element: Element) => Promise<void> | void): void
+```
+
+Registers the function called when an `@if`, `@switch`, `@for` or structural directive is about to remove the element: the element stays in the DOM until the promise settles (at most 5 s), then it is removed; no promise, a throw or a rejection remove it at once (the error reported). Call it in the `onInit` of a directive, on `this.element`. Everything else of the block is disposed at once, queries stop finding the element at once, and the block goes on without it (new branch at its place, `@for` rows placed ignoring it, a returning key gets a new row). Only elements at the top of the removed block wait; a destroyed component, or a block removed with its parent, removes them at once without calling the function. A second call replaces the first. No-op on the server. The built-in `@@animation(leave=…)` uses it.
+
+## `@xaendar/directives`
+
+The built-in directives, imported by the templates (`@import { AnimationDirective } from '@xaendar/directives'`). `@xaendar/core` is a peer.
+
+### AnimationDirective (`@@animation`)
+
+```html
+<li @@animation(enter="fade-in" leave="fade-out")>…</li>
+<section @@animation(enter="{slideIn}" leave="{slideOut}")>…</section>
+```
+
+`enter` and `leave` are each a CSS class or a function (`ElementAnimation`), `''` by default (no animation on that side); `ignoreReducedMotion="{true}"` animates even with `prefers-reduced-motion: reduce`, which otherwise disables both.
+
+- `enter`: once the element is rendered, applies the class and removes it when the CSS animations or transitions it runs on the element itself end (`@keyframes` run at once; a transition needs `@starting-style`), or calls the function with the element. On the server the class is written into the HTML (the browser runs the animation on load) and the hydration does not restart it, only removes the class at its end; a function runs at the hydration.
+- `leave`: through `onLeave`, registered only when `leave` holds an animation as the directive starts: makes the element `inert`, applies the class and waits for the end of its CSS animations or transitions on the element itself (at most their CSS times plus a margin), or waits for the promise of the function (`element.animate(…).finished`). Leaves at once without animations. While both branches are in the DOM the layout grows: take the leaving one out of the flow in CSS (`.stage > [inert] { position: absolute; inset: 0 }`). Its `id` and positional selectors (`:first-child`, `+`, `:nth-child`) still see it until it is removed.
+
+### ElementAnimation (type)
+
+```ts
+type ElementAnimation = string | ((element: HTMLElement) => Promise<unknown> | void)
+```
+
+The `enter` and the `leave` of `@@animation`: a CSS class, or a function animating the element.
+
 ## `@xaendar/core/signals`
 
 ### signal (function)

@@ -4,7 +4,8 @@ import type { RenderOptions } from '../../types/render-options.type';
 import type { ServerRuntime } from '../../types/server-runtime.type';
 
 /**
- * Does nothing: the disposer of an effect that never ran, and the `destroy` of a component never rendered.
+ * Does nothing: the disposer of an effect that never ran, the `destroy` of a component never rendered, and `onLeave`,
+ * since the server removes no element.
  */
 function noop(): void {
   // Nothing to dispose on the server
@@ -13,7 +14,7 @@ function noop(): void {
 /**
  * Creates the runtime the components and the custom directives use while a page is rendered on the server: an effect
  * does not run, a component created by `createComponent` is constructed without being rendered, since the server writes
- * HTML once and has no document to append it to, and `getTransferState` reads the transfer state of that page. The
+ * HTML once and has no document to append it to, `onLeave` registers nothing, and `getTransferState` reads the transfer state of that page. The
  * events the components listen to are collected in it, for the event contract of the page.
  *
  * @param state - The transfer state of the page, if any.
@@ -24,7 +25,8 @@ export function _createServerRuntime(state: RenderOptions['state']): ServerRunti
     events: new Set(),
     effect: () => noop,
     createComponent: (_owner, component) => ({ element: new component(), destroy: noop }),
-    getTransferState: key => state && Object.hasOwn(state, key) ? state[key] : undefined
+    getTransferState: key => state && Object.hasOwn(state, key) ? state[key] : undefined,
+    onLeave: noop
   };
 }
 

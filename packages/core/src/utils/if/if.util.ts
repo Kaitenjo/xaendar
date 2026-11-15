@@ -112,10 +112,11 @@ function renderBranch(context: _Context, config: BlockConfig, container: number,
   const position = context[container + POSITION] as Node;
   const parentNode = blockParent(position) as HTMLElement;
   const shown = context[container + CONTENT] as _Context | InlineBranch | null | undefined;
+  // The nodes of the branch registered with `onLeave` leave while the selected one is inserted at the anchor
   if (Array.isArray(shown)) {
-    clear(shown);
+    clear(shown, true, context);
   } else if (shown) {
-    clearInline(context, shown, true, parentNode);
+    clearInline(context, shown, true, parentNode, true);
   }
 
   context[container + BRANCH] = selected;

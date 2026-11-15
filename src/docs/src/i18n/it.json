@@ -136,6 +136,7 @@
       "directives/custom": "Direttive custom",
       "directives/structural": "Direttive strutturali",
       "directives/conditional": "Direttive condizionali",
+      "directives/animations": "Animazioni",
       "patterns/forms": "Form",
       "patterns/async-data": "Dati asincroni",
       "patterns/routing": "Routing",
@@ -949,6 +950,52 @@
       }
     },
     "directives": {
+      "animations": {
+        "eyebrow": "Direttive",
+        "title": "Animazioni",
+        "lead": "La direttiva <code>@@animation</code> del pacchetto <code>@xaendar/directives</code> anima gli elementi di un template quando entrano, con <code>enter</code>, e quando escono, con <code>leave</code>: ognuno una classe CSS o una funzione, e un lato omesso non viene animato. L’ingresso non chiede niente al runtime: l’elemento c’è. L’uscita sì: un blocco rimuove i suoi elementi subito, quindi <code>leave</code> chiede al runtime di aspettare, con <a href=\"#/it/reference/api/core/onLeave\"><code>onLeave</code></a> di <code>@xaendar/core</code>, che possono usare anche le tue direttive.",
+        "classes": {
+          "title": "Con le classi di un foglio di stile",
+          "example1": "Una lista le cui righe compaiono e svaniscono",
+          "p1": "<code>@@animation(enter=\"fade-in\" leave=\"fade-out\")</code> applica la classe di <code>enter</code> appena l’elemento è renderizzato, e la toglie quando finiscono le animazioni o le transizioni CSS che avvia sull’elemento; applica la classe di <code>leave</code> quando il blocco rimuove l’elemento, e rimuove l’elemento quando finiscono. Contano solo gli eventi dell’elemento stesso: quelli dei discendenti, che risalgono, vengono ignorati. Un elemento senza animazioni né transizioni esce subito, e nessuno aspetta più delle sue durate CSS, con un margine.",
+          "p2": "Una classe aggiunta a un elemento appena renderizzato avvia subito i suoi <code>@keyframes</code>. Una transizione ha bisogno di uno stile da cui partire, che dà <code>@starting-style</code>:",
+          "p3": "Mentre esce, l’elemento è <code>inert</code>: non prende focus né click, e gli screen reader lo saltano. Con <code>prefers-reduced-motion: reduce</code> non si anima niente: l’elemento entra così com’è ed esce subito. Lega <code>ignoreReducedMotion=\"{true}\"</code> per animarlo comunque, per un movimento di cui l’interfaccia non può fare a meno."
+        },
+        "functions": {
+          "title": "Con una funzione",
+          "example1": "Una procedura guidata i cui passi scorrono con la Web Animations API",
+          "p1": "Legati a una funzione, <code>enter</code> o <code>leave</code> le passano l’elemento, e l’uscita aspetta la promessa che restituisce la funzione di <code>leave</code>: <code>element.animate(…).finished</code> è una di queste. La funzione di <code>enter</code> viene solo chiamata.",
+          "p2": "Il passo che esce e quello nuovo sono nel DOM insieme mentre il vecchio scorre via: il foglio di stile toglie dal flusso quello inerte, così il nuovo prende subito il suo posto."
+        },
+        "leaving": {
+          "title": "Come esce un elemento",
+          "p1": "Quando un <code>@if</code>, uno <code>@switch</code>, un <code>@for</code> o una direttiva strutturale rimuove un blocco, tutto ciò che contiene viene smaltito subito (effect, binding, listener, direttive, i blocchi al suo interno), ma un elemento al suo primo livello che ha registrato una funzione con <code>onLeave</code> resta nel DOM finché la promessa della funzione non si risolve. Nel frattempo:",
+          "li1": "il blocco va avanti come se l’elemento non ci fosse: un ramo selezionato viene inserito al suo posto, e le righe di un <code>@for</code> vengono posizionate e inserite ignorandolo. Con cambi rapidi (A → B → A) possono uscire più copie insieme.",
+          "li2": "una chiave che ritorna mentre la sua riga esce ottiene una riga nuova: la vecchia completa l’uscita, perché Xaendar non reinserisce mai un elemento che ha rimosso.",
+          "li3": "le query smettono subito di trovare l’elemento, non alla fine dell’animazione.",
+          "li4": "aspettano solo gli elementi al primo livello del blocco: un elemento al loro interno, o in un blocco accanto, esce con loro. Un componente distrutto, o un blocco rimosso insieme a quello che lo contiene, rimuove subito i suoi elementi, compresi quelli ancora in uscita, senza chiamarne la funzione.",
+          "p2": "Una funzione che non restituisce una promessa lascia uscire l’elemento subito; anche una che lancia un errore, o la cui promessa viene rifiutata, e l’errore viene segnalato. Il runtime non aspetta mai più di 5 secondi. Una tua direttiva può registrare la sua uscita con <code>onLeave</code>, nel suo <code>onInit</code>, sul proprio elemento:"
+        },
+        "edgeCases": {
+          "title": "Casi limite",
+          "callout1": {
+            "heading": "Il layout salta mentre ci sono entrambi",
+            "p1": "L’elemento che esce tiene il suo posto finché non viene rimosso, mentre quello nuovo è già inserito: un ramo sostituito da un altro occupa lo spazio di entrambi, poi salta. Si risolve nel foglio di stile, togliendo dal flusso l’elemento che esce: è <code>inert</code>, quindi un selettore lo trova."
+          },
+          "callout2": {
+            "heading": "Id duplicati durante l’uscita",
+            "p1": "Un elemento che esce mantiene il suo <code>id</code>: mentre esce, la nuova copia dello stesso ramo, o della stessa riga, ha lo stesso id, e <code>getElementById</code>, <code>&lt;label for&gt;</code> e <code>aria-labelledby</code> possono trovare quello vecchio. Dai agli elementi che escono id propri, o nessuno."
+          },
+          "callout3": {
+            "heading": "I selettori posizionali lo vedono",
+            "p1": "Il CSS non sa che l’elemento sta uscendo: <code>:first-child</code>, <code>:nth-child()</code>, <code>+</code> e <code>~</code> lo contano finché non viene rimosso, quindi le righe alternate di una tabella o il margine della prima riga cambiano quando se ne va. Escludilo con <code>:not([inert])</code> dove conta."
+          },
+          "callout4": {
+            "heading": "Importate dal template",
+            "p1": "La direttiva si importa come tutte le altre (<code>@import { AnimationDirective } from '@xaendar/directives'</code>), e <code>@xaendar/directives</code> prende <code>@xaendar/core</code> come peer, quello dell’applicazione. L’uscita viene registrata quando <code>leave</code> contiene un’animazione all’avvio della direttiva. In una pagina renderizzata sul server, la classe di <code>enter</code> viene scritta nell’HTML, così il browser avvia l’animazione mentre carica la pagina: l’hydration non la riavvia, toglie solo la classe quando l’animazione finisce. Una funzione non può girare sul server: la esegue l’hydration. <code>leave</code> sul server non fa niente."
+          }
+        }
+      },
       "conditional": {
         "eyebrow": "Direttive",
         "title": "Direttive condizionali",

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
+import { createBabelPlugin } from './packages/cli/src/utils/babel-plugin/babel-plugin.utils';
 
 type Tsconfig = {
   compilerOptions: {
@@ -22,13 +23,35 @@ export default defineConfig({
     },
     test: {
       environment: 'node',
-      include: ['packages/**/*.spec.ts'],
       maxWorkers: '50%',
+      projects: [
+        {
+          extends: true,
+          test: {
+            name: 'packages',
+            include: ['packages/**/*.spec.ts'],
+            exclude: ['packages/directives/**', '**/node_modules/**']
+          }
+        },
+        {
+          // the built-in directives are written with decorators: Babel transpiles them, as the CLI does for a library
+          extends: true,
+          plugins: [createBabelPlugin()],
+          test: {
+            name: 'directives',
+            include: ['packages/directives/**/*.spec.ts']
+          }
+        }
+      ],
       coverage: {
         clean: true,
         include: ['packages/**/*.ts'],
-        // the build configurations of the packages are not library code
-        exclude: ['packages/**/*.spec.ts', 'packages/*/vite.config.ts'],
+        /*
+          the build configurations of the packages are not library code; the directives written with decorators run in
+          their specs, but Babel gives each `accessor` a setter that `@Property` replaces, never called, which v8 counts
+          as uncovered lines of their source
+        */
+        exclude: ['packages/**/*.spec.ts', 'packages/*/vite.config.ts', 'packages/directives/src/directives/**/*.directive.ts'],
         thresholds: {
           lines: 100,
           functions: 100,

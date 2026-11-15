@@ -11,6 +11,7 @@ import type { RefQueryDecorator } from '../../types/query/ref-query-decorator.ty
 import type { SingleQueryDecorator } from '../../types/query/single-query-decorator.type';
 import type { TemplateRef } from '../../types/template-ref.type';
 import { getContentTemplate } from '../../utils/content-templates/content-templates.util';
+import { goesWithLeaving, withoutLeaving } from '../../utils/context/context.util';
 
 /**
  * Decorator that binds an accessor of a web component to the first element
@@ -474,9 +475,22 @@ export function queryContentAll<Target extends QueryTarget, ElementType extends 
  */
 function queryFirst<Value>(element: CustomElement, { selector, pick }: QueryMatcher): QuerySignal<Value | null> {
   const read = pick
-    ? (shadowRoot: ShadowRoot) => (pick(Array.from(shadowRoot.querySelectorAll(selector)))[0] ?? null) as Value | null
-    : (shadowRoot: ShadowRoot) => shadowRoot.querySelector(selector) as Value | null;
+    ? (shadowRoot: ShadowRoot) => (pick(withoutLeaving(Array.from(shadowRoot.querySelectorAll(selector))))[0] ?? null) as Value | null
+    : (shadowRoot: ShadowRoot) => readFirst(shadowRoot, selector) as Value | null;
   return createQuerySignal<Value | null>(element, read, null);
+}
+
+/**
+ * Reads the first element of a Shadow DOM matching a selector, passing over the elements leaving the DOM (see
+ * `onLeave`), which are no longer part of the template.
+ *
+ * @param shadowRoot - The Shadow DOM.
+ * @param selector - The selector.
+ * @returns The element, `null` when there is none.
+ */
+function readFirst(shadowRoot: ShadowRoot, selector: string): Element | null {
+  const found = shadowRoot.querySelector(selector);
+  return found && goesWithLeaving(found) ? withoutLeaving(Array.from(shadowRoot.querySelectorAll(selector)))[0] ?? null : found;
 }
 
 /**
@@ -501,7 +515,8 @@ function queryEvery<Value>(element: CustomElement, matcher: QueryMatcher): Query
  * @returns The values.
  */
 function readEvery<Value>(shadowRoot: ShadowRoot, { selector, pick }: QueryMatcher): Value[] {
-  const elements = Array.from(shadowRoot.querySelectorAll(selector));
+  // The elements leaving the DOM are no longer part of the template (see `onLeave`)
+  const elements = withoutLeaving(Array.from(shadowRoot.querySelectorAll(selector)));
   return (pick ? pick(elements) : elements) as Value[];
 }
 

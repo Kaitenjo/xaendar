@@ -4,6 +4,8 @@ import { CustomDirective } from '../../models/custom-directive/custom-directive'
 import { CustomElement } from '../../models/custom-element/custom-element';
 import { effect } from '../../signals/effect/effect';
 import { _createComponent } from '../create-component/create-component.util';
+import { registerLeave } from '../leave/leave.util';
+import { onLeave } from '../on-leave/on-leave.util';
 import { _readPageTransferState } from '../transfer-state/transfer-state.util';
 import { _getComponentRuntime, _setComponentRuntime } from './component-runtime.util';
 import type { _ComponentRuntime } from '../../types/component-runtime.type';
@@ -22,7 +24,8 @@ function createRuntime(): _ComponentRuntime & { stop: () => void } {
     stop,
     effect: vi.fn(() => stop),
     createComponent: vi.fn(() => ({ element: new ProbeElement(), destroy: vi.fn() })) as unknown as _ComponentRuntime['createComponent'],
-    getTransferState: vi.fn()
+    getTransferState: vi.fn(),
+    onLeave: vi.fn()
   };
 }
 
@@ -42,6 +45,7 @@ describe('component runtime', () => {
     expect(runtime.effect).toBe(effect);
     expect(runtime.createComponent).toBe(_createComponent);
     expect(runtime.getTransferState).toBe(_readPageTransferState);
+    expect(runtime.onLeave).toBe(registerLeave);
   });
 
   it('returns the runtime it replaces', () => {
@@ -85,5 +89,16 @@ describe('component runtime', () => {
     expect(fn).not.toHaveBeenCalled();
     expect(runtime.effect).toHaveBeenCalledWith(fn, undefined);
     expect(runtime.createComponent).toHaveBeenCalledWith(expect.any(Function), ProbeElement, { target });
+  });
+
+  it('registers the handlers of onLeave through the runtime in use', () => {
+    const runtime = createRuntime();
+    previous = _setComponentRuntime(runtime);
+    const element = document.createElement('div');
+    const handler = vi.fn();
+
+    onLeave(element, handler);
+
+    expect(runtime.onLeave).toHaveBeenCalledWith(element, handler);
   });
 });

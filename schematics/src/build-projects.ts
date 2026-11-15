@@ -1,5 +1,7 @@
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { spawn } from 'node:child_process';
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { basename, resolve } from 'node:path';
 import { build as tsupBuild } from 'tsup';
 import { TsConfigJson } from 'type-fest';
 import { build as viteBuild } from 'vite';
@@ -27,7 +29,8 @@ function mapProjectsDependencies(): Map<string, Record<string, string>> {
       .reduce<[string, Record<string, string>][]>((acc, folder) => {
         try {
           const pkg = getPackageJson(folder);
-          const dependencies = pkg.dependencies ?? {};
+          // A peer such as @xaendar/core of a library is built first too: the library reads its declarations
+          const dependencies = Object.assign({}, pkg.dependencies, pkg.peerDependencies);
 
           const xaendarDependencies = Object.entries(dependencies)
             .filter(([name]) => name.includes('@xaendar'))
@@ -78,7 +81,7 @@ function buildProject(projectName: string): void {
 
   const target = pkg.xaendar?.target ?? 'browser';
 
-  console.log(`\n▶ Build [${target}]: @xaendar/${projectName}`);
+  console.log(`\n▶ Build [${pkg.xaendar?.library ? 'library' : target}]: @xaendar/${projectName}`);
 
   const onSuccess = () => {
     console.log(`✅ @xaendar/${projectName} completato`);
@@ -90,6 +93,11 @@ function buildProject(projectName: string): void {
   let buildPromise: Promise<void> | ReturnType<typeof viteBuild>;
 
   try {
+    if (pkg.xaendar?.library) {
+      buildLibraryProject(projectPath, pkg).then(onSuccess).catch(onError);
+      return;
+    }
+
     switch (target) {
       case 'browser':
         buildPromise = buildBrowser(projectPath);
@@ -210,6 +218,50 @@ function writePackageJsonForNodeProject(projectName: string, pkg: XaendarPackage
 
   const packageJsonPath = resolve(options.outDir, 'package.json');
   writeFileSync(packageJsonPath, JSON.stringify(distPkg, null, 2), 'utf-8');
+}
+
+/**
+ * Builds a Xaendar library of components and directives with the build of the libraries of the CLI, run from its
+ * sources as the documentation site runs it: a workspace of its own, created for the build and deleted afterwards,
+ * declares the library, built into `dist/@xaendar/<name>` with its manifest, its declarations and its `package.json`.
+ *
+ * The workspace is inside the repository, so that Babel finds the plugin of the decorators in its `node_modules`.
+ *
+ * @param projectPath - The folder of the library.
+ * @param pkg - The `package.json` of the library.
+ * @returns A promise resolving once the library is built.
+ * @throws If the build of the CLI fails.
+ */
+async function buildLibraryProject(projectPath: string, pkg: XaendarPackageJson): Promise<void> {
+  const repositoryRoot = resolve(projectsPath, '..');
+  const folder = basename(projectPath);
+  const workspace = resolve(repositoryRoot, 'dist', `.xaendar-library-${folder}`);
+  const config = { libs: { [pkg.name!]: { root: projectPath, outDir: resolve(repositoryRoot, 'dist/@xaendar', folder) } } };
+  mkdirSync(workspace, { recursive: true });
+  writeFileSync(resolve(workspace, 'xaendar.json'), JSON.stringify(config, null, 2), 'utf-8');
+  try {
+    await runCliBuild(repositoryRoot, workspace);
+  } finally {
+    rmSync(workspace, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Runs `xd build` from the sources of the CLI, with the `paths` of the repository, in a workspace.
+ *
+ * @param repositoryRoot - The root of the repository.
+ * @param workspace - The folder of the workspace.
+ * @returns A promise resolving once the build ends.
+ * @throws If the build exits with an error.
+ */
+function runCliBuild(repositoryRoot: string, workspace: string): Promise<void> {
+  const tsx = createRequire(import.meta.url).resolve('tsx/cli');
+  const args = [tsx, '--tsconfig', resolve(repositoryRoot, 'tsconfig.json'), resolve(repositoryRoot, 'packages/cli/src/index.ts'), 'build'];
+  return new Promise((resolvePromise, reject) => {
+    const child = spawn(process.execPath, args, { cwd: workspace, stdio: 'inherit' });
+    child.on('error', reject);
+    child.on('close', code => code === 0 ? resolvePromise() : reject(new Error(`xd build exited with code ${code}`)));
+  });
 }
 
 async function buildExtension(projectName: string, projectPath: string, pkg: XaendarPackageJson): Promise<void> {

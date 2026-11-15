@@ -23,6 +23,7 @@
       "@xaendar/core": ["../../packages/core/src/public-api"],
       "@xaendar/core/signals": ["../../packages/core/src/signals/index.ts"],
       "@xaendar/core/testing": ["../../packages/core/src/testing/index.ts"],
+      "@xaendar/directives": ["../../packages/directives/src/public-api"],
       "@xaendar/signals": ["../../packages/signals/src/public-api"],
       "@xaendar/ssr": ["../../packages/ssr/src/public-api"],
       "@xaendar/ssr/dom": ["../../packages/ssr/src/dom/index"],

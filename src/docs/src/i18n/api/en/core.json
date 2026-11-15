@@ -452,5 +452,19 @@
         "body": "<p>The entry fetches the data before the render, which does not wait for a request a component starts, and gives them to <code>renderToString()</code>.</p>"
       }
     }
+  },
+  "onLeave": {
+    "summary": "Registers on an element the function the runtime calls when it is about to remove it, so that the element can leave with an animation.",
+    "description": "<p>When an <code>@if</code>, an <code>@switch</code>, a <code>@for</code> or a structural directive removes a block, an element at the top of the block that registered a function stays in the DOM until the promise the function returns settles, then it is removed. Everything else of the block is disposed at once, the queries stop finding the element at once, and the block goes on as if it were gone: the new branch is inserted at its place, the rows of a <code>@for</code> ignore it. A second registration on the same element replaces the first one.</p><p>Only the elements at the top of the block wait: the ones inside them, and the blocks beside them, leave with them, and a component destroyed, or a block removed with the one holding it, removes its elements at once, the ones leaving included, without calling the function. A function returning no promise lets the element go at once; one throwing, or rejecting, too, its error reported as the one of an effect. The element never waits more than 5 seconds. On the server it does nothing, and the hydration is not affected.</p><p>Call it while a directive starts, in its <code>onInit</code>, on the element of the directive: the runtime then knows the block of the element, and only the blocks holding such elements do more work when they are removed. Registered elsewhere, every block reads the function of its elements from then on, which is slower, never wrong. The built-in <code>@@animation</code> of <code>@xaendar/directives</code> uses it for its <code>leave</code>: see <a href=\"#/en/directives/animations\">Animations</a>.</p>",
+    "members": {
+      "element": "<p>The element, usually <code>this.element</code> of the directive.</p>",
+      "handler": "<p>The function, receiving the element: a promise settling once the element can be removed, as the <code>finished</code> of a Web Animation, or nothing to remove it at once.</p>"
+    },
+    "usage": {
+      "directive": {
+        "title": "In a directive",
+        "body": "<p>The directive registers the exit of its element in <code>onInit</code>: the height collapses, so the elements below move up smoothly, then the element is removed.</p>"
+      }
+    }
   }
 }

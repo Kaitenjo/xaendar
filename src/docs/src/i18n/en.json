@@ -136,6 +136,7 @@
       "directives/custom": "Custom directives",
       "directives/structural": "Structural directives",
       "directives/conditional": "Conditional directives",
+      "directives/animations": "Animations",
       "patterns/forms": "Forms",
       "patterns/async-data": "Async data",
       "patterns/routing": "Routing",
@@ -949,6 +950,52 @@
       }
     },
     "directives": {
+      "animations": {
+        "eyebrow": "Directives",
+        "title": "Animations",
+        "lead": "The directive <code>@@animation</code> of the package <code>@xaendar/directives</code> animates the elements of a template as they enter, with <code>enter</code>, and as they leave, with <code>leave</code>: each one a CSS class or a function, and a side left out is not animated. Entering needs nothing from the runtime: the element is there. Leaving does: a block removes its elements at once, so <code>leave</code> asks the runtime to wait, with <a href=\"#/en/reference/api/core/onLeave\"><code>onLeave</code></a> of <code>@xaendar/core</code>, which your own directives can use too.",
+        "classes": {
+          "title": "With the classes of a stylesheet",
+          "example1": "A list whose rows fade in and out",
+          "p1": "<code>@@animation(enter=\"fade-in\" leave=\"fade-out\")</code> applies the class of <code>enter</code> once the element is rendered, and removes it when the CSS animations or transitions it runs on the element end; it applies the class of <code>leave</code> when the block removes the element, and removes the element when they end. Only the events of the element itself count: the ones of its descendants, which bubble, are passed over. An element running no animation nor transition leaves at once, and none waits longer than its CSS times, with a margin.",
+          "p2": "A class added to an element just rendered runs its <code>@keyframes</code> at once. A transition needs a style to start from, which <code>@starting-style</code> gives:",
+          "p3": "While it leaves, the element is <code>inert</code>: it takes no focus nor click, and the screen readers skip it. With <code>prefers-reduced-motion: reduce</code> nothing is animated: the element enters as it is and leaves at once. Bind <code>ignoreReducedMotion=\"{true}\"</code> to animate it anyway, for a motion the interface cannot do without."
+        },
+        "functions": {
+          "title": "With a function",
+          "example1": "A wizard whose steps slide with the Web Animations API",
+          "p1": "Bound to a function, <code>enter</code> or <code>leave</code> gives it the element, and the exit waits for the promise the function of <code>leave</code> returns: <code>element.animate(…).finished</code> is one. The function of <code>enter</code> is only called.",
+          "p2": "The step leaving and the new one are in the DOM together while the old one slides out: the stylesheet takes the inert one out of the flow, so that the new one takes its place at once."
+        },
+        "leaving": {
+          "title": "How an element leaves",
+          "p1": "When an <code>@if</code>, an <code>@switch</code>, a <code>@for</code> or a structural directive removes a block, everything of it is disposed at once (effects, bindings, listeners, directives, the blocks inside it), but an element at its top that registered a function with <code>onLeave</code> stays in the DOM until the promise of the function settles. Meanwhile:",
+          "li1": "the block goes on as if the element were gone: a branch selected is inserted at its place, and the rows of a <code>@for</code> are placed and inserted ignoring it. With quick changes (A → B → A), several copies may leave together.",
+          "li2": "a key coming back while its row leaves gets a new row: the old one finishes leaving, since Xaendar never inserts again an element it removed.",
+          "li3": "the queries stop finding the element at once, not at the end of the animation.",
+          "li4": "only the elements at the top of the block wait: an element inside them, or in a block beside them, leaves with them. A component destroyed, or a block removed with the one holding it, removes its elements at once, the ones still leaving included, without calling their function.",
+          "p2": "A function returning no promise lets the element go at once; one throwing, or rejecting, too, its error reported. The runtime never waits more than 5 seconds. A directive of your own can register its exit with <code>onLeave</code>, in its <code>onInit</code>, on its own element:"
+        },
+        "edgeCases": {
+          "title": "Edge cases",
+          "callout1": {
+            "heading": "The layout jumps while both are there",
+            "p1": "The element leaving keeps its place until it is removed, while the new one is already inserted: a branch replaced by another one takes the space of both, then jumps. It is solved in the stylesheet, taking the element leaving out of the flow: it is <code>inert</code>, so a selector finds it."
+          },
+          "callout2": {
+            "heading": "Duplicate ids while it leaves",
+            "p1": "An element leaving keeps its <code>id</code>: while it leaves, the new copy of the same branch, or of the same row, has the same one, and <code>getElementById</code>, <code>&lt;label for&gt;</code> and <code>aria-labelledby</code> may find the old one. Give the elements that leave ids of their own, or none."
+          },
+          "callout3": {
+            "heading": "Positional selectors see it",
+            "p1": "CSS does not know the element is leaving: <code>:first-child</code>, <code>:nth-child()</code>, <code>+</code> and <code>~</code> count it until it is removed, so the stripes of a table or the margin of the first row change when it goes. Exclude it with <code>:not([inert])</code> where it matters."
+          },
+          "callout4": {
+            "heading": "Imported by the template",
+            "p1": "The directive is imported like any other (<code>@import { AnimationDirective } from '@xaendar/directives'</code>), and <code>@xaendar/directives</code> takes <code>@xaendar/core</code> as a peer, the one of the application. The exit is registered when <code>leave</code> holds an animation as the directive starts. On a page rendered on the server, the class of <code>enter</code> is written into the HTML, so the browser runs the animation as it loads the page: the hydration does not start it again, it only removes the class once the animation ends. A function cannot run on the server: the hydration runs it. <code>leave</code> does nothing on the server."
+          }
+        }
+      },
       "conditional": {
         "eyebrow": "Directives",
         "title": "Conditional directives",

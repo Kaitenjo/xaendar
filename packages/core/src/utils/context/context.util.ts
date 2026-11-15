@@ -1,4 +1,4 @@
-import { CLEANUP, COMPONENT, CONTAINER_SLOTS, CONTENT, HEADER, KEYS, LAYOUT, PARENT, PARENT_NODE } from '../../costants';
+import { CLEANUP, COMPONENT, CONTAINER_SLOTS, CONTENT, HEADER, KEYS, LAYOUT, LEAVE_HANDLER, PARENT, PARENT_NODE } from '../../costants';
 import { _runBinding } from '../../models/effect/effect';
 import type { BindingSite } from '../../types/binding-site.type';
 import type { Binding } from '../../types/binding.type';
@@ -9,6 +9,8 @@ import type { _DeclarationKind } from '../../types/declaration-kind.type';
 import type { Effect } from '../../types/effect.type';
 import type { Branch } from '../../types/if/branch.type';
 import type { InlineBranch } from '../../types/inline-branch.type';
+import type { LeaveHandler } from '../../types/leave-handler.type';
+import type { LeavingNode } from '../../types/leaving-node.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
@@ -103,6 +105,45 @@ let inlineBranch: InlineBranch | null = null;
  * The strategy getting the nodes of the branch being rendered inline into {@link inlineScope}.
  */
 let inlineStrategy: NodeStrategy = CREATE_NODES;
+
+/**
+ * The longest time, in milliseconds, a node waits before leaving the DOM (see `onLeave`): once it has passed, the node
+ * is removed even when the promise of its handler has not settled, so that a promise never settling does not keep it
+ * forever.
+ */
+export const LEAVE_TIMEOUT = 5000;
+
+/**
+ * The scopes whose nodes may have registered a handler with `onLeave`: clearing one of them reads the handler of the
+ * nodes at its top (see {@link markLeavingScope}). `null` until the first handler is registered.
+ *
+ * N.B. Deliberate, to save memory and time: a set of the module, created by the first handler, instead of a slot of
+ * every scope or a read of every node removed, which every scope and every node paid, though only the applications
+ * animating the exit of their elements need it. Without handlers, clearing a scope costs one more comparison. Do not
+ * give the scopes a slot for it, nor read the handler of every node.
+ */
+let leavingScopes: WeakSet<_Context> | null = null;
+
+/**
+ * Whether a handler was registered without a scope telling where its element is (see {@link markLeavingScope}): from
+ * then on, clearing any scope reads the handlers of the nodes at its top, which is slower, never wrong.
+ */
+let everyScopeLeaves = false;
+
+/**
+ * The nodes waiting before leaving the DOM (see `onLeave`): the blocks and the queries pass over them, as they are no
+ * longer part of the template.
+ *
+ * N.B. Deliberate, to save memory: a set of the module instead of a mark on the nodes, so that telling a node leaves
+ * costs nothing while none does (`size`). Do not mark the nodes.
+ */
+const leavingNodes = new Set<Node>();
+
+/**
+ * The comment inserted and removed at once beside a node starting to leave (see {@link wakeQueries}), created by the
+ * first one.
+ */
+let wakeMarker: Comment | null = null;
 
 /**
  * Creates the scope of an instance of a block: an array of the exact length of its layout, holding its header, then
@@ -335,14 +376,17 @@ export function bindingsBase(scope: _Context): number {
  * @param detach - Whether the nodes are removed from the DOM.
  * @param parentNode - The node the nodes are removed from, only if they are still there: `null` to remove them from the
  *   one they are inserted into, as a scope tracking no node does.
+ * @param leave - Whether the nodes registered with `onLeave` wait before leaving the DOM (see {@link clear}): only
+ *   when the block replaces the branch, never when the scope holding it is cleared.
  */
-export function clearInline(scope: _Context, branch: InlineBranch, detach: boolean, parentNode: Node | null): void {
+export function clearInline(scope: _Context, branch: InlineBranch, detach: boolean, parentNode: Node | null, leave = false): void {
   const { base, nodes, sites, cleanup } = branch;
   if (detach) {
+    const leaves = leave && scopeLeaves(scope);
     for (let i = nodes.length - 1; i >= 0; i--) {
-      const node = scope[base + nodes[i]] as Node | null | undefined;
+      const node = scope[base + nodes[i]] as Element | null | undefined;
       const current = node?.parentNode;
-      if (current && (parentNode === null || current === parentNode)) {
+      if (current && (parentNode === null || current === parentNode) && !(leaves && startLeaving(node!, current, scope))) {
         current.removeChild(node!);
       }
     }
@@ -472,14 +516,7 @@ export function trackNode(node: Node, parentNode: Node, scope: _Context, slot: n
  * @param cleanup - The cleanup to register.
  */
 export function addCleanup(scope: _Context, cleanup: Cleanup): void {
-  const slot = scope === inlineScope ? inlineBranch!.base + inlineBranch!.cleanup! : CLEANUP;
-  const current = scope[slot] as Cleanup | Cleanup[] | null | undefined;
-  if (Array.isArray(current)) {
-    current.push(cleanup);
-  } else {
-    // The second cleanup gets an array of exactly two items: a push into an empty array would reserve room for many more
-    scope[slot] = current ? [current, cleanup] : cleanup;
-  }
+  pushCleanup(scope, scope === inlineScope ? inlineBranch!.base + inlineBranch!.cleanup! : CLEANUP, cleanup);
 }
 
 /**
@@ -590,19 +627,27 @@ export function moveTo(scope: _Context, target: _Context): void {
  * into it are emptied with the scopes of the containers, as the scopes of their own they stand for were: their nodes
  * are removed when they are beside the ones of the scope, or when it tracks none.
  *
+ * A block replacing what it shows (a branch of an `@if` or of a `@switch`, the rows of a `@for` gone) passes the scope
+ * holding it: the nodes at the top of the scope registered with `onLeave` stay in the DOM, leaving (see
+ * {@link startLeaving}), while everything else is disposed at once. Only the nodes at the top wait: the scopes inside
+ * this one, and the nodes inside the ones waiting, leave with them.
+ *
  * @param scope - The scope.
  * @param detach - Whether the nodes are removed from the DOM. Defaults to `true`.
+ * @param holder - The scope holding the block replacing the scope, so that the nodes at its top registered with
+ *   `onLeave` wait before leaving, held by it until they do: `null`, the default, removes them at once.
  */
-export function clear(scope: _Context, detach = true): void {
+export function clear(scope: _Context, detach = true, holder: _Context | null = null): void {
   /*
     Nodes are removed before the cleanups to let events fired on onDestroy actually work: the cleanups remove the
     listeners on the nodes, preventing the parent to listen the event emitted on the destruction of the element
   */
   const parentNode = scope[PARENT_NODE];
   if (detach && parentNode) {
+    const leaves = holder !== null && scopeLeaves(scope);
     for (let i = nodesEnd(scope) - 1; i >= scope[LAYOUT].nodes; i--) {
-      const node = scope[i] as Node | null | undefined;
-      if (node?.parentNode === parentNode) {
+      const node = scope[i] as Element | null | undefined;
+      if (node?.parentNode === parentNode && !(leaves && startLeaving(node, parentNode, holder!))) {
         parentNode.removeChild(node);
       }
     }
@@ -624,7 +669,7 @@ export function clear(scope: _Context, detach = true): void {
           clearChild(rows[j], holder);
         }
       } else if (Array.isArray(content)) {
-        clearChild(content as _Context, holder);
+        clearChild(content, holder);
       } else if (isInline(content)) {
         clearInline(scope, content, detach, parentNode);
       }
@@ -677,6 +722,76 @@ export function createAnchor(label: string, parentNode: Node, scope: _Context, r
 }
 
 /**
+ * Marks the scope tracking the element a directive starting registers a handler on with `onLeave` (see
+ * {@link leavingScopes}): the scope the directive starts in, or, for the scope the runtime creates to apply a branch of
+ * a conditional binding, which tracks no node, the first scope up the chain of the declaring scopes it does not create
+ * so: the one of the element. A scope holding the element in the area of a branch rendered inline is marked too.
+ *
+ * Without a scope, as for a handler registered outside of the start of a directive, or for the host directives of a
+ * component, which start in a scope of their own while another template tracks their element, every scope reads the
+ * handlers of its nodes from then on.
+ *
+ * @param scope - The scope the directive starts in, `null` when none is known.
+ */
+export function markLeavingScope(scope: _Context | null): void {
+  leavingScopes ??= new WeakSet();
+  let current = scope;
+  while (current && current[LAYOUT] === EMPTY_LAYOUT) {
+    current = current[PARENT];
+  }
+
+  current === null ? everyScopeLeaves = true : leavingScopes.add(current);
+}
+
+/**
+ * Tells whether a node is leaving the DOM, waiting for its handler (see `onLeave`).
+ *
+ * @param node - The node.
+ * @returns `true` while the node is leaving.
+ */
+export function isLeaving(node: Node): boolean {
+  return leavingNodes.size !== 0 && leavingNodes.has(node);
+}
+
+/**
+ * Returns the first node, from the given one on through its next siblings, that is not leaving the DOM (see
+ * {@link isLeaving}): the position the blocks compare their nodes with.
+ *
+ * @param node - The node to start from.
+ * @returns The node, `null` when it and every sibling after it are leaving.
+ */
+export function nextStaying(node: Node | null): Node | null {
+  let current = node;
+  while (current !== null && isLeaving(current)) {
+    current = current.nextSibling;
+  }
+
+  return current;
+}
+
+/**
+ * Leaves out of the elements a query found the ones leaving the DOM, and the ones inside them (see {@link isLeaving}):
+ * they are no longer part of the template.
+ *
+ * @template Found - The type of the elements.
+ * @param elements - The elements found.
+ * @returns The elements as they are while no node is leaving, otherwise the ones staying.
+ */
+export function withoutLeaving<Found extends Element>(elements: Found[]): Found[] {
+  return leavingNodes.size === 0 ? elements : elements.filter(element => !insideLeaving(element));
+}
+
+/**
+ * Tells whether an element is leaving the DOM, or inside a node leaving it (see {@link isLeaving}).
+ *
+ * @param element - The element.
+ * @returns `true` when the element goes with a node leaving.
+ */
+export function goesWithLeaving(element: Element): boolean {
+  return leavingNodes.size !== 0 && insideLeaving(element);
+}
+
+/**
  * Tells whether a container holds a branch rendered inline, an object, rather than a scope, the rows of a `@for`, which
  * are arrays, or nothing.
  *
@@ -685,6 +800,158 @@ export function createAnchor(label: string, parentNode: Node, scope: _Context, r
  */
 function isInline(content: Container): content is InlineBranch {
   return !!content && !Array.isArray(content);
+}
+
+/**
+ * Adds a cleanup to a slot holding cleanups (see {@link addCleanup}).
+ *
+ * @param scope - The scope.
+ * @param slot - The slot.
+ * @param cleanup - The cleanup.
+ */
+function pushCleanup(scope: _Context, slot: number, cleanup: Cleanup): void {
+  const current = scope[slot] as Cleanup | Cleanup[] | null | undefined;
+  if (Array.isArray(current)) {
+    current.push(cleanup);
+  } else {
+    // The second cleanup gets an array of exactly two items: a push into an empty array would reserve room for many more
+    scope[slot] = current ? [current, cleanup] : cleanup;
+  }
+}
+
+/**
+ * Tells whether the nodes at the top of a scope may have registered a handler with `onLeave` (see
+ * {@link leavingScopes}).
+ *
+ * @param scope - The scope.
+ * @returns `true` when clearing the scope reads the handlers of its nodes.
+ */
+function scopeLeaves(scope: _Context): boolean {
+  return leavingScopes !== null && (everyScopeLeaves || leavingScopes.has(scope));
+}
+
+/**
+ * Starts the exit of a node at the top of a scope being cleared, when it registered a handler with `onLeave`: calls the
+ * handler and, when it returns a promise, keeps the node in the DOM, leaving, until the promise settles or
+ * {@link LEAVE_TIMEOUT} passes, held by the scope holding the block, which removes it at once when it is cleared. The
+ * queries stop finding it at once (see {@link wakeQueries}).
+ *
+ * An error the handler throws, or a promise it rejects with, is reported as the one of an effect, in a microtask of its
+ * own, and the node leaves anyway.
+ *
+ * @param node - The node.
+ * @param parentNode - The node it is inserted into.
+ * @param holder - The scope holding the block the node belonged to.
+ * @returns `true` when the node stays, leaving; `false` when it has to be removed at once.
+ */
+function startLeaving(node: Element, parentNode: Node, holder: _Context): boolean {
+  const handler = (node as Partial<Record<typeof LEAVE_HANDLER, LeaveHandler>>)[LEAVE_HANDLER];
+  if (handler === undefined) {
+    return false;
+  }
+
+  let result: Promise<void> | void;
+  try {
+    result = handler(node);
+  } catch (error) {
+    throwLater(error);
+    return false;
+  }
+
+  if (!result) {
+    return false;
+  }
+
+  const leaving: LeavingNode = { node, parentNode, holder, timer: undefined, dispose: disposeLeaving };
+  leavingNodes.add(node);
+  pushCleanup(holder, CLEANUP, leaving);
+  leaving.timer = setTimeout(finishLeaving, LEAVE_TIMEOUT, leaving, false);
+  result.then(() => finishLeaving(leaving, false), (error: unknown) => {
+    throwLater(error);
+    finishLeaving(leaving, false);
+  });
+
+  wakeQueries(parentNode, node);
+  return true;
+}
+
+/**
+ * Removes a node once it has left (see {@link startLeaving}), when it is still in the node it was inserted into: its
+ * handler settled, {@link LEAVE_TIMEOUT} passed, or the scope holding it is cleared. Only the first of them counts.
+ *
+ * @param leaving - The node leaving.
+ * @param held - Whether the scope holding it is being cleared, running its cleanups, which drops them all.
+ */
+function finishLeaving(leaving: LeavingNode, held: boolean): void {
+  const { node, parentNode, holder } = leaving;
+  if (!leavingNodes.delete(node)) {
+    return;
+  }
+
+  clearTimeout(leaving.timer);
+  if (!held) {
+    removeCleanup(holder, leaving);
+  }
+
+  if (node.parentNode === parentNode) {
+    parentNode.removeChild(node);
+  }
+}
+
+/**
+ * Removes a node leaving at once, as the scope holding the block it belonged to is cleared (see `LeavingNode.dispose`).
+ *
+ * N.B. Deliberate, to save memory: a function of the module, called with the node leaving as `this`, instead of a
+ * closure created for each node. Do not create the `dispose` in {@link startLeaving}.
+ *
+ * @param this - The node leaving.
+ */
+function disposeLeaving(this: LeavingNode): void {
+  finishLeaving(this, true);
+}
+
+/**
+ * Wakes the queries observing the DOM a node starting to leave is in: the node stays, so nothing tells them it changed.
+ * A comment is inserted beside it and removed at once, a change of the children of its node, which the queries observe,
+ * and they read the DOM again, leaving out the nodes leaving (see {@link withoutLeaving}).
+ *
+ * N.B. Deliberate, to save memory and time: a change of the DOM the observers of the queries already watch, instead of
+ * a list of the queries of every component to notify, which every query would join. Do not register the queries.
+ *
+ * @param parentNode - The node the node leaving is inserted into.
+ * @param node - The node leaving.
+ */
+function wakeQueries(parentNode: Node, node: Node): void {
+  wakeMarker ??= document.createComment('');
+  parentNode.insertBefore(wakeMarker, node);
+  parentNode.removeChild(wakeMarker);
+}
+
+/**
+ * Tells whether an element is leaving the DOM, or inside a node leaving it.
+ *
+ * @param element - The element.
+ * @returns `true` when the element goes with a node leaving.
+ */
+function insideLeaving(element: Element): boolean {
+  for (const node of leavingNodes) {
+    if (node.contains(element)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Reports an error in a microtask of its own, as the one of an effect, so that what threw it goes on.
+ *
+ * @param error - The error.
+ */
+function throwLater(error: unknown): void {
+  queueMicrotask(() => {
+    throw error;
+  });
 }
 
 /**

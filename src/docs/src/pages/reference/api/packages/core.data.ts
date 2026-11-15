@@ -6,6 +6,7 @@ import { PROPERTY_OPTIONS, PROPERTY_TYPE, READ_ONLY_INPUT, TRANSFORM_TYPE } from
 import { CONNECTED_CALLBACK, LIFECYCLE_HOOKS } from '../../../components/lifecycle/lifecycle.snippets';
 import { EVENT_DECLARATION, MEMBER_NAME_CLASH, MODEL_DECLARATION } from '../../../components/outputs/outputs.snippets';
 import { QUERY_DECORATORS, QUERY_REQUIRED } from '../../../components/queries/queries.snippets';
+import { LEAVE_HANDLER_DIRECTIVE } from '../../../directives/animations/animations.snippets';
 import { CONSTRUCTOR_ACCESS, HOST_DIRECTIVE } from '../../../directives/custom/custom.snippets';
 import { DIRECTIVE_REGISTRATION } from '../../../directives/overview/overview.snippets';
 import { HYDRATE_COMPONENT } from '../../../tools/ssr/progressive-hydration/progressive-hydration.snippets';
@@ -717,6 +718,27 @@ export const CORE_API: ApiPackage = {
         { key: 'giving', snippets: [TRANSFER_STATE_ENTRY] }
       ],
       guides: ['tools/ssr/transfer-state']
+    },
+    {
+      name: 'onLeave',
+      kind: 'function',
+      signature: 'function onLeave(element: Element, handler: (element: Element) => Promise<void> | void): void',
+      members: [
+        {
+          name: 'element',
+          group: 'parameters',
+          signature: 'element: Element'
+        },
+        {
+          name: 'handler',
+          group: 'parameters',
+          signature: 'handler: (element: Element) => Promise<void> | void'
+        }
+      ],
+      usage: [
+        { key: 'directive', snippets: [LEAVE_HANDLER_DIRECTIVE] }
+      ],
+      guides: ['directives/animations', 'directives/custom']
     }
   ]
 };

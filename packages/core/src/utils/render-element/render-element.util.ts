@@ -494,7 +494,8 @@ function renderStructuralElement(parentNode: Element, context: _Context, anchor:
 
     rendered = shouldRender;
     untracked(() => {
-      clear(elementContext);
+      // The element registered with `onLeave` leaves, while a new one may be inserted at the anchor
+      clear(elementContext, true, context);
       shouldRender && renderElement(parentNode, elementContext, block.anchor, config, HEADER);
     });
   }));

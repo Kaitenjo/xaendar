@@ -1,16 +1,17 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { CLEANUP, COMPONENT, CONTAINER_SLOTS, HEADER, KEYS, LAYOUT, PARENT, PARENT_NODE, POSITION } from '../../costants';
+import { CLEANUP, COMPONENT, CONTAINER_SLOTS, HEADER, KEYS, LAYOUT, LEAVE_HANDLER, PARENT, PARENT_NODE, POSITION } from '../../costants';
 import { _bindEffect, _bindSite } from '../../signals/effect/effect';
 import type { BindingSite } from '../../types/binding-site.type';
 import type { _Context } from '../../types/context.type';
 import type { Branch } from '../../types/if/branch.type';
 import type { InlineBranch } from '../../types/inline-branch.type';
+import type { LeaveHandler } from '../../types/leave-handler.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { closeTryScope, openTryScope } from '../try-scope/try-scope.util';
-import { _declare, _read, _scope, _set, addCleanup, bindingsBase, clear, clearInline, containerSlot, createAnchor, ELEMENT_LAYOUT, EMPTY_LAYOUT, forEachChild, forEachInline, getNodeStrategy, moveTo, mountNode, nodesEnd, propagate, refresh, removeCleanup, renderInline, setNodeStrategy, STRUCTURAL_LAYOUT, swapNodeStrategy, trackNode, update } from './context.util';
+import { _declare, _read, _scope, _set, addCleanup, bindingsBase, clear, clearInline, containerSlot, createAnchor, ELEMENT_LAYOUT, EMPTY_LAYOUT, forEachChild, forEachInline, getNodeStrategy, goesWithLeaving, isLeaving, LEAVE_TIMEOUT, markLeavingScope, moveTo, mountNode, nextStaying, nodesEnd, propagate, refresh, removeCleanup, renderInline, setNodeStrategy, STRUCTURAL_LAYOUT, swapNodeStrategy, trackNode, update, withoutLeaving } from './context.util';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -966,5 +967,345 @@ describe('createAnchor', () => {
     expect(parent.firstChild).toBe(first);
     expect(parent.lastChild).toBe(last);
     expect(nodesOf(scope)).toEqual([first]);
+  });
+});
+
+describe('leaving', () => {
+  /**
+   * A promise settled from outside.
+   */
+  function deferred(): { promise: Promise<void>, resolve: () => void, reject: (error: unknown) => void } {
+    let resolve!: () => void;
+    let reject!: (error: unknown) => void;
+    const promise = new Promise<void>((onResolve, onReject) => {
+      resolve = onResolve;
+      reject = onReject;
+    });
+    return { promise, resolve, reject };
+  }
+
+  /**
+   * Gives an element a handler, without marking any scope.
+   */
+  function setHandler(element: Element, handler: LeaveHandler): void {
+    (element as Element & Record<typeof LEAVE_HANDLER, LeaveHandler>)[LEAVE_HANDLER] = handler;
+  }
+
+  /**
+   * Registers a handler on an element, marking the scope tracking it, as `onLeave` does from a directive starting.
+   */
+  function register(element: Element, scope: _Context, handler: LeaveHandler): void {
+    setHandler(element, handler);
+    markLeavingScope(scope);
+  }
+
+  /**
+   * Renders an element at the top of a scope held by another one, as the branch of a block, registering the handler, if
+   * any, on it.
+   */
+  function render(handler?: LeaveHandler, layout = ELEMENT_LAYOUT) {
+    const holder = _scope(null, HOLDER);
+    const scope = addChild(holder, _scope(holder, layout));
+    const parent = document.createElement('div');
+    const element = parent.appendChild(document.createElement('p'));
+    trackNode(element, parent, scope, HEADER);
+    if (handler) {
+      register(element, scope, handler);
+    }
+
+    return { holder, scope, parent, element };
+  }
+
+  /**
+   * A handler whose promise never settles.
+   */
+  const forever = () => vi.fn(() => new Promise<void>(() => undefined));
+
+  it('reads no handler before one is registered, nor in a scope cleared without the scope holding its block, nor in a scope not marked', () => {
+    const read = vi.fn();
+    const define = (element: Element) => Object.defineProperty(element, LEAVE_HANDLER, { get: read });
+    const first = render();
+    define(first.element);
+
+    clear(first.scope, true, first.holder);
+
+    const marked = render(vi.fn());
+    const second = render();
+    define(second.element);
+    clear(second.scope, true, second.holder);
+    clear(marked.scope);
+
+    expect(read).not.toHaveBeenCalled();
+    expect(first.element.parentNode).toBeNull();
+    expect(second.element.parentNode).toBeNull();
+    expect(marked.element.parentNode).toBeNull();
+  });
+
+  it('keeps a node whose handler returns a promise until it settles, disposing everything else at once', async () => {
+    const { promise, resolve } = deferred();
+    const handler = vi.fn(() => promise);
+    const { holder, scope, parent, element } = render(handler);
+    const cleanup = vi.fn();
+    addCleanup(scope, cleanup);
+    const other = vi.fn();
+    addCleanup(holder, other);
+
+    clear(scope, true, holder);
+
+    expect(handler).toHaveBeenCalledExactlyOnceWith(element);
+    expect(element.parentNode).toBe(parent);
+    expect(isLeaving(element)).toBe(true);
+    expect(cleanup).toHaveBeenCalledOnce();
+    expect(scope[HEADER]).toBeNull();
+    expect(holder[CLEANUP]).toEqual([other, expect.objectContaining({ node: element, parentNode: parent, holder })]);
+
+    resolve();
+    await flush();
+
+    expect(element.parentNode).toBeNull();
+    expect(isLeaving(element)).toBe(false);
+    expect(holder[CLEANUP]).toBe(other);
+  });
+
+  it('removes at once a node whose handler returns no promise, and the nodes of the scope without handler', () => {
+    const handler = vi.fn();
+    const { holder, scope, parent, element } = render(handler, layoutOf([], 2));
+    const plain = parent.appendChild(document.createElement('b'));
+    trackNode(plain, parent, scope, HEADER + 1);
+
+    clear(scope, true, holder);
+
+    expect(handler).toHaveBeenCalledOnce();
+    expect(element.parentNode).toBeNull();
+    expect(plain.parentNode).toBeNull();
+    expect(isLeaving(element)).toBe(false);
+    expect(holder[CLEANUP]).toBeNull();
+  });
+
+  it('removes at once a node whose handler throws, reporting the error in a microtask', () => {
+    const { holder, scope, element } = render(() => {
+      throw new Error('boom');
+    });
+    const tasks = new Array<() => void>();
+    const queueMicrotask = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(task => { tasks.push(task); });
+
+    clear(scope, true, holder);
+    queueMicrotask.mockRestore();
+
+    expect(element.parentNode).toBeNull();
+    expect(tasks).toHaveLength(1);
+    expect(() => tasks[0]()).toThrow('boom');
+  });
+
+  it('removes a node whose handler rejects, reporting the error in a microtask', async () => {
+    const { promise, reject } = deferred();
+    const { holder, scope, parent, element } = render(() => promise);
+    clear(scope, true, holder);
+    const tasks = new Array<() => void>();
+    const queueMicrotask = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(task => { tasks.push(task); });
+
+    expect(element.parentNode).toBe(parent);
+    reject(new Error('boom'));
+    await flush();
+    queueMicrotask.mockRestore();
+
+    expect(element.parentNode).toBeNull();
+    expect(holder[CLEANUP]).toBeNull();
+    expect(tasks).toHaveLength(1);
+    expect(() => tasks[0]()).toThrow('boom');
+  });
+
+  it('removes a node once the longest time has passed, whatever its handler does later', async () => {
+    vi.useFakeTimers();
+    try {
+      const { promise, resolve } = deferred();
+      const { holder, scope, parent, element } = render(() => promise);
+
+      clear(scope, true, holder);
+      vi.advanceTimersByTime(LEAVE_TIMEOUT - 1);
+      expect(element.parentNode).toBe(parent);
+      vi.advanceTimersByTime(1);
+      expect(element.parentNode).toBeNull();
+      expect(isLeaving(element)).toBe(false);
+      expect(holder[CLEANUP]).toBeNull();
+
+      // A node inserted again by code outside Xaendar is not removed by the handler settling late
+      parent.appendChild(element);
+      resolve();
+      await vi.runAllTimersAsync();
+      expect(element.parentNode).toBe(parent);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('waits only for the nodes at the top of the scope: the ones inside them and the blocks beside them leave at once', () => {
+    const handler = forever();
+    const { holder, scope, parent, element } = render(handler, ELEMENT_HOLDER);
+    const inner = element.appendChild(document.createElement('span'));
+    register(inner, scope, handler);
+    const beside = addChild(scope, _scope(scope, ELEMENT_LAYOUT));
+    const besideNode = parent.appendChild(document.createElement('b'));
+    trackNode(besideNode, parent, beside, HEADER);
+    register(besideNode, beside, handler);
+
+    clear(scope, true, holder);
+
+    expect(handler).toHaveBeenCalledExactlyOnceWith(element);
+    expect(element.parentNode).toBe(parent);
+    expect(inner.parentNode).toBe(element);
+    expect(besideNode.parentNode).toBeNull();
+    clear(holder);
+  });
+
+  it('calls no handler when the scope is cleared with what holds it, or keeps the DOM as it is', () => {
+    const handler = forever();
+    const { holder, scope, parent, element } = render(handler);
+    const kept = render(handler);
+
+    clear(holder);
+    clear(kept.scope, false, kept.holder);
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(element.parentNode).toBeNull();
+    expect(scope[HEADER]).toBeNull();
+    expect(kept.element.parentNode).toBe(kept.parent);
+    expect(parent.childNodes).toHaveLength(0);
+  });
+
+  it('removes at once the nodes leaving when the scope holding the block is cleared, the DOM kept or not', async () => {
+    const { promise, resolve } = deferred();
+    const first = render(() => promise);
+    const second = render(() => promise);
+    clear(first.scope, true, first.holder);
+    clear(second.scope, true, second.holder);
+
+    clear(first.holder);
+    clear(second.holder, false);
+
+    expect(first.element.parentNode).toBeNull();
+    expect(second.element.parentNode).toBeNull();
+    expect(isLeaving(first.element)).toBe(false);
+    resolve();
+    await flush();
+    expect(first.holder[CLEANUP]).toBeNull();
+  });
+
+  it('lets a node leaving go with an ancestor removed, removing it from there once its handler settles', async () => {
+    const { promise, resolve } = deferred();
+    const { holder, scope, parent, element } = render(() => promise);
+    const page = document.body.appendChild(document.createElement('main'));
+    page.appendChild(parent);
+    clear(scope, true, holder);
+
+    page.remove();
+
+    expect(element.isConnected).toBe(false);
+    resolve();
+    await flush();
+    expect(element.parentNode).toBeNull();
+  });
+
+  it('leaves a node leaving moved into another node where it is once its handler settles', async () => {
+    const { promise, resolve } = deferred();
+    const { holder, scope, element } = render(() => promise);
+    const other = document.createElement('section');
+    clear(scope, true, holder);
+
+    other.appendChild(element);
+    resolve();
+    await flush();
+
+    expect(element.parentNode).toBe(other);
+    expect(isLeaving(element)).toBe(false);
+  });
+
+  it('keeps a node of a branch rendered inline leaving when the block replaces it, not when the scope holding it is cleared', async () => {
+    const { promise, resolve } = deferred();
+    const layout: _ScopeLayout = { size: HEADER + 1, nodes: HEADER, bindings: HEADER };
+    const branch: InlineBranch = { base: HEADER, size: 1, nodes: [0] };
+    const scope = _scope(null, layout);
+    const parent = document.createElement('div');
+    const element = parent.appendChild(document.createElement('p'));
+    scope[HEADER] = element;
+    const handler = vi.fn(() => promise);
+    register(element, scope, handler);
+
+    clearInline(scope, branch, true, parent, true);
+
+    expect(element.parentNode).toBe(parent);
+    resolve();
+    await flush();
+    expect(element.parentNode).toBeNull();
+
+    const other = parent.appendChild(document.createElement('p'));
+    scope[HEADER] = other;
+    register(other, scope, handler);
+    clearInline(scope, branch, true, parent);
+    expect(other.parentNode).toBeNull();
+    expect(handler).toHaveBeenCalledOnce();
+  });
+
+  it('wakes the observers of the node the node leaves from, and leaves the nodes leaving out of the positions and of the elements found', async () => {
+    const { promise, resolve } = deferred();
+    const { holder, scope, parent, element } = render(() => promise);
+    const inner = element.appendChild(document.createElement('span'));
+    const after = parent.appendChild(document.createElement('b'));
+    const records = new Array<MutationRecord>();
+    const observer = new MutationObserver(list => records.push(...list));
+    observer.observe(parent, { childList: true });
+
+    expect(withoutLeaving([element, after])).toEqual([element, after]);
+    expect(goesWithLeaving(inner)).toBe(false);
+    clear(scope, true, holder);
+    await flush();
+    observer.disconnect();
+
+    expect(records.length).toBeGreaterThan(0);
+    expect(parent.childNodes).toHaveLength(2);
+    expect(withoutLeaving([element, inner, after])).toEqual([after]);
+    expect(goesWithLeaving(inner)).toBe(true);
+    expect(goesWithLeaving(after)).toBe(false);
+    expect(nextStaying(element)).toBe(after);
+    expect(nextStaying(after)).toBe(after);
+    expect(isLeaving(after)).toBe(false);
+    parent.removeChild(after);
+    expect(nextStaying(element)).toBeNull();
+    resolve();
+    await flush();
+  });
+
+  it('marks the scope of the element for the branch of a conditional binding applying the directive, and only it', () => {
+    const handler = forever();
+    const { holder, scope, parent, element } = render();
+    setHandler(element, handler);
+    markLeavingScope(_scope(_scope(scope, EMPTY_LAYOUT), EMPTY_LAYOUT));
+    const unmarked = render();
+    setHandler(unmarked.element, handler);
+
+    clear(scope, true, holder);
+    clear(unmarked.scope, true, unmarked.holder);
+
+    expect(handler).toHaveBeenCalledExactlyOnceWith(element);
+    expect(element.parentNode).toBe(parent);
+    expect(unmarked.element.parentNode).toBeNull();
+    clear(holder);
+  });
+
+  // Last: from then on, every scope reads the handlers of its nodes
+  it('reads the handlers of every scope once one is registered without a scope telling where its element is', () => {
+    const handler = forever();
+    const first = render();
+    setHandler(first.element, handler);
+    markLeavingScope(_scope(null, EMPTY_LAYOUT));
+    clear(first.scope, true, first.holder);
+    const second = render();
+    setHandler(second.element, handler);
+    markLeavingScope(null);
+    clear(second.scope, true, second.holder);
+
+    expect(handler.mock.calls).toEqual([[first.element], [second.element]]);
+    clear(first.holder);
+    clear(second.holder);
   });
 });

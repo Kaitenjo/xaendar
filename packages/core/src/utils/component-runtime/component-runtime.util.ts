@@ -1,5 +1,6 @@
 import { effect } from '../../signals/effect/effect';
 import { _createComponent } from '../create-component/create-component.util';
+import { registerLeave } from '../leave/leave.util';
 import { _readPageTransferState } from '../transfer-state/transfer-state.util';
 import type { _ComponentRuntime } from '../../types/component-runtime.type';
 
@@ -18,7 +19,8 @@ export function _getComponentRuntime(): _ComponentRuntime {
   return runtime ??= {
     effect,
     createComponent: _createComponent,
-    getTransferState: _readPageTransferState
+    getTransferState: _readPageTransferState,
+    onLeave: registerLeave
   };
 }
 

@@ -2,7 +2,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ForConfig } from '../../types/for-config.type';
 import type { IterationVariables } from '../../types/iteration-variables.type';
-import { CONTAINER_SLOTS, HEADER, LAYOUT } from '../../costants';
+import { CONTAINER_SLOTS, HEADER, LAYOUT, LEAVE_HANDLER } from '../../costants';
+import type { LeaveHandler } from '../../types/leave-handler.type';
 import type { _Context } from '../../types/context.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 
@@ -11,7 +12,7 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { _read, _scope, clear, containerSlot, ELEMENT_LAYOUT, EMPTY_LAYOUT, mountNode, nodesEnd, refresh, update } = await import('../context/context.util');
+const { _read, _scope, clear, containerSlot, ELEMENT_LAYOUT, EMPTY_LAYOUT, markLeavingScope, mountNode, nodesEnd, refresh, update } = await import('../context/context.util');
 // The namespace of the module, whose members are live bindings, read by the spec of the bounds
 const forModule = await import('./for.util');
 const { _for, _iterationVariables } = forModule;
@@ -778,5 +779,106 @@ describe('_for over iterables', () => {
 
     await change(['a', 'b', 'c']);
     expect(valuesOf(entries[0], variables)).toEqual([3]);
+  });
+});
+
+describe('_for with rows leaving', () => {
+  /**
+   * The functions settling the exit of the rows leaving, by the text of the row.
+   */
+  const exits = new Map<string, () => void>();
+
+  /**
+   * Registers on an element a handler whose exit settles once the test calls the function kept under the text, and
+   * marks the scope tracking it, as `onLeave` does from a directive starting.
+   */
+  function leaveLater(element: Element, scope: Context, text: string): void {
+    (element as Element & Record<typeof LEAVE_HANDLER, LeaveHandler>)[LEAVE_HANDLER] = () => new Promise<void>(resolve => exits.set(text, resolve));
+    markLeavingScope(scope);
+  }
+
+  /**
+   * Renders an item as an `<li>` leaving with an exit the test settles.
+   */
+  const leavingItem: Body = (parentNode, itemContext, text, reference) => {
+    const li = document.createElement('li');
+    li.textContent = text;
+    mountNode(li, parentNode, itemContext, reference as Comment | null, freeSlot(itemContext));
+    leaveLater(li, itemContext, text);
+  };
+
+  /**
+   * Settles the exit of a row, then waits for its removal.
+   */
+  async function exit(text: string): Promise<void> {
+    exits.get(text)!();
+    exits.delete(text);
+    await flush();
+  }
+
+  it('keeps the rows destroyed in the DOM while they leave, placing the rows kept and inserting the new ones as if they were gone', async () => {
+    const { texts, change } = setup(['a', 'b', 'c'], { body: leavingItem });
+    moveBefore.mockClear();
+
+    await change(['c', 'a', 'd']);
+
+    expect(texts()).toEqual(['b', 'c', 'a', 'd']);
+    // Only the row "a" moves: the row "c" is followed by it, the row "b" leaving between them
+    expect(moveBefore).toHaveBeenCalledOnce();
+    await exit('b');
+    expect(texts()).toEqual(['c', 'a', 'd']);
+  });
+
+  it('leaves where it is a node leaving between the nodes of a row it moves', async () => {
+    const twoItems: Body = (parentNode, itemContext, text, reference) => {
+      renderItem(parentNode, itemContext, `${text}1`, reference);
+      renderItem(parentNode, itemContext, `${text}2`, reference);
+    };
+    const { parent, context, texts, change } = setup(['a', 'b'], { body: twoItems });
+    // A node of a block of the row "a", leaving between its two nodes
+    const block = _scope(context, ELEMENT_LAYOUT);
+    const leaving = document.createElement('li');
+    leaving.textContent = 'leaving';
+    mountNode(leaving, parent, block, parent.children[1], HEADER);
+    leaveLater(leaving, block, 'leaving');
+    clear(block, true, context);
+
+    await change(['b', 'a']);
+
+    expect(texts()).toEqual(['leaving', 'b1', 'b2', 'a1', 'a2']);
+    await exit('leaving');
+    expect(texts()).toEqual(['b1', 'b2', 'a1', 'a2']);
+  });
+
+  it('creates a new row for a key coming back while its row leaves', async () => {
+    const { parent, texts, forFn, change } = setup(['a', 'b'], { body: leavingItem });
+    const old = parent.children[1];
+
+    await change(['a']);
+    await change(['a', 'b']);
+
+    expect(forFn).toHaveBeenCalledTimes(3);
+    expect(texts()).toEqual(['a', 'b', 'b']);
+    await exit('b');
+    expect(texts()).toEqual(['a', 'b']);
+    expect(parent.children[1]).not.toBe(old);
+  });
+
+  it('lets the content of the @empty leave once there are items', async () => {
+    const empty: ForConfig['empty'] = (parentNode, parentContext, reference) => {
+      const scope = _scope(parentContext, ELEMENT_LAYOUT);
+      const li = document.createElement('li');
+      li.textContent = 'none';
+      mountNode(li, parentNode, scope, reference, HEADER);
+      leaveLater(li, scope, 'none');
+      return scope;
+    };
+    const { texts, change } = setup([], { empty });
+
+    await change(['a']);
+
+    expect(texts()).toEqual(['none', 'a']);
+    await exit('none');
+    expect(texts()).toEqual(['a']);
   });
 });

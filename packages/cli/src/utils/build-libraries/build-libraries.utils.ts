@@ -6,7 +6,7 @@ import type { LibraryOrder } from '../../types/library-order.type';
 import type { ResolvedLibrary } from '../../types/resolved-library.type';
 import type { XaendarProject } from '../../types/xaendar-project.type';
 import { findProjectLibrary } from '../library/library.utils';
-import { createBabelPlugin } from '../plugins';
+import { createBabelPlugin } from '../babel-plugin/babel-plugin.utils';
 
 /**
  * Builds the libraries of a workspace, each one into a package ready to be published (see `buildLibrary` of

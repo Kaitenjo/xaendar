@@ -3,6 +3,7 @@ import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { CustomElement } from '../../models/custom-element/custom-element';
 import { _getAppliedDirectives } from '../../utils/applied-directives/applied-directives.util';
+import { withoutLeaving } from '../../utils/context/context.util';
 import { _getElementRef } from '../../utils/element-refs/element-refs.util';
 import { getSelector } from '../../utils/get-selector/get-selector.util';
 import type { QueryMatcher } from '../types/query-matcher.type';
@@ -231,9 +232,10 @@ function observeLightDom(element: CustomElement, update: NoArgsVoidFunction, des
  * @returns The matching elements.
  */
 function getContentElements(element: CustomElement, selector: string, descendants: boolean): Element[] {
-  return descendants
+  // The elements leaving the DOM are no longer part of the template rendering the content (see `onLeave`)
+  return withoutLeaving(descendants
     ? Array.from(element.querySelectorAll(selector))
-    : Array.from(element.children).filter(child => child.matches(selector));
+    : Array.from(element.children).filter(child => child.matches(selector)));
 }
 
 /**

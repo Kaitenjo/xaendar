@@ -21,6 +21,7 @@
       "@xaendar/core/signals": ["./packages/core/src/signals/index"],
       "@xaendar/core/testing": ["./packages/core/src/testing/index"],
       "@xaendar/compiler": ["./packages/compiler/src/public-api"],
+      "@xaendar/directives": ["./packages/directives/src/public-api"],
       "@xaendar/language-core": ["./packages/language-core/src/public-api"],
       "@xaendar/signals": ["./packages/signals/src/public-api"],
       "@xaendar/ssr": ["./packages/ssr/src/public-api"],

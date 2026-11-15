@@ -1,0 +1,9 @@
+.stage {
+  position: relative;
+}
+
+/* The element leaving is inert: taken out of the flow, it lets the new one take its place at once */
+.stage > [inert] {
+  position: absolute;
+  inset: 0;
+}

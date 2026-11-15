@@ -13,6 +13,7 @@
 @import lazy { ComponentsQueriesPage } from '../../pages/components/queries/queries.xd.component.ts'
 @import lazy { ComponentsRegistrationPage } from '../../pages/components/registration/registration.xd.component.ts'
 @import lazy { ComponentsStylingPage } from '../../pages/components/styling/styling.xd.component.ts'
+@import lazy { DirectivesAnimationsPage } from '../../pages/directives/animations/animations.xd.component.ts'
 @import lazy { DirectivesConditionalPage } from '../../pages/directives/conditional/conditional.xd.component.ts'
 @import lazy { DirectivesCustomPage } from '../../pages/directives/custom/custom.xd.component.ts'
 @import lazy { DirectivesOverviewPage } from '../../pages/directives/overview/overview.xd.component.ts'
@@ -112,6 +113,9 @@
   }
   @case ('components/styling') {
     <page-components-styling />
+  }
+  @case ('directives/animations') {
+    <page-directives-animations />
   }
   @case ('directives/conditional') {
     <page-directives-conditional />

@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
 import type { BlockConfig } from '../../types/if/block-config.type';
-import { CONTAINER_SLOTS, HEADER } from '../../costants';
+import { CONTAINER_SLOTS, HEADER, LEAVE_HANDLER } from '../../costants';
+import type { LeaveHandler } from '../../types/leave-handler.type';
 import type { _Context } from '../../types/context.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 
@@ -10,7 +11,7 @@ await vi.hoisted(async () => {
   loadSignals();
 });
 
-const { _scope, STRUCTURAL_LAYOUT, clear, ELEMENT_LAYOUT, mountNode, refresh, update } = await import('../context/context.util');
+const { _scope, STRUCTURAL_LAYOUT, clear, ELEMENT_LAYOUT, markLeavingScope, mountNode, refresh, update } = await import('../context/context.util');
 const { _if } = await import('./if.util');
 const { CREATE_NODES } = await import('../create-nodes/create-nodes.util');
 const { _SSR_MARKERS } = await import('../../costants');
@@ -375,5 +376,80 @@ describe('_if', () => {
     expect(condition.mock.calls.map(call => scopes.get(call[0]))).toEqual(['first', 'second', 'second', 'first']);
     expect(a.block.mock.calls.map(call => scopes.get(call[1]))).toEqual(['first', 'second']);
     expect(b.block.mock.calls.map(call => scopes.get(call[1]))).toEqual(['second', 'first']);
+  });
+});
+
+describe('_if with branches leaving', () => {
+  /**
+   * Registers on an element a handler whose exit settles once the test calls the function it pushes, and marks the
+   * scope tracking it, as `onLeave` does from a directive starting.
+   */
+  function leaveLater(element: Element, scope: Context, exits: Array<() => void>): void {
+    (element as Element & Record<typeof LEAVE_HANDLER, LeaveHandler>)[LEAVE_HANDLER] = () => new Promise<void>(resolve => exits.push(resolve));
+    markLeavingScope(scope);
+  }
+
+  it('inserts the branch selected at the anchor while the ones replaced leave, removing every copy once it has left', async () => {
+    const exits = new Array<() => void>();
+    const leaving = (label: string, condition: () => boolean) => ({
+      condition,
+      block: (parent: HTMLElement, parentContext: Context, reference: Node | null) => {
+        const context = _scope(parentContext, ELEMENT_LAYOUT);
+        const element = document.createElement('span');
+        element.textContent = label;
+        mountNode(element, parent, context, reference as Comment | null, HEADER);
+        leaveLater(element, context, exits);
+        return context;
+      }
+    });
+    const parent = document.createElement('div');
+    const selected = signal('a');
+    _if(parent, createRoot(), null, { branches: [leaving('a', () => selected() === 'a'), leaving('b', () => selected() === 'b')] });
+
+    selected.set('b');
+    await flush();
+    selected.set('a');
+    await flush();
+    selected.set('b');
+    await flush();
+
+    expect(text(parent)).toEqual(['a', 'b', 'a', 'b']);
+    expect(parent.lastChild?.textContent).toBe('if');
+    exits[1]();
+    await flush();
+    expect(text(parent)).toEqual(['a', 'a', 'b']);
+    exits[0]();
+    exits[2]();
+    await flush();
+    expect(text(parent)).toEqual(['b']);
+  });
+
+  it('lets the nodes of a branch rendered inline leave', async () => {
+    const exits = new Array<() => void>();
+    const layout: _ScopeLayout = { size: HEADER + 1 + CONTAINER_SLOTS, nodes: HEADER, containers: HEADER + 1 };
+    const inline = (label: string, condition: () => boolean) => ({
+      condition,
+      base: HEADER,
+      size: 1,
+      nodes: [0],
+      block: (parent: HTMLElement, context: Context, reference: Node | null) => {
+        const element = document.createElement('span');
+        element.textContent = label;
+        mountNode(element, parent, context, reference as Comment | null, 0);
+        leaveLater(element, context, exits);
+        return undefined;
+      }
+    });
+    const parent = document.createElement('div');
+    const selected = signal('a');
+    _if(parent, _scope(null, layout), null, { branches: [inline('a', () => selected() === 'a'), inline('b', () => selected() === 'b')] });
+
+    selected.set('b');
+    await flush();
+
+    expect(text(parent)).toEqual(['a', 'b']);
+    exits[0]();
+    await flush();
+    expect(text(parent)).toEqual(['b']);
   });
 });

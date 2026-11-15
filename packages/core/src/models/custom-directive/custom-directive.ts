@@ -7,6 +7,7 @@ import { _getComponentRuntime } from '../../utils/component-runtime/component-ru
 import type { _Context } from '../../types/context.type';
 import { _scope, addCleanup, EMPTY_LAYOUT, moveTo, removeCleanup } from '../../utils/context/context.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
+import { startDirective } from '../../utils/leave/leave.util';
 import type { CustomElement } from '../custom-element/custom-element';
 
 /**
@@ -98,7 +99,14 @@ export abstract class CustomDirective<T extends Element = Element> {
     const staging = this._context;
     this._context = context;
     moveTo(staging, context);
-    this.onInit?.();
+    // A handler `onInit` registers with `onLeave` marks the scope of the element
+    const previous = startDirective(context);
+    try {
+      this.onInit?.();
+    } finally {
+      startDirective(previous);
+    }
+
     _bindHost(this, this._element, context);
   }
 

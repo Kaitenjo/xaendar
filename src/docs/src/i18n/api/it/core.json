@@ -452,5 +452,19 @@
         "body": "<p>L’entry recupera i dati prima del render, che non aspetta una richiesta avviata da un componente, e li dà a <code>renderToString()</code>.</p>"
       }
     }
+  },
+  "onLeave": {
+    "summary": "Registra su un elemento la funzione che il runtime chiama quando sta per rimuoverlo, così che l’elemento possa uscire con un’animazione.",
+    "description": "<p>Quando un <code>@if</code>, uno <code>@switch</code>, un <code>@for</code> o una direttiva strutturale rimuove un blocco, un elemento al primo livello del blocco che ha registrato una funzione resta nel DOM finché la promessa restituita dalla funzione non si risolve, poi viene rimosso. Tutto il resto del blocco viene smaltito subito, le query smettono subito di trovare l’elemento, e il blocco va avanti come se non ci fosse: il nuovo ramo viene inserito al suo posto, le righe di un <code>@for</code> lo ignorano. Una seconda registrazione sullo stesso elemento sostituisce la prima.</p><p>Aspettano solo gli elementi al primo livello del blocco: quelli al loro interno, e i blocchi accanto, escono con loro, e un componente distrutto, o un blocco rimosso insieme a quello che lo contiene, rimuove subito i suoi elementi, compresi quelli in uscita, senza chiamare la funzione. Una funzione che non restituisce una promessa lascia uscire l’elemento subito; anche una che lancia un errore, o la cui promessa viene rifiutata, e l’errore viene segnalato come quello di un effect. L’elemento non aspetta mai più di 5 secondi. Sul server non fa niente, e l’hydration non cambia.</p><p>Chiamala mentre una direttiva si avvia, nel suo <code>onInit</code>, sull’elemento della direttiva: il runtime conosce allora il blocco dell’elemento, e solo i blocchi che contengono elementi così fanno lavoro in più quando vengono rimossi. Registrata altrove, da quel momento ogni blocco legge la funzione dei suoi elementi, il che è più lento, mai sbagliato. La direttiva <code>@@animation</code> di <code>@xaendar/directives</code> la usa per il suo <code>leave</code>: vedi <a href=\"#/it/directives/animations\">Animazioni</a>.</p>",
+    "members": {
+      "element": "<p>L’elemento, di solito <code>this.element</code> della direttiva.</p>",
+      "handler": "<p>La funzione, che riceve l’elemento: una promessa che si risolve quando l’elemento può essere rimosso, come il <code>finished</code> di una Web Animation, o niente per rimuoverlo subito.</p>"
+    },
+    "usage": {
+      "directive": {
+        "title": "In una direttiva",
+        "body": "<p>La direttiva registra l’uscita del suo elemento in <code>onInit</code>: l’altezza si riduce a zero, così gli elementi sotto risalgono senza scatti, poi l’elemento viene rimosso.</p>"
+      }
+    }
   }
 }

@@ -7,7 +7,7 @@ vi.mock('@xaendar/build-tools', () => ({
   buildLibrary: vi.fn()
 }));
 
-vi.mock('../plugins', () => ({
+vi.mock('../babel-plugin/babel-plugin.utils', () => ({
   createBabelPlugin: vi.fn(() => ({ name: 'babel' }))
 }));
 

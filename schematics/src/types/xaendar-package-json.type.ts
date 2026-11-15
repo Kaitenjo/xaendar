@@ -44,5 +44,11 @@ export type XaendarPackageJson = PackageJson & {
      * Defaults to `true`.
      */
     sourceMap?: boolean;
+    /**
+     * Whether the package is a Xaendar library of components and directives: it is built by the CLI (`xd build` of a
+     * workspace declaring it), which transpiles its decorators and writes its `xaendar-manifest.json`, so that the
+     * templates of the applications import it. `target` is not read then.
+     */
+    library?: boolean;
   };
 };

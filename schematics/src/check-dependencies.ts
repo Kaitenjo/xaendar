@@ -1,7 +1,9 @@
+import { parse } from '@babel/parser';
 import depcheck from 'depcheck';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { PackageJson } from 'type-fest';
+import { XaendarPackageJson } from './types/xaendar-package-json.type.js';
 
 /**
  * Default options passed to `depcheck` for every scanned package.
@@ -37,6 +39,26 @@ const deepCheckOptions = {
 };
 
 /**
+ * The options of `depcheck` for a Xaendar library (`xaendar.library`), whose classes are written with the decorators of
+ * the standard, `accessor` included, which the TypeScript parser of `depcheck` (`decorators-legacy`) rejects.
+ */
+const libraryCheckOptions = Object.assign({}, deepCheckOptions, {
+  parsers: {
+    '**/*.ts': parseDecoratedTypescript
+  }
+});
+
+/**
+ * Parses a TypeScript file written with the decorators of the standard, auto-accessors included.
+ *
+ * @param fileName - The path of the file.
+ * @returns The syntax tree.
+ */
+function parseDecoratedTypescript(fileName: string): ReturnType<typeof parse> {
+  return parse(readFileSync(fileName, 'utf-8'), { sourceType: 'module', plugins: ['typescript', 'decorators', 'decoratorAutoAccessors'] });
+}
+
+/**
  * Entry point. Iterates over every package in `../packages`, runs `depcheck`
  * on each one, and validates the following rules:
  *
@@ -61,7 +83,7 @@ async function checkDependencies(): Promise<void> {
   for (let i = 0; i < projectPaths.length; i++) {
     const projectPath = projectPaths[i];
     const packageJson = getPackageJson(projectPath);
-    const depCheckResult = await depcheck(projectPath, deepCheckOptions);
+    const depCheckResult = await depcheck(projectPath, (packageJson as XaendarPackageJson).xaendar?.library ? libraryCheckOptions : deepCheckOptions);
 
     // Rule 1 – invalid files
     const realAllInvalidFiles = Object.keys(depCheckResult.invalidFiles);

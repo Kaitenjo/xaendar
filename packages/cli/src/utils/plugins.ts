@@ -1,9 +1,8 @@
-import babel from '@rolldown/plugin-babel';
 import { xaendarPlugin, type XaendarPluginOptions } from '@xaendar/build-tools';
 import { resolve } from 'node:path';
 import type { PluginOption } from 'vite';
 import type { XaendarConfig } from '../types/xaendar-config.type';
-import { createBabelHelpersPlugin, importBabelHelpers } from './babel-helpers/babel-helpers.utils';
+import { createBabelPlugin } from './babel-plugin/babel-plugin.utils';
 import { readXaendarConfig, resolveSsrPaths } from './xaendar-config/xaendar-config.utils';
 
 /**
@@ -17,39 +16,6 @@ export function createPlugins(staticReport?: boolean): PluginOption[] {
   return [
     createBabelPlugin(),
     xaendarPlugin({ ...readPluginOptions(), staticReport })
-  ];
-}
-
-/**
- * Creates the Babel plugin transpiling the decorators, which the Xaendar plugin needs before it (the build of a library
- * adds the Xaendar plugin by itself), followed by the plugin giving the transpiled modules the helpers of the
- * decorators, which they import from a single module (see {@link importBabelHelpers}).
- *
- * @returns The plugins.
- */
-export function createBabelPlugin(): PluginOption {
-  return [
-    babel({
-      presets: [
-        {
-          preset: () => ({
-            plugins: [
-              [
-                '@babel/plugin-proposal-decorators',
-                { version: '2023-11' }
-              ],
-              importBabelHelpers
-            ]
-          }),
-          rolldown: {
-            filter: {
-              code: '@'
-            }
-          }
-        }
-      ]
-    }),
-    createBabelHelpersPlugin()
   ];
 }
 

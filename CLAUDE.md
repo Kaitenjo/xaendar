@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Xaendar is a framework for building Web Components declaratively, using a template language that extends HTML5. No virtual DOM, no component-level re-renders: the compiler turns each template into code creating its DOM nodes, and every binding of a node (element, attribute, or text node) becomes an effect on the exact signal(s) it reads at runtime, so a signal change updates only the nodes that read it. The variables of a template (the item of a `@for`, `$index`, a `@let`, the parameters of a `<template>`) are plain values, not signals: a scope whose variables change runs again only the bindings the compiler found reading them, and a binding reading no signal is no effect at all.
 
-This is a monorepo of the framework's own client libraries, published as separate `@xaendar/*` npm packages, all consumed under TS path aliases (`@xaendar/build-tools`, `@xaendar/common`, `@xaendar/core`, `@xaendar/compiler`, `@xaendar/language-core`, `@xaendar/signals`, `@xaendar/ssr`, `@xaendar/ssr-compiler`, `@xaendar/types`, plus the `@xaendar/core/signals`, `@xaendar/core/testing` and `@xaendar/ssr/dom` entry points) defined once in the root `tsconfig.json`. `vitest.config.ts` reuses that same `paths` map as its single source of truth for aliasing in tests — don't duplicate alias definitions elsewhere.
+This is a monorepo of the framework's own client libraries, published as separate `@xaendar/*` npm packages, all consumed under TS path aliases (`@xaendar/build-tools`, `@xaendar/common`, `@xaendar/core`, `@xaendar/compiler`, `@xaendar/directives`, `@xaendar/language-core`, `@xaendar/signals`, `@xaendar/ssr`, `@xaendar/ssr-compiler`, `@xaendar/types`, plus the `@xaendar/core/signals`, `@xaendar/core/testing` and `@xaendar/ssr/dom` entry points) defined once in the root `tsconfig.json`. `vitest.config.ts` reuses that same `paths` map as its single source of truth for aliasing in tests — don't duplicate alias definitions elsewhere.
 
 ## Commands
 
@@ -36,7 +36,7 @@ Package-level build/publish is driven from `schematics/` (its own TS project, bu
 npm run deploy   # full release pipeline: build schematics → check:extension-token → check:dependencies → test →
                   # typecheck:projects → update:version → build:projects → pack:projects → publish:projects →
                   # publish-extension → npm i
-npm run build:projects        # builds each package's dist/@xaendar/<name>: Vite for "xaendar.target" browser (packages/*/vite.config.ts + root vite-config.ts), tsup for node
+npm run build:projects        # builds each package's dist/@xaendar/<name>: Vite for "xaendar.target" browser (packages/*/vite.config.ts + root vite-config.ts), tsup for node, `xd build` of the CLI for "xaendar.library" (a Xaendar library with its manifest: @xaendar/directives)
 npm run typecheck:projects    # typechecks each package via its tsconfig.typecheck.json
 npm run check:dependencies    # depcheck across packages
 ```
@@ -53,6 +53,7 @@ Dependency edges below are the actual `@xaendar/*` entries in each package's `pa
 
 ```
 types ────┬──►  signals  ──►  core  ··peer··►  ssr
+          │                      ··peer··►  directives
           │
 common ───┼──►  compiler  ──►  language-core  ──►  language-server
           │       │    │             │

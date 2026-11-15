@@ -4,7 +4,7 @@ import { _bindSite } from '../../signals/effect/effect';
 import type { IterationVariable } from '../../types/iteration-variable.type';
 import type { IterationVariables } from '../../types/iteration-variables.type';
 import type { _Context } from '../../types/context.type';
-import { blockAnchor, blockParent, clear, containerSlot, forEachChild, forEachInline, getNodeStrategy, nodesEnd, refresh, update } from '../context/context.util';
+import { blockAnchor, blockParent, clear, containerSlot, forEachChild, forEachInline, getNodeStrategy, isLeaving, nextStaying, nodesEnd, refresh, update } from '../context/context.util';
 import type { ForConfig } from '../../types/for-config.type';
 import type { InlineBranch } from '../../types/inline-branch.type';
 import type { NodeBlock } from '../../types/node-block.type';
@@ -150,6 +150,9 @@ function renderItems(context: _Context, config: ForConfig, container: number, it
  * refreshes the bindings reading them, and their nodes moved, read once refreshed, since a block at the top of the body
  * may render other nodes. The rows of the keys gone are destroyed first, the ones of the new keys created.
  *
+ * The nodes of a row destroyed registered with `onLeave` stay in the DOM while they leave, but no longer count: the rows
+ * kept are placed, and the new ones inserted, as if they were gone. A key coming back meanwhile gets a new row.
+ *
  * A key repeated in the items has a row per occurrence: the n-th occurrence of a key reuses the row of its n-th
  * occurrence in the previous run, and the occurrences beyond its new count are destroyed.
  *
@@ -178,7 +181,7 @@ function updateItems(parentContext: _Context, config: ForConfig, container: numb
       return;
     }
 
-    clear(parentContext[container + CONTENT] as _Context);
+    clear(parentContext[container + CONTENT] as _Context, true, parentContext);
   }
 
   const oldRows = shownKeys ? parentContext[container + CONTENT] as _Context[] : NO_ROWS;
@@ -194,7 +197,7 @@ function updateItems(parentContext: _Context, config: ForConfig, container: numb
     const key = oldKeys[i];
     const occurrence = oldOccurrences.indexes[i];
     if (occurrence >= (occurrences.counts.get(key) ?? 0)) {
-      clear(oldRows[i]);
+      clear(oldRows[i], true, parentContext);
     } else if (occurrence === 0) {
       firsts.set(key, oldRows[i]);
     } else {
@@ -226,7 +229,8 @@ function updateItems(parentContext: _Context, config: ForConfig, container: numb
       }
 
       findItemBounds(parentNode, existing);
-      if (lastNode && lastNode.nextSibling !== nextReference) {
+      // The rows leaving (see `onLeave`) are no longer part of the @for: a row followed by them is in place
+      if (lastNode && nextStaying(lastNode.nextSibling) !== nextReference) {
         moveItem(parentNode, firstNode!, lastNode, nextReference);
       }
 
@@ -341,7 +345,8 @@ function widenBounds(node: Node | null | undefined): void {
 
 /**
  * Moves the nodes of an item, from its first to its last one, before a node, keeping their order: from the last one
- * back, each one before the one moved after it.
+ * back, each one before the one moved after it. A node leaving the DOM between them (see `onLeave`), which belonged to a
+ * block of the item, is no longer part of it: it stays where it is.
  *
  * moveBefore keeps the nodes in the document: the components of the row are not disconnected, so they keep their
  * render, their state and their effects. insertBefore would destroy and render them again.
@@ -358,8 +363,10 @@ function moveItem(parentNode: Element, first: Node, last: Node, reference: Node 
   while (node !== first) {
     const moved: Node = previous!;
     previous = moved.previousSibling;
-    parentNode.moveBefore(moved, node);
-    node = moved;
+    if (!isLeaving(moved)) {
+      parentNode.moveBefore(moved, node);
+      node = moved;
+    }
   }
 }
 

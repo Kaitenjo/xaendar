@@ -1,0 +1,75 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
+@import { AnimatedListComponent } from '../../../examples/directives/animations/animated-list/animated-list.xd.component.ts'
+@import { AnimatedPanelComponent } from '../../../examples/directives/animations/animated-panel/animated-panel.xd.component.ts'
+@import { LEAVE_HANDLER_DIRECTIVE } from './animations.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.directives.animations.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.directives.animations.title') }
+</h1>
+<p @@htmlTranslation(key="pages.directives.animations.lead") class="lead" />
+<docs-code snippet="directives/animations-install.sh" />
+
+<h2>
+  { t(translations(), 'pages.directives.animations.classes.title') }
+</h2>
+<docs-example name="directives/animations/animated-list"
+  heading="{translations().pages.directives.animations.classes.example1}">
+  <ex-animated-list />
+</docs-example>
+<p @@htmlTranslation(key="pages.directives.animations.classes.p1") />
+<p @@htmlTranslation(key="pages.directives.animations.classes.p2") />
+<docs-code snippet="directives/animations-classes.css" />
+<p @@htmlTranslation(key="pages.directives.animations.classes.p3") />
+
+<h2>
+  { t(translations(), 'pages.directives.animations.functions.title') }
+</h2>
+<docs-example name="directives/animations/animated-panel"
+  heading="{translations().pages.directives.animations.functions.example1}">
+  <ex-animated-panel />
+</docs-example>
+<p @@htmlTranslation(key="pages.directives.animations.functions.p1") />
+<p @@htmlTranslation(key="pages.directives.animations.functions.p2") />
+
+<h2>
+  { t(translations(), 'pages.directives.animations.leaving.title') }
+</h2>
+<p @@htmlTranslation(key="pages.directives.animations.leaving.p1") />
+<ul>
+  <li @@htmlTranslation(key="pages.directives.animations.leaving.li1") />
+  <li @@htmlTranslation(key="pages.directives.animations.leaving.li2") />
+  <li @@htmlTranslation(key="pages.directives.animations.leaving.li3") />
+  <li @@htmlTranslation(key="pages.directives.animations.leaving.li4") />
+</ul>
+<p @@htmlTranslation(key="pages.directives.animations.leaving.p2") />
+<docs-code snippet="{LEAVE_HANDLER_DIRECTIVE}" />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.directives.animations.edgeCases.title') }
+  </h2>
+  <docs-callout kind="edge">
+    <docs-callout-item heading="{translations().pages.directives.animations.edgeCases.callout1.heading}">
+      <p @@htmlTranslation(key="pages.directives.animations.edgeCases.callout1.p1") />
+      <docs-code snippet="directives/animations-layout.css" />
+    </docs-callout-item>
+    <docs-callout-item heading="{translations().pages.directives.animations.edgeCases.callout2.heading}">
+      <p @@htmlTranslation(key="pages.directives.animations.edgeCases.callout2.p1") />
+    </docs-callout-item>
+    <docs-callout-item heading="{translations().pages.directives.animations.edgeCases.callout3.heading}">
+      <p @@htmlTranslation(key="pages.directives.animations.edgeCases.callout3.p1") />
+    </docs-callout-item>
+    <docs-callout-item heading="{translations().pages.directives.animations.edgeCases.callout4.heading}">
+      <p @@htmlTranslation(key="pages.directives.animations.edgeCases.callout4.p1") />
+    </docs-callout-item>
+  </docs-callout>
+</section>

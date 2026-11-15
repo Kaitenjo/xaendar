@@ -68,6 +68,11 @@ export const DIRECTIVE_CONNECT = Symbol('DirectiveConnect');
  */
 export const DIRECTIVE_DISCONNECT = Symbol('DirectiveDisconnect');
 /**
+ * Key of the function an element registered with `onLeave` holds, called when the runtime is about to remove the element
+ * (see `LeaveHandler`): a single read tells whether the element waits before leaving.
+ */
+export const LEAVE_HANDLER = Symbol('LeaveHandler');
+/**
  * Key of the internal list of callbacks a `CustomElement` invokes each time it is connected, right after the render.
  */
 export const CONNECTED_HOOKS = Symbol('ConnectedHooks');

@@ -34,7 +34,7 @@ export class Version {
    * new Version('1.4');   // major=1, minor=4, patch=0
    */
   constructor(version: string) {
-    const [major, minor, patch] = version.split('.').map(Number);
+    const [major, minor, patch] = version.replace('~', '').split('.').map(Number);
     if (major !== undefined) {
       this.major = major;
       this.minor = minor ?? 0;
@@ -98,7 +98,8 @@ function updateVersion(bump: 'major' | 'minor' | 'patch'): void {
   }
 
   const nextVersion = version.toString();
-  console.log(`Root package: ${previousVersion} → ${nextVersion}`);
+  const packageJsonNextVersion = `~${nextVersion}`;
+  console.log(`Root package: ${previousVersion} → ${packageJsonNextVersion}`);
 
   writeFileSync(mainPackageJsonPath, JSON.stringify({ ...mainPackageJson, version: nextVersion }, null, 2));
   console.log(`✅ Written: ${mainPackageJsonPath}`);
@@ -115,7 +116,10 @@ function updateVersion(bump: 'major' | 'minor' | 'patch'): void {
     if (packageJson.dependencies) {
       for (const depName in packageJson.dependencies) {
         if (depName.startsWith('@xaendar')) {
-          packageJson.dependencies[depName] = nextVersion;
+          const currentVersion = new Version(packageJson.dependencies[depName]!);
+          if (currentVersion.minor < version.minor) {
+            packageJson.dependencies[depName] = packageJsonNextVersion;
+          }
         }
       }
     }
@@ -124,7 +128,7 @@ function updateVersion(bump: 'major' | 'minor' | 'patch'): void {
     if (packageJson.peerDependencies) {
       for (const depName in packageJson.peerDependencies) {
         if (depName.startsWith('@xaendar')) {
-          packageJson.peerDependencies[depName] = nextVersion;
+          packageJson.peerDependencies[depName] = packageJsonNextVersion;
         }
       }
     }

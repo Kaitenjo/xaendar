@@ -197,7 +197,8 @@ export const NAV: readonly NavSection[] = [
         page('directives/overview', 'Directive selector registry'),
         page('directives/custom', 'CustomDirective attribute directive @@'),
         page('directives/structural', 'StructuralDirective shouldRender async *'),
-        page('directives/conditional', 'conditional directive if switch')
+        page('directives/conditional', 'conditional directive if switch'),
+        page('directives/animations', 'animation animate enter leave transition keyframes onLeave fade inert reduced motion')
       ]),
       group('patterns', [
         page('patterns/forms', 'form input checkbox select validation two-way'),

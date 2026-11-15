@@ -7,7 +7,8 @@ import { CustomElement } from '../../models/custom-element/custom-element';
 import { effect } from '../../signals/effect/effect';
 import type { QuerySignal } from '../../signals/types/query-signal.type';
 import { _addAppliedDirective } from '../../utils/applied-directives/applied-directives.util';
-import { EMPTY_LAYOUT, _scope } from '../../utils/context/context.util';
+import { HEADER, LEAVE_HANDLER } from '../../costants';
+import { EMPTY_LAYOUT, _scope, clear, markLeavingScope, trackNode } from '../../utils/context/context.util';
 import type { _Context } from '../../types/context.type';
 import { _setElementRef } from '../../utils/element-refs/element-refs.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
@@ -905,5 +906,73 @@ describe('Query.contentTemplate decorator', () => {
 
     _setContentTemplates(element, context, [{ name: 'row', template }]);
     expect(signal()).toEqual({ template, context });
+  });
+});
+
+describe('elements leaving', () => {
+  /**
+   * Makes elements at the top of a scope leave, as a block replacing them does, with an exit never settling: returns the
+   * scope holding the block, which removes them once cleared.
+   */
+  function leave(parentNode: Node, elements: Element[]): _Context {
+    const holder = _scope(null, EMPTY_LAYOUT);
+    const scope = _scope(null, { size: HEADER + elements.length, nodes: HEADER });
+    for (let i = 0; i < elements.length; i++) {
+      trackNode(elements[i], parentNode, scope, HEADER + i);
+      (elements[i] as Element & Record<typeof LEAVE_HANDLER, () => Promise<void>>)[LEAVE_HANDLER] = () => new Promise<void>(() => undefined);
+    }
+
+    markLeavingScope(scope);
+    clear(scope, true, holder);
+    return holder;
+  }
+
+  it('stop finding at once the elements leaving and the ones inside them, while they are still in the Shadow DOM', async () => {
+    const element = create();
+    const first = query(element, '[item]');
+    const all = queryAll(element, '[item]');
+    const directive = query(element, Tooltip);
+    const only = query(element, '[only]');
+    document.body.appendChild(element);
+    const leaving = item();
+    leaving.setAttribute('only', '');
+    const nested = leaving.appendChild(item());
+    const inner = withTooltip();
+    leaving.appendChild(inner.element);
+    const staying = item();
+    const other = withTooltip();
+    element.shadowRoot!.append(leaving, staying, other.element);
+    await flush();
+    expect(first()).toBe(leaving);
+    expect(all()).toEqual([leaving, nested, staying]);
+    expect(directive()).toBe(inner.tooltip);
+    expect(only()).toBe(leaving);
+
+    const holder = leave(element.shadowRoot!, [leaving]);
+    await flush();
+
+    expect(leaving.parentNode).toBe(element.shadowRoot);
+    expect(first()).toBe(staying);
+    expect(all()).toEqual([staying]);
+    expect(directive()).toBe(other.tooltip);
+    expect(only()).toBeNull();
+    clear(holder);
+  });
+
+  it('stop finding at once the elements of the content leaving', async () => {
+    const element = create();
+    const content = queryContentAll(element, '[item]');
+    const leaving = item();
+    const staying = item();
+    element.append(leaving, staying);
+    document.body.appendChild(element);
+    await flush();
+    expect(content()).toEqual([leaving, staying]);
+
+    const holder = leave(element, [leaving]);
+    await flush();
+
+    expect(content()).toEqual([staying]);
+    clear(holder);
   });
 });

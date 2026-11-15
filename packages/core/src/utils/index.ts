@@ -23,6 +23,7 @@ export { _toPropertyName } from './input-names/input-names.util';
 export * from './if/if.util';
 export { _isKey } from './key-event/key-event.util';
 export * from './let/let.util';
+export { onLeave } from './on-leave/on-leave.util';
 export * from './render-element/render-element.util';
 export * from './render-registry/render-registry.util';
 export type * from '../types/render-definition.type';
