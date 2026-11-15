@@ -276,12 +276,24 @@
   }
 }
 
-/* On narrow screens the pages cover the entries, closed by their button. */
-@media (max-width: 600px) {
+/*
+  In the drawer of narrow screens the pages cover the entries, closed by their button: on the right of the drawer
+  they would stay visible once it is closed, since it slides away by its own width only.
+*/
+@media (max-width: 900px) {
   .column--pages {
     left: 0;
+    z-index: 1;
     width: 100%;
     border-right: 0;
     box-shadow: none;
+    transition: transform 0.15s ease-in-out, opacity 0.15s ease-in-out;
+
+    &.fade-in,
+    &.fade-out {
+      left: 0;
+      opacity: 0;
+      transform: translateX(-12px);
+    }
   }
 }
