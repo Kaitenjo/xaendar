@@ -256,7 +256,7 @@ function values<Obj extends object, Key extends keyof Obj, Value extends Obj[Key
       name: 'MODEL_CHANGE_SUFFIX',
       kind: 'constant',
       signature: 'const MODEL_CHANGE_SUFFIX: \'Change\'',
-      guides: ['components/outputs']
+      guides: ['components/two-way-binding']
     },
     {
       name: 'toModelChangeEvent',
@@ -264,7 +264,7 @@ function values<Obj extends object, Key extends keyof Obj, Value extends Obj[Key
       signature: 'function toModelChangeEvent(name: string): string',
       members: [{ name: 'name', group: 'parameters', signature: 'name: string' }],
       usage: [{ key: 'converting' }],
-      guides: ['components/outputs']
+      guides: ['components/two-way-binding']
     },
     {
       name: 'toModelName',
@@ -272,7 +272,7 @@ function values<Obj extends object, Key extends keyof Obj, Value extends Obj[Key
       signature: 'function toModelName(event: string): string | undefined',
       members: [{ name: 'event', group: 'parameters', signature: 'event: string' }],
       usage: [{ key: 'converting' }],
-      guides: ['components/outputs']
+      guides: ['components/two-way-binding']
     },
     {
       name: 'parseKeyEvent',

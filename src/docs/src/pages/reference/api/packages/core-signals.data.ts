@@ -1,6 +1,6 @@
 import type { ApiPackage } from '../api.data';
 import { PROPERTY_OPTIONS, PROPERTY_TYPE, READ_ONLY_INPUT, TRANSFORM_TYPE } from '../../../components/inputs/inputs.snippets';
-import { MODEL_DECLARATION } from '../../../components/outputs/outputs.snippets';
+import { MODEL_DECLARATION } from '../../../components/two-way-binding/two-way-binding.snippets';
 import { QUERY_DECORATORS, QUERY_REQUIRED } from '../../../components/queries/queries.snippets';
 import { COMPUTED_EQUALS, COMPUTED_MEMBER, EFFECT_BATCHING, EFFECT_CLEANUP, EFFECT_COMPONENT, INPUT_LOCAL_COPY, MODEL_WRITE, QUERY_CONTENT_DESCENDANTS, QUERY_ELEMENT, QUERY_SIGNAL_READ, QUERY_TARGET_NATIVE, SIGNAL_COMPONENT, SIGNAL_EQUALS, SIGNAL_IDENTITY, SIGNAL_WATCHED, UNTRACKED_CALL, UNTRACKED_READ } from './core-signals.snippets';
 import { QUERY_READ } from './core.snippets';
@@ -235,7 +235,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
         { key: 'binding', snippets: ['components/two-way-binding.html'] },
         { key: 'instead', snippets: [MODEL_WRITE] }
       ],
-      guides: ['components/outputs', 'components/inputs']
+      guides: ['components/two-way-binding', 'components/inputs']
     },
     {
       name: 'QuerySignal',

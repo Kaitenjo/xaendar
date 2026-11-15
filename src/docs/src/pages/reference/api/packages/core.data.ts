@@ -4,7 +4,8 @@ import { CREATE_COMPONENT, CREATE_COMPONENT_CONTENT } from '../../../components/
 import { MANUAL_SUBCLASS } from '../../../components/inheritance/inheritance.snippets';
 import { PROPERTY_OPTIONS, PROPERTY_TYPE, READ_ONLY_INPUT, TRANSFORM_TYPE } from '../../../components/inputs/inputs.snippets';
 import { CONNECTED_CALLBACK, LIFECYCLE_HOOKS } from '../../../components/lifecycle/lifecycle.snippets';
-import { EVENT_DECLARATION, MEMBER_NAME_CLASH, MODEL_DECLARATION } from '../../../components/outputs/outputs.snippets';
+import { EVENT_DECLARATION, MEMBER_NAME_CLASH } from '../../../components/outputs/outputs.snippets';
+import { MODEL_DECLARATION } from '../../../components/two-way-binding/two-way-binding.snippets';
 import { QUERY_DECORATORS, QUERY_REQUIRED } from '../../../components/queries/queries.snippets';
 import { LEAVE_HANDLER_DIRECTIVE } from '../../../directives/animations/animations.snippets';
 import { CONSTRUCTOR_ACCESS, HOST_DIRECTIVE } from '../../../directives/custom/custom.snippets';
@@ -181,7 +182,7 @@ export const CORE_API: ApiPackage = {
         { key: 'outside', snippets: [MODEL_CREATE_COMPONENT] },
         { key: 'errors', snippets: ['components/two-way-binding-errors.txt'] }
       ],
-      guides: ['components/outputs', 'components/inputs', 'directives/custom', 'components/dynamic-creation']
+      guides: ['components/two-way-binding', 'components/inputs', 'directives/custom', 'components/dynamic-creation']
     },
     {
       name: 'Event',
