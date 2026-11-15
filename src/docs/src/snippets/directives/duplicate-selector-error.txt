@@ -1,9 +1,13 @@
 // tint.directive.ts
-@Directive({ selector: 'exTint' })
+@Directive({
+  selector: 'exTint'
+})
 export class TintDirective extends CustomDirective {}
 
 // other-tint.directive.ts
-@Directive({ selector: 'exTint' })
+@Directive({
+  selector: 'exTint'
+})
 export class OtherTintDirective extends CustomDirective {}
 
 // While compiling a template importing one of them, once the other one is known

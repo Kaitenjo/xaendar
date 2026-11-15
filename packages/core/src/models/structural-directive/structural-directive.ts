@@ -11,7 +11,9 @@
  *
  * @example
  * ```ts
- * \@Directive({ selector: 'hasRole' })
+ * \@Directive({
+ *   selector: 'hasRole'
+ *  })
  * class HasRoleDirective extends StructuralDirective {
  *   \@Property.required()
  *   public accessor role!: InputSignal<string>;

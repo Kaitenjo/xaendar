@@ -4,7 +4,7 @@
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
-  "description": "The built-in directives of Xaendar: the animations of the elements entering and leaving",
+  "description": "The built-in directives of Xaendar: the animations of the elements entering and leaving, and the rendering of HTML sanitized",
   "xaendar": {
     "target": "browser",
     "library": true

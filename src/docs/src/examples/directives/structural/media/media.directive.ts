@@ -29,7 +29,9 @@ function matches(query: string): Signal<boolean> {
 /**
  * Renders the element while a media query matches.
  */
-@Directive({ selector: 'exMedia' })
+@Directive({ 
+  selector: 'exMedia' 
+})
 export class MediaDirective extends StructuralDirective {
   /**
    * The media query.

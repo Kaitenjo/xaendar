@@ -5,7 +5,9 @@ import { canSeeAdminPanel } from './permissions';
 /**
  * Renders the element when the server allows the user.
  */
-@Directive({ selector: 'exAllowedUser' })
+@Directive({ 
+  selector: 'exAllowedUser' 
+})
 export class AllowedUserDirective extends StructuralDirective {
   /**
    * The user to check.

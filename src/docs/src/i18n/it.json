@@ -1183,7 +1183,7 @@
           "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
-          "td1": "<a href=\"#/it/reference/api/core/Directive\"><code>@Directive({ selector: 'nome' })</code></a>",
+          "td1": "<a href=\"#/it/reference/api/core/Directive\"><code>@Directive({\n  selector: 'nome'\n})</code></a>",
           "td2": "Registra la classe con il selettore.",
           "td3": "Classe base delle direttive che agiscono su un elemento di tipo <code>T</code>.",
           "td4": "Classe base delle direttive che decidono se un elemento viene renderizzato.",

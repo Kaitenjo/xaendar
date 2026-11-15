@@ -82,7 +82,9 @@ public onDestroy(): void {
 - `value` and `checked` bindings are only the initial state. To write a field from the state (reset, formatting), use a directive writing the property:
 
 ```ts
-@Directive({ selector: 'appBindValue' })
+@Directive({ 
+  selector: 'appBindValue' 
+})
 export class BindValueDirective extends CustomDirective<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> {
   @Property('')
   public accessor value!: InputSignal<string>;
@@ -148,17 +150,27 @@ export function navigate(target: string): void {
 
 ## Rendering HTML
 
-Interpolations always create text nodes. To render markup, a directive writes `innerHTML` from an effect, on an empty element; sanitize or escape HTML you do not control.
+Interpolations always create text nodes. To render markup, apply `@@innerHtml` of `@xaendar/directives` to an empty element: it sanitizes the HTML (configurable with `options`, replaceable with `sanitizer`, skipped for `trustHtml(html)`) and writes it on the server too (see references/api.md).
+
+```html
+@import { InnerHtmlDirective } from '@xaendar/directives'
+
+<article @@innerHtml(html="{post().body}") />
+```
+
+A directive of the application writing `innerHTML` itself, for a behavior `@@innerHtml` lacks, writes it from an effect, on an empty element, and sanitizes it with `sanitizeHtml` unless the application controls the HTML:
 
 ```ts
-@Directive({ selector: 'appInnerHtml' })
-export class InnerHtmlDirective extends CustomDirective<HTMLElement> {
+@Directive({ 
+  selector: 'appInnerHtml' 
+})
+export class AppHtmlDirective extends CustomDirective<HTMLElement> {
   @Property('')
   public accessor html!: InputSignal<string>;
 
   public onInit(): void {
     this.effect(() => {
-      this.element.innerHTML = this.html();
+      this.element.innerHTML = sanitizeHtml(this.html());
     });
   }
 }

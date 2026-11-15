@@ -35,7 +35,9 @@ let nextInstance = 1;
 /**
  * Traces its own lifecycle, and the values of its input.
  */
-@Directive({ selector: 'exTraced' })
+@Directive({ 
+  selector: 'exTraced' 
+})
 export class TracedDirective extends CustomDirective<HTMLElement> {
   /**
    * A label, shown as the background color of the element.

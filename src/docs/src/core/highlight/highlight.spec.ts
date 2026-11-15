@@ -31,25 +31,94 @@ describe('highlight', () => {
 
   it('highlights TypeScript', () => {
     expect(tokens(highlight(`@Property() public accessor n = signal<number>(1); // x\nconst s = 'a';\nthis.items.update(x => x);`, 'ts'))).toEqual([
-      'dec:@Property', 'kw:public', 'kw:accessor', 'kw:number', 'num:1', 'com:// x', 'kw:const', 'str:\'a\'', 'kw:this', 'fn:update'
+      'dec:@Property', 'br1:(', 'br1:)', 'kw:public', 'kw:accessor', 'var:n', 'op:=', 'fn:signal', 'br1:<', 'prim:number', 'br1:>', 'br1:(',
+      'num:1', 'br1:)', 'com:// x', 'kw:const', 'const:s', 'op:=', 'str:\'a\'', 'kw:this', 'member:items', 'fn:update', 'br1:(', 'param:x',
+      'op:=>', 'var:x', 'br1:)'
     ]);
   });
 
   it('highlights calls, types and keywords used as property names', () => {
-    expect(tokens(highlight('new Foo().default.run()', 'ts'))).toEqual(['kw:new', 'fn:Foo', 'fn:run']);
+    expect(tokens(highlight('new Foo().default.run()', 'ts'))).toEqual(['kw:new', 'type:Foo', 'br1:(', 'br1:)', 'member:default', 'fn:run', 'br1:(', 'br1:)']);
+  });
+
+  it('tells parameters, constants, primitive types and types apart, as VS Code does', () => {
+    const code = `import { load } from 'x';\nconst { render } = await import('y');\nexport function page(url: string): Promise<string> {\n  return render(App);\n}`;
+    expect(tokens(highlight(code, 'ts'))).toEqual([
+      'kw:import', 'br1:{', 'var:load', 'br1:}', 'kw:from', 'str:\'x\'', 'kw:const', 'br1:{', 'const:render', 'br1:}', 'op:=', 'kw:await',
+      'kw:import', 'br1:(', 'str:\'y\'', 'br1:)', 'kw:export', 'kw:function', 'fn:page', 'br1:(', 'param:url', 'op::', 'prim:string', 'br1:)',
+      'op::', 'type:Promise', 'br1:<', 'prim:string', 'br1:>', 'br1:{', 'kw:return', 'fn:render', 'br2:(', 'var:App', 'br2:)', 'br1:}'
+    ]);
+  });
+
+  it('highlights the members, the parameters and the types of a class', () => {
+    const code = `class A<T> extends B implements C {\n  public readonly count = signal(0);\n  public value?: Map<string, T[]>;\n  constructor(private store: Store, name = 'x') {}\n  public get label(): void {}\n}`;
+    expect(tokens(highlight(code, 'ts')).filter(item => !item.startsWith('br'))).toEqual([
+      'kw:class', 'type:A', 'type:T', 'kw:extends', 'type:B', 'kw:implements', 'type:C', 'kw:public', 'kw:readonly', 'field:count', 'op:=',
+      'fn:signal', 'num:0', 'kw:public', 'field:value', 'op:?', 'op::', 'type:Map', 'prim:string', 'type:T', 'kw:constructor', 'kw:private',
+      'param:store', 'op::', 'type:Store', 'param:name', 'op:=', 'str:\'x\'', 'kw:public', 'kw:get', 'fn:label', 'op::', 'prim:void'
+    ]);
+  });
+
+  it('tells the declaration of a field, the key of an object and the access to a property apart', () => {
+    const code = 'class A {\n  private readonly _tip = document.body;\n  public show(): void {\n    this._tip.style.left = { top: box.top };\n  }\n}';
+    expect(tokens(highlight(code, 'ts')).filter(item => /^(field|key|member):/.test(item))).toEqual([
+      'field:_tip', 'member:body', 'member:_tip', 'member:style', 'member:left', 'key:top', 'member:top'
+    ]);
+  });
+
+  it('highlights interfaces, type aliases and the types following as', () => {
+    const code = `interface P<T = string> extends Q { a: number; b?(x: T): void; c: keyof typeof obj }\ntype F = (v: string) => boolean;\nconst z = y as unknown as Z;`;
+    expect(tokens(highlight(code, 'ts')).filter(item => !item.startsWith('br'))).toEqual([
+      'kw:interface', 'type:P', 'type:T', 'op:=', 'prim:string', 'kw:extends', 'type:Q', 'field:a', 'op::', 'prim:number', 'fn:b', 'op:?',
+      'param:x', 'op::', 'type:T', 'op::', 'prim:void', 'field:c', 'op::', 'kw:keyof', 'kw:typeof', 'var:obj', 'kw:type', 'type:F', 'op:=',
+      'param:v', 'op::', 'prim:string', 'op:=>', 'prim:boolean', 'kw:const', 'const:z', 'op:=', 'var:y', 'kw:as', 'prim:unknown', 'kw:as', 'type:Z'
+    ]);
+  });
+
+  it('highlights destructured parameters, arrow functions and type predicates', () => {
+    const code = `const add = ({ a, b: c }: P, ...rest: number[]): number => a;\nfunction is(value: unknown): value is R {}`;
+    expect(tokens(highlight(code, 'ts')).filter(item => !item.startsWith('br'))).toEqual([
+      'kw:const', 'fn:add', 'op:=', 'param:a', 'key:b', 'param:c', 'op::', 'type:P', 'op:...', 'param:rest', 'op::', 'prim:number', 'op::',
+      'prim:number', 'op:=>', 'var:a', 'kw:function', 'fn:is', 'param:value', 'op::', 'prim:unknown', 'op::', 'param:value', 'kw:is', 'type:R'
+    ]);
+  });
+
+  it('draws the colon of an object literal as plain punctuation, and a ternary one as an operator', () => {
+    expect(tokens(highlight('const o = { kind: a ? b : c, run() {} };', 'ts')).filter(item => !item.startsWith('br'))).toEqual([
+      'kw:const', 'const:o', 'op:=', 'key:kind', 'var:a', 'op:?', 'var:b', 'op::', 'var:c', 'fn:run'
+    ]);
+  });
+
+  it('colors the brackets by their depth', () => {
+    expect(tokens(highlight('f([{ a: (1) }])', 'ts')).filter(item => item.startsWith('br'))).toEqual([
+      'br1:(', 'br2:[', 'br3:{', 'br1:(', 'br1:)', 'br3:}', 'br2:]', 'br1:)'
+    ]);
+  });
+
+  it('highlights the expressions of template literals, regular expressions and comparisons', () => {
+    expect(tokens(highlight('const t = `a ${x + 1} b`; const r = /[<>]/g; i<n;', 'ts'))).toEqual([
+      'kw:const', 'const:t', 'op:=', 'str:`a ', 'kw:${', 'var:x', 'op:+', 'num:1', 'kw:}', 'str: b`', 'kw:const', 'const:r', 'op:=',
+      'str:/[<>]/g', 'var:i', 'op:<', 'var:n'
+    ]);
+  });
+
+  it('highlights the tags of JSDoc comments and the names of the parameters', () => {
+    expect(tokens(highlight('/**\n * Text.\n *\n * @param name - The name.\n * @returns The @value.\n */', 'ts'))).toEqual([
+      'com:/**\n * Text.\n *\n * ', 'kw:@param', 'com: ', 'var:name', 'com: - The name.\n * ', 'kw:@returns', 'com: The @value.\n */'
+    ]);
   });
 
   it('highlights the template syntax', () => {
     expect(tokens(highlight(`<b class="x" title="{ tip() }" (click)="go($event)" @@tip(text="a") *when(ok="{ok}") disabled />`, 'html'))).toEqual([
-      'punc:<', 'tag:b', 'attr:class', 'punc:=', 'str:"x"', 'attr:title', 'punc:=', 'punc:"', 'interp:{', 'fn:tip', 'interp:}', 'punc:"',
-      'evt:(click)', 'punc:=', 'punc:"', 'fn:go', 'punc:"', 'dir:@@tip', 'punc:(', 'attr:text', 'punc:=', 'str:"a"', 'punc:)',
-      'dir:*when', 'punc:(', 'attr:ok', 'punc:=', 'punc:"', 'interp:{', 'interp:}', 'punc:"', 'punc:)', 'attr:disabled', 'punc:/>'
+      'punc:<', 'tag:b', 'attr:class', 'punc:=', 'str:"x"', 'attr:title', 'punc:=', 'punc:"', 'interp:{', 'fn:tip', 'br1:(', 'br1:)', 'interp:}', 'punc:"',
+      'evt:(click)', 'punc:=', 'punc:"', 'fn:go', 'br1:(', 'var:$event', 'br1:)', 'punc:"', 'dir:@@tip', 'punc:(', 'attr:text', 'punc:=', 'str:"a"',
+      'punc:)', 'dir:*when', 'punc:(', 'attr:ok', 'punc:=', 'punc:"', 'interp:{', 'var:ok', 'interp:}', 'punc:"', 'punc:)', 'attr:disabled', 'punc:/>'
     ]);
   });
 
   it('highlights control flow and interpolations', () => {
     expect(tokens(highlight(`@if (ready()) {\n<i>{ label }</i>\n} @else {\n}`, 'html'))).toEqual([
-      'ctl:@if', 'punc:(', 'fn:ready', 'punc:)', 'punc:{', 'punc:<', 'tag:i', 'punc:>', 'interp:{', 'interp:}', 'punc:</', 'tag:i', 'punc:>',
+      'ctl:@if', 'punc:(', 'fn:ready', 'br1:(', 'br1:)', 'punc:)', 'punc:{', 'punc:<', 'tag:i', 'punc:>', 'interp:{', 'var:label', 'interp:}', 'punc:</', 'tag:i', 'punc:>',
       'punc:}', 'ctl:@else', 'punc:{', 'punc:}'
     ]);
   });
@@ -59,24 +128,24 @@ describe('highlight', () => {
   });
 
   it('highlights a @hydrate like the other blocks', () => {
-    expect(tokens(highlight('@hydrate (idle) {\n}', 'html'))).toEqual(['ctl:@hydrate', 'punc:(', 'punc:)', 'punc:{', 'punc:}']);
+    expect(tokens(highlight('@hydrate (idle) {\n}', 'html'))).toEqual(['ctl:@hydrate', 'punc:(', 'var:idle', 'punc:)', 'punc:{', 'punc:}']);
   });
 
   it('highlights conditional bindings inside a tag', () => {
     expect(tokens(highlight(`<a @if (linked()) { href="/home" } @else { (click)="edit()" }>`, 'html'))).toEqual([
-      'punc:<', 'tag:a', 'ctl:@if', 'punc:(', 'fn:linked', 'punc:)', 'punc:{', 'attr:href', 'punc:=', 'str:"/home"', 'punc:}',
-      'ctl:@else', 'punc:{', 'evt:(click)', 'punc:=', 'punc:"', 'fn:edit', 'punc:"', 'punc:}', 'punc:>'
+      'punc:<', 'tag:a', 'ctl:@if', 'punc:(', 'fn:linked', 'br1:(', 'br1:)', 'punc:)', 'punc:{', 'attr:href', 'punc:=', 'str:"/home"', 'punc:}',
+      'ctl:@else', 'punc:{', 'evt:(click)', 'punc:=', 'punc:"', 'fn:edit', 'br1:(', 'br1:)', 'punc:"', 'punc:}', 'punc:>'
     ]);
   });
 
   it('highlights the type arguments following the name of a tag', () => {
     expect(tokens(highlight(`<ex-picker(Row, number) items="a" /></ex-picker>`, 'html'))).toEqual([
-      'punc:<', 'tag:ex-picker', 'punc:(', 'type:Row', 'kw:number', 'punc:)', 'attr:items', 'punc:=', 'str:"a"', 'punc:/>', 'punc:</', 'tag:ex-picker', 'punc:>'
+      'punc:<', 'tag:ex-picker', 'punc:(', 'type:Row', 'prim:number', 'punc:)', 'attr:items', 'punc:=', 'str:"a"', 'punc:/>', 'punc:</', 'tag:ex-picker', 'punc:>'
     ]);
   });
 
   it('highlights imports and comments in templates', () => {
-    expect(tokens(highlight(`@import { Card } from './card.ts'\n<!-- note -->`, 'html'))).toEqual(['ctl:@import', 'type:Card', 'kw:from', 'str:\'./card.ts\'', 'com:<!-- note -->']);
+    expect(tokens(highlight(`@import { Card } from './card.ts'\n<!-- note -->`, 'html'))).toEqual(['ctl:@import', 'br1:{', 'var:Card', 'br1:}', 'kw:from', 'str:\'./card.ts\'', 'com:<!-- note -->']);
   });
 
   it('highlights CSS', () => {

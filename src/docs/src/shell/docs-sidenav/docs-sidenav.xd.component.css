@@ -54,6 +54,8 @@
   text-align: left;
   text-decoration: none;
   cursor: pointer;
+  transition: ease-in-out background .2s,
+              ease-in-out color .2s;
 }
 
 .link--nested {

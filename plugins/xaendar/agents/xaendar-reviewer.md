@@ -44,7 +44,7 @@ Check at least the following:
 **Problems the build does not report**
 - `@import` rules in a `.css` component stylesheet (dropped), relative `url()` (resolved against the page), `:root` in a component stylesheet (matches nothing), page styles or resets expected inside a shadow root, and custom elements left `display: inline` by a missing `:host` display.
 - Module constants, functions or signals copied into members only for the template (`public readonly count = count;`) instead of imported with `@import`, and state or logic of the component moved out of its class into imported functions only because a template can import them.
-- `innerHTML` written with markup the application does not control, without escaping or sanitizing it.
+- `innerHTML` written with markup the application does not control, without escaping or sanitizing it (`@@innerHtml` of `@xaendar/directives` sanitizes it). `trustHtml`, or a `sanitizer` returning its input, applied to HTML from users or the network; `options` allowing `script`, `iframe`, `object`, `embed`, `form`, `on*` or `style`; an `options` object literal written in the template (read once per object).
 
 **Code conventions**: report these after the bugs, grouped by file:
 - Member order: public fields → protected fields → private fields → getters and setters → constructor → `onInit` → `afterRender` → public methods → protected methods → private methods → `onDestroy`.
@@ -56,6 +56,8 @@ Check at least the following:
 - An `@Property` `x` paired with an `@Event` `xChange` and a local signal copying the input, instead of one `@Model` (`x` is the state the class writes): two signals to keep in sync, and an `Output` per instance.
 - Opening tags whose items are out of order. The order is: element ref → conditional structural directives → structural directives → conditional directives → directives → conditional attributes/inputs → attributes/inputs (two-way bindings `[(x)]` included), then class bindings, then style bindings → conditional events → events. The last four also apply inside a directive's parentheses. Also report conditional blocks that mix groups when the branches could be split by group without testing a condition and its negation separately.
 - One-letter identifiers (variables, parameters, arrow callbacks, catch bindings, type parameters, `@for` items and aliases); only the counter of a `for` loop may be `i`/`j`/`k`.
+- Strings joined with `+` or `+=` instead of a template literal.
+- `window` or `globalThis` cast to read a global the DOM library lacks (`(globalThis as unknown as { trustedTypes?: … }).trustedTypes`), instead of a module augmentation (`declare global { var trustedTypes: … }` in a `.d.ts`).
 - `void` in front of a call to discard its result (`void this._load(id)`), instead of a plain call statement, or `await` / `.then`/`.catch` when the promise must be handled.
 - `.forEach`, and `for…of` over an array, instead of an indexed `for` (`for…of` stays for `Map` and `Set`).
 - Empty collections or objects created only to be looped over or spread (`?? []`, `|| []`, `?? new Map()`, `...(x ?? [])`, `...(condition ? [item] : [])`, `...(x ?? {})`, `...(condition ? { key: value } : {})`, `...condition && { key: value }`), a spread of an array or an object that may be empty, a function returning an empty array/`Map`/`Set` instead of `undefined` for "nothing", and a collection tested with a bare `if (items)` instead of `if (items?.length)` / `if (items?.size)`.

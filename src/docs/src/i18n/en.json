@@ -1183,7 +1183,7 @@
           "title": "Summary",
           "th1": "API",
           "th2": "Description",
-          "td1": "<a href=\"#/en/reference/api/core/Directive\"><code>@Directive({ selector: 'name' })</code></a>",
+          "td1": "<a href=\"#/en/reference/api/core/Directive\"><code>@Directive({\n  selector: 'name'\n})</code></a>",
           "td2": "Registers the class under the selector.",
           "td3": "Base class of directives acting on an element of type <code>T</code>.",
           "td4": "Base class of directives deciding whether an element is rendered.",
@@ -1796,7 +1796,7 @@
           "li4": "<strong>Templates are strict.</strong> Listeners call one method, expressions cannot assign or create objects, and a few characters must be escaped. See <a href=\"#/en/reference/template-syntax\">the cheat sheet</a>.",
           "callout1": {
             "heading": "Not available",
-            "body": "Dependency injection, a router, a forms module, an HTTP client and <code>[(ngModel)]</code> on native fields. The <a href=\"#/en/patterns/forms\">Patterns</a> section shows how to cover the common cases with signals and directives."
+            "body": "Dependency injection, a router, a forms module, an HTTP client. The <a href=\"#/en/patterns/forms\">Patterns</a> section shows how to cover the common cases with signals and directives."
           }
         }
       },

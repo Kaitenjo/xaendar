@@ -4,7 +4,9 @@ import type { InputSignal } from '@xaendar/core/signals';
 /**
  * Waits before reading its input: the input is read outside of the tracking, so its changes are missed.
  */
-@Directive({ selector: 'exLateRead' })
+@Directive({ 
+  selector: 'exLateRead' 
+})
 export class LateReadDirective extends StructuralDirective {
   /**
    * The user to check.

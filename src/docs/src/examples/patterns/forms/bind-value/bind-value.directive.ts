@@ -5,7 +5,9 @@ import type { InputSignal } from '@xaendar/core/signals';
  * Writes a signal into the value property of a field. The value attribute is only the initial value:
  * once the user types, the field ignores it.
  */
-@Directive({ selector: 'exBindValue' })
+@Directive({ 
+  selector: 'exBindValue' 
+})
 export class BindValueDirective extends CustomDirective<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> {
   /**
    * The value to show.

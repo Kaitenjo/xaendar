@@ -149,6 +149,17 @@
 .tok-interp { color: var(--tok-interp); font-weight: 600; }
 .tok-prop { color: var(--tok-prop); }
 .tok-sel { color: var(--tok-sel); }
+.tok-var { color: var(--tok-var); }
+.tok-field { color: var(--tok-field); }
+.tok-key { color: var(--tok-key); }
+.tok-member { color: var(--tok-member); }
+.tok-param { color: var(--tok-param); }
+.tok-const { color: var(--tok-const); }
+.tok-prim { color: var(--tok-prim); }
+.tok-op { color: var(--tok-op); }
+.tok-br1 { color: var(--tok-br1); }
+.tok-br2 { color: var(--tok-br2); }
+.tok-br3 { color: var(--tok-br3); }
 
 .box--bare .pre {
   max-height: 28rem;

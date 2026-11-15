@@ -10,7 +10,9 @@ export const DIRECTIVE_REGISTRATION: SourceFile = {
 /**
  * Registered under its selector by the decorator, when the module is evaluated.
  */
-@Directive({ selector: 'exTint' })
+@Directive({
+  selector: 'exTint'
+})
 export class TintDirective extends CustomDirective<HTMLElement> {}
 
 // The template imports the class: the compiler checks the directive and its inputs, and the module of the template

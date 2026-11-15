@@ -5,7 +5,9 @@ import type { InputSignal } from '@xaendar/core/signals';
  * Shows a tooltip above the element while the pointer is over it or while it has the focus.
  * The tooltip is appended to the body, so no ancestor can clip it.
  */
-@Directive({ selector: 'exTooltip' })
+@Directive({ 
+  selector: 'exTooltip' 
+})
 export class TooltipDirective extends CustomDirective<HTMLElement> {
   /**
    * The text of the tooltip.

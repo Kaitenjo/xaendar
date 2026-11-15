@@ -5,7 +5,9 @@ import type { InputSignal } from '@xaendar/core/signals';
  * Grows an SVG circle while the pointer is over it. The element is typed as SVGCircleElement,
  * so its animated radius is available.
  */
-@Directive({ selector: 'exGrow' })
+@Directive({ 
+  selector: 'exGrow' 
+})
 export class GrowDirective extends CustomDirective<SVGCircleElement> {
   /**
    * How much the radius grows.

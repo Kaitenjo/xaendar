@@ -4,7 +4,9 @@ import type { InputSignal } from '@xaendar/core/signals';
 /**
  * Reads its input first, then waits.
  */
-@Directive({ selector: 'exEarlyRead' })
+@Directive({ 
+  selector: 'exEarlyRead' 
+})
 export class EarlyReadDirective extends StructuralDirective {
   /**
    * The user to check.

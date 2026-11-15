@@ -4,7 +4,9 @@ import type { Output } from '@xaendar/core';
 /**
  * Emits `outside` when the pointer is pressed anywhere outside the element.
  */
-@Directive({ selector: 'exClickOutside' })
+@Directive({ 
+  selector: 'exClickOutside' 
+})
 export class ClickOutsideDirective extends CustomDirective<HTMLElement> {
   /**
    * Emitted on the element when the pointer is pressed outside of it.

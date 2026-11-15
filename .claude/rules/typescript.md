@@ -9,6 +9,20 @@ paths:
 
 - Respect `tsconfig.json` (strict). Explicitly type parameters and return values of public functions (`public-api.ts`).
 - No implicit `any`: use precise types or `unknown` + narrowing. Unavoidable casts go through `as unknown as <T>`.
+- A global the DOM library of TypeScript lacks (`trustedTypes`, a property of `window`) is declared by module augmentation in a `.d.ts` of the package (`src/globals.d.ts`, `src/window.d.ts`), with its type in a `*.type.ts`: never cast `window` or `globalThis` to read it.
+
+  ```ts
+  // ✗
+  const factory = (globalThis as unknown as { trustedTypes?: TrustedTypePolicyFactory }).trustedTypes;
+
+  // ✓ src/globals.d.ts
+  declare global {
+    var trustedTypes: TrustedTypePolicyFactory | undefined; // globalThis and window
+  }
+  export { };
+  ```
+
+  A property of `window` only goes in `interface Window { … }` inside `declare global`.
 - Handle optionals explicitly: `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess` are off, so validate at runtime where it matters.
 - Derive a type from the ones it depends on (`Pick`, `Omit`, `Exclude`, `Extract`, `Parameters`, `ReturnType`, etc..., mapped types, indexed access such as `Type['member']`, ...) instead of redefining it from scratch: when the source type changes, the derived one follows. Declare a new standalone type only for members that exist nowhere else.
 - Prefer `readonly` on properties/arrays that shouldn't be reassigned, especially in shared models under `packages/common/src/models`.

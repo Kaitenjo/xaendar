@@ -4,7 +4,9 @@ import type { InputSignal } from '@xaendar/core/signals';
 /**
  * Renders the element it is applied to only while its condition is true.
  */
-@Directive({ selector: 'exVisibleWhen' })
+@Directive({ 
+  selector: 'exVisibleWhen' 
+})
 export class VisibleWhenDirective extends StructuralDirective {
   /**
    * Whether the element is rendered.

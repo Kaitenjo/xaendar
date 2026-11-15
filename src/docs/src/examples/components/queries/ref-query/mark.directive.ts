@@ -4,7 +4,9 @@ import { signal } from '@xaendar/core/signals';
 /**
  * Marks the element it is applied to, highlighting it while it is marked.
  */
-@Directive({ selector: 'exMark' })
+@Directive({ 
+  selector: 'exMark' 
+})
 export class MarkDirective extends CustomDirective<HTMLElement> {
   /**
    * Whether the element is marked.

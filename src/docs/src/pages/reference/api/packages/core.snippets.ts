@@ -83,7 +83,9 @@ export const CUSTOM_DIRECTIVE: SourceFile = {
 /**
  * Copies a text to the clipboard when the element is clicked.
  */
-@Directive({ selector: 'exCopy' })
+@Directive({
+  selector: 'exCopy'
+})
 export class CopyDirective extends CustomDirective<HTMLButtonElement> {
   /**
    * The text to copy.
@@ -134,7 +136,9 @@ export const DIRECTIVE_CREATE_COMPONENT: SourceFile = {
 /**
  * Shows a tooltip with a text for as long as it is applied to an element.
  */
-@Directive({ selector: 'exTooltip' })
+@Directive({
+  selector: 'exTooltip'
+})
 export class TooltipDirective extends CustomDirective<HTMLElement> {
   /**
    * The text of the tooltip.
@@ -164,7 +168,9 @@ export const DIRECTIVE_KINDS: SourceFile = {
 /**
  * A custom directive, applied with @@exTint: it acts on the element.
  */
-@Directive({ selector: 'exTint' })
+@Directive({
+  selector: 'exTint'
+})
 export class TintDirective extends CustomDirective<HTMLElement> {
   /**
    * The background color.
@@ -186,7 +192,9 @@ export class TintDirective extends CustomDirective<HTMLElement> {
 /**
  * A structural directive, applied with *exVisibleWhen: it decides whether the element exists.
  */
-@Directive({ selector: 'exVisibleWhen' })
+@Directive({
+  selector: 'exVisibleWhen'
+})
 export class VisibleWhenDirective extends StructuralDirective {
   /**
    * Whether the element is rendered.
@@ -216,7 +224,9 @@ export const HOST_BINDINGS_DIRECTIVE: SourceFile = {
  * Copies a text to the clipboard when the element is clicked. The listener and the title are bound to the element by
  * the decorators: no onInit, and nothing to undo in onDestroy.
  */
-@Directive({ selector: 'exCopy' })
+@Directive({
+  selector: 'exCopy'
+})
 export class CopyDirective extends CustomDirective<HTMLButtonElement> {
   /**
    * The text to copy.
@@ -489,7 +499,9 @@ export const MODEL_DIRECTIVE: SourceFile = {
 /**
  * Switches a boolean at each click of its element: templates bind it with @@exToggle([(on)]="enabled").
  */
-@Directive({ selector: 'exToggle' })
+@Directive({
+  selector: 'exToggle'
+})
 export class ToggleDirective extends CustomDirective<HTMLElement> {
   /**
    * Whether the toggle is on. Its event of change, onChange, is dispatched on the element of the directive.
@@ -691,7 +703,9 @@ export const STRUCTURAL_DIRECTIVE: SourceFile = {
 /**
  * Renders the element only when the server allows the user to edit the document.
  */
-@Directive({ selector: 'exCanEdit' })
+@Directive({
+  selector: 'exCanEdit'
+})
 export class CanEditDirective extends StructuralDirective {
   /**
    * The document to check.

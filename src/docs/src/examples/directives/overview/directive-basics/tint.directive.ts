@@ -4,7 +4,9 @@ import type { InputSignal } from '@xaendar/core/signals';
 /**
  * Paints the background of the element it is applied to.
  */
-@Directive({ selector: 'exTint' })
+@Directive({ 
+  selector: 'exTint' 
+})
 export class TintDirective extends CustomDirective<HTMLElement> {
   /**
    * The background color.

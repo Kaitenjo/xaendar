@@ -4,7 +4,9 @@ import type { InputSignal } from '@xaendar/core/signals';
 /**
  * Renders the element while the value is greater than zero.
  */
-@Directive({ selector: 'exPositive' })
+@Directive({ 
+  selector: 'exPositive' 
+})
 export class PositiveDirective extends StructuralDirective {
   /**
    * The value to check.

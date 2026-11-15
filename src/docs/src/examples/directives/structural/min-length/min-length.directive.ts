@@ -4,7 +4,9 @@ import type { InputSignal } from '@xaendar/core/signals';
 /**
  * Renders the element once the text is long enough.
  */
-@Directive({ selector: 'exMinLength' })
+@Directive({ 
+  selector: 'exMinLength' 
+})
 export class MinLengthDirective extends StructuralDirective {
   /**
    * The text to measure.

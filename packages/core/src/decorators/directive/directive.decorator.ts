@@ -14,7 +14,9 @@ import { _defineDirective } from '../../utils/directive-registry/directive-regis
  * instantiate it on every element it is applied to.
  * @example
  * ```ts
- * \@Directive({ selector: 'myDirective' })
+ * \@Directive({
+ *   selector: 'myDirective'
+ *  })
  * class MyDirective extends CustomDirective {
  *
  *  \@Property('block')

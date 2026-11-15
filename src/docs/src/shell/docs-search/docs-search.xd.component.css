@@ -30,6 +30,9 @@
   background: var(--xd-bg-soft);
   color: var(--xd-text);
   font: 0.88rem var(--xd-font);
+  transition: ease-out box-shadow .15s,
+              ease-out outline .15s,
+              ease-out border-color .15s;
 }
 
 .field::placeholder {
@@ -38,7 +41,6 @@
 
 .field:focus {
   outline: none;
-  border-color: var(--xd-accent);
   box-shadow: var(--xd-focus);
 }
 

@@ -4,7 +4,9 @@ import type { InputSignal } from '@xaendar/core/signals';
 /**
  * Renders the element while the value is even.
  */
-@Directive({ selector: 'exIsEven' })
+@Directive({ 
+  selector: 'exIsEven' 
+})
 export class IsEvenDirective extends StructuralDirective {
   /**
    * The value to check.

@@ -9,7 +9,9 @@ export const CONSTRUCTOR_ACCESS: SourceFile = {
   code: `/**
  * A directive doing its setup too early.
  */
-@Directive({ selector: 'exEarly' })
+@Directive({ 
+  selector: 'exEarly'
+})
 export class EarlyDirective extends CustomDirective<HTMLElement> {
   /**
    * ✗ Reads the element before it is set.
@@ -36,7 +38,9 @@ export const GENERIC_DIRECTIVE: SourceFile = {
   name: 'generic-directive.ts',
   lang: 'ts',
   code: `// each.directive.ts
-@Directive({ selector: 'exEach' })
+@Directive({ 
+  selector: 'exEach'
+})
 export class EachDirective<Item extends { id: number }, Key = string> extends CustomDirective<HTMLElement> {
   @Property([]) accessor items!: InputSignal<Item[]>;
   @Event() accessor picked!: Output<Key>;

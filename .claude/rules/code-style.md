@@ -6,6 +6,17 @@ paths:
 # Code style
 
 - Strings use single quotes (`'...'`), per ESLint `quotes: single`.
+- Never join strings with `+` or `+=`: interpolate them in a template literal. `+=` stays for numbers.
+
+  ```ts
+  // ✗
+  const label = 'target <' + element.localName + '>';
+  out += token('punc', '{');
+
+  // ✓
+  const label = `target <${element.localName}>`;
+  out = `${out}${token('punc', '{')}`;
+  ```
 - Prefix unused vars/params with `_` (e.g. `_event`).
 - Never use one-letter identifiers: variables, parameters (arrow callbacks included), catch bindings, type parameters. Name what the value is (`item`, `index`, `error`, `TValue`): the build minifies the names anyway. The only exception is the counter of a `for` loop: `i`, then `j`, `k` in nested loops.
 - Never put `void` in front of a call to discard its result (`void client.start()`, `void this._load(id)`): call the function as a plain statement, or `await` it / chain `.then`/`.catch` when the promise must be handled.

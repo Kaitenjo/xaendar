@@ -3,7 +3,9 @@ import { CustomDirective, Directive } from '@xaendar/core';
 /**
  * Marks the newest notification, for as long as it is applied.
  */
-@Directive({ selector: 'exNewest' })
+@Directive({ 
+  selector: 'exNewest' 
+})
 export class NewestDirective extends CustomDirective<HTMLElement> {
   /**
    * Marks the element.

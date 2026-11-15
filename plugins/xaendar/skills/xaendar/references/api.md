@@ -152,7 +152,9 @@ Listens to an event of the host element (component, or element of a custom direc
 ### Directive (decorator)
 
 ```ts
-@Directive({ selector: 'exName' })
+@Directive({ 
+  selector: 'exName' 
+})
 ```
 
 Registers a class extending CustomDirective or StructuralDirective under a selector, used as @@selector or *selector.
@@ -271,7 +273,7 @@ Registers the function called when an `@if`, `@switch`, `@for` or structural dir
 
 ## `@xaendar/directives`
 
-The built-in directives, imported by the templates (`@import { AnimationDirective } from '@xaendar/directives'`). `@xaendar/core` is a peer.
+The built-in directives, imported by the templates (`@import { AnimationDirective } from '@xaendar/directives'`), and the sanitizer of HTML. `@xaendar/core` is a peer.
 
 ### AnimationDirective (`@@animation`)
 
@@ -292,6 +294,40 @@ type ElementAnimation = string | ((element: HTMLElement) => Promise<unknown> | v
 ```
 
 The `enter` and the `leave` of `@@animation`: a CSS class, or a function animating the element.
+
+### InnerHtmlDirective (`@@innerHtml`)
+
+```html
+<article @@innerHtml(html="{post().body}") />
+<article @@innerHtml(html="{post().body}" options="{withImages}" (sanitized)="log($event.detail)") />
+<span @@innerHtml(html="{icon}") />
+```
+
+Renders an HTML as the content of its element (Angular's `[innerHTML]`), replacing what the template puts there, again at each change; on the server it is written into the page. `html` (`HtmlContent`: `string | SafeHtml | null | undefined`, `''` by default; `null`/`undefined` empty the element) is sanitized with `sanitizeHtml` and `options` (`HtmlSanitizerOptions`, read once per object: a constant or a field, never an object literal in the template). `sanitizer` (`HtmlSanitizer`, `(html: string) => string`, as `DOMPurify.sanitize`) replaces the sanitizer, `options` aside; an HTML wrapped by `trustHtml` is rendered as it is. `(sanitized)` fires, in the browser, when the built-in sanitizer removed something: `detail` is an `HtmlSanitizeReport` (`{ removedElements: string[], removedAttributes: string[] }`, attributes as `img[onerror]`). With Trusted Types the HTML is written through the policy `xaendar#inner-html` (sanitized here) or `xaendar#inner-html-unsafe` (trusted, or from `sanitizer`): list the ones allowed in the `trusted-types` of the CSP. The HTML is not a template: no bindings, listeners or directives; the stylesheet of the component styles it. A `div` or a `ul` of the HTML closes a host `p` in a page rendered on the server: use a `div` or an `article` as host.
+
+### sanitizeHtml (function)
+
+```ts
+sanitizeHtml(html: string, options?: HtmlSanitizerOptions): string
+```
+
+The sanitizer of `@@innerHtml` (Angular's `DomSanitizer.sanitize(SecurityContext.HTML, …)`), without DOM: the same result on the server and in the browser. Keeps by default what Angular keeps: text-level and block elements, lists, tables, media (`img`, `picture`, `audio`, `video`, `source`, `track`), with their presentational attributes, `class`, `title`, `lang`, the URLs and `aria-*`. Removes forms, SVG, MathML, custom elements, comments, `id`, `name`, `style`, `data-*` and `on*`. A removed element leaves its content, except `script`, `style`, `template`, `noscript`, `iframe`, `noembed`, `noframes`, `object` and `plaintext`, removed with it. URLs (`href`, `src`, every URL of `srcset` and `ping`, `action`, `poster`, `xlink:href`, …) are decoded as the browser does and kept when relative, of an allowed scheme, or `data:` image/audio/video in base64; otherwise the attribute is removed. The output is well formed: texts and values encoded, every element closed, end tags without start tag dropped, implied ends (`li`, `p`, cells) written.
+
+### HtmlSanitizerOptions (type)
+
+```ts
+interface HtmlSanitizerOptions { allowElements?: string[]; allowAttributes?: string[]; removeElements?: string[]; removeAttributes?: string[]; urlSchemes?: string[] }
+```
+
+`allow…` add to the defaults, `remove…` take off them (a removed element keeps its content) and win over `allow…`; names are case-insensitive, `'data-*'`/`'x-*'` are prefixes. Attributes apply to every kept element, or to one only when written `element[attribute]` (`allowAttributes: ['span[style]', 'img[data-*]']`, `removeAttributes: ['a[target]']`). `urlSchemes` replaces `['http', 'https', 'mailto', 'tel', 'ftp', 'sms']`. Allowing `script`, `iframe`, `object`, `embed`, `form`, defined custom elements, SVG `animate`/`set`, `on*` or `style` lets code or arbitrary CSS through.
+
+### trustHtml (function)
+
+```ts
+trustHtml(html: string): SafeHtml
+```
+
+Angular's `bypassSecurityTrustHtml`: bound to the `html` of `@@innerHtml`, the HTML is rendered without sanitizing it. Only for HTML the application builds or has already sanitized.
 
 ## `@xaendar/core/signals`
 

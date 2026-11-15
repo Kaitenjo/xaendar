@@ -31,7 +31,9 @@ import { enterElement, leaveElement } from '../../utils/element-animation/elemen
  * <section @@animation(enter="{slideIn}" leave="{slideOut}")>…</section>
  * ```
  */
-@Directive({ selector: 'animation' })
+@Directive({ 
+  selector: 'animation' 
+})
 export class AnimationDirective extends CustomDirective<HTMLElement> {
   /**
    * The class the element gets while it enters, or the function animating it: none by default.

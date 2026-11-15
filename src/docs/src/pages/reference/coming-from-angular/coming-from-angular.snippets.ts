@@ -21,20 +21,20 @@ export class CounterComponent {
   /**
    * The starting value.
    */
-  start = input(0);
+  public readonly start = input(0);
   /**
    * Emitted with the new count.
    */
-  changed = output<number>();
+  public readonly changed = output<number>();
   /**
    * The current count.
    */
-  count = signal(0);
+  protected readonly count = signal(0);
 
   /**
    * Adds one and notifies the parent.
    */
-  increment(): void {
+  protected increment(): void {
     this.count.update(value => value + 1);
     this.changed.emit(this.count());
   }
@@ -44,7 +44,10 @@ export class CounterComponent {
 /**
  * A counter that notifies every click.
  */
-@WebComponent({ selector: 'app-counter', templateUrl: './counter.xd.component.html' })
+@WebComponent({ 
+  selector: 'app-counter',
+  templateUrl: './counter.xd.component.html'
+})
 export class CounterComponent extends CustomElement {
   /**
    * The starting value.

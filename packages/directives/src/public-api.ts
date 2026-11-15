@@ -1,2 +1,10 @@
 export { AnimationDirective } from './directives/animation/animation.directive';
+export { InnerHtmlDirective } from './directives/inner-html/inner-html.directive';
 export type { ElementAnimation } from './types/element-animation.type';
+export type { HtmlContent } from './types/html-content.type';
+export type { HtmlSanitizeReport } from './types/html-sanitize-report.type';
+export type { HtmlSanitizer } from './types/html-sanitizer.type';
+export type { HtmlSanitizerOptions } from './types/html-sanitizer-options.type';
+export type { SafeHtml } from './types/safe-html.type';
+export { sanitizeHtml } from './utils/html-sanitizer/html-sanitizer.utils';
+export { trustHtml } from './utils/trust-html/trust-html.utils';

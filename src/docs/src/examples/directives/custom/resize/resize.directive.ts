@@ -4,7 +4,9 @@ import type { Output } from '@xaendar/core';
 /**
  * Emits `resized` with the size of the element whenever it changes.
  */
-@Directive({ selector: 'exResize' })
+@Directive({ 
+  selector: 'exResize' 
+})
 export class ResizeDirective extends CustomDirective<HTMLElement> {
   /**
    * Emitted with the new size of the content box, in pixels.

@@ -22,6 +22,7 @@
 | structural directive (`*ngIf`-like) | a class extending `StructuralDirective` with `shouldRender()`, applied with `*appX(...)` |
 | `hostDirectives` | the same option of `@WebComponent`, with `{ directive, properties, events }` |
 | `{{ expr }}` | `{ expr }` |
+| `[innerHTML]="html"`, `DomSanitizer` | `@@innerHtml(html="{html}")` of `@xaendar/directives`, sanitized as Angular does (`options` changes what is kept, `sanitizer` replaces the sanitizer); `bypassSecurityTrustHtml(x)` → `trustHtml(x)`; `sanitize(SecurityContext.HTML, x)` → `sanitizeHtml(x)` |
 | `[attr]="expr"`, `[prop]="expr"` | `attr="{expr}"`: an attribute on native elements, an input on components |
 | `[class.x]="cond"` | `[class.x]="{cond}"` |
 | `[style.x]`, `[style.width.px]` | the same syntax with braces: `[style.x]="{value}"`, `[style.width.px]="{n}"`, `[style.--var]="{v}"`; merged with directives and host bindings with the precedence of Angular (template > directives > component, a key > the string) |

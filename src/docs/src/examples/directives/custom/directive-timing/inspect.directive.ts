@@ -5,7 +5,9 @@ import type { InputSignal } from '@xaendar/core/signals';
 /**
  * Reports what it finds on the element when it starts, and every time its label changes.
  */
-@Directive({ selector: 'exInspect' })
+@Directive({ 
+  selector: 'exInspect' 
+})
 export class InspectDirective extends CustomDirective<HTMLElement> {
   /**
    * A bound input.

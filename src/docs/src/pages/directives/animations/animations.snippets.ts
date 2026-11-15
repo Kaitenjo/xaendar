@@ -11,7 +11,9 @@ export const LEAVE_HANDLER_DIRECTIVE: SourceFile = {
 /**
  * Collapses the element as it leaves: its height goes to zero, and the rows below it move up smoothly.
  */
-@Directive({ selector: 'exCollapse' })
+@Directive({ 
+  selector: 'exCollapse'
+})
 export class CollapseDirective extends CustomDirective<HTMLElement> {
   /**
    * Registers the exit while the directive starts, on its own element.
