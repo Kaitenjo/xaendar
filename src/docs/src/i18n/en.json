@@ -143,6 +143,7 @@
       "directives/class": "Classes",
       "directives/style": "Styles",
       "directives/inner-html": "Inner HTML",
+      "directives/component-outlet": "Component outlet",
       "patterns/forms": "Forms",
       "patterns/async-data": "Async data",
       "patterns/routing": "Routing",
@@ -1147,6 +1148,45 @@
           "td2": "The string parsed as HTML and sanitized, updated when it changes.",
           "td3": "The same, keeping or removing more than the defaults.",
           "td4": "An HTML the application trusts, rendered as it is."
+        }
+      },
+      "componentOutlet": {
+        "eyebrow": "Directives",
+        "title": "Component outlet",
+        "lead": "The directive <code>@@componentOutlet</code> of the package <code>@xaendar/directives</code> creates a component from its class and appends it to the element it is applied to, the equivalent of <code>ngComponentOutlet</code> of Angular. A template cannot name a class, so the class comes from the component as a value: the outlet fits what is chosen at runtime, such as the widgets of a dashboard or the pages of a router.",
+        "creating": {
+          "title": "Creating a component from its class",
+          "example1": "A panel showing the card of the class chosen",
+          "p1": "<code>component</code> takes the class of a component decorated with <code>@WebComponent</code>, usually the value of a signal. The directive creates it with <code>createComponent</code> of <a href=\"#/en/reference/api/core/CustomDirective\"><code>CustomDirective</code></a> and appends it to its own element, as its last child, so the component is rendered where the outlet is written.",
+          "p2": "When the signal gives another class, the component created is destroyed, with its bindings and its directives, and the new one takes its place. The directive destroys the component it created when it is destroyed as well: the element it is applied to is left as it was."
+        },
+        "options": {
+          "title": "Binding its inputs and its events",
+          "p1": "<code>options</code> takes the <a href=\"#/en/reference/api/core/CreateComponentOptionsWithOptionalTarget\"><code>CreateComponentOptionsWithOptionalTarget</code></a> of <code>createComponent</code>: the groups of <code>properties</code> and of <code>events</code>, the <code>directives</code> applied to the component and its <code>content</code>. A property is a getter run in an effect of the component, so the example gives the new text to the card created, without creating it again.",
+          "p2": "Without <code>target</code> the component is appended to the element of the directive; with one, it goes there, and the element of the directive stays empty. See <a href=\"#/en/components/dynamic-creation\">Creating components in code</a> for the options."
+        },
+        "edgeCases": {
+          "title": "Edge cases",
+          "callout1": {
+            "heading": "Keep the options stable",
+            "body": "The component is created again every time the class or the object of <code>options</code> changes, not its content: an object written in the template, or a <code>computed</code> returning a new one, creates the component at every run. Keep it in a field of the class, and bind what changes with the getters of its <code>properties</code>."
+          },
+          "callout2": {
+            "heading": "Once per element",
+            "body": "Like any directive, <code>@@componentOutlet</code> is applied at most once on an element. The component created is a child of the element: an element with content of its own keeps it, and the component follows it."
+          },
+          "callout3": {
+            "heading": "Imported by the template",
+            "body": "The directive is imported like any other: <code>@import { ComponentOutlet } from '@xaendar/directives'</code>. The classes it creates are imported by the module of the component that gives them to the template, as nothing in the template names them."
+          }
+        },
+        "summary": {
+          "title": "Summary",
+          "th1": "Syntax",
+          "th2": "Use",
+          "td1": "Creates the component of the class, inside the element, again when the class changes.",
+          "td2": "The same, binding the inputs and the events of the component with the options.",
+          "td3": "Appends the component to another element, which holds it instead of the one of the directive."
         }
       },
       "conditional": {

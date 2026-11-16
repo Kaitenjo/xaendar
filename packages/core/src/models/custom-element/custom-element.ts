@@ -2,17 +2,17 @@ import { keys } from '@xaendar/common';
 import type { Constructor, NoArgsVoidFunction } from '@xaendar/types';
 import { _CLIENT_ATTRIBUTE, _HYDRATE_ATTRIBUTE, _SERVER_INPUTS_ATTRIBUTE, CONNECTED_HOOKS, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DISCONNECTED_HOOKS, HYDRATE, WAITS_FOR_HYDRATION } from '../../costants';
 import { EffectOptions } from '../../signals/types/effect-options.type';
+import type { _Context } from '../../types/context.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
-import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
+import type { CreateComponentOptionsWithOptionalTarget } from '../../types/create-component/create-component-options-with-optional-target.type';
 import type { HostDirectives } from '../../types/web-component/host-directives.type';
 import { claimShadowRoot, isClaimed } from '../../utils/claim-nodes/claim-nodes.util';
 import { _getComponentRuntime } from '../../utils/component-runtime/component-runtime.util';
-import type { _Context } from '../../types/context.type';
 import { _scope, addCleanup, clear, EMPTY_LAYOUT, moveTo, removeCleanup } from '../../utils/context/context.util';
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
-import { deferElementHydration, replayContractEvents, replayElementEvents } from '../../utils/hydration-triggers/hydration-triggers.util';
 import { _createHostDirectives } from '../../utils/host-directives/host-directives.util';
+import { deferElementHydration, replayContractEvents, replayElementEvents } from '../../utils/hydration-triggers/hydration-triggers.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
 import { _parseState } from '../../utils/state-serialization/state-serialization.util';
 import { runConnection } from '../../utils/try-scope/try-scope.util';
@@ -148,13 +148,15 @@ export class CustomElement extends HTMLElement {
    *
    * @param component - The class of the component, decorated with `@WebComponent`.
    * @param options - The target the component is appended to, the groups of its inputs and of its events, the directives
-   *   applied to it and its content.
+   *   applied to it and its content. Without `target`, or without options at all, the component is appended to the element of this
+   *   component, its host element.
    * @returns The element of the component, along with the function destroying it ahead of the disconnection.
    * @throws When the class is not decorated with `@WebComponent`, when an input is bound by more than one group, when a directive is not
    * a custom directive, or when it is already a host directive of the component.
    */
-  public createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<Component, Directives>): ComponentRef<Component> {
-    return _getComponentRuntime().createComponent(() => this._context, component, options);
+  public createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options?: CreateComponentOptionsWithOptionalTarget<Component, Directives>): ComponentRef<Component> {
+    const actualOptions = Object.assign({}, options, { target: options?.target ?? this });
+    return _getComponentRuntime().createComponent(() => this._context, component, actualOptions);
   }
 
   /**

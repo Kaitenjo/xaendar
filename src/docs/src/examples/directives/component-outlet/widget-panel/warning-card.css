@@ -1,0 +1,9 @@
+:host {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-left: 4px solid #e5484d;
+  border-radius: 6px;
+  background: color-mix(in srgb, #e5484d 18%, transparent);
+}

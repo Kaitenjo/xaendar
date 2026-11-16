@@ -16,6 +16,7 @@
 @import lazy { ComponentsStylingPage } from '../../pages/components/styling/styling.xd.component.ts'
 @import lazy { DirectivesAnimationsPage } from '../../pages/directives/animations/animations.xd.component.ts'
 @import lazy { DirectivesClassPage } from '../../pages/directives/class/class.xd.component.ts'
+@import lazy { DirectivesComponentOutletPage } from '../../pages/directives/component-outlet/component-outlet.xd.component.ts'
 @import lazy { DirectivesConditionalPage } from '../../pages/directives/conditional/conditional.xd.component.ts'
 @import lazy { DirectivesCustomPage } from '../../pages/directives/custom/custom.xd.component.ts'
 @import lazy { DirectivesInnerHtmlPage } from '../../pages/directives/inner-html/inner-html.xd.component.ts'
@@ -131,6 +132,9 @@
   }
   @case ('directives/inner-html') {
     <page-directives-inner-html />
+  }
+  @case ('directives/component-outlet') {
+    <page-directives-component-outlet />
   }
   @case ('directives/conditional') {
     <page-directives-conditional />

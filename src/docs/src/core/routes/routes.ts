@@ -214,7 +214,8 @@ export const NAV: readonly NavSection[] = [
         page('directives/animations', 'animation animate enter leave transition keyframes onLeave fade inert reduced motion'),
         page('directives/class', 'class ClassDirective ngClass classes object list set toggle'),
         page('directives/style', 'style StyleDirective ngStyle styles object unit custom property'),
-        page('directives/inner-html', 'innerHTML InnerHtmlDirective html markdown sanitize sanitizeHtml trustHtml trusted types csp')
+        page('directives/inner-html', 'innerHTML InnerHtmlDirective html markdown sanitize sanitizeHtml trustHtml trusted types csp'),
+        page('directives/component-outlet', 'componentOutlet ComponentOutlet ngComponentOutlet dynamic create component class outlet host target createComponent')
       ]),
       group('patterns', [
         page('patterns/forms', 'form input checkbox select validation two-way'),

@@ -341,6 +341,66 @@ describe('CustomDirective', () => {
       expect(element.isConnected).toBe(false);
       expect(childrenOf(context)).toHaveLength(0);
     });
+
+    describe('target', () => {
+      it('is the element the directive is applied to when no options are given', () => {
+        const host = document.createElement('div');
+        const directive = create(TestDirective, host);
+        connect(directive);
+
+        const { element } = directive.createComponent(Child);
+
+        expect(element.parentNode).toBe(host);
+      });
+
+      it('is the element the directive is applied to when the options have no target', () => {
+        const host = document.createElement('div');
+        const content = document.createTextNode('projected');
+        const directive = create(TestDirective, host);
+        connect(directive);
+
+        const { element } = directive.createComponent(Child, { content: [content] });
+
+        expect(element.parentNode).toBe(host);
+        expect(element.contains(content)).toBe(true);
+      });
+
+      it('is the element the directive is applied to when the target is undefined', () => {
+        const host = document.createElement('div');
+        const directive = create(TestDirective, host);
+        connect(directive);
+
+        const { element } = directive.createComponent(Child, { target: undefined });
+
+        expect(element.parentNode).toBe(host);
+      });
+
+      it('is the one of the options when it is given, leaving the options as they are', () => {
+        const host = document.createElement('div');
+        const target = document.createElement('section');
+        const options = { target };
+        const directive = create(TestDirective, host);
+        connect(directive);
+
+        const { element } = directive.createComponent(Child, options);
+
+        expect(element.parentNode).toBe(target);
+        expect(host.childNodes).toHaveLength(0);
+        expect(options).toEqual({ target });
+      });
+
+      it('leaves the host without the component once it is destroyed', () => {
+        const host = document.createElement('div');
+        const directive = create(TestDirective, host);
+        const context = connect(directive);
+        directive.createComponent(Child);
+        expect(host.childNodes).toHaveLength(1);
+
+        clear(context);
+
+        expect(host.childNodes).toHaveLength(0);
+      });
+    });
   });
 
   it('dispatches events on the element it is applied to', () => {

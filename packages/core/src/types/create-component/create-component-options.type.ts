@@ -13,7 +13,8 @@ import type { CreateComponentDirective } from './create-component-directive.type
  */
 export type CreateComponentOptions<Component extends CustomDirective | CustomElement, Directives extends readonly CustomDirective[] = CustomDirective[]> = {
   /**
-   * The element the component is appended to.
+   * The element the component is appended to. In the options of `createComponent` of `CustomElement` and of `CustomDirective` it can be left out:
+   * the component is then appended to the host element, that is the element of the component or the element the directive is applied to.
    */
   target: Element,
   /**

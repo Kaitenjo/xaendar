@@ -162,7 +162,7 @@ Registers a class extending CustomDirective or StructuralDirective under a selec
 ### CustomElement (class)
 
 ```ts
-class X extends CustomElement { hostDirectives: HostDirectives; onInit?(); afterRender?(); onDestroy?(); effect(fn, options?): () => void; createComponent(Class, options): ComponentRef<Class> }
+class X extends CustomElement { hostDirectives: HostDirectives; onInit?(); afterRender?(); onDestroy?(); effect(fn, options?): () => void; createComponent(Class, options?): ComponentRef<Class> }
 ```
 
 Base class of components: an open shadow root, the lifecycle hooks, and effects disposed at disconnection. `hostDirectives` is a map from the class of each host directive to its instance (`this.hostDirectives.get(Tip)`, typed): the directives start before `onInit` and stop after `onDestroy`. `connectedCallback` and `disconnectedCallback` belong to the base class: never declare them. Disconnection runs `onDestroy`, disposes the effects, removes the template and destroys the components created with `createComponent`.
@@ -170,10 +170,10 @@ Base class of components: an open shadow root, the lifecycle hooks, and effects 
 ### createComponent (method of CustomElement and CustomDirective)
 
 ```ts
-this.createComponent(ToastComponent, { target: Element, properties?: [{ input: () => value, condition?: () => boolean }], events?: [{ output: (event: CustomEvent<T>) => void, valueChange: (event: CustomEvent<T>) => void /* of a model */, click: (event: MouseEvent) => void, condition? }], directives?: [Directive | { directive, condition?, properties?, events? }], content?: Node[] })
+this.createComponent(ToastComponent, { target?: Element, properties?: [{ input: () => value, condition?: () => boolean }], events?: [{ output: (event: CustomEvent<T>) => void, valueChange: (event: CustomEvent<T>) => void /* of a model */, click: (event: MouseEvent) => void, condition? }], directives?: [Directive | { directive, condition?, properties?, events? }], content?: Node[] })
 ```
 
-Creates a component in code and appends it to `target`, bound as a tag of a template is: the inputs are set before the element is appended (its `onInit` reads them), then the directives are applied and the content appended (projected through its slots; a `DocumentFragment` gives its nodes). Getters and conditions run in effects. A group with a `condition` is bound only while it holds; when it stops, its inputs go back to their defaults and its listeners stop. Throws for a class without `@WebComponent`, an input bound by two groups, a structural directive, or a directive that is already a host directive of the component. The component belongs to its creator: it is destroyed when the creator is disconnected (a directive: stops), after `onDestroy`. Callable from the constructor, a field or `onInit`; the creation is not tracked by an enclosing effect. In a directive, call it from `onInit`. A getter returning a string literal for a union-typed input of a *directive* needs `as const`.
+Creates a component in code and appends it to `target`, or to the host element when `target` or the options are missing (the element of the component, the element the directive is applied to), bound as a tag of a template is: the inputs are set before the element is appended (its `onInit` reads them), then the directives are applied and the content appended (projected through its slots; a `DocumentFragment` gives its nodes). Getters and conditions run in effects. A group with a `condition` is bound only while it holds; when it stops, its inputs go back to their defaults and its listeners stop. Throws for a class without `@WebComponent`, an input bound by two groups, a structural directive, or a directive that is already a host directive of the component. The component belongs to its creator: it is destroyed when the creator is disconnected (a directive: stops), after `onDestroy`. Callable from the constructor, a field or `onInit`; the creation is not tracked by an enclosing effect. In a directive, call it from `onInit`. A getter returning a string literal for a union-typed input of a *directive* needs `as const`.
 
 ### ComponentRef (type)
 
@@ -194,7 +194,7 @@ The type of `hostDirectives`: the instances exist with the element, so a field i
 ### CustomDirective (class)
 
 ```ts
-class X extends CustomDirective<E> { element: E; onInit?(); onDestroy?(); effect(fn, options?): () => void; createComponent(Class, options): ComponentRef<Class>; dispatchEvent(event: CustomEvent): boolean }
+class X extends CustomDirective<E> { element: E; onInit?(); onDestroy?(); effect(fn, options?): () => void; createComponent(Class, options?): ComponentRef<Class>; dispatchEvent(event: CustomEvent): boolean }
 ```
 
 Base class of the directives acting on the element they are applied to. `element` is set after the constructor: use it from `onInit`, which runs once the inputs are bound and the element is in the document, before its children are rendered. `onDestroy` runs when the element leaves the template or a conditional branch applying the directive is left (a new instance is created when it is taken again). Outputs are dispatched on the element; `dispatchEvent` returns `false` when a listener canceled a cancelable event.

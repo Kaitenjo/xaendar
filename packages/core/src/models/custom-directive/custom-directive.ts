@@ -1,10 +1,10 @@
 import type { Constructor, NoArgsVoidFunction } from '@xaendar/types';
 import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DIRECTIVE_ORDER, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
 import { EffectOptions } from '../../signals/types/effect-options.type';
-import type { ComponentRef } from '../../types/create-component/component-ref.type';
-import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
-import { _getComponentRuntime } from '../../utils/component-runtime/component-runtime.util';
 import type { _Context } from '../../types/context.type';
+import type { ComponentRef } from '../../types/create-component/component-ref.type';
+import type { CreateComponentOptionsWithOptionalTarget } from '../../types/create-component/create-component-options-with-optional-target.type';
+import { _getComponentRuntime } from '../../utils/component-runtime/component-runtime.util';
 import { _scope, addCleanup, EMPTY_LAYOUT, moveTo, removeCleanup } from '../../utils/context/context.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import { startDirective } from '../../utils/leave/leave.util';
@@ -99,6 +99,7 @@ export abstract class CustomDirective<T extends Element = Element> {
     const staging = this._context;
     this._context = context;
     moveTo(staging, context);
+
     // A handler `onInit` registers with `onLeave` marks the scope of the element
     const previous = startDirective(context);
     try {
@@ -168,13 +169,15 @@ export abstract class CustomDirective<T extends Element = Element> {
    *
    * @param component - The class of the component, decorated with `@WebComponent`.
    * @param options - The target the component is appended to, the groups of its inputs and of its events, the directives
-   *   applied to it and its content.
+   *   applied to it and its content. Without `target`, or without options at all, the component is appended to the element the
+   *   directive is applied to, its host element.
    * @returns The element of the component, along with the function destroying it ahead of the disconnection.
    * @throws When the class is not decorated with `@WebComponent`, when an input is bound by more than one group, when a directive is not
    * a custom directive, or when it is already a host directive of the component.
    */
-  public createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<Component, Directives>): ComponentRef<Component> {
-    return _getComponentRuntime().createComponent(() => this._context, component, options);
+  public createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options?: CreateComponentOptionsWithOptionalTarget<Component, Directives>): ComponentRef<Component> {
+    const actualOptions = Object.assign({}, options, { target: options?.target ?? this.element });
+    return _getComponentRuntime().createComponent(() => this._context, component, actualOptions);
   }
 
   /**

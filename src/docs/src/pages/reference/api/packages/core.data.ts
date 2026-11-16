@@ -360,7 +360,7 @@ export const CORE_API: ApiPackage = {
     {
       name: 'CustomElement',
       kind: 'class',
-      signature: 'class CustomElement extends HTMLElement {\n  readonly hostDirectives: HostDirectives;\n  onInit?(): void;\n  afterRender?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n  createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<Component, Directives>): ComponentRef<Component>;\n  onDestroy?(): void;\n}',
+      signature: 'class CustomElement extends HTMLElement {\n  readonly hostDirectives: HostDirectives;\n  onInit?(): void;\n  afterRender?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n  createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options?: CreateComponentOptionsWithOptionalTarget<Component, Directives>): ComponentRef<Component>;\n  onDestroy?(): void;\n}',
       members: [
         {
           name: 'hostDirectives',
@@ -391,7 +391,7 @@ export const CORE_API: ApiPackage = {
         {
           name: 'createComponent',
           group: 'methods',
-          signature: 'createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<Component, Directives>): ComponentRef<Component>',
+          signature: 'createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options?: CreateComponentOptionsWithOptionalTarget<Component, Directives>): ComponentRef<Component>',
           snippets: [CREATE_COMPONENT]
         }
       ],
@@ -406,7 +406,7 @@ export const CORE_API: ApiPackage = {
     {
       name: 'CustomDirective',
       kind: 'class',
-      signature: 'abstract class CustomDirective<T extends Element = Element> {\n  get element(): T;\n  onInit?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n  createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<Component, Directives>): ComponentRef<Component>;\n  dispatchEvent(event: CustomEvent): boolean;\n  onDestroy?(): void;\n}',
+      signature: 'abstract class CustomDirective<T extends Element = Element> {\n  get element(): T;\n  onInit?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n  createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options?: CreateComponentOptionsWithOptionalTarget<Component, Directives>): ComponentRef<Component>;\n  dispatchEvent(event: CustomEvent): boolean;\n  onDestroy?(): void;\n}',
       members: [
         {
           name: 'element',
@@ -432,7 +432,7 @@ export const CORE_API: ApiPackage = {
         {
           name: 'createComponent',
           group: 'methods',
-          signature: 'createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<Component, Directives>): ComponentRef<Component>',
+          signature: 'createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options?: CreateComponentOptionsWithOptionalTarget<Component, Directives>): ComponentRef<Component>',
           snippets: [DIRECTIVE_CREATE_COMPONENT]
         },
         {
@@ -676,6 +676,19 @@ export const CORE_API: ApiPackage = {
       ],
       usage: [
         { key: 'errors', snippets: ['api/core/create-component-errors.txt'] }
+      ],
+      guides: ['components/dynamic-creation']
+    },
+    {
+      name: 'CreateComponentOptionsWithOptionalTarget',
+      kind: 'type',
+      signature: 'type CreateComponentOptionsWithOptionalTarget<Component, Directives extends readonly CustomDirective[] = CustomDirective[]> = Omit<CreateComponentOptions<Component, Directives>, \'target\'> & { target?: Element };',
+      members: [
+        {
+          name: 'target',
+          group: 'properties',
+          signature: 'target?: Element'
+        }
       ],
       guides: ['components/dynamic-creation']
     },

@@ -803,5 +803,65 @@ describe('CustomElement', () => {
       element.remove();
       expect(child.destroyed).toHaveBeenCalledOnce();
     });
+
+    describe('target', () => {
+      it('is the element of the component when no options are given', () => {
+        const { element } = createWithHooks({});
+        document.body.appendChild(element);
+
+        const { element: child } = element.createComponent(Child);
+
+        expect(child.parentNode).toBe(element);
+        element.remove();
+      });
+
+      it('is the element of the component when the options have no target', () => {
+        const { element } = createWithHooks({});
+        const content = document.createTextNode('projected');
+        document.body.appendChild(element);
+
+        const { element: child } = element.createComponent(Child, { content: [content] });
+
+        expect(child.parentNode).toBe(element);
+        expect(child.contains(content)).toBe(true);
+        element.remove();
+      });
+
+      it('is the element of the component when the target is undefined', () => {
+        const { element } = createWithHooks({});
+        document.body.appendChild(element);
+
+        const { element: child } = element.createComponent(Child, { target: undefined });
+
+        expect(child.parentNode).toBe(element);
+        element.remove();
+      });
+
+      it('is the one of the options when it is given, leaving the options as they are', () => {
+        const { element } = createWithHooks({});
+        const target = document.createElement('section');
+        const options = { target };
+        document.body.appendChild(element);
+
+        const { element: child } = element.createComponent(Child, options);
+
+        expect(child.parentNode).toBe(target);
+        expect(element.childNodes).toHaveLength(0);
+        expect(options).toEqual({ target });
+        element.remove();
+      });
+
+      it('leaves the element without the component once it is destroyed', () => {
+        const { element } = createWithHooks({});
+        document.body.appendChild(element);
+        const { destroy } = element.createComponent(Child);
+        expect(element.childNodes).toHaveLength(1);
+
+        destroy();
+
+        expect(element.childNodes).toHaveLength(0);
+        element.remove();
+      });
+    });
   });
 });

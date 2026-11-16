@@ -143,6 +143,7 @@
       "directives/class": "Classi",
       "directives/style": "Stili",
       "directives/inner-html": "Inner HTML",
+      "directives/component-outlet": "Component outlet",
       "patterns/forms": "Form",
       "patterns/async-data": "Dati asincroni",
       "patterns/routing": "Routing",
@@ -1147,6 +1148,45 @@
           "td2": "La stringa analizzata come HTML e sanificata, aggiornata quando cambia.",
           "td3": "Lo stesso, mantenendo o rimuovendo più dei default.",
           "td4": "Un HTML di cui l’applicazione si fida, renderizzato così com’è."
+        }
+      },
+      "componentOutlet": {
+        "eyebrow": "Direttive",
+        "title": "Component outlet",
+        "lead": "La direttiva <code>@@componentOutlet</code> del pacchetto <code>@xaendar/directives</code> crea un componente a partire dalla sua classe e lo aggiunge all’elemento a cui è applicata, l’equivalente di <code>ngComponentOutlet</code> di Angular. Un template non può nominare una classe, quindi la classe arriva dal componente come valore: l’outlet serve per ciò che si sceglie a runtime, come i widget di una dashboard o le pagine di un router.",
+        "creating": {
+          "title": "Creare un componente dalla sua classe",
+          "example1": "Un pannello che mostra la card della classe scelta",
+          "p1": "<code>component</code> prende la classe di un componente decorato con <code>@WebComponent</code>, di solito il valore di un signal. La direttiva lo crea con <code>createComponent</code> di <a href=\"#/it/reference/api/core/CustomDirective\"><code>CustomDirective</code></a> e lo aggiunge al proprio elemento, come ultimo figlio, quindi il componente viene mostrato dove è scritto l’outlet.",
+          "p2": "Quando il signal dà un’altra classe, il componente creato viene distrutto, con i suoi binding e le sue direttive, e il nuovo prende il suo posto. Anche la direttiva distrugge il componente che ha creato quando viene distrutta: l’elemento a cui è applicata resta com’era."
+        },
+        "options": {
+          "title": "Legare i suoi input e i suoi eventi",
+          "p1": "<code>options</code> prende le <a href=\"#/it/reference/api/core/CreateComponentOptionsWithOptionalTarget\"><code>CreateComponentOptionsWithOptionalTarget</code></a> di <code>createComponent</code>: i gruppi di <code>properties</code> e di <code>events</code>, le <code>directives</code> applicate al componente e il suo <code>content</code>. Una property è un getter eseguito in un effect del componente, quindi l’esempio dà il nuovo testo alla card creata senza crearla di nuovo.",
+          "p2": "Senza <code>target</code> il componente viene aggiunto all’elemento della direttiva; con uno, va lì, e l’elemento della direttiva resta vuoto. Vedi <a href=\"#/it/components/dynamic-creation\">Creare componenti nel codice</a> per le opzioni."
+        },
+        "edgeCases": {
+          "title": "Casi limite",
+          "callout1": {
+            "heading": "Tieni stabili le opzioni",
+            "body": "Il componente viene creato di nuovo ogni volta che cambia la classe o l’oggetto di <code>options</code>, non il suo contenuto: un oggetto scritto nel template, o un <code>computed</code> che ne restituisce uno nuovo, crea il componente a ogni esecuzione. Tienilo in un campo della classe, e lega ciò che cambia con i getter delle sue <code>properties</code>."
+          },
+          "callout2": {
+            "heading": "Una volta per elemento",
+            "body": "Come ogni direttiva, <code>@@componentOutlet</code> si applica al massimo una volta su un elemento. Il componente creato è un figlio dell’elemento: un elemento con un contenuto suo lo mantiene, e il componente lo segue."
+          },
+          "callout3": {
+            "heading": "Importata dal template",
+            "body": "La direttiva si importa come ogni altra: <code>@import { ComponentOutlet } from '@xaendar/directives'</code>. Le classi che crea sono importate dal modulo del componente che le dà al template, dato che nel template nulla le nomina."
+          }
+        },
+        "summary": {
+          "title": "Riepilogo",
+          "th1": "Sintassi",
+          "th2": "Uso",
+          "td1": "Crea il componente della classe dentro l’elemento, di nuovo quando la classe cambia.",
+          "td2": "Lo stesso, legando gli input e gli eventi del componente con le opzioni.",
+          "td3": "Aggiunge il componente a un altro elemento, che lo contiene al posto di quello della direttiva."
         }
       },
       "conditional": {
