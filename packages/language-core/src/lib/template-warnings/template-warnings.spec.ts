@@ -26,7 +26,7 @@ describe('getTemplateWarnings', () => {
 
     it.each([
       ['an attribute', '<p title="{ window.name }"></p>', 'window'],
-      ['a class binding', '<p [class.a]="{ innerWidth > 1 }"></p>', 'innerWidth'],
+      ['a class binding', '<p class.a="{ innerWidth > 1 }"></p>', 'innerWidth'],
       ['a @if', '@if (matchMedia(\'print\').matches) { }', 'matchMedia'],
       ['a @for', '@for (item of history.state; track item) { }', 'history'],
       ['a @switch', '@switch (location.hash) { }', 'location'],

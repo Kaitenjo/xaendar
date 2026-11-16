@@ -23,7 +23,7 @@ function inline(text: string): string {
 
 /**
  * Turns a tiny subset of Markdown into HTML: headings, lists, paragraphs and inline formatting.
- * Everything is escaped first, so the source cannot inject markup.
+ * Everything is escaped first, so the HTML typed in the source comes out as text.
  *
  * @param source - The Markdown source.
  * @returns The HTML.

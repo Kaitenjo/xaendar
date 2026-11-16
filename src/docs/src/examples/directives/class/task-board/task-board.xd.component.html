@@ -1,0 +1,16 @@
+@import { ClassDirective } from '@xaendar/directives'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button (click)="toggleDensity()">Density: { density() }</ex-button>
+<ul @@class(value="{density()}") class="tasks">
+  @for (task of tasks(); track task.id) {
+    <li
+      @@class(value="{({ selected: task.id === selected(), done: task.done, urgent: task.urgent })}")
+      class="task"
+      (click)="select(task.id)"
+    >
+      <span>{ task.label }</span>
+      <ex-button (click)="toggle(task.id)">{ task.done ? 'Reopen' : 'Done' }</ex-button>
+    </li>
+  }
+</ul>

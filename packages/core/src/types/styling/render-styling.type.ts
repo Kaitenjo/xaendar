@@ -7,7 +7,7 @@ import type { StylingAttribute } from './styling-attribute.type';
 /**
  * Everything a template writes on the `class` or on the `style` of an element, or of a branch of one of its conditional
  * bindings: its string, static (`class="a b"`) or an expression (`class="{kind()}"`), and the keys it binds one by one
- * (`[class.on]`, `[style.width.px]`), all in one binding, which applies the keys over the string and writes only the
+ * (`class.on`, `style.width.px`), all in one binding, which applies the keys over the string and writes only the
  * keys whose value changes. A constant of the module of the template, which the compiler writes after the element.
  *
  * N.B. Deliberate, to save memory: one binding for the whole attribute instead of one per key, so that an element keeps

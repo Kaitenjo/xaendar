@@ -24527,6 +24527,10 @@ var ATTRIBUTE_PREFIX = "attr.";
 function parseAttribute(cursor, parseNode, token) {
   const node = readAttribute(cursor, parseNode, token);
   const { name, nameSpan } = node;
+  if (name.startsWith("[") && !name.startsWith("[(")) {
+    const unbracketed = name.slice(1, name.endsWith("]") ? -1 : void 0);
+    throw new Error(`"${name}" is not a binding: brackets declare only a two-way binding, [(name)]="signal": write ${unbracketed}="{ expression }"`, { cause: nameSpan });
+  }
   if (!name.startsWith(ATTRIBUTE_PREFIX)) {
     return node;
   }
@@ -24536,7 +24540,7 @@ function parseAttribute(cursor, parseNode, token) {
       throw new Error(`${name} names no attribute: write attr. followed by the name of the attribute, e.g. attr.title="\u2026"`, { cause: nameSpan });
     case "class":
     case "style":
-      throw new Error(`${name} cannot be written: ${attribute} is merged with the directives and the component writing it, bound with ${attribute}="\u2026" and [${attribute}.name]="{ expression }"`, { cause: nameSpan });
+      throw new Error(`${name} cannot be written: ${attribute} is merged with the directives and the component writing it, bound with ${attribute}="\u2026" and ${attribute}.name="{ expression }"`, { cause: nameSpan });
   }
   node.attribute = attribute;
   return node;
@@ -24614,30 +24618,34 @@ function isBooleanAttributeSuccessor(type) {
 }
 
 // ../packages/compiler/src/parser/states/parse-class-binding/parse-class-binding.state.ts
-var CLASS_BINDING_RE = /^\[class\.([^\s[\]]+)\]$/;
-var STYLE_BINDING_RE = /^\[style\.([^\s[\]]+)\]$/;
+var CLASS_PREFIX = "class.";
+var STYLE_PREFIX = "style.";
+var CLASS_NAME_RE = /^[^\s[\]]+$/;
 var STYLE_PROPERTY_RE = /^([a-zA-Z][a-zA-Z-]*)(?:\.([a-z]+|%))?$/;
-function isBracketBinding(token) {
-  return token.parts[0].startsWith("[");
+function isStylingName(name) {
+  return name.startsWith(CLASS_PREFIX) || name.startsWith(STYLE_PREFIX);
 }
-function parseBracketBinding(cursor, parseNode, token) {
+function isStylingBinding(token) {
+  return isStylingName(token.parts[0]);
+}
+function parseStylingBinding(cursor, parseNode, token) {
   const { name, nameSpan, value, span } = parseAttribute(cursor, parseNode, token);
-  const className = CLASS_BINDING_RE.exec(name)?.[1];
-  const style = className ? void 0 : STYLE_BINDING_RE.exec(name)?.[1];
-  if (!className && !style) {
-    throw new Error(`"${name}" is not a binding: a class is toggled with [class.name]="{expression}", a style property is set with [style.name]="{expression}"`, { cause: nameSpan });
+  const isClass = name.startsWith(CLASS_PREFIX);
+  const key = name.slice(isClass ? CLASS_PREFIX.length : STYLE_PREFIX.length);
+  if (isClass && !CLASS_NAME_RE.test(key)) {
+    throw new Error(`${name} names no class: write class. followed by the name of the class, e.g. class.active="{ expression }"`, { cause: nameSpan });
   }
   if (typeof value === "string") {
-    throw new Error(`${name} ${className ? "toggles the class" : "sets the style property"} by the value of an expression: ${name}="{expression}"`, { cause: span });
+    throw new Error(`${name} ${isClass ? "toggles the class" : "sets the style property"} by the value of an expression: ${name}="{expression}"`, { cause: span });
   }
-  if (className) {
-    return { type: 20 /* ClassBinding */, className, nameSpan, value, span };
+  if (isClass) {
+    return { type: 20 /* ClassBinding */, className: key, nameSpan, value, span };
   }
-  const node = { type: 30 /* StyleBinding */, property: style, nameSpan, value, span };
-  if (!style.startsWith("--")) {
-    const match = STYLE_PROPERTY_RE.exec(style);
+  const node = { type: 30 /* StyleBinding */, property: key, nameSpan, value, span };
+  if (!key.startsWith("--") || key.length === 2) {
+    const match = STYLE_PROPERTY_RE.exec(key);
     if (!match) {
-      throw new Error(`${name} does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. [style.width.px], or a custom property, e.g. [style.--accent]`, { cause: nameSpan });
+      throw new Error(`${name} does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. style.width.px, or a custom property, e.g. style.--accent`, { cause: nameSpan });
     }
     const [, property, unit] = match;
     node.property = toCssPropertyName(property);
@@ -24650,37 +24658,32 @@ function parseBracketBinding(cursor, parseNode, token) {
   }
   return node;
 }
-function assertNoBracketBindings(attributes, conditionalBindings) {
+function assertNoElementBindings(attributes, conditionalBindings) {
   for (let i2 = 0; i2 < attributes.length; i2++) {
     const { name, nameSpan, attribute } = attributes[i2];
-    if (name.startsWith("[") || attribute !== void 0) {
+    if (attribute !== void 0 || isStylingName(name)) {
       throw new Error(`${name} cannot be bound inside a directive: bind it on the element`, { cause: nameSpan });
     }
   }
   if (conditionalBindings?.length) {
-    assertNoBranchClassBindings(conditionalBindings);
+    assertNoBranchElementBindings(conditionalBindings);
   }
 }
-function assertNoBranchClassBindings(conditionalBindings) {
+function assertNoBranchElementBindings(conditionalBindings) {
   for (let i2 = 0; i2 < conditionalBindings.length; i2++) {
     const { branches } = conditionalBindings[i2];
     for (let j = 0; j < branches.length; j++) {
       const { classBindings, styleBindings, attributes } = branches[j];
-      const written = attributes.find(({ attribute }) => attribute !== void 0);
+      const written = attributes.find(({ attribute }) => attribute !== void 0) ?? classBindings[0] ?? styleBindings[0];
       if (written) {
-        throw new Error(`${written.name} cannot be bound inside a directive: bind it on the element`, { cause: written.nameSpan });
+        throw new Error(`${written.type === 1 /* Attribute */ ? written.name : bindingName(written)} cannot be bound inside a directive: bind it on the element`, { cause: written.nameSpan });
       }
-      if (classBindings.length) {
-        const { className, nameSpan } = classBindings[0];
-        throw new Error(`[class.${className}] cannot be bound inside a directive: bind it on the element`, { cause: nameSpan });
-      }
-      if (styleBindings.length) {
-        const { property, nameSpan } = styleBindings[0];
-        throw new Error(`[style.${property}] cannot be bound inside a directive: bind it on the element`, { cause: nameSpan });
-      }
-      assertNoBranchClassBindings(branches[j].conditionalBindings);
+      assertNoBranchElementBindings(branches[j].conditionalBindings);
     }
   }
+}
+function bindingName(binding) {
+  return binding.type === 20 /* ClassBinding */ ? `${CLASS_PREFIX}${binding.className}` : `${STYLE_PREFIX}${binding.property}`;
 }
 
 // ../packages/compiler/src/parser/utils/default-never/default-never.utils.ts
@@ -24883,7 +24886,7 @@ function parseDirective(cursor, parseNode, token) {
         throw new Error("Unexpected token in directive");
     }
   }
-  assertNoBracketBindings(attributes, conditionalBindings);
+  assertNoElementBindings(attributes, conditionalBindings);
   const selectorSpan = cursor.findSpan(token.parts[0], startOffset);
   const node = {
     type: 15 /* Directive */,
@@ -24923,7 +24926,7 @@ function parseStructuralDirective(cursor, parseNode, token) {
         throw new Error("Unexpected token in structural directive");
     }
   }
-  assertNoBracketBindings(attributes);
+  assertNoElementBindings(attributes);
   const selectorSpan = cursor.findSpan(token.parts[0], startOffset);
   const node = {
     type: 16 /* StructuralDirective */,
@@ -25047,8 +25050,8 @@ function parseBranch(cursor, parseNode, start, condition, conditionSpans) {
           const { attribute, event } = parseTwoWayBinding(cursor, parseNode, token);
           attributes.push(attribute);
           events.push(event);
-        } else if (isBracketBinding(token)) {
-          const binding = parseBracketBinding(cursor, parseNode, token);
+        } else if (isStylingBinding(token)) {
+          const binding = parseStylingBinding(cursor, parseNode, token);
           binding.type === 20 /* ClassBinding */ ? classBindings.push(binding) : styleBindings.push(binding);
         } else {
           attributes.push(parseAttribute(cursor, parseNode, token));
@@ -25350,8 +25353,8 @@ function parseElement(cursor, parseNode, token) {
           const { attribute, event } = parseTwoWayBinding(cursor, parseNode, token2);
           attributes.push(attribute);
           events.push(event);
-        } else if (isBracketBinding(token2)) {
-          const binding = parseBracketBinding(cursor, parseNode, token2);
+        } else if (isStylingBinding(token2)) {
+          const binding = parseStylingBinding(cursor, parseNode, token2);
           binding.type === 20 /* ClassBinding */ ? classBindings.push(binding) : styleBindings.push(binding);
         } else {
           attributes.push(parseAttribute(cursor, parseNode, token2));
@@ -31988,7 +31991,7 @@ function getCssProperties(readFile = import_typescript31.sys.readFile) {
 }
 
 // ../packages/language-core/src/lib/template-completions/template-completions.ts
-var STYLE_BINDING_RE2 = /^\[style\.([^.\]]*)(?:\.([^.\]]*))?$/;
+var STYLE_BINDING_RE = /^style\.([^.]*)(?:\.([^.]*))?$/;
 var KEY_EVENT_RE = /^key(?:down|up)\.((?:[^.]*\.)*)([^.]*)$/;
 var COMMON_KEYS = ["enter", "escape", "space", "tab", "backspace", "delete", "arrowup", "arrowdown", "arrowleft", "arrowright", "home", "end", "pageup", "pagedown"];
 var KEYWORD_SNIPPETS = {
@@ -32117,7 +32120,7 @@ function getTemplateStyleCompletions(source, offset) {
   if (context?.kind !== "attribute" || context.directive !== void 0) {
     return void 0;
   }
-  const match = STYLE_BINDING_RE2.exec(source.slice(context.span.start, offset));
+  const match = STYLE_BINDING_RE.exec(source.slice(context.span.start, offset));
   if (!match) {
     return void 0;
   }
@@ -33540,7 +33543,7 @@ var XaendarLanguageServer = class {
    * Proposes the completions at the cursor in a template: in the path of an `@import`, the modules and directories;
    * between its braces, the components and directives the module declares; on the tag name of an element or the
    * selector of a directive, the components and directives imported by the template; on the name of an attribute or
-   * event, the bindings of the component or directive, and after `[style.` the CSS properties, then their units; after a `@`, the blocks that can be written there; between the
+   * event, the bindings of the component or directive, and after `style.` the CSS properties, then their units; after a `@`, the blocks that can be written there; between the
    * parentheses of a `@defer` or of a `@hydrate`, their triggers, and of a `@placeholder` or of a `@loading`, their
    * parameters; in an
    * interpolation, in the method an event calls and in its arguments, in the condition of a block, the variables of

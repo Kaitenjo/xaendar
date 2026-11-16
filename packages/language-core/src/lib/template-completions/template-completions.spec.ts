@@ -299,25 +299,26 @@ describe('getTemplateSourceBindingCompletions', () => {
 });
 
 describe('getTemplateStyleCompletions', () => {
-  it('proposes the CSS properties after [style., replacing what follows it', () => {
-    const source = '<div [style.fo';
+  it('proposes the CSS properties after style., replacing what follows it', () => {
+    const source = '<div style.fo';
     const completions = getTemplateStyleCompletions(source, source.length)!;
     expect(completions.map(({ name }) => name)).toContain('font-size');
-    expect(completions[0].replacementSpan).toEqual({ start: 12, end: 14 });
+    expect(completions[0].replacementSpan).toEqual({ start: 11, end: 13 });
   });
 
   it('proposes the units of CSS after the property, none for a custom property', () => {
-    const source = '<div [style.width.p';
+    const source = '<div style.width.p';
     const completions = getTemplateStyleCompletions(source, source.length)!;
     expect(completions.map(({ name }) => name)).toContain('px');
-    expect(completions[0].replacementSpan).toEqual({ start: 18, end: 19 });
-    expect(getTemplateStyleCompletions('<div [style.--x.', 16)).toEqual([]);
+    expect(completions[0].replacementSpan).toEqual({ start: 17, end: 18 });
+    expect(getTemplateStyleCompletions('<div style.--x.', 15)).toEqual([]);
   });
 
   it('proposes nothing elsewhere, in a directive or on another binding', () => {
-    expect(getTemplateStyleCompletions('<div [class.', 12)).toBeUndefined();
-    expect(getTemplateStyleCompletions('<div @@tip([style.', 18)).toBeUndefined();
-    expect(getTemplateStyleCompletions('text [style.', 12)).toBeUndefined();
+    expect(getTemplateStyleCompletions('<div class.', 11)).toBeUndefined();
+    expect(getTemplateStyleCompletions('<div style', 10)).toBeUndefined();
+    expect(getTemplateStyleCompletions('<div @@tip(style.', 17)).toBeUndefined();
+    expect(getTemplateStyleCompletions('text style.', 11)).toBeUndefined();
   });
 });
 

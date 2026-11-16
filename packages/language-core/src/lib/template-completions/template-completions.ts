@@ -16,7 +16,7 @@ import { readSsr } from '../utils/xaendar-config/xaendar-config.utils';
 /**
  * Matches the name of a style binding being written: the property, and the unit after it, if a `.` follows it.
  */
-const STYLE_BINDING_RE = /^\[style\.([^.\]]*)(?:\.([^.\]]*))?$/;
+const STYLE_BINDING_RE = /^style\.([^.]*)(?:\.([^.]*))?$/;
 
 /**
  * Matches the name of a key event being written: the parts written after its event, each one followed by a dot, and the
@@ -268,7 +268,7 @@ export function getTemplateTriggerCompletions(source: string, offset: number): T
 
 /**
  * Proposes what a style binding is being written with at an offset of a template, while it doesn't compile too: after
- * `[style.`, the CSS properties (see `getCssProperties`); after `[style.name.`, the units of CSS, but for a custom
+ * `style.`, the CSS properties (see `getCssProperties`); after `style.name.`, the units of CSS, but for a custom
  * property, which takes none.
  *
  * @param source - The current source of the template.

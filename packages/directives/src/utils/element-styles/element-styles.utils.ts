@@ -2,7 +2,7 @@ import { CSS_UNITS, parseStyleDeclarations, styleValue, toCssPropertyName } from
 import type { ElementStyles } from '../../types/element-styles.type';
 
 /**
- * Matches the name of a style property and its unit, if any, as `[style.name]` does in a template: `width` and `px` in
+ * Matches the name of a style property and its unit, if any, as `style.name` does in a template: `width` and `px` in
  * `width.px`, `backgroundColor` in `backgroundColor`, `-webkit-line-clamp` in `-webkit-line-clamp`.
  */
 const STYLE_KEY_RE = /^(-?[a-zA-Z][a-zA-Z-]*)(?:\.([a-z]+|%))?$/;

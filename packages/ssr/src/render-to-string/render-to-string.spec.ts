@@ -121,7 +121,7 @@ declareInput(TeamElement, 'heading', 'Untitled', rootMetadata);
 Object.defineProperty(TeamElement, Symbol.for('Symbol.metadata'), { value: rootMetadata });
 customElements.define('team-list', TeamElement);
 _defineServerRender(TeamElement, await compile([
-  '<h1 class="title" [class.long]="{ heading().length > 5 }">{ heading() } &amp; { name }</h1>',
+  '<h1 class="title" class.long="{ heading().length > 5 }">{ heading() } &amp; { name }</h1>',
   '<template row(user: { name: string, admin: boolean }, index: number)>',
   '  <user-badge label="{ user.name }" admin="{ user.admin }">#{ index }</user-badge>',
   '</template>',
@@ -359,7 +359,7 @@ describe('renderToString', () => {
       public off = null;
     }
     customElements.define('merged-card', MergedElement);
-    _defineServerRender(MergedElement, await compile('<p class="a" style="color: red" [class.on]="{ off }" @@wide @@narrow></p>', [], [], []));
+    _defineServerRender(MergedElement, await compile('<p class="a" style="color: red" class.on="{ off }" @@wide @@narrow></p>', [], [], []));
 
     expect(await renderToString(MergedElement)).toBe('<merged-card><template shadowrootmode="open"><p class="a wide on" style="color: red; width: 5px; gap: 2px;"></p></template></merged-card>');
   });
@@ -400,7 +400,7 @@ describe('renderToString', () => {
     });
 
     it('writes the inputs of the conditional bindings, not the classes named like an input', async () => {
-      expect(await renderIsland('static-three', '<island-card [class.kind]="{ true }" @if (true) { first="{ 2 }" }></island-card>')).toContain('data-xd-inputs="{&quot;start&quot;:2}"');
+      expect(await renderIsland('static-three', '<island-card class.kind="{ true }" @if (true) { first="{ 2 }" }></island-card>')).toContain('data-xd-inputs="{&quot;start&quot;:2}"');
     });
 
     it('writes a custom element without a class as any other element', async () => {

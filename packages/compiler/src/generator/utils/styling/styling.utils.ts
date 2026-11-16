@@ -81,7 +81,7 @@ export function splitStylingAttributes(attributes: readonly AttributeNode[], isI
  *
  * @param attribute - The attribute.
  * @param string - The attribute holding the string, if any.
- * @param keys - The keys bound one by one: `[class.name]`, or `[style.name]`.
+ * @param keys - The keys bound one by one: `class.name`, or `style.name`.
  * @param declare - Declares the function computing an expression, given the role it is named after, returning its name.
  * @returns The members, `undefined` when the element writes nothing on the attribute.
  */

@@ -2,6 +2,6 @@
 <p>{ html() }</p>
 <!-- Rendered: <b>bold</b> -->
 
-<!-- A directive is the only way to set innerHTML -->
-<p @@exInnerHtml(html="{html()}") />
+<!-- @@innerHtml renders it as markup, sanitized -->
+<p @@innerHtml(html="{html()}") />
 <!-- Rendered: bold, in bold -->

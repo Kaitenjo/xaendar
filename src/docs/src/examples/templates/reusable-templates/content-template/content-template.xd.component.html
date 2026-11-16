@@ -3,7 +3,7 @@
 
 <ex-option-list options="{fruits()}" emptyTemplate="{nothing}">
   <template option(name: string, selected: boolean)>
-    <span [class.selected]="{selected}">
+    <span class.selected="{selected}">
       { selected ? marker() : '·' } { name }
     </span>
   </template>

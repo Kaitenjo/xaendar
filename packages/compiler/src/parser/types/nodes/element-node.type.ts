@@ -44,11 +44,11 @@ export type ElementNode = ASTNodeWithSpan<{
    */
   attributes: AttributeNode[];
   /**
-   * Classes toggled on this element, `[class.name]="{expression}"`.
+   * Classes toggled on this element, `class.name="{expression}"`.
    */
   classBindings: ClassBindingNode[];
   /**
-   * Style properties set on this element, `[style.name]="{expression}"`.
+   * Style properties set on this element, `style.name="{expression}"`.
    */
   styleBindings: StyleBindingNode[];
   /**

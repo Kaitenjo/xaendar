@@ -19,7 +19,7 @@ import type { TemplateDeclarationNode } from '../../types/nodes/template-declara
 import type { ClassBindingNode } from '../../types/nodes/class-binding-node.type';
 import type { StyleBindingNode } from '../../types/nodes/style-binding-node.type';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
-import { isBracketBinding, parseBracketBinding } from '../parse-class-binding/parse-class-binding.state';
+import { isStylingBinding, parseStylingBinding } from '../parse-class-binding/parse-class-binding.state';
 import { parseConditionalBinding } from '../parse-conditional-binding/parse-conditional-binding.state';
 import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseEvent } from '../parse-event/parse-event.state';
@@ -90,8 +90,8 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
           const { attribute, event } = parseTwoWayBinding(cursor, parseNode, token);
           attributes.push(attribute);
           events.push(event);
-        } else if (isBracketBinding(token)) {
-          const binding = parseBracketBinding(cursor, parseNode, token);
+        } else if (isStylingBinding(token)) {
+          const binding = parseStylingBinding(cursor, parseNode, token);
           binding.type === ASTNodeType.ClassBinding ? classBindings.push(binding) : styleBindings.push(binding);
         } else {
           attributes.push(parseAttribute(cursor, parseNode, token));

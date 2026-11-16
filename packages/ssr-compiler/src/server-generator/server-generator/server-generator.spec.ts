@@ -135,7 +135,7 @@ describe('ServerGenerator', () => {
   });
 
   it('marks what listens to submit, as HTML or through the runtime', () => {
-    const source = '<form (submit)="a()"></form><form [class.on]="{on}" (submit)="b()"></form><form></form>';
+    const source = '<form (submit)="a()"></form><form class.on="{on}" (submit)="b()"></form><form></form>';
     const code = new ServerGenerator(source, parseTemplate(source), cache).generate([], []);
 
     expect(code).toContain('<form data-xd-submit="">');

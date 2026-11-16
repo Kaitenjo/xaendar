@@ -145,7 +145,7 @@ describe('Generator', () => {
     });
 
     it('declares the variables of a @for body after its iteration variables', async () => {
-      const code = await generate('@for (item of items; track item) { <input #field [class.first]="{$first}" />{ item } }');
+      const code = await generate('@for (item of items; track item) { <input #field class.first="{$first}" />{ item } }');
 
       expect(code).toContain('_iterationVariables(context, items0, i0, for0Variables);\n  _declare(context, 7);');
     });

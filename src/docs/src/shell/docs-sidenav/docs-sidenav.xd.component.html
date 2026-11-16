@@ -12,7 +12,7 @@
     <ul class="column sections">
       @for (section of NAV; track section.key) {
         <li>
-          <button class="section" type="button" [class.section--current]="{section === currentSection()}"
+          <button class="section" type="button" class.section--current="{section === currentSection()}"
             (click)="select(section)">
             <span class="section__icon" style="{`--icon: url(/${section.iconUrl})`}" />
             <span class="section__title">{ translations().nav.sections[section.key] }</span>
@@ -35,12 +35,12 @@
           <li>
             @if (item.page) {
               <a class="link" href="{`#/${currentLang()}/${item.page.path}`}"
-                [class.link--active]="{item.page.path === navPathValue}">
+                class.link--active="{item.page.path === navPathValue}">
                 { itemTitle(item, translations()) }
               </a>
             } @else {
               <button class="link group" type="button" aria-expanded="{item === openedValue ? 'true' : 'false'}"
-                [class.group--open]="{item === openedValue}" [class.group--current]="{item === currentGroup()}"
+                class.group--open="{item === openedValue}" class.group--current="{item === currentGroup()}"
                 (click)="toggle(item)">
                 <span>{ itemTitle(item, translations()) }</span>
                 <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
@@ -68,7 +68,7 @@
           @for (page of openedValue.pages; track page.path) {
             <li>
               <a class="link" href="{`#/${currentLang()}/${page.path}`}"
-                [class.link--active]="{page.path === navPathValue}">
+                class.link--active="{page.path === navPathValue}">
                 { pageTitle(page, translations()) }
               </a>
             </li>

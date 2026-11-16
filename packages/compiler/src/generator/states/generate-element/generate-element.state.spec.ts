@@ -524,7 +524,7 @@ describe('generateElement', () => {
   it('generates the class and the style of the element as one descriptor each, before its attributes: the static string parsed, the keys bound one by one with their units, and the ones of a branch removed with it', async () => {
     const context = new GeneratorContext(cache);
     context.addSignalClassField('width');
-    const result = await run(`<div style="color: red" [style.width.px]="{width()}" [class.on]="{1}" [style.--accent]="{'blue'}" @if (x) { [style.top.%]="{5}" }></div>`, context);
+    const result = await run(`<div style="color: red" style.width.px="{width()}" class.on="{1}" style.--accent="{'blue'}" @if (x) { style.top.%="{5}" }></div>`, context);
 
     expect(result.constants).toEqual([[
       'const div0$style$binding = {',
@@ -578,7 +578,7 @@ describe('generateElement', () => {
   it('binds the classes bound one by one in one binding of the class, before the attributes', async () => {
     const context = new GeneratorContext(cache);
     context.addSignalClassField('active');
-    const result = await run('<div [class.is-on]="{active()}" title="x" [class.big]="{2 > 1}"></div>', context);
+    const result = await run('<div class.is-on="{active()}" title="x" class.big="{2 > 1}"></div>', context);
 
     expect(result.constants).toEqual([[
       'const div0$class$binding = {',
@@ -607,7 +607,7 @@ describe('generateElement', () => {
   it('passes to the binding of the class the constant listing the variables of the template its expressions read', async () => {
     const context = new GeneratorContext(cache);
     context.addIdentifier('row', 'variable');
-    const { constants, reads } = await run('<div class="{row.kind}" [class.on]="{row.active}"></div>', context);
+    const { constants, reads } = await run('<div class="{row.kind}" class.on="{row.active}"></div>', context);
 
     expect(constants[0]).toBe([
       'const div0$class$binding = {',
@@ -634,15 +634,15 @@ describe('generateElement', () => {
 
   it('flags the states the runtime creates: for a component, for directives, for structural directives, for branches applying directives', async () => {
     const flagsOf = async (template: string) => /styling: (\d+)/.exec((await run(template, new GeneratorContext(cacheWith({})))).constants.at(-1)!)?.[1];
-    expect(await flagsOf('<my-el class="a" [style.width.px]="{1}"></my-el>')).toBe('12');
+    expect(await flagsOf('<my-el class="a" style.width.px="{1}"></my-el>')).toBe('12');
     expect(await flagsOf('<div class="a" @@tip()></div>')).toBe('4');
     expect(await flagsOf('<div *visible style="top: 0"></div>')).toBe('2');
     expect(await flagsOf('<div class="a" style="top: 0" @if (x) { @@tip() }></div>')).toBe('3');
-    expect(await flagsOf('<div class="a" @if (x) { [style.top.px]="{1}" }></div>')).toBeUndefined();
+    expect(await flagsOf('<div class="a" @if (x) { style.top.px="{1}" }></div>')).toBeUndefined();
     expect(await flagsOf('<div @@tip()></div>')).toBeUndefined();
-    expect(await flagsOf('<div [class.a]="{1}" @if (x) { class="b" }></div>')).toBe('1');
-    expect(await flagsOf('<div class="a" @if (x) { [class.b]="{1}" }></div>')).toBe('1');
-    expect(await flagsOf('<div [style.top.px]="{1}" @if (x) { style="left: 0" }></div>')).toBe('2');
+    expect(await flagsOf('<div class.a="{1}" @if (x) { class="b" }></div>')).toBe('1');
+    expect(await flagsOf('<div class="a" @if (x) { class.b="{1}" }></div>')).toBe('1');
+    expect(await flagsOf('<div style.top.px="{1}" @if (x) { style="left: 0" }></div>')).toBe('2');
   });
 
   it('describes the class of an element applying structural directives without slots, the runtime keeping its binding', async () => {
@@ -661,7 +661,7 @@ describe('generateElement', () => {
 
   describe('conditional bindings', () => {
     it('generates the classes of a branch, removed when it is no longer selected, even when the branch writes nothing else', async () => {
-      const result = await run('<div @if (cond()) { [class.on]="{1}" }></div>');
+      const result = await run('<div @if (cond()) { class.on="{1}" }></div>');
 
       expect(result.constants).toEqual([[
         'const div0$conditional$binding = {',

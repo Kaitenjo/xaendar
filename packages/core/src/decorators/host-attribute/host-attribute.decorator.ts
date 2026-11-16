@@ -19,7 +19,7 @@ const CLASS_PREFIX = 'class.';
 const STYLE_PREFIX = 'style.';
 
 /**
- * Matches the name of a style property and its unit, if any, as `[style.name]` does in a template: `width` and `px`
+ * Matches the name of a style property and its unit, if any, as `style.name` does in a template: `width` and `px`
  * in `width.px`, `backgroundColor` in `backgroundColor`.
  */
 const STYLE_PROPERTY_RE = /^([a-zA-Z][a-zA-Z-]*)(?:\.([a-z]+|%))?$/;

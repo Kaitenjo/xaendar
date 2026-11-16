@@ -140,10 +140,12 @@
       "directives/structural": "Direttive strutturali",
       "directives/conditional": "Direttive condizionali",
       "directives/animations": "Animazioni",
+      "directives/class": "Classi",
+      "directives/style": "Stili",
+      "directives/inner-html": "Inner HTML",
       "patterns/forms": "Form",
       "patterns/async-data": "Dati asincroni",
       "patterns/routing": "Routing",
-      "patterns/html-rendering": "Renderizzare HTML",
       "patterns/theming": "Temi",
       "patterns/lists": "Liste e CRUD",
       "tools/cli": "CLI",
@@ -928,7 +930,7 @@
         },
         "dynamicClassesAndStyles": {
           "title": "Classi e stili dinamici",
-          "p1": "<code>class</code> e <code>style</code> sono attributi come gli altri: legali a un’espressione e l’attributo viene riscritto quando il valore cambia. Costruire la stringa in un computed mantiene il template corto e il binding reattivo. Una singola classe che va e viene è più breve con <code>[class.nome]=\"{ condizione }\"</code>, come fa l’etichetta, e una singola proprietà con <code>[style.width.%]=\"{ valore }\"</code>: vedi <a href=\"#/it/templates/binding\">Binding</a>.",
+          "p1": "<code>class</code> e <code>style</code> sono attributi come gli altri: legali a un’espressione e l’attributo viene riscritto quando il valore cambia. Costruire la stringa in un computed mantiene il template corto e il binding reattivo. Una singola classe che va e viene è più breve con <code>class.nome=\"{ condizione }\"</code>, come fa l’etichetta, e una singola proprietà con <code>style.width.%=\"{ valore }\"</code>: vedi <a href=\"#/it/templates/binding\">Binding</a>.",
           "example1": "Una barra di avanzamento"
         },
         "sassAndLess": {
@@ -1021,6 +1023,130 @@
             "heading": "Importate dal template",
             "p1": "La direttiva si importa come tutte le altre (<code>@import { AnimationDirective } from '@xaendar/directives'</code>), e <code>@xaendar/directives</code> prende <code>@xaendar/core</code> come peer, quello dell’applicazione. L’uscita viene registrata quando <code>leave</code> contiene un’animazione all’avvio della direttiva. In una pagina renderizzata sul server, la classe di <code>enter</code> viene scritta nell’HTML, così il browser avvia l’animazione mentre carica la pagina: l’hydration non la riavvia, toglie solo la classe quando l’animazione finisce. Una funzione non può girare sul server: la esegue l’hydration. <code>leave</code> sul server non fa niente."
           }
+        }
+      },
+      "class": {
+        "eyebrow": "Direttive",
+        "title": "Classi",
+        "lead": "La direttiva <code>@@class</code> del pacchetto <code>@xaendar/directives</code> dà all’elemento a cui è applicata le classi di un’espressione, l’equivalente di <code>[ngClass]</code> di Angular: una stringa, una lista, un set, o un oggetto di classi e condizioni. Poche classi note in anticipo sono più leggere con <code>class.nome=\"{ condizione }\"</code> del template; <code>@@class</code> è adatta a classi calcolate, o numerose.",
+        "values": {
+          "title": "Classi da un valore",
+          "example1": "Righe con le classi di un oggetto, una lista con la densità di una stringa",
+          "p1": "<code>value</code> accetta una stringa di classi separate da spazi, una lista o un set di classi, o un oggetto le cui chiavi sono classi, ognuna data finché il suo valore è truthy; <code>null</code> e <code>undefined</code> non ne danno nessuna. Quando il valore cambia, le classi che non contiene più vengono rimosse e le nuove aggiunte: le altre classi dell’elemento restano.",
+          "p2": "Ogni riga dell’esempio costruisce il suo oggetto nel template, dall’elemento del <code>@for</code> e da <code>selected()</code>: il binding viene rieseguito quando uno dei due cambia, e vengono scritte solo le classi diverse."
+        },
+        "merging": {
+          "title": "Fusione con le altre classi",
+          "p1": "Le classi di <code>@@class</code> vengono fuse classe per classe con le altre sorgenti del <code>class</code> dell’elemento, come una <code>@HostAttribute('class')</code> di una direttiva: il <code>class</code> e i <code>class.nome</code> del template vincono su di essa, essa vince sul componente, e una classe che non dà, o non dà più, è lasciata a loro.",
+          "p2": "In una pagina renderizzata sul server, le classi vengono scritte nell’HTML, e l’idratazione non scrive nulla. Vedi <a href=\"#/it/templates/binding\">Binding</a> per l’ordine completo delle sorgenti."
+        },
+        "edgeCases": {
+          "title": "Casi limite",
+          "callout1": {
+            "heading": "Una volta per elemento",
+            "body": "Come ogni direttiva, <code>@@class</code> si applica al massimo una volta su un elemento. Per combinare più sorgenti, uniscile in un solo valore nella classe (un <code>computed</code> che restituisce l’oggetto), oppure lega le classi fisse con <code>class</code> e quelle calcolate con <code>@@class</code>."
+          },
+          "callout2": {
+            "heading": "Importata dal template",
+            "body": "La direttiva si importa come le altre: <code>@import { ClassDirective } from '@xaendar/directives'</code>. <code>@xaendar/directives</code> prende <code>@xaendar/core</code> come peer, quello dell’applicazione."
+          }
+        },
+        "summary": {
+          "title": "Riepilogo",
+          "th1": "Sintassi",
+          "th2": "Uso",
+          "td1": "Una classe nota in anticipo, attivata da una condizione.",
+          "td2": "L’intera stringa di classi, calcolata.",
+          "td3": "Classi da una stringa, una lista, un set o un oggetto, calcolate o numerose, fuse con le altre."
+        }
+      },
+      "style": {
+        "eyebrow": "Direttive",
+        "title": "Stili",
+        "lead": "La direttiva <code>@@style</code> del pacchetto <code>@xaendar/directives</code> dà all’elemento a cui è applicata le proprietà di stile di un oggetto, l’equivalente di <code>[ngStyle]</code> di Angular. Poche proprietà note in anticipo sono più leggere con <code>style.nome=\"{ valore }\"</code> del template; <code>@@style</code> è adatta a proprietà calcolate, o numerose.",
+        "properties": {
+          "title": "Proprietà da un oggetto",
+          "example1": "Una card con larghezza, raggio e colore presi da un oggetto",
+          "p1": "Le chiavi di <code>value</code> sono le proprietà, scritte in kebab-case o in camelCase, seguite dalla loro unità, se c’è (<code>'width.px'</code>, <code>'width.%'</code>), o custom property (<code>'--accent'</code>), impostate come sono scritte. I valori sono stringhe o numeri, con <code>!important</code> quando finiscono con esso; <code>null</code>, <code>undefined</code> e <code>''</code> non impostano nulla.",
+          "p2": "Quando l’oggetto cambia, le proprietà che non imposta più vengono rimosse, e vengono scritte solo quelle diverse. L’oggetto dell’esempio è un <code>computed</code> della classe: la larghezza, il raggio e la <code>--hue</code> letta dal foglio di stile seguono gli slider, e il peso del font è impostato solo finché la casella è spuntata."
+        },
+        "merging": {
+          "title": "Fusione con le altre proprietà",
+          "p1": "Le proprietà di <code>@@style</code> vengono fuse proprietà per proprietà con le altre sorgenti dello <code>style</code> dell’elemento, come una <code>@HostAttribute('style')</code> di una direttiva: lo <code>style</code> e gli <code>style.nome</code> del template vincono su di essa, essa vince sul componente, e una proprietà che non imposta è lasciata a loro.",
+          "p2": "In una pagina renderizzata sul server, le proprietà vengono scritte nell’HTML, e l’idratazione non scrive nulla. Vedi <a href=\"#/it/templates/binding\">Binding</a> per l’ordine completo delle sorgenti."
+        },
+        "edgeCases": {
+          "title": "Casi limite",
+          "callout1": {
+            "heading": "Una chiave che non è una proprietà",
+            "body": "Una chiave che non è né una proprietà di stile, in kebab-case o in camelCase seguita da un’unità del CSS, né una custom property lancia un errore (<code>'width.foo'</code>, <code>'1x'</code>): le unità sono quelle che <code>style.width.px</code> accetta nel template."
+          },
+          "callout2": {
+            "heading": "Un valore che scrive altre proprietà",
+            "body": "Un valore che contiene un <code>;</code> fuori da parentesi e virgolette, che chiuderebbe la dichiarazione e scriverebbe altre proprietà, viene scartato, come il browser scarta un valore non valido: la proprietà non viene impostata."
+          },
+          "callout3": {
+            "heading": "Importata dal template",
+            "body": "La direttiva si importa come le altre: <code>@import { StyleDirective } from '@xaendar/directives'</code>, e il tipo del suo valore è <code>ElementStyles</code>, per un oggetto calcolato nella classe."
+          }
+        },
+        "summary": {
+          "title": "Riepilogo",
+          "th1": "Sintassi",
+          "th2": "Uso",
+          "td1": "Una proprietà nota in anticipo, con la sua unità se c’è.",
+          "td2": "L’intera stringa di dichiarazioni, calcolata.",
+          "td3": "Proprietà da un oggetto, calcolate o numerose, fuse con le altre."
+        }
+      },
+      "innerHtml": {
+        "eyebrow": "Direttive",
+        "title": "Inner HTML",
+        "lead": "Un’interpolazione crea sempre un nodo di testo, quindi una stringa di HTML appare come testo, che è il default sicuro. La direttiva <code>@@innerHtml</code> del pacchetto <code>@xaendar/directives</code> la renderizza invece come contenuto del suo elemento, l’equivalente di <code>[innerHTML]</code> di Angular, sanificata come fa Angular.",
+        "rendering": {
+          "title": "Renderizzare una stringa di HTML",
+          "example1": "Un’anteprima Markdown",
+          "p1": "<code>@@innerHtml(html=\"{html()}\")</code> renderizza il suo input come contenuto dell’elemento, e di nuovo a ogni cambio, quindi l’anteprima segue ogni tasto premuto. Il convertitore Markdown fa l’escape del sorgente prima di aggiungere i suoi tag: l’HTML scritto nell’editor esce come testo.",
+          "p2": "Gli elementi inseriti vivono nella shadow root del componente, quindi il suo foglio di stile li stila: i titoli e il codice dell’anteprima usano le regole di <code>markdown-preview.css</code>. In una pagina renderizzata sul server, l’HTML viene scritto nella pagina."
+        },
+        "sanitizing": {
+          "title": "Sanificazione",
+          "example1": "Un commento scritto in HTML, renderizzato sanificato",
+          "p1": "L’HTML è sanificato di default: gli elementi, gli attributi e gli URL che possono eseguire codice vengono rimossi (<code>script</code>, <code>onerror</code>, <code>javascript:</code>), mentre gli elementi di testo e di blocco, le liste, le tabelle e i media restano. Quando rimuove qualcosa, l’elemento emette <code>sanitized</code>, il cui detail elenca gli elementi e gli attributi rimossi: l’esempio li mostra sotto il commento.",
+          "p2": "<code>options</code> cambia cosa viene mantenuto (<code>allowElements</code>, <code>allowAttributes</code>, <code>removeElements</code>, <code>removeAttributes</code>, <code>urlSchemes</code>, un attributo di un solo elemento scritto <code>elemento[attributo]</code>), <code>sanitizer</code> sostituisce il sanificatore con uno dell’applicazione, e un HTML marcato con <code>trustHtml</code> viene renderizzato così com’è:",
+          "p3": "Lo stesso sanificatore è esportato come <code>sanitizeHtml</code>: non richiede il DOM, quindi il server e il browser scrivono lo stesso HTML.",
+          "callout1": {
+            "heading": "Fidati solo di ciò che costruisce l’applicazione",
+            "p1": "<code>trustHtml</code> e un <code>sanitizer</code> dell’applicazione disattivano la sanificazione della direttiva: gli script negli attributi del loro HTML vengono eseguiti. Usa <code>trustHtml</code> solo per un HTML costruito dall’applicazione, o proveniente da una fonte fidata e già sanificato, e chiamala dove l’HTML viene costruito, così ogni HTML fidato è facile da trovare."
+          }
+        },
+        "trustedTypes": {
+          "title": "Trusted Types",
+          "p1": "Dove il browser supporta i Trusted Types, l’HTML sanificato dalla direttiva viene scritto con la policy <code>xaendar#inner-html</code>, quello fidato o sanificato dall’applicazione con <code>xaendar#inner-html-unsafe</code>. Una <code>Content-Security-Policy</code> che richiede i Trusted Types elenca i nomi che consente: lasciando fuori il secondo consente solo l’HTML sanificato dalla direttiva."
+        },
+        "edgeCases": {
+          "title": "Casi limite",
+          "callout1": {
+            "heading": "L’HTML inserito non è un template",
+            "body": "La stringa viene analizzata dal browser, non dal compilatore: un’interpolazione al suo interno è testo semplice, un listener scritto come <code>(click)</code> è un attributo qualsiasi (rimosso dal sanificatore), e nessuna direttiva viene applicata. Ogni cambio dell’input sostituisce l’intero contenuto, quindi gli elementi inseriti perdono il loro stato, come il focus o una selezione di testo."
+          },
+          "callout2": {
+            "heading": "L’elemento non contiene altro",
+            "body": "La direttiva sostituisce tutto ciò che l’elemento contiene, compreso il contenuto che gli dà il template: applicala a un elemento vuoto."
+          },
+          "callout3": {
+            "heading": "Un elemento che può contenere l’HTML",
+            "body": "In una pagina renderizzata sul server, il browser legge l’HTML della pagina come legge qualsiasi pagina: un <code>div</code> o un <code>ul</code> del contenuto chiude un <code>p</code> che lo contiene. Applica la direttiva a un elemento che può contenere l’HTML che renderizza, un <code>div</code> o un <code>article</code>."
+          }
+        },
+        "summary": {
+          "title": "Riepilogo",
+          "th1": "Sintassi",
+          "th2": "Risultato",
+          "td1": "La stringa come testo, tag compresi.",
+          "td2": "La stringa analizzata come HTML e sanificata, aggiornata quando cambia.",
+          "td3": "Lo stesso, mantenendo o rimuovendo più dei default.",
+          "td4": "Un HTML di cui l’applicazione si fida, renderizzato così com’è."
         }
       },
       "conditional": {
@@ -1598,39 +1724,6 @@
           "td8": "Una direttiva che imposta la proprietà in un effect"
         }
       },
-      "htmlRendering": {
-        "eyebrow": "Pattern",
-        "title": "Renderizzare HTML",
-        "lead": "Un’interpolazione crea sempre un nodo di testo, e un binding su un elemento nativo imposta sempre un attributo. Una stringa di HTML quindi appare come testo, che è il default sicuro. Renderizzarla come markup richiede una direttiva che imposti <code>innerHTML</code>.",
-        "aDirectiveForInnerhtml": {
-          "title": "Una direttiva per innerHTML",
-          "example1": "Un’anteprima Markdown",
-          "p1": "<code>exInnerHtml</code> scrive il suo input in <code>innerHTML</code> da un effect, quindi l’anteprima segue ogni tasto premuto. Il convertitore Markdown fa l’escape dell’intero sorgente prima di aggiungere i suoi tag: l’HTML scritto nell’editor esce come testo, e l’unico markup del risultato è quello scritto dal convertitore.",
-          "p2": "Gli elementi inseriti vivono nella shadow root del componente, quindi il suo foglio di stile li stila: i titoli e il codice dell’anteprima usano le regole di <code>markdown-preview.css</code>.",
-          "callout1": {
-            "heading": "Non fidarti mai dell’HTML",
-            "p1": "<code>innerHTML</code> esegue i gestori di eventi del markup che riceve: basta un <code>&lt;img&gt;</code> con un attributo <code>onerror</code> per eseguire codice. L’HTML degli utenti, o di qualsiasi fonte che non controlli, va trattato con l’escape, come fa il convertitore, oppure sanificato da una libreria fatta apposta."
-          }
-        },
-        "edgeCases": {
-          "title": "Casi limite",
-          "callout1": {
-            "heading": "L’HTML inserito non è un template",
-            "body": "La stringa viene analizzata dal browser, non dal compilatore: un’interpolazione al suo interno è testo semplice, un listener scritto come <code>(click)</code> è un attributo qualsiasi, e nessuna direttiva viene applicata. Ogni cambio dell’input sostituisce l’intero contenuto, quindi gli elementi inseriti perdono il loro stato, come il focus o una selezione di testo."
-          },
-          "callout2": {
-            "heading": "L’elemento non deve avere altro contenuto",
-            "body": "La direttiva sostituisce tutto ciò che l’elemento contiene, e i figli scritti nel template vengono renderizzati subito dopo <code>onInit</code>, come mostrato in <a href=\"#/it/directives/custom\">Direttive custom</a>. Applicala a un elemento vuoto."
-          }
-        },
-        "summary": {
-          "title": "Riepilogo",
-          "th1": "Sintassi",
-          "th2": "Risultato",
-          "td1": "La stringa come testo, tag compresi.",
-          "td2": "La stringa analizzata come HTML, aggiornata quando cambia."
-        }
-      },
       "lists": {
         "eyebrow": "Pattern",
         "title": "Liste e CRUD",
@@ -1781,7 +1874,7 @@
           "td8": "Direttive custom, <code>@@nome</code>",
           "td9": "Direttive strutturali",
           "td10": "<code>*nome</code>, con <code>shouldRender()</code>, anche asincrono",
-          "td11": "La stessa sintassi: <code>[style.color]=\"{ color() }\"</code>, anche con un’unità, <code>[style.width.px]</code>, e per le custom property, <code>[style.--accent]</code>. Lo stile viene fuso proprietà per proprietà con la stessa precedenza di Angular: il template, poi le direttive, poi il componente, e una proprietà legata da sola vince sulla stringa. Non esiste <code>[style]</code> legato a un oggetto. Vedi <a href=\"#/it/templates/binding\">Binding</a>.",
+          "td11": "Lo stesso prefisso, senza parentesi quadre: <code>style.color=\"{ color() }\"</code>, anche con un’unità, <code>style.width.px</code>, e per le custom property, <code>style.--accent</code>. Lo stile viene fuso proprietà per proprietà con la stessa precedenza di Angular: il template, poi le direttive, poi il componente, e una proprietà legata da sola vince sulla stringa. Non esiste <code>[style]</code> legato a un oggetto: <code>@@style</code> di <code>@xaendar/directives</code> ne accetta uno, vedi <a href=\"#/it/directives/style\">Stili</a>, e <a href=\"#/it/templates/binding\">Binding</a>.",
           "td12": "<code>imports</code> del componente",
           "td13": "<code>@import</code> in cima al template",
           "td14": "Service e <code>inject()</code>",
@@ -1791,7 +1884,7 @@
           "td18": "<code>styleUrl</code>, <code>:host</code>, <code>::part</code> e custom property",
           "td19": "<code>&lt;template name(…)&gt;</code> e <code>@render name(…)</code>, con parametri tipizzati; passati a un altro componente come content, letti con <code>@Query.contentTemplate</code>, o come input tipizzato <code>TemplateRef</code>: vedi <a href=\"#/it/templates/reusable-templates\">Template e @render</a>",
           "td20": "<code>@let</code>, chiamata anche variabile di template, un valore letto come <code>nome</code>, come in Angular, tenuto aggiornato con ciò che legge: vedi <a href=\"#/it/templates/let\">@let</a>",
-          "td21": "Stessa sintassi: <code>[class.x]=\"{ condizione }\"</code>, con il valore tra graffe, fusa classe per classe con le direttive e il componente come in Angular. Non esiste <code>[class]</code> legato a un oggetto: <code>class=\"{`a ${b()}`}\"</code> lega la stringa. Vedi <a href=\"#/it/templates/binding\">Binding</a>.",
+          "td21": "Lo stesso prefisso, senza parentesi quadre: <code>class.x=\"{ condizione }\"</code>, con il valore tra graffe, fusa classe per classe con le direttive e il componente come in Angular. Non esiste <code>[class]</code> legato a un oggetto: <code>class=\"{`a ${b()}`}\"</code> lega la stringa, e <code>@@class</code> di <code>@xaendar/directives</code> accetta un oggetto, vedi <a href=\"#/it/directives/class\">Classi</a>, e <a href=\"#/it/templates/binding\">Binding</a>.",
           "td22": "<code>@Model</code> e <code>@Model.required</code> su un accessor tipizzato <code>ModelSignal</code>: <code>set</code> e <code>update</code> inviano l’evento di cambiamento, <code>valueChange</code>",
           "td23": "La stessa sintassi, <code>[(value)]=\"signal\"</code>, con il signal indicato senza chiamata, su componenti e direttive. I campi nativi non hanno model: vedi <a href=\"#/it/patterns/forms\">Form</a>.",
           "td24": "Gli stessi eventi di tasto: il tasto dopo l’evento, <code>(keyup.escape)</code>, i modificatori <code>alt</code>, <code>control</code>, <code>meta</code> e <code>shift</code> prima di esso, che devono corrispondere esattamente, e <code>code</code> per <code>event.code</code>; anche in <code>@HostListener('document:keydown.escape')</code>. Vedi <a href=\"#/it/templates/events\">Gestione degli eventi</a>.",
@@ -2194,7 +2287,7 @@
         "bindingAttributes": {
           "title": "Legare gli attributi",
           "example1": "Quattro attributi legati alla stessa pagina",
-          "p1": "L’intero valore deve essere un’unica espressione: un template literal quando serve del testo intorno. Il valore viene convertito in stringa e scritto con <code>setAttribute</code>, quindi <code>class</code> e <code>style</code> si legano come qualsiasi altro attributo, mentre <code>[class.name]</code> e <code>[style.name]</code> legano una sola classe e una sola proprietà, come mostrato in <a href=\"#/it/components/styling\">Stili</a>; <code>null</code> e <code>undefined</code> invece non esprimono un’opinione, e rimuovono l’attributo, a meno che lo scriva anche una direttiva o il componente (vedi sotto)."
+          "p1": "L’intero valore deve essere un’unica espressione: un template literal quando serve del testo intorno. Il valore viene convertito in stringa e scritto con <code>setAttribute</code>, quindi <code>class</code> e <code>style</code> si legano come qualsiasi altro attributo, mentre <code>class.name</code> e <code>style.name</code> legano una sola classe e una sola proprietà, come mostrato in <a href=\"#/it/components/styling\">Stili</a>; <code>null</code> e <code>undefined</code> invece non esprimono un’opinione, e rimuovono l’attributo, a meno che lo scriva anche una direttiva o il componente (vedi sotto)."
         },
         "whichExpressionsAreReactive": {
           "title": "Quali espressioni sono reattive",
@@ -2204,20 +2297,20 @@
         },
         "togglingAClass": {
           "title": "Attivare una classe",
-          "p1": "<code>[class.nome]=\"{ espressione }\"</code> dà all’elemento la classe <code>nome</code> finché il valore dell’espressione è truthy, e gliela toglie altrimenti. Il valore può essere di qualsiasi tipo. Funziona sugli elementi nativi, sui tag dei componenti, dove la classe va sull’elemento stesso, e dentro i <a href=\"#/it/templates/conditional-bindings\">binding condizionali</a>, dove la classe viene tolta quando il suo ramo non è più selezionato. Dopo il punto va qualsiasi nome di classe senza spazi, <code>[class.is-active]</code> compreso.",
+          "p1": "<code>class.nome=\"{ espressione }\"</code> dà all’elemento la classe <code>nome</code> finché il valore dell’espressione è truthy, e gliela toglie altrimenti. Il valore può essere di qualsiasi tipo. Funziona sugli elementi nativi, sui tag dei componenti, dove la classe va sull’elemento stesso, e dentro i <a href=\"#/it/templates/conditional-bindings\">binding condizionali</a>, dove la classe viene tolta quando il suo ramo non è più selezionato. Dopo il punto va qualsiasi nome di classe senza spazi, <code>class.is-active</code> compreso.",
           "example1": "Un attributo class legato e due binding di classe",
           "p2": "I binding di classe e l’attributo <code>class</code> funzionano insieme, anche quando è legato: vengono fusi classe per classe, i binding di classe vincono sulla stringa, e vengono scritte solo le classi il cui valore cambia. Un binding con valore falsy toglie la sua classe anche quando <code>class</code> la elenca; uno che vale <code>null</code> o <code>undefined</code> non ha opinione, e lascia la classe alla stringa. Un binding di classe segue i signal che legge, come un attributo."
         },
         "settingAStyle": {
           "title": "Impostare una proprietà di stile",
-          "p1": "<code>[style.name]=\"{ expression }\"</code> imposta la proprietà di stile <code>name</code> al valore dell’espressione, una stringa o un numero; <code>null</code>, <code>undefined</code> e una stringa vuota non hanno opinione, e lasciano la proprietà alle altre sorgenti che la scrivono, oppure la rimuovono. La proprietà si scrive in kebab-case o in camelCase, <code>[style.background-color]</code> o <code>[style.backgroundColor]</code>, e può essere seguita da un’unità del CSS, che il valore riceve e che accetta un numero: <code>[style.width.px]=\"{ 120 }\"</code> scrive <code>120px</code>. Una custom property si imposta come è scritta: <code>[style.--accent]</code>. Un valore che termina con <code>!important</code> viene impostato con quella priorità.",
+          "p1": "<code>style.name=\"{ expression }\"</code> imposta la proprietà di stile <code>name</code> al valore dell’espressione, una stringa o un numero; <code>null</code>, <code>undefined</code> e una stringa vuota non hanno opinione, e lasciano la proprietà alle altre sorgenti che la scrivono, oppure la rimuovono. La proprietà si scrive in kebab-case o in camelCase, <code>style.background-color</code> o <code>style.backgroundColor</code>, e può essere seguita da un’unità del CSS, che il valore riceve e che accetta un numero: <code>style.width.px=\"{ 120 }\"</code> scrive <code>120px</code>. Una custom property si imposta come è scritta: <code>style.--accent</code>. Un valore che termina con <code>!important</code> viene impostato con quella priorità.",
           "example1": "Una barra con una larghezza in percentuale, una custom property e una proprietà rimossa da null",
           "p2": "Gli style binding e l’attributo <code>style</code> lavorano insieme, anche quando è legato: vengono fusi proprietà per proprietà, e i binding vincono sulla stringa. La stringa viene letta come una lista di dichiarazioni, compresi i <code>;</code> dentro <code>url(…)</code> o tra virgolette. Funzionano sui tag dei componenti e dentro i binding condizionali, dove la proprietà viene rimossa quando il suo ramo non è più selezionato, e <code>@HostAttribute('style.width.px')</code> ne lega una sull’elemento host."
         },
         "merging": {
           "title": "Fondere class e style",
-          "p1": "La <code>class</code> e lo <code>style</code> di un elemento possono essere scritti da più sorgenti: il template che lo renderizza, le direttive che applica, comprese le sue host directive, e il componente che è, con <code>@HostAttribute</code>. Vengono fusi chiave per chiave, una classe o una proprietà alla volta, e per ogni chiave vince la sorgente più forte che ha un’opinione: il template, poi le direttive, poi il componente. In ognuna di esse una chiave legata da sola (<code>[class.on]</code>, <code>@HostAttribute('style.width.px')</code>) vince sulla stringa (<code>class=\"…\"</code>, <code>@HostAttribute('style')</code>). Tra due direttive vince quella applicata dopo: prima le host directive, nell’ordine in cui il componente le dichiara, poi quelle del template, nell’ordine in cui compaiono.",
-          "p2": "Una sorgente senza opinione su una chiave la lascia a quelle sotto: un template che lega <code>[style.width]=\"{ null }\"</code> lascia valere la larghezza di una direttiva o del componente. Per una classe <code>false</code> è un’opinione, <code>null</code> no: <code>[class.on]=\"{ false }\"</code> toglie la classe anche quando il componente la aggiunge, <code>[class.on]=\"{ null }\"</code> la lascia al componente. Quando una sorgente sparisce (un ramo non più selezionato, una direttiva distrutta) le chiavi che scriveva prendono il valore delle sorgenti sotto, e le chiavi delle altre restano.",
+          "p1": "La <code>class</code> e lo <code>style</code> di un elemento possono essere scritti da più sorgenti: il template che lo renderizza, le direttive che applica, comprese le sue host directive, e il componente che è, con <code>@HostAttribute</code>. Vengono fusi chiave per chiave, una classe o una proprietà alla volta, e per ogni chiave vince la sorgente più forte che ha un’opinione: il template, poi le direttive, poi il componente. In ognuna di esse una chiave legata da sola (<code>class.on</code>, <code>@HostAttribute('style.width.px')</code>) vince sulla stringa (<code>class=\"…\"</code>, <code>@HostAttribute('style')</code>). Tra due direttive vince quella applicata dopo: prima le host directive, nell’ordine in cui il componente le dichiara, poi quelle del template, nell’ordine in cui compaiono.",
+          "p2": "Una sorgente senza opinione su una chiave la lascia a quelle sotto: un template che lega <code>style.width=\"{ null }\"</code> lascia valere la larghezza di una direttiva o del componente. Per una classe <code>false</code> è un’opinione, <code>null</code> no: <code>class.on=\"{ false }\"</code> toglie la classe anche quando il componente la aggiunge, <code>class.on=\"{ null }\"</code> la lascia al componente. Quando una sorgente sparisce (un ramo non più selezionato, una direttiva distrutta) le chiavi che scriveva prendono il valore delle sorgenti sotto, e le chiavi delle altre restano.",
           "p3": "L’ordine in cui le sorgenti girano non conta: il risultato dipende solo dal loro livello. Vengono scritte solo le chiavi il cui valore cambia, con <code>classList</code> e <code>style.setProperty</code>, mai scrivendo l’attributo intero, così un elemento adottato dall’HTML del server che ha già gli stessi valori non viene riscritto. Le classi e le proprietà che altro codice scrive sull’elemento non vengono tracciate: il runtime tocca solo le chiavi che ha scritto, e rimuove una chiave su cui nessuna sorgente ha un’opinione solo se l’aveva scritta lui.",
           "p4": "Un elemento scritto solo dal suo template, il caso più comune, non costa niente in più: la sua classe e il suo stile vengono scritti direttamente. Lo stato della fusione viene tenuto solo per gli elementi scritti da più di una sorgente."
         },
@@ -2228,7 +2321,7 @@
         "writingTheAttribute": {
           "title": "Scrivere l’attributo di un componente: attr.",
           "p1": "Sul tag di un componente, un nome che è un input imposta l’input. <code>attr.nome</code> scrive invece l’attributo <code>nome</code> dell’elemento, qualunque cosa dichiari il componente: <code>attr.title=\"…\"</code> imposta l’attributo <code>title</code> anche quando il componente ha un input chiamato <code>title</code>, che mantiene il suo valore. Il valore segue le regole degli altri attributi, statico o un’espressione, compresi <code>null</code> e i booleani, anche nei rami di un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a>. Su un elemento nativo <code>attr.title</code> equivale a <code>title</code>: rende solo esplicita l’intenzione.",
-          "p2": "<code>attr.class</code> e <code>attr.style</code> non compilano: li scrivono <code>class</code>, <code>style</code>, <code>[class.name]</code> e <code>[style.name]</code>, fusi chiave per chiave. Il template di un elemento scrive un attributo una volta sola: <code>title</code> e <code>attr.title</code> sono lo stesso attributo quando <code>title</code> non è un input, e scriverli entrambi è un errore, come scrivere due volte <code>attr.title</code>. <code>attr.</code> non si può scrivere tra le parentesi di una direttiva, che lega solo le sue proprietà, né in un binding bidirezionale.",
+          "p2": "<code>attr.class</code> e <code>attr.style</code> non compilano: li scrivono <code>class</code>, <code>style</code>, <code>class.name</code> e <code>style.name</code>, fusi chiave per chiave. Il template di un elemento scrive un attributo una volta sola: <code>title</code> e <code>attr.title</code> sono lo stesso attributo quando <code>title</code> non è un input, e scriverli entrambi è un errore, come scrivere due volte <code>attr.title</code>. <code>attr.</code> non si può scrivere tra le parentesi di una direttiva, che lega solo le sue proprietà, né in un binding bidirezionale.",
           "p3": "Un componente che dichiara un input, o un alias, con il nome di un attributo che ogni elemento riflette (<code>id</code>, <code>title</code>, <code>hidden</code>, <code>lang</code>, <code>dir</code>, <code>tabindex</code>, <code>slot</code>, <code>inert</code>, <code>draggable</code>, <code>spellcheck</code>, <code>popover</code>, <code>aria-*</code>…) riceve un avviso dalla build e dall’editor: i template che legano quel nome impostano l’input, e scrivono l’attributo nativo con <code>attr.nome</code>."
         },
         "attributePrecedence": {
@@ -2262,11 +2355,11 @@
           },
           "callout5": {
             "heading": "Un binding di classe richiede un’espressione",
-            "p1": "Il valore di <code>[class.name]</code> e di <code>[style.name]</code> è sempre un’espressione tra graffe: un valore statico, o nessun valore, non compila. Le parentesi quadre legano solo classi e proprietà di stile: <code>[title]</code> o <code>[attr.title]</code> sono errori, e l’attributo si scrive <code>title</code> o <code>attr.title</code>."
+            "p1": "Il valore di <code>class.name</code> e di <code>style.name</code> è sempre un’espressione tra graffe: un valore statico, o nessun valore, non compila. Le parentesi quadre dichiarano solo un binding bidirezionale, <code>[(value)]</code>: <code>[title]</code>, <code>[attr.title]</code> o <code>[class.name]</code> sono errori, e il binding si scrive <code>title</code>, <code>attr.title</code> o <code>class.name</code>."
           },
           "callout6": {
             "heading": "Le classi si attivano sull’elemento, non nelle direttive",
-            "body": "<code>[class.nome]</code> non si può scrivere tra le parentesi di una direttiva, che legano solo le sue proprietà: scrivilo sull’elemento. Una classe si può attivare al massimo una volta su un elemento, come un attributo si può legare una volta, salvo in rami diversi della stessa condizione."
+            "body": "<code>class.nome</code> non si può scrivere tra le parentesi di una direttiva, che legano solo le sue proprietà: scrivilo sull’elemento. Una classe si può attivare al massimo una volta su un elemento, come un attributo si può legare una volta, salvo in rami diversi della stessa condizione."
           }
         },
         "summary": {
@@ -3871,14 +3964,14 @@
       "fix": "Legalo solo dentro la condizione, in ogni ramo che ne ha bisogno."
     },
     "[Parser] Class \"on\" is bound more than once on <p>": {
-      "cause": "Lo stesso [class.nome] scritto due volte su un elemento, oppure sia fuori sia dentro un binding condizionale.",
+      "cause": "Lo stesso class.nome scritto due volte su un elemento, oppure sia fuori sia dentro un binding condizionale.",
       "fix": "Attivala una volta sola, combinando le condizioni nella sua espressione, oppure in ogni ramo di un’unica condizione."
     },
-    "[Parser] [class.on] toggles the class by the value of an expression: [class.on]=\"{expression}\"": {
+    "[Parser] class.on toggles the class by the value of an expression: class.on=\"{expression}\"": {
       "cause": "Un binding di classe con un valore statico, o senza valore.",
-      "fix": "Legalo a un’espressione tra graffe: [class.on]=\"{ active() }\"."
+      "fix": "Legalo a un’espressione tra graffe: class.on=\"{ active() }\"."
     },
-    "[Parser] [class.on] cannot be bound inside a directive: bind it on the element": {
+    "[Parser] class.on cannot be bound inside a directive: bind it on the element": {
       "cause": "Un binding di classe tra le parentesi di una direttiva, o in un binding condizionale al loro interno, che legano solo le proprietà della direttiva.",
       "fix": "Spostalo tra i binding dell’elemento."
     },
@@ -4462,23 +4555,27 @@
       "cause": "Un @render che chiama un nome che non è un template dichiarato nel suo scope o in uno esterno, né ne contiene uno: un membro, un import o un element ref, renderizzato allora come il template che dovrebbe contenere.",
       "fix": "Dichiara il template dove il @render lo vede, oppure chiama un’espressione il cui valore è un TemplateRef, ad esempio @render row()(item) per una query o un input."
     },
-    "[Parser] \"[attr.color]\" is not a binding: a class is toggled with [class.name]=\"{expression}\", a style property is set with [style.name]=\"{expression}\"": {
-      "cause": "Un nome di attributo tra parentesi quadre diverso da [class.name] e [style.name]: le parentesi quadre attivano solo classi e impostano solo proprietà di stile.",
-      "fix": "Lega l’attributo senza parentesi quadre, ad esempio title=\"{ … }\", oppure usa [class.name] o [style.name]."
+    "[Parser] \"[class.on]\" is not a binding: brackets declare only a two-way binding, [(name)]=\"signal\": write class.on=\"{ expression }\"": {
+      "cause": "Un nome tra parentesi quadre che non è un binding bidirezionale, come Angular scrive i binding di proprietà, classi e stili: [title], [class.on], [style.width.px], [attr.title].",
+      "fix": "Togli le parentesi quadre: class.on=\"{ active() }\", style.width.px=\"{ width() }\", title=\"{ hint() }\"."
     },
-    "[Parser] [style.color] sets the style property by the value of an expression: [style.color]=\"{expression}\"": {
+    "[Parser] class. names no class: write class. followed by the name of the class, e.g. class.active=\"{ expression }\"": {
+      "cause": "Un binding di classe senza il nome della classe dopo class., o con spazi o parentesi quadre nel nome.",
+      "fix": "Scrivi il nome della classe dopo il punto, class.active=\"{ … }\", oppure lega l’intera stringa con class=\"{ … }\"."
+    },
+    "[Parser] style.color sets the style property by the value of an expression: style.color=\"{expression}\"": {
       "cause": "Uno style binding con un valore statico, o senza valore.",
-      "fix": "Metti il valore tra graffe, [style.color]=\"{ 'red' }\", oppure scrivilo nell’attributo style."
+      "fix": "Metti il valore tra graffe, style.color=\"{ 'red' }\", oppure scrivilo nell’attributo style."
     },
-    "[Parser] [style.width.PX] does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. [style.width.px], or a custom property, e.g. [style.--accent]": {
+    "[Parser] style.width.PX does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. style.width.px, or a custom property, e.g. style.--accent": {
       "cause": "Uno style binding la cui proprietà contiene caratteri che una proprietà non può avere, o la cui unità non è fatta di lettere minuscole o %, o è seguita da più di un’unità.",
-      "fix": "Scrivi la proprietà in kebab-case o camelCase, e al più un’unità in minuscolo: [style.width.px], [style.height.%]."
+      "fix": "Scrivi la proprietà in kebab-case o camelCase, e al più un’unità in minuscolo: style.width.px, style.height.%."
     },
     "[Parser] Style property \"width\" is bound more than once on <div>": {
       "cause": "La stessa proprietà di stile impostata due volte su un elemento, anche con unità diverse, o sull’elemento e in uno dei suoi binding condizionali.",
       "fix": "Legala una volta sola, o in rami diversi della stessa condizione."
     },
-    "[Parser] [style.color] cannot be bound inside a directive: bind it on the element": {
+    "[Parser] style.color cannot be bound inside a directive: bind it on the element": {
       "cause": "Uno style binding tra le parentesi di una direttiva, che legano solo le sue proprietà.",
       "fix": "Scrivilo sull’elemento, oppure imposta la proprietà dalla direttiva con @HostAttribute('style.color')."
     },
@@ -4498,9 +4595,9 @@
       "cause": "Un @for la cui espressione dà, a runtime, una stringa, null, undefined o un oggetto non iterabile: il type-check non l’ha visto, tipizzato come any.",
       "fix": "Dai al @for un array, un numero o un iterabile, ad esempio un array vuoto invece di null."
     },
-    "[Parser] [style.width.foo] sets width in \"foo\", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh": {
+    "[Parser] style.width.foo sets width in \"foo\", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh": {
       "cause": "Uno style binding la cui unità non è un’unità del CSS.",
-      "fix": "Scrivi un’unità del CSS in minuscolo, oppure lega la proprietà senza unità e scrivi l’unità nel valore: [style.width.px], [style.width]=\"{ `${w}px` }\"."
+      "fix": "Scrivi un’unità del CSS in minuscolo, oppure lega la proprietà senza unità e scrivi l’unità nel valore: style.width.px, style.width=\"{ `${w}px` }\"."
     },
     "Error: @HostAttribute('style.width.foo') sets width in \"foo\", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh": {
       "cause": "Un @HostAttribute di una proprietà di stile la cui unità non è un’unità del CSS. Viene lanciato quando la classe viene definita.",

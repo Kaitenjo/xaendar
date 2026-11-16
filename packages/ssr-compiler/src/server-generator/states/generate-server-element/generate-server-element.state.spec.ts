@@ -96,7 +96,7 @@ describe('generateServerElement', () => {
   });
 
   it('writes the start tag of an element setting style properties through _ssrStartTag, one descriptor of the style with their units, in its branches too', () => {
-    const { code, constants } = generate('<div [style.width.px]="{ on() }" @if (mode()) { [style.--accent]="{ 1 }" }></div>');
+    const { code, constants } = generate('<div style.width.px="{ on() }" @if (mode()) { style.--accent="{ 1 }" }></div>');
 
     expect(code).toEqual(['_ssrStartTag(out, context, div0$element);', 'out.push(\'</div>\');']);
     expect(constants[0]).toContain([
@@ -155,7 +155,7 @@ describe('generateServerElement', () => {
   });
 
   it('writes the start tag of an element toggling classes through _ssrStartTag, the class string and the classes in one descriptor', () => {
-    const { code, constants, functions } = generate('<div class="a" [class.is-on]="{ on() }"></div>');
+    const { code, constants, functions } = generate('<div class="a" class.is-on="{ on() }"></div>');
 
     expect(code).toEqual(['_ssrStartTag(out, context, div0$element);', 'out.push(\'</div>\');']);
     expect(constants).toEqual([[
@@ -179,7 +179,7 @@ describe('generateServerElement', () => {
   it('describes the conditional bindings writing attributes or classes, nested ones included, leaving out the ones writing nothing', () => {
     const { code, constants, functions } = generate([
       '<div',
-      '  @if (on()) { title="x" @if (inner) { id="y" } } @else if (other) { [class.on]="{ 1 }" } @else { title="z" }',
+      '  @if (on()) { title="x" @if (inner) { id="y" } } @else if (other) { class.on="{ 1 }" } @else { title="z" }',
       '  @switch (mode()) { @case (\'a\') @case (\'b\') { lang="x" } @default { lang="y" } }',
       '  @if (events) { (click)="f()" }',
       '></div>'

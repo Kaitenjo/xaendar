@@ -124,7 +124,7 @@ describe('parseElement', () => {
 
     it.each([
       ['attr.', 'attr. names no attribute: write attr. followed by the name of the attribute'],
-      ['attr.class', 'attr.class cannot be written: class is merged with the directives and the component writing it, bound with class="…" and [class.name]="{ expression }"'],
+      ['attr.class', 'attr.class cannot be written: class is merged with the directives and the component writing it, bound with class="…" and class.name="{ expression }"'],
       ['attr.style', 'attr.style cannot be written: style is merged']
     ])('rejects %s', (name, message) => {
       expect(() => parse(`<div ${name}="x"></div>`)).toThrow(message);
@@ -159,17 +159,17 @@ describe('parseElement', () => {
   });
 
   it.each([
-    ['on the element', '<div [class.on]="{a}" [class.on]="{b}"></div>'],
-    ['on the element and in a conditional binding', '<div [class.on]="{a}" @if (cond()) { [class.on]="{b}" }></div>'],
-    ['in two conditional bindings', '<div @if (cond()) { [class.on]="{a}" } @switch (mode()) { @default { [class.on]="{b}" } }></div>'],
-    ['in a nested conditional binding', '<div @if (cond()) { [class.on]="{a}" @if (other()) { [class.on]="{b}" } }></div>']
+    ['on the element', '<div class.on="{a}" class.on="{b}"></div>'],
+    ['on the element and in a conditional binding', '<div class.on="{a}" @if (cond()) { class.on="{b}" }></div>'],
+    ['in two conditional bindings', '<div @if (cond()) { class.on="{a}" } @switch (mode()) { @default { class.on="{b}" } }></div>'],
+    ['in a nested conditional binding', '<div @if (cond()) { class.on="{a}" @if (other()) { class.on="{b}" } }></div>']
   ])('throws when a class is bound more than once %s', (_description, template) => {
     expect(() => parse(template)).toThrow('Class "on" is bound more than once on <div>');
   });
 
   it('allows a class to be bound in every branch of a conditional binding, and next to an attribute named like it', () => {
-    expect(() => parse('<div class="on" on="x" [class.on]="{a}" [class.off]="{b}"></div>')).not.toThrow();
-    expect(() => parse('<div @if (a()) { [class.on]="{x}" } @else { [class.on]="{y}" }></div>')).not.toThrow();
+    expect(() => parse('<div class="on" on="x" class.on="{a}" class.off="{b}"></div>')).not.toThrow();
+    expect(() => parse('<div @if (a()) { class.on="{x}" } @else { class.on="{y}" }></div>')).not.toThrow();
   });
 
   it('allows a directive to be applied, and its properties to be bound, in every branch of a conditional binding', () => {
@@ -305,7 +305,7 @@ describe('parseElement', () => {
       });
 
       it('parses a <template> with a boolean attribute, and one with attributes bound to expressions', () => {
-        const [boolean, bound] = parse('<template row></template><template id="{ name() }" [class.on]="{ on() }"></template>') as ElementNode[];
+        const [boolean, bound] = parse('<template row></template><template id="{ name() }" class.on="{ on() }"></template>') as ElementNode[];
         expect(boolean).toMatchObject({ tagName: 'template', attributes: [{ name: 'row' }], content: '' });
         expect(bound).toMatchObject({ tagName: 'template', classBindings: [{ className: 'on' }], content: '' });
       });
@@ -340,7 +340,7 @@ describe('parseElement', () => {
       it.each([
         ['an element ref', '<template><b #name></b></template>', '#name'],
         ['type arguments', '<template><my-list(string)></my-list></template>', 'string'],
-        ['a class binding', '<template><b [class.on]="{ on() }"></b></template>', '[class.on]'],
+        ['a class binding', '<template><b class.on="{ on() }"></b></template>', 'class.on'],
         ['an event', '<template><b (click)="go()"></b></template>', '(click)'],
         ['a conditional binding', '<template><b @if (on()) { title="a" }></b></template>', '@if'],
         ['a directive', '<template><b @@tint></b></template>', 'tint'],
@@ -355,7 +355,7 @@ describe('parseElement', () => {
     it.each([
       ['type arguments', '<template(string) row()></template>', 'string'],
       ['an attribute', '<template row() class="a"></template>', 'class="a"'],
-      ['a class binding', '<template row() [class.on]="{a}"></template>', '[class.on]'],
+      ['a class binding', '<template row() class.on="{a}"></template>', 'class.on'],
       ['an event', '<template row() (click)="go()"></template>', '(click)="go()"'],
       ['a conditional binding', '<template row() @if (on()) { title="a" }></template>', '@if (on()) { title="a" }'],
       ['a directive', '<template row() @@tint></template>', 'tint'],

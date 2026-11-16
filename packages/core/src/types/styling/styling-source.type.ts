@@ -14,7 +14,7 @@ export type StylingSource = SourceRank & {
    */
   readonly owner: object;
   /**
-   * The opinions of the keys bound one by one (`[class.on]`, `@HostAttribute('style.width.px')`), `null` for none.
+   * The opinions of the keys bound one by one (`class.on`, `@HostAttribute('style.width.px')`), `null` for none.
    */
   keys: StylingOpinions | null;
   /**

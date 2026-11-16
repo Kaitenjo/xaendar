@@ -302,7 +302,7 @@ The `enter` and the `leave` of `@@animation`: a CSS class, or a function animati
 <div class="card" @@class(value="{theme().classes}")>…</div>
 ```
 
-Angular's `[ngClass]`: `value` (`ElementClasses`, none by default) is a string of classes, a list or a set of classes, or an object whose keys are classes (several separated by spaces) given while their value is truthy. On a change the classes it no longer holds are removed. Its classes are a source of `class` at the level of the directives: the template's `class` and `[class.x]` win over it, it wins over the component's `@HostAttribute`, and a class it does not give is left to the others. Written into the page on the server. For a few classes known in advance, `[class.x]="{…}"` is lighter.
+Angular's `[ngClass]`: `value` (`ElementClasses`, none by default) is a string of classes, a list or a set of classes, or an object whose keys are classes (several separated by spaces) given while their value is truthy. On a change the classes it no longer holds are removed. Its classes are a source of `class` at the level of the directives: the template's `class` and `class.x` win over it, it wins over the component's `@HostAttribute`, and a class it does not give is left to the others. Written into the page on the server. For a few classes known in advance, `class.x="{…}"` is lighter.
 
 ### StyleDirective (`@@style`)
 
@@ -310,7 +310,7 @@ Angular's `[ngClass]`: `value` (`ElementClasses`, none by default) is a string o
 <div @@style(value="{ ({ 'width.px': width(), backgroundColor: color(), '--accent': accent() }) }")>…</div>
 ```
 
-Angular's `[ngStyle]`: `value` (`ElementStyles`, none by default) is an object of properties, in kebab-case or camelCase, followed by their unit if any (`'width.px'`), or custom properties (`'--accent'`), set to a string or a number, with `!important` when the value ends with it; `null`, `undefined` and `''` set nothing. A key that is not a property, or a unit CSS does not have, throws; a value holding a `;` outside parentheses and quotes is left out. On a change the properties it no longer sets are removed. Merged with the other sources of `style` as `@@class` is with `class`; written into the page on the server. For a few properties known in advance, `[style.x]="{…}"` is lighter.
+Angular's `[ngStyle]`: `value` (`ElementStyles`, none by default) is an object of properties, in kebab-case or camelCase, followed by their unit if any (`'width.px'`), or custom properties (`'--accent'`), set to a string or a number, with `!important` when the value ends with it; `null`, `undefined` and `''` set nothing. A key that is not a property, or a unit CSS does not have, throws; a value holding a `;` outside parentheses and quotes is left out. On a change the properties it no longer sets are removed. Merged with the other sources of `style` as `@@class` is with `class`; written into the page on the server. For a few properties known in advance, `style.x="{…}"` is lighter.
 
 ### ElementClasses, ElementStyles (types)
 

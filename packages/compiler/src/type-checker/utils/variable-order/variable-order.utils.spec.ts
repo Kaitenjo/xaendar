@@ -165,7 +165,7 @@ describe('checkVariableOrder', () => {
     });
 
     it('checks the style bindings, of the element and of its conditional bindings', () => {
-      const template = '<p [style.width.px]="{ field.width }" @if (other) { [style.color]="{ field.value }" }></p><input #field />';
+      const template = '<p style.width.px="{ field.width }" @if (other) { style.color="{ field.value }" }></p><input #field />';
 
       expect(errorsOf(template)?.map(([, read]) => read)).toEqual(['field', 'field']);
     });
@@ -175,7 +175,7 @@ describe('checkVariableOrder', () => {
     });
 
     it('checks the class bindings, of the element and of its conditional bindings', () => {
-      const template = '<p [class.on]="{ field.checked }" @if (other) { [class.big]="{ field.value }" }></p><input #field />';
+      const template = '<p class.on="{ field.checked }" @if (other) { class.big="{ field.value }" }></p><input #field />';
 
       expect(errorsOf(template)?.map(([, read]) => read)).toEqual(['field', 'field']);
     });

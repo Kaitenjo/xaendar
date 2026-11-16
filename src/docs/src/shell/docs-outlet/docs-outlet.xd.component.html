@@ -15,10 +15,13 @@
 @import lazy { ComponentsTwoWayBindingPage } from '../../pages/components/two-way-binding/two-way-binding.xd.component.ts'
 @import lazy { ComponentsStylingPage } from '../../pages/components/styling/styling.xd.component.ts'
 @import lazy { DirectivesAnimationsPage } from '../../pages/directives/animations/animations.xd.component.ts'
+@import lazy { DirectivesClassPage } from '../../pages/directives/class/class.xd.component.ts'
 @import lazy { DirectivesConditionalPage } from '../../pages/directives/conditional/conditional.xd.component.ts'
 @import lazy { DirectivesCustomPage } from '../../pages/directives/custom/custom.xd.component.ts'
+@import lazy { DirectivesInnerHtmlPage } from '../../pages/directives/inner-html/inner-html.xd.component.ts'
 @import lazy { DirectivesOverviewPage } from '../../pages/directives/overview/overview.xd.component.ts'
 @import lazy { DirectivesStructuralPage } from '../../pages/directives/structural/structural.xd.component.ts'
+@import lazy { DirectivesStylePage } from '../../pages/directives/style/style.xd.component.ts'
 @import lazy { EssentialsComponentsPage } from '../../pages/essentials/components/components.xd.component.ts'
 @import lazy { EssentialsNextStepsPage } from '../../pages/essentials/next-steps/next-steps.xd.component.ts'
 @import lazy { EssentialsSignalsPage } from '../../pages/essentials/signals/signals.xd.component.ts'
@@ -27,7 +30,6 @@
 @import lazy { OverviewPage } from '../../pages/overview/overview.xd.component.ts'
 @import lazy { PatternsAsyncDataPage } from '../../pages/patterns/async-data/async-data.xd.component.ts'
 @import lazy { PatternsFormsPage } from '../../pages/patterns/forms/forms.xd.component.ts'
-@import lazy { PatternsHtmlRenderingPage } from '../../pages/patterns/html-rendering/html-rendering.xd.component.ts'
 @import lazy { PatternsListsPage } from '../../pages/patterns/lists/lists.xd.component.ts'
 @import lazy { PatternsRoutingPage } from '../../pages/patterns/routing/routing.xd.component.ts'
 @import lazy { PatternsThemingPage } from '../../pages/patterns/theming/theming.xd.component.ts'
@@ -121,6 +123,15 @@
   @case ('directives/animations') {
     <page-directives-animations />
   }
+  @case ('directives/class') {
+    <page-directives-class />
+  }
+  @case ('directives/style') {
+    <page-directives-style />
+  }
+  @case ('directives/inner-html') {
+    <page-directives-inner-html />
+  }
   @case ('directives/conditional') {
     <page-directives-conditional />
   }
@@ -156,9 +167,6 @@
   }
   @case ('patterns/forms') {
     <page-patterns-forms />
-  }
-  @case ('patterns/html-rendering') {
-    <page-patterns-html-rendering />
   }
   @case ('patterns/lists') {
     <page-patterns-lists />

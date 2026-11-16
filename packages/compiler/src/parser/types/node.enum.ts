@@ -83,7 +83,7 @@ export enum ASTNodeType {
    */
   Let,
   /**
-   * A class toggled on an HTML element by the value of an expression, `[class.name]="{expression}"`.
+   * A class toggled on an HTML element by the value of an expression, `class.name="{expression}"`.
    */
   ClassBinding,
   /**
@@ -124,7 +124,7 @@ export enum ASTNodeType {
    */
   Empty,
   /**
-   * A style property set on an HTML element by the value of an expression, `[style.name]="{expression}"`.
+   * A style property set on an HTML element by the value of an expression, `style.name="{expression}"`.
    */
   StyleBinding
 }

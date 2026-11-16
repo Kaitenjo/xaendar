@@ -34,6 +34,7 @@
     "src/**/*.ts",
     "../../packages/core/src/globals.d.ts",
     "../../packages/core/src/window.d.ts",
+    "../../packages/directives/src/globals.d.ts",
     "./server.ts"
   ],
   "exclude": [

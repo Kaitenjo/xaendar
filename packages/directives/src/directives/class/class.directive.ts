@@ -9,10 +9,10 @@ import { toClassString } from '../../utils/element-classes/element-classes.utils
  * value changes, the classes it no longer holds are removed, the new ones added.
  *
  * The classes are a source of the `class` of the element, merged class by class with the others, as `@HostAttribute('class')`
- * of a directive: the `class` and the `[class.name]` of the template win over it, it wins over the component, and a class
+ * of a directive: the `class` and the `class.name` of the template win over it, it wins over the component, and a class
  * it does not give, or gives no more, is left to them. On the server the classes are written into the page.
  *
- * To toggle a few classes known in advance, `[class.name]="{…}"` of the template is lighter: `@@class` fits classes
+ * To toggle a few classes known in advance, `class.name="{…}"` of the template is lighter: `@@class` fits classes
  * computed, or many.
  *
  * @example

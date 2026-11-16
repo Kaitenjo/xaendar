@@ -150,12 +150,12 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
-    message: '[Parser] [class.on] toggles the class by the value of an expression: [class.on]="{expression}"',
+    message: '[Parser] class.on toggles the class by the value of an expression: class.on="{expression}"',
     page: 'templates/binding'
   },
   {
     phase: 'Parser',
-    message: '[Parser] [class.on] cannot be bound inside a directive: bind it on the element',
+    message: '[Parser] class.on cannot be bound inside a directive: bind it on the element',
     page: 'templates/binding'
   },
   {
@@ -265,22 +265,27 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
-    message: '[Parser] "[attr.color]" is not a binding: a class is toggled with [class.name]="{expression}", a style property is set with [style.name]="{expression}"',
+    message: '[Parser] "[class.on]" is not a binding: brackets declare only a two-way binding, [(name)]="signal": write class.on="{ expression }"',
     page: 'templates/binding'
   },
   {
     phase: 'Parser',
-    message: '[Parser] [style.color] sets the style property by the value of an expression: [style.color]="{expression}"',
+    message: '[Parser] class. names no class: write class. followed by the name of the class, e.g. class.active="{ expression }"',
     page: 'templates/binding'
   },
   {
     phase: 'Parser',
-    message: '[Parser] [style.width.PX] does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. [style.width.px], or a custom property, e.g. [style.--accent]',
+    message: '[Parser] style.color sets the style property by the value of an expression: style.color="{expression}"',
     page: 'templates/binding'
   },
   {
     phase: 'Parser',
-    message: '[Parser] [style.width.foo] sets width in "foo", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh',
+    message: '[Parser] style.width.PX does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. style.width.px, or a custom property, e.g. style.--accent',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] style.width.foo sets width in "foo", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh',
     page: 'templates/binding'
   },
   {
@@ -290,7 +295,7 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
-    message: '[Parser] [style.color] cannot be bound inside a directive: bind it on the element',
+    message: '[Parser] style.color cannot be bound inside a directive: bind it on the element',
     page: 'templates/binding'
   },
   {

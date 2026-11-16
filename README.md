@@ -44,7 +44,7 @@ export class CounterComponent extends CustomElement {
 
 ```html
 <!-- counter.xd.component.html -->
-<p [class.even]="{count() % 2 === 0}">You clicked { count() } times.</p>
+<p class.even="{count() % 2 === 0}">You clicked { count() } times.</p>
 <button (click)="increment()">Add { step() }</button>
 
 @if (count() >= 10) {

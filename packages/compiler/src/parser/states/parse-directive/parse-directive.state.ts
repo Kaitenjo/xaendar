@@ -15,7 +15,7 @@ import type { DirectiveNode } from '../../types/nodes/directive-node.type';
 import type { EventNode } from '../../types/nodes/event-node.type';
 import { parseTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
-import { assertNoBracketBindings } from '../parse-class-binding/parse-class-binding.state';
+import { assertNoElementBindings } from '../parse-class-binding/parse-class-binding.state';
 import { isTwoWayBinding, parseTwoWayBinding } from '../parse-two-way-binding/parse-two-way-binding.state';
 import { parseConditionalBinding } from '../parse-conditional-binding/parse-conditional-binding.state';
 import { parseEvent } from '../parse-event/parse-event.state';
@@ -72,7 +72,7 @@ export function parseDirective(cursor: ParserCursor, parseNode: NoArgsFunction<A
     }
   }
 
-  assertNoBracketBindings(attributes, conditionalBindings);
+  assertNoElementBindings(attributes, conditionalBindings);
 
   const selectorSpan = cursor.findSpan(token.parts[0], startOffset);
   const node: DirectiveNode = {

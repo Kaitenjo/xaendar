@@ -68,7 +68,7 @@ describe('typeCheckElement', () => {
     });
 
     it('type-checks the expressions toggling classes, of any type, on the element and in its conditional bindings', () => {
-      const template = '<div [class.on]="{active()}" @if (cond()) { [class.big]="{items.length}" }></div>';
+      const template = '<div class.on="{active()}" @if (cond()) { class.big="{items.length}" }></div>';
       const lines = run(template);
 
       expect(text(lines)).toEqual([
@@ -81,13 +81,13 @@ describe('typeCheckElement', () => {
     });
 
     it('type-checks the values of the style properties, numbers with a unit, strings or numbers without, null or undefined, on the element and in its conditional bindings', () => {
-      expect(text(run('<div [style.width.px]="{width()}" @if (cond()) { [style.color]="{color}" }></div>'))).toEqual([
+      expect(text(run('<div style.width.px="{width()}" @if (cond()) { style.color="{color}" }></div>'))).toEqual([
         '(root.width()) satisfies number | null | undefined;',
         'if (root.cond()) {',
         '  (root.color) satisfies string | number | null | undefined;',
         '}'
       ]);
-      expect(text(run('<my-el [style.width]="{width()}"></my-el>', metadata({})))).toEqual(['(root.width()) satisfies string | number | null | undefined;']);
+      expect(text(run('<my-el style.width="{width()}"></my-el>', metadata({})))).toEqual(['(root.width()) satisfies string | number | null | undefined;']);
     });
 
     it('declares $event in a separate block for each event, so that every handler gets its own', () => {
@@ -348,7 +348,7 @@ describe('typeCheckElement', () => {
     });
 
     it('type-checks the expressions toggling classes on the element of a component, without matching them to its properties', () => {
-      const lines = run('<my-el [class.title]="{active()}" @if (cond()) { [class.label]="{1}" }></my-el>', metadata(properties));
+      const lines = run('<my-el class.title="{active()}" @if (cond()) { class.label="{1}" }></my-el>', metadata(properties));
 
       expect(text(lines)).toEqual([
         'root.active();',
@@ -1084,7 +1084,7 @@ describe('typeCheckElement structural directives', () => {
     });
 
     it('casts the values bound to the attributes and to the properties of a component, and the toggled classes', () => {
-      const native = run('<div title="{heading as string}" [class.on]="{on as boolean}"></div>');
+      const native = run('<div title="{heading as string}" class.on="{on as boolean}"></div>');
       const template = '<my-el label="{caption() as Label}"></my-el>';
       const [, property] = run(template, metadata({ label: new ComponentPropertyMetadata('label', 'string') }));
 

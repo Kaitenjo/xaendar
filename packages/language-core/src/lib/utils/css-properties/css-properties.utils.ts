@@ -24,7 +24,7 @@ const NOT_PROPERTIES: ReadonlySet<string> = new Set(['cssText', 'cssFloat']);
 let properties: readonly string[] | undefined;
 
 /**
- * Gives the CSS properties a style binding can set (`[style.name]`), in kebab-case, as CSS writes them: read once from
+ * Gives the CSS properties a style binding can set (`style.name`), in kebab-case, as CSS writes them: read once from
  * the members of `CSSStyleDeclaration` in the declaration file of the DOM TypeScript ships, so that they follow the
  * version of TypeScript, `float` included.
  *

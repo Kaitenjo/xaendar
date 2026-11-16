@@ -41,11 +41,17 @@ const ATTRIBUTE_PREFIX = 'attr.';
  * @param token - The ATTRIBUTE token to parse.
  * @returns The parsed `AttributeNode`.
  * @throws If the attribute is followed by a token that is neither a value nor another binding or the end of the tag, or
- *   `attr.` names no attribute, or `class` or `style`.
+ *   its name is in brackets without being a two-way binding, or `attr.` names no attribute, or `class` or `style`.
  */
 export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: AttributeToken): AttributeNode {
   const node = readAttribute(cursor, parseNode, token);
   const { name, nameSpan } = node;
+  // Brackets declare only a two-way binding, `[(value)]`
+  if (name.startsWith('[') && !name.startsWith('[(')) {
+    const unbracketed = name.slice(1, name.endsWith(']') ? -1 : undefined);
+    throw new Error(`"${name}" is not a binding: brackets declare only a two-way binding, [(name)]="signal": write ${unbracketed}="{ expression }"`, { cause: nameSpan });
+  }
+
   if (!name.startsWith(ATTRIBUTE_PREFIX)) {
     return node;
   }
@@ -57,7 +63,7 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
 
     case 'class':
     case 'style':
-      throw new Error(`${name} cannot be written: ${attribute} is merged with the directives and the component writing it, bound with ${attribute}="…" and [${attribute}.name]="{ expression }"`, { cause: nameSpan });
+      throw new Error(`${name} cannot be written: ${attribute} is merged with the directives and the component writing it, bound with ${attribute}="…" and ${attribute}.name="{ expression }"`, { cause: nameSpan });
   }
 
   node.attribute = attribute;

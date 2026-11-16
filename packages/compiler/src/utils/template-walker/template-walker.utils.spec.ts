@@ -78,7 +78,7 @@ describe('walkTemplate', () => {
 
   it('visits the style properties set on the elements and in their conditional bindings, with their expressions', () => {
     const visits = new Array<string>();
-    walkTemplate(parseTemplate('<p [style.width.px]="{a}" @if (b) { [style.--x]="{c}" }></p>'), [], {
+    walkTemplate(parseTemplate('<p style.width.px="{a}" @if (b) { style.--x="{c}" }></p>'), [], {
       styleBinding: node => visits.push(`style ${node.property}`),
       expression: expression => visits.push(`expression ${expression.getText()}`)
     });
@@ -97,7 +97,7 @@ describe('walkTemplate', () => {
 
   it('visits the classes toggled on the elements and in their conditional bindings, with their expressions', () => {
     const visits = new Array<string>();
-    walkTemplate(parseTemplate('<p [class.on]="{a}" @if (b) { [class.big]="{c}" } @@tip(text="t")></p>'), [], {
+    walkTemplate(parseTemplate('<p class.on="{a}" @if (b) { class.big="{c}" } @@tip(text="t")></p>'), [], {
       classBinding: node => visits.push(`class ${node.className}`),
       expression: expression => visits.push(`expression ${expression.getText()}`)
     });

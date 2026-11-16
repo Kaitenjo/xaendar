@@ -257,7 +257,7 @@
   },
   "toCssPropertyName": {
     "summary": "Converts the name of a style property to the one CSS uses.",
-    "description": "<p>A name in camelCase becomes kebab-case, each uppercase letter turning into <code>-</code> followed by the lowercase letter: <code>'fontSize'</code> becomes <code>'font-size'</code>, <code>'WebkitTransform'</code> <code>'-webkit-transform'</code>. A custom property, starting with <code>--</code>, is returned as it is, since its name is case-sensitive.</p><p>The template compiler and <code>@HostAttribute</code> convert with it the property of <code>[style.name]</code> and <code>'style.name'</code>.</p>",
+    "description": "<p>A name in camelCase becomes kebab-case, each uppercase letter turning into <code>-</code> followed by the lowercase letter: <code>'fontSize'</code> becomes <code>'font-size'</code>, <code>'WebkitTransform'</code> <code>'-webkit-transform'</code>. A custom property, starting with <code>--</code>, is returned as it is, since its name is case-sensitive.</p><p>The template compiler and <code>@HostAttribute</code> convert with it the property of <code>style.name</code> and <code>'style.name'</code>.</p>",
     "usage": {
       "converting": {
         "title": "Converting a property",
@@ -307,7 +307,7 @@
   },
   "CSS_UNITS": {
     "summary": "The units a style binding can follow its property with.",
-    "description": "<p>The lengths, the angles, the times, the frequencies, the resolutions and the flex fraction of CSS, in lowercase, and <code>%</code>: <code>px</code>, <code>rem</code>, <code>em</code>, <code>vh</code>, <code>dvh</code>, <code>cqi</code>, <code>deg</code>, <code>ms</code>, <code>fr</code> and the others. A unit outside the set, in <code>[style.width.foo]</code> or <code>@HostAttribute('style.width.foo')</code>, is an error.</p>",
+    "description": "<p>The lengths, the angles, the times, the frequencies, the resolutions and the flex fraction of CSS, in lowercase, and <code>%</code>: <code>px</code>, <code>rem</code>, <code>em</code>, <code>vh</code>, <code>dvh</code>, <code>cqi</code>, <code>deg</code>, <code>ms</code>, <code>fr</code> and the others. A unit outside the set, in <code>style.width.foo</code> or <code>@HostAttribute('style.width.foo')</code>, is an error.</p>",
     "usage": {
       "checking": {
         "title": "Checking a unit",

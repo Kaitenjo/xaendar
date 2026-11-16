@@ -18,8 +18,7 @@ import { parseAttribute } from '../parse-attribute/parse-attribute.state';
 const TWO_WAY_BINDING_RE = /^\[\(([^\s()[\]]+)\)\]$/;
 
 /**
- * Tells whether an ATTRIBUTE token declares a two-way binding, e.g. `[(value)]`, rather than an attribute or a binding
- * in brackets.
+ * Tells whether an ATTRIBUTE token declares a two-way binding, e.g. `[(value)]`, rather than an attribute.
  *
  * @param token - The ATTRIBUTE token.
  * @returns `true` if the name of the attribute starts with `[(`.

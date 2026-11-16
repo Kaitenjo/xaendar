@@ -211,13 +211,15 @@ export const NAV: readonly NavSection[] = [
         page('directives/custom', 'CustomDirective attribute directive @@'),
         page('directives/structural', 'StructuralDirective shouldRender async *'),
         page('directives/conditional', 'conditional directive if switch'),
-        page('directives/animations', 'animation animate enter leave transition keyframes onLeave fade inert reduced motion')
+        page('directives/animations', 'animation animate enter leave transition keyframes onLeave fade inert reduced motion'),
+        page('directives/class', 'class ClassDirective ngClass classes object list set toggle'),
+        page('directives/style', 'style StyleDirective ngStyle styles object unit custom property'),
+        page('directives/inner-html', 'innerHTML InnerHtmlDirective html markdown sanitize sanitizeHtml trustHtml trusted types csp')
       ]),
       group('patterns', [
         page('patterns/forms', 'form input checkbox select validation two-way'),
         page('patterns/async-data', 'fetch loading error abort race'),
         page('patterns/routing', 'router hash navigation'),
-        page('patterns/html-rendering', 'innerHTML markdown sanitize'),
         page('patterns/theming', 'theme dark light css variables'),
         page('patterns/lists', 'table crud add remove')
       ])

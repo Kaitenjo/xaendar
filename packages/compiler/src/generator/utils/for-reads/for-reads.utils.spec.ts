@@ -27,7 +27,7 @@ describe('getReadForVariables', () => {
   });
 
   it('reads the attributes, the class bindings, the conditional bindings, the directives and the events', () => {
-    const template = '@for (item of items(); track item.id) { <li title="{item}" [class.a]="{$first}" @if ($last) { b="1" } @@tip(text="{$even}") (click)="pick($odd)"></li> }';
+    const template = '@for (item of items(); track item.id) { <li title="{item}" class.a="{$first}" @if ($last) { b="1" } @@tip(text="{$even}") (click)="pick($odd)"></li> }';
     expect(readIn(template)).toEqual(['item', '$first', '$last', '$even', '$odd']);
   });
 

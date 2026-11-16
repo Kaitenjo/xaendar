@@ -257,7 +257,7 @@
   },
   "toCssPropertyName": {
     "summary": "Converte il nome di una proprietà di stile in quello che usa il CSS.",
-    "description": "<p>Un nome in camelCase diventa kebab-case: ogni lettera maiuscola diventa <code>-</code> seguito dalla lettera minuscola. <code>'fontSize'</code> diventa <code>'font-size'</code>, <code>'WebkitTransform'</code> diventa <code>'-webkit-transform'</code>. Una custom property, che inizia con <code>--</code>, resta com’è, perché il suo nome distingue maiuscole e minuscole.</p><p>Il compilatore dei template e <code>@HostAttribute</code> la usano per convertire la proprietà di <code>[style.name]</code> e di <code>'style.name'</code>.</p>",
+    "description": "<p>Un nome in camelCase diventa kebab-case: ogni lettera maiuscola diventa <code>-</code> seguito dalla lettera minuscola. <code>'fontSize'</code> diventa <code>'font-size'</code>, <code>'WebkitTransform'</code> diventa <code>'-webkit-transform'</code>. Una custom property, che inizia con <code>--</code>, resta com’è, perché il suo nome distingue maiuscole e minuscole.</p><p>Il compilatore dei template e <code>@HostAttribute</code> la usano per convertire la proprietà di <code>style.name</code> e di <code>'style.name'</code>.</p>",
     "usage": {
       "converting": {
         "title": "Convertire una proprietà",
@@ -307,7 +307,7 @@
   },
   "CSS_UNITS": {
     "summary": "Le unità che possono seguire la proprietà di uno style binding.",
-    "description": "<p>Le unità CSS di lunghezza, angolo, tempo, frequenza e risoluzione, la frazione dei flex, tutte in minuscolo, più <code>%</code>: <code>px</code>, <code>rem</code>, <code>em</code>, <code>vh</code>, <code>dvh</code>, <code>cqi</code>, <code>deg</code>, <code>ms</code>, <code>fr</code> e le altre. Un’unità che non è nell’insieme è un errore, sia in <code>[style.width.foo]</code> sia in <code>@HostAttribute('style.width.foo')</code>.</p>",
+    "description": "<p>Le unità CSS di lunghezza, angolo, tempo, frequenza e risoluzione, la frazione dei flex, tutte in minuscolo, più <code>%</code>: <code>px</code>, <code>rem</code>, <code>em</code>, <code>vh</code>, <code>dvh</code>, <code>cqi</code>, <code>deg</code>, <code>ms</code>, <code>fr</code> e le altre. Un’unità che non è nell’insieme è un errore, sia in <code>style.width.foo</code> sia in <code>@HostAttribute('style.width.foo')</code>.</p>",
     "usage": {
       "checking": {
         "title": "Controllare un’unità",

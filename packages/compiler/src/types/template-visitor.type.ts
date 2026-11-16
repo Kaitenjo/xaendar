@@ -43,11 +43,11 @@ export type TemplateVisitor = {
    */
   readonly attribute?: (node: AttributeNode, owner: ComponentOrDirectiveMetadata | undefined) => void;
   /**
-   * Invoked for every class toggled on an element (`[class.name]`), conditional bindings included.
+   * Invoked for every class toggled on an element (`class.name`), conditional bindings included.
    */
   readonly classBinding?: (node: ClassBindingNode) => void;
   /**
-   * Invoked for every style property set on an element (`[style.name]`), conditional bindings included.
+   * Invoked for every style property set on an element (`style.name`), conditional bindings included.
    */
   readonly styleBinding?: (node: StyleBindingNode) => void;
   /**

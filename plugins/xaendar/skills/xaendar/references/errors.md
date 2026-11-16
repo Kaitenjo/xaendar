@@ -123,23 +123,28 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `[Parser] Class "on" is bound more than once on <p>`
 
-- **Cause:** The same [class.name] written twice on an element, or both outside and inside a conditional binding.
+- **Cause:** The same class.name written twice on an element, or both outside and inside a conditional binding.
 - **Fix:** Toggle it once, combining the conditions in its expression, or in every branch of one condition.
 
-### `[Parser] [class.on] toggles the class by the value of an expression: [class.on]="{expression}"`
+### `[Parser] class.on toggles the class by the value of an expression: class.on="{expression}"`
 
 - **Cause:** A class binding with a static value, or without a value.
-- **Fix:** Bind it to an expression in braces: [class.on]="{ active() }".
+- **Fix:** Bind it to an expression in braces: class.on="{ active() }".
 
-### `[Parser] "[attr.color]" is not a binding: a class is toggled with [class.name]="{expression}", a style property is set with [style.name]="{expression}"`
+### `[Parser] "[class.on]" is not a binding: brackets declare only a two-way binding, [(name)]="signal": write class.on="{ expression }"`
 
-- **Cause:** An attribute name in brackets other than [class.name] and [style.name]: brackets only toggle classes and set style properties.
-- **Fix:** Bind the attribute without brackets, e.g. title="{ … }", or use [class.name] or [style.name].
+- **Cause:** A name in brackets other than a two-way binding, as Angular writes the bindings of properties, classes and styles: [title], [class.on], [style.width.px], [attr.title].
+- **Fix:** Remove the brackets: class.on="{ active() }", style.width.px="{ width() }", title="{ hint() }".
 
-### `[Parser] attr.class cannot be written: class is merged with the directives and the component writing it, bound with class="…" and [class.name]="{ expression }"`
+### `[Parser] class. names no class: write class. followed by the name of the class, e.g. class.active="{ expression }"`
+
+- **Cause:** A class binding without the name of the class after class., or with whitespace or brackets in it.
+- **Fix:** Write the name of the class after the dot, class.active="{ … }", or bind the whole string with class="{ … }".
+
+### `[Parser] attr.class cannot be written: class is merged with the directives and the component writing it, bound with class="…" and class.name="{ expression }"`
 
 - **Cause:** attr.class or attr.style: class and style are merged key by key, never written whole.
-- **Fix:** Write class="…" / style="…", [class.name] or [style.name].
+- **Fix:** Write class="…" / style="…", class.name or style.name.
 
 ### `[Parser] attr. names no attribute: write attr. followed by the name of the attribute, e.g. attr.title="…"`
 
@@ -171,17 +176,17 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A two-way binding whose value is a call (count()), uses ?., or is any other expression than a name or a chain of property accesses.
 - **Fix:** Name the signal without calling it; for a computed value, bind the input and the event separately: value="{ total() }" (valueChange)="setTotal($event.detail)".
 
-### `[Parser] [style.color] sets the style property by the value of an expression: [style.color]="{expression}"`
+### `[Parser] style.color sets the style property by the value of an expression: style.color="{expression}"`
 
 - **Cause:** A style binding with a static value, or without a value.
-- **Fix:** Put the value in braces, [style.color]="{ 'red' }", or write it in the style attribute.
+- **Fix:** Put the value in braces, style.color="{ 'red' }", or write it in the style attribute.
 
-### `[Parser] [style.width.PX] does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. [style.width.px], or a custom property, e.g. [style.--accent]`
+### `[Parser] style.width.PX does not name a style property: write it in kebab-case or in camelCase, followed by its unit if any, e.g. style.width.px, or a custom property, e.g. style.--accent`
 
 - **Cause:** A style binding whose property holds characters a property cannot, or whose unit is not lowercase letters or %, or is followed by more than one unit.
 - **Fix:** Write the property in kebab-case or camelCase, and at most one unit in lowercase.
 
-### `[Parser] [style.width.foo] sets width in "foo", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh`
+### `[Parser] style.width.foo sets width in "foo", which is not a unit of CSS: write one of them, e.g. px, rem, %, vh`
 
 - **Cause:** A style binding whose unit is not one of CSS.
 - **Fix:** Write a unit of CSS in lowercase, or bind the property without unit and write the unit in the value.
@@ -191,12 +196,12 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** The same style property set twice on an element, also with different units, or on the element and in one of its conditional bindings.
 - **Fix:** Bind it once, or in different branches of the same condition.
 
-### `[Parser] [style.color] cannot be bound inside a directive: bind it on the element`
+### `[Parser] style.color cannot be bound inside a directive: bind it on the element`
 
 - **Cause:** A style binding in the parentheses of a directive, which only bind its properties.
 - **Fix:** Write it on the element, or set it from the directive with @HostAttribute('style.color').
 
-### `[Parser] [class.on] cannot be bound inside a directive: bind it on the element`
+### `[Parser] class.on cannot be bound inside a directive: bind it on the element`
 
 - **Cause:** A class binding in the parentheses of a directive, or in a conditional binding inside them, which only bind the properties of the directive.
 - **Fix:** Move it among the bindings of the element.

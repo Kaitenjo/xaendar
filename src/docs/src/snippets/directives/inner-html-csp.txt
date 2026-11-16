@@ -1,0 +1,4 @@
+Content-Security-Policy: require-trusted-types-for 'script'; trusted-types xaendar#inner-html
+
+# Allows the trusted HTML and the sanitizer of the application too
+Content-Security-Policy: require-trusted-types-for 'script'; trusted-types xaendar#inner-html xaendar#inner-html-unsafe

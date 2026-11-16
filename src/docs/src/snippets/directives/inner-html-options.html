@@ -1,0 +1,8 @@
+<!-- What the sanitizer keeps besides the defaults: an object created once, a field of the class -->
+<article @@innerHtml(html="{post().body}" options="{withMedia}") />
+
+<!-- The sanitizer of the application in place of the one of the directive -->
+<article @@innerHtml(html="{post().body}" sanitizer="{purify}") />
+
+<!-- An HTML the application trusts, rendered as it is -->
+<span @@innerHtml(html="{icon}") class="icon" />

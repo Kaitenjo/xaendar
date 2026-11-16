@@ -1,7 +1,7 @@
 <ex-dialog attr.class="wide" />
 
 Xaendar: Failed to compile template - /src/page/page.xd.component.html
-[Parser] [Ln 1, Col 12] - attr.class cannot be written: class is merged with the directives and the component writing it, bound with class="…" and [class.name]="{ expression }"
+[Parser] [Ln 1, Col 12] - attr.class cannot be written: class is merged with the directives and the component writing it, bound with class="…" and class.name="{ expression }"
 
 <ex-dialog lang="it" attr.lang="en" />
 

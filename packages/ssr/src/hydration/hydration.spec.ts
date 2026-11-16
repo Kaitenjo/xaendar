@@ -267,7 +267,7 @@ describe('hydration', () => {
   }
 
   const teamTemplate = (tag: (name: string) => string) => [
-    '<h1 class="title" [class.long]="{ users().length > 1 }">Hello { users()[0].name }!</h1>',
+    '<h1 class="title" class.long="{ users().length > 1 }">Hello { users()[0].name }!</h1>',
     '<template row(text: string)><em>{ text }</em></template>',
     '@if (users().length) {',
     `@for (user of users(); track user.id) {<${tag('badge')} label="{ user.name }">#{ $index }</${tag('badge')}>}`,
@@ -605,7 +605,7 @@ describe('hydration', () => {
       public hint = signal<string | null>(null);
       public missing = undefined;
     }
-    const hint = await register('hint', Hint, () => '<p title="{ hint() }" data-note="{ missing }">p</p><b title="{ hint() }" [class.on]="{ hint() }">b</b>', ['hint']);
+    const hint = await register('hint', Hint, () => '<p title="{ hint() }" data-note="{ missing }">p</p><b title="{ hint() }" class.on="{ hint() }">b</b>', ['hint']);
     const html = await renderToString(hint.Server);
     const host = load(html);
     const root = host.shadowRoot!;
@@ -2326,7 +2326,7 @@ describe('style bindings', () => {
       public accent = signal('red');
     }
 
-    const bar = await register('bar', Bar, () => '<div style="height: 4px;" [style.width.%]="{width()}" [style.--accent]="{accent()}" [style.color]="{null}"></div>', ['width', 'accent']);
+    const bar = await register('bar', Bar, () => '<div style="height: 4px;" style.width.%="{width()}" style.--accent="{accent()}" style.color="{null}"></div>', ['width', 'accent']);
     const html = await renderToString(bar.Server);
     expect(html).toContain('<div style="height: 4px; width: 40%; --accent: red;"></div>');
 
@@ -2367,7 +2367,7 @@ describe('style bindings', () => {
       public gap = signal<number | null>(4);
     }
 
-    const board = await register('board', Board, child => `<${child('tile')} class="extra" [class.on]="{ false }" [style.gap.px]="{ gap() }"></${child('tile')}>`, ['gap']);
+    const board = await register('board', Board, child => `<${child('tile')} class="extra" class.on="{ false }" style.gap.px="{ gap() }"></${child('tile')}>`, ['gap']);
     const html = await renderToString(board.Server);
     expect(html).toContain('<server-tile-');
     expect(html).toMatch(/<server-tile-\d+ class="extra tile base" style="gap: 4px; display: flex; width: 10px;">/);

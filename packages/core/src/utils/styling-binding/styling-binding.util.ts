@@ -54,7 +54,7 @@ export function _setExpressionStyling(context: _Context, target: Element | Bindi
 /**
  * Writes the `class` or the `style` of an element by the values of the expressions of the binding, again whenever a
  * signal or a variable of the template they read changes (see `_bindSite`), its callback being
- * {@link _setExpressionStyling}. E.g., `<div class="{kind()}" [class.active]="{active()}"></div>`.
+ * {@link _setExpressionStyling}. E.g., `<div class="{kind()}" class.active="{active()}"></div>`.
  *
  * @param context - The current template execution scope, which the expressions read and which disposes the binding.
  * @param target - The element.

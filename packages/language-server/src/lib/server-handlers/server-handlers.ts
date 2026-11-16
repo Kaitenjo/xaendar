@@ -336,7 +336,7 @@ export class XaendarLanguageServer {
    * Proposes the completions at the cursor in a template: in the path of an `@import`, the modules and directories;
    * between its braces, the components and directives the module declares; on the tag name of an element or the
    * selector of a directive, the components and directives imported by the template; on the name of an attribute or
-   * event, the bindings of the component or directive, and after `[style.` the CSS properties, then their units; after a `@`, the blocks that can be written there; between the
+   * event, the bindings of the component or directive, and after `style.` the CSS properties, then their units; after a `@`, the blocks that can be written there; between the
    * parentheses of a `@defer` or of a `@hydrate`, their triggers, and of a `@placeholder` or of a `@loading`, their
    * parameters; in an
    * interpolation, in the method an event calls and in its arguments, in the condition of a block, the variables of

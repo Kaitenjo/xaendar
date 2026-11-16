@@ -42,7 +42,7 @@ The references follow the documentation site:
 | `skills/xaendar/references/api.md` | `src/docs/src/pages/reference/api/packages/<package>.data.ts` and the texts in `src/docs/src/i18n/api/en/<package>.json` |
 | `skills/xaendar/references/errors.md` | `src/docs/src/pages/reference/errors/errors.data.ts` and the `errors` texts of `src/docs/src/i18n/en.json`, plus the compiler and runtime messages the site does not list yet |
 | `skills/xaendar/references/template-syntax.md` | the Template syntax cheat sheet and the Templates guides |
-| `skills/xaendar/references/patterns.md` | the Patterns section, Using DOM APIs, Creating components in code, Selectors and registration |
+| `skills/xaendar/references/patterns.md` | the Patterns section, the Inner HTML page of the Directives section, Using DOM APIs, Creating components in code, Selectors and registration |
 | `skills/xaendar/references/angular.md` | the Coming from Angular page |
 
 Update them, and the skills using what changed, when the framework or the docs change.

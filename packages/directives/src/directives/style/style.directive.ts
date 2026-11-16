@@ -10,11 +10,11 @@ import { toStyleString } from '../../utils/element-styles/element-styles.utils';
  * `undefined` and `''` set nothing. When the object changes, the properties it no longer sets are removed.
  *
  * The properties are a source of the `style` of the element, merged property by property with the others, as
- * `@HostAttribute('style')` of a directive: the `style` and the `[style.name]` of the template win over it, it wins over
+ * `@HostAttribute('style')` of a directive: the `style` and the `style.name` of the template win over it, it wins over
  * the component, and a property it does not set is left to them. On the server the properties are written into the
  * page. A value holding a `;` outside parentheses and quotes, which would write other properties, is left out.
  *
- * To set a few properties known in advance, `[style.name]="{…}"` of the template is lighter: `@@style` fits properties
+ * To set a few properties known in advance, `style.name="{…}"` of the template is lighter: `@@style` fits properties
  * computed, or many.
  *
  * @example

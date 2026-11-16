@@ -261,7 +261,7 @@ describe('generateFor', () => {
     });
 
     it('creates the variables read by their alias', async () => {
-      const { created, names } = await generateBody('@for (item of items(); track item.id; i = $index, odd = $odd) { <li [class.odd]="{odd}">{ i }</li> }');
+      const { created, names } = await generateBody('@for (item of items(); track item.id; i = $index, odd = $odd) { <li class.odd="{odd}">{ i }</li> }');
 
       expect(created).toBe('\'$index\', \'$odd\'');
       expect(names).toBe('\'i\', \'odd\'');

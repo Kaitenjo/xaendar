@@ -23,7 +23,7 @@ import { validateExpression } from '../../utils/expression-validator/expression-
 import type { ClassBindingNode } from '../../types/nodes/class-binding-node.type';
 import type { StyleBindingNode } from '../../types/nodes/style-binding-node.type';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
-import { isBracketBinding, parseBracketBinding } from '../parse-class-binding/parse-class-binding.state';
+import { isStylingBinding, parseStylingBinding } from '../parse-class-binding/parse-class-binding.state';
 import { isTwoWayBinding, parseTwoWayBinding } from '../parse-two-way-binding/parse-two-way-binding.state';
 import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseEvent } from '../parse-event/parse-event.state';
@@ -225,8 +225,8 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
           const { attribute, event } = parseTwoWayBinding(cursor, parseNode, token);
           attributes.push(attribute);
           events.push(event);
-        } else if (isBracketBinding(token)) {
-          const binding = parseBracketBinding(cursor, parseNode, token);
+        } else if (isStylingBinding(token)) {
+          const binding = parseStylingBinding(cursor, parseNode, token);
           binding.type === ASTNodeType.ClassBinding ? classBindings.push(binding) : styleBindings.push(binding);
         } else {
           attributes.push(parseAttribute(cursor, parseNode, token));
