@@ -45,7 +45,7 @@ export class SwitchButtonComponent<T = string> extends CustomElement {
 
   private _selectItem(item: Item<T>, button: HTMLElement): void {
     this.selected.set(item);
-    this.valueChange.emit(item);
+    this.valueChange.dispatch(item);
     this.selectedCircle()!.style.left = `${button.offsetLeft}px`;
     this.selectedCircle()!.style.width = `${button.offsetWidth}px`;
   }

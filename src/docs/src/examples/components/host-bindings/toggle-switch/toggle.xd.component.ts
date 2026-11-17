@@ -74,7 +74,7 @@ export class ToggleComponent extends CustomElement {
   public toggle(): void {
     if (!this.locked()) {
       this.on.update(on => !on);
-      this.checkedChange.emit(this.on());
+      this.checkedChange.dispatch(this.on());
     }
   }
 

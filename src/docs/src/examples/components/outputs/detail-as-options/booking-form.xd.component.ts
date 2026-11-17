@@ -20,6 +20,6 @@ export class BookingFormComponent extends CustomElement {
    * Emits the booking as the detail.
    */
   public book(): void {
-    this.booked.emit({ date: '2026-10-08', cancelable: false });
+    this.booked.dispatch({ date: '2026-10-08', cancelable: false });
   }
 }

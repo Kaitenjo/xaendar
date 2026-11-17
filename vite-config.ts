@@ -16,6 +16,12 @@ export type ViteConfigOptions = {
    * package only to be type-checked, while its users get them from that package.
    */
   removeGlobalDeclarations?: boolean,
+  /**
+   * Declaration files of another package (paths relative to the package directory) declaring globals its sources use, such as
+   * the `Window` of the event contract of `@xaendar/core`: they are added to the files the declarations are generated from, only
+   * so that the sources type-check, and the `declare global` blocks they bring are removed from the declaration files.
+   */
+  typeCheckFiles?: string[],
 }
 
 /**
@@ -36,6 +42,7 @@ export default function getViteConfig(name: string, dirName: string, options?: V
     entry[entryPoint] = resolve(dirName, path);
   }
 
+  const typeCheckFiles = (options?.typeCheckFiles ?? []).map(path => resolve(dirName, path).replace(/\\/g, '/'));
   const plugins: PluginOption[] = [
     createGeneratePackageJsonPlugin(dirName, fileName, outDir, secondaryEntryPoints),
     createCopyReadmePlugin(dirName, outDir),
@@ -43,11 +50,19 @@ export default function getViteConfig(name: string, dirName: string, options?: V
       exclude: [`**/packages/${fileName.split('-')[1]}/**/*.spec.ts`],
       include: [
         `**/packages/${fileName.split('-')[1]}/**/*.ts`,
-        '**/packages/signals/**/globals.d.ts'
+        '**/packages/signals/**/globals.d.ts',
+        ...typeCheckFiles
       ],
       bundleTypes: true,
       outDirs: distDir,
       root: resolve(dirName, 'src'),
+      afterDiagnostic(diagnostics) {
+        // The plugin only logs the errors of the sources: the build must fail, or the declarations are published with them
+        const errors = diagnostics.filter(diagnostic => diagnostic.category === ts.DiagnosticCategory.Error);
+        if (errors.length) {
+          throw new Error(`${name}: ${errors.length} type error(s) found while generating the declaration files`);
+        }
+      },
       afterBuild() {
         const pkgImportRegex = /from (['"])(?:\.\.\/)*([^/'"]+)\/src\/public-api\1/g;
         const dts = readdirSync(distDir, { recursive: true, encoding: 'utf-8' }).filter(entry => entry.endsWith('.d.ts')).map((entry) => join(distDir, entry));
@@ -68,6 +83,20 @@ export default function getViteConfig(name: string, dirName: string, options?: V
         if (options?.removeGlobalDeclarations) {
           for (const filePath of dts) {
             removeGlobalDeclarations(filePath);
+          }
+        } else if (typeCheckFiles.length) {
+          const blocks = new Set<string>();
+          for (let i = 0; i < typeCheckFiles.length; i++) {
+            const path = typeCheckFiles[i];
+            const source = ts.createSourceFile(path, readFileSync(path, 'utf-8'), ts.ScriptTarget.Latest, true);
+            const globalBlocks = getGlobalBlocks(source);
+            for (let j = 0; j < globalBlocks.length; j++) {
+              blocks.add(normalizeLineEndings(globalBlocks[j].getText(source)));
+            }
+          }
+
+          for (const filePath of dts) {
+            removeGlobalDeclarations(filePath, blocks);
           }
         }
       }
@@ -353,14 +382,35 @@ function nameNodeOf(statement: ts.Statement): ts.Identifier | undefined {
 }
 
 /**
+ * Reads the `declare global` blocks of a declaration file.
+ *
+ * @param source The declaration file.
+ * @returns The blocks, in the order they are written.
+ */
+function getGlobalBlocks(source: ts.SourceFile): ts.Statement[] {
+  return source.statements.filter(statement => ts.isModuleDeclaration(statement) && (statement.flags & ts.NodeFlags.GlobalAugmentation) !== 0);
+}
+
+/**
+ * Replaces the line endings of a text with `\n`, so that texts read from files written on different platforms compare equal.
+ *
+ * @param text The text.
+ * @returns The text with `\n` as its only line ending.
+ */
+function normalizeLineEndings(text: string): string {
+  return text.replace(/\r\n/g, '\n');
+}
+
+/**
  * Removes the `declare global` blocks from a declaration file.
  *
  * @param filePath Path of the declaration file.
+ * @param only The text of the blocks to remove: the other ones are kept. Every block is removed when omitted.
  */
-function removeGlobalDeclarations(filePath: string): void {
+function removeGlobalDeclarations(filePath: string, only?: Set<string>): void {
   const content = readFileSync(filePath, 'utf-8');
   const source = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true);
-  const blocks = source.statements.filter(statement => ts.isModuleDeclaration(statement) && (statement.flags & ts.NodeFlags.GlobalAugmentation) !== 0);
+  const blocks = getGlobalBlocks(source).filter(block => !only || only.has(normalizeLineEndings(block.getText(source))));
   if (!blocks.length) {
     return;
   }

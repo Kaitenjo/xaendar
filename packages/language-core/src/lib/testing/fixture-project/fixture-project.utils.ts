@@ -33,7 +33,7 @@ const FIXTURE_FILES: Readonly<Record<string, string>> = {
   'stubs/signals.ts': 'export type Signal<T> = () => T;\nexport type Computed<T> = () => T;\n',
   'stubs/core.ts': [
     'export type InputSignal<T> = () => T;',
-    'export type Output<T = void> = { emit(value: T): void };',
+    'export type Output<T = void> = { dispatch(value: T): void };',
     'export type ModelSignal<T> = (() => T) & { set(value: T): void };',
     'type Decorator = (...args: any[]) => any;',
     'export declare function WebComponent(options: { selector: string, templateUrl: string }): Decorator;',

@@ -6,16 +6,16 @@
 | --- | --- |
 | `@Component` | `@WebComponent({ selector, styleUrl, templateUrl })` on a class extending `CustomElement`, in a `.xd.component.ts` file; `selector` needs a dash |
 | `imports: [...]` of a standalone component | `@import { X } from './x.xd.component.ts'` at the top of the template |
-| `input()`, `@Input` / `input.required()` | `@Property(default)` / `@Property.required()` on `public accessor x!: InputSignal<T>` |
-| `output()`, `@Output` + `EventEmitter` | `@Event()` on `public accessor x!: Output<T>`, `this.x.emit(value)`: a DOM `CustomEvent`, `$event.detail` in the parent |
+| `input()`, `@Input` / `input.required()` | `@Property(default)` / `@Property.required()` on `public accessor x!: InputSignal<T>`; in the template an input is a signal: `x()`, not `x` |
+| `output()`, `@Output` + `EventEmitter` | `@Event()` on `public accessor x!: Output<T>`, `this.x.dispatch(value)`: a DOM `CustomEvent`, `$event.detail` in the parent |
 | `model()`, `model.required()` | `@Model(default)` / `@Model.required()` on `public accessor x!: ModelSignal<T>`, `this.x.set(v)` dispatching `xChange` (a DOM `CustomEvent`, `$event.detail`) |
 | `[(x)]="sig"` two-way binding | the same: `[(x)]="sig"`, `sig` a writable signal named without `()`; Angular's assignment to a plain field (`[(x)]="field"`) does not exist |
 | `[(ngModel)]` on native fields | `(input)` + a directive writing the property (patterns.md, Forms) |
 | `host: {...}`, `@HostBinding`, `@HostListener` | `@HostAttribute('attr' \| 'class.x' \| 'style.x')`, `@HostListener('event' \| 'window:event' \| 'document:event')`, key events included (`@HostListener('document:keydown.escape')`) |
 | `(keydown.enter)`, `(keyup.control.shift.z)`, `(keydown.code.keya)` | the same key events; `control` (not `ctrl`), `esc` for `escape`, `space`, `dot`; modifiers matched exactly; no `.prevent`/`.stop` (call it on `$event`) |
 | `signal`, `computed`, `effect`, `untracked` | the same names from `@xaendar/core/signals`; `this.effect()` for effects bound to the component |
-| `viewChild`, `viewChild.required`, `viewChildren` | `@Query`, `@Query.required`, `@Query.all`, `@Query.ref('name')` on `accessor x!: QuerySignal<…>` |
-| `contentChild`, `contentChild.required`, `contentChildren` | `@Query.content`, `@Query.contentRequired`, `@Query.contentAll`: the content passed to the component (its light DOM), whether a slot renders it or not; `{ descendants }` with the same defaults (`true` for the single ones, `false` for `@Query.contentAll`); `[slot="x"]` in the selector for the content of a slot |
+| `viewChild`, `viewChild.required`, `viewChildren` | `@Query`, `@Query.required`, `@Query.all`, `@Query.ref('name')` on `accessor x!: QuerySignal<…>`, read as `x()` in the template |
+| `contentChild`, `contentChild.required`, `contentChildren` | `@Query.content`, `@Query.contentRequired`, `@Query.contentAll`: the content passed to the component (its light DOM), whether a slot renders it or not; `{ descendants }` with the same defaults (`true` for the single ones, `false` for `@Query.contentAll`); `[slot="x"]` in the selector for the content of a slot; read as `x()` in the template |
 | `ngOnInit`, `ngAfterViewInit`, `ngOnDestroy` | `onInit`, `afterRender`, `onDestroy`: run at every connection and disconnection |
 | `ngOnChanges` | read the inputs reactively: `computed`, `this.effect` |
 | attribute directive | `@Directive({ selector: 'appX' })` on a class extending `CustomDirective<E>`, applied with `@@appX(...)` |
@@ -47,10 +47,10 @@
 ## Steps
 
 1. Create the files with `xd generate component <selector> -p <folder>`, then move the class members: inputs, outputs and queries become decorated accessors, state stays in signals, `computed` callbacks move to `_computeX()` methods (SKILL.md, Code conventions).
-2. Rewrite the template: single braces, every attribute value in double quotes, self-closed empty elements, one method call per listener (key events such as `(keydown.enter)` stay as they are), no pipes, `@import` for every component, directive and module symbol it reads.
+2. Rewrite the template: single braces, every attribute value in double quotes, self-closed empty elements, one method call per listener (key events such as `(keydown.enter)` stay as they are), no pipes, `@import` for every component, directive and module symbol it reads. Add `()` to every input, model, query, `computed` and `signal` it reads: Angular's `@Input()` is a plain value (`disabled`), a `@Property` is a signal (`disabled()`). Only `@let`, `@for` variables and `<template>` parameters stay without parentheses.
 3. Replace services with store modules, and `HttpClient` calls with `fetch`.
 4. Replace `ng-content` with slots, and component styles that relied on view encapsulation emulation with `:host`, `::slotted()`, `::part()` and custom properties.
-5. Run `/xaendar:check` and fix every `Xaendar:` error.
+5. Read every identifier of the template again and look up how the class declares it: a `@Property`, `@Model`, `@Query`, `computed` or `signal` needs `()` (the compiler checks it only in bindings to typed inputs, not in `@if` or text). Then run `/xaendar:check` and fix every `Xaendar:` error.
 
 ## What works differently
 

@@ -57,7 +57,7 @@ export class CounterComponent extends CustomElement {
 
   public increment(): void {
     this.count.update(count => count + 1);
-    this.changed.emit(this.total());
+    this.changed.dispatch(this.total());
   }
 
   private _computeTotal(): number {
@@ -111,6 +111,7 @@ export class CounterComponent extends CustomElement {
   The getters run in effects. A group with a `condition` resets its inputs to their defaults when the condition stops holding; an input goes in one group only; structural directives are not accepted. The component is destroyed with its creator, after `onDestroy`; `toast.destroy()` does it earlier, while removing the element with the DOM APIs leaves its bindings alive.
 
 **Template**: see [references/template-syntax.md](references/template-syntax.md). The essentials:
+- Read every signal of the class with `()`: the `@Property`, `@Model`, `@Query`, `signal` and `computed` members, and those of the host directives (`{ label() }`, `@if (loading())`, `title="{caption()}"`). An input is a signal, not the plain value Angular's `@Input()` gives, so without the call `@if (loading)` is always true (a signal is an object), `{ label }` renders the object and `type="{type}"` passes an `InputSignal<string>`. The compiler reports it only where the type does not fit (`type="{type}"` on a typed input); `@if (loading)` and `{ label }` compile and misbehave at runtime, and a signal without the call is valid where the signal itself is passed (an argument of a listener, `[(x)]="sig"`). Without parentheses go only the variables of the template (`@let`, `@for` items, `$index`, the parameters of a `<template>`) and the members holding a plain value.
 - Use `{ expr }`, not `{{ }}`. Write a literal `@ < { }` as `&commat;`, `&lt;`, `&lbrace;`, `&rbrace;` (character references are decoded as in HTML) or `{ '@' }`, `{ '<' }`, `{ '{' }`, `{ '}' }`. Use double quotes around every attribute value. Self-close every element without content, native ones included (`<div class="spacer" />`); void elements require it (`<input />`).
 - An attribute is fully static or one expression: `class="{`btn ${kind()}`}"`, not `class="btn { kind() }"`. Toggle a single class with `class.name="{expr}"`, set a single style property with `style.name="{expr}"` (`style.width.px` takes a number, `style.--accent`; `null`/`undefined` are no opinion). `class` and `style` are merged key by key with the directives and the component: template > directives > component, a single key > the string (see `references/template-syntax.md`). Every other attribute is merged as a whole with the same precedence (`null` no opinion). `attr.name="…"` always writes the attribute, never the input of a component named `name` (`attr.class`/`attr.style` are errors).
 - A listener is one method call, whose arguments are expressions (`save($event.key, count() + 1, format(name()))`): no assignments, arrow functions or several statements. Key events filter the key as in Angular: `(keydown.enter)`, `(keyup.escape)`, `(keydown.control.shift.z)` (modifiers matched exactly), `(keydown.code.keya)`; the same in `@HostListener('document:keydown.escape')`. No `.prevent`/`.stop` modifiers: call `preventDefault()` in the method.
@@ -125,7 +126,7 @@ export class CounterComponent extends CustomElement {
 - `styleUrl` takes `.css`, `.scss`, `.sass` or `.less`; Sass and Less need `sass` / `less` in the devDependencies. Their `@use`/`@import` are resolved at build time, while an `@import` in a `.css` file is dropped, and a relative `url()` resolves against the page: use absolute paths (the `public` folder).
 - Page styles and resets do not enter shadow roots, and `:root` matches nothing in a component. Use `:host` (custom elements are `display: inline` by default), `:host(.x)`, `::slotted()`, `::part()` and CSS custom properties for theming.
 
-**Signals**: import `signal`, `computed`, `effect` and `untracked` from `@xaendar/core/signals`. Read a signal by calling it (`count()`) or with `get()`, and write it with `.set(v)` / `.update(fn)`; values are compared with `Object.is`, so write new arrays and objects instead of mutating them. Effects run again in a microtask. For shared state, use modules that export read-only `computed`s and functions; there is no DI.
+**Signals**: import `signal`, `computed`, `effect` and `untracked` from `@xaendar/core/signals`. Read a signal by calling it (`count()`) or with `get()`, in a template too (inputs and queries included), and write it with `.set(v)` / `.update(fn)`; values are compared with `Object.is`, so write new arrays and objects instead of mutating them. Effects run again in a microtask. For shared state, use modules that export read-only `computed`s and functions; there is no DI.
 
 ## Code conventions
 

@@ -1,6 +1,6 @@
 /**
- * The options of an event emitted by an `@Event` output: the subset of {@link EventInit} that configures
- * how the `CustomEvent` is dispatched. The detail is not part of them, since it is passed separately when emitting.
+ * The options of an event dispatched by an `@Event` output: the subset of {@link EventInit} that configures
+ * how the `CustomEvent` is dispatched. The detail is not part of them, since it is passed separately to `dispatch`.
  */
 export class EventOptions implements EventInit {
   /**
@@ -38,7 +38,7 @@ export class EventOptions implements EventInit {
   }
 
   /**
-   * Creates the options of an emission.
+   * Creates the options of a single dispatch.
    *
    * @param options - The options to set.
    */

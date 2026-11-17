@@ -19,20 +19,20 @@ export class StageReporterComponent extends CustomElement {
    * Emits before the render.
    */
   public onInit(): void {
-    this.stage.emit('onInit');
+    this.stage.dispatch('onInit');
   }
 
   /**
    * Emits after the render.
    */
   public afterRender(): void {
-    this.stage.emit('afterRender');
+    this.stage.dispatch('afterRender');
   }
 
   /**
    * Emits on removal.
    */
   public onDestroy(): void {
-    this.stage.emit('onDestroy');
+    this.stage.dispatch('onDestroy');
   }
 }

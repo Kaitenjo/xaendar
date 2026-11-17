@@ -20,7 +20,7 @@ public readonly open = signal(true);
  * Closes the dialog, unless a listener cancels the closing.
  */
 public close(): void {
-  // emit() returns nothing: dispatchEvent() tells whether a listener called preventDefault()
+  // dispatch() of an output returns nothing: dispatchEvent() tells whether a listener called preventDefault()
   const allowed = this.dispatchEvent(new CustomEvent('closing', { cancelable: true }));
   if (allowed) {
     this.open.set(false);
@@ -103,7 +103,7 @@ export class CopyDirective extends CustomDirective<HTMLButtonElement> {
   private readonly _copy = async (): Promise<void> => {
     const text = this.text();
     await navigator.clipboard.writeText(text);
-    this.copied.emit(text);
+    this.copied.dispatch(text);
   };
 
   /**
@@ -256,7 +256,7 @@ export class CopyDirective extends CustomDirective<HTMLButtonElement> {
   public async copy(): Promise<void> {
     const text = this.text();
     await navigator.clipboard.writeText(text);
-    this.copied.emit(text);
+    this.copied.dispatch(text);
   }
 }`
 };
@@ -386,7 +386,7 @@ export const HOST_LISTENER_KEYS: SourceFile = {
 @HostListener('document:keydown.control.s')
 public save(event: KeyboardEvent): void {
   event.preventDefault();
-  this.saved.emit(this.value());
+  this.saved.dispatch(this.value());
 }
 
 /**
@@ -538,10 +538,10 @@ export class ToggleButtonComponent extends CustomElement {}`
 };
 
 /**
- * The snippet `output-emit.ts`, shown by the API reference of core.
+ * The snippet `output-dispatch.ts`, shown by the API reference of core.
  */
-export const OUTPUT_EMIT: SourceFile = {
-  name: 'output-emit.ts',
+export const OUTPUT_DISPATCH: SourceFile = {
+  name: 'output-dispatch.ts',
   lang: 'ts',
   code: `/**
  * A booking, emitted as the detail: an object with a cancelable key of its own.
@@ -555,13 +555,13 @@ public accessor booked!: Output<{ seats: number; cancelable: boolean }>;
 public accessor closed!: Output;
 
 // All of it is the detail: the event is not cancelable
-this.booked.emit({ seats: 2, cancelable: true });
-// The options of the emission follow the detail
-this.booked.emit({ seats: 2, cancelable: true }, new EventOptions({ cancelable: true }));
-// An instance of EventOptions as the only argument: the options of the emission
-this.closed.emit(new EventOptions({ bubbles: true }));
+this.booked.dispatch({ seats: 2, cancelable: true });
+// The options of the dispatch follow the detail
+this.booked.dispatch({ seats: 2, cancelable: true }, new EventOptions({ cancelable: true }));
+// An instance of EventOptions as the only argument: the options of the dispatch
+this.closed.dispatch(new EventOptions({ bubbles: true }));
 // A plain object is never taken for the options
-this.closed.emit({ bubbles: true });
+this.closed.dispatch({ bubbles: true });
 // ✗ Argument of type '[{ bubbles: true; }]' is not assignable to parameter of type '[] | [EventOptions]'.`
 };
 

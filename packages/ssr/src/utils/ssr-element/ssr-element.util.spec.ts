@@ -49,6 +49,22 @@ const expressionInput = (name: string, value: unknown) => ({ name, value: () => 
  */
 const classBinding = (name: string, value: unknown, text?: string) => ({ name: 'class', text, statics: text ? [text, true] : undefined, keys: [name], values: [() => value], setter: _setExpressionStyling }) as unknown as ServerAttribute;
 
+/**
+ * The getter and the setter of the private storage of an accessor, one value per instance, as the ones a decorator of a
+ * real `accessor` receives.
+ */
+function accessorStorage(): { get(this: object): unknown, set(this: object, value: unknown): void } {
+  const values = new WeakMap<object, unknown>();
+  return {
+    get(this: object) {
+      return values.get(this);
+    },
+    set(this: object, value: unknown) {
+      values.set(this, value);
+    }
+  };
+}
+
 describe('_ssrStartTag', () => {
   it('writes the start tag with the attributes and the classes applied in order through the setters of the client', () => {
     const out: ServerOutput = [];
@@ -133,7 +149,7 @@ describe('_ssrComponent', () => {
   it('passes the templates written among the children of a component before it renders, which an island cannot receive', () => {
     const template = vi.fn((out: ServerOutput, _context: unknown) => out.push('<b>row</b>'));
     class TemplatedElement extends CustomElement {
-      public row = (Query.contentTemplate('row') as unknown as () => { init(this: object): () => unknown })().init.call(this);
+      public row = (Query.contentTemplate('row') as unknown as (target: unknown) => { get(this: object): () => unknown })(accessorStorage()).get.call(this);
     }
     customElements.define('x-templated', TemplatedElement);
     _defineServerRender(TemplatedElement, function (this: InstanceType<typeof CustomElement>, out: ServerOutput) {
@@ -186,11 +202,11 @@ describe('_ssrComponent', () => {
 
   it('renders a component: its inputs set, onInit run before the template, its stylesheet first, and its host attributes written on the start tag', () => {
     const metadata: DecoratorMetadataObject = {};
-    const label = (Property('default', { alias: 'card-label' }) as unknown as (target: unknown, context: unknown) => { init(this: object): () => string })({}, { name: 'label', metadata });
+    const label = (Property('default', { alias: 'card-label' }) as unknown as (target: unknown, context: unknown) => { get(this: object): () => string })(accessorStorage(), { name: 'label', metadata });
     (HostAttribute('role') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'role', static: false, metadata, access: { get: (owner: { role: string }) => owner.role } });
 
     class CardElement extends CustomElement {
-      public label = label.init.call(this);
+      public label = label.get.call(this);
       public role = 'note';
       public calls = new Array<string>();
 

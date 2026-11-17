@@ -3,7 +3,7 @@ import { EffectOptions } from '@xaendar/core/signals';
 import { loadSignals } from '@xaendar/signals';
 import { Constructor, NoArgsVoidFunction } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { CLEANUP, CONNECTED_HOOKS, DISCONNECTED_HOOKS, HEADER, HYDRATE } from '../../costants';
+import { CLEANUP, CONNECTED_HOOKS, DISCONNECTED_HOOKS, HEADER, HYDRATE, IS_RENDERED } from '../../costants';
 import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
 import { effect } from '../../signals/effect/effect';
 import { ClaimNodes } from '../../utils/claim-nodes/claim-nodes.util';
@@ -554,6 +554,28 @@ describe('CustomElement', () => {
       element.remove();
 
       expect(calls).toEqual(['onDestroy', 'clear', 'hook']);
+    });
+
+    it('tells it is rendered from the end of the connected hooks to its removal', () => {
+      const states = new Array<string>();
+      const { element, render } = createWithHooks({
+        onInit: element => states.push(`onInit ${(element as unknown as CustomElement)[IS_RENDERED]()}`),
+        afterRender: () => states.push(`afterRender ${(element as unknown as CustomElement)[IS_RENDERED]()}`)
+      });
+      const custom = element as unknown as CustomElement;
+      render.mockImplementation(() => {
+        states.push(`render ${custom[IS_RENDERED]()}`);
+        return createContext();
+      });
+      custom[CONNECTED_HOOKS] = [() => states.push(`hook ${custom[IS_RENDERED]()}`)];
+      expect(custom[IS_RENDERED]()).toBe(false);
+
+      document.body.appendChild(element);
+      expect(states).toEqual(['onInit false', 'render false', 'hook false', 'afterRender true']);
+      expect(custom[IS_RENDERED]()).toBe(true);
+
+      element.remove();
+      expect(custom[IS_RENDERED]()).toBe(false);
     });
   });
 

@@ -26,6 +26,6 @@ export class NotificationComponent extends CustomElement {
    * Dismisses the notification.
    */
   public dismiss(): void {
-    this.dismissed.emit();
+    this.dismissed.dispatch();
   }
 }

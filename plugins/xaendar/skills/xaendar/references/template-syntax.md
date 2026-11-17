@@ -6,7 +6,7 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 
 ```html
 <!-- Interpolation: any expression, always reactive, always a text node -->
-<p>Hello { name }, you have { count() + 1 } messages</p>
+<p>Hello { name() }, you have { count() + 1 } messages</p>
 <p>{`${count()} items`}</p>                 <!-- template literal -->
 <p>{ user()?.name ?? 'anonymous' }</p>
 
@@ -333,6 +333,16 @@ Forbidden    assignments, new, arrow and function expressions, this, a cast of a
 - An object literal needs parentheses (`{ ({ id: 1 }) }`): without them the interpolation renders nothing.
 - A cast `as Type` closes a whole interpolation (`{ value() as string }`, `label="{name as Label}"`) or casts an argument of a call: of a listener (`(input)="search($event.target as HTMLInputElement)"`, `pick($event as MouseEvent, row as Row)`), of a `@render` (`@render row(item as Row)`), of a call in any expression (`{ format(value() as Date) }`, `as unknown as Date` included). The type is written as is in the type-check (imported types included) and generates no code. Any other cast (`{ (item as Row).id }`, `{ a + (b as number) }`) is an error.
 - Members used by the template must be `public`. A module constant, function or signal the template reads is imported (`@import { LIMIT } from './limits.ts'`) rather than copied into a member that only aliases it; what is state of the component stays in its class.
+- Signals are read with `()`: a `@Property`, `@Model`, `@Query`, `signal` or `computed` member of the component or of its host directives is a signal, and `@if (loading)` tests an object, always true. The variables of the template and the members holding a plain value are read without parentheses:
+
+  | Identifier | Read as |
+  | --- | --- |
+  | `@Property`, `@Model`, `@Query.*`, `signal`, `computed` | `x()` |
+  | `@for` items, `$index`, `$count`, `@let`, parameters of `<template>` | `x` (calling one is a compile error, unless its value is a function) |
+  | a member holding a plain value | `x` |
+  | a signal passed as an argument, `[(x)]` | `x`, without the call |
+
+  The compiler reports a signal read without `()` only where the type does not fit (a binding to a typed input: `Type 'InputSignal<string>' does not satisfy the expected type 'string'`): `@if (loading)` and `{ label }` compile and misbehave at runtime.
 - A member named like a global (`name`, `location`, `history`), inherited ones included, hides the global in the template. Read the global as `window.location` or `globalThis.location`.
 
 ## What does not exist

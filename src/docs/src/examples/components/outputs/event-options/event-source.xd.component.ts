@@ -30,27 +30,27 @@ export class EventSourceComponent extends CustomElement {
    * Emits plain.
    */
   public emitPlain(): void {
-    this.plain.emit('plain');
+    this.plain.dispatch('plain');
   }
 
   /**
    * Emits bubbling.
    */
   public emitBubbling(): void {
-    this.bubbling.emit('bubbling');
+    this.bubbling.dispatch('bubbling');
   }
 
   /**
    * Emits escaping.
    */
   public emitEscaping(): void {
-    this.escaping.emit('escaping');
+    this.escaping.dispatch('escaping');
   }
 
   /**
    * Emits plain with the options of escaping, for this emission only.
    */
   public emitOverride(): void {
-    this.plain.emit('plain + override', new EventOptions({ bubbles: true, composed: true }));
+    this.plain.dispatch('plain + override', new EventOptions({ bubbles: true, composed: true }));
   }
 }

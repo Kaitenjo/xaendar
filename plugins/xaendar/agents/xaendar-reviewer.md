@@ -18,6 +18,7 @@ Check at least the following:
 
 **Bugs that compile**
 - Members holding the value of a signal instead of the signal (`level = readLevel()()`, a field initialized with `this.price() * 2`): read once, so the bindings reading them never change. Keep the signal, or a `computed`.
+- Signals read without `()` in a template: a `@Property`, `@Model`, `@Query`, `computed` or `signal` member of the component or of its host directives used as a plain value (`@if (loading)` is always true, `{ label }` renders the object, `type="{type}"` passes the signal). The compiler reports it only in bindings to typed inputs, not in `@if` or text. Compare each identifier of the template with the declarations of the class; `@let`, `@for` variables and `<template>` parameters are values and take no parentheses, and a signal passed as the argument of a listener or bound with `[(x)]` goes without the call.
 - Mixed static text and `{ }` in one attribute value. It renders literally.
 - An attribute that must keep the text `"false"` bound to a boolean: `false` removes every attribute but `aria-*` and the enumerated ones (`draggable`, `spellcheck`, `contenteditable`, `writingsuggestions`), so `data-open="{open()}"` disappears when closed: bind `String(x())`. A static `disabled="false"` still disables.
 - `value`/`checked` bindings on inputs that the user edits. Only the initial state is applied.

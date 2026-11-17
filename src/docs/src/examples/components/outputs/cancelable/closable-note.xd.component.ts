@@ -13,9 +13,9 @@ import { signal } from '@xaendar/core/signals';
 })
 export class ClosableNoteComponent extends CustomElement {
   /**
-   * How the event is dispatched: with emit, or with dispatchEvent.
+   * How the event is dispatched: with `dispatch` of the output, or with `dispatchEvent` of the element.
    */
-  @Property('emit')
+  @Property('output')
   public accessor mode!: InputSignal<string>;
   /**
    * Emitted before closing, with the mode as detail. Declared in both modes, so that templates can listen to it.
@@ -35,10 +35,10 @@ export class ClosableNoteComponent extends CustomElement {
    * Announces the closing, then closes unless the event was canceled, when the note can tell.
    */
   public close(): void {
-    if (this.mode() === 'emit') {
-      this.closing.emit(this.mode());
+    if (this.mode() === 'output') {
+      this.closing.dispatch(this.mode());
       this.open.set(false);
-      this.status.set('emit() returns nothing: closed anyway');
+      this.status.set('dispatch() returns nothing: closed anyway');
     } else {
       const allowed = this.dispatchEvent(new CustomEvent('closing', { cancelable: true, detail: this.mode() }));
       this.open.set(!allowed);

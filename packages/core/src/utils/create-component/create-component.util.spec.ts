@@ -264,7 +264,7 @@ describe('_createComponent', () => {
     const onClick = vi.fn();
     const { element } = _createComponent(owner, Card, { target: document.body, events: [{ changed: event => onChanged(event.detail), click: onClick }] });
 
-    element.changed.emit(3);
+    element.changed.dispatch(3);
     element.click();
 
     expect(onChanged).toHaveBeenCalledWith(3);
@@ -300,10 +300,10 @@ describe('_createComponent', () => {
     const onClosed = vi.fn();
     const { element } = _createComponent(owner, Card, { target: document.body, events: [{ condition: () => enabled(), closed: onClosed }] });
 
-    element.closed.emit();
+    element.closed.dispatch();
     enabled.set(false);
     await flush();
-    element.closed.emit();
+    element.closed.dispatch();
 
     expect(onClosed).toHaveBeenCalledOnce();
   });
@@ -354,7 +354,7 @@ describe('_createComponent', () => {
 
       enabled.set(true);
       await flush();
-      tooltip.toggled.emit(true);
+      tooltip.toggled.dispatch(true);
 
       expect(tooltip.text()).toBe('Hint');
       expect(onToggled).toHaveBeenCalledWith(true);

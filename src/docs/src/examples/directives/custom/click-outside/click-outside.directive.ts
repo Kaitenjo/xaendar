@@ -21,7 +21,7 @@ export class ClickOutsideDirective extends CustomDirective<HTMLElement> {
    */
   private readonly _check = (event: PointerEvent): void => {
     if (!event.composedPath().includes(this.element)) {
-      this.outside.emit();
+      this.outside.dispatch();
     }
   };
 

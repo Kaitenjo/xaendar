@@ -1,5 +1,5 @@
 import type { Constructor, NoArgsVoidFunction } from '@xaendar/types';
-import { CONNECTED_HOOKS, DISCONNECTED_HOOKS } from '../../costants';
+import { CONNECTED_HOOKS, DISCONNECTED_HOOKS, IS_RENDERED } from '../../costants';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { CustomElement } from '../../models/custom-element/custom-element';
 import { _getAppliedDirectives } from '../../utils/applied-directives/applied-directives.util';
@@ -134,7 +134,8 @@ function observeShadowRoot(element: CustomElement, update: NoArgsVoidFunction): 
  * Creates a signal holding the result of `read`, kept up to date while the element is connected:
  * it is read again each time the element is inserted into the DOM, right after the render,
  * and recomputed each time `observe` reports a change. The observation is stopped each time
- * the element is removed from the DOM.
+ * the element is removed from the DOM. Created on an element already rendered (the decorators create it lazily, the first
+ * time the accessor is read), it starts at once instead of waiting for the next connection.
  *
  * @template Value - The type of the queried value.
  * @param element - The component whose DOM is queried.
@@ -171,6 +172,10 @@ export function createQuerySignal<Value>(
 
   element[CONNECTED_HOOKS] ? element[CONNECTED_HOOKS].push(connectedHook) : element[CONNECTED_HOOKS] = [connectedHook];
   element[DISCONNECTED_HOOKS] ? element[DISCONNECTED_HOOKS].push(disconnectedHook) : element[DISCONNECTED_HOOKS] = [disconnectedHook];
+  // Created lazily once the element has run the connected hooks of this connection: it starts at once
+  if (element[IS_RENDERED]()) {
+    connectedHook();
+  }
 
   return Object.assign(getter, {
     get: signal.get.bind(signal)

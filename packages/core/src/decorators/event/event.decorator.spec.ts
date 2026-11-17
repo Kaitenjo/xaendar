@@ -5,11 +5,26 @@ import { CustomElement, EventOptions } from '../../models';
 import { Output } from '../../models/output/output';
 import { Event } from '../event/event.decorator';
 
-type Decorated<ReturnType> = { init(this: Element): Output<ReturnType> };
+type Decorated<ReturnType> = { get(this: Element): Output<ReturnType> };
 
-function decorate<ReturnType = unknown>(name: string | symbol = 'clicked', options?: Parameters<typeof Event>[0]): Decorated<ReturnType> {
+/**
+ * The getter and the setter of an accessor, backed by a storage per instance, as the private field of a real accessor.
+ */
+function createTarget() {
+  const storage = new WeakMap<object, unknown>();
+  return {
+    get(this: object) {
+      return storage.get(this);
+    },
+    set: vi.fn(function (this: object, value: unknown) {
+      storage.set(this, value);
+    })
+  };
+}
+
+function decorate<ReturnType = unknown>(name: string | symbol = 'clicked', options?: Parameters<typeof Event>[0], target = createTarget()): Decorated<ReturnType> {
   const context = { name } as unknown as ClassAccessorDecoratorContext<CustomElement, Output<unknown>>;
-  const decorated = Event<ReturnType>(options)({} as ClassAccessorDecoratorValue<Output<ReturnType>>, context);
+  const decorated = Event<ReturnType>(options)(target as unknown as ClassAccessorDecoratorValue<Output<ReturnType>>, context);
   return decorated as unknown as Decorated<ReturnType>;
 }
 
@@ -24,9 +39,9 @@ function setup<ReturnType = unknown>(name: string | symbol = 'clicked', options?
   const element = document.createElement('div');
   const listener = listen(element);
 
-  const output = decorated.init.call(element);
+  const output = decorated.get.call(element);
 
-  return { output, emit: output.emit, listener };
+  return { output, dispatch: output.dispatch, listener };
 }
 
 function lastEvent(listener: ReturnType<typeof vi.fn>): CustomEvent {
@@ -44,6 +59,19 @@ describe('Event decorator', () => {
     expect(output).toBeInstanceOf(Output);
   });
 
+  it('creates the output of an instance only when the accessor is first read, keeping it in its storage', () => {
+    const target = createTarget();
+    const decorated = decorate('clicked', undefined, target);
+    const element = document.createElement('div');
+    expect(target.set).not.toHaveBeenCalled();
+
+    const output = decorated.get.call(element);
+    decorated.get.call(element);
+
+    expect(target.set).toHaveBeenCalledOnce();
+    expect(target.get.call(element)).toBe(output);
+  });
+
   it('creates a separate output for each instance, dispatching on its own element', () => {
     const decorated = decorate<number>();
     const first = document.createElement('div');
@@ -51,22 +79,23 @@ describe('Event decorator', () => {
     const firstListener = listen(first);
     const secondListener = listen(second);
 
-    const firstOutput = decorated.init.call(first);
-    const secondOutput = decorated.init.call(second);
+    const firstOutput = decorated.get.call(first);
+    const secondOutput = decorated.get.call(second);
     expect(firstOutput).not.toBe(secondOutput);
+    expect(decorated.get.call(first)).toBe(firstOutput);
 
-    firstOutput.emit(1);
+    firstOutput.dispatch(1);
     expect(lastEvent(firstListener).detail).toBe(1);
     expect(secondListener).not.toHaveBeenCalled();
 
-    secondOutput.emit(2);
+    secondOutput.dispatch(2);
     expect(lastEvent(secondListener).detail).toBe(2);
     expect(firstListener).toHaveBeenCalledTimes(1);
   });
 
   it('dispatches a CustomEvent named after the accessor with the value as detail', () => {
-    const { emit, listener } = setup();
-    emit({ id: 1 });
+    const { dispatch, listener } = setup();
+    dispatch({ id: 1 });
 
     const event = lastEvent(listener);
     expect(event).toBeInstanceOf(CustomEvent);
@@ -74,30 +103,30 @@ describe('Event decorator', () => {
   });
 
   it('dispatches without detail when called with no arguments', () => {
-    const { emit, listener } = setup<void>();
-    emit();
+    const { dispatch, listener } = setup<void>();
+    dispatch();
 
     expect(lastEvent(listener).detail).toBeNull();
   });
 
   it('uses primitive values as detail', () => {
-    const { emit, listener } = setup();
-    emit(5);
+    const { dispatch, listener } = setup();
+    dispatch(5);
 
     expect(lastEvent(listener).detail).toBe(5);
   });
 
   it('applies the default options', () => {
-    const { emit, listener } = setup('clicked', { bubbles: true });
-    emit('x');
+    const { dispatch, listener } = setup('clicked', { bubbles: true });
+    dispatch('x');
 
     expect(lastEvent(listener).bubbles).toBe(true);
     expect(lastEvent(listener).cancelable).toBe(false);
   });
 
   it('overrides the default options with the ones passed alongside the value', () => {
-    const { emit, listener } = setup('clicked', { bubbles: true });
-    emit('x', new EventOptions({ bubbles: false, cancelable: true }));
+    const { dispatch, listener } = setup('clicked', { bubbles: true });
+    dispatch('x', new EventOptions({ bubbles: false, cancelable: true }));
 
     const event = lastEvent(listener);
     expect(event.bubbles).toBe(false);
@@ -105,9 +134,9 @@ describe('Event decorator', () => {
     expect(event.detail).toBe('x');
   });
 
-  it.each(['bubbles', 'cancelable', 'composed'] as const)('takes an EventOptions instance for the options of the emission, with %s', key => {
-    const { emit, listener } = setup('clicked', { bubbles: false });
-    emit(new EventOptions({ [key]: true }));
+  it.each(['bubbles', 'cancelable', 'composed'] as const)('takes an EventOptions instance for the options of the dispatch, with %s', key => {
+    const { dispatch, listener } = setup('clicked', { bubbles: false });
+    dispatch(new EventOptions({ [key]: true }));
 
     const event = lastEvent(listener);
     expect(event[key]).toBe(true);
@@ -120,8 +149,8 @@ describe('Event decorator', () => {
     ['with option keys and other keys', { bubbles: true, value: 1 }],
     ['empty', {}]
   ])('takes a plain object %s for the detail', (_case, detail) => {
-    const { emit, listener } = setup('clicked', { bubbles: false });
-    emit(detail);
+    const { dispatch, listener } = setup('clicked', { bubbles: false });
+    dispatch(detail);
 
     const event = lastEvent(listener);
     expect(event.detail).toEqual(detail);

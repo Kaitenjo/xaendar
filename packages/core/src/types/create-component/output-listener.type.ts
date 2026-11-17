@@ -3,7 +3,7 @@ import type { Output } from '../../models/output/output';
 import type { OutputDetail } from './output-detail.type';
 
 /**
- * The listener of an output: it receives the event dispatched by the output, whose detail is the value the output emits.
+ * The listener of an output: it receives the event dispatched by the output, whose detail is the value the output dispatches.
  *
  * Any other member gets `unknown`, which leaves the type of a native event alone: TypeScript reads the type of the listener
  * of a name also from this side of `BindableEvents`, the native `click` included, even if it has no output with that name.

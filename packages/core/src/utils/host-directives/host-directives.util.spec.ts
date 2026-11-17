@@ -28,7 +28,7 @@ class TooltipDirective extends CustomDirective {
     this.dispatchEvent(new CustomEvent('opened', { detail, bubbles: true }));
   });
   public readonly closed = new Output(() => this.dispatchEvent(new CustomEvent('closed')));
-  public readonly fake = { emit: () => undefined };
+  public readonly fake = { dispatch: () => undefined };
 }
 
 Object.defineProperty(TooltipDirective, Symbol.for('Symbol.metadata'), { value: { aliasToAttribute: { pos: 'position' } } });
@@ -224,7 +224,7 @@ describe('_createHostDirectives', () => {
     it('does not dispatch any event on the component unless asked to', () => {
       const element = create([TooltipDirective]);
       const heard = listen(element);
-      element.hostDirectives.get(TooltipDirective)?.opened.emit(undefined);
+      element.hostDirectives.get(TooltipDirective)?.opened.dispatch(undefined);
 
       expect(heard).toEqual([]);
     });
@@ -233,8 +233,8 @@ describe('_createHostDirectives', () => {
       const element = create([{ directive: TooltipDirective, events: ['opened'] }]);
       const heard = listen(element);
       const directive = element.hostDirectives.get(TooltipDirective)!;
-      directive.opened.emit({ id: 1 });
-      directive.closed.emit();
+      directive.opened.dispatch({ id: 1 });
+      directive.closed.dispatch();
 
       expect(heard).toEqual(['opened']);
     });
@@ -244,7 +244,7 @@ describe('_createHostDirectives', () => {
       const listener = vi.fn();
       element.addEventListener('shown', listener);
       const heard = listen(element);
-      element.hostDirectives.get(TooltipDirective)?.opened.emit({ id: 1 });
+      element.hostDirectives.get(TooltipDirective)?.opened.dispatch({ id: 1 });
 
       expect(heard).toEqual(['shown']);
       expect(listener.mock.calls[0][0].detail).toEqual({ id: 1 });

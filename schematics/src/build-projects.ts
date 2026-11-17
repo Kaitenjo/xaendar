@@ -88,7 +88,11 @@ function buildProject(projectName: string): void {
     markComplete(projectName);
   };
 
-  const onError = (err: Error) => console.error(`❌ @xaendar/${projectName} fallito:`, err.message);
+  const onError = (err: Error) => {
+    console.error(`❌ @xaendar/${projectName} fallito:`, err.message);
+    // The process must end with an error, so that a script running it (such as `deploy`) does not go on
+    process.exitCode = 1;
+  };
 
   let buildPromise: Promise<void> | ReturnType<typeof viteBuild>;
 

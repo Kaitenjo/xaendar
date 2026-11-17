@@ -83,11 +83,29 @@ function named(name: string): HTMLInputElement {
 }
 
 /**
- * Applies the decorator the way the runtime does and returns the signal created by its initializer.
+ * The decorator of a query applied to an accessor whose storage holds one value per instance, as the private field of a
+ * real accessor: `get` reads the accessor of an element, `set` is the setter of the storage.
  */
-function init<Value>(decorator: AccessorDecorator<CustomElement, QuerySignal<Value>>, element: CustomElement): QuerySignal<Value> {
-  const decorated = decorator({} as never, {} as never);
-  return decorated!.init!.call(element, undefined as never) as QuerySignal<Value>;
+type AppliedQuery<Value> = { get: (element: CustomElement) => QuerySignal<Value>, set: ReturnType<typeof vi.fn> };
+
+/**
+ * Applies the decorator the way the runtime does, to an accessor with a storage per instance.
+ */
+function apply<Value>(decorator: AccessorDecorator<CustomElement, QuerySignal<Value>>): AppliedQuery<Value> {
+  const values = new WeakMap<object, unknown>();
+  const set = vi.fn(function (this: object, value: unknown) {
+    values.set(this, value);
+  });
+  const storage = { get(this: object) { return values.get(this); }, set };
+  const decorated = decorator(storage as never, {} as never)!;
+  return { get: element => decorated.get!.call(element), set };
+}
+
+/**
+ * Applies the decorator the way the runtime does and reads the accessor of the element, which creates its signal.
+ */
+function read<Value>(decorator: AccessorDecorator<CustomElement, QuerySignal<Value>>, element: CustomElement): QuerySignal<Value> {
+  return apply(decorator).get(element);
 }
 
 describe('query', () => {
@@ -472,7 +490,7 @@ describe('queryAll', () => {
 describe('Query decorator', () => {
   it('creates a signal holding the first element having the attribute', async () => {
     const element = create();
-    const signal = init(Query('[item]'), element);
+    const signal = read(Query('[item]'), element);
     document.body.appendChild(element);
     expect(signal()).toBeNull();
 
@@ -486,7 +504,7 @@ describe('Query decorator', () => {
   it('creates a signal holding the first instance of the component', async () => {
     const element = create();
     const { klass, selector } = defineComponent();
-    const signal = init(Query(klass), element);
+    const signal = read(Query(klass), element);
     document.body.appendChild(element);
 
     const target = document.createElement(selector);
@@ -499,7 +517,7 @@ describe('Query decorator', () => {
   describe('required', () => {
     it('creates a signal holding the first element having the attribute, throwing when there is none', async () => {
       const element = create();
-      const signal = init(Query.required('[item]'), element);
+      const signal = read(Query.required('[item]'), element);
       document.body.appendChild(element);
       expect(() => signal()).toThrow(`No element matches the required query '[item]' of <${element.localName}>`);
 
@@ -513,7 +531,7 @@ describe('Query decorator', () => {
     it('creates a signal holding the first instance of the component', async () => {
       const element = create();
       const { klass, selector } = defineComponent();
-      const signal = init(Query.required(klass), element);
+      const signal = read(Query.required(klass), element);
       document.body.appendChild(element);
 
       const target = document.createElement(selector);
@@ -527,7 +545,7 @@ describe('Query decorator', () => {
   describe('all', () => {
     it('creates a signal holding all the elements having the attribute', async () => {
       const element = create();
-      const signal = init(Query.all('[item]'), element);
+      const signal = read(Query.all('[item]'), element);
       document.body.appendChild(element);
       expect(signal()).toEqual([]);
 
@@ -542,7 +560,7 @@ describe('Query decorator', () => {
     it('creates a signal holding all the instances of the component', async () => {
       const element = create();
       const { klass, selector } = defineComponent();
-      const signal = init(Query.all(klass), element);
+      const signal = read(Query.all(klass), element);
       document.body.appendChild(element);
 
       const first = document.createElement(selector);
@@ -697,7 +715,7 @@ describe('queryContentAll', () => {
 describe('Query.ref decorator', () => {
   it('creates a signal holding the first element named by the ref', async () => {
     const element = create();
-    const signal = init(Query.ref('field'), element);
+    const signal = read(Query.ref('field'), element);
     document.body.appendChild(element);
     const field = named('field');
 
@@ -709,14 +727,14 @@ describe('Query.ref decorator', () => {
 
   it('creates a signal holding the element named by the ref, throwing when there is none', () => {
     const element = create();
-    const signal = init(Query.refRequired('field'), element);
+    const signal = read(Query.refRequired('field'), element);
 
     expect(() => signal()).toThrow('No element is named by the required ref \'#field\'');
   });
 
   it('creates a signal holding all the elements named by the ref', async () => {
     const element = create();
-    const signal = init(Query.refAll('note'), element);
+    const signal = read(Query.refAll('note'), element);
     document.body.appendChild(element);
     const [first, second] = [named('note'), named('note')];
 
@@ -735,7 +753,7 @@ describe('read option', () => {
 
   it('holds the directive applied to the first element the selector finds that has it', async () => {
     const element = create();
-    const signal = init(Query('[item]', { read: Mark }), element);
+    const signal = read(Query('[item]', { read: Mark }), element);
     document.body.appendChild(element);
     const marked = item();
     const mark = new Mark();
@@ -749,7 +767,7 @@ describe('read option', () => {
 
   it('holds the element a directive is applied to', async () => {
     const element = create();
-    const signal = init(Query(Tooltip, { read: 'element' }), element);
+    const signal = read(Query(Tooltip, { read: 'element' }), element);
     document.body.appendChild(element);
     const { element: withIt } = withTooltip();
 
@@ -761,15 +779,15 @@ describe('read option', () => {
 
   it('names what is read in the error of a required query', () => {
     const element = create();
-    const signal = init(Query.required('[item]', { read: Mark }), element);
+    const signal = read(Query.required('[item]', { read: Mark }), element);
 
     expect(() => signal()).toThrow(`No element matches the required query '[item], read: Mark' of <${element.localName}>`);
   });
 
   it('holds the directive applied to the element named by a ref, throwing when required and there is none', async () => {
     const element = create();
-    const signal = init(Query.ref('field', { read: Tooltip }), element);
-    const required = init(Query.refRequired('field', { read: Tooltip }), element);
+    const signal = read(Query.ref('field', { read: Tooltip }), element);
+    const required = read(Query.refRequired('field', { read: Tooltip }), element);
     document.body.appendChild(element);
     expect(() => required()).toThrow(`No element is named by the required ref '#field, read: Tooltip' of <${element.localName}>`);
     const field = named('field');
@@ -786,8 +804,8 @@ describe('read option', () => {
   it('holds the directive applied to the first element of the content, among the options of the content', () => {
     const { element: child, tooltip } = withTooltip();
     const element = withContent(wrapping(withTooltip().element), child);
-    const signal = init(Query.content('span', { descendants: false, read: Tooltip }), element);
-    const required = init(Query.contentRequired(Tooltip, { descendants: false, read: 'element' }), element);
+    const signal = read(Query.content('span', { descendants: false, read: Tooltip }), element);
+    const required = read(Query.contentRequired(Tooltip, { descendants: false, read: 'element' }), element);
 
     document.body.appendChild(element);
 
@@ -800,9 +818,9 @@ describe('Query.content decorator', () => {
   it('creates a signal holding the instances of a directive applied to the elements of the content', () => {
     const [first, second] = [withTooltip(), withTooltip()];
     const element = withContent(first.element, wrapping(second.element));
-    const firstSignal = init(Query.content(Tooltip), element);
-    const childrenSignal = init(Query.contentAll(Tooltip), element);
-    const allSignal = init(Query.contentAll(Tooltip, { descendants: true }), element);
+    const firstSignal = read(Query.content(Tooltip), element);
+    const childrenSignal = read(Query.contentAll(Tooltip), element);
+    const allSignal = read(Query.contentAll(Tooltip, { descendants: true }), element);
 
     document.body.appendChild(element);
 
@@ -813,7 +831,7 @@ describe('Query.content decorator', () => {
 
   it('names the class of the directive in the error of a required content query', () => {
     const element = withContent();
-    const signal = init(Query.contentRequired(Tooltip), element);
+    const signal = read(Query.contentRequired(Tooltip), element);
     document.body.appendChild(element);
 
     expect(() => signal()).toThrow(`No element matches the required content query 'Tooltip' of <${element.localName}>`);
@@ -822,7 +840,7 @@ describe('Query.content decorator', () => {
   it('creates a signal holding the first element of the content matching the target', () => {
     const target = item();
     const element = withContent(target, item());
-    const signal = init(Query.content('[item]'), element);
+    const signal = read(Query.content('[item]'), element);
 
     document.body.appendChild(element);
 
@@ -832,7 +850,7 @@ describe('Query.content decorator', () => {
   it('forwards the options', () => {
     const child = item();
     const element = withContent(wrapping(item()), child);
-    const signal = init(Query.content('[item]', { descendants: false }), element);
+    const signal = read(Query.content('[item]', { descendants: false }), element);
 
     document.body.appendChild(element);
 
@@ -843,7 +861,7 @@ describe('Query.content decorator', () => {
     it('creates a signal holding the first element of the content matching the target', () => {
       const target = item();
       const element = withContent(target, item());
-      const signal = init(Query.contentRequired('[item]'), element);
+      const signal = read(Query.contentRequired('[item]'), element);
 
       document.body.appendChild(element);
 
@@ -852,7 +870,7 @@ describe('Query.content decorator', () => {
 
     it('forwards the options, throwing when no element matches', () => {
       const element = withContent(wrapping(item()));
-      const signal = init(Query.contentRequired('[item]', { descendants: false }), element);
+      const signal = read(Query.contentRequired('[item]', { descendants: false }), element);
 
       document.body.appendChild(element);
 
@@ -864,7 +882,7 @@ describe('Query.content decorator', () => {
     it('creates a signal holding all the children of the element matching the target', () => {
       const [first, second] = [item(), item()];
       const element = withContent(first, second);
-      const signal = init(Query.contentAll('[item]'), element);
+      const signal = read(Query.contentAll('[item]'), element);
 
       document.body.appendChild(element);
 
@@ -874,7 +892,7 @@ describe('Query.content decorator', () => {
     it('forwards the options', () => {
       const nested = item();
       const element = withContent(wrapping(nested));
-      const signal = init(Query.contentAll('[item]', { descendants: true }), element);
+      const signal = read(Query.contentAll('[item]', { descendants: true }), element);
 
       document.body.appendChild(element);
 
@@ -889,23 +907,88 @@ describe('Query.contentTemplate decorator', () => {
 
   it('holds the template passed as content under its name, null when there is none, read when it is read', () => {
     const element = create();
-    const signal = init(Query.contentTemplate('row'), element);
+    const signal = read(Query.contentTemplate('row'), element);
     expect(signal()).toBeNull();
 
     _setContentTemplates(element, context, [{ name: 'row', template }]);
 
     expect(signal()).toEqual({ template, context });
     expect(signal.get()).toBe(signal());
-    expect(init(Query.contentTemplate('other'), element).get()).toBeNull();
+    expect(read(Query.contentTemplate('other'), element).get()).toBeNull();
   });
 
   it('throws when no template is passed under the name of a required query', () => {
     const element = create();
-    const signal = init(Query.contentTemplateRequired('row'), element);
+    const signal = read(Query.contentTemplateRequired('row'), element);
     expect(() => signal()).toThrow(`No template named 'row' is passed as content to <${element.localName}>, as its required content template query needs`);
 
     _setContentTemplates(element, context, [{ name: 'row', template }]);
     expect(signal()).toEqual({ template, context });
+  });
+});
+
+describe('lazy creation', () => {
+  it('creates the signal of an instance only when its accessor is first read, the same one at every read', () => {
+    const applied = apply(Query('[item]'));
+    const first = create();
+    const second = create();
+    expect(applied.set).not.toHaveBeenCalled();
+
+    const signal = applied.get(first);
+    expect(applied.get(first)).toBe(signal);
+    expect(applied.get(second)).not.toBe(signal);
+    expect(applied.set).toHaveBeenCalledTimes(2);
+  });
+
+  it('starts at once when first read after the render, following the changes of the Shadow DOM', async () => {
+    const element = create();
+    document.body.appendChild(element);
+    const target = item();
+    element.shadowRoot!.append(target);
+
+    const signal = read(Query('[item]'), element);
+    expect(signal()).toBe(target);
+
+    target.remove();
+    await flush();
+    expect(signal()).toBeNull();
+  });
+
+  it('starts with the hooks of the connection when first read before the render ends', () => {
+    const applied = apply(Query.required('[item]'));
+    const target = item();
+    let signal: QuerySignal<HTMLElement> | undefined;
+    const klass = class extends CustomElement {
+      public onInit(): void {
+        signal = applied.get(this) as QuerySignal<HTMLElement>;
+      }
+    };
+    _defineRender(klass, function (this: CustomElement) {
+      this.shadowRoot!.append(target);
+      return _scope(null, EMPTY_LAYOUT);
+    });
+    const name = `x-query-decorator-${counter++}`;
+    customElements.define(name, klass);
+
+    document.body.appendChild(document.createElement(name));
+
+    expect(signal!()).toBe(target);
+  });
+
+  it('waits for the next connection when first read after the removal of the element', async () => {
+    const element = create();
+    document.body.appendChild(element);
+    element.remove();
+
+    const signal = read(Query('[item]'), element);
+    expect(signal()).toBeNull();
+
+    document.body.appendChild(element);
+    const target = item();
+    element.shadowRoot!.append(target);
+    await flush();
+
+    expect(signal()).toBe(target);
   });
 });
 

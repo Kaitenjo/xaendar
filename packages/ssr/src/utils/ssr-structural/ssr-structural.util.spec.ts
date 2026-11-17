@@ -20,13 +20,29 @@ type StructuralConditionalBinding = import('@xaendar/core').RenderElementStructu
 const { _ssrStructural } = await import('./ssr-structural.util');
 const { _createServerRuntime, _runOnServer } = await import('../server-runtime/server-runtime.util');
 
-const allow = (Property(true) as unknown as (target: unknown, context: unknown) => { init(this: object): () => boolean | Promise<boolean> })({}, { name: 'allow', metadata: {} });
+/**
+ * The getter and the setter of the private storage of an accessor, one value per instance, as the ones a decorator of a
+ * real `accessor` receives.
+ */
+function accessorStorage(): { get(this: object): unknown, set(this: object, value: unknown): void } {
+  const values = new WeakMap<object, unknown>();
+  return {
+    get(this: object) {
+      return values.get(this);
+    },
+    set(this: object, value: unknown) {
+      values.set(this, value);
+    }
+  };
+}
+
+const allow = (Property(true) as unknown as (target: unknown, context: unknown) => { get(this: object): () => boolean | Promise<boolean> })(accessorStorage(), { name: 'allow', metadata: {} });
 
 /**
  * A structural directive allowing the element as its `allow` input tells, synchronously or not.
  */
 class GuardDirective extends StructuralDirective {
-  public allow = allow.init.call(this);
+  public allow = allow.get.call(this);
 
   public shouldRender(): boolean | Promise<boolean> {
     return this.allow();

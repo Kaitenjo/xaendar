@@ -1,20 +1,50 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue, DecoratorMetadataContext, Function } from '@xaendar/types';
 import { PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND } from '../../costants';
-import { registerInput } from '../../utils/input-registration/input-registration.util';
-import type { BindingHost } from '../../types/binding-host.type';
 import { input } from '../../signals/input/input';
-import { InputSignal } from '../../signals/types/input-signal.type';
-import { PropertyDecoratorOptions } from '../../types/property-decorator-options.type';
-import type { PropertyDecoratorOptionsWithRequired } from '../../types/property-decorator-options-with-required.type';
-import { PropertyDecoratorReturnType } from '../../types/property/property-return-type.type';
-import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
+import { InputSignal } from '../../signals/types/input-signal.type';
 import { SettableInputSignal } from '../../signals/types/settable-input-signal.type';
-import type { PropertyDecoratorOptionsWithRequiredBrandType } from '../../types/property/property-decorator-options-with-required-brand-type.type';
+import type { BindingHost } from '../../types/binding-host.type';
+import type { PropertyDecoratorOptionsWithRequired } from '../../types/property-decorator-options-with-required.type';
+import { PropertyDecoratorOptions } from '../../types/property-decorator-options.type';
 import type { InputAlias } from '../../types/property/input-alias.type';
-import type { WithAlias } from '../../types/property/with-alias.type';
+import type { PropertyDecoratorOptionsWithRequiredBrandType } from '../../types/property/property-decorator-options-with-required-brand-type.type';
 import type { PropertyOptionsArgument } from '../../types/property/property-options-argument.type';
+import { PropertyDecoratorReturnType } from '../../types/property/property-return-type.type';
+import type { WithAlias } from '../../types/property/with-alias.type';
+import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
+import { registerInput } from '../../utils/input-registration/input-registration.util';
 
+/**
+ * Creates the input signal of an accessor decorated with `@Property`.
+ *
+ * @param value - The default value of the input.
+ * @param options - The options of the input: equality, watched and unwatched callbacks, transform.
+ * @returns The input signal, holding the default value.
+ */
+function createInput<ActualValue, IncomingValue>(value: ActualValue | undefined, options: PropertyDecoratorOptions<ActualValue, IncomingValue> | undefined): SettableInputSignal<ActualValue, IncomingValue> {
+  return input<ActualValue, IncomingValue>(value, {
+    equals: options?.equals,
+    watched: options?.watched,
+    unwatched: options?.unwatched,
+    transform: options?.transform
+  }) as SettableInputSignal<ActualValue, IncomingValue>;
+}
+
+/**
+ * Creates the decorator of an input, optional or required.
+ *
+ * The input signal of an instance is created lazily, the first time the accessor is read or assigned, and kept in the
+ * storage of the accessor, so an instance whose input is never read allocates no signal. Only an element holding a value
+ * assigned before its upgrade creates it at once, in `init`, to take that value.
+ *
+ * N.B. The signal is kept in the private storage the `accessor` already has for each instance. Do not keep it in a
+ * variable of the decorator, which runs once per class: every instance would share one signal.
+ *
+ * @param value - The default value of the input, or the options of a required input (`@Property.required`).
+ * @param options - The options of an optional input.
+ * @returns The accessor decorator.
+ */
 function createPropertyDecorator<
   Class extends BindingHost,
   Value extends InputSignal<ActualValue, IncomingValue>,
@@ -47,29 +77,35 @@ function createPropertyDecorator<
     registerInput(context.metadata, propertyKey, actualOptions?.alias, required);
 
     return {
-      init(_?: InputSignal<ActualValue, IncomingValue>) {
-        const signal = input<ActualValue, IncomingValue>(actualValue, {
-          equals: actualOptions?.equals,
-          watched: actualOptions?.watched,
-          unwatched: actualOptions?.unwatched,
-          transform: actualOptions?.transform
-        }) as SettableInputSignal<ActualValue, IncomingValue>;
+      init(value: Value): Value {
         /*
-          A value assigned to the element before its upgrade is an own property, which would shadow the accessor:
-          it is removed and written into the input as any later assignment, so the transform applies to it and the
-          default stays the initial value a reset goes back to.
+          A value assigned to the element before its upgrade is an own property, which would shadow the accessor until
+          the input is created: the input is created at once, only then, and the value written into it as any later
+          assignment, so the transform applies to it and the default stays the initial value a reset goes back to.
         */
-        if (Object.hasOwn(this, propertyKey)) {
-          const element = this as unknown as Record<string, IncomingValue>;
-          const preUpgrade = element[propertyKey];
-          delete element[propertyKey];
-          signal.set(preUpgrade, INPUT_SIGNAL_SET_SYMBOL);
+        if (!Object.hasOwn(this, propertyKey)) {
+          return value;
         }
 
-        return signal as Value;
+        const element = this as unknown as Record<string, IncomingValue>;
+        const preUpgrade = element[propertyKey];
+        delete element[propertyKey];
+        const signal = createInput(actualValue, actualOptions);
+        signal.set(preUpgrade, INPUT_SIGNAL_SET_SYMBOL);
+
+        return signal as unknown as Value;
       },
-      set(newValue: IncomingValue) {
-        const signal = target.get.call(this) as SettableInputSignal<ActualValue, IncomingValue>;
+      get(): Value {
+        let signal = target.get.call(this);
+        if (!signal) {
+          signal = createInput(actualValue, actualOptions) as unknown as Value;
+          target.set.call(this, signal);
+        }
+
+        return signal;
+      },
+      set(newValue: IncomingValue): void {
+        const signal = context.access.get(this) as unknown as SettableInputSignal<ActualValue, IncomingValue>;
         signal.set(newValue, INPUT_SIGNAL_SET_SYMBOL);
       }
     };

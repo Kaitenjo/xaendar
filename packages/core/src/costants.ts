@@ -81,6 +81,11 @@ export const CONNECTED_HOOKS = Symbol('ConnectedHooks');
  */
 export const DISCONNECTED_HOOKS = Symbol('DisconnectedHooks');
 /**
+ * Key of the method of a `CustomElement` telling whether it is rendered and has run its connected hooks: a query signal
+ * created from then on, lazily, starts at once instead of waiting for the hooks of the next connection.
+ */
+export const IS_RENDERED = Symbol('IsRendered');
+/**
  * Key of the method of a `CustomElement` rendered on the server starting its hydration, once the component rendering it
  * has adopted its element and set its inputs, as inserting the element connects a component rendered in the browser.
  */

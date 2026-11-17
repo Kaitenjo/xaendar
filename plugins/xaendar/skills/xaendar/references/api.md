@@ -54,7 +54,7 @@ A model every use must bind, as `@Property.required`: `[(name)]` or `name="{…}
 @Event({ bubbles?, cancelable?, composed? }) accessor name!: Output<T>
 ```
 
-Declares an output. emit(detail?, options?) dispatches a CustomEvent named after the accessor on the host element. The options of an emission are an EventOptions instance (`new EventOptions({ composed: false })`), and a single argument is taken for the options only when it is one: any other value, a plain object with option keys included, is the detail. The options of the decorator are a plain object.
+Declares an output. dispatch(detail?, options?) dispatches a CustomEvent named after the accessor on the host element. The options of a single dispatch are an EventOptions instance (`new EventOptions({ composed: false })`), and a single argument is taken for the options only when it is one: any other value, a plain object with option keys included, is the detail. The options of the decorator are a plain object.
 
 ### Query (decorator)
 
@@ -210,10 +210,10 @@ Base class of the directives deciding whether the element they are applied to is
 ### Output (class)
 
 ```ts
-class Output<T = void> { emit(...args: T extends void ? [options?: EventOptions] : [detail: T, options?: EventOptions]): void }
+class Output<T = void> { dispatch(...args: T extends void ? [options?: EventOptions] : [detail: T, options?: EventOptions]): void }
 ```
 
-The class of an @Event accessor: emit dispatches a CustomEvent named after the accessor on the host element. Without a type argument the event carries no detail: `$event` is a `CustomEvent<null>`.
+The class of an @Event accessor: dispatch dispatches a CustomEvent named after the accessor on the host element. Without a type argument the event carries no detail: `$event` is a `CustomEvent<null>`.
 
 ### EventOptions (class)
 
@@ -221,7 +221,7 @@ The class of an @Event accessor: emit dispatches a CustomEvent named after the a
 new EventOptions({ bubbles?: boolean, cancelable?: boolean, composed?: boolean })
 ```
 
-The options of an output: a plain object in @Event, an EventOptions instance in a single emit (merged over the ones of the decorator). By default an event neither bubbles nor leaves the shadow root.
+The options of an output: a plain object in @Event, an EventOptions instance in a single dispatch (merged over the ones of the decorator). By default an event neither bubbles nor leaves the shadow root.
 
 ### WebComponentOptions (type)
 

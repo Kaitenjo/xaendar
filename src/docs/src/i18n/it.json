@@ -627,10 +627,10 @@
       "outputs": {
         "eyebrow": "Componenti",
         "title": "Output con @Event",
-        "lead": "Un output è il modo in cui un figlio parla al padre. Lo dichiari con <code>@Event</code> su un accessor del figlio, e diventa un <code>Output</code> il cui <code>emit</code> invia un <code>CustomEvent</code> sull’elemento del figlio. Il padre lo ascolta nel proprio template, come un evento nativo. Un model, dichiarato con <code>@Model</code>, unisce un input e un output in un solo membro, che il padre lega nei due sensi.",
+        "lead": "Un output è il modo in cui un figlio parla al padre. Lo dichiari con <code>@Event</code> su un accessor del figlio, e diventa un <code>Output</code> il cui <code>dispatch</code> invia un <code>CustomEvent</code> sull’elemento del figlio. Il padre lo ascolta nel proprio template, come un evento nativo. Un model, dichiarato con <code>@Model</code>, unisce un input e un output in un solo membro, che il padre lega nei due sensi.",
         "declaringAndEmitting": {
-          "title": "Dichiarare ed emettere",
-          "p1": "L’evento prende il nome dall’accessor, e l’argomento di tipo di <code>Output</code> è il tipo del suo <code>detail</code>. Senza argomento di tipo l’evento non porta alcun detail, e <code>emit</code> accetta al massimo le opzioni. Le opzioni passate al decoratore valgono per ogni emissione; quelle passate a <code>emit</code> vengono unite sopra di esse solo per quell’emissione."
+          "title": "Dichiarare e inviare",
+          "p1": "L’evento prende il nome dall’accessor, e l’argomento di tipo di <code>Output</code> è il tipo del suo <code>detail</code>. Senza argomento di tipo l’evento non porta alcun detail, e <code>dispatch</code> accetta al massimo le opzioni. Le opzioni passate al decoratore valgono per ogni invio; quelle passate a <code>dispatch</code> vengono unite sopra di esse solo per quell’invio."
         },
         "listeningInTheParent": {
           "title": "Ascoltare nel padre",
@@ -650,9 +650,9 @@
           "example1": "Eventi emessi mentre il figlio viene montato",
           "p1": "Il padre collega i propri listener prima di inserire il figlio, quindi ogni evento del figlio arriva: quelli emessi da <code>onInit</code> e <code>afterRender</code>, e quello emesso da <code>onDestroy</code>, perché i listener sono ancora al loro posto mentre il figlio viene rimosso.",
           "example2": "Un detail che sembra un oggetto di opzioni",
-          "p2": "<code>emit</code> prende il suo unico argomento per le opzioni solo quando è un'istanza di <code>EventOptions</code>. Qualsiasi altro valore è il detail, anche un oggetto che contiene le chiavi <code>bubbles</code>, <code>cancelable</code> o <code>composed</code>: la prenotazione arriva intera in <code>event.detail</code>, e il suo <code>cancelable</code> non cambia l'evento.",
+          "p2": "<code>dispatch</code> prende il suo unico argomento per le opzioni solo quando è un'istanza di <code>EventOptions</code>. Qualsiasi altro valore è il detail, anche un oggetto che contiene le chiavi <code>bubbles</code>, <code>cancelable</code> o <code>composed</code>: la prenotazione arriva intera in <code>event.detail</code>, e il suo <code>cancelable</code> non cambia l'evento.",
           "example3": "Un evento annullabile",
-          "p3": "<code>emit</code> non restituisce nulla, quindi il figlio non può sapere se un listener ha chiamato <code>preventDefault()</code>. Perché un evento annullabile serva a qualcosa, dichiaralo con <code>@Event</code>, così che i template possano ascoltarlo, e invialo tu con <code>dispatchEvent</code>, che restituisce <code>false</code> quando l’evento è stato annullato. I listener vengono eseguiti in modo sincrono, quindi il risultato è pronto alla riga successiva. L’evento porta come detail la modalità della nota.",
+          "p3": "<code>dispatch</code> non restituisce nulla, quindi il figlio non può sapere se un listener ha chiamato <code>preventDefault()</code>. Perché un evento annullabile serva a qualcosa, dichiaralo con <code>@Event</code>, così che i template possano ascoltarlo, e invialo tu con <code>dispatchEvent</code>, che restituisce <code>false</code> quando l’evento è stato annullato. I listener vengono eseguiti in modo sincrono, quindi il risultato è pronto alla riga successiva. L’evento porta come detail la modalità della nota.",
           "callout2": {
             "heading": "I nomi degli eventi distinguono maiuscole e minuscole",
             "p1": "Il nome dell’evento è il nome dell’accessor, lettera per lettera. Gli attributi HTML non distinguono maiuscole e minuscole, i binding degli eventi sì: <code>(valuechange)</code> non corrisponde a <code>valueChange</code>, e la build lo segnala con un warning, come ogni evento che l’elemento non dichiara."
@@ -675,7 +675,7 @@
           "title": "Riepilogo",
           "th1": "API",
           "th2": "Descrizione",
-          "td1": "Dichiara un evento con il nome dell’accessor. <code>options</code> imposta <code>bubbles</code>, <code>cancelable</code> e <code>composed</code> per ogni emissione.",
+          "td1": "Dichiara un evento con il nome dell’accessor. <code>options</code> imposta <code>bubbles</code>, <code>cancelable</code> e <code>composed</code> per ogni invio.",
           "td2": "Il tipo dell’accessor: <code>T</code> è il tipo del detail, <code>void</code> per default.",
           "td3": "Invia l’evento sull’elemento, con le opzioni unite sopra quelle di default.",
           "td4": "La forma di un <code>Output</code> senza detail.",
@@ -1441,7 +1441,7 @@
         },
         "outputs": {
           "title": "Output",
-          "p1": "Un output è un <code>accessor</code> decorato con <code>@Event</code>, di tipo <code>Output</code>. Chiamare <code>emit(valore)</code> invia un <code>CustomEvent</code> con il nome dell’accessor, con il valore nel suo <code>detail</code>. Il padre lo ascolta come qualsiasi evento del DOM: <code>(wave)=\"onWave($event)\"</code>."
+          "p1": "Un output è un <code>accessor</code> decorato con <code>@Event</code>, di tipo <code>Output</code>. Chiamare <code>dispatch(valore)</code> invia un <code>CustomEvent</code> con il nome dell’accessor, con il valore nel suo <code>detail</code>. Il padre lo ascolta come qualsiasi evento del DOM: <code>(wave)=\"onWave($event)\"</code>."
         },
         "usingAComponent": {
           "title": "Usare un componente",
@@ -3739,7 +3739,7 @@
           "td1": "<strong>Contenuto</strong>",
           "td2": "I figli del tag vengono proiettati nei suoi elementi <code>&lt;slot&gt;</code>, come per qualsiasi elemento. Vedi <a href=\"#/it/components/content-projection\">Proiezione del contenuto</a>.",
           "td3": "<strong>Output</strong> (<code>@Event</code>)",
-          "td4": "<code>element.addEventListener(nome, …)</code>. Il nome è quello dell’accessor, letterale, e il valore passato a <code>emit</code> è il <code>detail</code> dell’evento.",
+          "td4": "<code>element.addEventListener(nome, …)</code>. Il nome è quello dell’accessor, letterale, e il valore passato a <code>dispatch</code> è il <code>detail</code> dell’evento.",
           "td5": "<strong>Input</strong> (<code>@Property</code>)",
           "td6": "Assegnando la proprietà con il nome dell’accessor, non il suo <code>alias</code>: <code>element.value = 3</code> scrive l’input passando dalla sua <code>transform</code>, come fa un binding, anche prima che l’elemento sia definito. Gli attributi vengono ignorati: non esiste <code>attributeChangedCallback</code>.",
           "td7": "<strong>Metodi</strong>",

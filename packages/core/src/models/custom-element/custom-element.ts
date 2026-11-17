@@ -1,6 +1,6 @@
 import { keys } from '@xaendar/common';
 import type { Constructor, NoArgsVoidFunction } from '@xaendar/types';
-import { _CLIENT_ATTRIBUTE, _HYDRATE_ATTRIBUTE, _SERVER_INPUTS_ATTRIBUTE, CONNECTED_HOOKS, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DISCONNECTED_HOOKS, HYDRATE, WAITS_FOR_HYDRATION } from '../../costants';
+import { _CLIENT_ATTRIBUTE, _HYDRATE_ATTRIBUTE, _SERVER_INPUTS_ATTRIBUTE, CONNECTED_HOOKS, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DISCONNECTED_HOOKS, HYDRATE, IS_RENDERED, WAITS_FOR_HYDRATION } from '../../costants';
 import { EffectOptions } from '../../signals/types/effect-options.type';
 import type { _Context } from '../../types/context.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
@@ -58,11 +58,14 @@ export class CustomElement extends HTMLElement {
    *   declarative shadow root holds the HTML of the server, or the component renders only in the browser (see
    *   {@link _CLIENT_ATTRIBUTE});
    * - `idle`: any other element not rendered yet;
-   * - `rendered`: from its render to its removal from the DOM;
+   * - `rendering`: from the start of its render to the end of its connected hooks, the ones of the query signals created
+   *   so far;
+   * - `rendered`: from then to its removal from the DOM, a query signal created meanwhile starting at once (see
+   *   {@link IS_RENDERED});
    * - `destroyed`: removed from the DOM, its effects and listeners disposed, its shadow root holding what it rendered
    *   until it is inserted again, if ever (see {@link connectedCallback}).
    */
-  private _state: 'hydrating' | 'idle' | 'rendered' | 'destroyed' = this.shadowRoot !== null || this.hasAttribute(_CLIENT_ATTRIBUTE) ? 'hydrating' : 'idle';
+  private _state: 'hydrating' | 'idle' | 'rendering' | 'rendered' | 'destroyed' = this.shadowRoot !== null || this.hasAttribute(_CLIENT_ATTRIBUTE) ? 'hydrating' : 'idle';
   /**
    * Whether the element has a declarative shadow root, whose nodes its first render adopts instead of creating them (the
    * hydration).
@@ -178,6 +181,16 @@ export class CustomElement extends HTMLElement {
    */
   public [WAITS_FOR_HYDRATION](): boolean {
     return this._state === 'hydrating' && this.getAttribute(_HYDRATE_ATTRIBUTE) !== 'never';
+  }
+
+  /**
+   * Tells whether the element is rendered and has run its connected hooks, so that a query signal created from now on,
+   * lazily, starts at once instead of waiting for the hooks of the next connection.
+   *
+   * @returns `true` from the end of the connected hooks to the removal of the element.
+   */
+  public [IS_RENDERED](): boolean {
+    return this._state === 'rendered';
   }
 
   /**
@@ -301,7 +314,7 @@ export class CustomElement extends HTMLElement {
 
     // The first render of an element rendered on the server adopts its nodes, any other one creates them
     const nodeStrategy = hydrating && this._hasServerRoot ? claimShadowRoot(this._root, !!styleSheet) : CREATE_NODES;
-    this._state = 'rendered';
+    this._state = 'rendering';
 
     /*
       The host directives are started before the component, so its `onInit` finds them ready
@@ -329,6 +342,8 @@ export class CustomElement extends HTMLElement {
       }
     }
 
+    // The query signals created from now on start at once (see `IS_RENDERED`)
+    this._state = 'rendered';
     // Bound once the queries are up to date, so a `@HostAttribute` can read them
     _bindHost(this, this, this._context);
     this.afterRender?.();

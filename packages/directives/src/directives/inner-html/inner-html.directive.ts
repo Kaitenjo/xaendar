@@ -75,7 +75,7 @@ export class InnerHtmlDirective extends CustomDirective<HTMLElement> {
   private _render(): void {
     const report = this._renderHtml();
     if (report) {
-      this.sanitized.emit(report);
+      this.sanitized.dispatch(report);
     }
   }
 

@@ -12,15 +12,15 @@ export const EVENT_DECLARATION: SourceFile = {
 @Event()
 public accessor valueChange!: Output<number>;
 /**
- * An Output<void>, with no detail. The options are the defaults of every emission.
+ * An Output<void>, with no detail. The options are the defaults of every dispatch.
  */
 @Event({ bubbles: true, composed: true })
 public accessor closed!: Output;
 
-this.valueChange.emit(3);                                       // detail 3, default options
-this.valueChange.emit(3, new EventOptions({ bubbles: true }));  // detail 3, options for this emission only
-this.closed.emit();                                             // detail null
-this.closed.emit(new EventOptions({ composed: false }));        // without a detail, the only argument is the options`
+this.valueChange.dispatch(3);                                       // detail 3, default options
+this.valueChange.dispatch(3, new EventOptions({ bubbles: true }));  // detail 3, options for this dispatch only
+this.closed.dispatch();                                             // detail null
+this.closed.dispatch(new EventOptions({ composed: false }));        // without a detail, the only argument is the options`
 };
 
 /**

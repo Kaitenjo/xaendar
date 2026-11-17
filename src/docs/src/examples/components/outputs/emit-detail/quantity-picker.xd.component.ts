@@ -33,13 +33,13 @@ export class QuantityPickerComponent extends CustomElement {
    * @param delta - The change.
    */
   public step(delta: number): void {
-    this.valueChange.emit(Math.max(0, this.value() + delta));
+    this.valueChange.dispatch(Math.max(0, this.value() + delta));
   }
 
   /**
    * Asks to clear the quantity.
    */
   public clear(): void {
-    this.cleared.emit();
+    this.cleared.dispatch();
   }
 }

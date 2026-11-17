@@ -39,7 +39,7 @@ export class DocsTopbarComponent extends CustomElement {
    * Asks the application to open or close the navigation.
    */
   public toggleMenu(): void {
-    this.menuToggle.emit();
+    this.menuToggle.dispatch();
   }
 
   /**

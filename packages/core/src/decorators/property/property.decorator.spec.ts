@@ -19,12 +19,41 @@ const { isInputSignal } = await import('../../signals/input/input-instance.symbo
 const { INPUT_SIGNAL_SET_SYMBOL } = await import('../../signals/input/input-set.symbol');
 
 type Metadata = { [INTERNAL_ALIAS_TO_ATTRIBUTE]?: Record<string, string>, [INTERNAL_REQUIRED_INPUTS]?: Set<string> };
-type Decorated<ActualValue, IncomingValue = ActualValue> = { init(this: unknown): InputSignal<ActualValue, IncomingValue>, set(this: unknown, value: unknown): void };
+type Decorated<ActualValue, IncomingValue = ActualValue> = {
+  init(this: object, value: undefined): InputSignal<ActualValue, IncomingValue> | undefined,
+  get(this: object): InputSignal<ActualValue, IncomingValue>,
+  set(this: object, value: unknown): void
+};
+type Target = { get(this: object): unknown, set: ReturnType<typeof vi.fn> };
 type Accessor<ActualValue, IncomingValue = ActualValue> = {
-  signal: InputSignal<ActualValue, IncomingValue>,
+  read: () => InputSignal<ActualValue, IncomingValue>,
   assign: (value: unknown) => void,
   originalSet: ReturnType<typeof vi.fn>
 };
+
+/**
+ * The getter and the setter of an accessor, backed by a storage per instance, as the private field of a real accessor.
+ */
+function createTarget(): Target {
+  const storage = new WeakMap<object, unknown>();
+  return {
+    get(this: object) {
+      return storage.get(this);
+    },
+    set: vi.fn(function (this: object, value: unknown) {
+      storage.set(this, value);
+    })
+  };
+}
+
+/**
+ * Applies a decorator to the accessor of the given name, whose context reads the accessor through the decorated getter.
+ */
+function apply<ActualValue, IncomingValue>(decorator: unknown, name: string | symbol, metadata: Metadata, target = createTarget()): Decorated<ActualValue, IncomingValue> {
+  const access = { get: (object: object) => decorated.get.call(object) };
+  const decorated = (decorator as (target: Target, context: unknown) => Decorated<ActualValue, IncomingValue>)(target, { name, metadata, access });
+  return decorated;
+}
 
 function setup<ActualValue = unknown, IncomingValue = ActualValue>(
   value?: ActualValue,
@@ -34,8 +63,7 @@ function setup<ActualValue = unknown, IncomingValue = ActualValue>(
 ): Decorated<ActualValue, IncomingValue> {
   // The alias of the tests is a value of their own: the decorators are typed for an accessor without alias
   const decorator = Property<InputSignal<ActualValue, IncomingValue>, IncomingValue, ActualValue, never>(value, options as PropertyDecoratorOptions<ActualValue, IncomingValue, never>);
-  const decorated = decorator({} as Parameters<typeof decorator>[0], { name, metadata } as unknown as Parameters<typeof decorator>[1]);
-  return decorated as unknown as Decorated<ActualValue, IncomingValue>;
+  return apply(decorator, name, metadata);
 }
 
 function setupRequired<ActualValue = unknown, IncomingValue = ActualValue>(
@@ -44,25 +72,22 @@ function setupRequired<ActualValue = unknown, IncomingValue = ActualValue>(
   metadata: Metadata = {}
 ): Decorated<ActualValue, IncomingValue> {
   const decorator = Property.required<ActualValue, IncomingValue, never>(options as Omit<PropertyDecoratorOptionsWithRequired<ActualValue, IncomingValue, never>, 'required'>);
-  const decorated = decorator({} as Parameters<typeof decorator>[0], { name, metadata } as unknown as Parameters<typeof decorator>[1]);
-  return decorated as unknown as Decorated<ActualValue, IncomingValue>;
+  return apply(decorator, name, metadata);
 }
 
 /*
-  Decorates the accessor `label` of an element, with a getter and a setter backed by a storage of their own, as the
-  ones of a real accessor: the getter returns the signal created by `init`.
+  Decorates the accessor `label` of an element: `read` reads it, `assign` assigns it, `originalSet` is the setter of its storage.
 */
 function setupAccessor<ActualValue = unknown, IncomingValue = ActualValue>(
   value?: ActualValue,
   options?: PropertyDecoratorOptions<ActualValue, IncomingValue, never>
 ): Accessor<ActualValue, IncomingValue> {
   const element = {};
-  const target = { get: () => stored!, set: vi.fn() };
+  const target = createTarget();
   const decorator = Property<InputSignal<ActualValue, IncomingValue>, IncomingValue, ActualValue, never>(value, options);
-  const decorated = decorator(target, { name: 'label', metadata: {} } as unknown as Parameters<typeof decorator>[1]) as unknown as Decorated<ActualValue, IncomingValue>;
-  const stored = decorated.init.call(element);
+  const decorated = apply<ActualValue, IncomingValue>(decorator, 'label', {}, target);
 
-  return { signal: stored, assign: newValue => decorated.set.call(element, newValue), originalSet: target.set };
+  return { read: () => decorated.get.call(element), assign: newValue => decorated.set.call(element, newValue), originalSet: target.set };
 }
 
 function setValue<ActualValue, IncomingValue>(signal: InputSignal<ActualValue, IncomingValue>, value: IncomingValue): void {
@@ -87,18 +112,20 @@ describe('Property decorator', () => {
   });
 
   it('creates an input signal without default value', () => {
-    expect(setup().init()()).toBeUndefined();
+    expect(setup().get.call({})()).toBeUndefined();
   });
 
   it('creates an input signal with the default value', () => {
-    expect(setup(5).init()()).toBe(5);
+    expect(setup(5).get.call({})()).toBe(5);
   });
 
-  it('creates a separate signal for each instance', () => {
+  it('creates a separate signal for each instance, the same one at every read', () => {
     const decorated = setup(1);
-    const first = decorated.init();
-    const second = decorated.init();
+    const firstElement = {};
+    const first = decorated.get.call(firstElement);
+    const second = decorated.get.call({});
     expect(first).not.toBe(second);
+    expect(decorated.get.call(firstElement)).toBe(first);
 
     setValue(first, 2);
     expect(first()).toBe(2);
@@ -107,7 +134,7 @@ describe('Property decorator', () => {
 
   it('accepts an object as default value', () => {
     const value = { a: 1 };
-    expect(setup(value).init()()).toBe(value);
+    expect(setup(value).get.call({})()).toBe(value);
   });
 
   it('registers the property name as attribute in the metadata', () => {
@@ -150,68 +177,88 @@ describe('Property decorator', () => {
   });
 
   it('forwards the transform option', () => {
-    const signal = setup<number, string>(0, { transform: Number }).init();
+    const signal = setup<number, string>(0, { transform: Number }).get.call({});
     setValue(signal, '7');
     expect(signal()).toBe(7);
+  });
+
+  it('creates the signal of an instance only when the accessor is first read, keeping it in its storage', () => {
+    const target = createTarget();
+    const decorated = apply(Property(1), 'label', {}, target);
+    const element = {};
+    expect(decorated.init.call(element, undefined)).toBeUndefined();
+    expect(target.set).not.toHaveBeenCalled();
+
+    const signal = decorated.get.call(element);
+    expect(target.set).toHaveBeenCalledOnce();
+    expect(target.get.call(element)).toBe(signal);
   });
 
   describe('value assigned before the upgrade', () => {
     it('becomes the initial value of the input, in place of the default', () => {
       const element = { label: 7 };
-      expect(setup(5).init.call(element)()).toBe(7);
+      expect(setup(5).init.call(element, undefined)!()).toBe(7);
     });
 
     it('goes through the transform of the input', () => {
       const element = { label: '4' };
-      expect(setup<number, string>(0, { transform: Number }).init.call(element)()).toBe(4);
+      expect(setup<number, string>(0, { transform: Number }).init.call(element, undefined)!()).toBe(4);
     });
 
     it('leaves the default as the value a reset goes back to', () => {
-      const signal = setup(5).init.call({ label: 7 });
+      const signal = setup(5).init.call({ label: 7 }, undefined)!;
       resetValue(signal);
       expect(signal()).toBe(5);
     });
 
     it('is removed from the element, so the accessor is no longer shadowed', () => {
       const element = { label: 7 };
-      setup(5).init.call(element);
+      setup(5).init.call(element, undefined);
       expect(Object.hasOwn(element, 'label')).toBe(false);
     });
 
     it('is read from the name of the property, not from its alias', () => {
       const element = { label: 7, 'my-label': 9 };
-      expect(setup(5, { alias: 'my-label' }).init.call(element)()).toBe(7);
+      expect(setup(5, { alias: 'my-label' }).init.call(element, undefined)!()).toBe(7);
       expect(element).toEqual({ 'my-label': 9 });
     });
 
-    it('leaves the other inputs to their default', () => {
+    it('leaves the other inputs to their default, created lazily', () => {
       const element = { other: 7 };
-      expect(setup(5).init.call(element)()).toBe(5);
+      const decorated = setup(5);
+      expect(decorated.init.call(element, undefined)).toBeUndefined();
+      expect(decorated.get.call(element)()).toBe(5);
       expect(element).toEqual({ other: 7 });
     });
   });
 
   describe('assignment', () => {
     it('writes the value into the input signal of the element', () => {
-      const { signal, assign } = setupAccessor(1);
+      const { read, assign } = setupAccessor(1);
+      const signal = read();
       assign(3);
       expect(signal()).toBe(3);
     });
 
-    it('keeps the input signal in the accessor', () => {
-      const { assign, originalSet } = setupAccessor(1);
+    it('creates the input signal on the first assignment, keeping it in the accessor', () => {
+      const { read, assign, originalSet } = setupAccessor(1);
       assign(3);
-      expect(originalSet).not.toHaveBeenCalled();
+      expect(originalSet).toHaveBeenCalledOnce();
+      expect(read()()).toBe(3);
+
+      assign(4);
+      expect(originalSet).toHaveBeenCalledOnce();
     });
 
     it('applies the transform of the input', () => {
-      const { signal, assign } = setupAccessor<number, string>(0, { transform: Number });
+      const { read, assign } = setupAccessor<number, string>(0, { transform: Number });
       assign('7');
-      expect(signal()).toBe(7);
+      expect(read()()).toBe(7);
     });
 
     it('notifies the readers of the input', () => {
-      const { signal, assign } = setupAccessor(1);
+      const { read, assign } = setupAccessor(1);
+      const signal = read();
       const doubled = new Signal.Computed(() => signal() * 2);
       expect(doubled.get()).toBe(2);
 
@@ -222,7 +269,7 @@ describe('Property decorator', () => {
 
   describe('required', () => {
     it('creates an input signal with no default value', () => {
-      expect(setupRequired().init()()).toBeUndefined();
+      expect(setupRequired().get.call({})()).toBeUndefined();
     });
 
     it('registers the alias in the metadata', () => {
@@ -254,7 +301,7 @@ describe('Property decorator', () => {
     });
 
     it('forwards the transform option', () => {
-      const signal = setupRequired<number, string>({ transform: Number }).init();
+      const signal = setupRequired<number, string>({ transform: Number }).get.call({});
       setValue(signal, '3');
       expect(signal()).toBe(3);
     });

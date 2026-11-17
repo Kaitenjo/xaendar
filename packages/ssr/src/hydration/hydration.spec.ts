@@ -37,34 +37,51 @@ function evaluate<Render>(code: string): Render {
 }
 
 /**
+ * The getter and the setter of the private storage of an accessor, one value per instance, as the ones a decorator of a
+ * real `accessor` receives.
+ */
+function accessorStorage(): { get(this: object): unknown, set(this: object, value: unknown): void } {
+  const values = new WeakMap<object, unknown>();
+  return {
+    get(this: object) {
+      return values.get(this);
+    },
+    set(this: object, value: unknown) {
+      values.set(this, value);
+    }
+  };
+}
+
+/**
  * Declares an input on a component class as the accessor `@Property` decorates.
  *
  * @returns Initializes the input of an element, as the accessor does when the element is constructed: a value assigned to
- *   the element before its class was defined is written into the input.
+ *   the element before its class was defined is written into the input, which is otherwise created when first read.
  */
 function declareInput(klass: object, name: string, value: unknown, alias?: string): (element: object) => unknown {
   const metadata = ((klass as Record<symbol, DecoratorMetadataObject | undefined>)[Symbol.for('Symbol.metadata')] ??= {});
-  const storage = new WeakMap<object, unknown>();
-  const target = { get(this: object) { return storage.get(this); }, set(this: object, input: unknown) { storage.set(this, input); } };
-  const decorated = ((alias ? Property(value, { alias }) : Property(value)) as unknown as (target: unknown, context: unknown) => { init(this: object): unknown, set(this: object, value: unknown): void })(target, { name, metadata });
-  const read = (element: object) => {
-    if (!storage.has(element)) {
-      storage.set(element, decorated.init.call(element));
-    }
-    return storage.get(element);
-  };
+  const target = accessorStorage();
+  const access = { get: (element: object) => decorated.get.call(element) };
+  const decorated = ((alias ? Property(value, { alias }) : Property(value)) as unknown as (target: unknown, context: unknown) => { init(this: object, value: unknown): unknown, get(this: object): unknown, set(this: object, value: unknown): void })(target, { name, metadata, access });
   Object.defineProperty((klass as { prototype: object }).prototype, name, {
-    get(this: object) { return read(this); },
-    set(this: object, newValue: unknown) { read(this); decorated.set.call(this, newValue); }
+    get(this: object) { return decorated.get.call(this); },
+    set(this: object, newValue: unknown) { decorated.set.call(this, newValue); }
   });
-  return read;
+  return (element: object) => {
+    const input = decorated.init.call(element, undefined);
+    if (input) {
+      target.set.call(element, input);
+    }
+
+    return decorated.get.call(element);
+  };
 }
 
 /**
  * A structural directive rendering its element once a promise resolves to its `allow` input.
  */
 class LaterDirective extends StructuralDirective {
-  public allow = (Property(true) as unknown as (target: unknown, context: unknown) => { init(this: object): () => boolean })({}, { name: 'allow', metadata: {} }).init.call(this);
+  public allow = (Property(true) as unknown as (target: unknown, context: unknown) => { get(this: object): () => boolean })(accessorStorage(), { name: 'allow', metadata: {} }).get.call(this);
 
   public shouldRender(): Promise<boolean> {
     return Promise.resolve(this.allow());
@@ -371,7 +388,7 @@ describe('hydration', () => {
      * A directive filling its element with the HTML of its input: in `onInit` on the server, in an effect in the browser.
      */
     class HydratedFillDirective extends CustomDirective {
-      public content = (Property('') as unknown as (target: unknown, context: unknown) => { init(this: object): () => string })({}, { name: 'content', metadata: {} }).init.call(this);
+      public content = (Property('') as unknown as (target: unknown, context: unknown) => { get(this: object): () => string })(accessorStorage(), { name: 'content', metadata: {} }).get.call(this);
 
       public onInit(): void {
         if (onServer) {
@@ -2176,7 +2193,7 @@ describe('templates passed as content', () => {
    * Creates the query of a component holding the template passed to it as content under a name, as the accessor
    * `@Query.contentTemplate` decorates does.
    */
-  const queryTemplate = (element: object, name: string) => (core.Query.contentTemplate(name) as unknown as () => { init(this: object): unknown })().init.call(element);
+  const queryTemplate = (element: object, name: string) => (core.Query.contentTemplate(name) as unknown as (target: unknown) => { get(this: object): unknown })(accessorStorage()).get.call(element);
 
   it('renders on the server the template a component receives as content, reading the scope of the parent, and adopts it in the browser, keeping it reactive', async () => {
     /**

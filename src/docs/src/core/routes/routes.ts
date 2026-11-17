@@ -177,7 +177,7 @@ export const NAV: readonly NavSection[] = [
         page('components/registration', 'selector customElements define import order'),
         page('components/styling', 'css shadow dom host slotted part custom properties'),
         page('components/inputs', 'Property input alias transform required InputSignal'),
-        page('components/outputs', 'Event output emit CustomEvent detail bubbles composed'),
+        page('components/outputs', 'Event output dispatch emit CustomEvent detail bubbles composed'),
         page('components/two-way-binding', 'Model ModelSignal model two-way binding bind input output signal'),
         page('components/host-bindings', 'HostAttribute HostListener host attribute class listener HostBinding window document role aria keydown shortcut'),
         page('components/lifecycle', 'onInit afterRender onDestroy connectedCallback'),

@@ -25,8 +25,8 @@ export class InspectDirective extends CustomDirective<HTMLElement> {
    */
   public onInit(): void {
     const element = this.element;
-    this.report.emit(`onInit: label="${this.label()}", id="${element.id}", connected=${element.isConnected}, children=${element.children.length}`);
-    queueMicrotask(() => this.report.emit(`after a microtask: children=${element.children.length}`));
-    this.effect(() => this.report.emit(`effect: label="${this.label()}"`));
+    this.report.dispatch(`onInit: label="${this.label()}", id="${element.id}", connected=${element.isConnected}, children=${element.children.length}`);
+    queueMicrotask(() => this.report.dispatch(`after a microtask: children=${element.children.length}`));
+    this.effect(() => this.report.dispatch(`effect: label="${this.label()}"`));
   }
 }

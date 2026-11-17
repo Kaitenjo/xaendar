@@ -32,13 +32,13 @@ export class TodoItemComponent extends CustomElement {
    * Asks the parent to toggle the todo.
    */
   public toggle(): void {
-    this.doneChange.emit(this.todo().id);
+    this.doneChange.dispatch(this.todo().id);
   }
 
   /**
    * Asks the parent to remove the todo.
    */
   public delete(): void {
-    this.removed.emit(this.todo().id);
+    this.removed.dispatch(this.todo().id);
   }
 }

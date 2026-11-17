@@ -31,6 +31,6 @@ export class UserBadgeComponent extends CustomElement {
    * Emits the `wave` event.
    */
   public sayHi(): void {
-    this.wave.emit(this.name());
+    this.wave.dispatch(this.name());
   }
 }

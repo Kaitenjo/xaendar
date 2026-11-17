@@ -51,22 +51,31 @@ async function compile(source: string, signals: string[] = [], shadowingMembers:
 }
 
 /**
+ * The getter and the setter of the private storage of an accessor, one value per instance, as the ones a decorator of a
+ * real `accessor` receives.
+ */
+function accessorStorage(): { get(this: object): unknown, set(this: object, value: unknown): void } {
+  const values = new WeakMap<object, unknown>();
+  return {
+    get(this: object) {
+      return values.get(this);
+    },
+    set(this: object, value: unknown) {
+      values.set(this, value);
+    }
+  };
+}
+
+/**
  * Declares an input on a component class as the accessor `@Property` decorates: the property holds the input signal,
  * and assigning it sets the value of the input.
  */
 function declareInput(klass: object, name: string, value: unknown, metadata: DecoratorMetadataObject): void {
-  const storage = new WeakMap<object, unknown>();
-  const target = { get(this: object) { return storage.get(this); }, set(this: object, input: unknown) { storage.set(this, input); } };
-  const decorated = (Property(value) as unknown as (target: unknown, context: unknown) => { init(this: object): unknown, set(this: object, value: unknown): void })(target, { name, metadata });
-  const read = (element: object) => {
-    if (!storage.has(element)) {
-      storage.set(element, decorated.init.call(element));
-    }
-    return storage.get(element);
-  };
+  const access = { get: (element: object) => decorated.get.call(element) };
+  const decorated = (Property(value) as unknown as (target: unknown, context: unknown) => { get(this: object): unknown, set(this: object, value: unknown): void })(accessorStorage(), { name, metadata, access });
   Object.defineProperty((klass as { prototype: object }).prototype, name, {
-    get(this: object) { return read(this); },
-    set(this: object, newValue: unknown) { read(this); decorated.set.call(this, newValue); }
+    get(this: object) { return decorated.get.call(this); },
+    set(this: object, newValue: unknown) { decorated.set.call(this, newValue); }
   });
 }
 
@@ -74,7 +83,7 @@ function declareInput(klass: object, name: string, value: unknown, metadata: Dec
  * A structural directive rendering its element once a promise resolves to its `allow` input.
  */
 class DelayDirective extends StructuralDirective {
-  public allow = (Property(true) as unknown as (target: unknown, context: unknown) => { init(this: object): () => boolean })({}, { name: 'allow', metadata: {} }).init.call(this);
+  public allow = (Property(true) as unknown as (target: unknown, context: unknown) => { get(this: object): () => boolean })(accessorStorage(), { name: 'allow', metadata: {} }).get.call(this);
 
   public shouldRender(): Promise<boolean> {
     const allow = this.allow();
@@ -295,7 +304,7 @@ describe('renderToString', () => {
      * A directive filling its element with the HTML of its input, on the server only.
      */
     class FillDirective extends CustomDirective {
-      public content = (Property('') as unknown as (target: unknown, context: unknown) => { init(this: object): () => string })({}, { name: 'content', metadata: fillMetadata }).init.call(this);
+      public content = (Property('') as unknown as (target: unknown, context: unknown) => { get(this: object): () => string })(accessorStorage(), { name: 'content', metadata: fillMetadata }).get.call(this);
       public filled = true;
 
       constructor() {

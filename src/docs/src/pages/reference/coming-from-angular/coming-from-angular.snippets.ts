@@ -36,7 +36,7 @@ export class CounterComponent {
    */
   protected increment(): void {
     this.count.update(value => value + 1);
-    this.changed.emit(this.count());
+    this.changed.dispatch(this.count());
   }
 }
 
@@ -69,7 +69,7 @@ export class CounterComponent extends CustomElement {
    */
   public increment(): void {
     this.count.update(value => value + 1);
-    this.changed.emit(this.count());
+    this.changed.dispatch(this.count());
   }
 }`
 };

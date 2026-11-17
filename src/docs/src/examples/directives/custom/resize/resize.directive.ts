@@ -19,7 +19,7 @@ export class ResizeDirective extends CustomDirective<HTMLElement> {
   private readonly _observer = new ResizeObserver(([entry]) => {
     if (entry) {
       const { width, height } = entry.contentRect;
-      this.resized.emit({ width: Math.round(width), height: Math.round(height) });
+      this.resized.dispatch({ width: Math.round(width), height: Math.round(height) });
     }
   });
 

@@ -6,7 +6,7 @@ import type { InputSignal } from '../../signals/types/input-signal.type';
 import type { ModelSignal } from '../../signals/types/model-signal.type';
 import type { EventHost } from '../../types/event/event-host.type';
 import type { ModelDecoratorOptions } from '../../types/model/model-decorator-options.type';
-import type { PropertyDecoratorReturnType } from '../../types/property/property-return-type.type';
+import type { ModelDecoratorReturnType } from '../../types/model/model-decorator-return-type.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 
 await vi.hoisted(async () => {
@@ -140,7 +140,7 @@ describe('types of @Model', () => {
   /**
    * The decorator of an accessor of a type: assigning a decorator to it checks it as TypeScript checks a decorator applied to the accessor.
    */
-  type DecoratorOf<Value> = Function<Parameters<AccessorDecorator<EventHost, Value, WebComponentMetadata>>, PropertyDecoratorReturnType<EventHost, Value, never>>;
+  type DecoratorOf<Value> = Function<Parameters<AccessorDecorator<EventHost, Value, WebComponentMetadata>>, ModelDecoratorReturnType<EventHost, Value, never>>;
 
   it('requires the type of the accessor to be a model declaring the alias', () => {
     const check = () => {

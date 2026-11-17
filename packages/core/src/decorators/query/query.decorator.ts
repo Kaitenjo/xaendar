@@ -84,11 +84,7 @@ export const Query = Object.assign(singleQuery(query) as unknown as SingleQueryD
    * ```
    */
   all: function all<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string, Class extends CustomElement = CustomElement>(target: Target): AccessorDecorator<Class, QuerySignal<QueryElement<Target, ElementType>[]>> {
-    return () => ({
-      init() {
-        return queryAll(this, target);
-      }
-    });
+    return lazyQuery<QueryElement<Target, ElementType>[], Class>(element => queryAll(element, target));
   },
   /**
    * Decorator that binds an accessor of a web component to the first element of its Shadow DOM named by an element ref
@@ -141,11 +137,7 @@ export const Query = Object.assign(singleQuery(query) as unknown as SingleQueryD
    * ```
    */
   refAll: function refAll<ElementType extends Element = HTMLElement, Class extends CustomElement = CustomElement>(name: string): AccessorDecorator<Class, QuerySignal<ElementType[]>> {
-    return () => ({
-      init() {
-        return queryRefAll<ElementType>(this, name);
-      }
-    });
+    return lazyQuery<ElementType[], Class>(element => queryRefAll<ElementType>(element, name));
   },
   /**
    * Decorator that binds an accessor of a web component to the first element of the content passed to it, its light
@@ -214,11 +206,7 @@ export const Query = Object.assign(singleQuery(query) as unknown as SingleQueryD
    * ```
    */
   contentAll: function contentAll<ElementType extends HTMLElement = HTMLElement, Target extends QueryTarget = string, Class extends CustomElement = CustomElement>(target: Target, options?: QueryContentOptions): AccessorDecorator<Class, QuerySignal<QueryElement<Target, ElementType>[]>> {
-    return () => ({
-      init() {
-        return queryContentAll(this, target, options);
-      }
-    });
+    return lazyQuery<QueryElement<Target, ElementType>[], Class>(element => queryContentAll(element, target, options));
   },
   /**
    * Decorator that binds an accessor of a web component to the template passed to it as content under a name, a
@@ -242,11 +230,7 @@ export const Query = Object.assign(singleQuery(query) as unknown as SingleQueryD
    * ```
    */
   contentTemplate: function contentTemplate<Params extends unknown[] = [], Class extends CustomElement = CustomElement>(name: string): AccessorDecorator<Class, QuerySignal<TemplateRef<Params> | null>> {
-    return () => ({
-      init() {
-        return queryContentTemplate<Params>(this, name);
-      }
-    });
+    return lazyQuery<TemplateRef<Params> | null, Class>(element => queryContentTemplate<Params>(element, name));
   },
   /**
    * Decorator that binds an accessor of a web component to the template passed to it as content under a name, when
@@ -265,11 +249,7 @@ export const Query = Object.assign(singleQuery(query) as unknown as SingleQueryD
    * ```
    */
   contentTemplateRequired: function contentTemplateRequired<Params extends unknown[] = [], Class extends CustomElement = CustomElement>(name: string): AccessorDecorator<Class, QuerySignal<TemplateRef<Params>>> {
-    return () => ({
-      init() {
-        return queryContentTemplateRequired<Params>(this, name);
-      }
-    });
+    return lazyQuery<TemplateRef<Params>, Class>(element => queryContentTemplateRequired<Params>(element, name));
   }
 });
 
@@ -301,6 +281,35 @@ export function queryContentTemplateRequired<Params extends unknown[]>(element: 
 }
 
 /**
+ * Creates the decorator of an accessor holding a query signal, given the function creating the signal on a component.
+ *
+ * The signal of an instance is created lazily, the first time the accessor is read, and kept in the storage of the
+ * accessor: a query never read allocates no signal, no hooks and no observer. Created once the component is rendered, it
+ * starts at once (see `createQuerySignal`).
+ *
+ * N.B. The signal is kept in the private storage the `accessor` already has for each instance. Do not keep it in a
+ * variable of the decorator, which runs once per class: every instance would share one signal, querying one element.
+ *
+ * @template Value - What the query holds.
+ * @template Class - The component declaring the accessor.
+ * @param create - Creates the signal of the query on the component.
+ * @returns The accessor decorator.
+ */
+function lazyQuery<Value, Class extends CustomElement = CustomElement>(create: (element: Class) => QuerySignal<Value>): AccessorDecorator<Class, QuerySignal<Value>> {
+  return target => ({
+    get(): QuerySignal<Value> {
+      let signal = target.get.call(this);
+      if (!signal) {
+        signal = create(this);
+        target.set.call(this, signal);
+      }
+
+      return signal;
+    }
+  });
+}
+
+/**
  * Creates a decorator of a query holding a single element, given the function creating its signal: its typed
  * signatures are described by {@link SingleQueryDecorator}.
  *
@@ -309,11 +318,7 @@ export function queryContentTemplateRequired<Params extends unknown[]>(element: 
  * @returns The decorator, taking the target and the options.
  */
 function singleQuery<Options>(create: (element: CustomElement, target: QueryTarget, options?: Options) => QuerySignal<unknown>): (target: QueryTarget, options?: Options) => AccessorDecorator<CustomElement, QuerySignal<unknown>> {
-  return (target, options) => () => ({
-    init() {
-      return create(this, target, options);
-    }
-  });
+  return (target, options) => lazyQuery(element => create(element, target, options));
 }
 
 /**
@@ -324,11 +329,7 @@ function singleQuery<Options>(create: (element: CustomElement, target: QueryTarg
  * @returns The decorator, taking the name of the ref and the options.
  */
 function refQuery(create: (element: CustomElement, name: string, options?: QueryOptions) => QuerySignal<unknown>): (name: string, options?: QueryOptions) => AccessorDecorator<CustomElement, QuerySignal<unknown>> {
-  return (name, options) => () => ({
-    init() {
-      return create(this, name, options);
-    }
-  });
+  return (name, options) => lazyQuery(element => create(element, name, options));
 }
 
 /**

@@ -8,7 +8,7 @@ import type { EventHost } from '../../types/event/event-host.type';
 import type { ModelChange } from '../../types/model/model-change.type';
 import type { ModelDecoratorOptions } from '../../types/model/model-decorator-options.type';
 import type { InputAlias } from '../../types/property/input-alias.type';
-import type { PropertyDecoratorReturnType } from '../../types/property/property-return-type.type';
+import type { ModelDecoratorReturnType } from '../../types/model/model-decorator-return-type.type';
 import type { PropertyOptionsArgument } from '../../types/property/property-options-argument.type';
 import type { WithAlias } from '../../types/property/with-alias.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
@@ -27,11 +27,11 @@ function createModelDecorator<Value extends ModelSignal<ActualValue>, ActualValu
   value: ActualValue | undefined,
   options: ModelDecoratorOptions<ActualValue> | undefined,
   required: boolean
-): Function<Parameters<AccessorDecorator<EventHost, Value, WebComponentMetadata>>, PropertyDecoratorReturnType<EventHost, Value, ActualValue>> {
+): Function<Parameters<AccessorDecorator<EventHost, Value, WebComponentMetadata>>, ModelDecoratorReturnType<EventHost, Value, ActualValue>> {
   return function (
     target: ClassAccessorDecoratorValue<Value>,
     context: DecoratorMetadataContext<ClassAccessorDecoratorContext<EventHost, Value>, WebComponentMetadata>
-  ): PropertyDecoratorReturnType<EventHost, Value, ActualValue> {
+  ): ModelDecoratorReturnType<EventHost, Value, ActualValue> {
     const propertyKey = context.name;
     if (typeof propertyKey === 'symbol') {
       throw new Error('Symbol properties are not supported');
@@ -100,7 +100,7 @@ export function Model<
 >(
   value?: ActualValue,
   ...[options]: PropertyOptionsArgument<ModelDecoratorOptions<ActualValue, Alias>, Alias>
-): Function<Parameters<AccessorDecorator<EventHost, WithAlias<ModelSignal<ActualValue>, Alias>, WebComponentMetadata>>, PropertyDecoratorReturnType<EventHost, WithAlias<ModelSignal<ActualValue>, Alias>, ActualValue>> {
+): Function<Parameters<AccessorDecorator<EventHost, WithAlias<ModelSignal<ActualValue>, Alias>, WebComponentMetadata>>, ModelDecoratorReturnType<EventHost, WithAlias<ModelSignal<ActualValue>, Alias>, ActualValue>> {
   return createModelDecorator<WithAlias<ModelSignal<ActualValue>, Alias>, ActualValue>(value, options, false);
 }
 
@@ -122,6 +122,6 @@ Model.required = function required<
   Alias extends string = never
 >(
   ...[options]: PropertyOptionsArgument<ModelDecoratorOptions<ActualValue, Alias>, Alias>
-): Function<Parameters<AccessorDecorator<EventHost, WithAlias<ModelSignal<ActualValue>, Alias>, WebComponentMetadata>>, PropertyDecoratorReturnType<EventHost, WithAlias<ModelSignal<ActualValue>, Alias>, ActualValue>> {
+): Function<Parameters<AccessorDecorator<EventHost, WithAlias<ModelSignal<ActualValue>, Alias>, WebComponentMetadata>>, ModelDecoratorReturnType<EventHost, WithAlias<ModelSignal<ActualValue>, Alias>, ActualValue>> {
   return createModelDecorator<WithAlias<ModelSignal<ActualValue>, Alias>, ActualValue>(undefined, options, true);
 };
