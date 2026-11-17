@@ -1,4 +1,6 @@
 import { parseStyleDeclarations } from '@xaendar/common';
+import type { HostStylingRun } from '../../models/host-styling-run/host-styling-run';
+import type { _RenderStyling } from '../../types/styling/render-styling.type';
 import type { StylingAttribute } from '../../types/styling/styling-attribute.type';
 import type { StylingOpinions } from '../../types/styling/styling-opinions.type';
 
@@ -20,8 +22,7 @@ export function stringOpinions(attribute: StylingAttribute, value: unknown): Sty
     return null;
   }
 
-  const opinions = attribute === 'class' ? classOpinions(String(value)) : parseStyleDeclarations(String(value));
-  return opinions ? toExactLength(opinions) : null;
+  return (attribute === 'class' ? classOpinions(String(value)) : parseStyleDeclarations(String(value))) ?? null;
 }
 
 /**
@@ -48,14 +49,103 @@ export function keyOpinion(attribute: StylingAttribute, value: unknown, unit: st
 }
 
 /**
- * Gives a list of opinions kept by a source at the exact length: a list grown past its first two items reserves room
- * for many more items, which a source keeping it would hold as long as it lives.
+ * Gives the opinions of the string of a binding of the template: its static string, parsed by the compiler, or the value
+ * of its expression.
  *
- * @param opinions - The list, built by pushing its items.
- * @returns The list, copied when it was grown.
+ * @param styling - The binding.
+ * @param values - The values of its expressions (see `_setExpressionStyling`): the value of the only one, or the values
+ *   of all of them, the string first; `undefined` before the first run.
+ * @returns The opinions, `null` for none.
  */
-export function toExactLength(opinions: StylingOpinions): StylingOpinions {
-  return opinions.length > 2 ? opinions.slice() : opinions;
+export function templateString({ name, statics, string, values: expressions }: _RenderStyling, values: unknown): StylingOpinions | null {
+  if (statics) {
+    return statics;
+  }
+
+  if (!string) {
+    return null;
+  }
+
+  return stringOpinions(name, expressions ? (values as unknown[] | undefined)?.[0] : values);
+}
+
+/**
+ * Gives the opinions of the keys a binding of the template binds one by one, by the values of their expressions.
+ *
+ * @param styling - The binding.
+ * @param values - The values of its expressions (see {@link templateString}).
+ * @returns The opinions, `null` for none.
+ */
+export function templateKeys({ name, string, keys, units }: _RenderStyling, values: unknown): StylingOpinions | null {
+  if (!keys) {
+    return null;
+  }
+
+  const single = !string && keys.length === 1;
+  const offset = string ? 1 : 0;
+  let opinions: Array<string | boolean> | null = null;
+  for (let i = 0; i < keys.length; i++) {
+    const value = single ? values : (values as unknown[] | undefined)?.[offset + i];
+    const opinion = keyOpinion(name, value, units?.[i] ?? '');
+    if (opinion !== undefined) {
+      opinions ? opinions.push(keys[i], opinion) : opinions = [keys[i], opinion];
+    }
+  }
+
+  return opinions;
+}
+
+/**
+ * Gives the opinions of the string of a run of host attributes, by the values its members gave: the one of the last host
+ * attribute of the whole attribute (`@HostAttribute('class')`), if any.
+ *
+ * @param run - The run.
+ * @param values - The values (see `HostStylingRun.values`).
+ * @returns The opinions, `null` for none.
+ */
+export function hostString({ attribute, bindings }: HostStylingRun, values: unknown): StylingOpinions | null {
+  let opinions: StylingOpinions | null = null;
+  for (let i = 0; i < bindings.length; i++) {
+    if (!bindings[i].name) {
+      opinions = stringOpinions(attribute, runValue(values, bindings.length, i));
+    }
+  }
+
+  return opinions;
+}
+
+/**
+ * Gives the opinions of the keys a run of host attributes binds one by one (`@HostAttribute('class.on')`), by the values
+ * its members gave.
+ *
+ * @param run - The run.
+ * @param values - The values (see `HostStylingRun.values`).
+ * @returns The opinions, `null` for none.
+ */
+export function hostKeys({ attribute, bindings }: HostStylingRun, values: unknown): StylingOpinions | null {
+  let opinions: Array<string | boolean> | null = null;
+  for (let i = 0; i < bindings.length; i++) {
+    const { name, unit } = bindings[i];
+    const opinion = name ? keyOpinion(attribute, runValue(values, bindings.length, i), unit ?? '') : undefined;
+    if (opinion !== undefined) {
+      opinions ? opinions.push(name, opinion) : opinions = [name, opinion];
+    }
+  }
+
+  return opinions;
+}
+
+/**
+ * Gives the value of a host attribute among the values of a run, which keeps a single value as it is (see
+ * `HostStylingRun.values` and `HostAttributeRun.values`).
+ *
+ * @param values - The values of the run, `undefined` before it runs.
+ * @param count - The number of its host attributes.
+ * @param index - The index of the host attribute.
+ * @returns The value.
+ */
+export function runValue(values: unknown, count: number, index: number): unknown {
+  return count === 1 ? values : (values as unknown[] | undefined)?.[index];
 }
 
 /**

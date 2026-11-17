@@ -20,8 +20,8 @@ The first argument is the selector, in camelCase (`appTooltip`); the second the 
    import type { Output } from '@xaendar/core';
    import type { InputSignal } from '@xaendar/core/signals';
 
-   @Directive({ 
-    selector: 'appTooltip' 
+   @Directive({
+     selector: 'appTooltip'
    })
    export class TooltipDirective extends CustomDirective<HTMLElement> {
      @Property('')
@@ -47,13 +47,13 @@ The first argument is the selector, in camelCase (`appTooltip`); the second the 
    import { Directive, Property, StructuralDirective } from '@xaendar/core';
    import type { InputSignal } from '@xaendar/core/signals';
 
-   @Directive({ 
-    selector: 'appMinLength'
+   @Directive({
+     selector: 'appMinLength'
    })
    export class MinLengthDirective extends StructuralDirective {
      @Property('')
      public accessor text!: InputSignal<string>;
-     
+
      @Property(1)
      public accessor min!: InputSignal<number>;
 

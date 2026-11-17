@@ -4,13 +4,18 @@ import { CustomElement } from '../../models/custom-element/custom-element';
 import { _bindSite } from '../../signals/effect/effect';
 import type { BindingHost } from '../../types/binding-host.type';
 import type { _Context } from '../../types/context.type';
+import type { ElementSources } from '../../types/element-sources.type';
+import type { RenderElementConditionalBinding } from '../../types/render-element-conditional-binding.type';
 import type { RenderElementDirective } from '../../types/render-element-directive.type';
+import type { RenderElement } from '../../types/render-element.type';
 import type { _RenderStyling } from '../../types/styling/render-styling.type';
-import type { StylingOpinions } from '../../types/styling/styling-opinions.type';
+import type { TemplateStyling } from '../../types/styling/template-styling.type';
+import { _getDirective } from '../directive-registry/directive-registry.util';
+import { getElementSources } from '../element-sources/element-sources.util';
 import { _hostStylingFlags } from '../host-styling/host-styling.util';
 import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
-import { keyOpinion, stringOpinions, toExactLength } from '../styling-opinions/styling-opinions.util';
-import { applyDirectStyling, ensureStylingState, findStylingSource, getStylingState, removeStylingSource, setStylingSource, writeStylingAttribute } from '../styling-state/styling-state.util';
+import { templateKeys, templateString } from '../styling-opinions/styling-opinions.util';
+import { applyDirectStyling, createStylingState, ensureStylingState, keepTemplateStyling, keptValues, markStyling, removeStylingSource, setTemplateStyling, sharesNewKey, writeStylingAttribute } from '../styling-state/styling-state.util';
 
 /**
  * Writes the static `class` or `style` of an element, without expressions (`<div class="card wide">`), once.
@@ -20,7 +25,7 @@ import { applyDirectStyling, ensureStylingState, findStylingSource, getStylingSt
  * @param styling - The binding, holding the static string.
  */
 export function _setStyling(_context: _Context, target: Element | BindingHost, styling: _RenderStyling): void {
-  writeStyling(target as Element, styling, undefined, undefined);
+  writeStyling(target as Element, styling, undefined, undefined, false);
 }
 
 /**
@@ -28,10 +33,9 @@ export function _setStyling(_context: _Context, target: Element | BindingHost, s
  * `_RenderStyling`): once for expressions reading nothing that can change, a literal, or any expression on the server,
  * which reads every value once. It is the callback of the binding of {@link _setReactiveStyling} too.
  *
- * The keys bound one by one win over the string. When the element is written by this binding alone, only the keys whose
- * value changes from the values computed last are written, the binding keeping them in the slot after the one of the
- * element; otherwise the binding is a source of the state of the element, merged with the directives and the
- * component writing the same attribute (see `StylingState`).
+ * The keys bound one by one win over the string. Only the keys whose value changes from the values computed last are
+ * written, the binding keeping them in the slot after the one of the element. When a directive or the component the
+ * element is writes the same keys, the binding is a source of the state merging them (see `StylingState`).
  *
  * @param context - The current template execution scope, which the expressions read.
  * @param target - The element, or, for a binding keeping its values (see `BindingSite.indexed`), the index of the slot
@@ -41,14 +45,14 @@ export function _setStyling(_context: _Context, target: Element | BindingHost, s
 export function _setExpressionStyling(context: _Context, target: Element | BindingHost | number, styling: _RenderStyling): void {
   const values = evaluate(context, styling);
   if (typeof target !== 'number') {
-    writeStyling(target as Element, styling, undefined, values);
+    writeStyling(target as Element, styling, undefined, values, false);
     return;
   }
 
   const previous = context[target + 1];
   // `null` tells the values of a run from the empty slot of a binding never run
   context[target + 1] = values ?? null;
-  writeStyling(context[target] as Element, styling, previous, values);
+  writeStyling(context[target] as Element, styling, previous, values, true);
 }
 
 /**
@@ -75,52 +79,51 @@ export function _setReactiveStyling(context: _Context, target: Element | Binding
  */
 export function _removeStyling(_context: _Context, target: Element | BindingHost, styling: _RenderStyling): void {
   const element = target as Element;
-  const state = getStylingState(element, styling.name);
-  if (state) {
-    removeStylingSource(state, element, styling);
+  if (Array.isArray(getElementSources(element)?.[styling.name])) {
+    removeStylingSource(element, styling.name, styling);
   }
 }
 
 /**
- * Creates, before the bindings of an element are applied, the states merging the sources of its `class` and of its
- * `style` that another source than its template writes, or may write later, as the compiler flags them (see
- * `RenderElement.styling`):
- * - `1` and `2`: the template writes `class` (`style`) on the element and in the branches of its conditional bindings,
- *   or through directives they apply, or the element applies structural directives;
- * - `4` and `8`: the template writes `class` (`style`) on a custom element or on an element applying directives,
- *   which write it too when their classes declare host attributes on it (`_hostStylingFlags`), as a custom element not
- *   defined yet may.
+ * Marks, before the bindings of an element are applied, its `class` and its `style` that another source than its own
+ * bindings may write (see `RenderElement.styling`), so that the binding of the template writing them keeps itself in
+ * the sources of the element (see `StylingSlot`), where a host attribute writing one of its keys finds it:
+ * - the branches of its conditional bindings writing them (`styling` of the branch), whose sources are merged in a state;
+ * - the component it is and the directives it applies, the ones of its branches included, declaring host attributes on
+ *   them (`_hostStylingFlags`), as a custom element not defined yet, or a directive not registered yet, may;
+ * - for an element applying structural directives, whose bindings the runtime keeps without slots, both always.
  *
- * N.B. Deliberate, to save memory: the state is created when the element is rendered, as soon as a second source is
- * certain or possible, because the bindings of the template could not be found from the element once a directive or the
- * component wrote it, without keeping in every element a reference to its template. An element written by its template
- * alone keeps no state. Do not create the state lazily for the template.
+ * N.B. Deliberate, to save memory: the binding of the template is kept, as soon as a second source is possible, in place
+ * of the state, which is created only once two sources have an opinion on the same key, because the bindings of the
+ * template could not be found from the element once a directive or the component writes it, without keeping in every
+ * element a reference to its template. An element written by its template alone keeps nothing. Do not create the state
+ * when the element is rendered, nor keep the binding of every element.
  *
  * @param element - The element.
- * @param styling - The flags of the element.
- * @param directives - The custom directives the element applies.
- * @throws When no custom directive is registered for the selector of a directive.
+ * @param config - The element as the template describes it, whose `styling` is set.
+ * @throws When no custom directive is registered for the selector of a directive of the element.
  */
-export function _prepareStyling(element: Element, styling: number, directives?: readonly RenderElementDirective[]): void {
-  let create = styling & 3;
-  const check = styling >> 2;
-  if (check) {
-    let flags = hostFlags(element);
+export function _prepareStyling(element: Element, config: RenderElement): void {
+  const { styling, directives } = config;
+  const writes = (styling! | styling! >> 2) & 3;
+  let marks = writes;
+  if (!config.structuralDirectives?.length && !config.structuralConditionalBindings?.length) {
+    let flags = hostFlags(element) | branchFlags(config.conditionalBindings);
     if (directives?.length) {
       for (let i = 0; i < directives.length; i++) {
         flags |= _hostStylingFlags(_resolveDirective(directives[i].selector, CustomDirective));
       }
     }
 
-    create |= flags & check;
+    marks &= flags;
   }
 
-  if (create & 1) {
-    ensureStylingState(element, 'class');
+  if (marks & 1) {
+    markStyling(element, 'class');
   }
 
-  if (create & 2) {
-    ensureStylingState(element, 'style');
+  if (marks & 2) {
+    markStyling(element, 'style');
   }
 }
 
@@ -140,27 +143,94 @@ function hostFlags(element: Element): number {
 }
 
 /**
- * Writes the opinions of a binding of the template, computed from the values of its expressions: as a source of the
- * state of the element, when it has one; otherwise directly, the whole attribute at once on an element not holding it
- * at the first run, then only the keys whose value changes.
+ * Gives the attributes merged key by key the branches of conditional bindings write, nested ones included: the ones
+ * their bindings write, and the ones the directives they apply declare host attributes on, both for a directive not
+ * registered yet, which the branch resolves only once selected.
+ *
+ * @param conditionalBindings - The conditional bindings.
+ * @returns The flags: `1` for `class`, `2` for `style`.
+ */
+function branchFlags(conditionalBindings: readonly RenderElementConditionalBinding[] | undefined): number {
+  let flags = 0;
+  if (conditionalBindings?.length) {
+    for (let i = 0; i < conditionalBindings.length; i++) {
+      const { branches } = conditionalBindings[i];
+      for (let j = 0; j < branches.length; j++) {
+        const { styling, directives, conditionalBindings: nested } = branches[j];
+        flags |= (styling ?? 0) | branchFlags(nested) | directiveFlags(directives);
+      }
+    }
+  }
+
+  return flags;
+}
+
+/**
+ * Gives the attributes merged key by key directives declare host attributes on, both for a directive not registered yet.
+ *
+ * @param directives - The directives.
+ * @returns The flags: `1` for `class`, `2` for `style`.
+ */
+function directiveFlags(directives: readonly RenderElementDirective[] | undefined): number {
+  let flags = 0;
+  if (directives?.length) {
+    for (let i = 0; i < directives.length; i++) {
+      const { selector } = directives[i];
+      const Directive = typeof selector === 'string' ? _getDirective(selector) : selector;
+      flags |= Directive ? _hostStylingFlags(Directive) : 3;
+    }
+  }
+
+  return flags;
+}
+
+/**
+ * Writes the opinions of a binding of the template, computed from the values of its expressions:
+ * - as a source of the state of the element, when it has one, and always for a branch of a conditional binding, which
+ *   keeps no slot;
+ * - on an element a host attribute may write (see {@link _prepareStyling}), keeping the binding in the sources of the
+ *   element, and creating the state when one of its keys is one a host attribute has an opinion on;
+ * - otherwise directly, the whole attribute at once on an element not holding it at the first run, then only the keys
+ *   whose value changes.
  *
  * @param element - The element.
  * @param styling - The binding.
- * @param previous - The values computed by the last run, `undefined` before the first run.
+ * @param previous - The values computed by the last run, `undefined` before the first run or for a binding keeping no
+ *   slot.
  * @param values - The values of this run.
+ * @param indexed - Whether the binding keeps its values in a slot, giving the previous ones.
  */
-function writeStyling(element: Element, styling: _RenderStyling, previous: unknown, values: unknown): void {
+function writeStyling(element: Element, styling: _RenderStyling, previous: unknown, values: unknown, indexed: boolean): void {
   const attribute = styling.name;
-  const keys = keysOf(styling, values);
-  const string = stringOf(styling, values);
-  const state = getStylingState(element, attribute);
-  if (state) {
-    setStylingSource(state, element, findStylingSource(state, styling) ?? { owner: styling, tier: 0, order: 0, keys: null, string: null }, keys, string);
+  const record = getElementSources(element);
+  const slot = record?.[attribute];
+  if (Array.isArray(slot) || styling.unbind) {
+    setTemplateStyling(element, record ?? createSources(element, attribute), styling, values);
     return;
   }
 
+  // A binding without slot reads its values in the sources of the element, where it kept them
+  const kept = slot && slot !== true ? slot as TemplateStyling | _RenderStyling : undefined;
+  if (kept && !indexed) {
+    previous = keptValues(kept) ?? null;
+  }
+
+  const keys = templateKeys(styling, values);
+  const string = templateString(styling, values);
+  const previousKeys = previous === undefined ? null : templateKeys(styling, previous);
+  const previousString = previous === undefined ? null : templateString(styling, previous);
+  if (slot) {
+    if (sharesNewKey(record!, attribute, styling, previousKeys, previousString, keys, string)) {
+      createStylingState(element, attribute);
+      setTemplateStyling(element, record!, styling, values);
+      return;
+    }
+
+    keepTemplateStyling(record!, styling, values);
+  }
+
   if (previous !== undefined) {
-    applyDirectStyling(element, attribute, keysOf(styling, previous), stringOf(styling, previous), keys, string);
+    applyDirectStyling(element, attribute, previousKeys, previousString, keys, string);
   } else if (element.hasAttribute(attribute)) {
     // An element adopted from the HTML of the server: only what it does not hold is written
     applyDirectStyling(element, attribute, null, null, keys, string);
@@ -169,6 +239,19 @@ function writeStyling(element: Element, styling: _RenderStyling, previous: unkno
   } else {
     writeStylingAttribute(element, attribute, keys, string);
   }
+}
+
+/**
+ * Creates the state merging the sources of an attribute of an element without record, for a branch of a conditional
+ * binding writing it.
+ *
+ * @param element - The element.
+ * @param attribute - The attribute.
+ * @returns The sources of the element.
+ */
+function createSources(element: Element, attribute: _RenderStyling['name']): ElementSources {
+  ensureStylingState(element, attribute);
+  return getElementSources(element)!;
 }
 
 /**
@@ -199,50 +282,4 @@ function evaluate(context: _Context, { string, values }: _RenderStyling): unknow
   }
 
   return computed;
-}
-
-/**
- * Gives the opinions of the string of a binding: its static string, parsed by the compiler, or the value of its
- * expression.
- *
- * @param styling - The binding.
- * @param values - The values of its expressions (see {@link evaluate}).
- * @returns The opinions, `null` for none.
- */
-function stringOf({ name, statics, string, values: expressions }: _RenderStyling, values: unknown): StylingOpinions | null {
-  if (statics) {
-    return statics;
-  }
-
-  if (!string) {
-    return null;
-  }
-
-  return stringOpinions(name, expressions ? (values as unknown[])[0] : values);
-}
-
-/**
- * Gives the opinions of the keys a binding binds one by one, by the values of their expressions.
- *
- * @param styling - The binding.
- * @param values - The values of its expressions (see {@link evaluate}).
- * @returns The opinions, `null` for none.
- */
-function keysOf({ name, string, keys, units }: _RenderStyling, values: unknown): StylingOpinions | null {
-  if (!keys) {
-    return null;
-  }
-
-  const single = !string && keys.length === 1;
-  const offset = string ? 1 : 0;
-  let opinions: Array<string | boolean> | null = null;
-  for (let i = 0; i < keys.length; i++) {
-    const value = single ? values : (values as unknown[])[offset + i];
-    const opinion = keyOpinion(name, value, units?.[i] ?? '');
-    if (opinion !== undefined) {
-      opinions ? opinions.push(keys[i], opinion) : opinions = [keys[i], opinion];
-    }
-  }
-
-  return opinions && toExactLength(opinions);
 }

@@ -1,7 +1,9 @@
 import { INTERNAL_HOST_DIRECTIVES, INTERNAL_HOST_ATTRIBUTES } from '../../costants';
 import type { HostAttributeRun } from '../../models/host-attribute-run/host-attribute-run';
-import { addHostAttributeSource, createAttributeState, findAttributeState, getAttributeState, hasHostAttributeSource, removeAttributeOpinion, removeHostAttributeSource, setAttributeOpinion } from '../attribute-state/attribute-state.util';
+import { createAttributeState, getAttributeState, isAttributeWritten, removeAttributeOpinion, setAttributeOpinion } from '../attribute-state/attribute-state.util';
+import { addHostRun, removeHostRun } from '../element-sources/element-sources.util';
 import { getWebComponentMetadata } from '../get-metadata/get-metadata.util';
+import { runValue } from '../styling-opinions/styling-opinions.util';
 import { _attributeValue, writeAttribute } from '../write-attribute/write-attribute.util';
 
 /**
@@ -11,8 +13,9 @@ const attributeNames = new WeakMap<object, readonly string[] | null>();
 
 /**
  * Registers a run of host attributes of attributes on its element, as a source of each attribute: for an attribute
- * another run bound on the element before writes too, when the element has no state for it yet, the state merging them
- * is created, holding the opinion of the one bound before.
+ * another run bound on the element before writes too, or the template of an element whose attributes are all merged,
+ * when the element has no state for it yet, the state merging them is created, holding the opinion of the one that wrote
+ * it before.
  *
  * @param run - The run, not run yet.
  */
@@ -20,13 +23,13 @@ export function registerHostAttributes(run: HostAttributeRun): void {
   const { element, bindings } = run;
   for (let i = 0; i < bindings.length; i++) {
     const { name } = bindings[i];
-    // The state takes the runs registered before this one, which registers in it once it runs
-    if (!getAttributeState(element, name) && hasHostAttributeSource(element, name)) {
+    // The state takes the sources registered before this one, which registers in it once it runs
+    if (!getAttributeState(element, name) && isAttributeWritten(element, name)) {
       createAttributeState(element, name);
     }
   }
 
-  addHostAttributeSource(run);
+  addHostRun(run);
 }
 
 /**
@@ -38,13 +41,14 @@ export function registerHostAttributes(run: HostAttributeRun): void {
  * @param index - The index of the property among the ones of the run.
  */
 export function applyHostAttribute(run: HostAttributeRun, index: number): void {
-  const { host, element, bindings, values } = run;
+  const { host, element, bindings } = run;
   const { name, read } = bindings[index];
   const member = read(host);
   const value = typeof member === 'function' ? member() : member;
-  values[index] = value;
-  const state = findAttributeState(element, name);
-  state ? setAttributeOpinion(state, element, run, run, value) : writeAttribute(element, name, value);
+  const previous = runValue(run.values, bindings.length, index);
+  setRunValue(run, index, value);
+  const state = getAttributeState(element, name);
+  state ? setAttributeOpinion(element, state, run, run.rank, value, previous) : writeAttribute(element, name, value);
 }
 
 /**
@@ -54,22 +58,23 @@ export function applyHostAttribute(run: HostAttributeRun, index: number): void {
  * @param run - The run.
  */
 export function removeHostAttributes(run: HostAttributeRun): void {
-  const { element, bindings, values } = run;
-  removeHostAttributeSource(run);
+  const { element, bindings } = run;
   for (let i = 0; i < bindings.length; i++) {
     const { name } = bindings[i];
     const state = getAttributeState(element, name);
     if (state) {
-      removeAttributeOpinion(state, element, run);
+      removeAttributeOpinion(element, state, run);
     } else {
-      const text = _attributeValue(name, values[i]);
+      const text = _attributeValue(name, runValue(run.values, bindings.length, i));
       if (text !== null && element.getAttribute(name) === text) {
         element.removeAttribute(name);
       }
     }
 
-    values[i] = undefined;
+    setRunValue(run, i, undefined);
   }
+
+  removeHostRun(run);
 }
 
 /**
@@ -87,6 +92,21 @@ export function _hostAttributeNames(klass: object): readonly string[] | null {
   }
 
   return names;
+}
+
+/**
+ * Keeps the value a host attribute of a run computed (see `HostAttributeRun.values`).
+ *
+ * @param run - The run.
+ * @param index - The index of the host attribute.
+ * @param value - The value.
+ */
+function setRunValue(run: HostAttributeRun, index: number, value: unknown): void {
+  if (run.bindings.length === 1) {
+    run.values = value;
+  } else {
+    (run.values as unknown[])[index] = value;
+  }
 }
 
 /**

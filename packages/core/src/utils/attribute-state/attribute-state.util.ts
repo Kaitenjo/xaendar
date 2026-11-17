@@ -1,61 +1,52 @@
 import type { HostAttributeRun } from '../../models/host-attribute-run/host-attribute-run';
-import type { AttributeOpinion } from '../../types/attributes/attribute-opinion.type';
+import type { HostStylingRun } from '../../models/host-styling-run/host-styling-run';
 import type { AttributeState } from '../../types/attributes/attribute-state.type';
-import type { SourceRank } from '../../types/source-rank.type';
-import { insertRanked, removeRanked } from '../source-rank/source-rank.util';
+import type { ElementSources } from '../../types/element-sources.type';
+import type { HostRun } from '../../types/host/host-run.type';
+import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
+import { ensureElementSources, getElementSources, getHostRuns } from '../element-sources/element-sources.util';
+import { entrySize, findEntry, insertEntry, removeEntry } from '../source-rank/source-rank.util';
+import { runValue } from '../styling-opinions/styling-opinions.util';
 import { _attributeValue } from '../write-attribute/write-attribute.util';
 
 /**
- * The states of the attributes, other than `class` and `style`, each element has: one, or an array of the exact length
- * from the second.
+ * The values of the template of an element whose attributes are all merged, before it binds any (see
+ * `ElementSources.template`).
  */
-const attributeStates = new WeakMap<Element, AttributeState | AttributeState[]>();
+const NO_TEMPLATE_VALUES: readonly unknown[] = Object.freeze([]);
 
 /**
- * The runs of host attributes bound on each element (see `HostAttributeRun`), so that the state created by a second
- * source finds the ones bound before.
+ * Whether some elements merge all their attributes (see {@link _mergeAttributes}): until then, an attribute of the
+ * template the compiler does not flag as shared never looks its state up.
  */
-const hostAttributeSources = new WeakMap<Element, HostAttributeRun | HostAttributeRun[]>();
+let merging = false;
 
 /**
- * The elements whose attributes are all merged, their states created when a source first writes them: the elements the
- * server writes through the runtime (see {@link _mergeAttributes}). `null` until the first one, so that the browser never
- * reads it.
- */
-let mergedElements: WeakSet<Element> | null = null;
-
-/**
- * Gives the state merging the sources of an attribute of an element, if more than one level writes it.
+ * Gives the state merging the sources of an attribute of an element, if two levels write it.
  *
  * @param element - The element.
  * @param name - The name of the attribute.
- * @returns The state, `undefined` when the attribute is written by a single source, directly.
+ * @returns The state, `undefined` when the attribute is written by a single level, directly.
  */
 export function getAttributeState(element: Element, name: string): AttributeState | undefined {
-  const states = attributeStates.get(element);
-  if (!Array.isArray(states)) {
-    return states?.name === name ? states : undefined;
+  const states = getElementSources(element)?.attributes;
+  if (!states) {
+    return undefined;
+  }
+
+  // A state starts with the name of its attribute, a list of states with a state
+  if (typeof states[0] === 'string') {
+    return states[0] === name ? states as AttributeState : undefined;
   }
 
   for (let i = 0; i < states.length; i++) {
-    if (states[i].name === name) {
-      return states[i];
+    const state = states[i] as AttributeState;
+    if (state[0] === name) {
+      return state;
     }
   }
 
   return undefined;
-}
-
-/**
- * Gives the state a source writing an attribute of an element goes through: the one of the element, created on an
- * element whose attributes are all merged (see {@link _mergeAttributes}).
- *
- * @param element - The element.
- * @param name - The name of the attribute.
- * @returns The state, `undefined` when the source writes the attribute directly.
- */
-export function findAttributeState(element: Element, name: string): AttributeState | undefined {
-  return getAttributeState(element, name) ?? (mergedElements?.has(element) ? createAttributeState(element, name) : undefined);
 }
 
 /**
@@ -65,7 +56,7 @@ export function findAttributeState(element: Element, name: string): AttributeSta
  * @returns `true` once an element merges them.
  */
 export function mergesAllAttributes(): boolean {
-  return mergedElements !== null;
+  return merging;
 }
 
 /**
@@ -82,44 +73,51 @@ export function _hasAttributeState(element: Element, name: string): boolean {
 
 /**
  * Merges every attribute of an element written through the runtime, whatever writes it: the state of an attribute is
- * created when a source first writes it. The server writes so the elements of the components and of the directives,
- * whose template, directives and component it applies once each, in an order that is not the one of the precedence.
+ * created when a second level writes it, the values the template bound kept until then (see `ElementSources.template`).
+ * The server writes so the elements of the components and of the directives, whose template, directives and component
+ * it applies once each, in an order that is not the one of the precedence.
  *
  * @param element - The element.
  */
 export function _mergeAttributes(element: Element): void {
-  (mergedElements ??= new WeakSet()).add(element);
+  merging = true;
+  ensureElementSources(element).template ??= NO_TEMPLATE_VALUES;
 }
 
 /**
- * Creates the state merging the sources of an attribute of an element, holding the opinions of the host attributes bound
- * on it so far: the attribute holds the value of a single one, since a second one creates the state. The template
- * registers its own bindings when they run, the state being created before (see `_prepareAttributes`).
+ * Creates the state merging the sources of an attribute of an element, holding the ones that wrote it so far, directly:
+ * the values the template bound on an element whose attributes are all merged, and the host runs bound on it. The
+ * template registers its own bindings when they run, on an element rendered by the browser, the state being created
+ * before (see `_prepareAttributes`).
  *
  * @param element - The element.
  * @param name - The name of the attribute.
  * @returns The state.
  */
 export function createAttributeState(element: Element, name: string): AttributeState {
-  const state: AttributeState = { name, opinions: null, written: false };
-  const states = attributeStates.get(element);
-  if (!states) {
-    attributeStates.set(element, state);
-  } else if (Array.isArray(states)) {
-    states.push(state);
-  } else {
-    attributeStates.set(element, [states, state]);
+  const record = ensureElementSources(element);
+  let state: AttributeState = [name];
+  const { template } = record;
+  if (template) {
+    for (let i = 0; i < template.length; i += 2) {
+      if ((template[i] as RenderElementAttribute).name === name) {
+        state = insertEntry(state, 1, template[i], 0, template[i + 1]);
+      }
+    }
   }
 
-  const hosts = hostAttributeSources.get(element);
+  const { hosts } = record;
   if (Array.isArray(hosts)) {
     for (let i = 0; i < hosts.length; i++) {
-      seedOpinion(state, hosts[i]);
+      if (writesAttribute(hosts[i], name)) {
+        state = insertEntry(state, 1, hosts[i], hosts[i].rank, undefined);
+      }
     }
-  } else if (hosts) {
-    seedOpinion(state, hosts);
+  } else if (hosts && writesAttribute(hosts, name)) {
+    state = insertEntry(state, 1, hosts, hosts.rank, undefined);
   }
 
+  storeState(record, null, state);
   return state;
 }
 
@@ -135,55 +133,61 @@ export function ensureAttributeState(element: Element, name: string): AttributeS
 }
 
 /**
+ * Tells whether a source writes an attribute of an element directly, a state merging it being needed once another level
+ * writes it too: a run of host attributes bound on the element, or the template of an element whose attributes are all
+ * merged.
+ *
+ * @param element - The element.
+ * @param name - The name of the attribute.
+ * @returns `true` when one does.
+ */
+export function isAttributeWritten(element: Element, name: string): boolean {
+  const template = getElementSources(element)?.template;
+  if (template) {
+    for (let i = 0; i < template.length; i += 2) {
+      if ((template[i] as RenderElementAttribute).name === name) {
+        return true;
+      }
+    }
+  }
+
+  return hostWritesAttribute(element, name);
+}
+
+/**
  * Tells whether a run of host attributes bound on an element writes an attribute.
  *
  * @param element - The element.
  * @param name - The name of the attribute.
  * @returns `true` when one does.
  */
-export function hasHostAttributeSource(element: Element, name: string): boolean {
-  const hosts = hostAttributeSources.get(element);
+export function hostWritesAttribute(element: Element, name: string): boolean {
+  const hosts = getHostRuns(element);
   if (!Array.isArray(hosts)) {
-    return !!hosts && indexOfAttribute(hosts, name) !== -1;
+    return !!hosts && writesAttribute(hosts, name);
   }
 
-  return hosts.some(host => indexOfAttribute(host, name) !== -1);
+  return hosts.some(host => writesAttribute(host, name));
 }
 
 /**
- * Registers a run of host attributes bound on an element, so that a state created later holds its opinions.
+ * Keeps the value the template binds to an attribute of an element whose attributes are all merged, while no state
+ * merges the attribute (see `ElementSources.template`).
  *
- * @param run - The run.
+ * @param record - The sources of the element.
+ * @param attribute - The attribute, a constant of the module of the template.
+ * @param value - The value.
  */
-export function addHostAttributeSource(run: HostAttributeRun): void {
-  const { element } = run;
-  const hosts = hostAttributeSources.get(element);
-  if (!hosts) {
-    hostAttributeSources.set(element, run);
-  } else if (Array.isArray(hosts)) {
-    hosts.push(run);
-  } else {
-    hostAttributeSources.set(element, [hosts, run]);
-  }
-}
-
-/**
- * Unregisters a run of host attributes of an element.
- *
- * @param run - The run, registered.
- */
-export function removeHostAttributeSource(run: HostAttributeRun): void {
-  const { element } = run;
-  const hosts = hostAttributeSources.get(element);
-  if (!Array.isArray(hosts)) {
-    hostAttributeSources.delete(element);
-    return;
+export function keepTemplateValue(record: ElementSources, attribute: RenderElementAttribute, value: unknown): void {
+  const template = record.template!;
+  for (let i = 0; i < template.length; i += 2) {
+    if (template[i] === attribute) {
+      (template as unknown[])[i + 1] = value;
+      return;
+    }
   }
 
-  hosts.splice(hosts.indexOf(run), 1);
-  if (hosts.length === 1) {
-    hostAttributeSources.set(element, hosts[0]);
-  }
+  record.template = template.concat([attribute, value]);
 }
 
 /**
@@ -194,98 +198,109 @@ export function removeHostAttributeSource(run: HostAttributeRun): void {
  * @returns The index, `-1` when the run does not write it.
  */
 export function indexOfAttribute({ bindings }: HostAttributeRun, name: string): number {
-  return bindings.findIndex(binding => binding.name === name);
+  for (let i = 0; i < bindings.length; i++) {
+    if (bindings[i].name === name) {
+      return i;
+    }
+  }
+
+  return -1;
 }
 
 /**
  * Sets the opinion of a source of a state, registering it if it is not there yet, and writes again the attribute with
  * the value of the strongest source having one.
  *
- * @param state - The state.
  * @param element - The element.
- * @param owner - What the source is (see `AttributeOpinion.owner`).
- * @param rank - Its level and its order.
- * @param value - Its value, `null` or `undefined` for no opinion.
+ * @param state - The state.
+ * @param owner - What the source is: the constant of the attribute in the template, or a host run, holding its new value.
+ * @param rank - Its rank (see `toRank`).
+ * @param value - The value of a source of the template, `null` or `undefined` for no opinion.
+ * @param previous - The value the source had, for a host run, whose state holds none.
  */
-export function setAttributeOpinion(state: AttributeState, element: Element, owner: object, rank: SourceRank, value: unknown): void {
-  const opinion = findOpinion(state, owner);
-  if (opinion) {
-    opinion.value = value;
+export function setAttributeOpinion(element: Element, state: AttributeState, owner: object, rank: number, value: unknown, previous?: unknown): void {
+  const name = state[0] as string;
+  let index = findEntry(state, 1, owner);
+  let before: unknown;
+  if (index === -1) {
+    const inserted = insertEntry(state, 1, owner, rank, value);
+    index = findEntry(inserted, 1, owner);
+    before = resolveValue(inserted, index, undefined);
+    storeState(getElementSources(element)!, state, inserted);
+    state = inserted;
+  } else if (entrySize(rank) === 3) {
+    before = resolveValue(state, -1, undefined);
+    state[index + 2] = value;
   } else {
-    state.opinions = insertRanked(state.opinions, { owner, tier: rank.tier, order: rank.order, value });
+    before = resolveValue(state, index, previous);
   }
 
-  writeResolved(state, element);
+  writeResolved(element, name, before, resolveValue(state, -1, undefined));
 }
 
 /**
  * Removes a source from a state, writing again the attribute: the value of the next source having an opinion comes
- * back, and the attribute no source has an opinion on any more is removed, if the runtime wrote it.
+ * back, and the attribute no source has an opinion on any more is removed, if the sources gave it a text before.
  *
- * @param state - The state.
  * @param element - The element.
- * @param owner - What the source is.
- */
-export function removeAttributeOpinion(state: AttributeState, element: Element, owner: object): void {
-  const opinion = findOpinion(state, owner);
-  if (opinion) {
-    state.opinions = removeRanked(state.opinions, opinion);
-    writeResolved(state, element);
-  }
-}
-
-/**
- * Registers in a state the opinion of a run of host attributes bound before the state was created, if it has one on its
- * attribute: the runtime wrote the attribute when its value has a text.
- *
- * @param state - The state, just created.
- * @param run - The run.
- */
-function seedOpinion(state: AttributeState, run: HostAttributeRun): void {
-  const index = indexOfAttribute(run, state.name);
-  const value = index === -1 ? undefined : run.values[index];
-  if (value !== undefined && value !== null) {
-    state.opinions = insertRanked(state.opinions, { owner: run, tier: run.tier, order: run.order, value });
-    state.written ||= _attributeValue(state.name, value) !== null;
-  }
-}
-
-/**
- * Gives the opinion a source registered in a state, if any.
- *
  * @param state - The state.
  * @param owner - What the source is.
- * @returns The opinion, `undefined` when the source registered none.
  */
-function findOpinion({ opinions }: AttributeState, owner: object): AttributeOpinion | undefined {
-  if (!Array.isArray(opinions)) {
-    return opinions?.owner === owner ? opinions : undefined;
+export function removeAttributeOpinion(element: Element, state: AttributeState, owner: object): void {
+  const index = findEntry(state, 1, owner);
+  if (index !== -1) {
+    const before = resolveValue(state, -1, undefined);
+    const removed = removeEntry(state, index);
+    storeState(getElementSources(element)!, state, removed);
+    writeResolved(element, state[0] as string, before, resolveValue(removed, -1, undefined));
   }
+}
 
-  for (let i = 0; i < opinions.length; i++) {
-    if (opinions[i].owner === owner) {
-      return opinions[i];
-    }
+/**
+ * Tells whether a host run writes an attribute: a run of host attributes, other than `class` and `style`, declaring it.
+ *
+ * @param run - The run.
+ * @param name - The name of the attribute.
+ * @returns `true` when it writes it.
+ */
+function writesAttribute(run: HostRun, name: string): boolean {
+  return (run as HostStylingRun).attribute === undefined && indexOfAttribute(run as HostAttributeRun, name) !== -1;
+}
+
+/**
+ * Stores a state among the ones of an element, in place of the one it replaces.
+ *
+ * @param record - The sources of the element.
+ * @param replaced - The state replaced, `null` for a new one.
+ * @param state - The state.
+ */
+function storeState(record: ElementSources, replaced: AttributeState | null, state: AttributeState): void {
+  const states = record.attributes;
+  if (!states || states === replaced) {
+    record.attributes = state;
+  } else if (typeof states[0] === 'string') {
+    record.attributes = [states as AttributeState, state];
+  } else if (replaced) {
+    (states as AttributeState[])[(states as AttributeState[]).indexOf(replaced)] = state;
+  } else {
+    record.attributes = (states as AttributeState[]).concat([state]);
   }
-
-  return undefined;
 }
 
 /**
  * Gives the value of the strongest source of a state having an opinion.
  *
  * @param state - The state.
+ * @param index - The index of a host run to read with another value, `-1` for none.
+ * @param value - The value to read for that run.
  * @returns The value, `undefined` when no source has an opinion.
  */
-function resolveValue({ opinions }: AttributeState): unknown {
-  if (!Array.isArray(opinions)) {
-    return opinions?.value ?? undefined;
-  }
-
-  for (let i = 0; i < opinions.length; i++) {
-    const { value } = opinions[i];
-    if (value !== undefined && value !== null) {
-      return value;
+function resolveValue(state: AttributeState, index: number, value: unknown): unknown {
+  const name = state[0] as string;
+  for (let i = 1; i < state.length; i += entrySize(state[i + 1] as number)) {
+    const opinion = i === index ? value : entryValue(state, i, name);
+    if (opinion !== undefined && opinion !== null) {
+      return opinion;
     }
   }
 
@@ -293,23 +308,40 @@ function resolveValue({ opinions }: AttributeState): unknown {
 }
 
 /**
+ * Gives the value of a source of a state: the one kept for a source of the template, the one its run holds for a host
+ * run.
+ *
+ * @param state - The state.
+ * @param index - The index of the source.
+ * @param name - The name of the attribute.
+ * @returns The value.
+ */
+function entryValue(state: AttributeState, index: number, name: string): unknown {
+  if (entrySize(state[index + 1] as number) === 3) {
+    return state[index + 2];
+  }
+
+  const run = state[index] as HostAttributeRun;
+  return runValue(run.values, run.bindings.length, indexOfAttribute(run, name));
+}
+
+/**
  * Writes an attribute of an element with the value of the strongest source of its state having an opinion, as
  * `writeAttribute` writes it (`false` removes it, unless it is an `aria-*` or an enumerated attribute), only when the
  * element does not hold it already, as an element adopted from the HTML of the server does. Without opinions, the
- * attribute is removed only if the runtime wrote it.
+ * attribute is removed only if the sources gave it a text before, so that a value other code wrote stays.
  *
- * @param state - The state.
  * @param element - The element.
+ * @param name - The name of the attribute.
+ * @param before - The value of the strongest source before the change.
+ * @param value - The value of the strongest source.
  */
-function writeResolved(state: AttributeState, element: Element): void {
-  const { name } = state;
-  const value = resolveValue(state);
+function writeResolved(element: Element, name: string, before: unknown, value: unknown): void {
   if (value === undefined) {
-    if (state.written && element.hasAttribute(name)) {
+    if (before !== undefined && _attributeValue(name, before) !== null && element.hasAttribute(name)) {
       element.removeAttribute(name);
     }
 
-    state.written = false;
     return;
   }
 
@@ -317,6 +349,4 @@ function writeResolved(state: AttributeState, element: Element): void {
   if (element.getAttribute(name) !== text) {
     text === null ? element.removeAttribute(name) : element.setAttribute(name, text);
   }
-
-  state.written = text !== null;
 }

@@ -102,14 +102,14 @@ function renderElement(parentNode: Element, context: _Context, anchor: Comment |
     element.innerHTML = config.content;
   }
 
-  // The states merging the sources of `class` and `style` exist before the bindings of the template write them
+  // The bindings of `class` and `style` a host attribute may write keep themselves in the sources of the element
   if (config.styling) {
-    _prepareStyling(element, config.styling, directives);
+    _prepareStyling(element, config);
   }
 
-  // The same for the other attributes the component or the directives may write
+  // The states of the other attributes the component or the directives write exist before the template writes them
   if (config.shared) {
-    _prepareAttributes(element, config.shared, !!config.sharedAlways, directives);
+    _prepareAttributes(element, config);
   }
 
   if (attributes?.length) {

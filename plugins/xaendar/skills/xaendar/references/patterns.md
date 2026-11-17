@@ -82,8 +82,8 @@ public onDestroy(): void {
 - `value` and `checked` bindings are only the initial state. To write a field from the state (reset, formatting), use a directive writing the property:
 
 ```ts
-@Directive({ 
-  selector: 'appBindValue' 
+@Directive({
+  selector: 'appBindValue'
 })
 export class BindValueDirective extends CustomDirective<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> {
   @Property('')
@@ -161,8 +161,8 @@ Interpolations always create text nodes. To render markup, apply `@@innerHtml` o
 A directive of the application writing `innerHTML` itself, for a behavior `@@innerHtml` lacks, writes it from an effect, on an empty element, and sanitizes it with `sanitizeHtml` unless the application controls the HTML:
 
 ```ts
-@Directive({ 
-  selector: 'appInnerHtml' 
+@Directive({
+  selector: 'appInnerHtml'
 })
 export class AppHtmlDirective extends CustomDirective<HTMLElement> {
   @Property('')
@@ -212,6 +212,22 @@ public notify(text: string): void {
     content: [document.createTextNode(text)]
   });
 }
+```
+
+A component chosen at runtime and shown at one place of the template (the widgets of a dashboard, the page of a router) is created by `@@componentOutlet` of `@xaendar/directives` (see api.md), which recreates it when its class changes:
+
+```ts
+public readonly card = signal<typeof InfoCardComponent | typeof WarningCardComponent>(InfoCardComponent);
+// A field, created once: the getter follows heading() without creating the card again
+public readonly cardOptions: CreateComponentOptionsWithOptionalTarget<InfoCardComponent | WarningCardComponent> = {
+  properties: [{ heading: () => this.heading() }]
+};
+```
+
+```html
+@import { ComponentOutlet } from '@xaendar/directives'
+
+<div @@componentOutlet(component="{card()}" options="{cardOptions}") class="panel" />
 ```
 
 ## Lazy loading
@@ -301,3 +317,12 @@ export function render(url: string): Promise<string> {
 - Bound `value`/`checked` attributes never overwrite a field the user edited before the page hydrated. A directive writing `value` itself (see Forms) skips its first write when `element.value !== element.defaultValue`.
 - Nest elements as the HTML parser builds them (no block element inside `<p>`, a `<tbody>` between `<table>` and `<tr>`): the parser closes or adds elements, and the HTML of the server shows another tree.
 - `xd start` renders on the server; `xd build` builds `dist/client`, then the server into `dist/server`; `npm run serve` runs the generated `server.ts`; `xd prerender` writes the routes listed in `"prerender": ["/", "/about"]` as HTML files, replacing `dist/client/index.html` too: serve a prerendered build from a static host.
+- `xd new my-app --ssr` writes `src/entry-server.ts` (exports `render(url)`, built on `renderToString`), `server.ts` (`node:http` and `toSameOriginPath` of `@xaendar/common`), `"ssr": { "entry": "src/entry-server" }` in `xaendar.json` (the entry without extension) and `<!--xd-ssr-->` in `index.html` in place of the root component.
+
+## Libraries
+
+A library of components and directives is developed in a workspace:
+
+- `xd generate library @acme/ui` (`xd g l`, `--ssr`, `-s`, `-p`) creates the folder `ui` holding the project testing it (the usual layout) and the library in `libraries/ui` (`package.json`, `src/public-api.ts`, an example component), declared in `"libs": { "@acme/ui": { "root": "libraries/ui" } }` of the single `xaendar.json`. Options of a library: `entry` (default `src/public-api.ts`), `ssr` (default `false`: without it `@hydrate`, `@client` and the `ssr` option of `@WebComponent` are errors in the library, and a server renders its components as `ssr: { render: false }`), its own `customElements`. `xd add library <name> [--ssr]` adds another one.
+- The project imports a library from its sources by its package name (`@import { CardComponent } from '@acme/ui'`, through the `paths` of `tsconfig.json`), as an application installing it does. `xd g c <name> --library @acme/ui` (or run inside `libraries/ui`) creates the component in the library and exports it from its entry. `xd test` runs the libraries' specs too.
+- `xd build` builds every library in the order of `libs` (`xd build ui` only one) into a package ready for `npm publish dist/ui` (`outDir`, default `dist/<folder>`): components compiled ahead of time, one module per component and directive, their declarations and `xaendar-manifest.json`, plus the server code in `server/` with `ssr: true`. A library is built after the workspace libraries it depends on, which it reads from their builds. It checks the libraries, not the project testing them (`xd start` checks that).

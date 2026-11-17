@@ -86,21 +86,23 @@ export type RenderElement = BlockPosition & {
    */
   readonly slot?: number;
   /**
-   * The states merging the sources of the `class` and of the `style` of the element to create before its bindings are
-   * applied (see `_prepareStyling`): `1` and `2` always, for `class` and `style`, `4` and `8` when its component
-   * or its directives write them. Left out for an element its template alone writes, nearly every one.
+   * The `class` and the `style` of the element another source than its own bindings may write (see `_prepareStyling`):
+   * `1` and `2`, for `class` and `style`, when another source of the template writes them, or the element applies
+   * structural directives, `4` and `8` when its component or its directives may write them. The runtime checks the
+   * classes of the component and of the directives, the ones of the branches included. Left out for an element its
+   * template alone writes, nearly every one.
    */
   readonly styling?: number;
   /**
    * The attributes, other than `class` and `style`, the template writes on the element, or in the branches of its
    * conditional bindings, when the component it is or the directives it applies may write them too: the runtime
-   * creates, before the bindings are applied, the state merging the sources of the ones they write (see
+   * creates, before the bindings are applied, the state merging the sources of the ones they declare (see
    * `_prepareAttributes`). Left out for an element its template alone writes, nearly every one.
    */
   readonly shared?: readonly string[];
   /**
-   * Set when a branch of a conditional binding of the element applies directives, which the runtime does not know
-   * before the branch is selected: the states of every attribute of {@link shared} are created.
+   * Set when a branch of a conditional binding of the element applies directives, which the runtime resolves when the
+   * element is rendered: the states of the attributes of {@link shared} they declare are created too.
    */
   readonly sharedAlways?: true;
 };

@@ -4,10 +4,12 @@ import { DIRECTIVE_ORDER, HEADER } from '../../costants';
 import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { _Context } from '../../types/context.type';
+import type { RenderElement } from '../../types/render-element.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 import type { _RenderStyling } from '../../types/styling/render-styling.type';
 import { _scope, clear, EMPTY_LAYOUT, refresh, update } from '../context/context.util';
 import { _defineDirective } from '../directive-registry/directive-registry.util';
+import { getElementSources } from '../element-sources/element-sources.util';
 import { _bindHost } from '../host-bindings/host-bindings.util';
 import { _hasStylingState, createStylingState } from '../styling-state/styling-state.util';
 import { _prepareStyling, _removeStyling, _setExpressionStyling, _setReactiveStyling, _setStyling } from './styling-binding.util';
@@ -26,6 +28,11 @@ const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
  * The style of an element.
  */
 const styleOf = (element: Element) => (element as HTMLElement).style;
+
+/**
+ * Describes a `div` of a template.
+ */
+const elementOf = (members: Omit<RenderElement, 'tagName'>): RenderElement => ({ tagName: 'div', ...members });
 
 /**
  * Describes a binding of `class` or `style` as the compiler writes it, with the slots of a compiled scope.
@@ -215,34 +222,55 @@ describe('_removeStyling', () => {
 });
 
 describe('_prepareStyling', () => {
-  it('creates the states the flags of the compiler ask for', () => {
-    const element = document.createElement('div');
-    _prepareStyling(element, 2);
-    expect(_hasStylingState(element, 'class')).toBe(false);
-    expect(_hasStylingState(element, 'style')).toBe(true);
+  /**
+   * Tells which attributes of an element are marked, so that its template keeps its binding there.
+   */
+  const marksOf = (element: Element) => [getElementSources(element)?.class === true, getElementSources(element)?.style === true];
+
+  it('marks the attributes an element applying structural directives writes, and the ones its branches write', () => {
+    const structural = document.createElement('div');
+    _prepareStyling(structural, elementOf({ styling: 3, structuralDirectives: [{ selector: 'visible' }] }));
+    expect(marksOf(structural)).toEqual([true, true]);
+
+    const conditional = document.createElement('div');
+    _prepareStyling(conditional, elementOf({ styling: 2, structuralConditionalBindings: [] }));
+    expect(marksOf(conditional)).toEqual([false, false]);
+
+    const branch = document.createElement('div');
+    _prepareStyling(branch, elementOf({ styling: 3, conditionalBindings: [{ branches: [{ condition: () => true }, { condition: () => false, conditionalBindings: [{ branches: [{ condition: () => true, styling: 2 }] }] }] }] }));
+    expect(marksOf(branch)).toEqual([false, true]);
   });
 
-  it('creates the states of the attributes the directives of the element write with their host attributes', () => {
-    const Directive = directiveOf({ width: 'style.width.px' }, { width: 1 });
-    _defineDirective('prepareStyling', Directive);
+  it('marks the attributes the directives of the element and of its branches write with their host attributes', () => {
+    _defineDirective('prepareStyling', directiveOf({ width: 'style.width.px' }, { width: 1 }));
     const element = document.createElement('div');
-    _prepareStyling(element, 12, [{ selector: 'prepareStyling' }]);
-    expect(_hasStylingState(element, 'class')).toBe(false);
-    expect(_hasStylingState(element, 'style')).toBe(true);
+    _prepareStyling(element, elementOf({ styling: 12, directives: [{ selector: 'prepareStyling' }] }));
+    expect(marksOf(element)).toEqual([false, true]);
+
+    const branch = document.createElement('div');
+    _prepareStyling(branch, elementOf({ styling: 3, conditionalBindings: [{ branches: [{ condition: () => true, directives: [{ selector: 'prepareStyling' }] }] }] }));
+    expect(marksOf(branch)).toEqual([false, true]);
+
+    // A directive applied by its class, one not registered yet
+    const byClass = document.createElement('div');
+    _prepareStyling(byClass, elementOf({ styling: 3, conditionalBindings: [{ branches: [{ condition: () => true, directives: [{ selector: directiveOf({ kind: 'class' }, {}) }] }] }] }));
+    expect(marksOf(byClass)).toEqual([true, false]);
+    const pending = document.createElement('div');
+    _prepareStyling(pending, elementOf({ styling: 3, conditionalBindings: [{ branches: [{ condition: () => true, directives: [{ selector: 'not-registered-yet' }] }] }] }));
+    expect(marksOf(pending)).toEqual([true, true]);
   });
 
-  it('creates both states on a custom element not defined yet, none on a native element', () => {
+  it('marks both attributes on a custom element not defined yet, none on a native element', () => {
     const custom = document.createElement('x-not-defined-yet');
-    _prepareStyling(custom, 12);
-    expect(_hasStylingState(custom, 'class')).toBe(true);
-    expect(_hasStylingState(custom, 'style')).toBe(true);
+    _prepareStyling(custom, elementOf({ styling: 12 }));
+    expect(marksOf(custom)).toEqual([true, true]);
 
     const native = document.createElement('div');
-    _prepareStyling(native, 12);
-    expect(_hasStylingState(native, 'class')).toBe(false);
+    _prepareStyling(native, elementOf({ styling: 12 }));
+    expect(getElementSources(native)).toBeUndefined();
   });
 
-  it('creates the states of the attributes a component writes with its host attributes or its host directives', () => {
+  it('marks the attributes a component writes with its host attributes or its host directives', () => {
     const Host = directiveOf({ kind: 'class' }, { kind: 'x' });
     const Plain = directiveOf({}, {});
     const metadata: DecoratorMetadataObject = { hostDirectives: [Plain, { directive: Host }] };
@@ -250,14 +278,13 @@ describe('_prepareStyling', () => {
     Object.defineProperty(Component, Symbol.for('Symbol.metadata'), { value: metadata });
     customElements.define('x-prepare-styling', Component);
     const element = document.createElement('x-prepare-styling');
-    _prepareStyling(element, 12);
-    expect(_hasStylingState(element, 'class')).toBe(true);
-    expect(_hasStylingState(element, 'style')).toBe(false);
+    _prepareStyling(element, elementOf({ styling: 12 }));
+    expect(marksOf(element)).toEqual([true, false]);
 
     // The flags of the class are computed once
     const other = document.createElement('x-prepare-styling');
-    _prepareStyling(other, 4);
-    expect(_hasStylingState(other, 'class')).toBe(true);
+    _prepareStyling(other, elementOf({ styling: 4 }));
+    expect(marksOf(other)).toEqual([true, false]);
   });
 });
 
@@ -318,5 +345,155 @@ describe('merging the template, the directives and the component', () => {
 
     clear(context);
     expect(element.className).toBe('');
+  });
+});
+
+describe('a state only for the keys two sources share', () => {
+  /**
+   * Renders the binding of the template of an element a directive writes, as `_renderElement` does: the element marked,
+   * its binding run, then the directive bound.
+   */
+  function renderWith(styling: _RenderStyling, Directive: new () => CustomDirective): { element: Element, directive: _Context } {
+    const selector = `lazy${Math.random()}`;
+    _defineDirective(selector, Directive);
+    const element = document.createElement('div');
+    _prepareStyling(element, elementOf({ styling: styling.name === 'class' ? 4 : 8, directives: [{ selector }] }));
+    _setReactiveStyling(scopeOf(styling), element, styling);
+    return { element, directive: bindDirective(element, Directive, 0) };
+  }
+
+  it('writes the classes of the template and of a directive directly while they differ, the directive removing only its own', async () => {
+    const on = signal(true);
+    const { element, directive } = renderWith(stylingOf({ name: 'class', string: () => 'a b' }), directiveOf({ on: 'class.on' }, { on }));
+    expect(element.className).toBe('a b on');
+    expect(_hasStylingState(element, 'class')).toBe(false);
+
+    on.set(false);
+    await flush();
+    expect(element.className).toBe('a b');
+    expect(_hasStylingState(element, 'class')).toBe(false);
+
+    on.set(true);
+    await flush();
+    clear(directive);
+    expect(element.className).toBe('a b');
+    expect(_hasStylingState(element, 'class')).toBe(false);
+  });
+
+  it('writes the properties of the template and of a directive directly while they differ, the directive removing only its own', () => {
+    const { element, directive } = renderWith(stylingOf({ name: 'style', string: () => 'gap: 4px' }), directiveOf({ width: 'style.width.px' }, { width: 20 }));
+    expect([styleOf(element).getPropertyValue('gap'), styleOf(element).getPropertyValue('width')]).toEqual(['4px', '20px']);
+    expect(_hasStylingState(element, 'style')).toBe(false);
+
+    clear(directive);
+    expect([styleOf(element).getPropertyValue('gap'), styleOf(element).getPropertyValue('width')]).toEqual(['4px', '']);
+    expect(_hasStylingState(element, 'style')).toBe(false);
+  });
+
+  it('creates the state when the string of the template gets a class the directive has an opinion on, the template winning', async () => {
+    const kind = signal('a');
+    const on = signal(false);
+    const { element, directive } = renderWith(stylingOf({ name: 'class', string: () => kind() }), directiveOf({ on: 'class.on' }, { on }));
+    expect(element.className).toBe('a');
+
+    kind.set('a on');
+    await flush();
+    expect(element.className).toBe('a on');
+    expect(_hasStylingState(element, 'class')).toBe(true);
+
+    // The directive comes back for the class the template leaves, then goes, the class of the template staying
+    kind.set('b');
+    await flush();
+    expect(element.className).toBe('b');
+    on.set(true);
+    await flush();
+    expect(element.className).toBe('b on');
+    kind.set('b on');
+    await flush();
+    clear(directive);
+    expect(element.className).toBe('b on');
+  });
+
+  it('creates the state when a directive gets a property the template has an opinion on, the template winning, the directive coming back without it', async () => {
+    const width = signal<string | null>(null);
+    const { element } = renderWith(stylingOf({ name: 'style', string: () => width() }), directiveOf({ width: 'style.width.px' }, { width: 20 }));
+    expect(styleOf(element).getPropertyValue('width')).toBe('20px');
+
+    width.set('width: 30px');
+    await flush();
+    expect(styleOf(element).getPropertyValue('width')).toBe('30px');
+    expect(_hasStylingState(element, 'style')).toBe(true);
+
+    width.set(null);
+    await flush();
+    expect(styleOf(element).getPropertyValue('width')).toBe('20px');
+  });
+
+  it('creates the state when a directive gets a key the template has, written directly so far', async () => {
+    const key = signal<string | null>(null);
+    const { element } = renderWith(stylingOf({ name: 'class', string: () => 'a b' }), directiveOf({ kind: 'class' }, { kind: () => key() }));
+    key.set('c');
+    await flush();
+    expect(_hasStylingState(element, 'class')).toBe(false);
+
+    key.set('b');
+    await flush();
+    expect(element.className).toBe('a b');
+    expect(_hasStylingState(element, 'class')).toBe(true);
+  });
+
+  it('gives back the level below when a source of a shared key is destroyed', () => {
+    for (const attribute of ['class', 'style'] as const) {
+      const element = document.createElement('div');
+      const key = attribute === 'class' ? 'class.on' : 'style.width.px';
+      bindComponent(element, { value: key }, { value: attribute === 'class' ? true : 10 });
+      const directive = bindDirective(element, directiveOf({ value: key }, { value: attribute === 'class' ? false : 20 }), 0);
+      expect(_hasStylingState(element, attribute)).toBe(true);
+      expect(attribute === 'class' ? element.className : styleOf(element).getPropertyValue('width')).toBe(attribute === 'class' ? '' : '20px');
+
+      clear(directive);
+      expect(attribute === 'class' ? element.className : styleOf(element).getPropertyValue('width')).toBe(attribute === 'class' ? 'on' : '10px');
+    }
+  });
+
+  it('keeps the values of a binding without slots in the sources of the element, as the one of an element applying structural directives', async () => {
+    const kind = signal('a b');
+    const element = document.createElement('div');
+    _prepareStyling(element, elementOf({ styling: 3, structuralDirectives: [{ selector: 'visible' }] }));
+    const styling: _RenderStyling = { name: 'class', string: () => kind(), setter: _setReactiveStyling };
+    _setReactiveStyling(_scope(null, EMPTY_LAYOUT), element, styling);
+    kind.set('b c');
+    await flush();
+    expect(element.className).toBe('b c');
+    expect(getElementSources(element)!.class).toEqual({ site: styling, values: 'b c' });
+
+    // Without values first, then with them
+    const width = signal<string | undefined>(undefined);
+    const structural = document.createElement('div');
+    _prepareStyling(structural, elementOf({ styling: 3, structuralDirectives: [{ selector: 'visible' }] }));
+    const style: _RenderStyling = { name: 'style', string: () => width(), setter: _setReactiveStyling };
+    _setReactiveStyling(_scope(null, EMPTY_LAYOUT), structural, style);
+    expect(getElementSources(structural)!.style).toBe(style);
+    width.set('width: 1px');
+    await flush();
+    expect(styleOf(structural).getPropertyValue('width')).toBe('1px');
+
+    // A static binding on an element merging its attributes too
+    const statics = document.createElement('div');
+    _prepareStyling(statics, elementOf({ styling: 3, structuralDirectives: [{ selector: 'visible' }] }));
+    const binding: _RenderStyling = { name: 'class', text: 'a', statics: ['a', true], setter: _setStyling };
+    _setStyling(_scope(null, EMPTY_LAYOUT), statics, binding);
+    expect(getElementSources(statics)!.class).toBe(binding);
+    bindComponent(statics, { a: 'class.a' }, { a: false });
+    expect(statics.className).toBe('a');
+    expect(_hasStylingState(statics, 'class')).toBe(true);
+  });
+
+  it('merges a branch, which keeps no slot, in a state created at its first write', () => {
+    const element = document.createElement('div');
+    const branch: _RenderStyling = { name: 'class', keys: ['on'], values: [() => true], setter: _setExpressionStyling, unbind: _removeStyling };
+    _setExpressionStyling(_scope(null, EMPTY_LAYOUT), element, branch);
+    expect(element.className).toBe('on');
+    expect(_hasStylingState(element, 'class')).toBe(true);
   });
 });

@@ -4,7 +4,7 @@ Helps Claude Code write applications with Xaendar.
 
 | Component | What it does |
 | --- | --- |
-| `xaendar` skill | Loaded automatically on Xaendar code. It covers the project layout, the template language, the component, directive and signal APIs, `createComponent`, the stylesheets, the code conventions, the compiler and runtime errors, the idiomatic patterns (stores, async data, forms, routing, theming, DOM work, lazy loading, server-side rendering) and the porting of Angular code. |
+| `xaendar` skill | Loaded automatically on Xaendar code. It covers the project layout, the template language, the component, directive and signal APIs, the built-in directives of `@xaendar/directives`, `createComponent`, the stylesheets, the code conventions, the compiler and runtime errors, the idiomatic patterns (stores, async data, forms, routing, theming, DOM work, lazy loading, server-side rendering) and the porting of Angular code. |
 | `/xaendar:new-component <selector> [folder] [description]` | Scaffolds a component with `xd generate component`, and can implement it, test it and use it in a parent template. |
 | `/xaendar:new-directive <selector> [custom\|structural] [folder] [description]` | Creates a custom or structural directive, and can apply it in a template. |
 | `/xaendar:check [folder]` | Runs `xd build` and reports the template, stylesheet and type errors of the project. |
@@ -39,10 +39,10 @@ The references follow the documentation site:
 
 | Reference | Source |
 | --- | --- |
-| `skills/xaendar/references/api.md` | `src/docs/src/pages/reference/api/packages/<package>.data.ts` and the texts in `src/docs/src/i18n/api/en/<package>.json` |
+| `skills/xaendar/references/api.md` | `src/docs/src/pages/reference/api/packages/<package>.data.ts` and the texts in `src/docs/src/i18n/api/en/<package>.json`; for `@xaendar/directives`, which has no API pages, the Directives section of the site and the JSDoc of `packages/directives/src` |
 | `skills/xaendar/references/errors.md` | `src/docs/src/pages/reference/errors/errors.data.ts` and the `errors` texts of `src/docs/src/i18n/en.json`, plus the compiler and runtime messages the site does not list yet |
 | `skills/xaendar/references/template-syntax.md` | the Template syntax cheat sheet and the Templates guides |
-| `skills/xaendar/references/patterns.md` | the Patterns section, the Inner HTML page of the Directives section, Using DOM APIs, Creating components in code, Selectors and registration |
+| `skills/xaendar/references/patterns.md` | the Patterns section, the Inner HTML and Component outlet pages of the Directives section, Using DOM APIs, Creating components in code, Selectors and registration |
 | `skills/xaendar/references/angular.md` | the Coming from Angular page |
 
 Update them, and the skills using what changed, when the framework or the docs change.

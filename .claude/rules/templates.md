@@ -6,27 +6,21 @@ paths:
 
 # Templates
 
-Applies to every Xaendar template (`*.xd.component.html`), including the template fragments in `src/docs/src/snippets`.
+Every Xaendar template, the fragments in `src/docs/src/snippets` included.
 
 ## Order inside an opening tag
-
-After the tag name, write the items of the opening tag in this order:
 
 1. element ref: `#name`
 2. conditional structural directives: `@if (…) { *name(…) }`
 3. structural directives: `*name(…)`
 4. conditional directives: `@if (…) { @@name(…) }`
 5. directives: `@@name(…)`
-6. conditional attributes (and component inputs): `@if (…) { name="…" }`
-7. attributes (and component inputs, two-way bindings included), then class bindings, then style bindings: `name="…"`, `[(name)]="signal"`, `class.name="{…}"`, `style.name="{…}"`
+6. conditional attributes and inputs: `@if (…) { name="…" }`
+7. attributes and inputs (two-way bindings included), then class bindings, then style bindings: `name="…"`, `[(name)]="signal"`, `class.name="{…}"`, `style.name="{…}"`
 8. conditional events: `@if (…) { (name)="…" }`
 9. events: `(name)="…"`
 
-"Conditional" means any block inside the tag: `@if` / `@else if` / `@else` and `@switch`.
-
-- The last four groups keep the same order inside the parentheses of a directive: conditional attributes, attributes, conditional events, events.
-- Keep each conditional block to a single group when you can. When the branches of one condition need different groups (attributes in one, listeners in the other), keep a single `@if` / `@else` and never split it into `@if (x)` … `@if (!x)` (see Conditions): the block goes in the position of its first group.
-- Inside a block, its items follow the same order.
+"Conditional" means any block in the tag (`@if`/`@else if`/`@else`, `@switch`). The last four groups keep this order inside a directive's parentheses, and items inside a block follow it too. Keep each conditional block to one group when you can; when the branches of one condition need different groups, keep a single `@if`/`@else` (never `@if (x)` … `@if (!x)`) in the position of its first group.
 
 ```html
 <button
@@ -53,8 +47,8 @@ After the tag name, write the items of the opening tag in this order:
 
 Between elements and inside a tag alike:
 
-- Never write a block for a condition and another for its negation (`@if (x) { … }` … `@if (!x) { … }`): write one `@if (x) { … } @else { … }`.
-- Never compare the same expression with several values, in separate blocks (`@if (status() === 'draft') { … }` … `@if (status() === 'done') { … }`) or in an `@else if` chain: write a `@switch (status())` with one `@case` per value (stacked `@case`s share a branch) and a `@default` when the other values need handling too. `@switch` also avoids the generated names shared by `@else if` branches.
+- Never a block for a condition and another for its negation: one `@if (x) { … } @else { … }`.
+- Never compare one expression with several values in separate blocks or an `@else if` chain: one `@switch` with a `@case` per value (stacked `@case`s share a branch) and a `@default` when needed. `@switch` also avoids the generated names shared by `@else if` branches.
 
 ```html
 @switch (status()) {
@@ -73,7 +67,7 @@ Between elements and inside a tag alike:
 
 ## @let
 
-Use a `@let`, also called a template variable, to name a part of a signal the template reads several times, instead of a getter that only shortens the access. Computations stay in the class (`computed`, getters, methods).
+Use a `@let` (template variable) to name a part of a signal read several times, instead of a getter only shortening the access. Computations stay in the class (`computed`, getters, methods).
 
 ```html
 <!-- ✓ -->
@@ -86,23 +80,19 @@ Use a `@let`, also called a template variable, to name a part of a signal the te
 
 ## Spaces
 
-The language server formats the templates (Format Document, `xaendar.format.printWidth` for the width of the lines) and applies these rules:
-- An interpolation in a property binding has no spaces inside its braces: `title="{title()}"`, not `title="{ title() }"`. This holds in the parentheses of a directive too.
-- An interpolation in the text has one space on each side: `{ title() }`, not `{title()}`.
-- A control-flow keyword is followed by a space before its parenthesis: `@if (x)`, not `@if(x)`. The braces follow JavaScript: `{` after a space on the line of the keyword, `}` on a line of its own, except the one before an `@else`, an `@empty`, a `@placeholder`, a `@catch`, a `@loading` or an `@error` (`} @else {`, `} @empty {`, `} @placeholder {`, `} @catch (error) {`, `} @loading {`, `} @error (error) {`).
+The language server formats templates (Format Document, width `xaendar.format.printWidth`) with these rules:
+- Property-binding interpolations have no inner spaces (`title="{title()}"`), in directive parentheses too; text interpolations have one on each side (`{ title() }`).
+- A control-flow keyword is followed by a space (`@if (x)`). Braces follow JavaScript: `{` after a space on the keyword's line, `}` on its own line, except before `@else`, `@empty`, `@placeholder`, `@catch`, `@loading`, `@error` (`} @else {`, `} @empty {`, `} @placeholder {`, `} @catch (error) {`, `} @loading {`, `} @error (error) {`).
 
-## Names
+## Names and self-closing
 
-Never use one-letter names in templates either: `@for` items and aliases (`@for (row of rows(); track row.id; index = $index)`, not `r` / `i`).
-
-## Self-closing tags
-
-Self-close every element without content, native ones included: `<div class="spacer" />`, not `<div class="spacer"></div>`. Void elements require it (`<input />`).
+- No one-letter names: `@for (row of rows(); track row.id; index = $index)`, not `r`/`i`.
+- Self-close every element without content, native ones included (`<div class="spacer" />`); void elements require it (`<input />`).
 
 ## Line breaks
 
-- `<pre>` keeps its content exactly as written: never reformat inside it.
-- An element that contains another element puts each child on its own line, indented one level, and its closing tag on its own line:
+- Never reformat inside `<pre>`.
+- An element containing another element puts each child on its own line, indented, and its closing tag on its own line:
 
   ```html
   <tr>
@@ -112,13 +102,12 @@ Self-close every element without content, native ones included: `<div class="spa
     <td>Every connection, before the render</td>
   </tr>
   ```
+- Every element and block starts on its own line after another node, even if written on one line (`</button> <button>`): the formatter breaks the line and drops the space, so write `{ ' ' }` when it matters. A text is never separated from the element following it (`Use <code>x</code>.` stays on one line), and nothing is moved next to a comment or into `<pre>`.
+- An element with only text and interpolations stays on one line (`<span class="count">{ total } items</span>`) while its opening tag is short and the line within ~120 characters; otherwise the text goes on its own indented line, unless it already touches both tags (`<x-card>Text</x-card>`): on its own line it would gain spaces at both ends, visible when the content flows inline.
+- An opening tag over the width wraps like the default HTML formatter: items fill each line up to the width, next lines indented, `>` (or `/>`) ending the last. A tag containing a conditional block has one item per line and `>` (or `/>`) on its own line, as above.
+- Control-flow blocks, in a tag or between elements, are never inline: one block per line, content indented.
 
-- Every element and block starts on a line of its own after another node, also when the template had them on one line (`</button> <button>`): the formatter writes a line break there and the space is dropped, so write `{ ' ' }` when it matters. A text is never separated from the element that follows it (`Use <code>x</code>.` stays on one line), and nothing is moved next to a comment or inside `<pre>`.
-- An element that contains only text and interpolations stays on one line (`<span class="count">{ total } items</span>`), as long as its opening tag is short and the line stays within about 120 characters. Otherwise, the text goes on its own line, indented one level. Exception: text that already touches both tags (`<x-card>Text</x-card>`) stays inline even when long, because on its own line it would gain spaces at both ends, and they are visible when the content flows inline (slotted next to other content, for example).
-- An opening tag that does not fit the line (`xaendar.format.printWidth`) is wrapped like the default HTML formatter does: the items fill each line up to the width, the next lines indented one level, and `>` (or `/>`) ends the last line. A tag that contains a conditional block has one item per line instead, indented one level, and ends with `>` (or `/>`) on its own line, as in the example above.
-- Control-flow blocks, inside a tag or between elements, are never inline: one block per line, with its content indented.
-
-Xaendar keeps the line breaks inside a text, as HTML does, and drops whitespace-only text holding a line break; a space between two elements or interpolations on the same line stays. As a result:
+Xaendar keeps line breaks inside a text, as HTML does, and drops whitespace-only text holding a line break; a space between two elements or interpolations on the same line stays. So:
 - wrapped lines of text keep their words apart;
-- two elements separated only by a line break render joined: write `{ ' ' }` between them when the space matters;
-- punctuation that follows an element stays on that element's line (`<code>a</code>,`). On a line of its own, it would get a space before it.
+- two elements separated only by a line break render joined: write `{ ' ' }` when the space matters;
+- punctuation after an element stays on its line (`<code>a</code>,`): on its own line it would get a space before it.

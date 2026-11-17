@@ -5,11 +5,13 @@ import { HostAttribute } from '../../decorators/host-attribute/host-attribute.de
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { _Context } from '../../types/context.type';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
+import type { RenderElementConditionalBinding } from '../../types/render-element-conditional-binding.type';
+import type { RenderElement } from '../../types/render-element.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
-import { _hasAttributeState } from '../attribute-state/attribute-state.util';
+import { _hasAttributeState, _mergeAttributes } from '../attribute-state/attribute-state.util';
 import { _scope, clear, EMPTY_LAYOUT, refresh, update } from '../context/context.util';
 import { _defineDirective } from '../directive-registry/directive-registry.util';
-import { _bindHost } from '../host-bindings/host-bindings.util';
+import { _applyHostAttributes, _bindHost } from '../host-bindings/host-bindings.util';
 import { _removeAttribute, _setExpressionProperty } from '../render-element/render-element.util';
 import { _prepareAttributes, _setAttribute, _setExpressionAttribute, _setReactiveAttribute, removeTemplateAttribute, writeTemplateAttribute } from './attribute-binding.util';
 
@@ -71,6 +73,22 @@ function bindComponent(element: Element, properties: Record<string, string>, mem
  */
 const sharedOf = (name: string, value: RenderElementAttribute['value']): RenderElementAttribute => ({ name, value, setter: _setReactiveAttribute, shared: true });
 
+/**
+ * Describes a `div` of a template.
+ */
+const elementOf = (members: Omit<RenderElement, 'tagName'>): RenderElement => ({ tagName: 'div', ...members });
+
+/**
+ * Describes the branch of a conditional binding applying a directive.
+ */
+const branchApplying = (selector: string): RenderElementConditionalBinding[] => [{ branches: [{ condition: () => false, directives: [{ selector }] }] }];
+
+/**
+ * Creates the states of attributes, as for an element a branch of which applies a directive not registered yet, which
+ * may write any of them.
+ */
+const prepareAll = (element: Element, shared: string[]) => _prepareAttributes(element, elementOf({ shared, sharedAlways: true, conditionalBindings: branchApplying('not-registered-yet') }));
+
 describe('attributes written with attr.', () => {
   it('write the attribute of a component, never its input of the same name', async () => {
     const element = document.createElement('div') as unknown as Omit<HTMLElement, 'title'> & { title: unknown };
@@ -112,7 +130,7 @@ describe('merging the template, the directives and the component', () => {
       const id = signal<string | null>('template');
       const attribute = sharedOf('id', () => id());
       const scope = _scope(null, EMPTY_LAYOUT);
-      _prepareAttributes(element, ['id'], true);
+      prepareAll(element, ['id']);
       templateFirst && _setReactiveAttribute(scope, element, attribute);
       const component = bindComponent(element, { id: 'id' }, { id: 'component' });
       templateFirst || _setReactiveAttribute(scope, element, attribute);
@@ -132,7 +150,7 @@ describe('merging the template, the directives and the component', () => {
   it('lets the template win over a directive, the component coming back once the directive is destroyed, the template staying', async () => {
     const element = document.createElement('div');
     bindComponent(element, { id: 'id' }, { id: 'component' });
-    _prepareAttributes(element, ['id'], true);
+    prepareAll(element, ['id']);
     const template = signal<string | null>(null);
     _setReactiveAttribute(_scope(null, EMPTY_LAYOUT), element, sharedOf('id', () => template()));
     const directive = bindDirective(element, directiveOf({ id: 'id' }, { id: 'directive' }), 0);
@@ -151,7 +169,7 @@ describe('merging the template, the directives and the component', () => {
 
   it('removes for false an attribute the component writes, but writes "false" on aria-* and enumerated attributes', () => {
     const element = document.createElement('div');
-    _prepareAttributes(element, ['hidden', 'aria-expanded', 'spellcheck'], true);
+    prepareAll(element, ['hidden', 'aria-expanded', 'spellcheck']);
     bindComponent(element, { hidden: 'hidden', expanded: 'aria-expanded', spellcheck: 'spellcheck' }, { hidden: true, expanded: true, spellcheck: true });
     const scope = _scope(null, EMPTY_LAYOUT);
     _setExpressionAttribute(scope, element, sharedOf('hidden', () => false));
@@ -164,7 +182,7 @@ describe('merging the template, the directives and the component', () => {
 
   it('gives back the value below when the branch binding the attribute is no longer selected', () => {
     const element = document.createElement('div');
-    _prepareAttributes(element, ['title'], true);
+    prepareAll(element, ['title']);
     bindComponent(element, { title: 'title' }, { title: 'component' });
     const attribute: RenderElementAttribute = { name: 'title', value: 'branch', setter: _setAttribute, unbind: _removeAttribute, shared: true };
     const scope = _scope(null, EMPTY_LAYOUT);
@@ -190,32 +208,78 @@ describe('merging the template, the directives and the component', () => {
     removeTemplateAttribute(element, { name: 'title', value: 'a', setter: _setAttribute });
     expect(element.hasAttribute('title')).toBe(false);
   });
+
+  it('keeps no state for an attribute a single level writes, on an element whose other attributes are merged', () => {
+    _defineDirective('mergeOne', directiveOf({ id: 'id', role: 'role' }, { id: 'directive', role: 'note' }));
+    const element = document.createElement('div');
+    _prepareAttributes(element, elementOf({ shared: ['id', 'title'], directives: [{ selector: 'mergeOne' }] }));
+    const scope = _scope(null, EMPTY_LAYOUT);
+    _setExpressionAttribute(scope, element, sharedOf('id', () => 'template'));
+    _setExpressionAttribute(scope, element, sharedOf('title', () => 'title'));
+    const directive = bindDirective(element, directiveOf({ id: 'id', role: 'role' }, { id: 'directive', role: 'note' }), 0);
+    expect([element.getAttribute('id'), element.getAttribute('title'), element.getAttribute('role')]).toEqual(['template', 'title', 'note']);
+    expect([_hasAttributeState(element, 'id'), _hasAttributeState(element, 'title'), _hasAttributeState(element, 'role')]).toEqual([true, false, false]);
+
+    clear(directive);
+    expect([element.getAttribute('id'), element.getAttribute('title'), element.hasAttribute('role')]).toEqual(['template', 'title', false]);
+  });
+
+  it('keeps no state, on an element merging all its attributes, for the ones a single level writes, whatever writes first', () => {
+    const Directive = directiveOf({ id: 'id', role: 'role' }, { id: 'directive', role: 'note' });
+    for (const templateFirst of [true, false]) {
+      const element = document.createElement('div');
+      _mergeAttributes(element);
+      const write = () => {
+        writeTemplateAttribute(element, { name: 'id', value: 'template', setter: _setAttribute }, 'template');
+        writeTemplateAttribute(element, { name: 'title', value: 'title', setter: _setAttribute }, 'title');
+      };
+      templateFirst && write();
+      _applyHostAttributes(new Directive(), element);
+      templateFirst || write();
+      expect([element.getAttribute('id'), element.getAttribute('title'), element.getAttribute('role')]).toEqual(['template', 'title', 'note']);
+      expect([_hasAttributeState(element, 'id'), _hasAttributeState(element, 'title'), _hasAttributeState(element, 'role')]).toEqual([true, false, false]);
+    }
+  });
 });
 
 describe('_prepareAttributes', () => {
-  it('creates every state a branch applying directives may need', () => {
+  it('creates the states the directives of the branches may need, every one for a directive not registered yet', () => {
     const element = document.createElement('div');
-    _prepareAttributes(element, ['id', 'title'], true);
+    prepareAll(element, ['id', 'title']);
     expect(_hasAttributeState(element, 'id')).toBe(true);
     expect(_hasAttributeState(element, 'title')).toBe(true);
+
+    // A registered one only the ones it declares, nested branches included
+    _defineDirective('branchTitle', directiveOf({ title: 'title' }, {}));
+    _defineDirective('branchNothing', directiveOf({}, {}));
+    const declared = document.createElement('div');
+    const nested: RenderElementConditionalBinding[] = [{ branches: [{ condition: () => false, directives: [{ selector: 'branchNothing' }], conditionalBindings: branchApplying('branchTitle') }, { condition: () => false }] }];
+    _prepareAttributes(declared, elementOf({ shared: ['id', 'title'], sharedAlways: true, conditionalBindings: nested }));
+    expect(_hasAttributeState(declared, 'title')).toBe(true);
+    expect(_hasAttributeState(declared, 'id')).toBe(false);
+
+    // A directive applied by its class
+    const byClass = document.createElement('div');
+    _prepareAttributes(byClass, elementOf({ shared: ['title'], sharedAlways: true, conditionalBindings: [{ branches: [{ condition: () => false, directives: [{ selector: directiveOf({ title: 'title' }, {}) }] }] }] }));
+    expect(_hasAttributeState(byClass, 'title')).toBe(true);
   });
 
   it('creates the states of the attributes the directives of the element write with their host attributes, none on a native element', () => {
     _defineDirective('prepareAttributes', directiveOf({ id: 'id' }, {}));
     _defineDirective('prepareNothing', directiveOf({ kind: 'class' }, {}));
     const element = document.createElement('div');
-    _prepareAttributes(element, ['id', 'title'], false, [{ selector: 'prepareNothing' }, { selector: 'prepareAttributes' }]);
+    _prepareAttributes(element, elementOf({ shared: ['id', 'title'], directives: [{ selector: 'prepareNothing' }, { selector: 'prepareAttributes' }] }));
     expect(_hasAttributeState(element, 'id')).toBe(true);
     expect(_hasAttributeState(element, 'title')).toBe(false);
 
     const native = document.createElement('div');
-    _prepareAttributes(native, ['id'], false);
+    _prepareAttributes(native, elementOf({ shared: ['id'] }));
     expect(_hasAttributeState(native, 'id')).toBe(false);
   });
 
   it('creates every state on a custom element not defined yet, the ones its component writes on a defined one', () => {
     const pending = document.createElement('x-attributes-not-defined');
-    _prepareAttributes(pending, ['id', 'title'], false);
+    _prepareAttributes(pending, elementOf({ shared: ['id', 'title'] }));
     expect(_hasAttributeState(pending, 'id')).toBe(true);
     expect(_hasAttributeState(pending, 'title')).toBe(true);
 
@@ -223,7 +287,7 @@ describe('_prepareAttributes', () => {
     Object.defineProperty(Component, Symbol.for('Symbol.metadata'), { value: metadataOf({ title: 'title' }, {}) });
     customElements.define('x-prepare-attributes', Component);
     const element = document.createElement('x-prepare-attributes');
-    _prepareAttributes(element, ['id', 'title'], false);
+    _prepareAttributes(element, elementOf({ shared: ['id', 'title'] }));
     expect(_hasAttributeState(element, 'id')).toBe(false);
     expect(_hasAttributeState(element, 'title')).toBe(true);
   });

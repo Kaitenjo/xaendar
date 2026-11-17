@@ -1,9 +1,9 @@
 import { INTERNAL_HOST_DIRECTIVES, INTERNAL_HOST_ATTRIBUTES } from '../../costants';
 import type { HostStylingRun } from '../../models/host-styling-run/host-styling-run';
-import type { StylingOpinions } from '../../types/styling/styling-opinions.type';
+import { addHostRun, getElementSources, removeHostRun } from '../element-sources/element-sources.util';
 import { getWebComponentMetadata } from '../get-metadata/get-metadata.util';
-import { addHostStylingSource, applyDirectStyling, createStylingState, getStylingState, hasHostStylingSources, removeHostStylingSource, removeStylingSource, setStylingSource } from '../styling-state/styling-state.util';
-import { keyOpinion, stringOpinions, toExactLength } from '../styling-opinions/styling-opinions.util';
+import { hostKeys, hostString } from '../styling-opinions/styling-opinions.util';
+import { applyDirectStyling, createStylingState, removeStylingSource, setHostStyling, sharesNewKey } from '../styling-state/styling-state.util';
 
 /**
  * The flags of the host attributes of `class` and `style` each class declares, computed once per class.
@@ -11,61 +11,56 @@ import { keyOpinion, stringOpinions, toExactLength } from '../styling-opinions/s
 const stylingFlags = new WeakMap<object, number>();
 
 /**
- * Registers a run of host attributes of `class` or of `style` on its element, as a source of the attribute: when
- * another host source of the attribute was bound on the element before, and the element has no state yet, the state
- * merging them is created, holding the one bound before.
+ * Registers a run of host attributes of `class` or of `style` on its element, so that the sources writing the same keys
+ * find it (see `sharesNewKey`).
  *
  * @param run - The run, not run yet.
  */
 export function registerHostStyling(run: HostStylingRun): void {
-  const { element, attribute } = run;
-  // The state takes the sources registered before this one, which registers in it once it runs
-  if (hasHostStylingSources(element, attribute) && !getStylingState(element, attribute)) {
-    createStylingState(element, attribute);
-  }
-
-  addHostStylingSource(element, attribute, run);
+  addHostRun(run);
 }
 
 /**
- * Computes the opinions of the host attributes of a run, reading the members of its owner (a member holding a signal or
- * any function is called), and writes them: through the state of the element, when it has one, otherwise directly, only
- * the keys whose value changed since the last run. The callback of the effect of the run.
+ * Computes the values of the host attributes of a run, reading the members of its owner (a member holding a signal or
+ * any function is called), and writes their opinions: through the state of the element, when it has one, otherwise
+ * directly, only the keys whose value changed since the last run. A key another source has an opinion on creates the
+ * state merging them. The callback of the effect of the run.
  *
  * @param run - The run.
  */
 export function applyHostStyling(run: HostStylingRun): void {
   const { host, element, attribute, bindings } = run;
-  let keys: Array<string | boolean> | null = null;
-  let string: StylingOpinions | null = null;
+  const single = bindings.length === 1;
+  const values = single ? undefined : new Array<unknown>(bindings.length);
+  let value: unknown;
   for (let i = 0; i < bindings.length; i++) {
-    const { name, unit, read } = bindings[i];
-    const member = read(host);
-    const value = typeof member === 'function' ? member() : member;
-    if (!name) {
-      string = stringOpinions(attribute, value);
-      continue;
-    }
-
-    const opinion = keyOpinion(attribute, value, unit ?? '');
-    if (opinion !== undefined) {
-      keys ? keys.push(name, opinion) : keys = [name, opinion];
+    const member = bindings[i].read(host);
+    value = typeof member === 'function' ? member() : member;
+    if (!single) {
+      (values as unknown[])[i] = value;
     }
   }
 
-  if (keys) {
-    keys = toExactLength(keys) as Array<string | boolean>;
-  }
-
-  const state = getStylingState(element, attribute);
-  if (state) {
-    setStylingSource(state, element, run, keys, string);
+  const previous = run.values;
+  run.values = single ? value : values;
+  const record = getElementSources(element);
+  if (Array.isArray(record?.[attribute])) {
+    setHostStyling(element, record!, run, previous);
     return;
   }
 
-  applyDirectStyling(element, attribute, run.keys, run.string, keys, string);
-  run.keys = keys;
-  run.string = string;
+  const previousKeys = hostKeys(run, previous);
+  const previousString = hostString(run, previous);
+  const keys = hostKeys(run, run.values);
+  const string = hostString(run, run.values);
+  if (record && sharesNewKey(record, attribute, run, previousKeys, previousString, keys, string)) {
+    // The state holds the run, which writes its new values through it
+    createStylingState(element, attribute);
+    setHostStyling(element, record, run, previous);
+    return;
+  }
+
+  applyDirectStyling(element, attribute, previousKeys, previousString, keys, string);
 }
 
 /**
@@ -76,16 +71,14 @@ export function applyHostStyling(run: HostStylingRun): void {
  */
 export function removeHostStyling(run: HostStylingRun): void {
   const { element, attribute } = run;
-  removeHostStylingSource(element, attribute, run);
-  const state = getStylingState(element, attribute);
-  if (state) {
-    removeStylingSource(state, element, run);
+  if (Array.isArray(getElementSources(element)?.[attribute])) {
+    removeStylingSource(element, attribute, run);
   } else {
-    applyDirectStyling(element, attribute, run.keys, run.string, null, null);
+    applyDirectStyling(element, attribute, hostKeys(run, run.values), hostString(run, run.values), null, null);
   }
 
-  run.keys = null;
-  run.string = null;
+  removeHostRun(run);
+  run.values = undefined;
 }
 
 /**

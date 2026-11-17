@@ -7,9 +7,9 @@ paths:
 
 ## Types
 
-- Respect `tsconfig.json` (strict). Explicitly type parameters and return values of public functions (`public-api.ts`).
-- No implicit `any`: use precise types or `unknown` + narrowing. Unavoidable casts go through `as unknown as <T>`.
-- A global the DOM library of TypeScript lacks (`trustedTypes`, a property of `window`) is declared by module augmentation in a `.d.ts` of the package (`src/globals.d.ts`, `src/window.d.ts`), with its type in a `*.type.ts`: never cast `window` or `globalThis` to read it.
+- Respect the strict `tsconfig.json`; explicitly type parameters and return values of public functions (`public-api.ts`).
+- No implicit `any`: precise types or `unknown` + narrowing. Unavoidable casts go through `as unknown as <T>`.
+- A global the TS DOM library lacks (`trustedTypes`, a `window` property) is declared by module augmentation in a `.d.ts` of the package (`src/globals.d.ts`, `src/window.d.ts`), its type in a `*.type.ts`; never cast `window` or `globalThis` to read it. A `window`-only property goes in `interface Window { … }` inside `declare global`.
 
   ```ts
   // ✗
@@ -21,23 +21,21 @@ paths:
   }
   export { };
   ```
-
-  A property of `window` only goes in `interface Window { … }` inside `declare global`.
-- Handle optionals explicitly: `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess` are off, so validate at runtime where it matters.
-- Derive a type from the ones it depends on (`Pick`, `Omit`, `Exclude`, `Extract`, `Parameters`, `ReturnType`, etc..., mapped types, indexed access such as `Type['member']`, ...) instead of redefining it from scratch: when the source type changes, the derived one follows. Declare a new standalone type only for members that exist nowhere else.
-- Prefer `readonly` on properties/arrays that shouldn't be reassigned, especially in shared models under `packages/common/src/models`.
+- `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess` are off: handle optionals explicitly and validate at runtime where it matters.
+- Derive a type from its sources (`Pick`, `Omit`, `Exclude`, `Extract`, `Parameters`, `ReturnType`, mapped types, `Type['member']`…) instead of redefining it, so it follows them; declare a standalone type only for members that exist nowhere else.
+- Prefer `readonly` on properties/arrays never reassigned, especially in `packages/common/src/models`.
 
 ## Imports
 
-- Use `import type { ... }` for type-only imports.
-- No undeclared side-effect-only imports (`noUncheckedSideEffectImports` is on).
-- Each package exposes its public API only via `src/public-api.ts`. Never import another package's internal files: use the `@xaendar/*` aliases from `tsconfig.json`.
+- `import type { ... }` for type-only imports.
+- No undeclared side-effect-only imports (`noUncheckedSideEffectImports`).
+- A package exposes its API only via `src/public-api.ts`; import other packages through the `@xaendar/*` aliases, never their internal files.
 
 ## File layout (`packages/*/src`)
 
-- Name files with the existing suffixes: `*.type.ts`, `*.model.ts`, `*.utils.ts`, `*.decorator.ts`, `*.spec.ts`.
-- One file per folder: `pippo.<suffix>.ts` lives in `pippo/` (named after the part before the first dot), together only with its `pippo.<suffix>.spec.ts`. Nested grouping sub-folders are fine (e.g. `plugin/plugin-utils/plugin.utils.ts`). Exempt: `public-api.ts` and `index.ts` directly under `src/`.
-- Every `type` and `interface` has a `<name>.type.ts` of its own (`ServerShadowRoot` → `server-shadow-root.type.ts`), helper types included, exported and imported with `import type`: never declared in a `*.utils.ts`, `*.model.ts`, `*.state.ts` or any other file. It goes in the nearest `types/` folder, or the one fitting what it describes (`dom/types/` for the server DOM). Specs are exempt.
-- A `*.type.ts` has no spec, so it gets no folder of its own: it sits directly in `types/` (`types/server-output.type.ts`, not `types/server-output/server-output.type.ts`), or in a sub-folder grouping several types (`types/tokens/`).
-- Before adding a spec for a file not yet isolated this way, create its folder and move the file into it.
-- Every new `*.utils.ts`/`*.model.ts` with executable logic needs a Vitest `*.spec.ts`: coverage must stay at 100%.
+- Existing suffixes: `*.type.ts`, `*.model.ts`, `*.utils.ts`, `*.decorator.ts`, `*.spec.ts`.
+- One file per folder: `pippo.<suffix>.ts` lives in `pippo/` (the part before the first dot) with only its `pippo.<suffix>.spec.ts`. Grouping sub-folders are fine (`plugin/plugin-utils/plugin.utils.ts`); `public-api.ts` and `index.ts` directly under `src/` are exempt.
+- Every `type` and `interface` has its own `<name>.type.ts` (`ServerShadowRoot` → `server-shadow-root.type.ts`), helper types included, imported with `import type`; never declared in a `*.utils.ts`, `*.model.ts`, `*.state.ts` or other file. It goes in the nearest `types/` folder or the one fitting what it describes (`dom/types/`). Specs are exempt.
+- A `*.type.ts` has no spec, hence no folder of its own: it sits directly in `types/` (`types/server-output.type.ts`, not `types/server-output/server-output.type.ts`) or in a grouping sub-folder (`types/tokens/`).
+- Before adding a spec for a file not isolated this way, create its folder and move it there.
+- Every new `*.utils.ts`/`*.model.ts` with logic needs a `*.spec.ts`: coverage stays at 100%.

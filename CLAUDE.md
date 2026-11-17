@@ -4,68 +4,92 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Xaendar is a framework for building Web Components declaratively, using a template language that extends HTML5. No virtual DOM, no component-level re-renders: the compiler turns each template into code creating its DOM nodes, and every binding of a node (element, attribute, or text node) becomes an effect on the exact signal(s) it reads at runtime, so a signal change updates only the nodes that read it. The variables of a template (the item of a `@for`, `$index`, a `@let`, the parameters of a `<template>`) are plain values, not signals: a scope whose variables change runs again only the bindings the compiler found reading them, and a binding reading no signal is no effect at all.
+Xaendar builds Web Components declaratively from a template language extending HTML5. No virtual DOM, no component re-renders: the compiler turns each template into code creating its DOM nodes, and every binding (element, attribute, text) becomes an effect on the exact signals it reads at runtime. Template variables (a `@for` item, `$index`, a `@let`, `<template>` parameters) are plain values, not signals: a scope whose variables change reruns only the bindings the compiler found reading them, and a binding reading no signal is no effect at all.
 
-This is a monorepo of the framework's own client libraries, published as separate `@xaendar/*` npm packages, all consumed under TS path aliases (`@xaendar/build-tools`, `@xaendar/common`, `@xaendar/core`, `@xaendar/compiler`, `@xaendar/directives`, `@xaendar/language-core`, `@xaendar/signals`, `@xaendar/ssr`, `@xaendar/ssr-compiler`, `@xaendar/types`, plus the `@xaendar/core/signals`, `@xaendar/core/testing` and `@xaendar/ssr/dom` entry points) defined once in the root `tsconfig.json`. `vitest.config.ts` reuses that same `paths` map as its single source of truth for aliasing in tests — don't duplicate alias definitions elsewhere.
+This monorepo holds the framework's libraries, published as separate `@xaendar/*` packages. They import each other through the path aliases of the root `tsconfig.json` (`@xaendar/<name>`, plus `@xaendar/core/signals`, `@xaendar/core/testing`, `@xaendar/ssr/dom`), which `vitest.config.ts` reuses: define aliases nowhere else.
+
+## Rules
+
+`.claude/rules/` holds the conventions, loaded by path: `class-members.md`, `code-style.md`, `jsdoc.md`, `typescript.md` (every `.ts`), `templates.md`, `testing.md` (specs), `claude-plugin.md` (what to update in the plugin), one file per package in `packages/`, and `template-runtime.md`, the model `compiler`, `core`, `ssr-compiler` and `ssr` share.
 
 ## Commands
 
 ```bash
-npm run test              # run all vitest specs once
-npm run test:watch        # watch mode
-npm run test:coverage     # with coverage — 100% lines/functions/branches/statements is enforced (vitest.config.ts)
-npm run typecheck:specs   # type-checks the specs (vitest strips types): each package with its tsconfig.spec.json, plus src/docs; runs before the three commands above
-npx vitest packages/core/src/utils/context/context.util.spec.ts   # run a single spec file
-npx vitest -t "name of test"                              # run tests matching a name
+npm test                  # typecheck:specs (pretest), then every vitest spec once
+npm run test:watch        # watch mode, without typecheck:specs
+npm run test:coverage     # coverage (100% lines/functions/branches/statements enforced), without typecheck:specs
+npm run typecheck:specs   # type-checks the specs (vitest strips types): each package's tsconfig.spec.json, plus src/docs
+npx vitest packages/core/src/utils/context/context.util.spec.ts   # one spec file
+npx vitest -t "name of test"                                      # tests matching a name
+npx vitest --project directives                                   # one Vitest project: packages or directives
 
-npm run lint               # eslint .
-npm run lint:fix
+npm run lint               # eslint . (lint:fix to fix)
 
-npm run build:docs         # `xd build` of the documentation site in src/docs (output: src/docs/dist)
-npm start                  # `xd start` of the documentation site (Vite dev server on port 4200)
-npm test --prefix src/docs # `xd test`: the docs site's specs (utilities and components), with the Babel + Xaendar plugins in happy-dom
+npm run build:docs         # `xd build` of the docs site (src/docs/dist)
+npm start                  # `xd start` of the docs site (Vite, port 4200)
+npm test --prefix src/docs # `xd test`: the docs site's specs, happy-dom
 ```
 
-`src/docs` is the framework's documentation/storybook site, written in Xaendar itself and run through the linked `xd` CLI (`packages/cli`, `npm link`ed globally). It is a separate npm project (own `package.json`/lockfile/`tsconfig.json`, whose `paths` point at the packages' sources). Live examples live in `src/docs/src/examples/**` and are shown with their exact source via `?raw` globs (`src/docs/src/core/sources`); code that is shown but not run is a snippet: a TypeScript one is a `SourceFile` constant (`{ name, lang, code }`) exported by the `<page>.snippets.ts` module next to the page that shows it, imported by its template (`<docs-code snippet="{NAME}" />`), while the other languages (HTML, compiler output, JSON, shell) stay files in `src/docs/src/snippets`, referenced by path; pages are bilingual: one template per page, whose texts (HTML strings) live in `src/docs/src/i18n/en.json` / `it.json`, loaded on demand as modules of their own, by the browser and by the server alike (`core/i18n/i18n.ts`) and read with `t(translations(), 'pages.…')` (`translate` of `core/i18n/i18n.utils.ts`, imported as `t`): a plain text is interpolated in the content of its element (`<h2>{ t(translations(), 'pages.…') }</h2>`), a text holding markup or entities, in either language, is rendered by key with `@@htmlTranslation(key="pages.…")`, which translates it and sets the `innerHTML` of its element, since an interpolation shows markup as text. Both files must have the same keys (`i18n/messages.spec.ts`).
+## Documentation site (`src/docs`)
 
-The API reference is data-driven: one page component (`pages/reference/api-symbol`) renders every symbol, reached at `#/<lang>/reference/api/<package path>/<Name>`. The symbols of each package are in `pages/reference/api/packages/<package>.data.ts`, their texts in `src/docs/src/i18n/api/<lang>/<package>.json` (loaded only by that page, rendered with `@@html`), their examples in `pages/reference/api/packages/<package>.snippets.ts` (TypeScript) and `src/docs/src/snippets/api/<package>/` (the other files). `pages/reference/api/api.data.spec.ts` fails when an export of a documented package (`_`-prefixed runtime helpers excluded) has no page, when the two languages differ, and on links to symbols that don't exist: a new export needs its page.
+Written in Xaendar and run through the linked `xd` CLI (`packages/cli`, `npm link`ed globally); a separate npm project whose `tsconfig.json` `paths` point at the packages' sources.
 
-Package-level build/publish is driven from `schematics/` (its own TS project, built with `npm run build:schematics`), not from per-package npm scripts — the individual `packages/*/package.json` files have no scripts of their own:
+- Live examples: `src/docs/src/examples/**`, shown with their exact source via `?raw` globs (`src/docs/src/core/sources`).
+- Snippets (code shown, not run): TypeScript ones are `SourceFile` constants (`{ name, lang, code }`) exported by the `<page>.snippets.ts` next to the page and imported by its template (`<docs-code snippet="{NAME}" />`); other languages (HTML, compiler output, JSON, shell) are files in `src/docs/src/snippets`, referenced by path.
+- Pages are bilingual: one template per page, texts (HTML strings) in `src/docs/src/i18n/en.json`/`it.json`, loaded on demand by browser and server alike (`core/i18n/i18n.ts`); both files have the same keys (`i18n/messages.spec.ts`). A plain text is interpolated, `<h2>{ t(translations(), 'pages.…') }</h2>` (`translate` of `core/i18n/i18n.utils.ts` as `t`); a text with markup or entities in either language uses `@@htmlTranslation(key="pages.…")`, since an interpolation shows markup as text.
+- API reference: one page (`pages/reference/api-symbol`) renders every symbol at `#/<lang>/reference/api/<package path>/<Name>`, from `pages/reference/api/packages/<package>.data.ts`, texts in `src/docs/src/i18n/api/<lang>/<package>.json` (rendered with `@@html`), examples in `<package>.snippets.ts` and `src/docs/src/snippets/api/<package>/`. `api.data.spec.ts` fails when an export of a documented package (`_` helpers excluded) has no page, the languages differ, or a link targets a missing symbol: a new export needs its page. `@xaendar/directives` has no API pages (see the Directives section).
+
+## Build and release
+
+Driven from `schematics/` (its own TS project, `npm run build:schematics`): `packages/*/package.json` have no scripts.
 
 ```bash
-npm run deploy   # full release pipeline: build schematics → check:extension-token → check:dependencies → test →
-                  # typecheck:projects → update:version → build:projects → pack:projects → publish:projects →
-                  # publish-extension → npm i
-npm run build:projects        # builds each package's dist/@xaendar/<name>: Vite for "xaendar.target" browser (packages/*/vite.config.ts + root vite-config.ts), tsup for node, `xd build` of the CLI for "xaendar.library" (a Xaendar library with its manifest: @xaendar/directives)
-npm run typecheck:projects    # typechecks each package via its tsconfig.typecheck.json
-npm run check:dependencies    # depcheck across packages
+npm run deploy              # build:schematics → check:extension-token → check:dependencies → test → typecheck:projects →
+                            # update:version → build:projects → pack:projects → publish:projects → publish-extension →
+                            # tag:release (pushes the tag xaendar--v<version>) → npm i
+npm run build:projects      # each package into dist/@xaendar/<name> by "xaendar.target": Vite (browser), tsup (node),
+                            # `xd build` for a "xaendar.library" (@xaendar/directives, with its manifest)
+npm run typecheck:projects  # each package with its tsconfig.typecheck.json
+npm run check:dependencies  # depcheck across packages
+npm run build:claude-plugin # bundles packages/language-server into plugins/xaendar/server/server.cjs
+npm run release:claude-plugin  # build:claude-plugin, validate, stop if server.cjs changed, push the plugin tag
 ```
 
-Each publishable package's `vite.config.ts` just calls the shared `getViteConfig(name, dirName, options)` helper in root `vite-config.ts`: it builds `src/public-api.ts` (plus any declared `secondaryEntryPoints`, e.g. `@xaendar/core`'s `signals` and `testing` and `@xaendar/ssr`'s `dom` sub-entries) to ESM, bundles `.d.ts` files via `vite-plugin-dts`, rewrites cross-package type imports to `@xaendar/*` specifiers, and generates a trimmed `dist/@xaendar/<name>/package.json` + copies the package `README.md`.
+A browser package's `vite.config.ts` calls `getViteConfig(name, dirName, options)` of the root `vite-config.ts`: ESM build of `src/public-api.ts` plus `secondaryEntryPoints` (core's `signals`/`testing`, ssr's `dom`), `.d.ts` bundled by `vite-plugin-dts` with cross-package imports rewritten to `@xaendar/*`, a trimmed `package.json` and the `README.md`.
 
-`plugins/xaendar` is the Claude Code plugin for applications written with Xaendar (the `xaendar` skill and its references, the `check`, `test`, `new-component` and `new-directive` skills, the `xaendar-reviewer` agent and the language server bundled by `npm run build:claude-plugin`), listed by `.claude-plugin/marketplace.json`. `.claude/rules/claude-plugin.md` says what to update in it when the framework changes.
+`plugins/xaendar` is the Claude Code plugin for applications written with Xaendar (the `xaendar` skill and references, the `check`, `test`, `new-component`, `new-directive` skills, the `xaendar-reviewer` agent, the bundled language server), listed by `.claude-plugin/marketplace.json`; `.claude/rules/claude-plugin.md` says what to update in it.
+
+## Commits
+
+One commit per change, subject `@xaendar/<package>[, <package>] - Feature|Fix|Refactor|Chore: <title>` (`@xaendar/core, compiler - Fix: …`; `@xaendar/docs` for the site). Only the message: no `Co-Authored-By` or "Generated with" trailers.
 
 ## Architecture
 
-### Package pipeline
+### Packages
 
-Dependency edges below are the actual `@xaendar/*` entries in each package's `package.json` — always the source of truth over prose (verify with `node -e "console.log(require('./packages/<name>/package.json').dependencies)"` if this ever looks stale). `compiler` does **not** depend on `core` — the two are independent consumers of `types`/`common`, and it's `core` that depends on `signals`, not on `compiler`.
+`@xaendar/*` dependencies from each `package.json`, the source of truth if this looks stale. `compiler` does **not** depend on `core`: the compiled templates target core's runtime without a dependency edge.
 
-```
-types ────┬──►  signals  ──►  core  ··peer··►  ssr
-          │                      ··peer··►  directives
-          │
-common ───┼──►  compiler  ──►  language-core  ──►  language-server
-          │       │    │             │
-          │       │    ▼             │
-          │       │  ssr-compiler    │
-          │       │    │             │
-          │       └────┴─────┬───────┘
-          │                  ▼
-          └─────────────►  build-tools  ──►  cli
+| Package | Target | `@xaendar/*` dependencies | Role |
+| --- | --- | --- | --- |
+| `types` | browser | — | shared TS utility types |
+| `common` | browser | — | utilities shared by compiler, runtime and tooling |
+| `signals` | browser | common, types | TC39 Signals polyfill (`loadSignals()`) |
+| `core` | browser | common, signals, types | components, directives, decorators, template runtime |
+| `directives` | library | common, types; peer core | `@@animation`, `@@class`, `@@style`, `@@innerHtml`, `@@componentOutlet` |
+| `ssr` | browser (run by Node) | common, types; exact peer core | runtime of the rendering on the server |
+| `compiler` | node | common, types | template → render code + type-check |
+| `ssr-compiler` | node | common, compiler, types | template → server render code |
+| `language-core` | node | common, compiler | language service |
+| `language-server` | not built | compiler, language-core, types | LSP server, bundled by the extension and the plugin |
+| `build-tools` | node | common, compiler, language-core, ssr-compiler, types | Vite plugin, `buildLibrary` |
+| `cli` | node | build-tools, common | the `xd` CLI |
+| `vscode-client` | extension | — | VS Code extension, launches `language-server` |
 
-directives — also depends on common (the same external copy core uses)
-vscode-client — standalone; launches language-server as an external process (no @xaendar/* package dependency)
-```
+### Rendering on the server
 
-The rendering on the server mirrors the client pair: `ssr-compiler` (node) turns a template into a function writing HTML, reusing the generator internals `compiler` exports, and `ssr` (built with Vite like the browser packages, run by Node) is its runtime, with `renderToString` and the `loadServerDom()` of its `dom` entry. `ssr` takes `@xaendar/core` as an exact peerDependency (the dotted edge: `update:version` bumps it), so the application and the server share one copy of core's module state, and uses core's `_`-prefixed internals (`_ComponentRuntime`, `_selectBranch`, `_resolveDirective`, `_applyHostAttributes`, the hydration markers, `_encodeTrackKey` and the serializer of the state). In the browser, a component rendered on the server hydrates: its template runs with the `ClaimNodes` strategy, adopting the nodes of the server instead of creating them (see `.claude/rules/packages/template-runtime.md`); `@WebComponent({ ssr: { hydrate } })` and the `@hydrate` blocks of the templates delay it until a trigger fires, a `@hydrate` loading then the modules of the components only its content renders. An inline script after the root of the page, the event contract of `renderToString`, records what the user does until the runtime is there, which replays it after the hydration. A `@client` block is rendered only by the browser, during the hydration, in place of the `@placeholder` the server writes, and `@WebComponent({ ssr: { render: false } })` does the same for a whole component, whose module the server leaves out of the templates rendering it. The `never` trigger (`@hydrate (never)`, `ssr: { hydrate: 'never' }`) leaves the HTML of the server as it is for good. The build of a project with `ssr.staticComponents` in `xaendar.json` (off by default: a single-page application, whose router creates the pages in the browser, has almost none) finds the static components (`findStaticComponents` of `build-tools`), whose modules the browser does not load: they stay the HTML of the server, and the interactive ones they render hydrate by themselves from `data-xd-inputs`. `build-tools` compiles with `ssr-compiler` in the server environments of Vite when its `ssr` option is set; the CLI passes the `ssr` of `xaendar.json` and adds `xd new --ssr` and `xd prerender`.
+- `ssr-compiler` turns a template into a function writing HTML, on the generator internals `compiler` exports; `ssr` is its runtime (`renderToString`, `loadServerDom()` of `ssr/dom`), with `@xaendar/core` as an exact peerDependency (bumped by `update:version`) so app and server share core's module state, and using core's `_` internals (`.claude/rules/packages/core.md`).
+- In the browser a server-rendered component hydrates: its template runs with the `ClaimNodes` strategy, adopting the server nodes (`template-runtime.md`). `@WebComponent({ ssr: { hydrate } })` and `@hydrate` blocks delay it until a trigger, a `@hydrate` then loading the modules only its content renders; `never` keeps the server HTML for good.
+- The event contract, an inline script after the page root, records user events until the runtime replays them after hydration.
+- `@client` renders only in the browser, replacing the server's `@placeholder`; `@WebComponent({ ssr: { render: false } })` does it for a whole component, whose module the server leaves out.
+- With `ssr.staticComponents` in `xaendar.json` (off by default: an SPA has almost none) the build finds static components (`findStaticComponents`), whose modules the browser never loads; the interactive ones they render hydrate by themselves from `data-xd-inputs`.
+- `build-tools` compiles with `ssr-compiler` in Vite's server environments when `ssr` is set; the CLI passes `ssr` from `xaendar.json` and adds `xd new --ssr` and `xd prerender`.

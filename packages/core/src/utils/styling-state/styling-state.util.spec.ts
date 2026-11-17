@@ -1,13 +1,40 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
-import type { StylingSource } from '../../types/styling/styling-source.type';
-import type { StylingTier } from '../../types/styling/styling-tier.type';
-import { _hasStylingState, addHostStylingSource, applyDirectStyling, createStylingState, ensureStylingState, findStylingSource, getStylingState, hasHostStylingSources, removeHostStylingSource, removeStylingSource, resolveOpinion, setStylingSource, writeStylingAttribute } from './styling-state.util';
+import { HostStylingRun } from '../../models/host-styling-run/host-styling-run';
+import type { _RenderStyling } from '../../types/styling/render-styling.type';
+import type { StylingAttribute } from '../../types/styling/styling-attribute.type';
+import type { TemplateStyling } from '../../types/styling/template-styling.type';
+import { addHostRun, ensureElementSources, getElementSources } from '../element-sources/element-sources.util';
+import { toRank } from '../source-rank/source-rank.util';
+import { _hasStylingState, applyDirectStyling, createStylingState, ensureStylingState, getStylingState, keepTemplateStyling, keptValues, markStyling, removeStylingSource, resolveOpinion, setHostStyling, setTemplateStyling, sharesNewKey, writeStylingAttribute } from './styling-state.util';
 
 /**
- * Creates a source of a level and an order, without opinions.
+ * Describes a binding of the template with a string and keys bound one by one, its values being the string, then the
+ * values of the keys.
  */
-const sourceOf = (tier: StylingTier, order = 0): StylingSource => ({ owner: {}, tier, order, keys: null, string: null });
+const templateOf = (name: StylingAttribute, keys: string[] = []): _RenderStyling => ({ name, string: () => null, keys, values: keys.map(() => () => null), setter: () => undefined });
+
+/**
+ * Creates a run of host attributes with a string and keys bound one by one, at a level and an order.
+ */
+function hostOf(element: Element, attribute: StylingAttribute, tier: 1 | 2, order: number, keys: string[] = []): HostStylingRun {
+  const read = () => undefined;
+  return new HostStylingRun({} as never, element, attribute, [{ name: '', kind: attribute, read }, ...keys.map(name => ({ name, kind: attribute, read }))], toRank(tier, order));
+}
+
+/**
+ * Gives a source the values of its string and of its keys, writing them through the state of the element.
+ */
+function set(element: Element, source: _RenderStyling | HostStylingRun, string: string | null, ...keys: unknown[]): void {
+  const record = getElementSources(element)!;
+  if (source instanceof HostStylingRun) {
+    const previous = source.values;
+    source.values = [string, ...keys];
+    setHostStyling(element, record, source, previous);
+  } else {
+    setTemplateStyling(element, record, source, [string, ...keys]);
+  }
+}
 
 /**
  * The style of an element.
@@ -32,51 +59,51 @@ describe('styling state', () => {
     expect(_hasStylingState(element, 'class')).toBe(false);
 
     const state = ensureStylingState(element, 'class');
+    expect(state).toEqual([]);
     expect(ensureStylingState(element, 'class')).toBe(state);
+    expect(createStylingState(element, 'class')).toBe(state);
     expect(_hasStylingState(element, 'class')).toBe(true);
     expect(_hasStylingState(element, 'style')).toBe(false);
   });
 
   it('resolves each class by the strongest source having an opinion: template, then directives from the last, then component, keys before strings', () => {
-    const template = sourceOf(0);
-    const first = sourceOf(1, 0);
-    const second = sourceOf(1, 1);
-    const component = sourceOf(2);
-    const opinions = new Map<StylingSource, [Array<string | boolean> | null, Array<string | boolean> | null]>([
-      [template, [['t-key', false], ['t-string', true, 'shared', true]]],
-      [first, [['d-key', true, 'first-only', true], ['d-string', true, 'first-string', true]]],
-      [second, [['d-key', false], ['d-string', false, 'second-string', true]]],
-      [component, [['c-key', true, 't-key', true, 'd-string', true], ['c-string', true, 't-string', false, 'd-key', true, 'shared', false]]]
-    ]);
-
-    for (const order of permutations([template, first, second, component])) {
+    const template = templateOf('class', ['t-key']);
+    for (let attempt = 0; attempt < 24; attempt++) {
       const element = document.createElement('div');
-      const state = createStylingState(element, 'class');
+      const first = hostOf(element, 'class', 1, 0, ['d-key', 'first-only']);
+      const second = hostOf(element, 'class', 1, 1, ['d-key']);
+      const component = hostOf(element, 'class', 2, 0, ['c-key', 't-key']);
+      const writes = new Map<unknown, () => void>([
+        [template, () => set(element, template, 't-string shared', false)],
+        [first, () => set(element, first, 'd-string first-string', true, true)],
+        [second, () => set(element, second, 'second-string', false)],
+        [component, () => set(element, component, 'c-string d-key', true, true)]
+      ]);
+      createStylingState(element, 'class');
+      const order = permutations([...writes.keys()])[attempt];
       for (let i = 0; i < order.length; i++) {
-        const [keys, string] = opinions.get(order[i])!;
-        setStylingSource(state, element, { ...order[i] }, keys, string);
+        writes.get(order[i])!();
       }
 
-      expect([...element.classList].sort()).toEqual(['c-key', 'c-string', 'first-only', 'first-string', 'second-string', 'shared', 't-string']);
+      expect([...element.classList].sort()).toEqual(['c-key', 'c-string', 'd-string', 'first-only', 'first-string', 'second-string', 'shared', 't-string']);
     }
   });
 
   it('resolves each property by the strongest source having an opinion, whatever the order of registration', () => {
-    const template = sourceOf(0);
-    const directive = sourceOf(1);
-    const component = sourceOf(2);
-    const opinions = new Map<StylingSource, [Array<string | boolean> | null, Array<string | boolean> | null]>([
-      [template, [null, ['gap', '4px']]],
-      [directive, [['width', '20px'], ['color', 'blue']]],
-      [component, [['color', 'red'], ['display', 'flex', 'width', '10px', 'gap', '1px']]]
-    ]);
-
-    for (const order of permutations([template, directive, component])) {
+    const template = templateOf('style');
+    for (let attempt = 0; attempt < 6; attempt++) {
       const element = document.createElement('div');
-      const state = createStylingState(element, 'style');
+      const directive = hostOf(element, 'style', 1, 0, ['width']);
+      const component = hostOf(element, 'style', 2, 0, ['color']);
+      const writes = new Map<unknown, () => void>([
+        [template, () => set(element, template, 'gap: 4px')],
+        [directive, () => set(element, directive, 'color: blue', '20px')],
+        [component, () => set(element, component, 'display: flex; width: 10px; gap: 1px', 'red')]
+      ]);
+      createStylingState(element, 'style');
+      const order = permutations([...writes.keys()])[attempt];
       for (let i = 0; i < order.length; i++) {
-        const [keys, string] = opinions.get(order[i])!;
-        setStylingSource(state, element, { ...order[i] }, keys, string);
+        writes.get(order[i])!();
       }
 
       const style = styleOf(element);
@@ -86,155 +113,174 @@ describe('styling state', () => {
 
   it('gives back the value of the source below when a source loses its opinion or is removed, and leaves the keys of the others', () => {
     const element = document.createElement('div');
-    const state = createStylingState(element, 'style');
-    const template = sourceOf(0);
-    const component = sourceOf(2);
-    setStylingSource(state, element, component, null, ['width', '10px', 'display', 'flex']);
-    setStylingSource(state, element, template, ['width', '20px'], ['gap', '4px']);
+    const template = templateOf('style', ['width']);
+    const component = hostOf(element, 'style', 2, 0);
+    createStylingState(element, 'style');
+    set(element, component, 'width: 10px; display: flex');
+    set(element, template, 'gap: 4px', '20px');
     expect(styleOf(element).getPropertyValue('width')).toBe('20px');
 
-    setStylingSource(state, element, template, null, ['gap', '4px']);
+    set(element, template, 'gap: 4px', null);
     expect(styleOf(element).getPropertyValue('width')).toBe('10px');
 
-    setStylingSource(state, element, template, ['width', '30px'], null);
-    removeStylingSource(state, element, component.owner);
+    set(element, template, null, '30px');
+    removeStylingSource(element, 'style', component);
     expect(styleOf(element).getPropertyValue('width')).toBe('30px');
     expect(styleOf(element).getPropertyValue('display')).toBe('');
     expect(styleOf(element).getPropertyValue('gap')).toBe('');
 
-    removeStylingSource(state, element, template.owner);
+    removeStylingSource(element, 'style', template);
     expect(styleOf(element).getPropertyValue('width')).toBe('');
-    expect(state.sources).toBeNull();
+    expect(getStylingState(element, 'style')).toEqual([]);
 
     // A source never registered is not removed
-    removeStylingSource(state, element, {});
-    expect(state.sources).toBeNull();
+    removeStylingSource(element, 'style', {});
+    expect(getStylingState(element, 'style')).toEqual([]);
   });
 
   it('removes a class a source makes absent, even if a source below makes it present', () => {
     const element = document.createElement('div');
-    const state = createStylingState(element, 'class');
-    setStylingSource(state, element, sourceOf(2), null, ['on', true]);
+    createStylingState(element, 'class');
+    set(element, hostOf(element, 'class', 2, 0), 'on');
     expect(element.className).toBe('on');
 
-    const template = sourceOf(0);
-    setStylingSource(state, element, template, ['on', false], null);
+    const template = templateOf('class', ['on']);
+    set(element, template, null, false);
     expect(element.className).toBe('');
 
-    setStylingSource(state, element, template, null, null);
+    set(element, template, null, null);
     expect(element.className).toBe('on');
   });
 
-  it('leaves the keys other code wrote, removing only the ones the runtime wrote', () => {
+  it('leaves the keys other code wrote, removing only the ones the sources made present', () => {
     const element = document.createElement('div');
     element.classList.add('external');
-    const state = createStylingState(element, 'class');
-    const source = sourceOf(0);
-    setStylingSource(state, element, source, ['external', false, 'mine', true], null);
+    createStylingState(element, 'class');
+    const template = templateOf('class', ['external', 'mine']);
+    set(element, template, null, false, true);
     expect(element.className).toBe('mine');
 
     element.classList.add('external', 'other');
-    setStylingSource(state, element, source, null, ['a', true, 'b', true]);
+    set(element, template, 'a b', null, null);
     expect(element.className).toBe('external other a b');
 
-    setStylingSource(state, element, source, null, null);
+    set(element, template, null, null, null);
     expect(element.className).toBe('external other');
   });
 
   it('writes a property with its priority, and only when the element does not hold it', () => {
     const element = document.createElement('div');
-    const state = createStylingState(element, 'style');
-    const source = sourceOf(0);
-    setStylingSource(state, element, source, ['color', 'red !important'], null);
+    createStylingState(element, 'style');
+    const template = templateOf('style', ['color']);
+    set(element, template, null, 'red !important');
     expect(styleOf(element).getPropertyValue('color')).toBe('red');
     expect(styleOf(element).getPropertyPriority('color')).toBe('important');
 
     const before = element.getAttribute('style');
-    setStylingSource(state, element, source, ['color', 'red !important'], ['color', 'blue']);
+    set(element, template, 'color: blue', 'red !important');
     expect(element.getAttribute('style')).toBe(before);
 
-    setStylingSource(state, element, source, ['color', 'red'], null);
+    set(element, template, null, 'red');
     expect(styleOf(element).getPropertyPriority('color')).toBe('');
   });
 
-  it('keeps the sources from the strongest, a single one alone and more of them in an array', () => {
+  it('keeps the sources from the strongest in one array of the exact length, the values of the template only', () => {
     const element = document.createElement('div');
-    const state = createStylingState(element, 'class');
-    const component = sourceOf(2);
-    const directive = sourceOf(1, 3);
-    const later = sourceOf(1, 5);
-    const template = sourceOf(0);
-    setStylingSource(state, element, component, null, null);
-    expect(state.sources).toBe(component);
+    const template = templateOf('class');
+    const component = hostOf(element, 'class', 2, 0);
+    const directive = hostOf(element, 'class', 1, 3);
+    const later = hostOf(element, 'class', 1, 5);
+    createStylingState(element, 'class');
+    set(element, component, null);
+    set(element, directive, null);
+    set(element, later, null);
+    set(element, template, 'a');
+    expect(getStylingState(element, 'class')).toEqual([template, 0, ['a'], later, later.rank, directive, directive.rank, component, component.rank]);
 
-    setStylingSource(state, element, directive, null, null);
-    setStylingSource(state, element, later, null, null);
-    setStylingSource(state, element, template, null, null);
-    expect(state.sources).toEqual([template, later, directive, component]);
-    expect(findStylingSource(state, later.owner)).toBe(later);
-    expect(findStylingSource(state, {})).toBeUndefined();
-
-    removeStylingSource(state, element, template.owner);
-    removeStylingSource(state, element, later.owner);
-    removeStylingSource(state, element, directive.owner);
-    expect(state.sources).toBe(component);
-    expect(findStylingSource(state, component.owner)).toBe(component);
-    expect(findStylingSource(state, {})).toBeUndefined();
-  });
-
-  it('keeps the keys it wrote alone, then in an array', () => {
-    const element = document.createElement('div');
-    const state = createStylingState(element, 'class');
-    const source = sourceOf(0);
-    setStylingSource(state, element, source, ['a', true], null);
-    expect(state.written).toBe('a');
-
-    setStylingSource(state, element, source, ['a', true, 'b', true, 'c', true], null);
-    expect(state.written).toEqual(['a', 'b', 'c']);
-
-    setStylingSource(state, element, source, ['b', true], null);
-    expect(state.written).toBe('b');
+    removeStylingSource(element, 'class', template);
+    removeStylingSource(element, 'class', later);
+    expect(getStylingState(element, 'class')).toEqual([directive, directive.rank, component, component.rank]);
   });
 });
 
-describe('host sources', () => {
-  it('are registered per element and attribute, alone then in an array', () => {
+describe('the binding of the template kept by the element', () => {
+  it('is kept alone without values, with them otherwise, once the attribute is marked', () => {
     const element = document.createElement('div');
-    const first = sourceOf(2);
-    const second = sourceOf(1);
-    const third = sourceOf(1, 1);
-    expect(hasHostStylingSources(element, 'class')).toBe(false);
+    markStyling(element, 'class');
+    markStyling(element, 'class');
+    const record = getElementSources(element)!;
+    expect(record.class).toBe(true);
 
-    addHostStylingSource(element, 'class', first);
-    addHostStylingSource(element, 'class', second);
-    addHostStylingSource(element, 'class', third);
-    expect(hasHostStylingSources(element, 'class')).toBe(true);
-    expect(hasHostStylingSources(element, 'style')).toBe(false);
+    const statics = { name: 'class', statics: ['a', true], setter: () => undefined } as _RenderStyling;
+    keepTemplateStyling(record, statics, undefined);
+    expect(record.class).toBe(statics);
+    expect(keptValues(statics)).toBeUndefined();
 
-    const state = createStylingState(element, 'class');
-    expect(state.sources).toEqual([third, second, first]);
-
-    removeHostStylingSource(element, 'class', second);
-    removeHostStylingSource(element, 'class', first);
-    removeHostStylingSource(element, 'class', third);
-    expect(hasHostStylingSources(element, 'class')).toBe(false);
-
-    addHostStylingSource(element, 'style', first);
-    expect(hasHostStylingSources(element, 'style')).toBe(true);
-    removeHostStylingSource(element, 'style', first);
-    expect(hasHostStylingSources(element, 'style')).toBe(false);
+    const styling = templateOf('style');
+    markStyling(element, 'style');
+    keepTemplateStyling(record, styling, ['top: 1px']);
+    expect(record.style).toEqual({ site: styling, values: ['top: 1px'] });
+    const kept = record.style as TemplateStyling;
+    keepTemplateStyling(record, styling, ['top: 2px']);
+    expect(record.style).toBe(kept);
+    expect(keptValues(kept)).toEqual(['top: 2px']);
   });
 
-  it('give the state the keys the single one bound before wrote', () => {
+  it('is taken by the state, with the host runs of the attribute, ranked', () => {
     const element = document.createElement('div');
-    const host: StylingSource = { owner: {}, tier: 2, order: 0, keys: ['on', true, 'off', false], string: ['a', true] };
-    addHostStylingSource(element, 'class', host);
-    applyDirectStyling(element, 'class', null, null, host.keys, host.string);
-    const state = createStylingState(element, 'class');
-    expect(state.written).toEqual(['a', 'on']);
+    const record = ensureElementSources(element);
+    const styling = templateOf('class');
+    const component = hostOf(element, 'class', 2, 0);
+    const directive = hostOf(element, 'class', 1, 0);
+    const other = hostOf(element, 'style', 1, 0);
+    addHostRun(component);
+    addHostRun(other);
+    addHostRun(directive);
+    record.class = true;
+    keepTemplateStyling(record, styling, ['a']);
+    expect(createStylingState(element, 'class')).toEqual([styling, 0, ['a'], directive, directive.rank, component, component.rank]);
 
-    removeStylingSource(state, element, host.owner);
-    expect(element.className).toBe('');
+    // A single run of the attribute, and a static binding
+    const single = document.createElement('div');
+    const singleRecord = ensureElementSources(single);
+    const statics = { name: 'style', statics: ['top', '1px'], setter: () => undefined } as _RenderStyling;
+    singleRecord.style = true;
+    keepTemplateStyling(singleRecord, statics, undefined);
+    const run = hostOf(single, 'style', 2, 0);
+    addHostRun(run);
+    expect(createStylingState(single, 'style')).toEqual([statics, 0, undefined, run, run.rank]);
+    expect(createStylingState(single, 'class')).toEqual([]);
+  });
+});
+
+describe('sharesNewKey', () => {
+  it('tells a key another source has an opinion on, which the source had none on', () => {
+    const element = document.createElement('div');
+    const record = ensureElementSources(element);
+    const styling = templateOf('class', ['on']);
+    const run = hostOf(element, 'class', 1, 0, ['off']);
+    run.values = [null, false];
+    addHostRun(run);
+    addHostRun(hostOf(element, 'style', 1, 0));
+    record.class = true;
+    keepTemplateStyling(record, styling, ['a', true]);
+
+    // The template meets the run, the run meets the template
+    expect(sharesNewKey(record, 'class', styling, null, null, ['off', true], null)).toBe(true);
+    expect(sharesNewKey(record, 'class', styling, null, ['a', true], null, ['a', true, 'b', true])).toBe(false);
+    expect(sharesNewKey(record, 'class', run, null, null, null, ['on', true])).toBe(true);
+    expect(sharesNewKey(record, 'class', run, null, null, null, ['a', true])).toBe(true);
+    expect(sharesNewKey(record, 'class', run, ['off', false], null, ['off', true], null)).toBe(false);
+    expect(sharesNewKey(record, 'class', run, null, null, null, ['z', true])).toBe(false);
+
+    // A single run, or none
+    const single = document.createElement('div');
+    const singleRecord = ensureElementSources(single);
+    expect(sharesNewKey(singleRecord, 'style', run, null, null, null, ['top', '1px'])).toBe(false);
+    const host = hostOf(single, 'style', 2, 0);
+    host.values = ['top: 1px'];
+    addHostRun(host);
+    expect(sharesNewKey(singleRecord, 'style', styling, null, null, null, ['top', '2px'])).toBe(true);
   });
 });
 

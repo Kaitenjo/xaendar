@@ -852,9 +852,15 @@ describe('_renderElement', () => {
       await flush();
       expect(element.getAttribute('title')).toBe('directive');
 
-      // A branch applying directives makes the runtime create the states of every attribute the template shares
-      const always = render(document.createElement('div'), createRoot(), { shared: ['lang'], sharedAlways: true });
+      // A branch applying a directive not registered yet makes the runtime create the states of every attribute the template shares
+      const branch = (selector: string) => [ifBinding({ condition: () => false, directives: [{ selector }] })];
+      const always = render(document.createElement('div'), createRoot(), { shared: ['lang'], sharedAlways: true, conditionalBindings: branch('not-registered-yet') });
       expect(_hasAttributeState(always, 'lang')).toBe(true);
+
+      // A registered one only the states of the attributes it declares
+      const declared = render(document.createElement('div'), createRoot(), { shared: ['lang', 'title'], sharedAlways: true, conditionalBindings: branch('titled') });
+      expect(_hasAttributeState(declared, 'title')).toBe(true);
+      expect(_hasAttributeState(declared, 'lang')).toBe(false);
     });
 
     it('gives the directives of the template their order after the host directives', () => {

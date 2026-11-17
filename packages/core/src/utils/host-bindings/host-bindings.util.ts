@@ -12,6 +12,7 @@ import { addCleanup } from '../context/context.util';
 import { applyHostAttribute, registerHostAttributes } from '../host-attributes/host-attributes.util';
 import { applyHostStyling, registerHostStyling } from '../host-styling/host-styling.util';
 import { _isKey } from '../key-event/key-event.util';
+import { toRank } from '../source-rank/source-rank.util';
 
 /**
  * The host attributes of each class split by what they write, computed once per list of the metadata of a class.
@@ -88,7 +89,8 @@ export function _bindHost(owner: EventHost, element: Element, context: _Context)
  * Writes the attributes, the classes and the style properties of the host element of a web component or of a custom
  * directive as its `@HostAttribute` declare, once and without binding them: what the server writes on the tag of a
  * component it renders. The attributes and the keys of `class` and `style` are merged with the other sources of the
- * element, when it has a state merging them (see `_mergeAttributes`).
+ * element (see `_mergeAttributes`): the runs are registered on the element, so that the sources applied after them
+ * find them.
  *
  * @param owner - The web component or the custom directive.
  * @param element - Its host element.
@@ -103,18 +105,30 @@ export function _applyHostAttributes(owner: EventHost, element: Element): void {
   const { attributes } = groups;
   if (attributes?.length) {
     const run = createAttributeRun(owner, element, attributes);
+    registerHostAttributes(run);
     for (let i = 0; i < attributes.length; i++) {
       applyHostAttribute(run, i);
     }
   }
 
   if (groups.class?.length) {
-    applyHostStyling(createRun(owner, element, 'class', groups.class));
+    applyStylingOnce(createRun(owner, element, 'class', groups.class));
   }
 
   if (groups.style?.length) {
-    applyHostStyling(createRun(owner, element, 'style', groups.style));
+    applyStylingOnce(createRun(owner, element, 'style', groups.style));
   }
+}
+
+/**
+ * Registers a run of the host attributes of `class` or of `style` on its element and writes it once (see
+ * {@link _applyHostAttributes}).
+ *
+ * @param run - The run.
+ */
+function applyStylingOnce(run: HostStylingRun): void {
+  registerHostStyling(run);
+  applyHostStyling(run);
 }
 
 /**
@@ -183,8 +197,8 @@ function bindStyling(owner: EventHost, element: Element, context: _Context, attr
  */
 function createRun(owner: EventHost, element: Element, attribute: StylingAttribute, bindings: readonly HostAttributeBinding[]): HostStylingRun {
   return (owner as unknown) === element
-    ? new HostStylingRun(owner, element, attribute, bindings, 2, 0)
-    : new HostStylingRun(owner, element, attribute, bindings, 1, (owner as unknown as Record<symbol, number>)[DIRECTIVE_ORDER]);
+    ? new HostStylingRun(owner, element, attribute, bindings, toRank(2, 0))
+    : new HostStylingRun(owner, element, attribute, bindings, toRank(1, (owner as unknown as Record<symbol, number>)[DIRECTIVE_ORDER]));
 }
 
 /**
@@ -218,6 +232,6 @@ function bindAttributes(owner: EventHost, element: Element, context: _Context, b
  */
 function createAttributeRun(owner: EventHost, element: Element, bindings: readonly HostAttributeBinding[]): HostAttributeRun {
   return (owner as unknown) === element
-    ? new HostAttributeRun(owner, element, bindings, 2, 0)
-    : new HostAttributeRun(owner, element, bindings, 1, (owner as unknown as Record<symbol, number>)[DIRECTIVE_ORDER]);
+    ? new HostAttributeRun(owner, element, bindings, toRank(2, 0))
+    : new HostAttributeRun(owner, element, bindings, toRank(1, (owner as unknown as Record<symbol, number>)[DIRECTIVE_ORDER]));
 }

@@ -1,42 +1,52 @@
 import { describe, expect, it } from 'vitest';
-import type { SourceRank } from '../../types/source-rank.type';
-import { insertRanked, removeRanked } from './source-rank.util';
+import { entrySize, findEntry, insertEntry, removeEntry, tierOf, toRank } from './source-rank.util';
 
-describe('insertRanked', () => {
-  it('keeps one source as it is, then an array from the strongest: by level, then from the greatest order', () => {
-    const component: SourceRank = { tier: 2, order: 0 };
-    const first: SourceRank = { tier: 1, order: 0 };
-    const second: SourceRank = { tier: 1, order: 1 };
-    const template: SourceRank = { tier: 0, order: 0 };
+const TEMPLATE = toRank(0, 0);
+const FIRST = toRank(1, 0);
+const SECOND = toRank(1, 1);
+const COMPONENT = toRank(2, 0);
 
-    let sources = insertRanked(null, component);
-    expect(sources).toBe(component);
-
-    sources = insertRanked(sources, first);
-    expect(sources).toEqual([first, component]);
-
-    sources = insertRanked(sources, template);
-    sources = insertRanked(sources, second);
-    expect(sources).toEqual([template, second, first, component]);
+describe('toRank', () => {
+  it('keeps the level and the order in one integer', () => {
+    expect([TEMPLATE, FIRST, SECOND, COMPONENT]).toEqual([0, 65536, 65537, 131072]);
+    expect([tierOf(TEMPLATE), tierOf(SECOND), tierOf(COMPONENT)]).toEqual([0, 1, 2]);
   });
 
-  it('puts a source after the ones of the same rank, and before a weaker one met second', () => {
-    const strong: SourceRank = { tier: 0, order: 0 };
-    const weak: SourceRank = { tier: 2, order: 0 };
-    expect(insertRanked(weak, strong)).toEqual([strong, weak]);
-
-    const same: SourceRank = { tier: 0, order: 0 };
-    expect(insertRanked([strong, weak], same)).toEqual([strong, same, weak]);
+  it('gives a source of the template room for its data, a host run none', () => {
+    expect(entrySize(TEMPLATE)).toBe(3);
+    expect(entrySize(FIRST)).toBe(2);
   });
 });
 
-describe('removeRanked', () => {
-  it('leaves nothing for a single source, the other one alone for two, an array for more', () => {
-    const first: SourceRank = { tier: 0, order: 0 };
-    const second: SourceRank = { tier: 1, order: 0 };
-    const third: SourceRank = { tier: 2, order: 0 };
-    expect(removeRanked(first, first)).toBeNull();
-    expect(removeRanked([first, second], first)).toBe(second);
-    expect(removeRanked([first, second, third], second)).toEqual([first, third]);
+describe('insertEntry', () => {
+  it('keeps the sources from the strongest, by level, then from the greatest order, in an array of the exact length', () => {
+    const template = {};
+    const first = {};
+    const second = {};
+    const component = {};
+    let state = insertEntry(['name'], 1, component, COMPONENT, undefined);
+    state = insertEntry(state, 1, first, FIRST, undefined);
+    state = insertEntry(state, 1, template, TEMPLATE, 'value');
+    state = insertEntry(state, 1, second, SECOND, undefined);
+    expect(state).toEqual(['name', template, TEMPLATE, 'value', second, SECOND, first, FIRST, component, COMPONENT]);
+    expect(findEntry(state, 1, first)).toBe(6);
+    expect(findEntry(state, 1, {})).toBe(-1);
+  });
+
+  it('puts a source after the ones of the same rank', () => {
+    const own = {};
+    const branch = {};
+    const state = insertEntry(insertEntry([], 0, own, TEMPLATE, 1), 0, branch, TEMPLATE, 2);
+    expect(state).toEqual([own, TEMPLATE, 1, branch, TEMPLATE, 2]);
+  });
+});
+
+describe('removeEntry', () => {
+  it('gives the state without the source, in an array of the exact length', () => {
+    const template = {};
+    const run = {};
+    const state = [template, TEMPLATE, 'value', run, FIRST];
+    expect(removeEntry(state, 0)).toEqual([run, FIRST]);
+    expect(removeEntry(state, 3)).toEqual([template, TEMPLATE, 'value']);
   });
 });

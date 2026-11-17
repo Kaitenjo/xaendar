@@ -5,18 +5,16 @@ import { _bindSite } from '../../signals/effect/effect';
 import type { BindingHost } from '../../types/binding-host.type';
 import type { _Context } from '../../types/context.type';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
+import type { RenderElementConditionalBinding } from '../../types/render-element-conditional-binding.type';
 import type { RenderElementDirective } from '../../types/render-element-directive.type';
-import type { SourceRank } from '../../types/source-rank.type';
+import type { RenderElement } from '../../types/render-element.type';
 import type { TemplateExpression } from '../../types/template-expression.type';
-import { ensureAttributeState, findAttributeState, getAttributeState, mergesAllAttributes, removeAttributeOpinion, setAttributeOpinion } from '../attribute-state/attribute-state.util';
+import { createAttributeState, ensureAttributeState, getAttributeState, hostWritesAttribute, keepTemplateValue, mergesAllAttributes, removeAttributeOpinion, setAttributeOpinion } from '../attribute-state/attribute-state.util';
+import { _getDirective } from '../directive-registry/directive-registry.util';
+import { getElementSources } from '../element-sources/element-sources.util';
 import { _hostAttributeNames } from '../host-attributes/host-attributes.util';
 import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { writeAttribute } from '../write-attribute/write-attribute.util';
-
-/**
- * The rank of the attributes a template writes: the strongest level.
- */
-const TEMPLATE_RANK: SourceRank = Object.freeze({ tier: 0, order: 0 });
 
 /**
  * Writes the static value of an attribute written with `attr.` (`attr.title="Close"`), once: always the attribute of the
@@ -68,8 +66,20 @@ export function _setReactiveAttribute(context: _Context, target: Element | Bindi
  * @param value - The value.
  */
 export function writeTemplateAttribute(element: Element, attribute: RenderElementAttribute, value: unknown): void {
-  const state = attribute.shared || mergesAllAttributes() ? findAttributeState(element, attribute.name) : undefined;
-  state ? setAttributeOpinion(state, element, attribute, TEMPLATE_RANK, value) : writeAttribute(element, attribute.name, value);
+  const { name } = attribute;
+  if (!attribute.shared && !mergesAllAttributes()) {
+    writeAttribute(element, name, value);
+    return;
+  }
+
+  let state = getAttributeState(element, name);
+  const record = state ? undefined : getElementSources(element);
+  // An element whose attributes are all merged keeps the value, and merges it once a second level writes the attribute
+  if (record?.template) {
+    hostWritesAttribute(element, name) ? state = createAttributeState(element, name) : keepTemplateValue(record, attribute, value);
+  }
+
+  state ? setAttributeOpinion(element, state, attribute, 0, value) : writeAttribute(element, name, value);
 }
 
 /**
@@ -82,31 +92,30 @@ export function writeTemplateAttribute(element: Element, attribute: RenderElemen
  */
 export function removeTemplateAttribute(element: Element, attribute: RenderElementAttribute): void {
   const state = attribute.shared ? getAttributeState(element, attribute.name) : undefined;
-  state ? removeAttributeOpinion(state, element, attribute) : element.removeAttribute(attribute.name);
+  state ? removeAttributeOpinion(element, state, attribute) : element.removeAttribute(attribute.name);
 }
 
 /**
  * Creates, before the bindings of an element are applied, the states merging the sources of the attributes its template
  * writes, other than `class` and `style`, that the component it is or the directives it applies write too, or may write
- * later (see `RenderElement.shared`): every one of them when a branch of its conditional bindings applies directives,
- * or the element is a custom element whose class is not defined yet, otherwise the ones the classes of the component and
- * of the directives declare as host attributes (see `_hostAttributeNames`).
+ * later (see `RenderElement.shared`): the ones the classes of the component and of the directives, the ones the branches
+ * of its conditional bindings apply included, declare as host attributes (see `_hostAttributeNames`), and every one of
+ * them on a custom element whose class is not defined yet, or when a branch applies a directive not registered yet.
  *
- * N.B. Deliberate, to save memory: the state is created when the element is rendered, as soon as a second source is
- * certain or possible, because the bindings of the template could not be found from the element once a directive or the
- * component wrote it, without keeping in every element a reference to its template. An element written by its template
- * alone keeps no state. Do not create the state lazily for the template.
+ * N.B. Deliberate, to save memory: the state is created when the element is rendered, for the attributes a second level
+ * declares, because the value the template binds to an attribute is kept nowhere else, and the directives of the
+ * branches are resolved then, so that an attribute no host attribute declares gets no state. Do not create the state of
+ * every attribute flagged as shared, nor create it lazily for the template.
  *
  * @param element - The element.
- * @param names - The attributes the template writes, which other sources may write.
- * @param always - Whether a branch of a conditional binding applies directives.
- * @param directives - The custom directives the element applies.
- * @throws When no custom directive is registered for the selector of a directive.
+ * @param config - The element as the template describes it, whose `shared` is set.
+ * @throws When no custom directive is registered for the selector of a directive of the element.
  */
-export function _prepareAttributes(element: Element, names: readonly string[], always: boolean, directives?: readonly RenderElementDirective[]): void {
+export function _prepareAttributes(element: Element, config: RenderElement): void {
+  const names = config.shared!;
   for (let i = 0; i < names.length; i++) {
     const name = names[i];
-    if (always || declaresHostAttribute(element, name, directives)) {
+    if (declaresHostAttribute(element, name, config.directives) || (config.sharedAlways && branchDeclares(config.conditionalBindings, name))) {
       ensureAttributeState(element, name);
     }
   }
@@ -134,6 +143,51 @@ function declaresHostAttribute(element: Element, name: string, directives: reado
   if (directives?.length) {
     for (let i = 0; i < directives.length; i++) {
       if (_hostAttributeNames(_resolveDirective(directives[i].selector, CustomDirective))?.includes(name)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Tells whether a directive the branches of conditional bindings apply, nested ones included, writes an attribute with a
+ * host attribute: any attribute for a directive not registered yet, which the branch resolves only once selected.
+ *
+ * @param conditionalBindings - The conditional bindings.
+ * @param name - The name of the attribute.
+ * @returns `true` when one may write it.
+ */
+function branchDeclares(conditionalBindings: readonly RenderElementConditionalBinding[] | undefined, name: string): boolean {
+  if (conditionalBindings?.length) {
+    for (let i = 0; i < conditionalBindings.length; i++) {
+      const { branches } = conditionalBindings[i];
+      for (let j = 0; j < branches.length; j++) {
+        const { directives, conditionalBindings: nested } = branches[j];
+        if (directivesDeclare(directives, name) || branchDeclares(nested, name)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Tells whether directives write an attribute with a host attribute: any attribute for a directive not registered yet.
+ *
+ * @param directives - The directives.
+ * @param name - The name of the attribute.
+ * @returns `true` when one may write it.
+ */
+function directivesDeclare(directives: readonly RenderElementDirective[] | undefined, name: string): boolean {
+  if (directives?.length) {
+    for (let i = 0; i < directives.length; i++) {
+      const { selector } = directives[i];
+      const Directive = typeof selector === 'string' ? _getDirective(selector) : selector;
+      if (!Directive || _hostAttributeNames(Directive)?.includes(name)) {
         return true;
       }
     }

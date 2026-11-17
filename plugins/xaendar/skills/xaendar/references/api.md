@@ -152,8 +152,8 @@ Listens to an event of the host element (component, or element of a custom direc
 ### Directive (decorator)
 
 ```ts
-@Directive({ 
-  selector: 'exName' 
+@Directive({
+  selector: 'exName'
 })
 ```
 
@@ -182,6 +182,15 @@ Creates a component in code and appends it to `target`, or to the host element w
 ```
 
 The result of createComponent: the element, already in the DOM, and the function destroying it earlier (removes the element, unbinds its inputs and events, destroys its directives; the content nodes leave with the element). Calling it again, or after the creator is gone, does nothing. Removing the element with the DOM APIs leaves its bindings alive: call `destroy()`.
+
+### CreateComponentOptions, CreateComponentOptionsWithOptionalTarget (types)
+
+```ts
+CreateComponentOptions<Component, Directives> = { target: Element; properties?; events?; directives?; content?: Node[] }
+CreateComponentOptionsWithOptionalTarget<Component, Directives> // the same, target optional
+```
+
+The options of `createComponent`: `target` is required in the generic form and optional in the one of the methods of `CustomElement`/`CustomDirective` and of `@@componentOutlet`. Type a field holding options with them (`public readonly options: CreateComponentOptionsWithOptionalTarget<CardComponent> = { … }`).
 
 ### HostDirectives (type)
 
@@ -320,6 +329,17 @@ type ElementStyles = Readonly<Record<string, string | number | null | undefined>
 ```
 
 The `value` of `@@class` and of `@@style`.
+
+### ComponentOutlet (`@@componentOutlet`)
+
+```html
+@import { ComponentOutlet } from '@xaendar/directives'
+
+<div @@componentOutlet(component="{card()}") />
+<div @@componentOutlet(component="{card()}" options="{cardOptions}") />
+```
+
+Angular's `ngComponentOutlet`: creates the component of the class `component` (required, a class decorated with `@WebComponent`, usually the value of a signal) with `createComponent` and appends it to its element, after its content, or to the `target` of `options` (`CreateComponentOptionsWithOptionalTarget`, the element of the directive then staying empty). When the class or the `options` object changes, the component is destroyed and created again; the directive destroys it when it is destroyed. Keep `options` in a field of the class and bind what changes through the getters of its `properties`: an object literal in the template, or a `computed` returning a new object, recreates the component at every run. The classes it creates are imported by the TypeScript module giving them to the template, which never names them.
 
 ### InnerHtmlDirective (`@@innerHtml`)
 
