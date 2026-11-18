@@ -33,12 +33,12 @@ export function packageJson(name: string, version: string, style: Style, renderi
 
   const devDependencies: Record<string, string> = Object.assign({
     '@babel/plugin-proposal-decorators': '^8.0.2',
-    '@vitest/coverage-v8': '^5.1.0',
+    '@vitest/coverage-v8': '^5.1.1',
     '@xaendar/cli': `^${version}`,
     'happy-dom': '^21.0.4',
     'typescript': '^6.0.3',
     'vite': '^8.3.8',
-    'vitest': '^5.1.0'
+    'vitest': '^5.1.1'
   }, rendering.devDependencies);
 
   const preprocessor = STYLE_PREPROCESSORS[style];
