@@ -1,5 +1,5 @@
 import { escapeAttribute, escapeRawText } from '@xaendar/common';
-import { _applyHostAttributes, _COMPONENT, _createStylingState, _DIRECTIVE_ORDER, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _mergeAttributes, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setContentTemplates, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
+import { _applyHostAttributes, _COMPONENT, _createStylingState, _DIRECTIVE_ORDER, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _mergeAttributes, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setContentTemplates, _setExposedInput, _setExpressionExposedInput, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
 import type { Constructor, Dictionary, Function } from '@xaendar/types';
 import { ServerElement } from '../../dom/server-element/server-element';
 import type { ClientComponentOptions } from '../../types/client-component-options.type';
@@ -402,13 +402,14 @@ function applyClientBindings(element: Element, context: _Context, bindings: Serv
 
 /**
  * Tells whether the setter of a binding sets an input: the compiler binds the inputs it knows through the setters of the
- * inputs, by the name of their property.
+ * inputs, by the name of their property, and the inputs of host directives through the ones of the exposed inputs, by
+ * the name they are exposed with, which the browser sets them with too.
  *
  * @param setter - The setter of the binding.
  * @returns `true` when it sets an input.
  */
 function isInputSetter(setter: ServerAttribute['setter']): boolean {
-  return setter === _setInput || setter === _setExpressionInput;
+  return setter === _setInput || setter === _setExpressionInput || setter === _setExposedInput || setter === _setExpressionExposedInput;
 }
 
 /**

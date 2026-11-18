@@ -1,8 +1,9 @@
-import { INTERNAL_HOST_DIRECTIVES, INTERNAL_HOST_ATTRIBUTES } from '../../costants';
+import { INTERNAL_HOST_ATTRIBUTES } from '../../costants';
 import type { HostAttributeRun } from '../../models/host-attribute-run/host-attribute-run';
 import { createAttributeState, getAttributeState, isAttributeWritten, removeAttributeOpinion, setAttributeOpinion } from '../attribute-state/attribute-state.util';
 import { addHostRun, removeHostRun } from '../element-sources/element-sources.util';
 import { getWebComponentMetadata } from '../get-metadata/get-metadata.util';
+import { _resolveHostDirectives } from '../host-directives/host-directives.util';
 import { runValue } from '../styling-opinions/styling-opinions.util';
 import { _attributeValue, writeAttribute } from '../write-attribute/write-attribute.util';
 
@@ -128,12 +129,11 @@ function computeNames(klass: object): readonly string[] | null {
     }
   }
 
-  // The host directives belong to the class declaring them, as `_createHostDirectives` reads them
-  const directives = metadata && Object.hasOwn(metadata, INTERNAL_HOST_DIRECTIVES) ? metadata[INTERNAL_HOST_DIRECTIVES] : undefined;
-  if (directives?.length) {
+  // The host directives of the ancestors included, as `_createHostDirectives` applies them
+  const { directives } = _resolveHostDirectives(klass);
+  if (directives.length) {
     for (let i = 0; i < directives.length; i++) {
-      const declaration = directives[i];
-      const directiveNames = _hostAttributeNames(typeof declaration === 'function' ? declaration : declaration.directive);
+      const directiveNames = _hostAttributeNames(directives[i].directive);
       if (directiveNames?.length) {
         for (let j = 0; j < directiveNames.length; j++) {
           names = addName(names, directiveNames[j]);

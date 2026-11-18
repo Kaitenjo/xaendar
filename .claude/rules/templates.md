@@ -16,11 +16,17 @@ Every Xaendar template, the fragments in `src/docs/src/snippets` included.
 4. conditional directives: `@if (…) { @@name(…) }`
 5. directives: `@@name(…)`
 6. conditional attributes and inputs: `@if (…) { name="…" }`
-7. attributes and inputs (two-way bindings included), then class bindings, then style bindings: `name="…"`, `[(name)]="signal"`, `class.name="{…}"`, `style.name="{…}"`
+7. attributes and inputs (two-way bindings, `class` and `style` included): `name="…"`, `[(name)]="signal"`, `class="…"`, `style="…"`, `class.name="{…}"`, `style.name="{…}"`
 8. conditional events: `@if (…) { (name)="…" }`
 9. events: `(name)="…"`
 
 "Conditional" means any block in the tag (`@if`/`@else if`/`@else`, `@switch`). The last four groups keep this order inside a directive's parentheses, and items inside a block follow it too. Keep each conditional block to one group when you can; when the branches of one condition need different groups, keep a single `@if`/`@else` (never `@if (x)` … `@if (!x)`) in the position of its first group.
+
+Inside each group, sort the items alphabetically, comparing the full name as written, prefixes included: `attr.aria-hidden` before `attr.data-p`, `@@pBind` before `@@pRipple`, `(blur)` before `(click)`.
+
+- `class` and `style` are not a group of their own: they are sorted alphabetically among the attributes and inputs (`aria-label`, `class`, `data-p`). `class.x` and `style.x` bindings go right after `class` / `style` when present (before the other attributes that follow alphabetically), and in the alphabetical position `class` / `style` would have when absent.
+- The same alphabetical order applies to the inputs and listeners between the parentheses of a directive, within their own groups.
+- Conditional blocks (`@if`/`@else`/`@switch` inside the tag) keep the position of their first group and are not reordered by name.
 
 ```html
 <button
@@ -32,8 +38,8 @@ Every Xaendar template, the fragments in `src/docs/src/snippets` included.
   @if (locked()) {
     disabled
   }
-  type="button"
   class="{`btn ${kind()}`}"
+  type="button"
   @if (editable()) {
     (click)="edit()"
   }

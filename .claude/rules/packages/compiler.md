@@ -46,7 +46,8 @@ Turns a Xaendar template into a JS render-function body plus a type-check result
 
 - Metadata hold `modulePath`, the file declaring the class, also through a barrel (`resolveExportedClass`): the generated code imports it and the type-check references the class through it (`getOwnerType`), never `typescriptNodes`.
 - A compiled-library component/directive (`library` set) has no `typescriptNodes`/`templateUrl`: `modulePath` is its declaration file, the code imports `importPath` (`importPath ?? modulePath`).
-- Inputs are emitted with the input setters and the property name, never the alias (`exposed` for host-directive inputs); binding an aliased input by its property name is a type-check error (`assertNotAliasedProperty`).
+- Inputs are emitted with the input setters and the property name, never the alias; binding an aliased input by its property name is a type-check error (`assertNotAliasedProperty`). An input a host directive exposes (`exposed`) is emitted by the name it is exposed with through the `ExposedInput` setters (`unbind: _resetExposedInput`), in `ssr-compiler` too.
+- Host directives are inherited: `collectHostDirectiveSources` gives the `@WebComponent` decorators of the resolvable ancestors, then the class's, to `addHostDirectiveBindings`. `findHostDirectiveErrors` (build `transform` and `getComponentDiagnostics`) reports what the runtime rejects at registration, with the same messages (`checkHostDirectives`): on the exposure or directive for the class's own declarations, on the class name for an ancestor's.
 - `getDeferredModules` gives each `@hydrate`/`@defer` the modules only its content renders (not a `@defer`'s `@placeholder`/`@loading`/`@error`), emitted as `load: x$load` (`Promise.all([import("…")])`); build-tools drops their static imports.
 
 ## Blocks

@@ -1,7 +1,8 @@
-import { INTERNAL_HOST_DIRECTIVES, INTERNAL_HOST_ATTRIBUTES } from '../../costants';
+import { INTERNAL_HOST_ATTRIBUTES } from '../../costants';
 import type { HostStylingRun } from '../../models/host-styling-run/host-styling-run';
 import { addHostRun, getElementSources, removeHostRun } from '../element-sources/element-sources.util';
 import { getWebComponentMetadata } from '../get-metadata/get-metadata.util';
+import { _resolveHostDirectives } from '../host-directives/host-directives.util';
 import { hostKeys, hostString } from '../styling-opinions/styling-opinions.util';
 import { applyDirectStyling, createStylingState, removeStylingSource, setHostStyling, sharesNewKey } from '../styling-state/styling-state.util';
 
@@ -122,12 +123,11 @@ function computeFlags(klass: object): number {
     }
   }
 
-  // The host directives belong to the class declaring them, as `_createHostDirectives` reads them
-  const directives = metadata && Object.hasOwn(metadata, INTERNAL_HOST_DIRECTIVES) ? metadata[INTERNAL_HOST_DIRECTIVES] : undefined;
-  if (directives?.length) {
+  // The host directives of the ancestors included, as `_createHostDirectives` applies them
+  const { directives } = _resolveHostDirectives(klass);
+  if (directives.length) {
     for (let i = 0; i < directives.length; i++) {
-      const declaration = directives[i];
-      flags |= _hostStylingFlags(typeof declaration === 'function' ? declaration : declaration.directive);
+      flags |= _hostStylingFlags(directives[i].directive);
     }
   }
 

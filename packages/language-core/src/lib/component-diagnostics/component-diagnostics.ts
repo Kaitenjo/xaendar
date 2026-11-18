@@ -1,9 +1,10 @@
-import { type ComponentMetadata, describeSelectorConflict, findReflectedInputs, findWebComponentErrors, getWebComponentDeclarations, type WebComponentError } from '@xaendar/compiler';
+import { type ComponentMetadata, describeSelectorConflict, findHostDirectiveErrors, findReflectedInputs, findWebComponentErrors, getWebComponentDeclarations, type WebComponentError } from '@xaendar/compiler';
 import { existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { createSourceFile, ScriptTarget, type SourceFile, type StringLiteral } from 'typescript';
 import { resolveDeclarations } from '../template-analysis/template-analysis';
 import type { ComponentDiagnostic } from '../types/component-diagnostic.type';
+import { loadTsConfig } from '../utils/compiler-options/compiler-options.utils';
 import { findStringOptions } from '../utils/component-options/component-options.utils';
 import { normalizeFileName, resolvePosixPath } from '../utils/path/path.utils';
 import { readSsr } from '../utils/xaendar-config/xaendar-config.utils';
@@ -12,7 +13,8 @@ import { readSsr } from '../utils/xaendar-config/xaendar-config.utils';
  * Collects the problems of the `@WebComponent` decorators of a component file, the ones the build reports, on their
  * position: the options it cannot read (see `findWebComponentErrors`), the `ssr` option in a project whose nearest
  * `xaendar.json` declares no `ssr` (nothing without the file), a `templateUrl` or a `styleUrl` leading to a
- * missing file, and a selector declared by another component of the TypeScript project of the file, which the build
+ * missing file, the host directives the runtime would reject (see `findHostDirectiveErrors`), and a selector declared
+ * by another component of the TypeScript project of the file, which the build
  * finds only among the components it reaches. The inputs named like an attribute every element reflects are warnings,
  * as the build reports them (see `findReflectedInputs`).
  *
@@ -27,6 +29,14 @@ export async function getComponentDiagnostics(fileName: string, text: string): P
   const errors = findWebComponentErrors(sourceFile, true, readSsr(dirname(fileName)));
   if (errors.length) {
     diagnostics.push(...errors);
+  }
+
+  // The host directives are checked, the inherited ones included, with the options of the project resolving them
+  const hostDirectiveErrors = getWebComponentDeclarations(sourceFile).length ? findHostDirectiveErrors(sourceFile, loadTsConfig(dirname(fileName)).options) : undefined;
+  if (hostDirectiveErrors?.length) {
+    for (let i = 0; i < hostDirectiveErrors.length; i++) {
+      diagnostics.push(hostDirectiveErrors[i]);
+    }
   }
 
   const reflected = findReflectedInputs(sourceFile);

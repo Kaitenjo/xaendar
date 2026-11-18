@@ -1,6 +1,6 @@
 import type { AccessorDecorator, Function } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_REQUIRED_INPUTS } from '../../costants';
+import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_EVENTS, INTERNAL_REQUIRED_INPUTS } from '../../costants';
 import type { Aliased } from '../../signals/types/aliased.type';
 import type { InputSignal } from '../../signals/types/input-signal.type';
 import type { ModelSignal } from '../../signals/types/model-signal.type';
@@ -17,8 +17,8 @@ await vi.hoisted(async () => {
 const { Model } = await import('./model.decorator');
 const { isModelSignal } = await import('../../signals/model/model-instance.symbol');
 
-type Metadata = { [INTERNAL_ALIAS_TO_ATTRIBUTE]?: Record<string, string>, [INTERNAL_REQUIRED_INPUTS]?: Set<string> };
-type Decorated<Value> = { init(this: unknown): ModelSignal<Value>, set(this: unknown, value: unknown): void };
+type Metadata = Partial<Pick<WebComponentMetadata, typeof INTERNAL_ALIAS_TO_ATTRIBUTE | typeof INTERNAL_REQUIRED_INPUTS | typeof INTERNAL_EVENTS>>;
+type Decorated<Value> = { init(this: unknown, value: undefined): ModelSignal<Value> | undefined, get(this: unknown): ModelSignal<Value>, set(this: unknown, value: unknown): void };
 type Host = { events: CustomEvent[], dispatchEvent(event: CustomEvent): boolean } & Record<string, unknown>;
 
 /**
@@ -30,21 +30,40 @@ function createHost(): Host {
 }
 
 /**
- * Applies `@Model` to an accessor, with a getter returning the model `init` creates for the host.
+ * The getter and the setter of an accessor, backed by a storage per instance, as the private field of a real accessor.
  */
-function setup<Value>(value?: Value, options?: ModelDecoratorOptions<Value>, name: string | symbol = 'value', metadata: Metadata = {}, required = false): Decorated<Value> & { host: Host, model: () => ModelSignal<Value> } {
+function createTarget() {
+  const storage = new WeakMap<object, unknown>();
+  return {
+    get(this: object) {
+      return storage.get(this);
+    },
+    set: vi.fn(function (this: object, value: unknown) {
+      storage.set(this, value);
+    })
+  };
+}
+
+/**
+ * Applies `@Model` to an accessor backed by a storage per instance, as a real accessor, `context.access` reading it
+ * through the getter of the decorator.
+ */
+function setup<Value>(value?: Value, options?: ModelDecoratorOptions<Value>, name: string | symbol = 'value', metadata: Metadata = {}, required = false): Decorated<Value> & { host: Host, target: ReturnType<typeof createTarget>, model: () => ModelSignal<Value> } {
   const host = createHost();
-  let stored: ModelSignal<Value> | undefined;
+  const target = createTarget();
   const decorator = required
     ? Model.required<Value, never>(options as ModelDecoratorOptions<Value, never>)
     : Model<ModelSignal<Value>, Value, never>(value, options as ModelDecoratorOptions<Value, never>);
-  const decorated = decorator({ get: () => stored!, set: vi.fn() } as unknown as Parameters<typeof decorator>[0], { name, metadata } as unknown as Parameters<typeof decorator>[1]) as unknown as Decorated<Value>;
+  const access = { get: (instance: unknown) => decorated.get.call(instance) };
+  const decorated = decorator(target as unknown as Parameters<typeof decorator>[0], { name, metadata, access } as unknown as Parameters<typeof decorator>[1]) as unknown as Decorated<Value>;
 
   return {
     host,
+    target,
     init: decorated.init,
+    get: decorated.get,
     set: decorated.set,
-    model: () => stored ??= decorated.init.call(host)
+    model: () => decorated.get.call(host)
   };
 }
 
@@ -55,8 +74,8 @@ describe('Model decorator', () => {
 
   it('creates a model holding the default value, one per instance', () => {
     const decorated = setup(1);
-    const first = decorated.init.call(createHost());
-    const second = decorated.init.call(createHost());
+    const first = decorated.get.call(createHost());
+    const second = decorated.get.call(createHost());
 
     expect(isModelSignal(first)).toBe(true);
     expect(first).not.toBe(second);
@@ -64,13 +83,34 @@ describe('Model decorator', () => {
     expect([first(), second()]).toEqual([2, 1]);
   });
 
-  it('registers the model as an input, by its name or by its alias', () => {
+  it('creates the model of an instance only when the accessor is first read, keeping it in its storage', () => {
+    const decorated = setup(1);
+    expect(decorated.init.call(decorated.host, undefined)).toBeUndefined();
+    expect(decorated.target.set).not.toHaveBeenCalled();
+
+    const model = decorated.model();
+
+    expect(decorated.model()).toBe(model);
+    expect(decorated.target.set).toHaveBeenCalledOnce();
+    expect(decorated.target.get.call(decorated.host)).toBe(model);
+  });
+
+  it('creates the model when the accessor is first assigned', () => {
+    const decorated = setup(1);
+    decorated.set.call(decorated.host, 3);
+
+    expect(decorated.target.set).toHaveBeenCalledOnce();
+    expect(decorated.model()()).toBe(3);
+  });
+
+  it('registers the model as an input, by its name or by its alias, and its event of change', () => {
     const metadata: Metadata = {};
     setup(0, undefined, 'value', metadata);
     setup(false, { alias: 'on' }, 'checked', metadata);
 
     expect(metadata[INTERNAL_ALIAS_TO_ATTRIBUTE]).toEqual({ value: 'value', on: 'checked' });
     expect(metadata[INTERNAL_REQUIRED_INPUTS]).toBeUndefined();
+    expect(metadata[INTERNAL_EVENTS]).toEqual(new Set(['valueChange', 'onChange']));
   });
 
   it('dispatches the event of change named after the model, or after its alias, on the host', () => {
@@ -107,11 +147,12 @@ describe('Model decorator', () => {
     expect(decorated.host.events).toEqual([]);
   });
 
-  it('writes the value assigned before the upgrade into the model quietly, removing the own property', () => {
+  it('writes the value assigned before the upgrade into a model created at once, quietly, removing the own property', () => {
     const decorated = setup(0);
     decorated.host.value = 7;
-    const value = decorated.model();
+    const value = decorated.init.call(decorated.host, undefined)!;
 
+    expect(isModelSignal(value)).toBe(true);
     expect(value()).toBe(7);
     expect(Object.hasOwn(decorated.host, 'value')).toBe(false);
     expect(decorated.host.events).toEqual([]);

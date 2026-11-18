@@ -48,7 +48,7 @@ export abstract class CustomDirective<T extends Element = Element> {
    * The events a host directive exposes, as a map from the name of the event the directive dispatches to the name it is
    * dispatched with on the host. `undefined` when the directive is applied from a template, which dispatches all of them.
    */
-  private _exposedEvents?: Map<string, string>;
+  private _exposedEvents?: ReadonlyMap<string, string>;
 
   /**
    * Sets the HTML element the directive is applied to, invoked by the
@@ -65,9 +65,9 @@ export abstract class CustomDirective<T extends Element = Element> {
    * before `DIRECTIVE_CONNECT`.
    *
    * @param events - The map from the name of the event the directive dispatches to the name it is dispatched with
-   *   on the component. The events it does not hold are not dispatched.
+   *   on the component, shared by every instance of the component. The events it does not hold are not dispatched.
    */
-  public set [SET_DIRECTIVE_EVENTS](events: Map<string, string>) {
+  public set [SET_DIRECTIVE_EVENTS](events: ReadonlyMap<string, string>) {
     this._exposedEvents = events;
   }
 

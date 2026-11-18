@@ -157,7 +157,7 @@ describe('generateElement', () => {
       tone: new ComponentPropertyMetadata('color', 'string', { alias: 'tone', exposed: true })
     });
 
-    it('sets the inputs of a component by the name of their property, the one they are exposed with for the inputs of a host directive, through the setters of the inputs', async () => {
+    it('sets the inputs of a component by the name of their property, the one they are exposed with for the inputs of a host directive, through the setters of the inputs, and the exposed ones through the setters of the exposed inputs', async () => {
       const context = new GeneratorContext(cache);
       context.addSignalClassField('count');
       const result = await run('<my-el user-id="u" title="{\'heading\'}" count="{count()}" tone="dark" id="main"></my-el>', context);
@@ -178,7 +178,7 @@ describe('generateElement', () => {
         '    { name: \'userId\', value: \'u\', setter: _setInput },',
         '    { name: \'title\', value: my_el0$title, setter: _setExpressionInput },',
         '    my_el0$count$binding,',
-        '    { name: \'tone\', value: \'dark\', setter: _setInput },',
+        '    { name: \'tone\', value: \'dark\', setter: _setExposedInput },',
         '    { name: \'id\', shared: true, value: \'main\', setter: _setProperty }',
         '  ],',
         '  shared: [\'id\']',
@@ -256,6 +256,12 @@ describe('generateElement', () => {
       const { constants } = await run('<my-el @if (cond()) { user-id="u" }></my-el>', new GeneratorContext(cache));
 
       expect(constants[0]).toContain('attributes: [{ name: \'userId\', value: \'u\', setter: _setInput, unbind: _resetProperty }]');
+    });
+
+    it('resets an exposed input bound by a conditional binding by the name it is exposed with, in the directive', async () => {
+      const { constants } = await run('<my-el @if (cond()) { tone="dark" }></my-el>', new GeneratorContext(cache));
+
+      expect(constants[0]).toContain('attributes: [{ name: \'tone\', value: \'dark\', setter: _setExposedInput, unbind: _resetExposedInput }]');
     });
 
     it('binds a two-way binding as the input set from the signal and the listener writing the detail of its event of change into it', async () => {

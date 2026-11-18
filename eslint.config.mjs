@@ -46,7 +46,8 @@ export default defineConfig(
       '@typescript-eslint/no-wrapper-object-types': 'off',
       '@typescript-eslint/no-non-null-asserted-optional-chain': 'off',
       '@typescript-eslint/consistent-type-imports': 'off',
-      '@typescript-eslint/no-require-imports': 'off'
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/ban-ts-comment': 'off'
     }
   },
   {

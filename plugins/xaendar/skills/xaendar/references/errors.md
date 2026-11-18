@@ -984,18 +984,23 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `Error: XCard declares the host directive TipDirective more than once`
 
-- **Cause:** The same directive listed twice in hostDirectives. Thrown when the element is created.
-- **Fix:** List it once.
+- **Cause:** The same directive listed twice in hostDirectives, or listed by the component and by a class it extends, whose host directives it inherits. Reported by the build, thrown when the class is registered.
+- **Fix:** List it once: drop it from the subclass, which already has the one of its parent.
 
 ### `Error: TipDirective does not declare an input named "text"`
 
-- **Cause:** A name in the properties of a host directive that is not one of its @Property accessors; does not declare an event named "…" is the same for events.
-- **Fix:** Use the name of the accessor of the directive; rename it with { name, alias }.
+- **Cause:** A name in the properties of a host directive that is not the name one of its inputs is bound with (its alias, when it declares one); does not declare an event named "…" is the same for events. Reported by the build, thrown when the class is registered.
+- **Fix:** Use the name the templates bind the input with; rename it on the component with { name, alias }.
 
 ### `Error: XCard already has an input named "hint", which TipDirective cannot expose`
 
-- **Cause:** An exposed input of a host directive named like an input of the component or of another host directive.
+- **Cause:** An exposed input of a host directive named like an input of the component (or of a class it extends) or like an input another host directive exposes, the ones of its parent included; already has an event named "…" is the same for an exposed event named like an event of the component or another exposed event. Reported by the build, thrown when the class is registered.
 - **Fix:** Expose it under another name: { name: 'text', alias: 'tipText' }.
+
+### `Error: XCard already has a member named "label", which TipDirective cannot expose as an input`
+
+- **Cause:** An exposed input named like a field, a getter, a method or an accessor of the component, of a class it extends or of HTMLElement (`title`, `id`…): the component gets an accessor named after each exposed input, which would hide the member or be hidden by it.
+- **Fix:** Expose it under another name, or rename the member.
 
 ### `Error: Invalid symbol for InputSignal set method`
 

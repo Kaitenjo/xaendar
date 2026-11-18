@@ -253,8 +253,8 @@ function toClientOptions({ selector, clientOnly }: ComponentMetadata, generatorC
 /**
  * Maps attribute nodes to the descriptors the runtime applies, with the setters of the client reading the value once:
  * an input of a component or of a directive the template imports is set by the name of its property, never by its
- * alias, the one it is exposed with for an input of a host directive, through the setters of the inputs, as the client
- * does. The value of an expression is a function of the module named after the element and the attribute, as on the
+ * alias, through the setters of the inputs, and an input a host directive of the component exposes by the name it is
+ * exposed with, through the setters of the exposed inputs, as the client does. The value of an expression is a function of the module named after the element and the attribute, as on the
  * client. An attribute written with `attr.` is always the attribute of the element, written with the setters of the
  * attributes (`_setAttribute`, `_setExpressionAttribute`), even when the component declares an input with its name.
  *
@@ -280,8 +280,8 @@ function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, targ
     }
 
     const property = attribute ?? (input && !input.exposed ? input.name : name);
-    // The family of the setters: an input, an attribute written with `attr.`, or any other attribute
-    const kind = input ? 'Input' : attribute === undefined ? 'Property' : 'Attribute';
+    // The family of the setters: an input, one a host directive exposes, an attribute written with `attr.`, or any other attribute
+    const kind = input ? input.exposed ? 'ExposedInput' : 'Input' : attribute === undefined ? 'Property' : 'Attribute';
     if (typeof value === 'string') {
       return toObjectLiteral([`name: ${toStringLiteral(property)}`, `value: ${toStringLiteral(value)}`, `setter: _set${kind}`]);
     }

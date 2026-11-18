@@ -1,8 +1,10 @@
-import { AccessorDecorator, ClassAccessorDecoratorValue, Function } from '@xaendar/types';
+import { AccessorDecorator, ClassAccessorDecoratorValue, DecoratorMetadataContext, Function } from '@xaendar/types';
 import type { EventHost } from '../../types/event/event-host.type';
 import { EventDecoratorReturnType } from '../../types/event/event-return-type.type';
 import { EventOptions } from '../../models/event-options/event-options';
 import { Output } from '../../models/output/output';
+import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
+import { registerEvent } from '../../utils/event-registration/event-registration.util';
 
 /**
  * Merges the options of a dispatch over the default ones of the output. The options are read
@@ -49,6 +51,8 @@ function createOutput<Data>(host: EventHost, name: string, options: Partial<Even
  * overridden per dispatch.
  *
  * The output of an instance is created lazily, the first time the accessor is read, and kept in the storage of the accessor.
+ * The name of the event is registered in the metadata of the class, so that a component exposing it for a host directive
+ * does not read the accessor.
  *
  * N.B. The output is kept in the private storage the `accessor` already has for each instance. Do not keep it in a
  * variable of the decorator, which runs once per class: every instance would share one output, dispatching on one element.
@@ -65,13 +69,15 @@ function createOutput<Data>(host: EventHost, name: string, options: Partial<Even
  */
 export function Event<
   Data = void,
->(options?: Partial<EventOptions>): Function<Parameters<AccessorDecorator<EventHost, Output<Data>>>, EventDecoratorReturnType<EventHost, Output<Data>>> {
-  return (target: ClassAccessorDecoratorValue<Output<Data>>, context: ClassAccessorDecoratorContext<EventHost, Output<Data>>): EventDecoratorReturnType<EventHost, Output<Data>> => {
+>(options?: Partial<EventOptions>): Function<Parameters<AccessorDecorator<EventHost, Output<Data>, WebComponentMetadata>>,EventDecoratorReturnType<EventHost, Output<Data>>> {
+  return (target: ClassAccessorDecoratorValue<Output<Data>>, context: DecoratorMetadataContext<ClassAccessorDecoratorContext<EventHost, Output<Data>>, WebComponentMetadata>): EventDecoratorReturnType<EventHost, Output<Data>> => {
     const name = context.name;
 
     if (typeof name === 'symbol') {
       throw new Error('Symbol properties are not supported as event names');
     }
+
+    registerEvent(context.metadata, name);
 
     return {
       get(): Output<Data> {

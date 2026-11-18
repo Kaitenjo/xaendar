@@ -470,7 +470,7 @@
         },
         "extendingAComponent": {
           "title": "Extending a component",
-          "p1": "A component can extend another one. The subclass needs its own decorator, which gives it a selector and a render function; its <code>templateUrl</code> can point to the template of the parent. The options of the decorator are not inherited: the <code>hostDirectives</code> of the parent are listed again in the one of the subclass, if it needs them."
+          "p1": "A component can extend another one. The subclass needs its own decorator, which gives it a selector and a render function; its <code>templateUrl</code> can point to the template of the parent. The options of the decorator are not inherited, except the <code>hostDirectives</code>: the ones of the parent are applied to the subclass too, before its own, and its templates bind the inputs and the events they expose. The subclass, its parent and their host directives are one: a directive cannot be declared again, and an exposed name cannot be the one of an input, an event or a member of either class."
         },
         "edgeCases": {
           "title": "Edge cases",

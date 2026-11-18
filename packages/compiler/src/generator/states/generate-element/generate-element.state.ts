@@ -221,9 +221,11 @@ function declareElementExpression(owner: DescriptorOwner, role: string, expressi
  * Maps attribute nodes to their descriptors.
  *
  * An input of a component or of a directive, known from the metadata of its owner, is set by the name of its property,
- * never by its alias, the one it is exposed with for an input of a host directive, through the setters of the inputs:
- * an element whose class is not defined yet, e.g. one of a component loaded lazily, holds the value until the class
- * recovers it. Every attribute of a directive is one of its inputs, since a directive has no underlying attribute.
+ * never by its alias, through the setters of the inputs: an element whose class is not defined yet, e.g. one of a
+ * component loaded lazily, holds the value until the class recovers it. An input a host directive of the component
+ * exposes is set by the name it is exposed with, through the setters of the exposed inputs (`_setExposedInput`…), which
+ * write into the instance of the directive, never through a property of the element; its `unbind` is
+ * `_resetExposedInput`. Every attribute of a directive is one of its inputs, since a directive has no underlying attribute.
  * A value is a literal, written once, or an expression, a function of the module named after the element and the
  * attribute: one reading no name is evaluated once (`_setExpressionProperty`, `_setExpressionInput`), any other one is a
  * binding (`_setReactiveProperty`, `_setReactiveInput`) the runtime runs again when a signal it reads changes,
@@ -276,8 +278,8 @@ async function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner
       }
     }
 
-    // The family of the setters: an input, an attribute written with `attr.`, or any other attribute
-    const kind = input ? 'Input' : attribute === undefined ? 'Property' : 'Attribute';
+    // The family of the setters: an input, one a host directive exposes, an attribute written with `attr.`, or any other attribute
+    const kind = input ? input.exposed ? 'ExposedInput' : 'Input' : attribute === undefined ? 'Property' : 'Attribute';
     // The setter evaluating the expression once, which runs a binding again too: `undefined` for a descriptor written once
     let update: string | undefined;
     let role = '';
@@ -308,7 +310,7 @@ async function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner
       if (!input) {
         members.push('unbind: _removeAttribute');
       } else if (!input.required) {
-        members.push('unbind: _resetProperty');
+        members.push(`unbind: ${input.exposed ? '_resetExposedInput' : '_resetProperty'}`);
       }
     }
 

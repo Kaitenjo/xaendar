@@ -1,4 +1,4 @@
-import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers, ComponentMembers, findReflectedInputs, findWebComponentErrors, TypeCheckResult } from '@xaendar/compiler';
+import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers, ComponentMembers, findHostDirectiveErrors, findReflectedInputs, findWebComponentErrors, TypeCheckResult } from '@xaendar/compiler';
 import { createShim, getImportConflictDiagnostics, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
@@ -78,6 +78,14 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
     const library = findWorkspaceLibrary(state.libraries, componentPath);
     const ssr = library ? library.ssr : !!state.ssr;
     const errors = findWebComponentErrors(tsSource, componentFile, ssr);
+    // The host directives are checked only once the options can be read
+    const hostDirectiveErrors = componentFile && !errors.length ? findHostDirectiveErrors(tsSource, state.compilerOptions) : undefined;
+    if (hostDirectiveErrors?.length) {
+      for (let i = 0; i < hostDirectiveErrors.length; i++) {
+        errors.push(hostDirectiveErrors[i]);
+      }
+    }
+
     if (errors.length) {
       for (let i = 0; i < errors.length; i++) {
         state.logError('', `${errors[i].message} - ${componentPath}`);

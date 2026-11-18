@@ -18,7 +18,8 @@ import type { TemplateExpression } from './template-expression.type';
  */
 export type RenderElementAttribute = BindingSite & {
   /**
-   * The attribute name (e.g. `id`, `href`), or the name of the property of the input.
+   * The attribute name (e.g. `id`, `href`), the name of the property of the input, or the name an input of a host
+   * directive is exposed with on its component.
    */
   readonly name: string;
   /**
@@ -34,7 +35,9 @@ export type RenderElementAttribute = BindingSite & {
   /**
    * Writes the value on the target: `_setProperty`, `_setExpressionProperty` or `_setReactiveProperty` for an attribute
    * or a property, `_setAttribute`, `_setExpressionAttribute` or `_setReactiveAttribute` for an attribute written with
-   * `attr.`, never an input whatever its name, `_setInput`, `_setExpressionInput` or `_setReactiveInput` for an input.
+   * `attr.`, never an input whatever its name, `_setInput`, `_setExpressionInput` or `_setReactiveInput` for an input,
+   * `_setExposedInput`, `_setExpressionExposedInput` or `_setReactiveExposedInput` for an input a host directive of the
+   * component exposes, written into the directive.
    *
    * It is a method signature, so that each setter fits it while taking only the kind of target it is paired with, as
    * methods compare their parameters bivariantly.
@@ -46,8 +49,8 @@ export type RenderElementAttribute = BindingSite & {
   setter(context: _Context, target: Element | BindingHost, attribute: RenderElementAttribute): void;
   /**
    * Removes the attribute, giving it back to the sources below when it is merged with them, or resets the property,
-   * when the branch binding it is no longer the selected one, or its context is destroyed: `_removeAttribute` or
-   * `_resetProperty`.
+   * when the branch binding it is no longer the selected one, or its context is destroyed: `_removeAttribute`,
+   * `_resetProperty` or `_resetExposedInput`.
    *
    * @param context - The context the binding lived in.
    * @param target - The element, or the directive whose input was bound.

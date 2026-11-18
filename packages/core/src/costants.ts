@@ -7,6 +7,11 @@ export const INTERNAL_ALIAS_TO_ATTRIBUTE = 'aliasToAttribute';
  */
 export const INTERNAL_REQUIRED_INPUTS = 'requiredInputs';
 /**
+ * Internal metadata key holding the names of the events a class dispatches: the ones of its `@Event`s and the events of
+ * change of its `@Model`s.
+ */
+export const INTERNAL_EVENTS = 'events';
+/**
  * Internal metadata key holding the selector a web component is registered with (see `WebComponent`).
  */
 export const INTERNAL_SELECTOR = 'selector';

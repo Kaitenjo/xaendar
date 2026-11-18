@@ -449,6 +449,38 @@ describe('renderToString', () => {
     await expect(renderToString(CrossedElement, { internalValue: 'x' })).rejects.toThrow('"internalValue" is the property of an input of CrossedElement declaring an alias: bind it by its alias');
   });
 
+  it('sets an input a host directive exposes into the directive, by the name it is exposed with, as the client does', async () => {
+    /**
+     * A directive declaring the input its component exposes.
+     */
+    class TipDirective extends CustomDirective {
+      public declare text: InputSignal<string>;
+    }
+    const tipMetadata: DecoratorMetadataObject = {};
+    declareInput(TipDirective, 'text', '', tipMetadata);
+    Object.defineProperty(TipDirective, Symbol.for('Symbol.metadata'), { value: tipMetadata });
+
+    /**
+     * A component exposing the input of its host directive as `hint`, read by its template.
+     */
+    class TipCardElement extends CustomElement {
+      public declare hint: InputSignal<string>;
+    }
+    Object.defineProperty(TipCardElement, Symbol.for('Symbol.metadata'), { value: { hostDirectives: [{ directive: TipDirective, properties: [{ name: 'text', alias: 'hint' }] }] } });
+    customElements.define('tip-card', TipCardElement);
+    _defineServerRender(TipCardElement, await compile('<p>{ hint() }</p>', ['hint']));
+
+    /**
+     * A component binding the exposed input of the tip card.
+     */
+    class TipPageElement extends CustomElement { }
+    customElements.define('tip-page', TipPageElement);
+    const tipCard = { type: 'component', selector: 'tip-card', properties: new Map([['hint', { name: 'text', exposed: true }]]) } as unknown as ComponentOrDirectiveMetadata;
+    _defineServerRender(TipPageElement, await compile('<tip-card hint="{ \'hello\' }" />', [], [], [tipCard]));
+
+    expect(await renderToString(TipPageElement)).toContain('<tip-card><template shadowrootmode="open"><p><!---->hello</p></template></tip-card>');
+  });
+
   it('throws when the inputs leave out a required input, before any code of the component runs', async () => {
     const constructed = vi.fn();
 

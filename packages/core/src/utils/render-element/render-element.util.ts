@@ -31,6 +31,7 @@ import { _addAppliedDirective, _removeAppliedDirective } from '../applied-direct
 import type { _Context } from '../../types/context.type';
 import { _scope, addCleanup, clear, containerSlot, EMPTY_LAYOUT, getNodeStrategy, STRUCTURAL_LAYOUT, swapNodeStrategy, trackNode } from '../context/context.util';
 import { _setElementRef } from '../element-refs/element-refs.util';
+import { _dropPendingInput, _exposedInputOf, _keepPendingInput } from '../host-directives/host-directives.util';
 import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { _selectBranch } from '../select-branch/select-branch.util';
 import { connectChild } from '../try-scope/try-scope.util';
@@ -705,6 +706,70 @@ export function _resetProperty(_context: _Context, target: Element | BindingHost
   const element = target as Element;
   delete (element as unknown as Record<string, unknown>)[name];
   element.removeAttribute(name);
+}
+
+/**
+ * Sets a literal input a host directive of a component exposes, by the name it is exposed with: into the input of the
+ * instance of the directive, without going through the element. On an element whose class is not defined yet the value
+ * is kept apart from the element, which takes it once it is constructed.
+ *
+ * @param _context - The current template execution scope.
+ * @param element - The element of the component.
+ * @param attribute - The input, by the name it is exposed with, whose value is the literal.
+ */
+export function _setExposedInput(_context: _Context, element: Element, attribute: RenderElementAttribute): void {
+  updateExposedInput(element, attribute.name, attribute.value);
+}
+
+/**
+ * Sets an input a host directive of a component exposes bound to an expression reading nothing that can change, once
+ * (see {@link _setExposedInput}). It is the callback of the binding of {@link _setReactiveExposedInput} too.
+ *
+ * @param context - The current template execution scope, which the expression reads.
+ * @param element - The element of the component.
+ * @param attribute - The input, by the name it is exposed with, whose value is the expression.
+ */
+export function _setExpressionExposedInput(context: _Context, element: Element, attribute: RenderElementAttribute): void {
+  updateExposedInput(element, attribute.name, evaluate(attribute, context));
+}
+
+/**
+ * Sets an input a host directive of a component exposes bound to an expression, again whenever a signal or a variable
+ * of the template it reads changes (see {@link _setExposedInput} and `_bindSite`), its callback being
+ * {@link _setExpressionExposedInput}.
+ *
+ * @param context - The current template execution scope, which the expression reads and which disposes the binding.
+ * @param element - The element of the component.
+ * @param attribute - The input, by the name it is exposed with, whose value is the expression, and whose `reads` lists
+ *   the variables of the template it reads, if any.
+ */
+export function _setReactiveExposedInput(context: _Context, element: Element, attribute: RenderElementAttribute): void {
+  _bindSite(context, attribute, element, _setExpressionExposedInput);
+}
+
+/**
+ * Resets an input a host directive of a component exposes to the default value the directive declares, when the branch
+ * binding it is no longer the selected one: on an element whose class is not defined yet, the value kept for it is
+ * dropped.
+ *
+ * @param _context - The current template execution scope.
+ * @param element - The element of the component.
+ * @param attribute - The input, by the name it is exposed with.
+ */
+export function _resetExposedInput(_context: _Context, element: Element, attribute: RenderElementAttribute): void {
+  element instanceof CustomElement ? _exposedInputOf(element, attribute.name).reset(INPUT_SIGNAL_SET_SYMBOL) : _dropPendingInput(element, attribute.name);
+}
+
+/**
+ * Updates an input a host directive of a component exposes: into the input of the instance of the directive once the
+ * element is constructed, otherwise kept apart from the element until it is (see `_keepPendingInput`).
+ *
+ * @param element - The element of the component.
+ * @param name - The name the input is exposed with.
+ * @param value - The new value.
+ */
+function updateExposedInput(element: Element, name: string, value: unknown): void {
+  element instanceof CustomElement ? _exposedInputOf(element, name).set(value, INPUT_SIGNAL_SET_SYMBOL) : _keepPendingInput(element, name, value);
 }
 
 /**

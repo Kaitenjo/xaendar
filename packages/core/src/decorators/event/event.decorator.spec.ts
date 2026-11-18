@@ -1,8 +1,10 @@
 // @vitest-environment happy-dom
 import { ClassAccessorDecoratorValue } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { CustomElement, EventOptions } from '../../models';
+import { INTERNAL_EVENTS } from '../../costants';
+import { EventOptions } from '../../models';
 import { Output } from '../../models/output/output';
+import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { Event } from '../event/event.decorator';
 
 type Decorated<ReturnType> = { get(this: Element): Output<ReturnType> };
@@ -22,9 +24,9 @@ function createTarget() {
   };
 }
 
-function decorate<ReturnType = unknown>(name: string | symbol = 'clicked', options?: Parameters<typeof Event>[0], target = createTarget()): Decorated<ReturnType> {
-  const context = { name } as unknown as ClassAccessorDecoratorContext<CustomElement, Output<unknown>>;
-  const decorated = Event<ReturnType>(options)(target as unknown as ClassAccessorDecoratorValue<Output<ReturnType>>, context);
+function decorate<ReturnType = unknown>(name: string | symbol = 'clicked', options?: Parameters<typeof Event>[0], target = createTarget(), metadata: Partial<WebComponentMetadata> = {}): Decorated<ReturnType> {
+  const decorator = Event<ReturnType>(options);
+  const decorated = decorator(target as unknown as ClassAccessorDecoratorValue<Output<ReturnType>>, { name, metadata } as unknown as Parameters<typeof decorator>[1]);
   return decorated as unknown as Decorated<ReturnType>;
 }
 
@@ -57,6 +59,14 @@ describe('Event decorator', () => {
     const { output } = setup();
 
     expect(output).toBeInstanceOf(Output);
+  });
+
+  it('registers the name of the event in the metadata of the class', () => {
+    const metadata: Partial<WebComponentMetadata> = {};
+    decorate('clicked', undefined, createTarget(), metadata);
+    decorate('closed', undefined, createTarget(), metadata);
+
+    expect(metadata[INTERNAL_EVENTS]).toEqual(new Set(['clicked', 'closed']));
   });
 
   it('creates the output of an instance only when the accessor is first read, keeping it in its storage', () => {

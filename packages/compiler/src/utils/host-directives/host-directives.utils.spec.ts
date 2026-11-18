@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createSourceFile, ScriptTarget, SourceFile } from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { extractComponentsMetadataFromSourceFile } from '../metadata/metadata.utils';
+import { extractComponentsMetadataFromSourceFile, findHostDirectiveErrors } from '../metadata/metadata.utils';
 
 const sourceFileOf = (code: string): SourceFile => createSourceFile('component.ts', code, ScriptTarget.Latest, true);
 const extract = (code: string) => extractComponentsMetadataFromSourceFile(sourceFileOf(code));
@@ -138,5 +138,112 @@ ${component('', decorator)}`;
       expect(metadata?.properties.get('hint')).toMatchObject({ name: 'text', type: 'string', alias: 'hint', exposed: true });
       expect(metadata?.events.get('opened')).toEqual({ type: 'number' });
     });
+  });
+
+  describe('inheritance', () => {
+    it('adds the inputs and the events the host directives of the ancestors expose, the ones of the ancestors first', async () => {
+      const code = `${tooltip}
+class Other { @Property() accessor tone!: InputSignal<string>; @Event() accessor done!: Output<boolean>; }
+@WebComponent({ selector: 'base-el', hostDirectives: [{ directive: Tooltip, properties: ['text'], events: ['opened'] }], templateUrl: './b.xaendar' })
+class Base { }
+class Middle extends Base { }
+@WebComponent({ selector: 'my-el', hostDirectives: [{ directive: Other, properties: ['tone'], events: ['done'] }], templateUrl: './t.xaendar' })
+class MyEl extends Middle { }`;
+      const metadata = (await extract(code))?.get('MyEl');
+
+      expect([...metadata!.properties.keys()]).toEqual(['text', 'tone']);
+      expect(metadata?.properties.get('text')).toMatchObject({ name: 'text', exposed: true });
+      expect([...metadata!.events.keys()]).toEqual(['opened', 'done']);
+    });
+  });
+});
+
+describe('findHostDirectiveErrors', () => {
+  const directives = `
+    @Directive({ selector: 'tooltip' })
+    class Tooltip {
+      @Property() accessor text!: InputSignal<string>;
+      @Property('top', { alias: 'pos' }) accessor position!: InputSignal<string>;
+      @Event() accessor opened!: Output<number>;
+    }
+
+    @Directive({ selector: 'label' })
+    class Label {
+      @Property() accessor text!: InputSignal<string>;
+      @Event() accessor opened!: Output<number>;
+    }
+  `;
+  const decorator = (hostDirectives: string, selector = 'my-el') => `@WebComponent({ selector: '${selector}', hostDirectives: ${hostDirectives}, templateUrl: './t.xaendar' })`;
+
+  /**
+   * Finds the errors of a file holding the directives and the given code, each with the text it is reported on.
+   */
+  function errorsOf(code: string): Array<[string, string]> {
+    const sourceFile = sourceFileOf(`${directives}\n${code}`);
+    return findHostDirectiveErrors(sourceFile).map(({ message, span }) => [message, sourceFile.text.slice(span.start, span.end)]);
+  }
+
+  it('finds nothing for a component without host directives, or whose host directives can be applied', () => {
+    expect(errorsOf(component())).toEqual([]);
+    expect(errorsOf(component('', decorator('[{ directive: Tooltip, properties: [\'text\', { name: \'pos\', alias: \'place\' }], events: [\'opened\'] }, Label]')))).toEqual([]);
+    expect(errorsOf(component('', decorator('[{ directive: Missing, properties: [\'text\'] }]')))).toEqual([]);
+  });
+
+  it('reports a directive declared twice, and an input or an event it does not declare, on the declaration', () => {
+    expect(errorsOf(component('', decorator('[Tooltip, { directive: Tooltip }]')))).toEqual([['MyEl declares the host directive Tooltip more than once', 'Tooltip']]);
+    expect(errorsOf(component('', decorator('[{ directive: Tooltip, properties: [\'missing\', \'position\'], events: [{ name: \'closed\', alias: \'shut\' }] }]')))).toEqual([
+      ['Tooltip does not declare an input named "missing"', '\'missing\''],
+      ['Tooltip does not declare an input named "position"', '\'position\''],
+      ['Tooltip does not declare an event named "closed"', '{ name: \'closed\', alias: \'shut\' }']
+    ]);
+  });
+
+  it('reports a name already used by an input, a member or an event of the component, or by another exposure', () => {
+    const body = '@Property() accessor value!: InputSignal<string>;\n@Property(\'\', { alias: \'kind\' }) accessor type!: InputSignal<string>;\n@Event() accessor done!: Output<void>;\nlabel = 1;\nreset(): void { }';
+    const hostDirectives = '[{ directive: Tooltip, properties: [{ name: \'text\', alias: \'value\' }, { name: \'text\', alias: \'kind\' }, { name: \'text\', alias: \'type\' }, { name: \'text\', alias: \'label\' }, { name: \'text\', alias: \'reset\' }, \'text\'], events: [{ name: \'opened\', alias: \'done\' }, \'opened\'] }, { directive: Label, properties: [\'text\'], events: [\'opened\'] }]';
+
+    expect(errorsOf(component(body, decorator(hostDirectives))).map(([message]) => message)).toEqual([
+      'MyEl already has an input named "value", which Tooltip cannot expose',
+      'MyEl already has an input named "kind", which Tooltip cannot expose',
+      'MyEl already has a member named "type", which Tooltip cannot expose as an input',
+      'MyEl already has a member named "label", which Tooltip cannot expose as an input',
+      'MyEl already has a member named "reset", which Tooltip cannot expose as an input',
+      'MyEl already has an event named "done", which Tooltip cannot expose',
+      'MyEl already has an input named "text", which Label cannot expose',
+      'MyEl already has an event named "opened", which Label cannot expose'
+    ]);
+  });
+
+  it('reads nothing from an ancestor whose options are not an object literal', () => {
+    expect(errorsOf(`@WebComponent(options)
+class Base { }
+${decorator('[Tooltip, { directive: Tooltip }]')}
+class MyEl extends Base { }`)).toEqual([['MyEl declares the host directive Tooltip more than once', 'Tooltip']]);
+  });
+
+  it('ignores the static members of the component', () => {
+    expect(errorsOf(component('static label = 1;', decorator('[{ directive: Tooltip, properties: [{ name: \'text\', alias: \'label\' }] }]')))).toEqual([]);
+  });
+
+  it('checks the host directives of the ancestors with the ones of the component, reporting theirs on the name of the class', () => {
+    const base = `${decorator('[{ directive: Tooltip, properties: [\'text\'], events: [\'opened\'] }]', 'base-el')}\nclass Base { }`;
+
+    expect(errorsOf(`${base}\n${decorator('[Tooltip]')}\nclass MyEl extends Base { }`)).toEqual([['MyEl declares the host directive Tooltip more than once', 'Tooltip']]);
+    expect(errorsOf(`${base}\n${decorator('[{ directive: Label, properties: [\'text\'], events: [\'opened\'] }]')}\nclass MyEl extends Base { }`).map(([message, text]) => [message, text])).toEqual([
+      ['MyEl already has an input named "text", which Label cannot expose', '\'text\''],
+      ['MyEl already has an event named "opened", which Label cannot expose', '\'opened\'']
+    ]);
+    expect(errorsOf(`${base}\n${decorator('[Label]')}\nclass MyEl extends Base {\n  text(): void { }\n}`)).toEqual([['MyEl already has a member named "text", which Tooltip cannot expose as an input', 'MyEl']]);
+    expect(errorsOf(`${decorator('[Tooltip]', 'base-el')}\nclass Base { }\n${decorator('[Label]')}\nclass MyEl extends Base { }`)).toEqual([]);
+  });
+
+  it('reports a directive of an ancestor the component declares again on the name of the class', () => {
+    const code = `${decorator('[Tooltip]', 'base-el')}\nclass Base { }\n${decorator('[Label]', 'middle-el')}\nclass Middle extends Base { }\n@WebComponent({ selector: 'my-el', templateUrl: './t.xaendar' })\nclass MyEl extends Middle { }`;
+
+    expect(errorsOf(code)).toEqual([]);
+    expect(errorsOf(`${decorator('[Tooltip]', 'base-el')}\nclass Base { }\n${decorator('[Tooltip]', 'middle-el')}\nclass Middle extends Base { }\n@WebComponent({ selector: 'my-el', templateUrl: './t.xaendar' })\nclass MyEl extends Middle { }`)).toEqual([
+      ['Middle declares the host directive Tooltip more than once', 'Tooltip'],
+      ['MyEl declares the host directive Tooltip more than once', 'MyEl']
+    ]);
   });
 });

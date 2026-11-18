@@ -12,10 +12,20 @@ import type { ModelDecoratorReturnType } from '../../types/model/model-decorator
 import type { PropertyOptionsArgument } from '../../types/property/property-options-argument.type';
 import type { WithAlias } from '../../types/property/with-alias.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
+import { registerEvent } from '../../utils/event-registration/event-registration.util';
 import { registerInput } from '../../utils/input-registration/input-registration.util';
 
 /**
  * Creates the decorator of a model, for `@Model` and `@Model.required`.
+ *
+ * The model of an instance is created lazily, the first time the accessor is read or assigned, and kept in the storage
+ * of the accessor, so an instance whose model is never read allocates none. Only an element holding a value assigned
+ * before its upgrade creates it at once, in `init`, to take that value. The name of the model and the one of its event
+ * of change are registered in the metadata of the class, so that a component exposing them for a host directive does not
+ * read the accessor.
+ *
+ * N.B. The model is kept in the private storage the `accessor` already has for each instance. Do not keep it in a
+ * variable of the decorator, which runs once per class: every instance would share one model.
  *
  * @param value - The initial value of the model, `undefined` for a required one.
  * @param options - The options of the model.
@@ -38,26 +48,43 @@ function createModelDecorator<Value extends ModelSignal<ActualValue>, ActualValu
     }
 
     const alias = options?.alias;
+    const event = toModelChangeEvent(alias ?? propertyKey);
     registerInput(context.metadata, propertyKey, alias, required);
+    registerEvent(context.metadata, event);
     // The equality compares values of any model of the accessor: its type of value is the one the prototype keeps
     const equals = (options?.equals ?? Object.is) as unknown as ModelChange['equals'];
-    const prototype = createModelPrototype(value, { name: toModelChangeEvent(alias ?? propertyKey), event: options?.event, equals });
+    const prototype = createModelPrototype(value, { name: event, event: options?.event, equals });
 
     return {
-      init(_?: Value): Value {
-        const signal = model<ActualValue>(prototype, this, options) as unknown as SettableInputSignal<ActualValue>;
-        // A value assigned to the element before its upgrade is written into the model quietly, as any later assignment
-        if (Object.hasOwn(this, propertyKey)) {
-          const element = this as unknown as Record<string, ActualValue>;
-          const preUpgrade = element[propertyKey];
-          delete element[propertyKey];
-          signal.set(preUpgrade, INPUT_SIGNAL_SET_SYMBOL);
+      init(value: Value): Value {
+        /*
+          A value assigned to the element before its upgrade is an own property, which would shadow the accessor until
+          the model is created: the model is created at once, only then, and the value written into it quietly, as any
+          later assignment
+        */
+        if (!Object.hasOwn(this, propertyKey)) {
+          return value;
         }
+
+        const element = this as unknown as Record<string, ActualValue>;
+        const preUpgrade = element[propertyKey];
+        delete element[propertyKey];
+        const signal = model<ActualValue>(prototype, this, options) as unknown as SettableInputSignal<ActualValue>;
+        signal.set(preUpgrade, INPUT_SIGNAL_SET_SYMBOL);
 
         return signal as unknown as Value;
       },
+      get(): Value {
+        let signal = target.get.call(this);
+        if (!signal) {
+          signal = model<ActualValue>(prototype, this, options) as unknown as Value;
+          target.set.call(this, signal);
+        }
+
+        return signal;
+      },
       set(newValue: ActualValue): void {
-        const signal = target.get.call(this) as unknown as SettableInputSignal<ActualValue>;
+        const signal = context.access.get(this) as unknown as SettableInputSignal<ActualValue>;
         signal.set(newValue, INPUT_SIGNAL_SET_SYMBOL);
       }
     };

@@ -58,6 +58,14 @@ describe('getComponentDiagnostics', () => {
     ]);
   }, TIMEOUT);
 
+  it('reports a host directive the runtime would reject on the exposure, as the build does', async () => {
+    project.write('src/tip.directive.ts', '@Directive({ selector: \'tip\' })\nexport class Tip {\n  @Property(\'\') public accessor text!: InputSignal<string>;\n}\n');
+    const text = '@WebComponent({ selector: \'x-card\', hostDirectives: [{ directive: Tip, properties: [{ name: \'text\', alias: \'reset\' }] }], templateUrl: \'./card.xd.component.html\' })\nexport class Card {\n  public reset(): void { }\n}\n';
+    const diagnostics = await getComponentDiagnostics(project.path(COMPONENT_FILE), `import { Tip } from './tip.directive';\n${text}`);
+
+    expect(diagnostics.map(({ message }) => message)).toEqual(['Card already has a member named "reset", which Tip cannot expose as an input']);
+  }, TIMEOUT);
+
   it('reports a selector that is not a valid custom element name', async () => {
     expect(await diagnose('@WebComponent({ selector: \'card\', templateUrl: \'./card.xd.component.html\' })')).toEqual([
       ['\'card\'', 'Invalid custom element name "card" in component Card']

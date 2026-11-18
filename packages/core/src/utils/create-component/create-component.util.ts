@@ -15,7 +15,8 @@ import { _scope, addCleanup, clear, ELEMENT_LAYOUT, removeCleanup } from '../con
 import { getSelector } from '../get-selector/get-selector.util';
 import { _assertRequiredInputs } from '../required-inputs/required-inputs.util';
 import { _toPropertyName } from '../input-names/input-names.util';
-import { _renderElement, _resetProperty, _setReactiveInput } from '../render-element/render-element.util';
+import { _renderElement, _resetExposedInput, _resetProperty, _setReactiveExposedInput, _setReactiveInput } from '../render-element/render-element.util';
+import { _resolveHostDirectives } from '../host-directives/host-directives.util';
 import type { Bindings } from '../../types/create-component/bindings.type';
 import type { TemplateHandler } from '../../types/template-handler.type';
 
@@ -105,7 +106,8 @@ export function _createComponent<
  * without a condition are applied as long as the component lives, the ones of a group with a condition become an `@if` with a single branch,
  * whose inputs go back to their default value once it is no longer selected.
  * @param target - The class of the component or of the directive, whose required inputs must be bound by a group without condition.
- * @param properties - The groups of inputs, by the name they are bound with: their alias, when they declare one.
+ * @param properties - The groups of inputs, by the name they are bound with: their alias, when they declare one, or the
+ *   name an input of a host directive of the component is exposed with, set into the directive.
  * @param events - The groups of events, by name.
  * @returns The bindings collected.
  * @throws When an input is bound by more than one group, or by the name of its property while it declares an alias, or a required input
@@ -119,6 +121,7 @@ function collectBindings<Target extends CustomElement | CustomDirective>(target:
   const alwaysBound = new Set<string>();
 
   if (properties?.length) {
+    const exposedInputs = _resolveHostDirectives(target).inputs;
     for (let i = 0; i < properties.length; i++) {
       const group = properties[i];
       const { attributes } = group.condition ? addBranch(bindings, group.condition) : bindings;
@@ -129,8 +132,10 @@ function collectBindings<Target extends CustomElement | CustomDirective>(target:
           continue;
         }
 
+        // An input a host directive exposes is set into the directive by the name it is exposed with
+        const exposed = !!exposedInputs?.[name];
         // Bound by its alias, set by the name of its property
-        const property = _toPropertyName(target, name);
+        const property = exposed ? name : _toPropertyName(target, name);
         if (bound.has(property)) {
           throw new Error(`Property "${name}" is bound by more than one group`);
         }
@@ -139,10 +144,10 @@ function collectBindings<Target extends CustomElement | CustomDirective>(target:
         const attribute: Bindings['attributes'][number] = {
           name: property,
           value: group[name],
-          setter: _setReactiveInput
+          setter: exposed ? _setReactiveExposedInput : _setReactiveInput
         };
 
-        group.condition ? attribute.unbind = _resetProperty : alwaysBound.add(property);
+        group.condition ? attribute.unbind = exposed ? _resetExposedInput : _resetProperty : alwaysBound.add(property);
 
         attributes.push(attribute);
       }

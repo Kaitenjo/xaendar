@@ -1,5 +1,5 @@
 import { isValidCustomElementName, slice, toModelChangeEvent } from '@xaendar/common';
-import { ClassDeclaration, CompilerOptions, Decorator, EntityName, Expression, forEachChild, getDecorators, getNameOfDeclaration, Identifier, isArrowFunction, isCallExpression, isClassDeclaration, isDecorator, isEnumDeclaration, isFunctionExpression, isIdentifier, isImportDeclaration, isInterfaceDeclaration, isMethodDeclaration, isNamedImports, isNamespaceImport, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isQualifiedName, isShorthandPropertyAssignment, isStringLiteral, isTypeAliasDeclaration, isTypeReferenceNode, ModifierLike, Node, ObjectLiteralElementLike, ObjectLiteralExpression, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
+import { ClassDeclaration, CompilerOptions, Decorator, EntityName, Expression, forEachChild, getCombinedModifierFlags, getDecorators, getNameOfDeclaration, Identifier, isArrowFunction, isCallExpression, isClassDeclaration, isDecorator, isEnumDeclaration, isFunctionExpression, isIdentifier, isImportDeclaration, isInterfaceDeclaration, isMethodDeclaration, isNamedImports, isNamespaceImport, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isQualifiedName, isShorthandPropertyAssignment, isStringLiteral, isTypeAliasDeclaration, isTypeReferenceNode, ModifierFlags, ModifierLike, Node, ObjectLiteralElementLike, ObjectLiteralExpression, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
 import { ComponentPropertyMetadataWithSpan } from '../../models/component-property-metadata-with-span/component-property-metadata-with-span.model';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
 import type { ClassDecoratorNode } from '../../types/class-decorator-node.type';
@@ -14,11 +14,12 @@ import type { MemberDeclaration } from '../../types/member-declaration.type';
 import type { ResolvedClass } from '../../types/resolved-class.type';
 import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes/class-declaration-with-name.type';
 import type { DirectiveDecorator } from '../../types/typescript-decorator-nodes/directive-decorator.type';
+import type { HostDirectiveSource } from '../../types/host-directive-source.type';
 import type { EventDecorator } from '../../types/typescript-decorator-nodes/event-decorator.type';
 import type { PropertyDecorator } from '../../types/typescript-decorator-nodes/property-decorator.type';
 import type { WebComponentDecorator } from '../../types/typescript-decorator-nodes/web-component-decorator.type';
 import type { WebComponentError } from '../../types/web-component-error.type';
-import { addHostDirectiveBindings } from '../host-directives/host-directives.utils';
+import { addHostDirectiveBindings, checkHostDirectives, hasHostDirectives } from '../host-directives/host-directives.utils';
 import { readLibraryClass } from '../package-libraries/package-libraries.utils';
 import { resolveBaseClassOf } from '../resolve-declaration/resolve-declaration.utils';
 import { toTypeCheckModuleSpecifier } from '../symbol-imports/symbol-imports.utils';
@@ -47,7 +48,7 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
 
     const className = klass.name.text;
     const bindings = extractBindingsMetadata(klass, sourceFile, 'component', compilerOptions);
-    addHostDirectiveBindings(bindings, decorator, sourceFile, compilerOptions, directive => extractHostDirectiveBindings(directive, compilerOptions));
+    addHostDirectiveBindings(bindings, collectHostDirectiveSources({ sourceFile, declaration: klass }, decorator, compilerOptions), compilerOptions, directive => extractHostDirectiveBindings(directive, compilerOptions));
     const metadata: ComponentMetadata = {
       type: 'component',
       className,
@@ -231,6 +232,105 @@ export function findWebComponentErrors(sourceFile: SourceFile, componentFile: bo
   }
 
   return errors;
+}
+
+/**
+ * Finds the host directives of the components of a source file that the runtime would reject when the class is
+ * registered, the ones the components inherit included (see `checkHostDirectives`): a directive declared twice along
+ * the chain of classes, an input or an event a directive does not declare, an input exposed with the name of an input or
+ * of a member of the component or of another exposed input, an event exposed with the name of an event of the component
+ * or of another exposed event. A problem of a declaration of the component is reported on it, one of an ancestor on the
+ * name of the class. The build and the editor report the same errors.
+ *
+ * @param sourceFile - The source file declaring the components.
+ * @param compilerOptions - Project compiler options, driving how the modules declaring the base classes and the
+ *   directives are resolved.
+ * @returns One error per problem found.
+ */
+export function findHostDirectiveErrors(sourceFile: SourceFile, compilerOptions?: CompilerOptions): WebComponentError[] {
+  const errors = new Array<WebComponentError>();
+  const declarations = getWebComponentDeclarations(sourceFile);
+  for (let i = 0; i < declarations.length; i++) {
+    const { klass, decorator } = declarations[i];
+    const resolved: ResolvedClass = { sourceFile, declaration: klass };
+    const sources = collectHostDirectiveSources(resolved, decorator, compilerOptions);
+    if (!sources.some(source => hasHostDirectives(source.decorator))) {
+      continue;
+    }
+
+    const component = Object.assign(extractBindingsMetadata(klass, sourceFile, 'component', compilerOptions), { className: klass.name.text, members: collectMemberNames(resolved, compilerOptions) });
+    checkHostDirectives(sources, component, compilerOptions, directive => extractHostDirectiveBindings(directive, compilerOptions), (message, node) => reportAt(errors, sourceFile, message, node ?? klass.name));
+  }
+
+  return errors;
+}
+
+/**
+ * Collects the `@WebComponent` decorators of a component and of its ancestors, which declare the host directives the
+ * component has: the ones of the ancestors first, as the runtime applies them. Base classes that can't be resolved are
+ * skipped, as their accessors are.
+ *
+ * @param klass - The class of the component, with the file declaring it.
+ * @param decorator - Its `@WebComponent` decorator.
+ * @param compilerOptions - Project compiler options, driving how the modules declaring the base classes are resolved.
+ * @returns The decorators, the one of the component last.
+ */
+function collectHostDirectiveSources(klass: ResolvedClass, decorator: WebComponentDecorator, compilerOptions: CompilerOptions | undefined): HostDirectiveSource[] {
+  const sources = new Array<HostDirectiveSource>();
+  addAncestorSources(klass, compilerOptions, new Set([klass.declaration]), sources);
+  sources.push({ sourceFile: klass.sourceFile, decorator, own: true });
+  return sources;
+}
+
+/**
+ * Adds the `@WebComponent` decorators of the ancestors of a class, the farthest first.
+ *
+ * @param klass - The class, with the file declaring it.
+ * @param compilerOptions - Project compiler options, driving how the modules declaring the base classes are resolved.
+ * @param visitedClasses - Classes already walked, to stop on circular inheritance.
+ * @param sources - The decorators collected so far, filled in place.
+ */
+function addAncestorSources(klass: ResolvedClass, compilerOptions: CompilerOptions | undefined, visitedClasses: Set<ClassDeclaration>, sources: HostDirectiveSource[]): void {
+  const base = resolveBaseClassOf(klass, compilerOptions);
+  if (!base || visitedClasses.has(base.declaration)) {
+    return;
+  }
+
+  visitedClasses.add(base.declaration);
+  addAncestorSources(base, compilerOptions, visitedClasses, sources);
+  const decorator = findClassDecorator<WebComponentDecorator>(base.declaration, 'WebComponent');
+  if (decorator) {
+    sources.push({ sourceFile: base.sourceFile, decorator, own: false });
+  }
+}
+
+/**
+ * Collects the names of the instance members of a class and of its ancestors that can be resolved: fields, accessors and
+ * methods, which an accessor the runtime defines on the prototype for an exposed input would hide, or be hidden by.
+ *
+ * @param klass - The class, with the file declaring it.
+ * @param compilerOptions - Project compiler options, driving how the modules declaring the base classes are resolved.
+ * @returns The names.
+ */
+function collectMemberNames(klass: ResolvedClass, compilerOptions: CompilerOptions | undefined): Set<string> {
+  const names = new Set<string>();
+  const visitedClasses = new Set<ClassDeclaration>();
+  let current: ResolvedClass | undefined = klass;
+  while (current && !visitedClasses.has(current.declaration)) {
+    visitedClasses.add(current.declaration);
+    const { members } = current.declaration;
+    for (let i = 0; i < members.length; i++) {
+      const member = members[i];
+      const name = member.name;
+      if (name && (isIdentifier(name) || isStringLiteral(name)) && !(getCombinedModifierFlags(member) & ModifierFlags.Static)) {
+        names.add(name.text);
+      }
+    }
+
+    current = resolveBaseClassOf(current, compilerOptions);
+  }
+
+  return names;
 }
 
 /**

@@ -470,7 +470,7 @@
         },
         "extendingAComponent": {
           "title": "Estendere un componente",
-          "p1": "Un componente può estenderne un altro. La sottoclasse ha bisogno del proprio decoratore, che le dà un selettore e una funzione di render; il suo <code>templateUrl</code> può puntare al template del padre. Le opzioni del decoratore non vengono ereditate: le <code>hostDirectives</code> del padre vanno elencate di nuovo in quello della sottoclasse, se le servono."
+          "p1": "Un componente può estenderne un altro. La sottoclasse ha bisogno del proprio decoratore, che le dà un selettore e una funzione di render; il suo <code>templateUrl</code> può puntare al template del padre. Le opzioni del decoratore non vengono ereditate, tranne le <code>hostDirectives</code>: quelle del padre si applicano anche alla sottoclasse, prima delle sue, e i suoi template legano gli input e gli eventi che espongono. La sottoclasse, il padre e le loro host directive sono un tutt’uno: una direttiva non si può dichiarare di nuovo, e un nome esposto non può essere quello di un input, di un evento o di un membro di una delle due classi."
         },
         "edgeCases": {
           "title": "Casi limite",

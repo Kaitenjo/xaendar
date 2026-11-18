@@ -16,6 +16,7 @@ vi.mock('@xaendar/compiler', async (importOriginal) => {
     compile: vi.fn(),
     extractComponentsMetadataFromSourceFile: vi.fn(),
     extractComponentMembers: vi.fn(),
+    findHostDirectiveErrors: vi.fn(),
     findWebComponentErrors: vi.fn()
   };
 });
@@ -82,7 +83,7 @@ vi.mock('../plugin-utils/plugin.utils', () => ({
   injectTemplate: vi.fn()
 }));
 
-import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers, findWebComponentErrors } from '@xaendar/compiler';
+import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers, findHostDirectiveErrors, findWebComponentErrors } from '@xaendar/compiler';
 import { createShim, getImportConflictDiagnostics, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import { TransformPluginContext } from 'rolldown';
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
@@ -201,6 +202,7 @@ function mockNoDiagnostics() {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(findWebComponentErrors).mockReturnValue([]);
+  vi.mocked(findHostDirectiveErrors).mockReturnValue([]);
   vi.mocked(claimSelectors).mockResolvedValue(undefined);
   vi.mocked(extractImportedComponentPaths).mockReturnValue([]);
   vi.mocked(injectTemplate).mockImplementation(() => undefined);
@@ -263,6 +265,29 @@ describe('createTransformHook()', () => {
     expect(findWebComponentErrors).toHaveBeenCalledWith(expect.objectContaining({ fileName: COMPONENT_PATH }), true, false);
     expect(state.logError).toHaveBeenCalledWith('', `The templateUrl option of FooComponent must be a string literal - ${COMPONENT_PATH}`);
     expect(extractComponentsMetadataFromSourceFile).not.toHaveBeenCalled();
+  });
+
+  it('logs the host directives the runtime would reject, once the options can be read, extracting no metadata', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    vi.mocked(findHostDirectiveErrors).mockReturnValue([{ message: 'FooComponent already has an input named "hint", which TipDirective cannot expose', span: SPAN }]);
+    const state = createState();
+    const hook = createTransformHook(state);
+
+    const result = await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
+
+    expect(result).toBeNull();
+    expect(findHostDirectiveErrors).toHaveBeenCalledWith(expect.objectContaining({ fileName: COMPONENT_PATH }), state.compilerOptions);
+    expect(state.logError).toHaveBeenCalledWith('', `FooComponent already has an input named "hint", which TipDirective cannot expose - ${COMPONENT_PATH}`);
+    expect(extractComponentsMetadataFromSourceFile).not.toHaveBeenCalled();
+  });
+
+  it('does not check the host directives of a component whose options cannot be read', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    vi.mocked(findWebComponentErrors).mockReturnValue([{ message: 'The templateUrl option of FooComponent must be a string literal', span: SPAN }]);
+
+    await createTransformHook(createState()).call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
+
+    expect(findHostDirectiveErrors).not.toHaveBeenCalled();
   });
 
   it('does not serve a TypeScript file with type errors in the dev server, raising them', async () => {

@@ -26910,45 +26910,112 @@ function getSourceFile(fileName, context) {
 }
 
 // ../packages/compiler/src/utils/host-directives/host-directives.utils.ts
-function addHostDirectiveBindings({ properties: properties2, events }, decorator, sourceFile, compilerOptions, extractBindings) {
-  const directives = readHostDirectives(decorator);
-  if (!directives?.length) {
-    return;
-  }
-  for (let i2 = 0; i2 < directives.length; i2++) {
-    const { directive, properties: dirProperties, events: dirEvents } = directives[i2];
-    const resolved = dirProperties?.length || dirEvents?.length ? resolveClassReference(sourceFile, directive, compilerOptions) : void 0;
-    const exposed = resolved && extractBindings(resolved);
-    if (!exposed) {
+function addHostDirectiveBindings({ properties: properties2, events }, sources, compilerOptions, extractBindings) {
+  for (let i2 = 0; i2 < sources.length; i2++) {
+    const { sourceFile, decorator } = sources[i2];
+    const directives = readHostDirectives(decorator);
+    if (!directives?.length) {
       continue;
     }
-    if (dirProperties?.length) {
-      for (let j = 0; j < dirProperties.length; j++) {
-        const { name, alias } = dirProperties[j];
-        const property = exposed.properties.get(name);
-        if (property && !properties2.has(alias)) {
-          properties2.set(alias, new ComponentPropertyMetadata(property.name, property.type, {
-            required: property.required,
-            alias: alias === property.name ? void 0 : alias,
-            declaration: property.declaration,
-            exposed: true
-          }));
+    for (let j = 0; j < directives.length; j++) {
+      const { directive, properties: dirProperties, events: dirEvents } = directives[j];
+      const resolved = dirProperties?.length || dirEvents?.length ? resolveClassReference(sourceFile, directive, compilerOptions) : void 0;
+      const exposed = resolved && extractBindings(resolved);
+      if (!exposed) {
+        continue;
+      }
+      if (dirProperties?.length) {
+        for (let k = 0; k < dirProperties.length; k++) {
+          const { name, alias } = dirProperties[k];
+          const property = exposed.properties.get(name);
+          if (property && !properties2.has(alias)) {
+            properties2.set(alias, new ComponentPropertyMetadata(property.name, property.type, {
+              required: property.required,
+              alias: alias === property.name ? void 0 : alias,
+              declaration: property.declaration,
+              exposed: true
+            }));
+          }
         }
       }
-    }
-    if (dirEvents?.length) {
-      for (let j = 0; j < dirEvents.length; j++) {
-        const { name, alias } = dirEvents[j];
-        const event = exposed.events.get(name);
-        if (event && !events.has(alias)) {
-          events.set(alias, event);
+      if (dirEvents?.length) {
+        for (let k = 0; k < dirEvents.length; k++) {
+          const { name, alias } = dirEvents[k];
+          const event = exposed.events.get(name);
+          if (event && !events.has(alias)) {
+            events.set(alias, event);
+          }
         }
       }
     }
   }
 }
+function hasHostDirectives(decorator) {
+  return !!readHostDirectives(decorator)?.length;
+}
+function checkHostDirectives(sources, component, compilerOptions, extractBindings, report2) {
+  const { className, properties: properties2, events, members } = component;
+  const declared = /* @__PURE__ */ new Set();
+  const inputs = /* @__PURE__ */ new Set();
+  const outputs = /* @__PURE__ */ new Set();
+  for (let i2 = 0; i2 < sources.length; i2++) {
+    const { sourceFile, decorator, own } = sources[i2];
+    const directives = readHostDirectives(decorator);
+    if (!directives?.length) {
+      continue;
+    }
+    for (let j = 0; j < directives.length; j++) {
+      const { directive, properties: dirProperties, events: dirEvents } = directives[j];
+      const resolved = resolveClassReference(sourceFile, directive, compilerOptions);
+      if (!resolved) {
+        continue;
+      }
+      const directiveName = resolved.declaration.name?.text;
+      if (declared.has(resolved.declaration)) {
+        report2(`${className} declares the host directive ${directiveName} more than once`, own ? directive : void 0);
+        continue;
+      }
+      declared.add(resolved.declaration);
+      const exposed = dirProperties?.length || dirEvents?.length ? extractBindings(resolved) : void 0;
+      if (!exposed) {
+        continue;
+      }
+      if (dirProperties?.length) {
+        for (let k = 0; k < dirProperties.length; k++) {
+          const { name, alias, node } = dirProperties[k];
+          const message = describeInputConflict(exposed.properties.has(name), name, alias, className, directiveName, properties2.has(alias) || inputs.has(alias), members.has(alias));
+          if (message) {
+            report2(message, own ? node : void 0);
+          }
+          inputs.add(alias);
+        }
+      }
+      if (dirEvents?.length) {
+        for (let k = 0; k < dirEvents.length; k++) {
+          const { name, alias, node } = dirEvents[k];
+          if (!exposed.events.has(name)) {
+            report2(`${directiveName} does not declare an event named "${name}"`, own ? node : void 0);
+          } else if (events.has(alias) || outputs.has(alias)) {
+            report2(`${className} already has an event named "${alias}", which ${directiveName} cannot expose`, own ? node : void 0);
+          }
+          outputs.add(alias);
+        }
+      }
+    }
+  }
+}
+function describeInputConflict(declared, name, alias, className, directiveName, input, member) {
+  if (!declared) {
+    return `${directiveName} does not declare an input named "${name}"`;
+  }
+  if (input) {
+    return `${className} already has an input named "${alias}", which ${directiveName} cannot expose`;
+  }
+  return member ? `${className} already has a member named "${alias}", which ${directiveName} cannot expose as an input` : void 0;
+}
 function readHostDirectives(decorator) {
-  const list = getOptionExpression(decorator.expression.arguments[0], "hostDirectives");
+  const options = decorator.expression.arguments[0];
+  const list = options && (0, import_typescript15.isObjectLiteralExpression)(options) ? getOptionExpression(options, "hostDirectives") : void 0;
   if (!list || !(0, import_typescript15.isArrayLiteralExpression)(list)) {
     return;
   }
@@ -26985,12 +27052,12 @@ function readExposures(expression) {
   for (let i2 = 0; i2 < expression.elements.length; i2++) {
     const element = expression.elements[i2];
     if ((0, import_typescript15.isStringLiteralLike)(element)) {
-      exposures.push({ name: element.text, alias: element.text });
+      exposures.push({ name: element.text, alias: element.text, node: element });
     } else if ((0, import_typescript15.isObjectLiteralExpression)(element)) {
       const name = getOptionExpression(element, "name");
       const alias = getOptionExpression(element, "alias");
       if (name && alias && (0, import_typescript15.isStringLiteralLike)(name) && (0, import_typescript15.isStringLiteralLike)(alias)) {
-        exposures.push({ name: name.text, alias: alias.text });
+        exposures.push({ name: name.text, alias: alias.text, node: element });
       }
     }
   }
@@ -27186,7 +27253,7 @@ async function extractComponentsMetadataFromSourceFile(sourceFile, compilerOptio
     }
     const className = klass.name.text;
     const bindings = extractBindingsMetadata(klass, sourceFile, "component", compilerOptions);
-    addHostDirectiveBindings(bindings, decorator, sourceFile, compilerOptions, (directive) => extractHostDirectiveBindings(directive, compilerOptions));
+    addHostDirectiveBindings(bindings, collectHostDirectiveSources({ sourceFile, declaration: klass }, decorator, compilerOptions), compilerOptions, (directive) => extractHostDirectiveBindings(directive, compilerOptions));
     const metadata = {
       type: "component",
       className,
@@ -27306,6 +27373,57 @@ function findWebComponentErrors(sourceFile, componentFile, ssr) {
     }
   }
   return errors;
+}
+function findHostDirectiveErrors(sourceFile, compilerOptions) {
+  const errors = new Array();
+  const declarations = getWebComponentDeclarations(sourceFile);
+  for (let i2 = 0; i2 < declarations.length; i2++) {
+    const { klass, decorator } = declarations[i2];
+    const resolved = { sourceFile, declaration: klass };
+    const sources = collectHostDirectiveSources(resolved, decorator, compilerOptions);
+    if (!sources.some((source) => hasHostDirectives(source.decorator))) {
+      continue;
+    }
+    const component = Object.assign(extractBindingsMetadata(klass, sourceFile, "component", compilerOptions), { className: klass.name.text, members: collectMemberNames(resolved, compilerOptions) });
+    checkHostDirectives(sources, component, compilerOptions, (directive) => extractHostDirectiveBindings(directive, compilerOptions), (message, node) => reportAt(errors, sourceFile, message, node ?? klass.name));
+  }
+  return errors;
+}
+function collectHostDirectiveSources(klass, decorator, compilerOptions) {
+  const sources = new Array();
+  addAncestorSources(klass, compilerOptions, /* @__PURE__ */ new Set([klass.declaration]), sources);
+  sources.push({ sourceFile: klass.sourceFile, decorator, own: true });
+  return sources;
+}
+function addAncestorSources(klass, compilerOptions, visitedClasses, sources) {
+  const base = resolveBaseClassOf(klass, compilerOptions);
+  if (!base || visitedClasses.has(base.declaration)) {
+    return;
+  }
+  visitedClasses.add(base.declaration);
+  addAncestorSources(base, compilerOptions, visitedClasses, sources);
+  const decorator = findClassDecorator(base.declaration, "WebComponent");
+  if (decorator) {
+    sources.push({ sourceFile: base.sourceFile, decorator, own: false });
+  }
+}
+function collectMemberNames(klass, compilerOptions) {
+  const names = /* @__PURE__ */ new Set();
+  const visitedClasses = /* @__PURE__ */ new Set();
+  let current = klass;
+  while (current && !visitedClasses.has(current.declaration)) {
+    visitedClasses.add(current.declaration);
+    const { members } = current.declaration;
+    for (let i2 = 0; i2 < members.length; i2++) {
+      const member = members[i2];
+      const name = member.name;
+      if (name && ((0, import_typescript16.isIdentifier)(name) || (0, import_typescript16.isStringLiteral)(name)) && !((0, import_typescript16.getCombinedModifierFlags)(member) & import_typescript16.ModifierFlags.Static)) {
+        names.add(name.text);
+      }
+    }
+    current = resolveBaseClassOf(current, compilerOptions);
+  }
+  return names;
 }
 function getWebComponentDeclarations(sourceFile) {
   return getDecoratedClassDeclarations(sourceFile, "WebComponent");
@@ -31906,6 +32024,12 @@ async function getComponentDiagnostics(fileName, text) {
   const errors = findWebComponentErrors(sourceFile, true, readSsr((0, import_node_path9.dirname)(fileName)));
   if (errors.length) {
     diagnostics.push(...errors);
+  }
+  const hostDirectiveErrors = getWebComponentDeclarations(sourceFile).length ? findHostDirectiveErrors(sourceFile, loadTsConfig((0, import_node_path9.dirname)(fileName)).options) : void 0;
+  if (hostDirectiveErrors?.length) {
+    for (let i2 = 0; i2 < hostDirectiveErrors.length; i2++) {
+      diagnostics.push(hostDirectiveErrors[i2]);
+    }
   }
   const reflected = findReflectedInputs(sourceFile);
   for (let i2 = 0; i2 < reflected.length; i2++) {
