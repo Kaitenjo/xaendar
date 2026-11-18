@@ -220,6 +220,13 @@ describe('_createHostDirectives', () => {
       expect(() => _resolveHostDirectives(defineClass([{ directive: LabelDirective, properties: ['text'] }], {}, Parent))).toThrow('already has an input named "text", which LabelDirective cannot expose');
       expect(() => _resolveHostDirectives(defineClass([{ directive: LabelDirective, events: ['opened'] }], {}, Parent))).toThrow('already has an event named "opened", which LabelDirective cannot expose');
     });
+
+    it('accepts events of the class and of its host directives named apart from the ones an ancestor exposes', () => {
+      const Parent = defineClass([{ directive: TooltipDirective, events: ['opened'] }]);
+
+      expect(_resolveHostDirectives(defineClass(undefined, { events: new Set(['done']) }, Parent)).directives).toHaveLength(1);
+      expect(_resolveHostDirectives(defineClass([{ directive: LabelDirective, events: [{ name: 'opened', alias: 'shown' }] }], {}, Parent)).directives).toHaveLength(2);
+    });
   });
 
   describe('inputs', () => {

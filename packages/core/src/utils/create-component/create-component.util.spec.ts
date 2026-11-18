@@ -157,6 +157,13 @@ class Hint extends CustomDirective {
 Object.defineProperty(Hint, Symbol.for('Symbol.metadata'), { value: { aliasToAttribute: { hint: 'text' } } });
 
 /**
+ * Component exposing the input of a host directive under another name, as `@WebComponent` registers it in the metadata
+ * of the class.
+ */
+const Tipped = define(class Tipped extends CustomElement { });
+Object.assign((Tipped as unknown as Record<symbol, object>)[Symbol.for('Symbol.metadata')], { hostDirectives: [{ directive: Hint, properties: [{ name: 'hint', alias: 'tip' }] }] });
+
+/**
  * Directive declaring a required input.
  */
 class Label extends CustomDirective {
@@ -237,6 +244,23 @@ describe('_createComponent', () => {
 
     expect(element.internalValue()).toBe('second');
     expect(element.value()).toBe(7);
+  });
+
+  it('binds an input a host directive exposes by the name it is exposed with, setting it into the directive', async () => {
+    const enabled = signal(true);
+    const tip = signal('first');
+    const { element } = _createComponent(owner, Tipped, { target: document.body, properties: [{ condition: () => enabled(), tip: () => tip() } as never] });
+    const hint = element.hostDirectives.get(Hint) as Hint;
+
+    expect(hint.text()).toBe('first');
+
+    tip.set('second');
+    await flush();
+    expect(hint.text()).toBe('second');
+
+    enabled.set(false);
+    await flush();
+    expect(hint.text()).toBe('');
   });
 
   it('throws when an input declaring an alias is bound by the name of its property', () => {

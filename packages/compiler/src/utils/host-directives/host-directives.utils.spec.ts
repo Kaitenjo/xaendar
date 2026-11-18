@@ -237,6 +237,26 @@ class MyEl extends Base { }`)).toEqual([['MyEl declares the host directive Toolt
     expect(errorsOf(`${decorator('[Tooltip]', 'base-el')}\nclass Base { }\n${decorator('[Label]')}\nclass MyEl extends Base { }`)).toEqual([]);
   });
 
+  it('reports the events an ancestor exposes, missing or with a name the component uses, on the name of the class', () => {
+    const base = `${decorator('[{ directive: Tooltip, events: [\'closed\', { name: \'opened\', alias: \'done\' }] }]', 'base-el')}\nclass Base { }`;
+
+    expect(errorsOf(`${base}\n@WebComponent({ selector: 'my-el', templateUrl: './t.xaendar' })\nclass MyEl extends Base {\n  @Event() accessor done!: Output<void>;\n}`)).toEqual([
+      ['Tooltip does not declare an event named "closed"', '\'closed\''],
+      ['Tooltip does not declare an event named "closed"', 'MyEl'],
+      ['MyEl already has an event named "done", which Tooltip cannot expose', 'MyEl']
+    ]);
+  });
+
+  it('checks a directive exposing only events', () => {
+    expect(errorsOf(component('', decorator('[{ directive: Tooltip, events: [\'opened\'] }]')))).toEqual([]);
+  });
+
+  it('reads the members named by a string literal, and skips the ones without a name', () => {
+    expect(errorsOf(component('constructor() { }\n\'label\' = 1;', decorator('[{ directive: Tooltip, properties: [{ name: \'text\', alias: \'label\' }] }]')))).toEqual([
+      ['MyEl already has a member named "label", which Tooltip cannot expose as an input', '{ name: \'text\', alias: \'label\' }']
+    ]);
+  });
+
   it('reports a directive of an ancestor the component declares again on the name of the class', () => {
     const code = `${decorator('[Tooltip]', 'base-el')}\nclass Base { }\n${decorator('[Label]', 'middle-el')}\nclass Middle extends Base { }\n@WebComponent({ selector: 'my-el', templateUrl: './t.xaendar' })\nclass MyEl extends Middle { }`;
 
