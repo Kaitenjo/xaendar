@@ -1,7 +1,9 @@
 import { Command } from 'commander';
+import { resolve } from 'node:path';
 import type { Plugin } from 'vite';
 import { startVitest } from 'vitest/node';
 import type { CacheKeyIdGeneratorContext, CliOptions, VitestPluginContext } from 'vitest/node';
+import { findModulesDir } from '../../utils/cache-plugin/cache-plugin.utils';
 import { createPlugins } from '../../utils/plugins';
 import { readXaendarConfig } from '../../utils/xaendar-config/xaendar-config.utils';
 
@@ -62,7 +64,8 @@ export function testCommand(runVitest: typeof startVitest = startVitest): Comman
     .description('Run the tests of the project')
     .action(async () => {
       const plugins = [createTestPlugin(), ...createPlugins()];
-      const options: CliOptions = { environment: 'happy-dom', setupFiles: [SIGNALS_SETUP_ID] };
+      // The transformed modules are cached in the node_modules of the project, as the cache of Vite is (see createCachePlugin)
+      const options: CliOptions = { environment: 'happy-dom', setupFiles: [SIGNALS_SETUP_ID], fsModuleCachePath: resolve(findModulesDir(process.cwd()), '.vitest-cache') };
       if (readXaendarConfig()?.libs) {
         options.dir = process.cwd();
       }

@@ -7,6 +7,7 @@ import type { ResolvedLibrary } from '../../types/resolved-library.type';
 import type { XaendarProject } from '../../types/xaendar-project.type';
 import { findProjectLibrary } from '../library/library.utils';
 import { createBabelPlugin } from '../babel-plugin/babel-plugin.utils';
+import { createCachePlugin } from '../cache-plugin/cache-plugin.utils';
 
 /**
  * Builds the libraries of a workspace, each one into a package ready to be published (see `buildLibrary` of
@@ -38,7 +39,7 @@ export async function buildLibraries(project: XaendarProject, name?: string): Pr
     const { root } = order.libraries.get(libraryName)!;
     const { outDir, ssr, customElements, strictEvents = project.config.strictEvents, entry } = libs[libraryName];
     const libraryOutDir = resolve(project.dir, outDir ?? `dist/${basename(root)}`);
-    const options = { name: libraryName, root, entry, outDir: libraryOutDir, ssr: ssr === true, customElements, strictEvents, plugins: [createBabelPlugin()], xaendarVersion: version };
+    const options = { name: libraryName, root, entry, outDir: libraryOutDir, ssr: ssr === true, customElements, strictEvents, plugins: [createBabelPlugin(), createCachePlugin(project.dir)], xaendarVersion: version };
     await buildLibrary(dependencies.length ? Object.assign(options, { dependencies: toBuildDependencies(dependencies, outDirs) }) : options);
     outDirs.set(libraryName, libraryOutDir);
     console.log(`✔  ${libraryName} → ${libraryOutDir}`);

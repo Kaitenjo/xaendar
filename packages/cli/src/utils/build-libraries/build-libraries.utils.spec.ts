@@ -11,6 +11,10 @@ vi.mock('../babel-plugin/babel-plugin.utils', () => ({
   createBabelPlugin: vi.fn(() => ({ name: 'babel' }))
 }));
 
+vi.mock('../cache-plugin/cache-plugin.utils', () => ({
+  createCachePlugin: vi.fn((fromDir: string) => ({ name: 'xaendar:cache', fromDir }))
+}));
+
 vi.mock('../../commands/new/structure/structure', () => ({
   readCliVersion: vi.fn(() => '1.2.0')
 }));
@@ -63,8 +67,8 @@ describe('buildLibraries()', () => {
     await buildLibraries(project);
 
     expect(vi.mocked(buildLibrary).mock.calls).toEqual([
-      [{ name: '@acme/ui', root: resolve(dir, 'libraries/ui'), entry: undefined, outDir: resolve(dir, 'dist/ui'), ssr: true, customElements: ['sl-*'], plugins: [{ name: 'babel' }], xaendarVersion: '1.2.0' }],
-      [{ name: 'charts', root: resolve(dir, 'libraries/charts'), entry: 'lib/index.ts', outDir: resolve(dir, 'out/charts'), ssr: false, customElements: undefined, plugins: [{ name: 'babel' }], xaendarVersion: '1.2.0' }]
+      [{ name: '@acme/ui', root: resolve(dir, 'libraries/ui'), entry: undefined, outDir: resolve(dir, 'dist/ui'), ssr: true, customElements: ['sl-*'], plugins: [{ name: 'babel' }, { name: 'xaendar:cache', fromDir: dir }], xaendarVersion: '1.2.0' }],
+      [{ name: 'charts', root: resolve(dir, 'libraries/charts'), entry: 'lib/index.ts', outDir: resolve(dir, 'out/charts'), ssr: false, customElements: undefined, plugins: [{ name: 'babel' }, { name: 'xaendar:cache', fromDir: dir }], xaendarVersion: '1.2.0' }]
     ]);
     expect(console.log).toHaveBeenCalledWith(`✔  @acme/ui → ${resolve(dir, 'dist/ui')}`);
     expect(console.log).toHaveBeenCalledWith(`✔  charts → ${resolve(dir, 'out/charts')}`);

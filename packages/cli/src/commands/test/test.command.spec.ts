@@ -11,7 +11,17 @@ vi.mock('../../utils/xaendar-config/xaendar-config.utils', () => ({
   readXaendarConfig
 }));
 
+vi.mock('../../utils/cache-plugin/cache-plugin.utils', () => ({
+  findModulesDir: () => '/workspace/node_modules'
+}));
+
+import { resolve } from 'node:path';
 import { testCommand } from './test.command';
+
+/**
+ * The directory of the module cache of Vitest, in the node_modules of the project.
+ */
+const FS_MODULE_CACHE_PATH = resolve('/workspace/node_modules', '.vitest-cache');
 
 /**
  * Builds a fake `startVitest`, resolving to a Vitest instance that keeps running or not.
@@ -60,14 +70,14 @@ describe('testCommand()', () => {
     expect(command.aliases()).toContain('t');
   });
 
-  it('runs Vitest with the shared plugins, in a DOM environment installing the signals first, and exits after a single run', async () => {
+  it('runs Vitest with the shared plugins, in a DOM environment installing the signals first, caching the modules in the node_modules of the project, and exits after a single run', async () => {
     const { runVitest, exit } = createVitest(false);
 
     await testCommand(runVitest).parseAsync([], { from: 'user' });
 
     expect(runVitest).toHaveBeenCalledWith(
       [],
-      { environment: 'happy-dom', setupFiles: ['virtual:xaendar-signals-setup'] },
+      { environment: 'happy-dom', setupFiles: ['virtual:xaendar-signals-setup'], fsModuleCachePath: FS_MODULE_CACHE_PATH },
       { plugins: [expect.objectContaining({ name: 'xaendar:test' }), ...PLUGINS] }
     );
     expect(exit).toHaveBeenCalledOnce();
@@ -79,7 +89,7 @@ describe('testCommand()', () => {
 
     await testCommand(runVitest).parseAsync([], { from: 'user' });
 
-    expect(runVitest).toHaveBeenCalledWith([], { environment: 'happy-dom', setupFiles: ['virtual:xaendar-signals-setup'], dir: process.cwd() }, expect.anything());
+    expect(runVitest).toHaveBeenCalledWith([], { environment: 'happy-dom', setupFiles: ['virtual:xaendar-signals-setup'], fsModuleCachePath: FS_MODULE_CACHE_PATH, dir: process.cwd() }, expect.anything());
   });
 
   it('provides the setup module calling loadSignals() as a virtual module', async () => {

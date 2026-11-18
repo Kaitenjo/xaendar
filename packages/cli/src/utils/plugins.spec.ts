@@ -30,10 +30,10 @@ afterEach(() => {
 });
 
 describe('createPlugins()', () => {
-  it('creates the babel plugin and the plugin of its helpers, followed by the xaendar plugin', () => {
+  it('creates the babel plugin and the plugin of its helpers, followed by the xaendar plugin and the plugin of the cache', () => {
     const plugins = createPlugins();
 
-    expect(plugins.flat().map(plugin => (plugin as { name: string }).name)).toEqual(['babel', 'xaendar:babel-helpers', 'xaendar']);
+    expect(plugins.flat().map(plugin => (plugin as { name: string }).name)).toEqual(['babel', 'xaendar:babel-helpers', 'xaendar', 'xaendar:cache']);
     expect(xaendarPlugin).toHaveBeenCalledTimes(1);
   });
 

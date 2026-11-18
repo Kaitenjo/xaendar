@@ -3,11 +3,13 @@ import { resolve } from 'node:path';
 import type { PluginOption } from 'vite';
 import type { XaendarConfig } from '../types/xaendar-config.type';
 import { createBabelPlugin } from './babel-plugin/babel-plugin.utils';
+import { createCachePlugin } from './cache-plugin/cache-plugin.utils';
 import { readXaendarConfig, resolveSsrPaths } from './xaendar-config/xaendar-config.utils';
 
 /**
  * Creates the bundler plugins used by the CLI: Babel (to transpile decorators) followed by the Xaendar compiler
- * plugin, configured from the `xaendar.json` of the project in the working directory.
+ * plugin, configured from the `xaendar.json` of the project in the working directory, and the plugin putting the cache
+ * of Vite into the `node_modules` of the project (see `createCachePlugin`).
  *
  * @param staticReport - Whether the build tells what keeps each interactive component in the bundle of the browser.
  * @returns The plugins, in the order they must run.
@@ -15,7 +17,8 @@ import { readXaendarConfig, resolveSsrPaths } from './xaendar-config/xaendar-con
 export function createPlugins(staticReport?: boolean): PluginOption[] {
   return [
     createBabelPlugin(),
-    xaendarPlugin({ ...readPluginOptions(), staticReport })
+    xaendarPlugin({ ...readPluginOptions(), staticReport }),
+    createCachePlugin()
   ];
 }
 
