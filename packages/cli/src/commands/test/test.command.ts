@@ -5,7 +5,7 @@ import { startVitest } from 'vitest/node';
 import type { CacheKeyIdGeneratorContext, CliOptions, VitestPluginContext } from 'vitest/node';
 import { findModulesDir } from '../../utils/cache-plugin/cache-plugin.utils';
 import { createPlugins } from '../../utils/plugins';
-import { readXaendarConfig } from '../../utils/xaendar-config/xaendar-config.utils';
+import { enterProject, readXaendarConfig } from '../../utils/xaendar-config/xaendar-config.utils';
 
 /**
  * Id of the virtual module installing the global `Signal` before any spec.
@@ -63,6 +63,7 @@ export function testCommand(runVitest: typeof startVitest = startVitest): Comman
     .alias('t')
     .description('Run the tests of the project')
     .action(async () => {
+      enterProject();
       const plugins = [createTestPlugin(), ...createPlugins()];
       // The transformed modules are cached in the node_modules of the project, as the cache of Vite is (see createCachePlugin)
       const options: CliOptions = { environment: 'happy-dom', setupFiles: [SIGNALS_SETUP_ID], fsModuleCachePath: resolve(findModulesDir(process.cwd()), '.vitest-cache') };

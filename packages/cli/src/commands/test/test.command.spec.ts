@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { startVitest } from 'vitest/node';
 
-const { PLUGINS, readXaendarConfig } = vi.hoisted(() => ({ PLUGINS: [{ name: 'babel' }, { name: 'xaendar' }], readXaendarConfig: vi.fn() }));
+const { PLUGINS, enterProject, readXaendarConfig } = vi.hoisted(() => ({ PLUGINS: [{ name: 'babel' }, { name: 'xaendar' }], enterProject: vi.fn(), readXaendarConfig: vi.fn() }));
 
 vi.mock('../../utils/plugins', () => ({
   createPlugins: () => PLUGINS
 }));
 
 vi.mock('../../utils/xaendar-config/xaendar-config.utils', () => ({
+  enterProject,
   readXaendarConfig
 }));
 
@@ -81,6 +82,7 @@ describe('testCommand()', () => {
       { plugins: [expect.objectContaining({ name: 'xaendar:test' }), ...PLUGINS] }
     );
     expect(exit).toHaveBeenCalledOnce();
+    expect(enterProject).toHaveBeenCalledOnce();
   });
 
   it('looks for the specs in the whole workspace, its libraries included', async () => {

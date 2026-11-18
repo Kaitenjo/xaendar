@@ -37,6 +37,23 @@ export function readProject(fromDir: string): XaendarProject | undefined {
 }
 
 /**
+ * Moves into the project holding the working directory, which becomes the working directory: the commands reading the
+ * project (`start`, `build`, `test`, `prerender`) then work from any of its folders, the ones of the libraries of a
+ * workspace included, as from the project itself, as npm runs a script. The `xaendar.json`, the Vite configuration and
+ * the paths they hold, relative to the project, are then read from it.
+ *
+ * @returns The project, `undefined` when no `xaendar.json` holds the working directory, which stays where it is.
+ */
+export function enterProject(): XaendarProject | undefined {
+  const project = readProject(process.cwd());
+  if (project && project.dir !== process.cwd()) {
+    process.chdir(project.dir);
+  }
+
+  return project;
+}
+
+/**
  * Finds the nearest `xaendar.json`, walking up from a directory to the root of the file system.
  *
  * @param dir - Absolute path of the directory to start from.

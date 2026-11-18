@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { findXaendarConfigPath, readProject, readXaendarConfig, resolveSsrPaths } from './xaendar-config.utils';
+import { enterProject, findXaendarConfigPath, readProject, readXaendarConfig, resolveSsrPaths } from './xaendar-config.utils';
 
 /**
  * Temporary project directory the configuration is read from.
@@ -43,6 +43,28 @@ describe('readProject()', () => {
 
   it('reads nothing without a xaendar.json up to the root of the file system', () => {
     expect(readProject(projectDir)).toBeUndefined();
+  });
+});
+
+describe('enterProject()', () => {
+  it('moves into the project holding the working directory, such as the workspace of a library', () => {
+    const library = join(projectDir, 'libraries', 'ui');
+    mkdirSync(library, { recursive: true });
+    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ libs: { '@acme/ui': { root: 'libraries/ui' } } }));
+    vi.mocked(process.cwd).mockReturnValue(library);
+    const chdir = vi.spyOn(process, 'chdir').mockImplementation(() => undefined);
+
+    expect(enterProject()).toEqual(expect.objectContaining({ dir: projectDir }));
+    expect(chdir).toHaveBeenCalledExactlyOnceWith(projectDir);
+  });
+
+  it('stays in the project it is already in, and where it is without a project', () => {
+    const chdir = vi.spyOn(process, 'chdir').mockImplementation(() => undefined);
+
+    expect(enterProject()).toBeUndefined();
+    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ name: 'app' }));
+    expect(enterProject()).toEqual(expect.objectContaining({ dir: projectDir }));
+    expect(chdir).not.toHaveBeenCalled();
   });
 });
 

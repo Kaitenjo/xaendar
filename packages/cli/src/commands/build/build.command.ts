@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { buildLibraries } from '../../utils/build-libraries/build-libraries.utils';
 import { buildProject } from '../../utils/build-project/build-project.utils';
-import { readProject } from '../../utils/xaendar-config/xaendar-config.utils';
+import { enterProject } from '../../utils/xaendar-config/xaendar-config.utils';
 
 /**
  * Creates and returns the `build` command (alias `b`), building the project (see {@link buildProject}), or, in a
@@ -19,7 +19,8 @@ export function buildCommand(): Command {
 }
 
 /**
- * Builds the libraries of the workspace holding the working directory, or else the project in the working directory.
+ * Builds the libraries of the workspace holding the working directory, or else the project holding it, from the folder
+ * of the project (see `enterProject`).
  *
  * Exits the process with code `1` when a library is named outside of a workspace.
  *
@@ -28,13 +29,14 @@ export function buildCommand(): Command {
  * @returns A promise resolving once the build ends.
  */
 async function build(library: string | undefined, staticReport: boolean | undefined): Promise<void> {
-  const project = readProject(process.cwd());
+  const directory = process.cwd();
+  const project = enterProject();
   if (project?.config.libs) {
     await buildLibraries(project, library);
   } else if (library === undefined) {
     await buildProject(staticReport);
   } else {
-    console.error(`✖  No workspace holds ${process.cwd()}: xd build ${library} builds a library of a workspace.`);
+    console.error(`✖  No workspace holds ${directory}: xd build ${library} builds a library of a workspace.`);
     process.exit(1);
   }
 }

@@ -5,7 +5,7 @@ import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { resolveConfig } from 'vite';
 import { buildProject } from '../../utils/build-project/build-project.utils';
-import { readXaendarConfig, resolveSsrPaths, SSR_OUTLET } from '../../utils/xaendar-config/xaendar-config.utils';
+import { enterProject, readXaendarConfig, resolveSsrPaths, SSR_OUTLET } from '../../utils/xaendar-config/xaendar-config.utils';
 
 /**
  * Creates and returns the `prerender` command (alias `p`), rendering the routes of the project into HTML files (see
@@ -34,6 +34,7 @@ export function prerenderCommand(): Command {
  * @returns A promise resolving once every route is written.
  */
 async function prerender(): Promise<void> {
+  enterProject();
   const ssr = readXaendarConfig()?.ssr;
   if (!ssr) {
     console.error('✖  The project does not render on the server: declare "ssr": { "entry": "src/entry-server" } in its xaendar.json.');

@@ -7,6 +7,7 @@ paths:
 
 The `xd` CLI (`commander`, `src/commands/`): `new`, `generate component`, `generate library`, `add library`, `start`, `build`, `test` (Vitest in happy-dom), `prerender`. Depends on `build-tools`, `common`.
 
+- `start`, `build`, `test` and `prerender` first move into the project holding the working directory (`enterProject` of `utils/xaendar-config`, `process.chdir`, as npm runs a script), so they work from any of its folders, a library of a workspace included, reading `xaendar.json`, the Vite configuration and their relative paths from the project.
 - `start`, `build` and `test` add the plugins of `src/utils/plugins.ts`: Babel decorators (`createBabelPlugin` of `utils/babel-plugin`, which imports nothing of build-tools because the root `vitest.config.ts` uses it too), then `xaendarPlugin` with `customElements`, `strictEvents` and `ssr` of `xaendar.json` (`utils/xaendar-config`; a library without `strictEvents` inherits the workspace's).
 - Babel-transpiled modules import the decorator helpers from `virtual:xaendar-babel-helpers` (`utils/babel-helpers`), so a bundle holds one copy; helpers outside `DECORATOR_HELPERS` stay inline.
 

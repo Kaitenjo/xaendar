@@ -9,12 +9,12 @@ vi.mock('../../utils/build-libraries/build-libraries.utils', () => ({
 }));
 
 vi.mock('../../utils/xaendar-config/xaendar-config.utils', () => ({
-  readProject: vi.fn()
+  enterProject: vi.fn()
 }));
 
 import { buildLibraries } from '../../utils/build-libraries/build-libraries.utils';
 import { buildProject } from '../../utils/build-project/build-project.utils';
-import { readProject } from '../../utils/xaendar-config/xaendar-config.utils';
+import { enterProject } from '../../utils/xaendar-config/xaendar-config.utils';
 import { buildCommand } from './build.command';
 
 /**
@@ -24,7 +24,7 @@ const WORKSPACE = { dir: '/ws', configPath: '/ws/xaendar.json', config: { libs: 
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(readProject).mockReturnValue(undefined);
+  vi.mocked(enterProject).mockReturnValue(undefined);
 });
 
 afterEach(() => {
@@ -40,7 +40,7 @@ describe('buildCommand()', () => {
   });
 
   it('builds the project', async () => {
-    vi.mocked(readProject).mockReturnValue({ dir: '/app', configPath: '/app/xaendar.json', config: {} });
+    vi.mocked(enterProject).mockReturnValue({ dir: '/app', configPath: '/app/xaendar.json', config: {} });
 
     await buildCommand().parseAsync([], { from: 'user' });
 
@@ -55,7 +55,7 @@ describe('buildCommand()', () => {
   });
 
   it('builds the libraries of a workspace, or the one named', async () => {
-    vi.mocked(readProject).mockReturnValue(WORKSPACE);
+    vi.mocked(enterProject).mockReturnValue(WORKSPACE);
 
     await buildCommand().parseAsync([], { from: 'user' });
     await buildCommand().parseAsync(['ui'], { from: 'user' });
