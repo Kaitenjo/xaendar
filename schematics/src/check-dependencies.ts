@@ -148,7 +148,7 @@ async function checkDependencies(): Promise<void> {
     const dependenciesEntries = dependencies ? Object.entries(dependencies) : undefined;
     if (dependenciesEntries?.length) {
       dependenciesEntries.forEach(([depName, depVersion]) => {
-        const mainVersion = depName.includes('@xaendar') ? `~${mainPackageJsonDependencies.self}` : mainPackageJsonDependencies[depName];
+        const mainVersion = depName.includes('@xaendar') ? mainPackageJsonDependencies.self : mainPackageJsonDependencies[depName];
 
         /*
           This branch checks if a package uses a dependency not declared in the root `package.json`. 
