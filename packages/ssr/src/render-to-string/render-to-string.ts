@@ -1,5 +1,5 @@
 import { entries, isNonEmpty, keys } from '@xaendar/common';
-import { _assertRequiredInputs, _stringifyState, _toPropertyName, _TRANSFER_STATE_ATTRIBUTE, type CustomElement } from '@xaendar/core';
+import { _assertRequiredInputs, _stringifyState, _toPropertyName, _TRANSFER_STATE_ATTRIBUTE, _updateInput, type CustomElement } from '@xaendar/core';
 import type { Constructor, Dictionary } from '@xaendar/types';
 import type { RenderInputs } from '../types/render-inputs.type';
 import type { RenderOptions } from '../types/render-options.type';
@@ -55,7 +55,8 @@ const LESS_THAN_ESCAPE = `${String.fromCharCode(92)}u003c`;
  * @param options - The transfer state of the page, and the nonce of the `Content-Security-Policy` of the response.
  * @returns A promise resolving to the HTML of the component.
  * @throws When the component is not defined, or has no template compiled for the server, when `inputs` leaves out a
- *   required input or passes an input declaring an alias by the name of its property, when an input or a value of the
+ *   required input, passes an input declaring an alias by the name of its property or a name that is not an input of
+ *   the component nor one its host directives expose, when an input or a value of the
  *   transfer state cannot be written into the HTML, such as a function, or
  *   when the code of the component throws while it is rendered.
  */
@@ -90,7 +91,8 @@ export async function renderToString<Component extends CustomElement>(component:
           const _entries = entries(properties);
           for (let i = 0; i < _entries.length; i++) {
             const [name, value] = _entries[i];
-            (element as unknown as { [name]: typeof value })[name] = value;
+            // As the templates and createComponent set an input, rejecting a name that is not one
+            _updateInput(element, name, value);
           }
         }
 

@@ -372,6 +372,34 @@ describe('property setters', () => {
       expect(() => _setInput(createRoot(), new VisibleDirective(), attributeOf('missing', 'value'))).toThrow('VisibleDirective does not declare a property named "missing"');
     });
 
+    it('throws when a component already constructed does not declare the input, as for a directive', () => {
+      const klass = class Badge extends CustomElement {
+        public label = input<string>('');
+        public data = 1;
+      };
+      customElements.define('x-input-badge', klass);
+      const element = document.createElement('x-input-badge') as InstanceType<typeof klass>;
+      const missing = 'Badge does not declare a property named';
+
+      expect(() => _setInput(createRoot(), element, attributeOf('lable', 'value'))).toThrow(`${missing} "lable"`);
+      expect(() => _setExpressionInput(createRoot(), element, attributeOf('data', () => 2))).toThrow(`${missing} "data"`);
+      expect(() => _resetProperty(createRoot(), element, attributeOf('lable'))).toThrow(`${missing} "lable"`);
+      expect(element.data).toBe(1);
+      expect(() => _setProperty(createRoot(), element, attributeOf('id', 'badge'))).not.toThrow();
+      expect(element.id).toBe('badge');
+    });
+
+    it('assigns an input of an element whose class is not defined yet, or is not a component, to its property', () => {
+      const pending = document.createElement('x-input-pending') as HTMLElement & { label?: string };
+      const foreign = document.createElement('div') as unknown as HTMLElement & { label?: string };
+
+      _setInput(createRoot(), pending, attributeOf('label', 'early'));
+      _setInput(createRoot(), foreign, attributeOf('label', 'plain'));
+
+      expect(pending.label).toBe('early');
+      expect(foreign.label).toBe('plain');
+    });
+
     it('falls back to the attribute for properties that are not input signals', () => {
       const element = document.createElement('div') as unknown as HTMLElement & { custom: string };
       element.custom = 'not-a-signal';

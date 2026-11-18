@@ -897,6 +897,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** createComponent or renderToString binding an input by the name of its property, while the input declares an alias: code outside the class binds an input by the name the templates use.
 - **Fix:** Bind the input by its alias.
 
+### `Error: CardComponent does not declare a property named "hedaing"`
+
+- **Cause:** An input set on a component already constructed, or on a directive, that it does not declare: a name in the properties of createComponent or the inputs of renderToString that is neither an input (by the name the templates bind it with) nor an input a host directive exposes, e.g. a misspelled input or a member that is not an input; the types accept it, since they cannot see the exposures. Templates and code outside them go through the same check.
+- **Fix:** Use the name of an input or of an exposed input; set any other member on the element itself.
+
 ### `Error: No element matches the required content query '[header]' of <x-card>`
 
 - **Cause:** A @Query.contentRequired was read while no element of the content matched it: before the parent passed its content, afterRender included, or while the element was not passed.

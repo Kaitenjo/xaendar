@@ -790,6 +790,11 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Runtime',
+    message: 'Error: CardComponent does not declare a property named "hedaing"',
+    page: 'components/dynamic-creation'
+  },
+  {
+    phase: 'Runtime',
     message: "Error: @HostAttribute('class.') names no class",
     page: 'components/host-bindings'
   },

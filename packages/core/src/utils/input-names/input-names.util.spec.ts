@@ -20,6 +20,7 @@ describe('_toPropertyName', () => {
     expect(_toPropertyName(crossed, 'hint')).toBe('hint');
     expect(_toPropertyName({ name: 'Plain' }, 'hint')).toBe('hint');
     expect(_toPropertyName(withInputs('Empty'), 'hint')).toBe('hint');
+    expect(_toPropertyName(crossed, 'constructor')).toBe('constructor');
   });
 
   it('throws for the name of the property of an input declaring an alias', () => {

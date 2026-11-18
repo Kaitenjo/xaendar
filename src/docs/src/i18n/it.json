@@ -403,7 +403,7 @@
         },
         "bindings": {
           "title": "Input ed eventi",
-          "p1": "<code>properties</code> ed <code>events</code> sono liste di gruppi. Un gruppo lega input per il nome con cui li legano i template, il loro <code>alias</code> quando ne dichiarano uno, altrimenti il nome del loro accessor <code>@Property</code>, ciascuno con un getter che ne restituisce il valore, o ascolta eventi per nome, ciascuno con il suo listener: gli output del componente, il cui listener riceve un <code>CustomEvent</code> con il detail tipizzato come l’output, e gli eventi nativi di un elemento. I getter girano in un effect, quindi un input segue i signal letti dal suo getter, come fa un binding <code>{ … }</code> in un template.",
+          "p1": "<code>properties</code> ed <code>events</code> sono liste di gruppi. Un gruppo lega input per il nome con cui li legano i template, il loro <code>alias</code> quando ne dichiarano uno, altrimenti il nome del loro accessor <code>@Property</code>, ciascuno con un getter che ne restituisce il valore, o ascolta eventi per nome, ciascuno con il suo listener: gli output del componente, il cui listener riceve un <code>CustomEvent</code> con il detail tipizzato come l’output, e gli eventi nativi di un elemento. Gli input e gli eventi che le <code>hostDirectives</code> del componente espongono si legano con il nome con cui sono esposti: l’editor non li suggerisce, quindi prendili dalla documentazione del componente. Un nome in <code>properties</code> che non è un input, né uno esposto, lancia un errore, come farebbe in un template. I getter girano in un effect, quindi un input segue i signal letti dal suo getter, come fa un binding <code>{ … }</code> in un template.",
           "p2": "Un gruppo con una <code>condition</code> è legato solo mentre la condizione vale, come un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a> scritto nel tag: appena smette di valere, i suoi input tornano al loro <strong>valore di default</strong>, non all’ultimo ricevuto, e i suoi eventi non sono più ascoltati. Anche la condizione è un getter, e segue i signal che legge. Un input obbligatorio, del componente o di una direttiva, va legato da un gruppo senza <code>condition</code>: altrimenti <code>createComponent</code> lancia un errore."
         },
         "directives": {
@@ -4502,6 +4502,10 @@
     "Error: \"userId\" is the property of an input of ProfileComponent declaring an alias: bind it by its alias": {
       "cause": "createComponent o renderToString legano un input con il nome della sua proprietà, mentre l’input dichiara un alias: il codice fuori dalla classe lega un input con il nome che usano i template.",
       "fix": "Lega l’input con il suo alias."
+    },
+    "Error: CardComponent does not declare a property named \"hedaing\"": {
+      "cause": "Un input impostato su un componente già costruito, o su una direttiva, che non lo dichiara: un nome tra le properties di createComponent o gli input di renderToString che non è né un input, con il nome con cui lo legano i template, né un input esposto da una host directive, per esempio un input scritto male o un membro che non è un input. I tipi lo accettano, perché non vedono cosa espongono le host directive.",
+      "fix": "Usa il nome di un input o di un input esposto; imposta qualsiasi altro membro direttamente sull’elemento."
     },
     "Error: @HostAttribute('class.') names no class": {
       "cause": "Un @HostAttribute con class. senza una classe dopo. Viene lanciato quando la classe viene definita, appena il suo modulo viene importato; un nome vuoto lancia @HostAttribute('') names no attribute.",

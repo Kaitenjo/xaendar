@@ -479,6 +479,9 @@ describe('renderToString', () => {
     _defineServerRender(TipPageElement, await compile('<tip-card hint="{ \'hello\' }" />', [], [], [tipCard]));
 
     expect(await renderToString(TipPageElement)).toContain('<tip-card><template shadowrootmode="open"><p><!---->hello</p></template></tip-card>');
+    expect(await renderToString(TipCardElement, { hint: 'direct' })).toContain('<p><!---->direct</p>');
+    // A name that is neither an input nor an exposed one throws, as it does in createComponent and in the templates
+    await expect(renderToString(TipCardElement, { hnit: 'x' })).rejects.toThrow('TipCardElement does not declare a property named "hnit"');
   });
 
   it('throws when the inputs leave out a required input, before any code of the component runs', async () => {

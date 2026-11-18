@@ -638,10 +638,10 @@ export function _setReactiveProperty(context: _Context, target: Element | Bindin
  * @param _context - The current template execution scope.
  * @param target - The element of the component.
  * @param attribute - The input, by the name of its property, whose value is the literal.
- * @throws When the target is a directive not declaring the property.
+ * @throws When the target is a directive, or a component already constructed, not declaring the input.
  */
 export function _setInput(_context: _Context, target: Element | BindingHost, attribute: RenderElementAttribute): void {
-  updateInput(target, attribute.name, attribute.value);
+  _updateInput(target, attribute.name, attribute.value);
 }
 
 /**
@@ -652,10 +652,10 @@ export function _setInput(_context: _Context, target: Element | BindingHost, att
  * @param context - The current template execution scope, which the expression reads.
  * @param target - The element of the component.
  * @param attribute - The input, by the name of its property, whose value is the expression.
- * @throws When the target is a directive not declaring the property.
+ * @throws When the target is a directive, or a component already constructed, not declaring the input.
  */
 export function _setExpressionInput(context: _Context, target: Element | BindingHost, attribute: RenderElementAttribute): void {
-  updateInput(target, attribute.name, evaluate(attribute, context));
+  _updateInput(target, attribute.name, evaluate(attribute, context));
 }
 
 /**
@@ -667,7 +667,7 @@ export function _setExpressionInput(context: _Context, target: Element | Binding
  * @param target - The element of the component.
  * @param attribute - The input, by the name of its property, whose value is the expression, and whose `reads` lists the
  *   variables of the template it reads, if any.
- * @throws When the target is a directive not declaring the property.
+ * @throws When the target is a directive, or a component already constructed, not declaring the input.
  */
 export function _setReactiveInput(context: _Context, target: Element | BindingHost, attribute: RenderElementAttribute): void {
   _bindSite(context, attribute, target, _setExpressionInput);
@@ -693,11 +693,11 @@ export function _removeAttribute(_context: _Context, element: Element, attribute
  * @param _context - The current template execution scope.
  * @param target - The element or the directive whose input is reset.
  * @param attribute - The input, by the name of its property.
- * @throws When the target is a directive not declaring the property.
+ * @throws When the target is a directive, or a component already constructed, not declaring the input.
  */
 export function _resetProperty(_context: _Context, target: Element | BindingHost, attribute: RenderElementAttribute): void {
   const { name } = attribute;
-  const input = inputOf(target, name);
+  const input = inputOf(target, name, true);
   if (input) {
     input.reset(INPUT_SIGNAL_SET_SYMBOL);
     return;
@@ -787,15 +787,16 @@ function evaluate(attribute: RenderElementAttribute, context: _Context): unknown
 /**
  * Updates an input of a component or of a directive: when the class of the component is defined the value is set into
  * the input signal, otherwise it is assigned to the property of the element, which `@Property` recovers once the class
- * is defined.
+ * is defined. The setters of the inputs of the templates and `renderToString` of `@xaendar/ssr` set inputs through it,
+ * so they check the names the same way (see `inputOf`).
  *
  * @param target - The element of the component, or the directive.
  * @param name - The name of the property of the input.
  * @param newValue - The new value.
- * @throws When the target is a directive not declaring the property.
+ * @throws When the target is a directive, or a component already constructed, not declaring the input.
  */
-function updateInput(target: Element | BindingHost, name: string, newValue: unknown): void {
-  const input = inputOf(target, name);
+export function _updateInput(target: Element | BindingHost, name: string, newValue: unknown): void {
+  const input = inputOf(target, name, true);
   input
     ? input.set(newValue, INPUT_SIGNAL_SET_SYMBOL)
     : (target as unknown as Record<string, unknown>)[name] = newValue;
@@ -816,7 +817,7 @@ function updateInput(target: Element | BindingHost, name: string, newValue: unkn
  */
 function updateProperty(target: Element | BindingHost, attribute: RenderElementAttribute, newValue: unknown): void {
   const { name } = attribute;
-  if (inputOf(target, name)) {
+  if (inputOf(target, name, false)) {
     throw new Error(`"${name}" is an input of ${target.constructor.name}, bound as an attribute: an input declaring an alias is bound by its alias, and the attribute of the element is written with attr.${name}`);
   }
 
@@ -828,18 +829,27 @@ function updateProperty(target: Element | BindingHost, attribute: RenderElementA
  * backs it, as for an attribute of an element. `name` is the one of the property, never an alias, which the compiler
  * resolves.
  *
+ * It is the one check of the names the inputs are set by: the templates, `createComponent` and `renderToString` set
+ * them through the setters of the inputs, which ask for an input (`input`), so a name that is not an input of a
+ * directive, or of a component already constructed, is rejected the same way by all of them. An element whose class is
+ * not a component constructed yet gets the value as a property instead: a custom element not defined yet, whose
+ * `@Property` takes it once the class is defined, or one of another library. The attributes ask whether the name is an
+ * input of the element, which a component may well not have.
+ *
  * @param target - The HTML element or the directive owning the property.
  * @param name - The name of the property.
+ * @param input - Whether an input is being set, which a component already constructed must declare.
  * @returns The InputSignal, `null` for an element without it.
- * @throws When the target is a directive not declaring the property.
+ * @throws When the target is a directive not declaring the property, or a component already constructed not declaring
+ *   the input set.
  */
-function inputOf(target: Element | BindingHost, name: string): SettableInputSignal | null {
+function inputOf(target: Element | BindingHost, name: string, input: boolean): SettableInputSignal | null {
   const property = (target as unknown as Record<string, unknown>)[name];
   if (property && isInputSignal(property)) {
     return property;
   }
 
-  if (target instanceof CustomDirective || target instanceof StructuralDirective) {
+  if (target instanceof CustomDirective || target instanceof StructuralDirective || (input && target instanceof CustomElement)) {
     throw new Error(`${target.constructor.name} does not declare a property named "${name}"`);
   }
 

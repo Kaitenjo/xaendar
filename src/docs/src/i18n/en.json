@@ -403,7 +403,7 @@
         },
         "bindings": {
           "title": "Inputs and events",
-          "p1": "<code>properties</code> and <code>events</code> are lists of groups. A group binds inputs by the name the templates bind them with, their <code>alias</code> when they declare one, else the name of their <code>@Property</code> accessor, each one with a getter returning its value, or listens to events by name, each one with its listener: the outputs of the component, whose listener receives a <code>CustomEvent</code> with the detail typed as the output, and the native events of an element. The getters run in an effect, so an input follows the signals its getter reads, as a binding <code>{ … }</code> in a template does.",
+          "p1": "<code>properties</code> and <code>events</code> are lists of groups. A group binds inputs by the name the templates bind them with, their <code>alias</code> when they declare one, else the name of their <code>@Property</code> accessor, each one with a getter returning its value, or listens to events by name, each one with its listener: the outputs of the component, whose listener receives a <code>CustomEvent</code> with the detail typed as the output, and the native events of an element. The inputs and the events the <code>hostDirectives</code> of the component expose are bound by the name they are exposed with: the editor does not suggest them, so take them from the documentation of the component. A name in <code>properties</code> that is no input, nor an exposed one, throws, as it would in a template. The getters run in an effect, so an input follows the signals its getter reads, as a binding <code>{ … }</code> in a template does.",
           "p2": "A group with a <code>condition</code> is bound only while the condition holds, as a <a href=\"#/en/templates/conditional-bindings\">conditional binding</a> written in the tag: as soon as it does not, its inputs go back to their <strong>default value</strong>, not to the last one they received, and its events are no longer listened to. The condition is a getter too, and follows the signals it reads. A required input, of the component or of a directive, must be bound by a group without <code>condition</code>: otherwise <code>createComponent</code> throws."
         },
         "directives": {
@@ -4502,6 +4502,10 @@
     "Error: \"userId\" is the property of an input of ProfileComponent declaring an alias: bind it by its alias": {
       "cause": "createComponent or renderToString binding an input by the name of its property, while the input declares an alias: code outside the class binds an input by the name the templates use.",
       "fix": "Bind the input by its alias."
+    },
+    "Error: CardComponent does not declare a property named \"hedaing\"": {
+      "cause": "An input set on a component already constructed, or on a directive, that it does not declare: a name among the properties of createComponent or the inputs of renderToString that is neither an input, by the name the templates bind it with, nor an input a host directive exposes, e.g. a misspelled input or a member that is not an input. The types accept it, since they cannot see what the host directives expose.",
+      "fix": "Use the name of an input or of an exposed input; set any other member on the element itself."
     },
     "Error: @HostAttribute('class.') names no class": {
       "cause": "A @HostAttribute with class. and no class after it. Thrown when the class is defined, as soon as its module is imported; an empty name throws @HostAttribute('') names no attribute.",

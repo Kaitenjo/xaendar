@@ -273,6 +273,15 @@ describe('_createComponent', () => {
     expect(hint.text()).toBe('');
   });
 
+  it('throws when a name is neither an input of the component nor one its host directives expose, as a template does', () => {
+    const target = document.createElement('div');
+
+    expect(() => _createComponent(owner, Card, { target, properties: [{ hedaing: () => 'x' }] })).toThrow('Card does not declare a property named "hedaing"');
+    expect(() => _createComponent(owner, Card, { target, properties: [{ double: () => 1 }] })).toThrow('Card does not declare a property named "double"');
+    expect(() => _createComponent(owner, Tipped, { target, properties: [{ hint: () => 'x' }] })).toThrow('Tipped does not declare a property named "hint"');
+    expect(target.childNodes).toHaveLength(0);
+  });
+
   it('throws when an input declaring an alias is bound by the name of its property', () => {
     expect(() => _createComponent(owner, Crossed, { target: document.body, properties: [{ internalValue: () => 'x' } as never] }))
       .toThrow('"internalValue" is the property of an input of Crossed declaring an alias: bind it by its alias');

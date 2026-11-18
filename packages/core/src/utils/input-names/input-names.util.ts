@@ -14,9 +14,9 @@ import { getWebComponentMetadata } from '../get-metadata/get-metadata.util';
  */
 export function _toPropertyName(klass: { name: string }, name: string): string {
   const aliasToAttribute = getWebComponentMetadata(klass)?.[INTERNAL_ALIAS_TO_ATTRIBUTE];
-  const property = aliasToAttribute?.[name];
-  if (property) {
-    return property;
+  // An own key only: a member of `Object.prototype` (`constructor`, `toString`…) is the alias of no input
+  if (aliasToAttribute && Object.hasOwn(aliasToAttribute, name)) {
+    return aliasToAttribute[name]!;
   }
 
   // The names of the properties of the inputs without alias are among the names the inputs are bound with
