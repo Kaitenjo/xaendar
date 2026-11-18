@@ -63,6 +63,12 @@ export const DIRECTIVE_ORDER = Symbol('DirectiveOrder');
  */
 export const DIRECTIVE_CONNECT = Symbol('DirectiveConnect');
 /**
+ * Key of the internal method that invokes the `afterRender` hook of a directive, once the element it is applied to has
+ * rendered: the component invokes it on its host directives at the end of its render, the template runtime on the
+ * directives of a template right after `DIRECTIVE_CONNECT` (see `CustomDirective`).
+ */
+export const DIRECTIVE_AFTER_RENDER = Symbol('DirectiveAfterRender');
+/**
  * Key of the internal method the template runtime invokes to disconnect a directive,
  * typically when its host element is removed from the DOM.
  */

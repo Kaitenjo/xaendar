@@ -668,6 +668,44 @@ describe('CustomElement', () => {
       expect(calls).toEqual(['directive onInit', 'onInit', 'render', 'onDestroy', 'clear', 'directive onDestroy']);
     });
 
+    it('invoke afterRender once the component has rendered and bound its host, before its own afterRender', () => {
+      const calls = new Array<string>();
+      const Directive = class extends CustomDirective {
+        public onInit(): void {
+          calls.push('directive onInit');
+        }
+
+        public afterRender(): void {
+          calls.push('directive afterRender');
+        }
+      };
+      const klass = class extends CustomElement {
+        public onInit(): void {
+          calls.push('onInit');
+        }
+
+        public afterRender(): void {
+          calls.push('afterRender');
+        }
+      };
+      Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { hostDirectives: [Directive] } });
+      _defineRender(klass, () => {
+        calls.push('render');
+        return createContext();
+      });
+      const name = `x-base-${counter++}`;
+      customElements.define(name, klass);
+      const element = document.createElement(name);
+
+      document.body.appendChild(element);
+      expect(calls).toEqual(['directive onInit', 'onInit', 'render', 'directive afterRender', 'afterRender']);
+
+      element.remove();
+      document.body.appendChild(element);
+      expect(calls.filter(call => call === 'directive afterRender')).toHaveLength(2);
+      element.remove();
+    });
+
     it('dispose their effects on disconnection, and are started again on reconnection', () => {
       const calls = new Array<string>();
       const onCleanup = vi.fn();

@@ -875,6 +875,23 @@ describe('_renderElement', () => {
       expect(orders).toEqual([0, 1]);
     });
 
+    it('invokes afterRender of the directives of the template right after their onInit, with the element already mounted', () => {
+      const calls = new Array<string>();
+      const parent = document.createElement('div');
+      const HookDirective = class extends CustomDirective {
+        public onInit(): void {
+          calls.push('onInit');
+        }
+
+        public afterRender(): void {
+          calls.push(`afterRender ${this.element.parentNode === parent}`);
+        }
+      };
+      _defineDirective('hook', HookDirective);
+      render(parent, createRoot(), { directives: [{ selector: 'hook' }, { selector: 'hook' }] });
+      expect(calls).toEqual(['onInit', 'afterRender true', 'onInit', 'afterRender true']);
+    });
+
     it('applies attributes only while the condition is true', async () => {
       const enabled = signal(false);
       const element = render(document.createElement('div'), createRoot(), {

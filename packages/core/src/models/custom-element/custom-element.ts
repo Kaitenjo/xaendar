@@ -1,6 +1,6 @@
 import { keys } from '@xaendar/common';
 import type { Constructor, NoArgsVoidFunction } from '@xaendar/types';
-import { _CLIENT_ATTRIBUTE, _HYDRATE_ATTRIBUTE, _SERVER_INPUTS_ATTRIBUTE, CONNECTED_HOOKS, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DISCONNECTED_HOOKS, HYDRATE, IS_RENDERED, WAITS_FOR_HYDRATION } from '../../costants';
+import { _CLIENT_ATTRIBUTE, _HYDRATE_ATTRIBUTE, _SERVER_INPUTS_ATTRIBUTE, CONNECTED_HOOKS, DIRECTIVE_AFTER_RENDER, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DISCONNECTED_HOOKS, HYDRATE, IS_RENDERED, WAITS_FOR_HYDRATION } from '../../costants';
 import { EffectOptions } from '../../signals/types/effect-options.type';
 import type { _Context } from '../../types/context.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
@@ -346,6 +346,11 @@ export class CustomElement extends HTMLElement {
     this._state = 'rendered';
     // Bound once the queries are up to date, so a `@HostAttribute` can read them
     _bindHost(this, this, this._context);
+    // The host directives, started before the component, see it rendered before it does
+    for (const directive of this.hostDirectives.values()) {
+      directive[DIRECTIVE_AFTER_RENDER]();
+    }
+
     this.afterRender?.();
     if (hydrating) {
       replayElementEvents(this);

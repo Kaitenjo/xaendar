@@ -1,5 +1,5 @@
 import type { Constructor, NoArgsVoidFunction } from '@xaendar/types';
-import { DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DIRECTIVE_ORDER, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
+import { DIRECTIVE_AFTER_RENDER, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DIRECTIVE_ORDER, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
 import { EffectOptions } from '../../signals/types/effect-options.type';
 import type { _Context } from '../../types/context.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
@@ -16,7 +16,7 @@ import type { CustomElement } from '../custom-element/custom-element';
  *
  * The template runtime starts the directive via `DIRECTIVE_CONNECT` once its inputs
  * have been bound and tears it down via `DIRECTIVE_DISCONNECT` when its context is
- * destroyed. Subclasses may declare the optional `onInit` and `onDestroy` hooks.
+ * destroyed. Subclasses may declare the optional `onInit`, `afterRender` and `onDestroy` hooks.
  * Effects created via {@link CustomDirective.effect} are disposed automatically
  * on disconnection.
  */
@@ -87,6 +87,15 @@ export abstract class CustomDirective<T extends Element = Element> {
   public onInit?(): void;
 
   /**
+   * Optional lifecycle hook, invoked once the element the directive is applied to has rendered. The directive of a
+   * template is started after its element, which has already rendered, so it runs right after `onInit`. A host directive
+   * is started before its component renders: this is the hook that finds the Shadow DOM of the component built, the
+   * queries filled and the host attributes and listeners of the component bound, and it runs before the `afterRender` of
+   * the component.
+   */
+  public afterRender?(): void;
+
+  /**
    * Starts the directive, invoked by the template runtime once its inputs have been bound.
    * Invokes `onInit`, if declared, then binds the attributes, the classes and the events of the element declared by
    * `@HostAttribute` and `@HostListener`.
@@ -109,6 +118,23 @@ export abstract class CustomDirective<T extends Element = Element> {
     }
 
     _bindHost(this, this._element, context);
+  }
+
+  /**
+   * Invokes `afterRender`, if declared, once the element the directive is applied to has rendered: invoked by the
+   * component on its host directives at the end of its render, and by the template runtime on the directives of a
+   * template right after {@link DIRECTIVE_CONNECT}.
+   */
+  public [DIRECTIVE_AFTER_RENDER](): void {
+    if (this.afterRender) {
+      // A handler `afterRender` registers with `onLeave` marks the scope of the element, as in `onInit`
+      const previous = startDirective(this._context);
+      try {
+        this.afterRender();
+      } finally {
+        startDirective(previous);
+      }
+    }
   }
 
   /**

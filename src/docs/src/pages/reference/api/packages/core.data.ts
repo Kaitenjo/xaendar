@@ -406,7 +406,7 @@ export const CORE_API: ApiPackage = {
     {
       name: 'CustomDirective',
       kind: 'class',
-      signature: 'abstract class CustomDirective<T extends Element = Element> {\n  get element(): T;\n  onInit?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n  createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options?: CreateComponentOptionsWithOptionalTarget<Component, Directives>): ComponentRef<Component>;\n  dispatchEvent(event: CustomEvent): boolean;\n  onDestroy?(): void;\n}',
+      signature: 'abstract class CustomDirective<T extends Element = Element> {\n  get element(): T;\n  onInit?(): void;\n  afterRender?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n  createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options?: CreateComponentOptionsWithOptionalTarget<Component, Directives>): ComponentRef<Component>;\n  dispatchEvent(event: CustomEvent): boolean;\n  onDestroy?(): void;\n}',
       members: [
         {
           name: 'element',
@@ -418,6 +418,11 @@ export const CORE_API: ApiPackage = {
           group: 'methods',
           signature: 'onInit?(): void',
           snippets: [CONSTRUCTOR_ACCESS]
+        },
+        {
+          name: 'afterRender',
+          group: 'methods',
+          signature: 'afterRender?(): void'
         },
         {
           name: 'onDestroy',

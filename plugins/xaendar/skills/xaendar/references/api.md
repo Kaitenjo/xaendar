@@ -203,10 +203,10 @@ The type of `hostDirectives`: the instances exist with the element, so a field i
 ### CustomDirective (class)
 
 ```ts
-class X extends CustomDirective<E> { element: E; onInit?(); onDestroy?(); effect(fn, options?): () => void; createComponent(Class, options?): ComponentRef<Class>; dispatchEvent(event: CustomEvent): boolean }
+class X extends CustomDirective<E> { element: E; onInit?(); afterRender?(); onDestroy?(); effect(fn, options?): () => void; createComponent(Class, options?): ComponentRef<Class>; dispatchEvent(event: CustomEvent): boolean }
 ```
 
-Base class of the directives acting on the element they are applied to. `element` is set after the constructor: use it from `onInit`, which runs once the inputs are bound and the element is in the document, before its children are rendered. `onDestroy` runs when the element leaves the template or a conditional branch applying the directive is left (a new instance is created when it is taken again). Outputs are dispatched on the element; `dispatchEvent` returns `false` when a listener canceled a cancelable event.
+Base class of the directives acting on the element they are applied to. `element` is set after the constructor: use it from `onInit`, which runs once the inputs are bound and the element is in the document, before its children are rendered. `afterRender` runs once the element has rendered: right after `onInit` for a directive of a template, and for a host directive (started before its component) at the end of the render of the component, with its Shadow DOM built and before the `afterRender` of the component: use it to reach `this.element.shadowRoot`. `onDestroy` runs when the element leaves the template or a conditional branch applying the directive is left (a new instance is created when it is taken again). Outputs are dispatched on the element; `dispatchEvent` returns `false` when a listener canceled a cancelable event.
 
 ### StructuralDirective (class)
 

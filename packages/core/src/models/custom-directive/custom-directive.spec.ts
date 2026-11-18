@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { loadSignals } from '@xaendar/signals';
 import { describe, expect, it, vi } from 'vitest';
-import { CLEANUP, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
+import { CLEANUP, DIRECTIVE_AFTER_RENDER, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
 import { HostListener } from '../../decorators/host-listener/host-listener.decorator';
 import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
 import { effect } from '../../signals/effect/effect';
@@ -94,6 +94,34 @@ describe('CustomDirective', () => {
     connect(directive);
 
     expect(directive.onInitSpy).toHaveBeenCalledOnce();
+  });
+
+  it('invokes afterRender only when asked, and does nothing without the hook', () => {
+    const calls = new Array<string>();
+    const Hooked = class extends CustomDirective {
+      public afterRender(): void {
+        calls.push('afterRender');
+      }
+    };
+    const hooked = create(Hooked);
+    connect(hooked);
+    expect(calls).toEqual([]);
+
+    hooked[DIRECTIVE_AFTER_RENDER]();
+    expect(calls).toEqual(['afterRender']);
+    expect(() => create(TestDirective)[DIRECTIVE_AFTER_RENDER]()).not.toThrow();
+  });
+
+  it('lets the error of afterRender through', () => {
+    const Failing = class extends CustomDirective {
+      public afterRender(): void {
+        throw new Error('boom');
+      }
+    };
+    const directive = create(Failing);
+    connect(directive);
+
+    expect(() => directive[DIRECTIVE_AFTER_RENDER]()).toThrow('boom');
   });
 
   it('binds its element after onInit, and unbinds it when disconnected', () => {

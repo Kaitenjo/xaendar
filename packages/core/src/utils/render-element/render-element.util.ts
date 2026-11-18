@@ -1,4 +1,4 @@
-import { _SSR_MARKERS, COMPONENT, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DIRECTIVE_ORDER, HEADER, SET_DIRECTIVE_ELEMENT } from '../../costants';
+import { _SSR_MARKERS, COMPONENT, DIRECTIVE_AFTER_RENDER, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DIRECTIVE_ORDER, HEADER, SET_DIRECTIVE_ELEMENT } from '../../costants';
 import { AttributeUnbinding } from '../../models/attribute-unbinding/attribute-unbinding';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
@@ -431,6 +431,8 @@ function bindDirectives(element: Element, context: _Context, directives: readonl
     });
     _addAppliedDirective(element, directive);
     directive[DIRECTIVE_CONNECT](context);
+    // The element has already rendered: the hook follows `onInit` at once
+    directive[DIRECTIVE_AFTER_RENDER]();
   }
 }
 
