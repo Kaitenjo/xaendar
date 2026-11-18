@@ -164,6 +164,16 @@ const Tipped = define(class Tipped extends CustomElement { });
 Object.assign((Tipped as unknown as Record<symbol, object>)[Symbol.for('Symbol.metadata')], { hostDirectives: [{ directive: Hint, properties: [{ name: 'hint', alias: 'tip' }] }] });
 
 /**
+ * Component declaring an input and an output next to a member typed `any`, which matches every conditional type.
+ */
+const Loose = define(class Loose extends CustomElement {
+  public readonly label = input<string>('');
+  public readonly picked = new Output<number>((value, _options?) => { this.dispatchEvent(new CustomEvent('picked', { detail: value })); });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public data: any;
+});
+
+/**
  * Directive declaring a required input.
  */
 class Label extends CustomDirective {
@@ -249,7 +259,7 @@ describe('_createComponent', () => {
   it('binds an input a host directive exposes by the name it is exposed with, setting it into the directive', async () => {
     const enabled = signal(true);
     const tip = signal('first');
-    const { element } = _createComponent(owner, Tipped, { target: document.body, properties: [{ condition: () => enabled(), tip: () => tip() } as never] });
+    const { element } = _createComponent(owner, Tipped, { target: document.body, properties: [{ condition: () => enabled(), tip: () => tip() }] });
     const hint = element.hostDirectives.get(Hint) as Hint;
 
     expect(hint.text()).toBe('first');
@@ -503,8 +513,6 @@ describe('_createComponent', () => {
       const host = null as unknown as InstanceType<typeof CustomElement>;
       // A native event gets the type its map declares, a literal value is kept for an input typed as a union of literals
       host.createComponent(Card, { target: document.body, properties: [{ mode: () => 'compact' }], events: [{ click: event => event.clientX }] });
-      // @ts-expect-error a computed signal is not an input
-      host.createComponent(Card, { target: document.body, properties: [{ double: () => 1 }] });
       // @ts-expect-error the value of an input has its type
       host.createComponent(Card, { target: document.body, properties: [{ count: () => 'one' }] });
       // The value of an input with a transform is the one its transform takes
@@ -513,16 +521,12 @@ describe('_createComponent', () => {
       host.createComponent(Card, { target: document.body, properties: [{ size: () => 21 }] });
       // An input declaring an alias is bound by it, with the type its transform takes
       host.createComponent(Crossed, { target: document.body, properties: [{ value: () => 'x', initialValue: () => '1' }], directives: [{ directive: Hint, properties: [{ hint: () => 'tip' }] }] });
-      // @ts-expect-error an input declaring an alias is not bound by the name of its property
-      host.createComponent(Crossed, { target: document.body, properties: [{ internalValue: () => 'x' }] });
       // @ts-expect-error the input named like the alias of another one takes the type of its transform
       host.createComponent(Crossed, { target: document.body, properties: [{ initialValue: () => 1 }] });
       // @ts-expect-error the input of a directive declaring an alias is not bound by the name of its property
       host.createComponent(Card, { target: document.body, directives: [{ directive: Hint, properties: [{ text: () => 'tip' }] }] });
       // @ts-expect-error the detail of an event is the value of its output
       host.createComponent(Card, { target: document.body, events: [{ changed: event => event.detail.toUpperCase() }] });
-      // @ts-expect-error an input is not an event
-      host.createComponent(Card, { target: document.body, events: [{ heading: () => 'x' }] });
       // @ts-expect-error the value of a directive input has its type
       host.createComponent(Card, { target: document.body, directives: [{ directive: Tooltip, properties: [{ text: () => 1 }] }] });
       // @ts-expect-error the detail of a directive event is the value of its output
@@ -533,10 +537,22 @@ describe('_createComponent', () => {
       host.createComponent(Picker, { target: document.body, properties: [{ value: () => 'one' }] });
       // @ts-expect-error the detail of the event of change of a model is its value
       host.createComponent(Picker, { target: document.body, events: [{ valueChange: event => event.detail.toUpperCase() }] });
-      // @ts-expect-error the event of change of a model declaring an alias is named after the alias
-      host.createComponent(Picker, { target: document.body, events: [{ checkedChange: () => undefined }] });
-      // @ts-expect-error a model is not an event
-      host.createComponent(Picker, { target: document.body, events: [{ value: () => undefined }] });
+      /*
+        A name the component does not declare may be one a host directive exposes, which TypeScript cannot see: it is
+        accepted, with a getter of any value or a listener taking an event
+      */
+      host.createComponent(Card, { target: document.body, properties: [{ double: () => 1, tip: () => true }], events: [{ heading: () => 'x', tipShown: (event: CustomEvent<string>) => event.detail.toUpperCase() }] });
+      host.createComponent(Picker, { target: document.body, events: [{ checkedChange: event => event.type, value: () => undefined }] });
+      // @ts-expect-error the inputs of a directive are the ones it declares, since a directive exposes nothing
+      host.createComponent(Card, { target: document.body, directives: [{ directive: Tooltip, properties: [{ tip: () => 1 }] }] });
+      // @ts-expect-error the events of a directive are the ones it declares
+      host.createComponent(Card, { target: document.body, directives: [{ directive: Tooltip, events: [{ tipShown: () => undefined }] }] });
+      // A member typed any is neither an input nor an event, and leaves the others typed
+      host.createComponent(Loose, { target: document.body, properties: [{ label: () => 'x' }], events: [{ picked: event => event.detail.toFixed() }] });
+      // @ts-expect-error the value of an input keeps its type next to a member typed any
+      host.createComponent(Loose, { target: document.body, properties: [{ label: () => 1 }] });
+      // @ts-expect-error the detail of an event keeps its type next to a member typed any
+      host.createComponent(Loose, { target: document.body, events: [{ picked: event => event.detail.toUpperCase() }] });
     };
 
     expect(check).toBeTypeOf('function');

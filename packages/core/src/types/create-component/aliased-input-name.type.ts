@@ -1,10 +1,12 @@
+import type { IsAny } from 'type-fest';
 import type { Aliased } from '../../signals/types/aliased.type';
 import type { InputSignal } from '../../signals/types/input-signal.type';
 import type { InputAlias } from '../property/input-alias.type';
 
 /**
  * The alias of a member when it is an input declaring one (see `Aliased`), `never` otherwise. `condition` is never one,
- * since it is the key giving the condition of a group of bindings.
+ * since it is the key giving the condition of a group of bindings, nor is the alias of a member typed `any`, which would
+ * match every branch and widen the names to `string`.
  *
  * @template Target - The component or the directive declaring the member.
  * @template Name - The name of the member.
@@ -12,6 +14,8 @@ import type { InputAlias } from '../property/input-alias.type';
 export type AliasedInputName<Target, Name extends keyof Target> =
   Name extends number | symbol
     ? never
-    : Target[Name] extends Aliased<InputSignal, string>
-      ? Exclude<InputAlias<Target[Name]>, 'condition'>
-      : never;
+    : IsAny<Target[Name]> extends true
+      ? never
+      : Target[Name] extends Aliased<InputSignal, string>
+        ? Exclude<InputAlias<Target[Name]>, 'condition'>
+        : never;

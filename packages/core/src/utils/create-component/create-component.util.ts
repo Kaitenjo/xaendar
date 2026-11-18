@@ -6,6 +6,8 @@ import { untracked } from '../../signals/untracked';
 import { BindableEvents } from '../../types/create-component/bindable-events.type';
 import { BindableProperties } from '../../types/create-component/bindable-properties.type';
 import { BindingGroup } from '../../types/create-component/binding-group.type';
+import type { ExposableBindings } from '../../types/create-component/exposable-bindings.type';
+import type { ExposedEventListener } from '../../types/create-component/exposed-event-listener.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
 import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
 import { HEADER } from '../../costants';
@@ -107,13 +109,14 @@ export function _createComponent<
  * whose inputs go back to their default value once it is no longer selected.
  * @param target - The class of the component or of the directive, whose required inputs must be bound by a group without condition.
  * @param properties - The groups of inputs, by the name they are bound with: their alias, when they declare one, or the
- *   name an input of a host directive of the component is exposed with, set into the directive.
- * @param events - The groups of events, by name.
+ *   name an input of a host directive of the component is exposed with, set into the directive. The ones of a directive,
+ *   which exposes nothing, fit too, since their names are a subset.
+ * @param events - The groups of events, by name, the ones the host directives of the component expose included.
  * @returns The bindings collected.
  * @throws When an input is bound by more than one group, or by the name of its property while it declares an alias, or a required input
  * is not bound by a group without condition.
  */
-function collectBindings<Target extends CustomElement | CustomDirective>(target: { name: string }, properties: BindingGroup<BindableProperties<Target>>[] | undefined, events: BindingGroup<BindableEvents<Target>>[] | undefined): Bindings {
+function collectBindings<Target extends CustomElement | CustomDirective>(target: { name: string }, properties: BindingGroup<ExposableBindings<BindableProperties<Target>, NoArgsFunction<unknown>>>[] | undefined, events: BindingGroup<ExposableBindings<BindableEvents<Target>, ExposedEventListener>>[] | undefined): Bindings {
   const bindings: Bindings = { attributes: [], events: [], conditionalBindings: [], directives: [] };
   // A group unbinding an input resets it to its default value, even if another group still binds it
   const bound = new Set<string>();
@@ -143,7 +146,8 @@ function collectBindings<Target extends CustomElement | CustomDirective>(target:
         bound.add(property);
         const attribute: Bindings['attributes'][number] = {
           name: property,
-          value: group[name],
+          // A getter of any value for a name the class does not declare: TypeScript cannot resolve the type of a member of a generic target
+          value: group[name] as unknown as NoArgsFunction<unknown>,
           setter: exposed ? _setReactiveExposedInput : _setReactiveInput
         };
 

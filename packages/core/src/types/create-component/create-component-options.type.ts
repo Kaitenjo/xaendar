@@ -2,8 +2,11 @@ import type { CustomDirective } from '../../models/custom-directive/custom-direc
 import { CustomElement } from '../../models/custom-element/custom-element';
 import type { BindableEvents } from './bindable-events.type';
 import type { BindableProperties } from './bindable-properties.type';
+import type { NoArgsFunction } from '@xaendar/types';
 import type { BindingGroup } from './binding-group.type';
 import type { CreateComponentDirective } from './create-component-directive.type';
+import type { ExposableBindings } from './exposable-bindings.type';
+import type { ExposedEventListener } from './exposed-event-listener.type';
 
 /**
  * The options of `createComponent` of `CustomElement` and of `CustomDirective`: where the component is mounted, the bindings of its inputs and of its events, the directives applied to it and its content.
@@ -20,13 +23,17 @@ export type CreateComponentOptions<Component extends CustomDirective | CustomEle
   /**
    * The groups of inputs of the component to bind: a group without `condition` is bound as long as the component lives,
    * a group with `condition` only while the condition holds, its inputs going back to their default value as soon as it doesn't.
+   * The inputs the host directives of the component expose are bound by the name they are exposed with: the names the class
+   * declares are typed and suggested, any other one is accepted with a getter of any value (see `ExposableBindings`).
    */
-  properties?: BindingGroup<BindableProperties<Component>>[],
+  properties?: BindingGroup<ExposableBindings<BindableProperties<Component>, NoArgsFunction<unknown>>>[],
   /**
    * The groups of events to listen to on the component: a group without `condition` is listened to as long as the component lives,
-   * a group with `condition` only while the condition holds.
+   * a group with `condition` only while the condition holds. The events the host directives of the component expose are
+   * listened to by the name they are exposed with: the names the class declares and the native ones are typed and
+   * suggested, any other one is accepted with a listener taking an `Event` (see `ExposedEventListener`).
    */
-  events?: BindingGroup<BindableEvents<Component>>[],
+  events?: BindingGroup<ExposableBindings<BindableEvents<Component>, ExposedEventListener>>[],
   /**
    * The custom directives to apply to the component, once it is mounted.
    */

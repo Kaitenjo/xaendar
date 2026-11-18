@@ -445,7 +445,7 @@ describe('renderToString', () => {
 
     expect(html).toContain('<crossed-card data-xd-inputs="{&quot;internalValue&quot;:&quot;a&quot;,&quot;value&quot;:&quot;b&quot;}">');
     expect(html).toContain('<i><!---->a</i><b><!---->b</b>');
-    // @ts-expect-error an input declaring an alias is not passed by the name of its property
+    // The types accept it, as a name a host directive may expose: the runtime rejects it
     await expect(renderToString(CrossedElement, { internalValue: 'x' })).rejects.toThrow('"internalValue" is the property of an input of CrossedElement declaring an alias: bind it by its alias');
   });
 

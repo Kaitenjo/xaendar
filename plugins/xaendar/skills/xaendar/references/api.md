@@ -190,7 +190,7 @@ CreateComponentOptions<Component, Directives> = { target: Element; properties?; 
 CreateComponentOptionsWithOptionalTarget<Component, Directives> // the same, target optional
 ```
 
-The options of `createComponent`: `target` is required in the generic form and optional in the one of the methods of `CustomElement`/`CustomDirective` and of `@@componentOutlet`. Type a field holding options with them (`public readonly options: CreateComponentOptionsWithOptionalTarget<CardComponent> = { … }`).
+The options of `createComponent`: `target` is required in the generic form and optional in the one of the methods of `CustomElement`/`CustomDirective` and of `@@componentOutlet`. Type a field holding options with them (`public readonly options: CreateComponentOptionsWithOptionalTarget<CardComponent> = { … }`). The groups of the component suggest and type the inputs, outputs, model change events and native events it declares, and accept any other name (a getter of any value, a listener taking an `Event`): TypeScript cannot see what its `hostDirectives` expose, so those are bound by the name they are exposed with, from the documentation of the component, and an exposed event's listener annotates its parameter (`(event: CustomEvent<string>) => …`). A misspelled name is therefore not reported: it is assigned to the element as a property or listened to as an event. The groups of a directive in `directives` accept only what the directive declares. `renderToString` takes its `inputs` the same way.
 
 ### HostDirectives (type)
 
