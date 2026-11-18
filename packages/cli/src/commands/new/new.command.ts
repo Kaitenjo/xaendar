@@ -1,6 +1,6 @@
 import { isValidCustomElementName } from '@xaendar/common';
 import { Command } from 'commander';
-import { resolve } from 'node:path/win32';
+import { resolve } from 'node:path';
 import { buildStructure } from './structure/structure';
 import { execSync } from 'node:child_process';
 import { STYLES } from '../../utils/style/style';

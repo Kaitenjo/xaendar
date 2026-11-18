@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path/win32';
+import { resolve } from 'node:path';
 import { generateComponent } from '../../commands/generate/component/component.command';
 import { promptStyle } from '../../commands/new/prompt-style/prompt-style';
 import type { Entry } from '../../types/entry.type';
