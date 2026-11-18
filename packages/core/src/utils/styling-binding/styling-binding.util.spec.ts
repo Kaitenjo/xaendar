@@ -12,7 +12,7 @@ import { _defineDirective } from '../directive-registry/directive-registry.util'
 import { getElementSources } from '../element-sources/element-sources.util';
 import { _bindHost } from '../host-bindings/host-bindings.util';
 import { _hasStylingState, createStylingState } from '../styling-state/styling-state.util';
-import { _prepareStyling, _removeStyling, _setExpressionStyling, _setReactiveStyling, _setStyling } from './styling-binding.util';
+import { _internedStylingCount, _prepareStyling, _removeStyling, _setExpressionStyling, _setReactiveStyling, _setStyling, internStyling } from './styling-binding.util';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -495,5 +495,42 @@ describe('a state only for the keys two sources share', () => {
     _setExpressionStyling(_scope(null, EMPTY_LAYOUT), element, branch);
     expect(element.className).toBe('on');
     expect(_hasStylingState(element, 'class')).toBe(true);
+  });
+});
+
+describe('the strings the slots keep', () => {
+  it('are one copy per text, shared by the elements whose expressions compute it', () => {
+    const classes = ['xd-grid-cell', 'xd-grid-align-end'];
+    const styling = stylingOf({ name: 'class', string: () => classes.join(' ') });
+    const first = scopeOf(styling);
+    const second = scopeOf(styling);
+    const before = _internedStylingCount();
+    _setReactiveStyling(first, document.createElement('div'), styling);
+    _setReactiveStyling(second, document.createElement('div'), styling);
+    expect(_internedStylingCount()).toBe(before + 1);
+    expect(first[HEADER + 3]).toBe('xd-grid-cell xd-grid-align-end');
+    expect(second[HEADER + 3]).toBe(internStyling(classes.join(' ')));
+    expect((second[HEADER + 2] as Element).className).toBe('xd-grid-cell xd-grid-align-end');
+
+    // The strings of a binding keeping more values, the other values kept as they are
+    const both = stylingOf({ name: 'style', string: () => ['top', '1px'].join(': '), keys: ['width'], values: [() => 2], units: ['px'] });
+    const scope = scopeOf(both);
+    _setReactiveStyling(scope, document.createElement('div'), both);
+    expect(scope[HEADER + 3]).toEqual(['top: 1px', 2]);
+    expect(_internedStylingCount()).toBe(before + 2);
+  });
+
+  it('are kept as they are once the cache is full, which keeps the ones it holds', () => {
+    internStyling('held');
+    for (let i = 0; _internedStylingCount() < 512; i++) {
+      internStyling(`filler-${i}`);
+    }
+
+    const fresh = ['not', 'held'].join(' ');
+    expect(internStyling(fresh)).toBe(fresh);
+    expect(internStyling(['not', 'held'].join(' '))).toBe('not held');
+    expect(internStyling('held')).toBe('held');
+    expect(internStyling(null)).toBeNull();
+    expect(_internedStylingCount()).toBe(512);
   });
 });

@@ -18,6 +18,18 @@ import { templateKeys, templateString } from '../styling-opinions/styling-opinio
 import { applyDirectStyling, createStylingState, ensureStylingState, keepTemplateStyling, keptValues, markStyling, removeStylingSource, setTemplateStyling, sharesNewKey, writeStylingAttribute } from '../styling-state/styling-state.util';
 
 /**
+ * The most strings the cache of the values of `class` and `style` holds (see `internStyling`): enough for the distinct
+ * texts of the classes and the styles of an application, few enough that the cache stays small. Once it is full, a new
+ * string is kept as it is, and the cache is never emptied, so that the copies the slots share stay valid.
+ */
+const INTERNED_STRINGS = 512;
+
+/**
+ * The strings the expressions of `class` and `style` computed, each one by its text (see `internStyling`).
+ */
+const internedStrings = new Map<string, string>();
+
+/**
  * Writes the static `class` or `style` of an element, without expressions (`<div class="card wide">`), once.
  *
  * @param _context - The current template execution scope.
@@ -49,10 +61,57 @@ export function _setExpressionStyling(context: _Context, target: Element | Bindi
     return;
   }
 
+  // The values the slot keeps share the copy of an equal string the slot of another element keeps (see `internStyling`)
+  if (Array.isArray(values)) {
+    for (let i = 0; i < values.length; i++) {
+      values[i] = internStyling(values[i]);
+    }
+  }
+
+  const kept = Array.isArray(values) ? values : internStyling(values);
   const previous = context[target + 1];
   // `null` tells the values of a run from the empty slot of a binding never run
-  context[target + 1] = values ?? null;
-  writeStyling(context[target] as Element, styling, previous, values, true);
+  context[target + 1] = kept ?? null;
+  writeStyling(context[target] as Element, styling, previous, kept, true);
+}
+
+/**
+ * Gives the copy of a string an expression of `class` or `style` computed that the slots of the bindings keep (see
+ * `_setExpressionStyling`): the first equal string met, held by {@link internedStrings}, or the string itself once the
+ * cache is full. Any other value is given as it is.
+ *
+ * N.B. Deliberate, to save memory: a method composing the classes of an element (`cellClass(column)`, joining an array)
+ * returns a new string at every call, even with the same text, which the slot keeps as long as the element lives: a
+ * table kept one copy per cell of every row. The cache keeps one copy per text, shared by every slot, and the `===` of
+ * the next run compares two references. Do not keep the strings as they are computed, nor intern the other attributes.
+ *
+ * @param value - The value of an expression.
+ * @returns The value, or the copy of the string the cache holds.
+ */
+export function internStyling(value: unknown): unknown {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const interned = internedStrings.get(value);
+  if (interned !== undefined) {
+    return interned;
+  }
+
+  if (internedStrings.size < INTERNED_STRINGS) {
+    internedStrings.set(value, value);
+  }
+
+  return value;
+}
+
+/**
+ * Tells how many strings the cache of {@link internStyling} holds: a helper of the tests.
+ *
+ * @returns The number of strings.
+ */
+export function _internedStylingCount(): number {
+  return internedStrings.size;
 }
 
 /**
