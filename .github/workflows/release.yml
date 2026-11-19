@@ -5,8 +5,9 @@
 # - npm: a trusted publisher for each published @xaendar package (npmjs.com → package → Settings → Trusted publishing →
 #   GitHub Actions: owner Kaitenjo, repository xaendar, workflow release.yml, environment release). npm then
 #   authenticates this workflow through OIDC (`id-token: write`): no npm token is stored anywhere.
-# - VS Code Marketplace: the VSCE_PAT secret (Personal Access Token, scope Marketplace > Manage) of the `release`
-#   environment of the repository (Settings → Environments).
+# - VS Code Marketplace: a Trusted Publishing policy of the publisher (marketplace.visualstudio.com/manage → publisher →
+#   Trusted Publishing → Create: owner Kaitenjo, repository xaendar, workflow release.yml, environment release).
+#   `vsce publish --oidc` then authenticates this workflow through OIDC too: no Personal Access Token.
 name: Release
 
 on:
@@ -34,7 +35,7 @@ jobs:
     permissions:
       # Pushes the commit "Release <version>" and the tag xaendar--v<version>
       contents: write
-      # Trusted publishing on npm
+      # Trusted publishing on npm and on the VS Code Marketplace
       id-token: write
     steps:
       # The whole history and the tags: tag-release refuses a tag that already exists
@@ -71,4 +72,3 @@ jobs:
         run: npm run deploy -- "--bump=$BUMP"
         env:
           BUMP: ${{ inputs.bump }}
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
