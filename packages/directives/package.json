@@ -1,6 +1,6 @@
 {
   "name": "@xaendar/directives",
-  "version": "1.3.6",
+  "version": "1.4.0",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
@@ -15,10 +15,10 @@
     "library": true
   },
   "dependencies": {
-    "@xaendar/common": "1.3.5",
-    "@xaendar/types": "1.3.5"
+    "@xaendar/common": "1.4.0",
+    "@xaendar/types": "1.4.0"
   },
   "peerDependencies": {
-    "@xaendar/core": "1.3.6"
+    "@xaendar/core": "1.4.0"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@xaendar/build-tools",
-  "version": "1.3.6",
+  "version": "1.4.0",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
@@ -14,15 +14,15 @@
     ".": "./src/public-api.ts"
   },
   "dependencies": {
-    "@xaendar/common": "1.3.5",
-    "@xaendar/compiler": "1.3.5",
-    "@xaendar/language-core": "1.3.5",
-    "@xaendar/ssr-compiler": "1.3.5",
+    "@xaendar/common": "1.4.0",
+    "@xaendar/compiler": "1.4.0",
+    "@xaendar/language-core": "1.4.0",
+    "@xaendar/ssr-compiler": "1.4.0",
     "lightningcss": "1.33.0",
     "magic-string": "^1.4.5",
     "typescript": "^6.0.3",
     "vite": "^8.3.8",
-    "@xaendar/types": "1.3.5"
+    "@xaendar/types": "1.4.0"
   },
   "peerDependencies": {
     "less": "^4.9.1",
