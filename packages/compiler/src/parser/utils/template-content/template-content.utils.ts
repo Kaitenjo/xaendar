@@ -1,4 +1,4 @@
-import { dropsLeadingNewline, escapeAttribute, escapeRawText, escapeText, isRawTextElement, isVoidElement } from '@xaendar/common';
+import { dropsLeadingNewline, escapeAttribute, escapeRawText, escapeText, isRawTextElement, isVoidElement } from '@xaendar/internals';
 import type { ASTNode } from '../../types/ast.type';
 import { ASTNodeType } from '../../types/node.enum';
 import type { ElementNode } from '../../types/nodes/element-node.type';

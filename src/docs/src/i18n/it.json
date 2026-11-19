@@ -1889,7 +1889,7 @@
           "@xaendar/build-tools": "Il plugin di Vite che compila template e fogli di stile, per il browser e per il server, e le sue opzioni.",
           "@xaendar/ssr": "Il rendering lato server: renderToString, che renderizza un componente in HTML con shadow root dichiarativi, e il tipo dei suoi input.",
           "@xaendar/ssr/dom": "Il DOM del server, installato da loadServerDom: l’HTMLElement e i customElements di cui i moduli dei componenti hanno bisogno in Node.",
-          "@xaendar/common": "Utilità condivise dai pacchetti: conversione di maiuscole e minuscole, funzioni sugli oggetti, nomi di custom element, serializzazione HTML.",
+          "@xaendar/common": "Utilità generali: conversione di maiuscole e minuscole, funzioni su oggetti e array, indentazione, una pila, un piccolo insieme, il percorso di un URL sulla sua origine.",
           "@xaendar/types": "Tipi di utilità condivisi dai pacchetti: costruttori, decoratori, funzioni."
         }
       },

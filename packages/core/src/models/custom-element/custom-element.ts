@@ -11,7 +11,7 @@ import { _getComponentRuntime } from '../../utils/component-runtime/component-ru
 import { _scope, addCleanup, clear, EMPTY_LAYOUT, moveTo, removeCleanup } from '../../utils/context/context.util';
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
-import { _createHostDirectives } from '../../utils/host-directives/host-directives.util';
+import { _checkExposedFields, _createHostDirectives } from '../../utils/host-directives/host-directives.util';
 import { deferElementHydration, replayContractEvents, replayElementEvents } from '../../utils/hydration-triggers/hydration-triggers.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
 import { _parseState } from '../../utils/state-serialization/state-serialization.util';
@@ -217,8 +217,9 @@ export class CustomElement extends HTMLElement {
    * component of that content does not: the browser connects it along with the element holding it, after the element
    * has emptied its shadow root, so it is no longer in the DOM, and stays destroyed.
    *
-   * @throws When no render function is registered for this component class, and the error of the code of the component,
-   *   unless a template mounts it inside a `@try`.
+   * @throws When no render function is registered for this component class, when a field of the component has the name
+   *   an input of a host directive is exposed with, and the error of the code of the component, unless a template mounts
+   *   it inside a `@try`.
    */
   private connectedCallback(): void {
     if (this._state !== 'destroyed' || this.isConnected) {
@@ -283,7 +284,8 @@ export class CustomElement extends HTMLElement {
   /**
    * Connects the element, see {@link connectedCallback}.
    *
-   * @throws When no render function is registered for this component class, and the error of the code of the component.
+   * @throws When no render function is registered for this component class, when a field of the component has the name
+   *   an input of a host directive is exposed with, and the error of the code of the component.
    */
   private _connect(): void {
     const state = this._state;
@@ -295,6 +297,11 @@ export class CustomElement extends HTMLElement {
     const definition = _getRender(this.constructor);
     if (!definition) {
       throw new Error(`${this.constructor.name} does not seem to have a Render Function`);
+    }
+
+    // The fields exist only once the constructors of the subclasses have run
+    if (this._hostDirectivesContext) {
+      _checkExposedFields(this);
     }
 
     this._restoreServerInputs();

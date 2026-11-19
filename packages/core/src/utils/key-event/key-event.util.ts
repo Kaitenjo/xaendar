@@ -1,8 +1,8 @@
-import { KEY_MODIFIERS } from '@xaendar/common';
+import { KEY_MODIFIERS } from '@xaendar/internals';
 
 /**
  * Tells whether a keyboard event is the one a listener of a key event is filtered by (`(keydown.enter)`,
- * `@HostListener('document:keydown.escape')`, see `parseKeyEvent` of `@xaendar/common`): the key pressed, read from
+ * `@HostListener('document:keydown.escape')`, see `parseKeyEvent` of `@xaendar/internals`): the key pressed, read from
  * `event.key`, or from `event.code` for a filter by code, in lowercase, `' '` read as `space` and `'.'` as `dot`, is the
  * key of the filter, and the modifiers pressed are exactly the ones of the filter, but the one that is the key itself
  * (`keydown.shift`). An event without key, such as the `keydown` Chrome dispatches when it autofills a field, matches

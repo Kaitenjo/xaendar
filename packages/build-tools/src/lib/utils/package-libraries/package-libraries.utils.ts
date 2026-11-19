@@ -6,7 +6,7 @@ import { registerLibrarySelectors } from '../../registry/metadata-registry/metad
  * The packages of Xaendar the compiled code imports: an application and its libraries share one copy of each, as
  * `@xaendar/core` keeps the registries of the components and of the directives at module level.
  */
-const XAENDAR_PACKAGES = ['@xaendar/core', '@xaendar/signals', '@xaendar/common', '@xaendar/types', '@xaendar/ssr'];
+const XAENDAR_PACKAGES = ['@xaendar/core', '@xaendar/signals', '@xaendar/common', '@xaendar/internals', '@xaendar/types', '@xaendar/ssr'];
 
 /**
  * Configures Vite for the compiled libraries a project depends on: one copy of each package of Xaendar

@@ -20180,190 +20180,9 @@ var Stack = class {
   }
 };
 
-// ../packages/common/src/utils/css/css.util.ts
-var CSS_UNITS = /* @__PURE__ */ new Set([
-  "%",
-  "cap",
-  "ch",
-  "em",
-  "ex",
-  "ic",
-  "lh",
-  "rcap",
-  "rch",
-  "rem",
-  "rex",
-  "ric",
-  "rlh",
-  "vb",
-  "vh",
-  "vi",
-  "vw",
-  "vmin",
-  "vmax",
-  "dvb",
-  "dvh",
-  "dvi",
-  "dvw",
-  "dvmin",
-  "dvmax",
-  "lvb",
-  "lvh",
-  "lvi",
-  "lvw",
-  "lvmin",
-  "lvmax",
-  "svb",
-  "svh",
-  "svi",
-  "svw",
-  "svmin",
-  "svmax",
-  "cqb",
-  "cqh",
-  "cqi",
-  "cqw",
-  "cqmin",
-  "cqmax",
-  "cm",
-  "mm",
-  "q",
-  "in",
-  "pc",
-  "pt",
-  "px",
-  "deg",
-  "grad",
-  "rad",
-  "turn",
-  "s",
-  "ms",
-  "hz",
-  "khz",
-  "dpi",
-  "dpcm",
-  "dppx",
-  "x",
-  "fr"
-]);
-function toCssPropertyName(name) {
-  return name.startsWith("--") ? name : name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-}
-
-// ../packages/common/src/utils/html-serialization/html-serialization.util.ts
-var VOID_ELEMENTS = /* @__PURE__ */ new Set(["area", "base", "basefont", "bgsound", "br", "col", "embed", "frame", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"]);
-var RAW_TEXT_ELEMENTS = /* @__PURE__ */ new Set(["iframe", "noembed", "noframes", "noscript", "plaintext", "script", "style", "xmp"]);
-var LEADING_NEWLINE_ELEMENTS = /* @__PURE__ */ new Set(["listing", "pre", "textarea"]);
-var ESCAPES = {
-  "&": "&amp;",
-  '"': "&quot;",
-  "<": "&lt;",
-  ">": "&gt;"
-};
-function escapeText(value) {
-  return value.replace(/[&<>]/g, (char) => ESCAPES[char]);
-}
-function escapeAttribute(value) {
-  return value.replace(/[&"<>]/g, (char) => ESCAPES[char]);
-}
-function escapeRawText(value, tagName) {
-  return value.replace(new RegExp(`</(${tagName})`, "gi"), "<\\/$1");
-}
-function isVoidElement(tagName) {
-  return VOID_ELEMENTS.has(tagName);
-}
-function isRawTextElement(tagName) {
-  return RAW_TEXT_ELEMENTS.has(tagName);
-}
-function dropsLeadingNewline(tagName) {
-  return LEADING_NEWLINE_ELEMENTS.has(tagName);
-}
-
-// ../packages/common/src/utils/key-event/key-event.util.ts
-var KEY_MODIFIERS = { alt: 1, control: 2, meta: 4, shift: 8 };
-function parseKeyEvent(name) {
-  const dot = name.indexOf(".");
-  const event = dot < 0 ? name : name.slice(0, dot);
-  if (dot < 0 || event !== "keydown" && event !== "keyup") {
-    return void 0;
-  }
-  const parts = name.slice(dot + 1).toLowerCase().split(".");
-  const key = parts[parts.length - 1];
-  if (!key) {
-    throw new Error(`The key event "${name}" names no key: write it after the last dot, e.g. ${event}.enter`);
-  }
-  let modifiers = 0;
-  let code = false;
-  for (let i2 = 0; i2 < parts.length - 1; i2++) {
-    const part = parts[i2];
-    const modifier = Object.hasOwn(KEY_MODIFIERS, part) ? KEY_MODIFIERS[part] : 0;
-    if (!modifier && part !== "code") {
-      throw new Error(`"${part}" is not a modifier of the key event "${name}": alt, control, meta, shift or code`);
-    }
-    if (modifier ? modifiers & modifier : code) {
-      throw new Error(`The key event "${name}" names "${part}" twice`);
-    }
-    modifiers |= modifier;
-    code ||= !modifier;
-  }
-  const filter = { event, key: key === "esc" ? "escape" : key, modifiers };
-  return code ? Object.assign(filter, { code: true }) : filter;
-}
-
-// ../packages/common/src/utils/model/model.util.ts
-var MODEL_CHANGE_SUFFIX = "Change";
-function toModelChangeEvent(name) {
-  return `${name}${MODEL_CHANGE_SUFFIX}`;
-}
-
-// ../packages/common/src/utils/small-set/small-set.util.ts
-var EMPTY = Object.freeze([]);
-
 // ../packages/common/src/utils/string/string.util.ts
 function slice(value, start, end) {
   return JSON.parse(JSON.stringify(value.slice(start, end)));
-}
-
-// ../packages/common/src/costants/not-alllowed-tags.constants.ts
-var NOT_ALLOWED_TAGS = [
-  "annotation-xml",
-  "color-profile",
-  "font-face",
-  "font-face-src",
-  "font-face-uri",
-  "font-face-format",
-  "font-face-name",
-  "missing-glyph"
-];
-
-// ../packages/common/src/utils/tags/tags.util.ts
-var PCEN_CHAR = String.raw`\-.0-9_a-z\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u{10000}-\u{EFFFF}`;
-var CUSTOM_ELEMENT_NAME_RE = new RegExp(`^[a-z][${PCEN_CHAR}]*-[${PCEN_CHAR}]*$`, "u");
-function isValidCustomElementName(tagName, logErrors = true) {
-  if (!CUSTOM_ELEMENT_NAME_RE.test(tagName)) {
-    logErrors && console.error(`Tag <${tagName}> is not a valid custom element name. Custom element names must:
-- start with a lowercase ASCII letter.
-- contain a hyphen.
-- not contain uppercase ASCII letters, whitespace, or ASCII symbols other than '-', '.' and '_'.
-`);
-    return false;
-  }
-  if (isReservedTagName(tagName)) {
-    logErrors && console.error(`Tag <${tagName}> is a reserved tag name and cannot be used as a custom element name.
-Reserved names are: 
-- ${NOT_ALLOWED_TAGS.join("\n- ")}`);
-    return false;
-  }
-  return true;
-}
-function matchesCustomElementPattern(tagName, patterns) {
-  return patterns.some((pattern) => {
-    const source = pattern.split("*").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*");
-    return new RegExp(`^${source}$`).test(tagName);
-  });
-}
-function isReservedTagName(tagName) {
-  return NOT_ALLOWED_TAGS.includes(tagName);
 }
 
 // ../packages/compiler/src/parser/types/node.enum.ts
@@ -20455,6 +20274,207 @@ function appliesStructuralDirectives({ branches }) {
 
 // ../packages/compiler/src/costants/scope-header.costant.ts
 var SCOPE_HEADER = 5;
+
+// ../packages/internals/src/utils/css/css.util.ts
+var CSS_UNITS = /* @__PURE__ */ new Set([
+  "%",
+  "cap",
+  "ch",
+  "em",
+  "ex",
+  "ic",
+  "lh",
+  "rcap",
+  "rch",
+  "rem",
+  "rex",
+  "ric",
+  "rlh",
+  "vb",
+  "vh",
+  "vi",
+  "vw",
+  "vmin",
+  "vmax",
+  "dvb",
+  "dvh",
+  "dvi",
+  "dvw",
+  "dvmin",
+  "dvmax",
+  "lvb",
+  "lvh",
+  "lvi",
+  "lvw",
+  "lvmin",
+  "lvmax",
+  "svb",
+  "svh",
+  "svi",
+  "svw",
+  "svmin",
+  "svmax",
+  "cqb",
+  "cqh",
+  "cqi",
+  "cqw",
+  "cqmin",
+  "cqmax",
+  "cm",
+  "mm",
+  "q",
+  "in",
+  "pc",
+  "pt",
+  "px",
+  "deg",
+  "grad",
+  "rad",
+  "turn",
+  "s",
+  "ms",
+  "hz",
+  "khz",
+  "dpi",
+  "dpcm",
+  "dppx",
+  "x",
+  "fr"
+]);
+function toCssPropertyName(name) {
+  return name.startsWith("--") ? name : name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+}
+
+// ../packages/internals/src/utils/host-directive/host-directive.util.ts
+function describeDuplicateHostDirective(className, directiveName) {
+  return `${className} declares the host directive ${directiveName} more than once`;
+}
+function describeInputExposure(declared, input, member, name, alias, className, directiveName) {
+  if (!declared) {
+    return `${directiveName} does not declare an input named "${name}"`;
+  }
+  if (input) {
+    return `${className} already has an input named "${alias}", which ${directiveName} cannot expose`;
+  }
+  return member ? `${className} already has a member named "${alias}", which ${directiveName} cannot expose as an input` : void 0;
+}
+function describeEventExposure(declared, event, name, alias, className, directiveName) {
+  if (!declared) {
+    return `${directiveName} does not declare an event named "${name}"`;
+  }
+  return event ? `${className} already has an event named "${alias}", which ${directiveName} cannot expose` : void 0;
+}
+
+// ../packages/internals/src/utils/html-serialization/html-serialization.util.ts
+var VOID_ELEMENTS = /* @__PURE__ */ new Set(["area", "base", "basefont", "bgsound", "br", "col", "embed", "frame", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"]);
+var RAW_TEXT_ELEMENTS = /* @__PURE__ */ new Set(["iframe", "noembed", "noframes", "noscript", "plaintext", "script", "style", "xmp"]);
+var LEADING_NEWLINE_ELEMENTS = /* @__PURE__ */ new Set(["listing", "pre", "textarea"]);
+var ESCAPES = {
+  "&": "&amp;",
+  '"': "&quot;",
+  "<": "&lt;",
+  ">": "&gt;"
+};
+function escapeText(value) {
+  return value.replace(/[&<>]/g, (char) => ESCAPES[char]);
+}
+function escapeAttribute(value) {
+  return value.replace(/[&"<>]/g, (char) => ESCAPES[char]);
+}
+function escapeRawText(value, tagName) {
+  return value.replace(new RegExp(`</(${tagName})`, "gi"), "<\\/$1");
+}
+function isVoidElement(tagName) {
+  return VOID_ELEMENTS.has(tagName);
+}
+function isRawTextElement(tagName) {
+  return RAW_TEXT_ELEMENTS.has(tagName);
+}
+function dropsLeadingNewline(tagName) {
+  return LEADING_NEWLINE_ELEMENTS.has(tagName);
+}
+
+// ../packages/internals/src/utils/key-event/key-event.util.ts
+var KEY_MODIFIERS = { alt: 1, control: 2, meta: 4, shift: 8 };
+function parseKeyEvent(name) {
+  const dot = name.indexOf(".");
+  const event = dot < 0 ? name : name.slice(0, dot);
+  if (dot < 0 || event !== "keydown" && event !== "keyup") {
+    return void 0;
+  }
+  const parts = name.slice(dot + 1).toLowerCase().split(".");
+  const key = parts[parts.length - 1];
+  if (!key) {
+    throw new Error(`The key event "${name}" names no key: write it after the last dot, e.g. ${event}.enter`);
+  }
+  let modifiers = 0;
+  let code = false;
+  for (let i2 = 0; i2 < parts.length - 1; i2++) {
+    const part = parts[i2];
+    const modifier = Object.hasOwn(KEY_MODIFIERS, part) ? KEY_MODIFIERS[part] : 0;
+    if (!modifier && part !== "code") {
+      throw new Error(`"${part}" is not a modifier of the key event "${name}": alt, control, meta, shift or code`);
+    }
+    if (modifier ? modifiers & modifier : code) {
+      throw new Error(`The key event "${name}" names "${part}" twice`);
+    }
+    modifiers |= modifier;
+    code ||= !modifier;
+  }
+  const filter = { event, key: key === "esc" ? "escape" : key, modifiers };
+  return code ? Object.assign(filter, { code: true }) : filter;
+}
+
+// ../packages/internals/src/utils/model/model.util.ts
+var MODEL_CHANGE_SUFFIX = "Change";
+function toModelChangeEvent(name) {
+  return `${name}${MODEL_CHANGE_SUFFIX}`;
+}
+
+// ../packages/internals/src/utils/small-set/small-set.util.ts
+var EMPTY = Object.freeze([]);
+
+// ../packages/internals/src/costants/not-alllowed-tags.constants.ts
+var NOT_ALLOWED_TAGS = [
+  "annotation-xml",
+  "color-profile",
+  "font-face",
+  "font-face-src",
+  "font-face-uri",
+  "font-face-format",
+  "font-face-name",
+  "missing-glyph"
+];
+
+// ../packages/internals/src/utils/tags/tags.util.ts
+var PCEN_CHAR = String.raw`\-.0-9_a-z\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u{10000}-\u{EFFFF}`;
+var CUSTOM_ELEMENT_NAME_RE = new RegExp(`^[a-z][${PCEN_CHAR}]*-[${PCEN_CHAR}]*$`, "u");
+function isValidCustomElementName(tagName, logErrors = true) {
+  if (!CUSTOM_ELEMENT_NAME_RE.test(tagName)) {
+    logErrors && console.error(`Tag <${tagName}> is not a valid custom element name. Custom element names must:
+- start with a lowercase ASCII letter.
+- contain a hyphen.
+- not contain uppercase ASCII letters, whitespace, or ASCII symbols other than '-', '.' and '_'.
+`);
+    return false;
+  }
+  if (isReservedTagName(tagName)) {
+    logErrors && console.error(`Tag <${tagName}> is a reserved tag name and cannot be used as a custom element name.
+Reserved names are: 
+- ${NOT_ALLOWED_TAGS.join("\n- ")}`);
+    return false;
+  }
+  return true;
+}
+function matchesCustomElementPattern(tagName, patterns) {
+  return patterns.some((pattern) => {
+    const source = pattern.split("*").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*");
+    return new RegExp(`^${source}$`).test(tagName);
+  });
+}
+function isReservedTagName(tagName) {
+  return NOT_ALLOWED_TAGS.includes(tagName);
+}
 
 // ../packages/compiler/src/models/compiler-context/compiler-context.model.ts
 var CompilerContext = class {
@@ -26688,10 +26708,10 @@ var TypeCheckContext = class extends CompilerContext {
 };
 
 // ../packages/compiler/src/type-checker/states/type-check-element/type-check-element.state.ts
-var import_typescript17 = require("typescript");
+var import_typescript18 = require("typescript");
 
 // ../packages/compiler/src/utils/metadata/metadata.utils.ts
-var import_typescript16 = require("typescript");
+var import_typescript17 = require("typescript");
 
 // ../packages/compiler/src/type-checker/models/component-property-metadata/component-property-metadata.model.ts
 var ComponentPropertyMetadata = class {
@@ -26752,19 +26772,73 @@ var ComponentPropertyMetadataWithSpan = class extends ComponentPropertyMetadata 
   sourceFile;
 };
 
+// ../packages/compiler/src/utils/dom-members/dom-members.utils.ts
+var import_typescript14 = require("typescript");
+var HTML_ELEMENT = "HTMLElement";
+var htmlElementMembers;
+function getHTMLElementMembers() {
+  htmlElementMembers ??= readInterfaceMembers(`${(0, import_typescript14.getDefaultLibFilePath)({}).replace(/[^\\/]*$/, "")}lib.dom.d.ts`, HTML_ELEMENT);
+  return htmlElementMembers;
+}
+function readInterfaceMembers(fileName, name) {
+  const names = /* @__PURE__ */ new Set();
+  const text = import_typescript14.sys.readFile(fileName);
+  if (!text) {
+    return names;
+  }
+  const interfaces = /* @__PURE__ */ new Map();
+  const { statements } = (0, import_typescript14.createSourceFile)(fileName, text, import_typescript14.ScriptTarget.Latest, false);
+  for (let i2 = 0; i2 < statements.length; i2++) {
+    const statement = statements[i2];
+    if ((0, import_typescript14.isInterfaceDeclaration)(statement)) {
+      const declarations = interfaces.get(statement.name.text);
+      declarations ? declarations.push(statement) : interfaces.set(statement.name.text, [statement]);
+    }
+  }
+  collectInterfaceMembers(interfaces, name, /* @__PURE__ */ new Set(), names);
+  return names;
+}
+function collectInterfaceMembers(interfaces, name, visited, names) {
+  const declarations = interfaces.get(name);
+  if (!declarations?.length || visited.has(name)) {
+    return;
+  }
+  visited.add(name);
+  for (let i2 = 0; i2 < declarations.length; i2++) {
+    const { members, heritageClauses } = declarations[i2];
+    for (let j = 0; j < members.length; j++) {
+      const memberName = members[j].name;
+      if (memberName && ((0, import_typescript14.isIdentifier)(memberName) || (0, import_typescript14.isStringLiteral)(memberName))) {
+        names.add(memberName.text);
+      }
+    }
+    if (heritageClauses?.length) {
+      for (let j = 0; j < heritageClauses.length; j++) {
+        const { types } = heritageClauses[j];
+        for (let k = 0; k < types.length; k++) {
+          const { expression } = types[k];
+          if ((0, import_typescript14.isIdentifier)(expression)) {
+            collectInterfaceMembers(interfaces, expression.text, visited, names);
+          }
+        }
+      }
+    }
+  }
+}
+
 // ../packages/compiler/src/utils/host-directives/host-directives.utils.ts
-var import_typescript15 = require("typescript");
+var import_typescript16 = require("typescript");
 
 // ../packages/compiler/src/utils/resolve-declaration/resolve-declaration.utils.ts
 var import_node_fs = require("fs");
-var import_typescript14 = require("typescript");
+var import_typescript15 = require("typescript");
 var DEFAULT_COMPILER_OPTIONS = {
-  module: import_typescript14.ModuleKind.ESNext,
-  moduleResolution: import_typescript14.ModuleResolutionKind.Bundler
+  module: import_typescript15.ModuleKind.ESNext,
+  moduleResolution: import_typescript15.ModuleResolutionKind.Bundler
 };
 var CLASS_FINDER = {
-  local: (statement, localName) => (0, import_typescript14.isClassDeclaration)(statement) && statement.name?.text === localName ? statement : void 0,
-  exported: (statement, exportedName) => (0, import_typescript14.isClassDeclaration)(statement) && isExportedAs(statement, exportedName) ? statement : void 0
+  local: (statement, localName) => (0, import_typescript15.isClassDeclaration)(statement) && statement.name?.text === localName ? statement : void 0,
+  exported: (statement, exportedName) => (0, import_typescript15.isClassDeclaration)(statement) && isExportedAs(statement, exportedName) ? statement : void 0
 };
 var sourceFileCache = /* @__PURE__ */ new Map();
 function resolveBaseClassOf(klass, compilerOptions = DEFAULT_COMPILER_OPTIONS) {
@@ -26784,14 +26858,14 @@ function resolveBaseClass({ sourceFile, declaration }, context) {
   return resolveReference(sourceFile, expression, CLASS_FINDER, context, /* @__PURE__ */ new Set());
 }
 function getBaseClassExpression(declaration) {
-  const extendsClause = declaration.heritageClauses?.find((clause) => clause.token === import_typescript14.SyntaxKind.ExtendsKeyword);
+  const extendsClause = declaration.heritageClauses?.find((clause) => clause.token === import_typescript15.SyntaxKind.ExtendsKeyword);
   return extendsClause?.types[0].expression;
 }
 function resolveReference(sourceFile, expression, finder, context, visitedExports) {
-  if ((0, import_typescript14.isIdentifier)(expression)) {
+  if ((0, import_typescript15.isIdentifier)(expression)) {
     return resolveLocal(sourceFile, expression.text, finder, context, visitedExports);
   }
-  if ((0, import_typescript14.isPropertyAccessExpression)(expression) && (0, import_typescript14.isIdentifier)(expression.expression)) {
+  if ((0, import_typescript15.isPropertyAccessExpression)(expression) && (0, import_typescript15.isIdentifier)(expression.expression)) {
     const importDeclaration = findNamespaceImport(sourceFile, expression.expression.text);
     if (importDeclaration) {
       return resolveImported(sourceFile, importDeclaration.moduleSpecifier, expression.name.text, finder, context, visitedExports);
@@ -26805,7 +26879,7 @@ function resolveLocal(sourceFile, localName, finder, context, visitedExports) {
     if (declaration) {
       return { sourceFile, declaration };
     }
-    if ((0, import_typescript14.isImportDeclaration)(statement)) {
+    if ((0, import_typescript15.isImportDeclaration)(statement)) {
       const importedName = getImportedName(statement, localName);
       if (importedName) {
         return resolveImported(sourceFile, statement.moduleSpecifier, importedName, finder, context, visitedExports);
@@ -26819,7 +26893,7 @@ function getImportedName(importDeclaration, localName) {
     return "default";
   }
   const namedBindings = importClause?.namedBindings;
-  if (namedBindings && (0, import_typescript14.isNamedImports)(namedBindings)) {
+  if (namedBindings && (0, import_typescript15.isNamedImports)(namedBindings)) {
     const element = namedBindings.elements.find((el) => el.name.text === localName);
     return element && (element.propertyName ?? element.name).text;
   }
@@ -26827,15 +26901,15 @@ function getImportedName(importDeclaration, localName) {
 }
 function findNamespaceImport(sourceFile, namespace) {
   return sourceFile.statements.find((statement) => {
-    const namedBindings = (0, import_typescript14.isImportDeclaration)(statement) ? statement.importClause?.namedBindings : void 0;
-    return !!namedBindings && (0, import_typescript14.isNamespaceImport)(namedBindings) && namedBindings.name.text === namespace;
+    const namedBindings = (0, import_typescript15.isImportDeclaration)(statement) ? statement.importClause?.namedBindings : void 0;
+    return !!namedBindings && (0, import_typescript15.isNamespaceImport)(namedBindings) && namedBindings.name.text === namespace;
   });
 }
 function resolveImported(sourceFile, moduleSpecifier, exportedName, finder, context, visitedExports) {
-  if (!(0, import_typescript14.isStringLiteralLike)(moduleSpecifier)) {
+  if (!(0, import_typescript15.isStringLiteralLike)(moduleSpecifier)) {
     return;
   }
-  const { resolvedModule } = (0, import_typescript14.resolveModuleName)(moduleSpecifier.text, sourceFile.fileName, context.compilerOptions, import_typescript14.sys);
+  const { resolvedModule } = (0, import_typescript15.resolveModuleName)(moduleSpecifier.text, sourceFile.fileName, context.compilerOptions, import_typescript15.sys);
   const moduleSourceFile = resolvedModule && getSourceFile(resolvedModule.resolvedFileName, context);
   return moduleSourceFile ? resolveExported(moduleSourceFile, exportedName, finder, context, visitedExports) : void 0;
 }
@@ -26856,15 +26930,15 @@ function resolveExported(sourceFile, exportedName, finder, context, visitedExpor
     if (declaration) {
       return { sourceFile, declaration };
     }
-    if ((0, import_typescript14.isExportAssignment)(statement) && !statement.isExportEquals && exportedName === "default" && (0, import_typescript14.isIdentifier)(statement.expression)) {
+    if ((0, import_typescript15.isExportAssignment)(statement) && !statement.isExportEquals && exportedName === "default" && (0, import_typescript15.isIdentifier)(statement.expression)) {
       return resolveLocal(sourceFile, statement.expression.text, finder, context, visitedExports);
     }
-    if ((0, import_typescript14.isExportDeclaration)(statement)) {
+    if ((0, import_typescript15.isExportDeclaration)(statement)) {
       const { exportClause, moduleSpecifier } = statement;
       if (!exportClause && moduleSpecifier) {
         wildcardSpecifiers.push(moduleSpecifier);
       }
-      if (exportClause && (0, import_typescript14.isNamedExports)(exportClause)) {
+      if (exportClause && (0, import_typescript15.isNamedExports)(exportClause)) {
         const element = exportClause.elements.find((el) => el.name.text === exportedName);
         if (element) {
           const name = (element.propertyName ?? element.name).text;
@@ -26887,7 +26961,7 @@ function resolveExported(sourceFile, exportedName, finder, context, visitedExpor
 }
 function isExportedAs(declaration, exportedName) {
   if (exportedName === "default") {
-    return !!declaration.modifiers?.some((modifier) => modifier.kind === import_typescript14.SyntaxKind.DefaultKeyword);
+    return !!declaration.modifiers?.some((modifier) => modifier.kind === import_typescript15.SyntaxKind.DefaultKeyword);
   }
   return declaration.name?.text === exportedName;
 }
@@ -26899,7 +26973,7 @@ function getSourceFile(fileName, context) {
     if (cached?.modifiedTime === mtimeMs && cached.size === size) {
       sourceFile = cached.sourceFile;
     } else {
-      sourceFile = (0, import_typescript14.createSourceFile)(fileName, (0, import_node_fs.readFileSync)(fileName, "utf-8"), import_typescript14.ScriptTarget.Latest, true);
+      sourceFile = (0, import_typescript15.createSourceFile)(fileName, (0, import_node_fs.readFileSync)(fileName, "utf-8"), import_typescript15.ScriptTarget.Latest, true);
       sourceFileCache.set(fileName, { modifiedTime: mtimeMs, size, sourceFile });
     }
   } catch {
@@ -26972,7 +27046,7 @@ function checkHostDirectives(sources, component, compilerOptions, extractBinding
       }
       const directiveName = resolved.declaration.name?.text;
       if (declared.has(resolved.declaration)) {
-        report2(`${className} declares the host directive ${directiveName} more than once`, own ? directive : void 0);
+        report2(describeDuplicateHostDirective(className, directiveName), own ? directive : void 0);
         continue;
       }
       declared.add(resolved.declaration);
@@ -26983,7 +27057,7 @@ function checkHostDirectives(sources, component, compilerOptions, extractBinding
       if (dirProperties?.length) {
         for (let k = 0; k < dirProperties.length; k++) {
           const { name, alias, node } = dirProperties[k];
-          const message = describeInputConflict(exposed.properties.has(name), name, alias, className, directiveName, properties2.has(alias) || inputs.has(alias), members.has(alias));
+          const message = describeInputExposure(exposed.properties.has(name), properties2.has(alias) || inputs.has(alias), members.has(alias), name, alias, className, directiveName);
           if (message) {
             report2(message, own ? node : void 0);
           }
@@ -26993,10 +27067,9 @@ function checkHostDirectives(sources, component, compilerOptions, extractBinding
       if (dirEvents?.length) {
         for (let k = 0; k < dirEvents.length; k++) {
           const { name, alias, node } = dirEvents[k];
-          if (!exposed.events.has(name)) {
-            report2(`${directiveName} does not declare an event named "${name}"`, own ? node : void 0);
-          } else if (events.has(alias) || outputs.has(alias)) {
-            report2(`${className} already has an event named "${alias}", which ${directiveName} cannot expose`, own ? node : void 0);
+          const message = describeEventExposure(exposed.events.has(name), events.has(alias) || outputs.has(alias), name, alias, className, directiveName);
+          if (message) {
+            report2(message, own ? node : void 0);
           }
           outputs.add(alias);
         }
@@ -27004,25 +27077,16 @@ function checkHostDirectives(sources, component, compilerOptions, extractBinding
     }
   }
 }
-function describeInputConflict(declared, name, alias, className, directiveName, input, member) {
-  if (!declared) {
-    return `${directiveName} does not declare an input named "${name}"`;
-  }
-  if (input) {
-    return `${className} already has an input named "${alias}", which ${directiveName} cannot expose`;
-  }
-  return member ? `${className} already has a member named "${alias}", which ${directiveName} cannot expose as an input` : void 0;
-}
 function readHostDirectives(decorator) {
   const options = decorator.expression.arguments[0];
-  const list = options && (0, import_typescript15.isObjectLiteralExpression)(options) ? getOptionExpression(options, "hostDirectives") : void 0;
-  if (!list || !(0, import_typescript15.isArrayLiteralExpression)(list)) {
+  const list = options && (0, import_typescript16.isObjectLiteralExpression)(options) ? getOptionExpression(options, "hostDirectives") : void 0;
+  if (!list || !(0, import_typescript16.isArrayLiteralExpression)(list)) {
     return;
   }
   const declarations = new Array();
   for (let i2 = 0; i2 < list.elements.length; i2++) {
     const element = list.elements[i2];
-    if (!(0, import_typescript15.isObjectLiteralExpression)(element)) {
+    if (!(0, import_typescript16.isObjectLiteralExpression)(element)) {
       declarations.push({ directive: element });
       continue;
     }
@@ -27036,27 +27100,27 @@ function readHostDirectives(decorator) {
 function getOptionExpression(object, name) {
   for (let i2 = 0; i2 < object.properties.length; i2++) {
     const property = object.properties[i2];
-    if ((0, import_typescript15.isPropertyAssignment)(property) && (0, import_typescript15.isIdentifier)(property.name) && property.name.text === name) {
+    if ((0, import_typescript16.isPropertyAssignment)(property) && (0, import_typescript16.isIdentifier)(property.name) && property.name.text === name) {
       return property.initializer;
     }
-    if ((0, import_typescript15.isShorthandPropertyAssignment)(property) && property.name.text === name) {
+    if ((0, import_typescript16.isShorthandPropertyAssignment)(property) && property.name.text === name) {
       return property.name;
     }
   }
 }
 function readExposures(expression) {
-  if (!expression || !(0, import_typescript15.isArrayLiteralExpression)(expression)) {
+  if (!expression || !(0, import_typescript16.isArrayLiteralExpression)(expression)) {
     return;
   }
   const exposures = new Array();
   for (let i2 = 0; i2 < expression.elements.length; i2++) {
     const element = expression.elements[i2];
-    if ((0, import_typescript15.isStringLiteralLike)(element)) {
+    if ((0, import_typescript16.isStringLiteralLike)(element)) {
       exposures.push({ name: element.text, alias: element.text, node: element });
-    } else if ((0, import_typescript15.isObjectLiteralExpression)(element)) {
+    } else if ((0, import_typescript16.isObjectLiteralExpression)(element)) {
       const name = getOptionExpression(element, "name");
       const alias = getOptionExpression(element, "alias");
-      if (name && alias && (0, import_typescript15.isStringLiteralLike)(name) && (0, import_typescript15.isStringLiteralLike)(alias)) {
+      if (name && alias && (0, import_typescript16.isStringLiteralLike)(name) && (0, import_typescript16.isStringLiteralLike)(alias)) {
         exposures.push({ name: name.text, alias: alias.text, node: element });
       }
     }
@@ -27285,7 +27349,7 @@ function findReflectedInputs(sourceFile) {
     const { members } = klass;
     for (let j = 0; j < members.length; j++) {
       const member = members[j];
-      if (!(0, import_typescript16.isPropertyDeclaration)(member) || !(0, import_typescript16.isIdentifier)(member.name)) {
+      if (!(0, import_typescript17.isPropertyDeclaration)(member) || !(0, import_typescript17.isIdentifier)(member.name)) {
         continue;
       }
       const nameNode = member.name;
@@ -27329,7 +27393,7 @@ function findWebComponentErrors(sourceFile, componentFile, ssr) {
       continue;
     }
     const options = decorator.expression.arguments[0];
-    if (!options || !(0, import_typescript16.isObjectLiteralExpression)(options)) {
+    if (!options || !(0, import_typescript17.isObjectLiteralExpression)(options)) {
       reportAt(errors, sourceFile, `The options of @WebComponent in ${className} must be an object literal`, options ?? decorator.expression.expression);
       continue;
     }
@@ -27337,7 +27401,7 @@ function findWebComponentErrors(sourceFile, componentFile, ssr) {
     let templateUrl = false;
     for (let j = 0; j < options.properties.length; j++) {
       const property = options.properties[j];
-      if (!((0, import_typescript16.isPropertyAssignment)(property) || (0, import_typescript16.isShorthandPropertyAssignment)(property)) || !(0, import_typescript16.isIdentifier)(property.name)) {
+      if (!((0, import_typescript17.isPropertyAssignment)(property) || (0, import_typescript17.isShorthandPropertyAssignment)(property)) || !(0, import_typescript17.isIdentifier)(property.name)) {
         continue;
       }
       const name = property.name.text;
@@ -27360,8 +27424,8 @@ function findWebComponentErrors(sourceFile, componentFile, ssr) {
         default:
           continue;
       }
-      if (!(0, import_typescript16.isPropertyAssignment)(property) || !(0, import_typescript16.isStringLiteral)(property.initializer)) {
-        reportAt(errors, sourceFile, `The ${name} option of ${className} must be a string literal`, (0, import_typescript16.isPropertyAssignment)(property) ? property.initializer : property);
+      if (!(0, import_typescript17.isPropertyAssignment)(property) || !(0, import_typescript17.isStringLiteral)(property.initializer)) {
+        reportAt(errors, sourceFile, `The ${name} option of ${className} must be a string literal`, (0, import_typescript17.isPropertyAssignment)(property) ? property.initializer : property);
       } else if (name === "selector" && !isValidCustomElementName(property.initializer.text)) {
         reportAt(errors, sourceFile, `Invalid custom element name "${property.initializer.text}" in component ${className}`, property.initializer);
       }
@@ -27418,13 +27482,25 @@ function collectMemberNames(klass, compilerOptions) {
     for (let i2 = 0; i2 < members.length; i2++) {
       const member = members[i2];
       const name = member.name;
-      if (name && ((0, import_typescript16.isIdentifier)(name) || (0, import_typescript16.isStringLiteral)(name)) && !((0, import_typescript16.getCombinedModifierFlags)(member) & import_typescript16.ModifierFlags.Static)) {
+      if (name && ((0, import_typescript17.isIdentifier)(name) || (0, import_typescript17.isStringLiteral)(name)) && !((0, import_typescript17.getCombinedModifierFlags)(member) & import_typescript17.ModifierFlags.Static)) {
         names.add(name.text);
       }
     }
-    current = resolveBaseClassOf(current, compilerOptions);
+    const base = resolveBaseClassOf(current, compilerOptions);
+    if (!base) {
+      addGlobalBaseMembers(current.declaration, names);
+    }
+    current = base;
   }
   return names;
+}
+function addGlobalBaseMembers(declaration, names) {
+  const base = getBaseClassExpression(declaration);
+  if (base && (0, import_typescript17.isIdentifier)(base) && base.text === HTML_ELEMENT) {
+    for (const name of getHTMLElementMembers()) {
+      names.add(name);
+    }
+  }
 }
 function getWebComponentDeclarations(sourceFile) {
   return getDecoratedClassDeclarations(sourceFile, "WebComponent");
@@ -27433,7 +27509,7 @@ function describeSelectorConflict({ className, selector, type, modulePath }, own
   return type === "directive" ? `Selector "${selector}" of directive "${className}" - ${modulePath} is already used by directive "${owner.className}" - ${owner.ownerFile}. Directive selectors must be unique.` : `Selector "${selector}" of component "${className}" - ${modulePath} is already used by component "${owner.className}" - ${owner.ownerFile}. Custom element names must be unique.`;
 }
 function findSsrError(property, className) {
-  if (!(0, import_typescript16.isPropertyAssignment)(property) || !(0, import_typescript16.isObjectLiteralExpression)(property.initializer)) {
+  if (!(0, import_typescript17.isPropertyAssignment)(property) || !(0, import_typescript17.isObjectLiteralExpression)(property.initializer)) {
     return `The ssr option of ${className} must be an object literal`;
   }
   const { properties: properties2 } = property.initializer;
@@ -27441,11 +27517,11 @@ function findSsrError(property, className) {
   if (!render) {
     return void 0;
   }
-  if (!(0, import_typescript16.isPropertyAssignment)(render) || render.initializer.kind !== import_typescript16.SyntaxKind.FalseKeyword) {
+  if (!(0, import_typescript17.isPropertyAssignment)(render) || render.initializer.kind !== import_typescript17.SyntaxKind.FalseKeyword) {
     return `The ssr.render option of ${className} must be the literal false`;
   }
   const hydrate = properties2.find((option) => option.name?.getText() === "hydrate");
-  return hydrate && !((0, import_typescript16.isPropertyAssignment)(hydrate) && (0, import_typescript16.isStringLiteral)(hydrate.initializer)) ? `The ssr.hydrate option of ${className} must be a string literal next to ssr.render` : void 0;
+  return hydrate && !((0, import_typescript17.isPropertyAssignment)(hydrate) && (0, import_typescript17.isStringLiteral)(hydrate.initializer)) ? `The ssr.hydrate option of ${className} must be a string literal next to ssr.render` : void 0;
 }
 async function extractDirectivesMetadataFromSourceFile(sourceFile, compilerOptions) {
   const metadatas = /* @__PURE__ */ new Map();
@@ -27504,7 +27580,7 @@ function collectOwnBindingsMetadata({ sourceFile, declaration }, kind, accessorO
   const members = declaration.members;
   for (let i2 = 0; i2 < members.length; i2++) {
     const member = members[i2];
-    if (!(0, import_typescript16.isPropertyDeclaration)(member)) {
+    if (!(0, import_typescript17.isPropertyDeclaration)(member)) {
       continue;
     }
     const memberModifiers = member.modifiers;
@@ -27520,8 +27596,8 @@ function collectOwnBindingsMetadata({ sourceFile, declaration }, kind, accessorO
       return result.decorator;
     });
     if (propDecorator) {
-      const nameNode = (0, import_typescript16.getNameOfDeclaration)(member);
-      if (nameNode && (0, import_typescript16.isIdentifier)(nameNode)) {
+      const nameNode = (0, import_typescript17.getNameOfDeclaration)(member);
+      if (nameNode && (0, import_typescript17.isIdentifier)(nameNode)) {
         const propName = nameNode.text;
         const overridden = properties2.entries().find(([, property]) => property.name === propName);
         if (overridden) {
@@ -27552,8 +27628,8 @@ function collectOwnBindingsMetadata({ sourceFile, declaration }, kind, accessorO
     }
     const eventDecorator = Array.from(memberModifiers).find((member2) => isEventDecorator(member2));
     if (eventDecorator) {
-      const nameNode = (0, import_typescript16.getNameOfDeclaration)(member);
-      if (nameNode && (0, import_typescript16.isIdentifier)(nameNode)) {
+      const nameNode = (0, import_typescript17.getNameOfDeclaration)(member);
+      if (nameNode && (0, import_typescript17.isIdentifier)(nameNode)) {
         const eventName = nameNode.text;
         events.set(eventName, extractEventMetadata(member, eventName, accessorOwner, toMemberDeclaration(nameNode, sourceFile)));
       }
@@ -27575,7 +27651,7 @@ function getDecoratedClassDeclarations(sourceFile, decoratorName) {
   return found;
 }
 function classDeclarationHasName(node) {
-  return (0, import_typescript16.isClassDeclaration)(node) && !!node.name?.text;
+  return (0, import_typescript17.isClassDeclaration)(node) && !!node.name?.text;
 }
 function extractHostDirectiveBindings({ declaration, sourceFile }, compilerOptions) {
   if (!classDeclarationHasName(declaration)) {
@@ -27584,7 +27660,7 @@ function extractHostDirectiveBindings({ declaration, sourceFile }, compilerOptio
   return readLibraryClass(sourceFile.fileName, declaration.name.text) ?? extractBindingsMetadata(declaration, sourceFile, "directive", compilerOptions);
 }
 function findClassDecorator(classDecl, decoratorName) {
-  const decorators = (0, import_typescript16.getDecorators)(classDecl);
+  const decorators = (0, import_typescript17.getDecorators)(classDecl);
   if (!decorators?.length) {
     return void 0;
   }
@@ -27592,13 +27668,13 @@ function findClassDecorator(classDecl, decoratorName) {
   let found;
   while (i2 < decorators.length && !found) {
     const decorator = decorators[i2];
-    if (!(0, import_typescript16.isCallExpression)(decorator.expression)) {
+    if (!(0, import_typescript17.isCallExpression)(decorator.expression)) {
       i2++;
       continue;
     }
     const callExpression = decorator.expression;
-    const callee = (0, import_typescript16.isPropertyAccessExpression)(callExpression.expression) ? callExpression.expression.name : callExpression.expression;
-    const isSearchedDecorator = (_decorator) => (0, import_typescript16.isIdentifier)(callee) && callee.text === decoratorName;
+    const callee = (0, import_typescript17.isPropertyAccessExpression)(callExpression.expression) ? callExpression.expression.name : callExpression.expression;
+    const isSearchedDecorator = (_decorator) => (0, import_typescript17.isIdentifier)(callee) && callee.text === decoratorName;
     if (isSearchedDecorator(decorator)) {
       found = decorator;
     }
@@ -27618,21 +27694,21 @@ function extractMetadaFromDecorator(decorator) {
       return retVal;
     }
     const arg = args[0];
-    if (!arg || !(0, import_typescript16.isObjectLiteralExpression)(arg)) {
+    if (!arg || !(0, import_typescript17.isObjectLiteralExpression)(arg)) {
       return retVal;
     }
     for (let i2 = 0; i2 < arg.properties.length; i2++) {
       const prop = arg.properties[i2];
-      if ((0, import_typescript16.isPropertyAssignment)(prop) && (0, import_typescript16.isIdentifier)(prop.name)) {
+      if ((0, import_typescript17.isPropertyAssignment)(prop) && (0, import_typescript17.isIdentifier)(prop.name)) {
         switch (prop.name.text) {
           case "selector":
-            retVal.selector = (0, import_typescript16.isStringLiteral)(prop.initializer) ? prop.initializer.text : "";
+            retVal.selector = (0, import_typescript17.isStringLiteral)(prop.initializer) ? prop.initializer.text : "";
             break;
           case "templateUrl":
-            retVal.templateUrl = (0, import_typescript16.isStringLiteral)(prop.initializer) ? prop.initializer.text : "";
+            retVal.templateUrl = (0, import_typescript17.isStringLiteral)(prop.initializer) ? prop.initializer.text : "";
             break;
           case "styleUrl":
-            retVal.styleUrl = (0, import_typescript16.isStringLiteral)(prop.initializer) ? prop.initializer.text : void 0;
+            retVal.styleUrl = (0, import_typescript17.isStringLiteral)(prop.initializer) ? prop.initializer.text : void 0;
             break;
           case "ssr":
             retVal.clientOnly = extractClientOnly(prop.initializer);
@@ -27646,20 +27722,20 @@ function extractMetadaFromDecorator(decorator) {
   }
 }
 function extractClientOnly(ssr) {
-  if (!(0, import_typescript16.isObjectLiteralExpression)(ssr)) {
+  if (!(0, import_typescript17.isObjectLiteralExpression)(ssr)) {
     return void 0;
   }
   let render = false;
   let hydrate;
   for (let i2 = 0; i2 < ssr.properties.length; i2++) {
     const option = ssr.properties[i2];
-    if ((0, import_typescript16.isPropertyAssignment)(option)) {
+    if ((0, import_typescript17.isPropertyAssignment)(option)) {
       switch (option.name.getText()) {
         case "render":
-          render = option.initializer.kind === import_typescript16.SyntaxKind.FalseKeyword;
+          render = option.initializer.kind === import_typescript17.SyntaxKind.FalseKeyword;
           break;
         case "hydrate":
-          hydrate = (0, import_typescript16.isStringLiteral)(option.initializer) ? option.initializer.text : void 0;
+          hydrate = (0, import_typescript17.isStringLiteral)(option.initializer) ? option.initializer.text : void 0;
           break;
       }
     }
@@ -27670,22 +27746,22 @@ function extractClientOnly(ssr) {
   return hydrate ? { hydrate } : {};
 }
 function isPropertyDecorator(modifier) {
-  if (!(0, import_typescript16.isDecorator)(modifier)) {
+  if (!(0, import_typescript17.isDecorator)(modifier)) {
     return {
       decorator: false
     };
   }
   const expr = modifier.expression;
-  if (!(0, import_typescript16.isCallExpression)(expr)) {
+  if (!(0, import_typescript17.isCallExpression)(expr)) {
     return {
       decorator: false
     };
   }
   const subExpr = expr.expression;
-  if ((0, import_typescript16.isIdentifier)(subExpr) && isInputDecoratorName(subExpr.text)) {
+  if ((0, import_typescript17.isIdentifier)(subExpr) && isInputDecoratorName(subExpr.text)) {
     return toInputDecorator(subExpr.text, false);
   }
-  if ((0, import_typescript16.isPropertyAccessExpression)(subExpr) && (0, import_typescript16.isIdentifier)(subExpr.expression) && isInputDecoratorName(subExpr.expression.text) && subExpr.name.text === "required") {
+  if ((0, import_typescript17.isPropertyAccessExpression)(subExpr) && (0, import_typescript17.isIdentifier)(subExpr.expression) && isInputDecoratorName(subExpr.expression.text) && subExpr.name.text === "required") {
     return toInputDecorator(subExpr.expression.text, true);
   }
   return {
@@ -27708,10 +27784,10 @@ function toInputDecorator(name, required) {
 function findAliasLiteral(decorator, required) {
   const args = decorator.expression.arguments;
   const options = required ? args[0] : args[1];
-  if (!options || !(0, import_typescript16.isObjectLiteralExpression)(options)) {
+  if (!options || !(0, import_typescript17.isObjectLiteralExpression)(options)) {
     return void 0;
   }
-  const alias = options.properties.find((prop) => (0, import_typescript16.isPropertyAssignment)(prop) && (0, import_typescript16.isIdentifier)(prop.name) && prop.name.text === "alias" && (0, import_typescript16.isStringLiteral)(prop.initializer));
+  const alias = options.properties.find((prop) => (0, import_typescript17.isPropertyAssignment)(prop) && (0, import_typescript17.isIdentifier)(prop.name) && prop.name.text === "alias" && (0, import_typescript17.isStringLiteral)(prop.initializer));
   return alias?.initializer;
 }
 function extractPropertyMetadata(property, nameNode, name, decorator, required, accessorOwner, sourceFile) {
@@ -27721,7 +27797,7 @@ function extractPropertyMetadata(property, nameNode, name, decorator, required, 
   metadata.declaration = toMemberDeclaration(nameNode, sourceFile);
   if (args.length) {
     const options = required ? args[0] : args[1];
-    const incomingType = options && (0, import_typescript16.isObjectLiteralExpression)(options) ? findTransformIncomingType(property, options) : void 0;
+    const incomingType = options && (0, import_typescript17.isObjectLiteralExpression)(options) ? findTransformIncomingType(property, options) : void 0;
     if (incomingType) {
       metadata.type = qualifyType(incomingType, sourceFile);
     }
@@ -27737,16 +27813,16 @@ function extractPropertyMetadata(property, nameNode, name, decorator, required, 
   return metadata;
 }
 function findTransformIncomingType(property, options) {
-  const transform = options.properties.find((property2) => ((0, import_typescript16.isPropertyAssignment)(property2) || (0, import_typescript16.isMethodDeclaration)(property2)) && (0, import_typescript16.isIdentifier)(property2.name) && property2.name.text === "transform");
+  const transform = options.properties.find((property2) => ((0, import_typescript17.isPropertyAssignment)(property2) || (0, import_typescript17.isMethodDeclaration)(property2)) && (0, import_typescript17.isIdentifier)(property2.name) && property2.name.text === "transform");
   if (!transform) {
     return void 0;
   }
-  const typeArgument = property.type && (0, import_typescript16.isTypeReferenceNode)(property.type) ? property.type.typeArguments?.[1] : void 0;
+  const typeArgument = property.type && (0, import_typescript17.isTypeReferenceNode)(property.type) ? property.type.typeArguments?.[1] : void 0;
   if (typeArgument) {
     return typeArgument;
   }
-  const callback = (0, import_typescript16.isPropertyAssignment)(transform) ? transform.initializer : transform;
-  return (0, import_typescript16.isArrowFunction)(callback) || (0, import_typescript16.isFunctionExpression)(callback) || (0, import_typescript16.isMethodDeclaration)(callback) ? callback.parameters[0]?.type : void 0;
+  const callback = (0, import_typescript17.isPropertyAssignment)(transform) ? transform.initializer : transform;
+  return (0, import_typescript17.isArrowFunction)(callback) || (0, import_typescript17.isFunctionExpression)(callback) || (0, import_typescript17.isMethodDeclaration)(callback) ? callback.parameters[0]?.type : void 0;
 }
 function qualifyType(type, sourceFile) {
   const start = type.getStart(sourceFile);
@@ -27760,9 +27836,9 @@ function qualifyType(type, sourceFile) {
   return text;
 }
 function collectTypeReplacements(node, sourceFile, start, replacements) {
-  if ((0, import_typescript16.isTypeReferenceNode)(node)) {
+  if ((0, import_typescript17.isTypeReferenceNode)(node)) {
     let name = node.typeName;
-    while ((0, import_typescript16.isQualifiedName)(name)) {
+    while ((0, import_typescript17.isQualifiedName)(name)) {
       name = name.left;
     }
     const qualifier = findTypeQualifier(name.text, sourceFile);
@@ -27771,29 +27847,29 @@ function collectTypeReplacements(node, sourceFile, start, replacements) {
       replacements.push({ start: name.getStart(sourceFile) - start, end: name.getEnd() - start, text: isNamespace && qualifier.namespace ? `import('${qualifier.module}')` : `import('${qualifier.module}').${qualifier.name}` });
     }
   }
-  (0, import_typescript16.forEachChild)(node, (child) => collectTypeReplacements(child, sourceFile, start, replacements));
+  (0, import_typescript17.forEachChild)(node, (child) => collectTypeReplacements(child, sourceFile, start, replacements));
 }
 function findTypeQualifier(name, sourceFile) {
   const statements = sourceFile.statements;
   for (let i2 = 0; i2 < statements.length; i2++) {
     const statement = statements[i2];
-    if ((0, import_typescript16.isImportDeclaration)(statement) && (0, import_typescript16.isStringLiteral)(statement.moduleSpecifier)) {
+    if ((0, import_typescript17.isImportDeclaration)(statement) && (0, import_typescript17.isStringLiteral)(statement.moduleSpecifier)) {
       const module2 = resolveModuleSpecifier(statement.moduleSpecifier.text, sourceFile.fileName);
       const clause = statement.importClause;
       if (clause?.name?.text === name) {
         return { module: module2, name: "default", namespace: false };
       }
       const bindings = clause?.namedBindings;
-      if (bindings && (0, import_typescript16.isNamespaceImport)(bindings) && bindings.name.text === name) {
+      if (bindings && (0, import_typescript17.isNamespaceImport)(bindings) && bindings.name.text === name) {
         return { module: module2, name, namespace: true };
       }
-      if (bindings && (0, import_typescript16.isNamedImports)(bindings)) {
+      if (bindings && (0, import_typescript17.isNamedImports)(bindings)) {
         const element = bindings.elements.find(({ name: localName }) => localName.text === name);
         if (element) {
           return { module: module2, name: (element.propertyName ?? element.name).text, namespace: false };
         }
       }
-    } else if (((0, import_typescript16.isInterfaceDeclaration)(statement) || (0, import_typescript16.isTypeAliasDeclaration)(statement) || (0, import_typescript16.isClassDeclaration)(statement) || (0, import_typescript16.isEnumDeclaration)(statement)) && statement.name?.text === name) {
+    } else if (((0, import_typescript17.isInterfaceDeclaration)(statement) || (0, import_typescript17.isTypeAliasDeclaration)(statement) || (0, import_typescript17.isClassDeclaration)(statement) || (0, import_typescript17.isEnumDeclaration)(statement)) && statement.name?.text === name) {
       return { module: sourceFile.fileName.replaceAll("\\", "/").replace(/\.ts$/, ""), name, namespace: false };
     }
   }
@@ -27817,11 +27893,11 @@ function resolveModuleSpecifier(specifier, fileName) {
   return segments.join("/").replace(/\.ts$/, "");
 }
 function isEventDecorator(modifier) {
-  if (modifier.kind !== import_typescript16.SyntaxKind.Decorator) {
+  if (modifier.kind !== import_typescript17.SyntaxKind.Decorator) {
     return false;
   }
-  const expr = (0, import_typescript16.isCallExpression)(modifier.expression) ? modifier.expression.expression : modifier.expression;
-  return (0, import_typescript16.isIdentifier)(expr) && expr.text === "Event";
+  const expr = (0, import_typescript17.isCallExpression)(modifier.expression) ? modifier.expression.expression : modifier.expression;
+  return (0, import_typescript17.isIdentifier)(expr) && expr.text === "Event";
 }
 function extractEventMetadata(event, name, accessorOwner, declaration) {
   return {
@@ -27845,14 +27921,14 @@ function toOwnerType(modulePath, className, typeParameters) {
 function extractBindingType(member, name, accessorOwner, event) {
   const defaultValue = event ? "void" : "any";
   const typeNode = member.type;
-  if (!typeNode || !(0, import_typescript16.isTypeReferenceNode)(typeNode) || !typeNode.typeArguments?.length) {
+  if (!typeNode || !(0, import_typescript17.isTypeReferenceNode)(typeNode) || !typeNode.typeArguments?.length) {
     return defaultValue;
   }
   const accessor = `${accessorOwner}['${name}']`;
   if (!event) {
     return `ReturnType<${accessor}>`;
   }
-  return typeNode.typeArguments[0].kind === import_typescript16.SyntaxKind.VoidKeyword ? defaultValue : `(${accessor} extends import('@xaendar/core').Output<infer Value> ? Value : never)`;
+  return typeNode.typeArguments[0].kind === import_typescript17.SyntaxKind.VoidKeyword ? defaultValue : `(${accessor} extends import('@xaendar/core').Output<infer Value> ? Value : never)`;
 }
 
 // ../packages/compiler/src/type-checker/utils/cast/cast.utils.ts
@@ -28483,7 +28559,7 @@ function passesEvent(parameters) {
   return parameters.some((parameter) => isEventBeginning(parameter) || readsEvent(parameter));
 }
 function isEventBeginning(expression) {
-  return (0, import_typescript17.isIdentifier)(expression) && expression.text.startsWith("$") && "$event".startsWith(expression.text);
+  return (0, import_typescript18.isIdentifier)(expression) && expression.text.startsWith("$") && "$event".startsWith(expression.text);
 }
 function typeCheckConditionalBindings(conditionalBindings, context, bindings) {
   const lines = new Array();
@@ -28588,7 +28664,7 @@ function resolveImplicit(node, implicit) {
 }
 
 // ../packages/compiler/src/type-checker/utils/signal-narrowing/signal-narrowing.utils.ts
-var import_typescript18 = require("typescript");
+var import_typescript19 = require("typescript");
 function narrowSignals(conditions, prefix, context, chainContext) {
   const declarations = new Array();
   for (let i2 = 0; i2 < conditions.length; i2++) {
@@ -28603,7 +28679,7 @@ function declareSignalReads(node, prefix, context, chainContext, declarations) {
     declarations.push(plain(`const ${value} = ${resolveExpression(node, context, { resolver: ROOT_NODE, preserveTypeScript: true }).expression};`));
     chainContext.addNarrowedSignal(callee.text, value);
   }
-  (0, import_typescript18.forEachChild)(node, (child) => declareSignalReads(child, prefix, context, chainContext, declarations));
+  (0, import_typescript19.forEachChild)(node, (child) => declareSignalReads(child, prefix, context, chainContext, declarations));
 }
 
 // ../packages/compiler/src/type-checker/states/type-check-if/type-check-if.state.ts
@@ -30923,19 +30999,19 @@ function describeVariableCall(typeCheck, span, code) {
 }
 
 // ../packages/compiler/src/utils/component-logic/component-logic.utils.ts
-var import_typescript20 = require("typescript");
+var import_typescript21 = require("typescript");
 
 // ../packages/compiler/src/utils/extract-component-members/extract-component-members.utils.ts
-var import_typescript19 = require("typescript");
+var import_typescript20 = require("typescript");
 var SIGNAL_MODULE_SPECIFIERS = /* @__PURE__ */ new Set(["@xaendar/core/signals"]);
 var SIGNAL_EXPORTS = /* @__PURE__ */ new Set(["signal", "computed", "Signal", "Computed", "InputSignal", "Aliased", "SettableInputSignal", "QuerySignal"]);
 var FUNCTION_FINDER = {
-  local: (statement, localName) => (0, import_typescript19.isFunctionDeclaration)(statement) && statement.name?.text === localName ? statement : void 0,
-  exported: (statement, exportedName) => (0, import_typescript19.isFunctionDeclaration)(statement) && isExportedAs(statement, exportedName) ? statement : void 0
+  local: (statement, localName) => (0, import_typescript20.isFunctionDeclaration)(statement) && statement.name?.text === localName ? statement : void 0,
+  exported: (statement, exportedName) => (0, import_typescript20.isFunctionDeclaration)(statement) && isExportedAs(statement, exportedName) ? statement : void 0
 };
 var VARIABLE_FINDER = {
   local: (statement, localName) => findVariable(statement, localName),
-  exported: (statement, exportedName) => (0, import_typescript19.isVariableStatement)(statement) && statement.modifiers?.some((modifier) => modifier.kind === import_typescript19.SyntaxKind.ExportKeyword) ? findVariable(statement, exportedName) : void 0
+  exported: (statement, exportedName) => (0, import_typescript20.isVariableStatement)(statement) && statement.modifiers?.some((modifier) => modifier.kind === import_typescript20.SyntaxKind.ExportKeyword) ? findVariable(statement, exportedName) : void 0
 };
 function extractComponentMembers(sourceFile, classDeclaration, compilerOptions = DEFAULT_COMPILER_OPTIONS) {
   const context = {
@@ -30950,7 +31026,7 @@ function extractComponentMembers(sourceFile, classDeclaration, compilerOptions =
 }
 function collectShadowingMembers(chain) {
   const members = chain.flatMap(({ declaration }) => declaration.members.flatMap((member) => {
-    const isStatic = !!((0, import_typescript19.getCombinedModifierFlags)(member) & import_typescript19.ModifierFlags.Static);
+    const isStatic = !!((0, import_typescript20.getCombinedModifierFlags)(member) & import_typescript20.ModifierFlags.Static);
     return isNamedMember(member) && !isStatic && GLOBAL_IDENTIFIERS.has(member.name.text) ? [member.name.text] : [];
   }));
   return [...new Set(members)];
@@ -30982,8 +31058,8 @@ function collectReactiveMethods(chain, signals, context) {
         continue;
       }
       methods.delete(member.name.text);
-      if (((0, import_typescript19.isMethodDeclaration)(member) || (0, import_typescript19.isGetAccessorDeclaration)(member)) && member.body) {
-        methods.set(member.name.text, collectMemberReads(member.body, sourceFile, (0, import_typescript19.isGetAccessorDeclaration)(member), context));
+      if (((0, import_typescript20.isMethodDeclaration)(member) || (0, import_typescript20.isGetAccessorDeclaration)(member)) && member.body) {
+        methods.set(member.name.text, collectMemberReads(member.body, sourceFile, (0, import_typescript20.isGetAccessorDeclaration)(member), context));
       }
     }
   }
@@ -31006,31 +31082,31 @@ function collectMemberReads(body, sourceFile, getter, context) {
   return reads;
 }
 function collectReadsIn(node, sourceFile, context, reads) {
-  if ((0, import_typescript19.isPropertyAccessExpression)(node) && node.expression.kind === import_typescript19.SyntaxKind.ThisKeyword) {
-    const calls = (0, import_typescript19.isCallExpression)(node.parent) && node.parent.expression === node;
+  if ((0, import_typescript20.isPropertyAccessExpression)(node) && node.expression.kind === import_typescript20.SyntaxKind.ThisKeyword) {
+    const calls = (0, import_typescript20.isCallExpression)(node.parent) && node.parent.expression === node;
     (calls ? reads.calls : reads.accesses).add(node.name.text);
-  } else if ((0, import_typescript19.isCallExpression)(node) && (0, import_typescript19.isIdentifier)(node.expression) && !reads.readsModuleSignal) {
+  } else if ((0, import_typescript20.isCallExpression)(node) && (0, import_typescript20.isIdentifier)(node.expression) && !reads.readsModuleSignal) {
     reads.readsModuleSignal = isSignalReference(sourceFile, node.expression, context, /* @__PURE__ */ new Set());
   }
-  (0, import_typescript19.forEachChild)(node, (child) => collectReadsIn(child, sourceFile, context, reads));
+  (0, import_typescript20.forEachChild)(node, (child) => collectReadsIn(child, sourceFile, context, reads));
 }
 function readsReactiveMember(reads, reactive, methods) {
   return reads.readsModuleSignal || [...reads.calls].some((name) => reactive.has(name) && !methods.get(name)?.getter) || [...reads.accesses].some((name) => reactive.has(name) && !!methods.get(name)?.getter);
 }
 function isNamedMember(member) {
-  return !!member.name && (0, import_typescript19.isIdentifier)(member.name);
+  return !!member.name && (0, import_typescript20.isIdentifier)(member.name);
 }
 function findVariable(statement, name) {
-  if (!(0, import_typescript19.isVariableStatement)(statement)) {
+  if (!(0, import_typescript20.isVariableStatement)(statement)) {
     return;
   }
-  return statement.declarationList.declarations.find((declaration) => (0, import_typescript19.isIdentifier)(declaration.name) && declaration.name.text === name);
+  return statement.declarationList.declarations.find((declaration) => (0, import_typescript20.isIdentifier)(declaration.name) && declaration.name.text === name);
 }
 function collectSignalImportBindings(sourceFile) {
   const named = /* @__PURE__ */ new Set();
   const namespaces = /* @__PURE__ */ new Set();
-  (0, import_typescript19.forEachChild)(sourceFile, (node) => {
-    if (!(0, import_typescript19.isImportDeclaration)(node) || !(0, import_typescript19.isStringLiteralLike)(node.moduleSpecifier)) {
+  (0, import_typescript20.forEachChild)(sourceFile, (node) => {
+    if (!(0, import_typescript20.isImportDeclaration)(node) || !(0, import_typescript20.isStringLiteralLike)(node.moduleSpecifier)) {
       return;
     }
     if (!SIGNAL_MODULE_SPECIFIERS.has(node.moduleSpecifier.text)) {
@@ -31040,7 +31116,7 @@ function collectSignalImportBindings(sourceFile) {
     if (!namedBindings) {
       return;
     }
-    if ((0, import_typescript19.isNamespaceImport)(namedBindings)) {
+    if ((0, import_typescript20.isNamespaceImport)(namedBindings)) {
       namespaces.add(namedBindings.name.text);
     } else {
       for (let i2 = 0; i2 < namedBindings.elements.length; i2++) {
@@ -31058,7 +31134,7 @@ function extractOwnSignalMembers({ sourceFile, declaration }, context) {
   const result = new Array();
   for (let i2 = 0; i2 < declaration.members.length; i2++) {
     const member = declaration.members[i2];
-    if ((0, import_typescript19.isPropertyDeclaration)(member) && (0, import_typescript19.isIdentifier)(member.name) && isSignalMember(member, sourceFile, bindings, context)) {
+    if ((0, import_typescript20.isPropertyDeclaration)(member) && (0, import_typescript20.isIdentifier)(member.name) && isSignalMember(member, sourceFile, bindings, context)) {
       result.push(member.name.text);
     }
   }
@@ -31071,7 +31147,7 @@ function isSignalMember(member, sourceFile, bindings, context) {
   if (!member.initializer) {
     return false;
   }
-  if ((0, import_typescript19.isCallExpression)(member.initializer)) {
+  if ((0, import_typescript20.isCallExpression)(member.initializer)) {
     return resolvesToSignalBinding(member.initializer.expression, bindings);
   }
   return isSignalReference(sourceFile, member.initializer, context, /* @__PURE__ */ new Set());
@@ -31093,28 +31169,28 @@ function isSignalVariable(variable, context, visitedVariables) {
   if (!declaration.initializer) {
     return false;
   }
-  return (0, import_typescript19.isCallExpression)(declaration.initializer) ? resolvesToSignalBinding(declaration.initializer.expression, bindings) : isSignalReference(variable.sourceFile, declaration.initializer, context, visitedVariables);
+  return (0, import_typescript20.isCallExpression)(declaration.initializer) ? resolvesToSignalBinding(declaration.initializer.expression, bindings) : isSignalReference(variable.sourceFile, declaration.initializer, context, visitedVariables);
 }
 function resolvesToSignalBinding(expr, bindings) {
-  if ((0, import_typescript19.isIdentifier)(expr)) {
+  if ((0, import_typescript20.isIdentifier)(expr)) {
     return bindings.named.has(expr.text);
   }
-  if ((0, import_typescript19.isPropertyAccessExpression)(expr) && (0, import_typescript19.isIdentifier)(expr.expression)) {
+  if ((0, import_typescript20.isPropertyAccessExpression)(expr) && (0, import_typescript20.isIdentifier)(expr.expression)) {
     return bindings.namespaces.has(expr.expression.text) && SIGNAL_EXPORTS.has(expr.name.text);
   }
   return false;
 }
 function isSignalType(type, bindings) {
-  if ((0, import_typescript19.isTypeReferenceNode)(type)) {
+  if ((0, import_typescript20.isTypeReferenceNode)(type)) {
     return resolvesEntityNameToSignalBinding(type.typeName, bindings);
   }
-  return (0, import_typescript19.isImportTypeNode)(type) && !type.isTypeOf && !!type.qualifier && (0, import_typescript19.isIdentifier)(type.qualifier) && SIGNAL_EXPORTS.has(type.qualifier.text) && (0, import_typescript19.isLiteralTypeNode)(type.argument) && (0, import_typescript19.isStringLiteralLike)(type.argument.literal) && SIGNAL_MODULE_SPECIFIERS.has(type.argument.literal.text);
+  return (0, import_typescript20.isImportTypeNode)(type) && !type.isTypeOf && !!type.qualifier && (0, import_typescript20.isIdentifier)(type.qualifier) && SIGNAL_EXPORTS.has(type.qualifier.text) && (0, import_typescript20.isLiteralTypeNode)(type.argument) && (0, import_typescript20.isStringLiteralLike)(type.argument.literal) && SIGNAL_MODULE_SPECIFIERS.has(type.argument.literal.text);
 }
 function resolvesEntityNameToSignalBinding(entityName, bindings) {
-  if ((0, import_typescript19.isIdentifier)(entityName)) {
+  if ((0, import_typescript20.isIdentifier)(entityName)) {
     return bindings.named.has(entityName.text);
   }
-  if ((0, import_typescript19.isQualifiedName)(entityName) && (0, import_typescript19.isIdentifier)(entityName.left)) {
+  if ((0, import_typescript20.isQualifiedName)(entityName) && (0, import_typescript20.isIdentifier)(entityName.left)) {
     return bindings.namespaces.has(entityName.left.text) && SIGNAL_EXPORTS.has(entityName.right.text);
   }
   return false;
@@ -31124,7 +31200,7 @@ function isReactiveExport(modulePath, exportName, compilerOptions = DEFAULT_COMP
   const variable = resolveModuleExport(modulePath, exportName, VARIABLE_FINDER, context);
   if (variable) {
     const { initializer } = variable.declaration;
-    if (initializer && ((0, import_typescript19.isArrowFunction)(initializer) || (0, import_typescript19.isFunctionExpression)(initializer))) {
+    if (initializer && ((0, import_typescript20.isArrowFunction)(initializer) || (0, import_typescript20.isFunctionExpression)(initializer))) {
       return collectMemberReads(initializer.body, variable.sourceFile, false, context).readsModuleSignal;
     }
     return isSignalVariable(variable, context, /* @__PURE__ */ new Set());
@@ -31134,21 +31210,21 @@ function isReactiveExport(modulePath, exportName, compilerOptions = DEFAULT_COMP
 }
 
 // ../packages/compiler/src/utils/component-logic/component-logic.utils.ts
-var ASSIGNMENTS = { first: import_typescript20.SyntaxKind.FirstAssignment, last: import_typescript20.SyntaxKind.LastAssignment };
+var ASSIGNMENTS = { first: import_typescript21.SyntaxKind.FirstAssignment, last: import_typescript21.SyntaxKind.LastAssignment };
 
 // ../packages/language-core/src/lib/component-definition/component-definition.ts
 var import_node_fs3 = require("fs");
 var import_node_path3 = require("path");
-var import_typescript22 = require("typescript");
+var import_typescript23 = require("typescript");
 
 // ../packages/language-core/src/lib/utils/component-options/component-options.utils.ts
-var import_typescript21 = require("typescript");
+var import_typescript22 = require("typescript");
 function findStringOptions(decorator, names) {
   const options = new Array();
-  const { properties: properties2 } = decorator.expression.arguments.find(import_typescript21.isObjectLiteralExpression) ?? {};
+  const { properties: properties2 } = decorator.expression.arguments.find(import_typescript22.isObjectLiteralExpression) ?? {};
   for (let i2 = 0; properties2 && i2 < properties2.length; i2++) {
     const property = properties2[i2];
-    if ((0, import_typescript21.isPropertyAssignment)(property) && (0, import_typescript21.isIdentifier)(property.name) && names.includes(property.name.text) && (0, import_typescript21.isStringLiteral)(property.initializer)) {
+    if ((0, import_typescript22.isPropertyAssignment)(property) && (0, import_typescript22.isIdentifier)(property.name) && names.includes(property.name.text) && (0, import_typescript22.isStringLiteral)(property.initializer)) {
       options.push({ name: property.name.text, literal: property.initializer });
     }
   }
@@ -31246,7 +31322,7 @@ async function getComponentDefinition(fileName, text, offset) {
 }
 async function extractComponents(fileName, text) {
   try {
-    const metadatas = await extractComponentsMetadataFromSourceFile((0, import_typescript22.createSourceFile)(fileName, text, import_typescript22.ScriptTarget.Latest, true));
+    const metadatas = await extractComponentsMetadataFromSourceFile((0, import_typescript23.createSourceFile)(fileName, text, import_typescript23.ScriptTarget.Latest, true));
     if (metadatas?.size) {
       return Array.from(metadatas.values());
     }
@@ -31261,15 +31337,15 @@ function resolveUrls(fileName, urls) {
 // ../packages/language-core/src/lib/component-diagnostics/component-diagnostics.ts
 var import_node_fs7 = require("fs");
 var import_node_path9 = require("path");
-var import_typescript30 = require("typescript");
+var import_typescript31 = require("typescript");
 
 // ../packages/language-core/src/lib/template-analysis/template-analysis.ts
 var import_node_path8 = require("path");
-var import_typescript29 = require("typescript");
+var import_typescript30 = require("typescript");
 
 // ../packages/language-core/src/lib/language-service/language-service.ts
 var import_node_fs4 = require("fs");
-var import_typescript23 = require("typescript");
+var import_typescript24 = require("typescript");
 var documentOverlays = /* @__PURE__ */ new Map();
 var projectLanguageServices = /* @__PURE__ */ new Map();
 var ProjectLanguageService = class {
@@ -31324,7 +31400,7 @@ var ProjectLanguageService = class {
     }
     this._compilerOptions = compilerOptions;
     this._projectFileNames = fileNames;
-    this._languageService ??= (0, import_typescript23.createLanguageService)(this._createHost(), (0, import_typescript23.createDocumentRegistry)());
+    this._languageService ??= (0, import_typescript24.createLanguageService)(this._createHost(), (0, import_typescript24.createDocumentRegistry)());
     return this._languageService;
   }
   /**
@@ -31404,17 +31480,17 @@ var ProjectLanguageService = class {
       },
       getScriptSnapshot: (fileName) => {
         const text = this._readFile(fileName);
-        return text === void 0 ? void 0 : import_typescript23.ScriptSnapshot.fromString(text);
+        return text === void 0 ? void 0 : import_typescript24.ScriptSnapshot.fromString(text);
       },
       getCurrentDirectory: () => process.cwd(),
       getCompilationSettings: () => this._compilerOptions ?? {},
-      getDefaultLibFileName: (options) => (0, import_typescript23.getDefaultLibFilePath)(options),
-      fileExists: (fileName) => this._virtualFiles.has(fileName) || documentOverlays.has(normalizeFileName2(fileName)) || import_typescript23.sys.fileExists(fileName),
+      getDefaultLibFileName: (options) => (0, import_typescript24.getDefaultLibFilePath)(options),
+      fileExists: (fileName) => this._virtualFiles.has(fileName) || documentOverlays.has(normalizeFileName2(fileName)) || import_typescript24.sys.fileExists(fileName),
       readFile: (fileName) => this._readFile(fileName),
-      readDirectory: import_typescript23.sys.readDirectory,
-      directoryExists: import_typescript23.sys.directoryExists,
-      getDirectories: import_typescript23.sys.getDirectories,
-      realpath: import_typescript23.sys.realpath
+      readDirectory: import_typescript24.sys.readDirectory,
+      directoryExists: import_typescript24.sys.directoryExists,
+      getDirectories: import_typescript24.sys.getDirectories,
+      realpath: import_typescript24.sys.realpath
     };
   }
   /**
@@ -31465,7 +31541,7 @@ function removeDocumentOverlay(fileName) {
   documentOverlays.delete(normalizeFileName2(fileName));
 }
 function readDocument(fileName) {
-  return documentOverlays.get(normalizeFileName2(fileName))?.content ?? (import_typescript23.sys.fileExists(fileName) ? import_typescript23.sys.readFile(fileName) : void 0);
+  return documentOverlays.get(normalizeFileName2(fileName))?.content ?? (import_typescript24.sys.fileExists(fileName) ? import_typescript24.sys.readFile(fileName) : void 0);
 }
 function upsertVirtualFile(virtualPath, content) {
   defaultProjectLanguageService.upsertVirtualFile(virtualPath, content);
@@ -31481,7 +31557,7 @@ function upsertEntry(entries, key, content) {
 }
 
 // ../packages/language-core/src/lib/template-metadata-cache/template-metadata-cache.ts
-var import_typescript25 = require("typescript");
+var import_typescript26 = require("typescript");
 
 // ../packages/language-core/src/lib/utils/module-entries/module-entries.utils.ts
 var import_node_fs5 = require("fs");
@@ -31502,14 +31578,14 @@ function listModuleEntries(directory) {
 // ../packages/language-core/src/lib/utils/module-path/module-path.utils.ts
 var import_node_fs6 = require("fs");
 var import_node_path4 = require("path");
-var import_typescript24 = require("typescript");
-var DEFAULT_COMPILER_OPTIONS2 = { module: import_typescript24.ModuleKind.ESNext, moduleResolution: import_typescript24.ModuleResolutionKind.Bundler };
+var import_typescript25 = require("typescript");
+var DEFAULT_COMPILER_OPTIONS2 = { module: import_typescript25.ModuleKind.ESNext, moduleResolution: import_typescript25.ModuleResolutionKind.Bundler };
 function resolveModule(baseDir, modulePath, compilerOptions = DEFAULT_COMPILER_OPTIONS2) {
   if (modulePath.startsWith(".")) {
     const fileName = resolveRelativePath(baseDir, modulePath);
     return fileName ? { fileName, external: false } : void 0;
   }
-  const { resolvedModule } = (0, import_typescript24.resolveModuleName)(modulePath, resolvePosixPath(baseDir, "__template__.ts"), compilerOptions, import_typescript24.sys);
+  const { resolvedModule } = (0, import_typescript25.resolveModuleName)(modulePath, resolvePosixPath(baseDir, "__template__.ts"), compilerOptions, import_typescript25.sys);
   return resolvedModule && { fileName: toPosixPath2(resolvedModule.resolvedFileName), external: !!resolvedModule.isExternalLibraryImport };
 }
 function resolveModulePath(baseDir, modulePath, compilerOptions) {
@@ -31710,7 +31786,7 @@ var TemplateMetadataCache = class {
     if (cached?.text === text) {
       return cached.metadatas;
     }
-    const sourceFile = (0, import_typescript25.createSourceFile)(fileName, text, import_typescript25.ScriptTarget.Latest, true);
+    const sourceFile = (0, import_typescript26.createSourceFile)(fileName, text, import_typescript26.ScriptTarget.Latest, true);
     const components = await extractComponentsMetadataFromSourceFile(sourceFile, this._compilerOptions);
     const metadatas = new Map(components);
     const directives = await extractDirectivesMetadataFromSourceFile(sourceFile, this._compilerOptions);
@@ -31726,18 +31802,18 @@ var TemplateMetadataCache = class {
 
 // ../packages/language-core/src/lib/utils/compiler-options/compiler-options.utils.ts
 var import_node_path5 = require("path");
-var import_typescript26 = require("typescript");
+var import_typescript27 = require("typescript");
 function loadTsConfig(fromDir) {
-  const configPath = (0, import_typescript26.findConfigFile)(fromDir, import_typescript26.sys.fileExists, "tsconfig.json");
+  const configPath = (0, import_typescript27.findConfigFile)(fromDir, import_typescript27.sys.fileExists, "tsconfig.json");
   if (!configPath) {
     return { options: {}, fileNames: [] };
   }
-  const configFile = (0, import_typescript26.readConfigFile)(configPath, import_typescript26.sys.readFile);
-  const parsed = (0, import_typescript26.parseJsonConfigFileContent)(configFile.config, import_typescript26.sys, (0, import_node_path5.dirname)(configPath));
+  const configFile = (0, import_typescript27.readConfigFile)(configPath, import_typescript27.sys.readFile);
+  const parsed = (0, import_typescript27.parseJsonConfigFileContent)(configFile.config, import_typescript27.sys, (0, import_node_path5.dirname)(configPath));
   return { options: parsed.options, fileNames: parsed.fileNames };
 }
 function findTsConfigPath(fromDir) {
-  return (0, import_typescript26.findConfigFile)(fromDir, import_typescript26.sys.fileExists, "tsconfig.json");
+  return (0, import_typescript27.findConfigFile)(fromDir, import_typescript27.sys.fileExists, "tsconfig.json");
 }
 
 // ../packages/language-core/src/lib/utils/shim/shim.utils.ts
@@ -31768,25 +31844,25 @@ function buildTypecheckShim(componentData, shimPath, body) {
 }
 
 // ../packages/language-core/src/lib/utils/symbol-kind/symbol-kind.utils.ts
-var import_typescript27 = require("typescript");
+var import_typescript28 = require("typescript");
 var KINDS = [
-  [import_typescript27.SymbolFlags.Class, import_typescript27.ScriptElementKind.classElement],
-  [import_typescript27.SymbolFlags.Enum, import_typescript27.ScriptElementKind.enumElement],
-  [import_typescript27.SymbolFlags.Interface, import_typescript27.ScriptElementKind.interfaceElement],
-  [import_typescript27.SymbolFlags.TypeAlias, import_typescript27.ScriptElementKind.typeElement],
-  [import_typescript27.SymbolFlags.Function, import_typescript27.ScriptElementKind.functionElement],
-  [import_typescript27.SymbolFlags.BlockScopedVariable, import_typescript27.ScriptElementKind.constElement],
-  [import_typescript27.SymbolFlags.Variable, import_typescript27.ScriptElementKind.variableElement],
-  [import_typescript27.SymbolFlags.Module, import_typescript27.ScriptElementKind.moduleElement]
+  [import_typescript28.SymbolFlags.Class, import_typescript28.ScriptElementKind.classElement],
+  [import_typescript28.SymbolFlags.Enum, import_typescript28.ScriptElementKind.enumElement],
+  [import_typescript28.SymbolFlags.Interface, import_typescript28.ScriptElementKind.interfaceElement],
+  [import_typescript28.SymbolFlags.TypeAlias, import_typescript28.ScriptElementKind.typeElement],
+  [import_typescript28.SymbolFlags.Function, import_typescript28.ScriptElementKind.functionElement],
+  [import_typescript28.SymbolFlags.BlockScopedVariable, import_typescript28.ScriptElementKind.constElement],
+  [import_typescript28.SymbolFlags.Variable, import_typescript28.ScriptElementKind.variableElement],
+  [import_typescript28.SymbolFlags.Module, import_typescript28.ScriptElementKind.moduleElement]
 ];
 function getSymbolKind(checker, symbol) {
-  const { flags } = symbol.flags & import_typescript27.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
-  return KINDS.find(([flag]) => flags & flag)?.[1] ?? import_typescript27.ScriptElementKind.unknown;
+  const { flags } = symbol.flags & import_typescript28.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
+  return KINDS.find(([flag]) => flags & flag)?.[1] ?? import_typescript28.ScriptElementKind.unknown;
 }
 
 // ../packages/language-core/src/lib/utils/xaendar-config/xaendar-config.utils.ts
 var import_node_path7 = require("path");
-var import_typescript28 = require("typescript");
+var import_typescript29 = require("typescript");
 function readCustomElements(fromDir) {
   const config = readConfig(fromDir);
   const library = config && findLibrary2(config, fromDir);
@@ -31806,9 +31882,9 @@ function readStrictEvents(fromDir) {
   return (library?.strictEvents ?? config?.config.strictEvents) !== false;
 }
 function readConfig(fromDir) {
-  const configPath = (0, import_typescript28.findConfigFile)(fromDir, import_typescript28.sys.fileExists, "xaendar.json");
+  const configPath = (0, import_typescript29.findConfigFile)(fromDir, import_typescript29.sys.fileExists, "xaendar.json");
   if (configPath) {
-    const { config, error } = (0, import_typescript28.readConfigFile)(configPath, import_typescript28.sys.readFile);
+    const { config, error } = (0, import_typescript29.readConfigFile)(configPath, import_typescript29.sys.readFile);
     return error ? void 0 : { config, dir: (0, import_node_path7.dirname)(configPath) };
   }
 }
@@ -31967,8 +32043,8 @@ function extractMembers(components, project, compilerOptions) {
   for (const [fileName, classNames] of components) {
     project.registerRealFile(fileName);
     dependencies.add(normalizeFileName2(fileName));
-    const sourceFile = (0, import_typescript29.createSourceFile)(fileName, readDocument(fileName) ?? "", import_typescript29.ScriptTarget.Latest, true);
-    const classes = sourceFile.statements.filter((statement) => (0, import_typescript29.isClassDeclaration)(statement) && !!statement.name && classNames.includes(statement.name.text));
+    const sourceFile = (0, import_typescript30.createSourceFile)(fileName, readDocument(fileName) ?? "", import_typescript30.ScriptTarget.Latest, true);
+    const classes = sourceFile.statements.filter((statement) => (0, import_typescript30.isClassDeclaration)(statement) && !!statement.name && classNames.includes(statement.name.text));
     for (let i2 = 0; i2 < classes.length; i2++) {
       const members = extractComponentMembers(sourceFile, classes[i2], compilerOptions);
       for (let j = 0; j < members.shadowingMembers.length; j++) {
@@ -32020,7 +32096,7 @@ function toError(error) {
 
 // ../packages/language-core/src/lib/component-diagnostics/component-diagnostics.ts
 async function getComponentDiagnostics(fileName, text) {
-  const sourceFile = (0, import_typescript30.createSourceFile)(fileName, text, import_typescript30.ScriptTarget.Latest, true);
+  const sourceFile = (0, import_typescript31.createSourceFile)(fileName, text, import_typescript31.ScriptTarget.Latest, true);
   const diagnostics = findMissingFiles(sourceFile);
   const errors = findWebComponentErrors(sourceFile, true, readSsr((0, import_node_path9.dirname)(fileName)));
   if (errors.length) {
@@ -32089,20 +32165,20 @@ function toSpan(literal) {
 
 // ../packages/language-core/src/lib/template-completions/template-completions.ts
 var import_node_path11 = require("path");
-var import_typescript32 = require("typescript");
+var import_typescript33 = require("typescript");
 
 // ../packages/language-core/src/lib/utils/css-properties/css-properties.utils.ts
 var import_node_path10 = require("path");
-var import_typescript31 = require("typescript");
+var import_typescript32 = require("typescript");
 var DECLARATION_RE = /interface CSSStyle(?:Declaration|Properties)\b[^{]*\{/g;
 var PROPERTY_RE = /^ {4}(\w+): string;$/gm;
 var NOT_PROPERTIES = /* @__PURE__ */ new Set(["cssText", "cssFloat"]);
 var properties;
-function getCssProperties(readFile = import_typescript31.sys.readFile) {
+function getCssProperties(readFile = import_typescript32.sys.readFile) {
   if (properties) {
     return properties;
   }
-  const source = readFile((0, import_node_path10.join)((0, import_node_path10.dirname)((0, import_typescript31.getDefaultLibFilePath)({})), "lib.dom.d.ts")) ?? "";
+  const source = readFile((0, import_node_path10.join)((0, import_node_path10.dirname)((0, import_typescript32.getDefaultLibFilePath)({})), "lib.dom.d.ts")) ?? "";
   const names = /* @__PURE__ */ new Set(["float"]);
   for (const { index } of source.matchAll(DECLARATION_RE)) {
     for (const [, name] of source.slice(index, source.indexOf("\n}", index)).matchAll(PROPERTY_RE)) {
@@ -32150,7 +32226,7 @@ var TRIGGER_SNIPPETS = {
 var RETRIGGERING_TRIGGERS = /* @__PURE__ */ new Set(["when", "prefetch"]);
 var RETRIGGERING_KEYWORDS = /* @__PURE__ */ new Set(["if", "else if", "for", "switch", "import"]);
 var SERVER_KEYWORDS = /* @__PURE__ */ new Set(["hydrate", "client"]);
-var TYPE_KINDS = /* @__PURE__ */ new Set([import_typescript32.ScriptElementKind.interfaceElement, import_typescript32.ScriptElementKind.typeElement]);
+var TYPE_KINDS = /* @__PURE__ */ new Set([import_typescript33.ScriptElementKind.interfaceElement, import_typescript33.ScriptElementKind.typeElement]);
 function getTemplateCompletions(analysis, offset) {
   const shimPosition = findShimPosition(analysis, offset);
   if (!shimPosition) {
@@ -32180,7 +32256,7 @@ async function getTemplateExpressionCompletions(templatePath, source, offset, co
   const members = new Array();
   for (let i2 = 0; i2 < allCompletions.length; i2++) {
     const completion = allCompletions[i2];
-    const isMethod = completion.kind === import_typescript32.ScriptElementKind.memberFunctionElement;
+    const isMethod = completion.kind === import_typescript33.ScriptElementKind.memberFunctionElement;
     if (kind !== "handler" || isMethod) {
       members.push({ ...completion, sortText: getMemberSortText(origins.get(completion.name), isMethod) });
     }
@@ -32189,7 +32265,7 @@ async function getTemplateExpressionCompletions(templatePath, source, offset, co
   for (let i2 = 0; i2 < symbols.length; i2++) {
     const symbol = symbols[i2];
     const isValue = !TYPE_KINDS.has(symbol.kind);
-    if (isValue && !origins.has(symbol.name) && (kind !== "handler" || symbol.kind === import_typescript32.ScriptElementKind.functionElement)) {
+    if (isValue && !origins.has(symbol.name) && (kind !== "handler" || symbol.kind === import_typescript33.ScriptElementKind.functionElement)) {
       members.push(symbol);
     }
   }
@@ -32198,7 +32274,7 @@ async function getTemplateExpressionCompletions(templatePath, source, offset, co
   }
   const variables = getTemplateNames(analysis, identifier);
   const names = new Set(variables);
-  const proposed = variables.map((name, index) => ({ name, kind: import_typescript32.ScriptElementKind.letElement, sortText: `0${String(index).padStart(3, "0")}`, replacementSpan: span }));
+  const proposed = variables.map((name, index) => ({ name, kind: import_typescript33.ScriptElementKind.letElement, sortText: `0${String(index).padStart(3, "0")}`, replacementSpan: span }));
   for (let i2 = 0; i2 < members.length; i2++) {
     if (!names.has(members[i2].name)) {
       proposed.push(members[i2]);
@@ -32215,7 +32291,7 @@ function getTemplateKeywordCompletions(templatePath, source, offset) {
   const available = readSsr((0, import_node_path11.dirname)(templatePath)) === false ? keywords.filter((keyword) => !isServerKeyword(keyword, !!clientPlaceholder)) : keywords;
   return available.map((keyword, index) => ({
     name: `@${keyword}`,
-    kind: import_typescript32.ScriptElementKind.keyword,
+    kind: import_typescript33.ScriptElementKind.keyword,
     sortText: String(index),
     replacementSpan: span,
     snippet: KEYWORD_SNIPPETS[keyword],
@@ -32233,7 +32309,7 @@ function getTemplateTriggerCompletions(source, offset) {
   const { names, span } = context;
   return names.map((name, index) => ({
     name,
-    kind: import_typescript32.ScriptElementKind.keyword,
+    kind: import_typescript33.ScriptElementKind.keyword,
     sortText: String(index),
     replacementSpan: span,
     snippet: TRIGGER_SNIPPETS[name] ?? name,
@@ -32252,13 +32328,13 @@ function getTemplateStyleCompletions(source, offset) {
   const [, property, unit] = match;
   if (unit === void 0) {
     const span2 = { start: offset - property.length, end: offset };
-    return getCssProperties().map((name) => ({ name, kind: import_typescript32.ScriptElementKind.memberVariableElement, sortText: "0", replacementSpan: span2 }));
+    return getCssProperties().map((name) => ({ name, kind: import_typescript33.ScriptElementKind.memberVariableElement, sortText: "0", replacementSpan: span2 }));
   }
   if (property.startsWith("--")) {
     return [];
   }
   const span = { start: offset - unit.length, end: offset };
-  return [...CSS_UNITS].map((name) => ({ name, kind: import_typescript32.ScriptElementKind.keyword, sortText: "0", replacementSpan: span }));
+  return [...CSS_UNITS].map((name) => ({ name, kind: import_typescript33.ScriptElementKind.keyword, sortText: "0", replacementSpan: span }));
 }
 function getTemplateKeyEventCompletions(source, offset) {
   const context = getBindingContext(source, offset);
@@ -32274,8 +32350,8 @@ function getTemplateKeyEventCompletions(source, offset) {
   const span = { start: offset - key.length, end: offset };
   const modifiers = Object.keys(KEY_MODIFIERS).filter((modifier) => !written.includes(modifier));
   const parts = written.includes("code") ? modifiers : modifiers.concat("code");
-  const completions = parts.map((name) => ({ name, kind: import_typescript32.ScriptElementKind.keyword, sortText: "1", replacementSpan: span }));
-  return written.includes("code") ? completions : COMMON_KEYS.map((name) => ({ name, kind: import_typescript32.ScriptElementKind.constElement, sortText: "0", replacementSpan: span })).concat(completions);
+  const completions = parts.map((name) => ({ name, kind: import_typescript33.ScriptElementKind.keyword, sortText: "1", replacementSpan: span }));
+  return written.includes("code") ? completions : COMMON_KEYS.map((name) => ({ name, kind: import_typescript33.ScriptElementKind.constElement, sortText: "0", replacementSpan: span })).concat(completions);
 }
 function getTemplateBindingCompletions(metadatas, source, offset) {
   const context = getBindingContext(source, offset);
@@ -32289,14 +32365,14 @@ function getTemplateBindingCompletions(metadatas, source, offset) {
   }
   const models = Array.from(owner.properties.keys()).filter((name) => owner.events.has(toModelChangeEvent(name)));
   if (kind === "twoWay") {
-    return models.map((name) => ({ name, kind: import_typescript32.ScriptElementKind.memberVariableElement, sortText: "0", replacementSpan: span }));
+    return models.map((name) => ({ name, kind: import_typescript33.ScriptElementKind.memberVariableElement, sortText: "0", replacementSpan: span }));
   }
   const events = [...owner.events.keys()].map((name) => ({ name: kind === "event" ? name : `(${name})`, kind: "event", sortText: "1", replacementSpan: span }));
   if (kind === "event") {
     return events;
   }
-  const properties2 = [...owner.properties.keys()].map((name) => ({ name, kind: import_typescript32.ScriptElementKind.memberVariableElement, sortText: "0", replacementSpan: span }));
-  const twoWayBindings = models.map((name) => ({ name: `[(${name})]`, kind: import_typescript32.ScriptElementKind.memberVariableElement, sortText: "0", replacementSpan: span }));
+  const properties2 = [...owner.properties.keys()].map((name) => ({ name, kind: import_typescript33.ScriptElementKind.memberVariableElement, sortText: "0", replacementSpan: span }));
+  const twoWayBindings = models.map((name) => ({ name: `[(${name})]`, kind: import_typescript33.ScriptElementKind.memberVariableElement, sortText: "0", replacementSpan: span }));
   return properties2.concat(twoWayBindings, events);
 }
 async function getTemplateSourceBindingCompletions(templatePath, source, offset) {
@@ -32370,14 +32446,14 @@ function getTemplateImportPathCompletions(templatePath, source, offset) {
   }
   const { directory, span } = context;
   if (directory === "") {
-    return ["./", "../"].map((name) => ({ name, kind: import_typescript32.ScriptElementKind.directory, sortText: "0", replacementSpan: span }));
+    return ["./", "../"].map((name) => ({ name, kind: import_typescript33.ScriptElementKind.directory, sortText: "0", replacementSpan: span }));
   }
   if (!directory.startsWith(".")) {
     return [];
   }
   return listModuleEntries(resolvePosixPath((0, import_node_path11.dirname)(templatePath), directory)).map(({ name, isDirectory }) => ({
     name,
-    kind: isDirectory ? import_typescript32.ScriptElementKind.directory : import_typescript32.ScriptElementKind.scriptElement,
+    kind: isDirectory ? import_typescript33.ScriptElementKind.directory : import_typescript33.ScriptElementKind.scriptElement,
     sortText: isDirectory ? "0" : "1",
     replacementSpan: span
   }));
@@ -32391,7 +32467,7 @@ function findShimPosition({ typeCheck, languageService, shimPath, bodyLineOffset
 }
 function getTemplateNames({ languageService, bodyLineOffset }, { shimFile, position }) {
   const bodyStart = shimFile.getPositionOfLineAndCharacter(bodyLineOffset, 0);
-  return languageService.getProgram().getTypeChecker().getSymbolsInScope(findNode(shimFile, position), import_typescript32.SymbolFlags.Variable).filter((symbol) => isTemplateName(symbol, shimFile, bodyStart)).map(({ name }) => name);
+  return languageService.getProgram().getTypeChecker().getSymbolsInScope(findNode(shimFile, position), import_typescript33.SymbolFlags.Variable).filter((symbol) => isTemplateName(symbol, shimFile, bodyStart)).map(({ name }) => name);
 }
 function isTemplateName({ name, valueDeclaration }, shimFile, bodyStart) {
   return valueDeclaration?.getSourceFile() === shimFile && valueDeclaration.getStart() >= bodyStart && !/^(\$\$|__)/.test(name);
@@ -32399,13 +32475,13 @@ function isTemplateName({ name, valueDeclaration }, shimFile, bodyStart) {
 function getMemberOrigins({ languageService }, { shimFile }) {
   const program = languageService.getProgram();
   const checker = program.getTypeChecker();
-  const root = shimFile.statements.find(import_typescript32.isVariableStatement).declarationList.declarations[0];
+  const root = shimFile.statements.find(import_typescript33.isVariableStatement).declarationList.declarations[0];
   const properties2 = checker.getPropertiesOfType(checker.getTypeAtLocation(root));
   const origins = /* @__PURE__ */ new Map();
   for (let i2 = 0; i2 < properties2.length; i2++) {
     const { name, valueDeclaration } = properties2[i2];
     const isDom = !valueDeclaration || program.isSourceFileDefaultLibrary(valueDeclaration.getSourceFile());
-    const isCustomElement = !isDom && (0, import_typescript32.isClassDeclaration)(valueDeclaration.parent) && valueDeclaration.parent.name?.text === "CustomElement";
+    const isCustomElement = !isDom && (0, import_typescript33.isClassDeclaration)(valueDeclaration.parent) && valueDeclaration.parent.name?.text === "CustomElement";
     origins.set(name, isDom ? 2 : isCustomElement ? 1 : 0);
   }
   return origins;
@@ -32415,8 +32491,8 @@ function getImportedSymbolCompletions({ languageService, bodyLineOffset }, { shi
   const completions = new Array();
   for (let i2 = 0; i2 < shimFile.statements.length; i2++) {
     const statement = shimFile.statements[i2];
-    const namedBindings = (0, import_typescript32.isImportDeclaration)(statement) && shimFile.getLineAndCharacterOfPosition(statement.getStart(shimFile)).line >= bodyLineOffset ? statement.importClause?.namedBindings : void 0;
-    if (namedBindings && (0, import_typescript32.isNamespaceImport)(namedBindings)) {
+    const namedBindings = (0, import_typescript33.isImportDeclaration)(statement) && shimFile.getLineAndCharacterOfPosition(statement.getStart(shimFile)).line >= bodyLineOffset ? statement.importClause?.namedBindings : void 0;
+    if (namedBindings && (0, import_typescript33.isNamespaceImport)(namedBindings)) {
       addImportedSymbol(completions, checker, namedBindings.name, span);
     } else if (namedBindings) {
       for (let j = 0; j < namedBindings.elements.length; j++) {
@@ -32457,7 +32533,7 @@ function getMemberSortText(origin, isMethod) {
   return String(origin * 2 + (isMethod ? 1 : 0) + 1);
 }
 function findNode(node, position) {
-  return (0, import_typescript32.forEachChild)(node, (child) => child.getStart() <= position && position <= child.getEnd() ? findNode(child, position) : void 0) ?? node;
+  return (0, import_typescript33.forEachChild)(node, (child) => child.getStart() <= position && position <= child.getEnd() ? findNode(child, position) : void 0) ?? node;
 }
 
 // ../packages/language-core/src/lib/template-definition/template-definition.ts
@@ -32533,7 +32609,7 @@ function addTarget(targets, span, declaration) {
 }
 
 // ../packages/language-core/src/lib/template-diagnostics/template-diagnostics.ts
-var import_typescript35 = require("typescript");
+var import_typescript36 = require("typescript");
 
 // ../packages/language-core/src/lib/template-imports/template-imports.ts
 function findUnusedImports(analysis) {
@@ -32594,7 +32670,7 @@ function organizeTemplateImports(source, analysis) {
 }
 
 // ../packages/language-core/src/lib/template-warnings/template-warnings.ts
-var import_typescript33 = require("typescript");
+var import_typescript34 = require("typescript");
 function getTemplateWarnings(ast, shadowingMembers) {
   const warnings = new Array();
   const declared = new Set(shadowingMembers);
@@ -32626,32 +32702,32 @@ function findGlobalReads(expression) {
   return reads.filter(({ text }) => !guarded.has(text));
 }
 function collectGlobalReads(node, parent, reads, guarded) {
-  if ((0, import_typescript33.isTypeOfExpression)(node) && (0, import_typescript33.isIdentifier)(node.expression)) {
+  if ((0, import_typescript34.isTypeOfExpression)(node) && (0, import_typescript34.isIdentifier)(node.expression)) {
     guarded.add(node.expression.text);
-  } else if (!(0, import_typescript33.isIdentifier)(node)) {
+  } else if (!(0, import_typescript34.isIdentifier)(node)) {
     forEachExpressionChild(node, (child) => collectGlobalReads(child, node, reads, guarded));
   } else if (isBrowserOnlyGlobal(node.text) && !isMemberName(node, parent)) {
     reads.push(node);
   }
 }
 function isMemberName(node, parent) {
-  return ((0, import_typescript33.isPropertyAccessExpression)(parent) || (0, import_typescript33.isPropertyAssignment)(parent)) && parent.name === node;
+  return ((0, import_typescript34.isPropertyAccessExpression)(parent) || (0, import_typescript34.isPropertyAssignment)(parent)) && parent.name === node;
 }
 
 // ../packages/language-core/src/lib/utils/import-conflicts/import-conflicts.utils.ts
-var import_typescript34 = require("typescript");
+var import_typescript35 = require("typescript");
 var IMPORT_MEMBER_CONFLICT_CODE = 90001;
 function getImportConflictDiagnostics(languageService, shimPath, bodyLineOffset) {
   const program = languageService.getProgram();
   const shimFile = program.getSourceFile(shimPath);
   const checker = program.getTypeChecker();
-  const root = shimFile.statements.find(import_typescript34.isVariableStatement).declarationList.declarations[0];
+  const root = shimFile.statements.find(import_typescript35.isVariableStatement).declarationList.declarations[0];
   const rootType = checker.getTypeAtLocation(root);
   let diagnostics;
   for (let i2 = 0; i2 < shimFile.statements.length; i2++) {
     const statement = shimFile.statements[i2];
-    const namedBindings = (0, import_typescript34.isImportDeclaration)(statement) && shimFile.getLineAndCharacterOfPosition(statement.getStart(shimFile)).line >= bodyLineOffset ? statement.importClause?.namedBindings : void 0;
-    if (namedBindings && (0, import_typescript34.isNamespaceImport)(namedBindings)) {
+    const namedBindings = (0, import_typescript35.isImportDeclaration)(statement) && shimFile.getLineAndCharacterOfPosition(statement.getStart(shimFile)).line >= bodyLineOffset ? statement.importClause?.namedBindings : void 0;
+    if (namedBindings && (0, import_typescript35.isNamespaceImport)(namedBindings)) {
       diagnostics = checkConflict(diagnostics, namedBindings.name, checker, rootType, shimFile);
     } else if (namedBindings) {
       for (let j = 0; j < namedBindings.elements.length; j++) {
@@ -32670,7 +32746,7 @@ function checkConflict(diagnostics, name, checker, rootType, shimFile) {
     file: shimFile,
     start: name.getStart(shimFile),
     length: name.getWidth(shimFile),
-    category: import_typescript34.DiagnosticCategory.Error,
+    category: import_typescript35.DiagnosticCategory.Error,
     code: IMPORT_MEMBER_CONFLICT_CODE,
     messageText: `'${name.text}' is also a member of ${checker.typeToString(rootType)}: import it under another name (\u2026 as name), or rename the member.`
   });
@@ -32694,9 +32770,9 @@ function getTemplateDiagnostics({ analysis, error, ast }) {
       const span = locateDiagnostic(analysis, diagnostic);
       const eventCheck = findEventCheck(analysis.typeCheck, span, diagnostic.code);
       if (eventCheck) {
-        return { span: eventCheck.nameSpan, message: eventCheck.message, category: import_typescript35.DiagnosticCategory.Warning };
+        return { span: eventCheck.nameSpan, message: eventCheck.message, category: import_typescript36.DiagnosticCategory.Warning };
       }
-      const message = (0, import_typescript35.flattenDiagnosticMessageText)(diagnostic.messageText, "\n");
+      const message = (0, import_typescript36.flattenDiagnosticMessageText)(diagnostic.messageText, "\n");
       return {
         span,
         message: describeVariableCall(analysis.typeCheck, span, diagnostic.code) ?? describeExhaustiveSwitch(analysis.typeCheck, span, diagnostic.code, message) ?? message,
@@ -32708,14 +32784,14 @@ function getTemplateDiagnostics({ analysis, error, ast }) {
   const unused = findUnusedImports(analysis);
   if (unused) {
     for (let i2 = 0; i2 < unused.length; i2++) {
-      diagnostics.push({ span: unused[i2].span, message: `'${unused[i2].name}' is declared but never used.`, category: import_typescript35.DiagnosticCategory.Suggestion, unnecessary: true });
+      diagnostics.push({ span: unused[i2].span, message: `'${unused[i2].name}' is declared but never used.`, category: import_typescript36.DiagnosticCategory.Suggestion, unnecessary: true });
     }
   }
   const { ssr, shadowingMembers } = analysis;
   if (ssr) {
     const warnings = getTemplateWarnings(analysis.ast, shadowingMembers);
     for (let i2 = 0; i2 < warnings.length; i2++) {
-      diagnostics.push({ ...warnings[i2], category: import_typescript35.DiagnosticCategory.Warning });
+      diagnostics.push({ ...warnings[i2], category: import_typescript36.DiagnosticCategory.Warning });
     }
   }
   return diagnostics;
@@ -32724,7 +32800,7 @@ function toTemplateDiagnostic(error, ast) {
   return {
     span: getErrorSpan(error, ast),
     message: error instanceof TemplateError ? error.detail : error.message,
-    category: import_typescript35.DiagnosticCategory.Error
+    category: import_typescript36.DiagnosticCategory.Error
   };
 }
 function locateDiagnostic({ typeCheck, bodyLineOffset, ast }, diagnostic) {
@@ -32749,7 +32825,7 @@ function getTemplateFormatting(source, options) {
 }
 
 // ../packages/language-core/src/lib/template-hover/template-hover.ts
-var import_typescript36 = require("typescript");
+var import_typescript37 = require("typescript");
 function getTemplateHover(analysis, offset) {
   const target = findDefinitionTarget(analysis, offset);
   return target ? getDeclarationHover(analysis, target) : getTypeScriptHover(analysis, offset);
@@ -32776,9 +32852,9 @@ function toMarkdown(quickInfo) {
     return void 0;
   }
   const sections = [`\`\`\`ts
-${(0, import_typescript36.displayPartsToString)(quickInfo.displayParts)}
+${(0, import_typescript37.displayPartsToString)(quickInfo.displayParts)}
 \`\`\``];
-  const documentation = (0, import_typescript36.displayPartsToString)(quickInfo.documentation);
+  const documentation = (0, import_typescript37.displayPartsToString)(quickInfo.documentation);
   if (documentation) {
     sections.push(documentation);
   }
@@ -32786,7 +32862,7 @@ ${(0, import_typescript36.displayPartsToString)(quickInfo.displayParts)}
   if (tags?.length) {
     for (let i2 = 0; i2 < tags.length; i2++) {
       const { name, text } = tags[i2];
-      const description = (0, import_typescript36.displayPartsToString)(text);
+      const description = (0, import_typescript37.displayPartsToString)(text);
       sections.push(description ? `*@${name}* \u2014 ${description}` : `*@${name}*`);
     }
   }
@@ -32794,7 +32870,7 @@ ${(0, import_typescript36.displayPartsToString)(quickInfo.displayParts)}
 }
 
 // ../packages/language-core/src/lib/template-semantic-tokens/template-semantic-tokens.ts
-var import_typescript37 = require("typescript");
+var import_typescript38 = require("typescript");
 var TEMPLATE_SEMANTIC_TOKEN_TYPES = ["property", "event", "decorator", "variable", "function"];
 var TEMPLATE_SEMANTIC_TOKEN_MODIFIERS = ["readonly"];
 function getTemplateSemanticTokens({ ast, metadatas }) {
@@ -32834,15 +32910,15 @@ function getTemplateSemanticTokens({ ast, metadatas }) {
     tryBlock: (node) => addToken(tokens, node.catch.nameSpan, "variable", ["readonly"]),
     defer: (node) => addToken(tokens, node.error?.nameSpan, "variable", ["readonly"]),
     // The name a @render calls: an expression it calls is visited as one
-    render: (node) => (0, import_typescript37.isIdentifier)(node.calleeExpression) && addToken(tokens, node.calleeSpan, "function"),
+    render: (node) => (0, import_typescript38.isIdentifier)(node.calleeExpression) && addToken(tokens, node.calleeSpan, "function"),
     let: (node) => addToken(tokens, node.nameSpan, "variable", ["readonly"]),
     expression: (expression, variables) => collectVariableReads(expression, expression, variables, (span) => addToken(tokens, span, "variable", ["readonly"]))
   });
   return tokens.sort((first, second) => first.span.start - second.span.start);
 }
 function collectVariableReads(node, parent, variables, collect) {
-  const isMemberName2 = ((0, import_typescript37.isPropertyAccessExpression)(parent) || (0, import_typescript37.isPropertyAssignment)(parent)) && parent.name === node;
-  if ((0, import_typescript37.isIdentifier)(node) && !isMemberName2 && variables.has(node.text)) {
+  const isMemberName2 = ((0, import_typescript38.isPropertyAccessExpression)(parent) || (0, import_typescript38.isPropertyAssignment)(parent)) && parent.name === node;
+  if ((0, import_typescript38.isIdentifier)(node) && !isMemberName2 && variables.has(node.text)) {
     collect(getTemplateSpan(node));
   }
   forEachExpressionChild(node, (child) => collectVariableReads(child, node, variables, collect));
@@ -32854,7 +32930,7 @@ function addToken(tokens, span, type, modifiers = []) {
 }
 
 // ../packages/language-core/src/lib/template-usage/template-usage.ts
-var import_typescript38 = require("typescript");
+var import_typescript39 = require("typescript");
 
 // ../packages/language-server/src/lib/server-handlers/server-handlers.ts
 var import_node_path14 = require("path");
@@ -32863,7 +32939,7 @@ var import_node42 = __toESM(require_main3(), 1);
 // ../packages/language-server/src/lib/template-registry/template-registry.ts
 var import_fast_glob = __toESM(require_out4(), 1);
 var import_node_path13 = require("path");
-var import_typescript39 = require("typescript");
+var import_typescript40 = require("typescript");
 var COMPONENT_FILE_SUFFIX = ".xd.component.ts";
 var TemplateRegistry = class {
   /**
@@ -32903,7 +32979,7 @@ var TemplateRegistry = class {
     }
     let metadatas;
     try {
-      metadatas = await extractComponentsMetadataFromSourceFile((0, import_typescript39.createSourceFile)(componentPath, text, import_typescript39.ScriptTarget.Latest, true));
+      metadatas = await extractComponentsMetadataFromSourceFile((0, import_typescript40.createSourceFile)(componentPath, text, import_typescript40.ScriptTarget.Latest, true));
     } catch {
       return;
     }
@@ -33000,7 +33076,7 @@ var Debouncer = class {
 };
 
 // ../packages/language-server/src/lib/utils/lsp/lsp.utils.ts
-var import_typescript40 = require("typescript");
+var import_typescript41 = require("typescript");
 var import_node41 = __toESM(require_main3(), 1);
 
 // ../node_modules/vscode-uri/lib/esm/index.mjs
@@ -33351,11 +33427,11 @@ function getDocument(fileName, getOpenDocument) {
 }
 function toSeverity(category) {
   switch (category) {
-    case import_typescript40.DiagnosticCategory.Error:
+    case import_typescript41.DiagnosticCategory.Error:
       return import_node41.DiagnosticSeverity.Error;
-    case import_typescript40.DiagnosticCategory.Warning:
+    case import_typescript41.DiagnosticCategory.Warning:
       return import_node41.DiagnosticSeverity.Warning;
-    case import_typescript40.DiagnosticCategory.Suggestion:
+    case import_typescript41.DiagnosticCategory.Suggestion:
       return import_node41.DiagnosticSeverity.Hint;
     default:
       return import_node41.DiagnosticSeverity.Information;
@@ -33363,30 +33439,30 @@ function toSeverity(category) {
 }
 function toCompletionItemKind(kind) {
   switch (kind) {
-    case import_typescript40.ScriptElementKind.memberVariableElement:
-    case import_typescript40.ScriptElementKind.memberGetAccessorElement:
-    case import_typescript40.ScriptElementKind.memberSetAccessorElement:
+    case import_typescript41.ScriptElementKind.memberVariableElement:
+    case import_typescript41.ScriptElementKind.memberGetAccessorElement:
+    case import_typescript41.ScriptElementKind.memberSetAccessorElement:
       return import_node41.CompletionItemKind.Field;
-    case import_typescript40.ScriptElementKind.memberFunctionElement:
+    case import_typescript41.ScriptElementKind.memberFunctionElement:
       return import_node41.CompletionItemKind.Method;
-    case import_typescript40.ScriptElementKind.functionElement:
+    case import_typescript41.ScriptElementKind.functionElement:
       return import_node41.CompletionItemKind.Function;
-    case import_typescript40.ScriptElementKind.variableElement:
-    case import_typescript40.ScriptElementKind.letElement:
-    case import_typescript40.ScriptElementKind.constElement:
+    case import_typescript41.ScriptElementKind.variableElement:
+    case import_typescript41.ScriptElementKind.letElement:
+    case import_typescript41.ScriptElementKind.constElement:
       return import_node41.CompletionItemKind.Variable;
-    case import_typescript40.ScriptElementKind.classElement:
+    case import_typescript41.ScriptElementKind.classElement:
       return import_node41.CompletionItemKind.Class;
-    case import_typescript40.ScriptElementKind.directory:
+    case import_typescript41.ScriptElementKind.directory:
       return import_node41.CompletionItemKind.Folder;
-    case import_typescript40.ScriptElementKind.scriptElement:
+    case import_typescript41.ScriptElementKind.scriptElement:
       return import_node41.CompletionItemKind.File;
     case "event":
       return import_node41.CompletionItemKind.Event;
     case "component":
       return import_node41.CompletionItemKind.Class;
     case "directive":
-    case import_typescript40.ScriptElementKind.keyword:
+    case import_typescript41.ScriptElementKind.keyword:
       return import_node41.CompletionItemKind.Keyword;
     default:
       return import_node41.CompletionItemKind.Text;

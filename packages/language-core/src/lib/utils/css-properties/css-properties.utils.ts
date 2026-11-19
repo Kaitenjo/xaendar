@@ -1,4 +1,4 @@
-import { toCssPropertyName } from '@xaendar/common';
+import { toCssPropertyName } from '@xaendar/internals';
 import { dirname, join } from 'node:path';
 import { getDefaultLibFilePath, sys } from 'typescript';
 

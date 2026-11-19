@@ -16,7 +16,7 @@ afterEach(() => {
 
 describe('getPackageLibrariesConfig()', () => {
   it('shares the packages of Xaendar with the libraries, and optimizes every module they export but the packages of Xaendar', () => {
-    const packages = ['@xaendar/core', '@xaendar/signals', '@xaendar/common', '@xaendar/types', '@xaendar/ssr'];
+    const packages = ['@xaendar/core', '@xaendar/signals', '@xaendar/common', '@xaendar/internals', '@xaendar/types', '@xaendar/ssr'];
 
     expect(getPackageLibrariesConfig([libraryOf('@acme/ui', []), libraryOf('charts', [])])).toEqual({
       resolve: { dedupe: packages },

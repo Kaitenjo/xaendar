@@ -1,3 +1,4 @@
+import { describeDuplicateHostDirective, describeEventExposure, describeInputExposure } from '@xaendar/internals';
 import { CompilerOptions, Expression, isArrayLiteralExpression, isIdentifier, isObjectLiteralExpression, isPropertyAssignment, isShorthandPropertyAssignment, isStringLiteralLike, Node, ObjectLiteralExpression } from 'typescript';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
 import { ComponentMetadata } from '../../types/component-metadata.type';
@@ -113,7 +114,7 @@ export function checkHostDirectives(sources: readonly HostDirectiveSource[], com
 
       const directiveName = resolved.declaration.name?.text;
       if (declared.has(resolved.declaration)) {
-        report(`${className} declares the host directive ${directiveName} more than once`, own ? directive : undefined);
+        report(describeDuplicateHostDirective(className, directiveName), own ? directive : undefined);
         continue;
       }
 
@@ -126,7 +127,7 @@ export function checkHostDirectives(sources: readonly HostDirectiveSource[], com
       if (dirProperties?.length) {
         for (let k = 0; k < dirProperties.length; k++) {
           const { name, alias, node } = dirProperties[k];
-          const message = describeInputConflict(exposed.properties.has(name), name, alias, className, directiveName, properties.has(alias) || inputs.has(alias), members.has(alias));
+          const message = describeInputExposure(exposed.properties.has(name), properties.has(alias) || inputs.has(alias), members.has(alias), name, alias, className, directiveName);
           if (message) {
             report(message, own ? node : undefined);
           }
@@ -138,10 +139,9 @@ export function checkHostDirectives(sources: readonly HostDirectiveSource[], com
       if (dirEvents?.length) {
         for (let k = 0; k < dirEvents.length; k++) {
           const { name, alias, node } = dirEvents[k];
-          if (!exposed.events.has(name)) {
-            report(`${directiveName} does not declare an event named "${name}"`, own ? node : undefined);
-          } else if (events.has(alias) || outputs.has(alias)) {
-            report(`${className} already has an event named "${alias}", which ${directiveName} cannot expose`, own ? node : undefined);
+          const message = describeEventExposure(exposed.events.has(name), events.has(alias) || outputs.has(alias), name, alias, className, directiveName);
+          if (message) {
+            report(message, own ? node : undefined);
           }
 
           outputs.add(alias);
@@ -149,30 +149,6 @@ export function checkHostDirectives(sources: readonly HostDirectiveSource[], com
       }
     }
   }
-}
-
-/**
- * Describes why an input of a host directive cannot be exposed, with the messages of the runtime.
- *
- * @param declared - Whether the directive declares the input.
- * @param name - The name of the input in the directive.
- * @param alias - The name it is exposed with.
- * @param className - The name of the class of the component.
- * @param directiveName - The name of the class of the directive.
- * @param input - Whether the component, or another host directive, already has an input with the name.
- * @param member - Whether a class of the chain of the component has a member with the name.
- * @returns The message, `undefined` when the input can be exposed.
- */
-function describeInputConflict(declared: boolean, name: string, alias: string, className: string, directiveName: string | undefined, input: boolean, member: boolean): string | undefined {
-  if (!declared) {
-    return `${directiveName} does not declare an input named "${name}"`;
-  }
-
-  if (input) {
-    return `${className} already has an input named "${alias}", which ${directiveName} cannot expose`;
-  }
-
-  return member ? `${className} already has a member named "${alias}", which ${directiveName} cannot expose as an input` : undefined;
 }
 
 /**

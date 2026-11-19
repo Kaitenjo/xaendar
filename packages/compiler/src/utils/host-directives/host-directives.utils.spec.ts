@@ -221,6 +221,33 @@ ${decorator('[Tooltip, { directive: Tooltip }]')}
 class MyEl extends Base { }`)).toEqual([['MyEl declares the host directive Tooltip more than once', 'Tooltip']]);
   });
 
+  it('reports a name of a member of HTMLElement, which the last class of the chain extends', () => {
+    const hostDirectives = decorator('[{ directive: Tooltip, properties: [{ name: \'text\', alias: \'id\' }, { name: \'pos\', alias: \'onclick\' }] }]');
+
+    expect(errorsOf(`${hostDirectives}\nclass MyEl extends HTMLElement { }`).map(([message]) => message)).toEqual([
+      'MyEl already has a member named "id", which Tooltip cannot expose as an input',
+      'MyEl already has a member named "onclick", which Tooltip cannot expose as an input'
+    ]);
+    expect(errorsOf(`class Base extends HTMLElement { }\n${hostDirectives}\nclass MyEl extends Base { }`)).toHaveLength(2);
+    expect(errorsOf(`${hostDirectives}\nclass MyEl extends Unknown { }`)).toEqual([]);
+    expect(errorsOf(`${hostDirectives}\nclass MyEl extends window.HTMLElement { }`)).toEqual([]);
+  });
+
+  it('reports a name of a member of HTMLElement through a base class of a package, as CustomElement', () => {
+    const root = mkdtempSync(join(tmpdir(), 'xaendar-dom-base-')).replaceAll('\\', '/');
+    const library = `${root}/node_modules/@acme/base`;
+    mkdirSync(library, { recursive: true });
+    writeFileSync(`${library}/package.json`, JSON.stringify({ name: '@acme/base', exports: { '.': { types: './index.d.ts' } } }));
+    writeFileSync(`${library}/index.d.ts`, 'export declare class ElementBase extends HTMLElement { }');
+    const code = `${directives}\nimport { ElementBase } from '@acme/base';\n${decorator('[{ directive: Tooltip, properties: [{ name: \'text\', alias: \'title\' }] }]')}\nclass MyEl extends ElementBase { }`;
+
+    try {
+      expect(findHostDirectiveErrors(createSourceFile(`${root}/my-el.ts`, code, ScriptTarget.Latest, true)).map(({ message }) => message)).toEqual(['MyEl already has a member named "title", which Tooltip cannot expose as an input']);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('ignores the static members of the component', () => {
     expect(errorsOf(component('static label = 1;', decorator('[{ directive: Tooltip, properties: [{ name: \'text\', alias: \'label\' }] }]')))).toEqual([]);
   });

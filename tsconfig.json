@@ -17,6 +17,7 @@
     "paths": {
       "@xaendar/build-tools": ["./packages/build-tools/src/public-api"],
       "@xaendar/common": ["./packages/common/src/public-api"],
+      "@xaendar/internals": ["./packages/internals/src/public-api"],
       "@xaendar/core": ["./packages/core/src/public-api"],
       "@xaendar/core/signals": ["./packages/core/src/signals/index"],
       "@xaendar/core/testing": ["./packages/core/src/testing/index"],

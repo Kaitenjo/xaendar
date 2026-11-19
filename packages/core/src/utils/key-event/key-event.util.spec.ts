@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { KEY_MODIFIERS } from '@xaendar/common';
+import { KEY_MODIFIERS } from '@xaendar/internals';
 import { describe, expect, it } from 'vitest';
 import { _isKey } from './key-event.util';
 

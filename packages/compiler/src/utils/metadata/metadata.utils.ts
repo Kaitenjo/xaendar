@@ -1,4 +1,5 @@
-import { isValidCustomElementName, slice, toModelChangeEvent } from '@xaendar/common';
+import { slice } from '@xaendar/common';
+import { isValidCustomElementName, toModelChangeEvent } from '@xaendar/internals';
 import { ClassDeclaration, CompilerOptions, Decorator, EntityName, Expression, forEachChild, getCombinedModifierFlags, getDecorators, getNameOfDeclaration, Identifier, isArrowFunction, isCallExpression, isClassDeclaration, isDecorator, isEnumDeclaration, isFunctionExpression, isIdentifier, isImportDeclaration, isInterfaceDeclaration, isMethodDeclaration, isNamedImports, isNamespaceImport, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isQualifiedName, isShorthandPropertyAssignment, isStringLiteral, isTypeAliasDeclaration, isTypeReferenceNode, ModifierFlags, ModifierLike, Node, ObjectLiteralElementLike, ObjectLiteralExpression, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
 import { ComponentPropertyMetadataWithSpan } from '../../models/component-property-metadata-with-span/component-property-metadata-with-span.model';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
@@ -12,6 +13,7 @@ import type { ComponentOrDirectiveMetadata } from '../../types/component-or-dire
 import { DirectiveMetadata } from '../../types/directive-metadata.type';
 import type { MemberDeclaration } from '../../types/member-declaration.type';
 import type { ResolvedClass } from '../../types/resolved-class.type';
+import { getHTMLElementMembers, HTML_ELEMENT } from '../dom-members/dom-members.utils';
 import type { ClassDeclarationWithName } from '../../types/typescript-decorator-nodes/class-declaration-with-name.type';
 import type { DirectiveDecorator } from '../../types/typescript-decorator-nodes/directive-decorator.type';
 import type { HostDirectiveSource } from '../../types/host-directive-source.type';
@@ -21,7 +23,7 @@ import type { WebComponentDecorator } from '../../types/typescript-decorator-nod
 import type { WebComponentError } from '../../types/web-component-error.type';
 import { addHostDirectiveBindings, checkHostDirectives, hasHostDirectives } from '../host-directives/host-directives.utils';
 import { readLibraryClass } from '../package-libraries/package-libraries.utils';
-import { resolveBaseClassOf } from '../resolve-declaration/resolve-declaration.utils';
+import { getBaseClassExpression, resolveBaseClassOf } from '../resolve-declaration/resolve-declaration.utils';
 import { toTypeCheckModuleSpecifier } from '../symbol-imports/symbol-imports.utils';
 
 /**
@@ -327,10 +329,32 @@ function collectMemberNames(klass: ResolvedClass, compilerOptions: CompilerOptio
       }
     }
 
-    current = resolveBaseClassOf(current, compilerOptions);
+    const base = resolveBaseClassOf(current, compilerOptions);
+    if (!base) {
+      addGlobalBaseMembers(current.declaration, names);
+    }
+
+    current = base;
   }
 
   return names;
+}
+
+/**
+ * Adds the members of the global class the last class of a chain extends, which no declaration of a class gives: the
+ * ones of `HTMLElement` (`id`, `title`, `hidden`…), extended by `CustomElement`, so that an input exposed with their name
+ * is reported as the runtime rejects it.
+ *
+ * @param declaration - The last class of the chain that could be resolved.
+ * @param names - The names of the members, filled in place.
+ */
+function addGlobalBaseMembers(declaration: ClassDeclaration, names: Set<string>): void {
+  const base = getBaseClassExpression(declaration);
+  if (base && isIdentifier(base) && base.text === HTML_ELEMENT) {
+    for (const name of getHTMLElementMembers()) {
+      names.add(name);
+    }
+  }
 }
 
 /**

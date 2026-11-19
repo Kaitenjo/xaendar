@@ -1,3 +1,4 @@
+import { describeDuplicateHostDirective, describeEventExposure, describeInputExposure } from '@xaendar/internals';
 import type { Constructor, Dictionary } from '@xaendar/types';
 import { DIRECTIVE_ORDER, INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_EVENTS, INTERNAL_HOST_DIRECTIVES, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
 import type { CustomDirective } from '../../models/custom-directive/custom-directive';
@@ -82,6 +83,12 @@ const EXPOSED_ACCESSORS = new WeakMap<Constructor<CustomDirective>, Map<string, 
 const PENDING_INPUTS = new WeakMap<Element, Dictionary<string, unknown>>();
 
 /**
+ * The component classes whose fields were found named apart from the inputs their host directives expose (see
+ * {@link _checkExposedFields}).
+ */
+const CHECKED_FIELDS = new WeakSet<object>();
+
+/**
  * Creates the host directives of a component, the ones `@WebComponent` declares on its class and on its ancestors (see
  * {@link _resolveHostDirectives}): each directive is instantiated and applied to the component element, and takes the
  * values bound to its exposed inputs before the element was upgraded, by the templates or by code outside them.
@@ -111,6 +118,37 @@ export function _createHostDirectives(element: CustomElement): HostDirectives {
   }
 
   return instances as unknown as HostDirectives;
+}
+
+/**
+ * Checks that no field of a component is named like an input its host directives expose. A field is an own property the
+ * constructor of the class declaring it creates on the element, after the one of `CustomElement`: the prototype
+ * {@link _resolveHostDirectives} checks does not hold it, and it would hide the accessor of the exposed input, so that
+ * code outside the templates assigning it would write into the field and never into the input.
+ *
+ * N.B. Checked when an element of the class connects, the first moment its fields exist that the runtime controls, and
+ * once per class: every element of a class has the same fields, and the ones that the upgrade found assigned by code
+ * outside the templates were removed by {@link _createHostDirectives} already. A class found faulty is checked again,
+ * throwing for each of its elements. Do not check every element, nor in the constructor, which runs before the fields
+ * of the subclasses are created.
+ *
+ * @param element - The component, connecting.
+ * @throws When a field of the component has the name an input of one of its host directives is exposed with.
+ */
+export function _checkExposedFields(element: CustomElement): void {
+  const klass = element.constructor;
+  if (CHECKED_FIELDS.has(klass)) {
+    return;
+  }
+
+  const { inputs } = _resolveHostDirectives(klass);
+  if (inputs) {
+    for (const name in inputs) {
+      throwIfDescribed(describeInputExposure(true, false, Object.hasOwn(element, name), name, name, klass.name, inputs[name]!.directive.name));
+    }
+  }
+
+  CHECKED_FIELDS.add(klass);
 }
 
 /**
@@ -212,7 +250,7 @@ function computeHostDirectives(klass: object): ResolvedHostDirectives {
     const declaration = declarations[i];
     const { directive: Directive, properties, events }: HostDirectiveOptions = typeof declaration === 'function' ? { directive: declaration } : declaration;
     if (directives.some(resolved => resolved.directive === Directive)) {
-      throw new Error(`${className} declares the host directive ${Directive.name} more than once`);
+      throw new Error(describeDuplicateHostDirective(className, Directive.name));
     }
 
     directives.push({ directive: Directive, events: resolveEvents(Directive, events, className, metadata, directives) });
@@ -238,13 +276,8 @@ function checkInherited({ directives, inputs }: ResolvedHostDirectives, classNam
   if (inputs) {
     const componentInputs = metadata?.[INTERNAL_ALIAS_TO_ATTRIBUTE];
     for (const name in inputs) {
-      if (componentInputs?.[name]) {
-        throw new Error(`${className} already has an input named "${name}", which ${inputs[name]!.directive.name} cannot expose`);
-      }
-
-      if (Object.hasOwn(prototype, name)) {
-        throw new Error(`${className} already has a member named "${name}", which ${inputs[name]!.directive.name} cannot expose as an input`);
-      }
+      // The members of the ancestors were checked when they were resolved, the accessor being one of them
+      throwIfDescribed(describeInputExposure(true, !!componentInputs?.[name], Object.hasOwn(prototype, name), name, name, className, inputs[name]!.directive.name));
     }
   }
 
@@ -252,9 +285,7 @@ function checkInherited({ directives, inputs }: ResolvedHostDirectives, classNam
   if (componentEvents?.size) {
     for (let i = 0; i < directives.length; i++) {
       for (const [, alias] of directives[i].events) {
-        if (componentEvents.has(alias)) {
-          throw new Error(`${className} already has an event named "${alias}", which ${directives[i].directive.name} cannot expose`);
-        }
+        throwIfDescribed(describeEventExposure(true, componentEvents.has(alias), alias, alias, className, directives[i].directive.name));
       }
     }
   }
@@ -282,13 +313,7 @@ function resolveEvents(Directive: Constructor<CustomDirective>, members: HostDir
   const events = new Map<string, string>();
   for (let i = 0; i < members.length; i++) {
     const { name, alias } = toExposure(members[i]);
-    if (!declared?.has(name)) {
-      throw new Error(`${Directive.name} does not declare an event named "${name}"`);
-    }
-
-    if (metadata?.[INTERNAL_EVENTS]?.has(alias) || isExposedEvent(directives, alias)) {
-      throw new Error(`${className} already has an event named "${alias}", which ${Directive.name} cannot expose`);
-    }
+    throwIfDescribed(describeEventExposure(!!declared?.has(name), !!metadata?.[INTERNAL_EVENTS]?.has(alias) || isExposedEvent(directives, alias), name, alias, className, Directive.name));
 
     events.set(name, alias);
   }
@@ -337,21 +362,11 @@ function exposeInputs(Directive: Constructor<CustomDirective>, members: HostDire
   for (let i = 0; i < members.length; i++) {
     const { name, alias } = toExposure(members[i]);
     const property = aliasToAttribute?.[name];
-    if (!property) {
-      throw new Error(`${Directive.name} does not declare an input named "${name}"`);
-    }
-
-    if (metadata?.[INTERNAL_ALIAS_TO_ATTRIBUTE]?.[alias] || exposed[alias]) {
-      throw new Error(`${className} already has an input named "${alias}", which ${Directive.name} cannot expose`);
-    }
-
     // A member of the class, of an ancestor or of `HTMLElement` would be hidden by the accessor, or hide it
-    if (alias in prototype) {
-      throw new Error(`${className} already has a member named "${alias}", which ${Directive.name} cannot expose as an input`);
-    }
-
-    Object.defineProperty(prototype, alias, getExposedAccessor(Directive, property));
-    exposed[alias] = { directive: Directive, property };
+    throwIfDescribed(describeInputExposure(!!property, !!metadata?.[INTERNAL_ALIAS_TO_ATTRIBUTE]?.[alias] || !!exposed[alias], alias in prototype, name, alias, className, Directive.name));
+    // ! is safe: an input the directive does not declare has thrown
+    Object.defineProperty(prototype, alias, getExposedAccessor(Directive, property!));
+    exposed[alias] = { directive: Directive, property: property! };
   }
 
   return exposed;
@@ -443,6 +458,19 @@ function restorePreUpgradeInputs(element: CustomElement, instances: ReadonlyMap<
  */
 function inputOf(instances: ReadonlyMap<Constructor<CustomDirective>, CustomDirective>, { directive, property }: ExposedInput): SettableInputSignal {
   return instances.get(directive)![property] as SettableInputSignal;
+}
+
+/**
+ * Throws a problem of the host directives of a class, described by `@xaendar/internals` as the compiler reports it, so that
+ * the build and the browser give the same message.
+ *
+ * @param message - The description of the problem, `undefined` when there is none.
+ * @throws When there is a problem.
+ */
+function throwIfDescribed(message: string | undefined): void {
+  if (message) {
+    throw new Error(message);
+  }
 }
 
 /**

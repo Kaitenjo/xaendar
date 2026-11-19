@@ -19,7 +19,7 @@ const { createModelPrototype, model } = await import('../../signals/model/model'
 const { _scope, EMPTY_LAYOUT } = await import('../context/context.util');
 const { _resetExposedInput, _setExposedInput, _setExpressionExposedInput, _setReactiveExposedInput } = await import('../render-element/render-element.util');
 const { _defineRender } = await import('../render-registry/render-registry.util');
-const { _resolveHostDirectives } = await import('./host-directives.util');
+const { _checkExposedFields, _resolveHostDirectives } = await import('./host-directives.util');
 
 type Element = HostElement & Record<string, unknown>;
 type Declaration = typeof TooltipDirective | typeof PlainDirective | typeof ToggleDirective | HostDirectiveOptions;
@@ -321,6 +321,40 @@ describe('_createHostDirectives', () => {
       expect(() => _resolveHostDirectives(Member)).toThrow('already has a member named "label", which TooltipDirective cannot expose as an input');
       expect(() => create([{ directive: TooltipDirective, properties: [{ name: 'text', alias: 'title' }] }])).toThrow('already has a member named "title"');
       expect(() => create([{ directive: TooltipDirective, properties: [{ name: 'text', alias: 'effect' }] }])).toThrow('already has a member named "effect"');
+    });
+
+    it('throws when a field of the component, or of a class it extends, is named like an exposed input, at each check', () => {
+      const Parent = defineClass([{ directive: TooltipDirective, properties: [{ name: 'text', alias: 'label' }] }]);
+      const Field = class extends Parent {
+        public label = 'state';
+      };
+      const Child = class extends Field { };
+      const element = document.createElement(register(Field)) as Element;
+
+      expect(() => _checkExposedFields(element)).toThrow('Field already has a member named "label", which TooltipDirective cannot expose as an input');
+      expect(() => _checkExposedFields(element)).toThrow('Field already has a member named "label"');
+      expect(() => _checkExposedFields(document.createElement(register(Child)) as Element)).toThrow('Child already has a member named "label"');
+    });
+
+    it('accepts a component whose fields are named apart from its exposed inputs, checking its class once', () => {
+      const klass = defineClass([{ directive: TooltipDirective, properties: [{ name: 'text', alias: 'label' }] }]);
+      const element = document.createElement(register(klass)) as Element;
+      _checkExposedFields(element);
+      Object.defineProperty(element, 'label', { value: 'own', configurable: true });
+
+      expect(() => _checkExposedFields(element)).not.toThrow();
+      expect(() => _checkExposedFields(create([PlainDirective]))).not.toThrow();
+    });
+
+    it('checks the fields when the element connects', () => {
+      const Field = class extends defineClass([{ directive: TooltipDirective, properties: [{ name: 'text', alias: 'label' }] }]) {
+        public label = 'state';
+      };
+      _defineRender(Field, () => _scope(null, EMPTY_LAYOUT));
+      const element = document.createElement(register(Field)) as Element;
+
+      expect(() => document.body.appendChild(element)).toThrow('already has a member named "label", which TooltipDirective cannot expose as an input');
+      element.remove();
     });
   });
 

@@ -1,0 +1,16 @@
+{
+  "name": "@xaendar/internals",
+  "version": "1.4.1",
+  "type": "module",
+  "author": "Kaitenjo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/internals"
+  },
+  "description": "Logic shared by the Xaendar packages: not a public API, it changes with them without notice",
+  "xaendar": {
+    "target": "browser"
+  }
+}

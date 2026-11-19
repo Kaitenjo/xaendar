@@ -1,4 +1,4 @@
-import { isValidCustomElementName } from '@xaendar/common';
+import { isValidCustomElementName } from '@xaendar/internals';
 import type { Function, NoArgsFunction } from '@xaendar/types';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { TagOpenNameToken } from '../../../lexer/types/tokens/tag-open-name-token.type';

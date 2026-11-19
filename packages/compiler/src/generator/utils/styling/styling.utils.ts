@@ -1,4 +1,4 @@
-import { parseStyleDeclarations, splitClasses } from '@xaendar/common';
+import { parseStyleDeclarations, splitClasses } from '@xaendar/internals';
 import type { Function } from '@xaendar/types';
 import type { Expression } from 'typescript';
 import { ASTNodeType } from '../../../parser/types/node.enum';

@@ -290,7 +290,7 @@ Creates a component outside of any component or directive (the root of an applic
 
 ## `@xaendar/directives`
 
-The built-in directives, imported by the templates (`@import { AnimationDirective } from '@xaendar/directives'`), and the sanitizer of HTML. `@xaendar/core` is a peer, `@xaendar/common` a dependency.
+The built-in directives, imported by the templates (`@import { AnimationDirective } from '@xaendar/directives'`), and the sanitizer of HTML. `@xaendar/core` and `@xaendar/internals` are peers, installed with it.
 
 ### AnimationDirective (`@@animation`)
 

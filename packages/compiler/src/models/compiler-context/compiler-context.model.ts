@@ -1,4 +1,4 @@
-import { matchesCustomElementPattern } from '@xaendar/common';
+import { matchesCustomElementPattern } from '@xaendar/internals';
 import { SCOPE_HEADER } from '../../costants/scope-header.costant';
 import type { DeclaredIdentifier } from '../../generator/types/declared-identifier.type';
 import type { IdentifierKind } from '../../generator/types/identifier-kind.type';

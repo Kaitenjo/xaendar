@@ -20,6 +20,7 @@
     "skipLibCheck": true,
     "paths": {
       "@xaendar/common": ["../../packages/common/src/public-api"],
+      "@xaendar/internals": ["../../packages/internals/src/public-api"],
       "@xaendar/core": ["../../packages/core/src/public-api"],
       "@xaendar/core/signals": ["../../packages/core/src/signals/index.ts"],
       "@xaendar/core/testing": ["../../packages/core/src/testing/index.ts"],

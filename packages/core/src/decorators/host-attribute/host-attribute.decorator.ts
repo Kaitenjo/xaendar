@@ -1,4 +1,4 @@
-import { CSS_UNITS, toCssPropertyName } from '@xaendar/common';
+import { CSS_UNITS, toCssPropertyName } from '@xaendar/internals';
 import type { DecoratorMetadataContext } from '@xaendar/types';
 import { INTERNAL_HOST_ATTRIBUTES } from '../../costants';
 import type { EventHost } from '../../types/event/event-host.type';

@@ -1,4 +1,4 @@
-import { isValidCustomElementName } from '@xaendar/common';
+import { isValidCustomElementName } from '@xaendar/internals';
 
 /**
  * The `customElements` of the server DOM: the tag names the classes of the components are defined with, as a browser

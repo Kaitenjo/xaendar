@@ -1,4 +1,4 @@
-import { stylePriority, styleValue } from '@xaendar/common';
+import { stylePriority, styleValue } from '@xaendar/internals';
 import type { HostStylingRun } from '../../models/host-styling-run/host-styling-run';
 import type { ElementSources } from '../../types/element-sources.type';
 import type { _RenderStyling } from '../../types/styling/render-styling.type';
