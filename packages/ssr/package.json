@@ -1,6 +1,6 @@
 {
   "name": "@xaendar/ssr",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
@@ -18,6 +18,6 @@
     "@xaendar/types": "1.4.0"
   },
   "peerDependencies": {
-    "@xaendar/core": "1.4.0"
+    "@xaendar/core": "1.4.1"
   }
 }
