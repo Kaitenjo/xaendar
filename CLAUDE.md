@@ -44,9 +44,11 @@ Written in Xaendar and run through the linked `xd` CLI (`packages/cli`, `npm lin
 Driven from `schematics/` (its own TS project, `npm run build:schematics`): `packages/*/package.json` have no scripts.
 
 ```bash
-npm run deploy              # build:schematics → check:extension-token → check:dependencies → test → typecheck:projects →
-                            # update:version → build:projects → pack:projects → publish:projects → publish-extension →
-                            # tag:release (pushes the tag xaendar--v<version>) → npm i
+npm run deploy              # build:schematics, then schematics/src/deploy.ts runs each step in its own process, stopping
+                            # at the first failure: check extension token → check dependencies → typecheck specs →
+                            # tests → typecheck:projects → update version → build:projects → pack → publish → publish
+                            # extension → tag (pushes xaendar--v<version>) → npm i. `npm run deploy -- --bump=minor`
+                            # (patch|minor|major, default patch)
 npm run build:projects      # each package into dist/@xaendar/<name> by "xaendar.target": Vite (browser), tsup (node),
                             # `xd build` for a "xaendar.library" (@xaendar/directives, with its manifest)
 npm run typecheck:projects  # each package with its tsconfig.typecheck.json

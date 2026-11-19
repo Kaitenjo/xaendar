@@ -7,6 +7,7 @@
     "build:watch:extension": "node dist/build-extension.js",
     "build-claude-plugin": "node dist/build-claude-plugin.js",
     "check-dependencies": "node dist/check-dependencies.js",
+    "deploy": "node dist/deploy.js",
     "pack": "node dist/pack-projects.js",
     "publish": "node dist/publish.js",
     "publish-extension": "node dist/publish-extension.js",
