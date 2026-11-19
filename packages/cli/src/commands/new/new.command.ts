@@ -1,4 +1,4 @@
-import { isValidCustomElementName } from '@xaendar/common';
+import { isValidCustomElementName } from '@xaendar/internals';
 import { Command } from 'commander';
 import { resolve } from 'node:path';
 import { buildStructure } from './structure/structure';

@@ -1,4 +1,4 @@
-import { escapeAttribute, escapeRawText } from '@xaendar/common';
+import { escapeAttribute, escapeRawText } from '@xaendar/internals';
 import { _applyHostAttributes, _COMPONENT, _createStylingState, _DIRECTIVE_ORDER, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _mergeAttributes, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setContentTemplates, _setExposedInput, _setExpressionExposedInput, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
 import type { Constructor, Dictionary, Function } from '@xaendar/types';
 import { ServerElement } from '../../dom/server-element/server-element';

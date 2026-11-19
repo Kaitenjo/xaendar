@@ -1,4 +1,4 @@
-import { describeDuplicateHostDirective, describeEventExposure, describeInputExposure } from '@xaendar/common';
+import { describeDuplicateHostDirective, describeEventExposure, describeInputExposure } from '@xaendar/internals';
 import type { Constructor, Dictionary } from '@xaendar/types';
 import { DIRECTIVE_ORDER, INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_EVENTS, INTERNAL_HOST_DIRECTIVES, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
 import type { CustomDirective } from '../../models/custom-directive/custom-directive';
@@ -461,7 +461,7 @@ function inputOf(instances: ReadonlyMap<Constructor<CustomDirective>, CustomDire
 }
 
 /**
- * Throws a problem of the host directives of a class, described by `@xaendar/common` as the compiler reports it, so that
+ * Throws a problem of the host directives of a class, described by `@xaendar/internals` as the compiler reports it, so that
  * the build and the browser give the same message.
  *
  * @param message - The description of the problem, `undefined` when there is none.

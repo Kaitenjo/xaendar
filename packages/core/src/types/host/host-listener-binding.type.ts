@@ -1,4 +1,4 @@
-import type { KeyEventFilter } from '@xaendar/common';
+import type { KeyEventFilter } from '@xaendar/internals';
 import type { EventHost } from '../event/event-host.type';
 import type { HostListenerHandler } from './host-listener-handler.type';
 

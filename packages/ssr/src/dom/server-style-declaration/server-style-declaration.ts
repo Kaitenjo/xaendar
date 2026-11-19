@@ -1,4 +1,4 @@
-import { parseStyleDeclarations, stylePriority, styleValue } from '@xaendar/common';
+import { parseStyleDeclarations, stylePriority, styleValue } from '@xaendar/internals';
 import type { AttributeOwner } from '../types/attribute-owner.type';
 
 /**

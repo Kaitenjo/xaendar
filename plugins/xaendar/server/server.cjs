@@ -20180,210 +20180,9 @@ var Stack = class {
   }
 };
 
-// ../packages/common/src/utils/css/css.util.ts
-var CSS_UNITS = /* @__PURE__ */ new Set([
-  "%",
-  "cap",
-  "ch",
-  "em",
-  "ex",
-  "ic",
-  "lh",
-  "rcap",
-  "rch",
-  "rem",
-  "rex",
-  "ric",
-  "rlh",
-  "vb",
-  "vh",
-  "vi",
-  "vw",
-  "vmin",
-  "vmax",
-  "dvb",
-  "dvh",
-  "dvi",
-  "dvw",
-  "dvmin",
-  "dvmax",
-  "lvb",
-  "lvh",
-  "lvi",
-  "lvw",
-  "lvmin",
-  "lvmax",
-  "svb",
-  "svh",
-  "svi",
-  "svw",
-  "svmin",
-  "svmax",
-  "cqb",
-  "cqh",
-  "cqi",
-  "cqw",
-  "cqmin",
-  "cqmax",
-  "cm",
-  "mm",
-  "q",
-  "in",
-  "pc",
-  "pt",
-  "px",
-  "deg",
-  "grad",
-  "rad",
-  "turn",
-  "s",
-  "ms",
-  "hz",
-  "khz",
-  "dpi",
-  "dpcm",
-  "dppx",
-  "x",
-  "fr"
-]);
-function toCssPropertyName(name) {
-  return name.startsWith("--") ? name : name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-}
-
-// ../packages/common/src/utils/host-directive/host-directive.util.ts
-function describeDuplicateHostDirective(className, directiveName) {
-  return `${className} declares the host directive ${directiveName} more than once`;
-}
-function describeInputExposure(declared, input, member, name, alias, className, directiveName) {
-  if (!declared) {
-    return `${directiveName} does not declare an input named "${name}"`;
-  }
-  if (input) {
-    return `${className} already has an input named "${alias}", which ${directiveName} cannot expose`;
-  }
-  return member ? `${className} already has a member named "${alias}", which ${directiveName} cannot expose as an input` : void 0;
-}
-function describeEventExposure(declared, event, name, alias, className, directiveName) {
-  if (!declared) {
-    return `${directiveName} does not declare an event named "${name}"`;
-  }
-  return event ? `${className} already has an event named "${alias}", which ${directiveName} cannot expose` : void 0;
-}
-
-// ../packages/common/src/utils/html-serialization/html-serialization.util.ts
-var VOID_ELEMENTS = /* @__PURE__ */ new Set(["area", "base", "basefont", "bgsound", "br", "col", "embed", "frame", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"]);
-var RAW_TEXT_ELEMENTS = /* @__PURE__ */ new Set(["iframe", "noembed", "noframes", "noscript", "plaintext", "script", "style", "xmp"]);
-var LEADING_NEWLINE_ELEMENTS = /* @__PURE__ */ new Set(["listing", "pre", "textarea"]);
-var ESCAPES = {
-  "&": "&amp;",
-  '"': "&quot;",
-  "<": "&lt;",
-  ">": "&gt;"
-};
-function escapeText(value) {
-  return value.replace(/[&<>]/g, (char) => ESCAPES[char]);
-}
-function escapeAttribute(value) {
-  return value.replace(/[&"<>]/g, (char) => ESCAPES[char]);
-}
-function escapeRawText(value, tagName) {
-  return value.replace(new RegExp(`</(${tagName})`, "gi"), "<\\/$1");
-}
-function isVoidElement(tagName) {
-  return VOID_ELEMENTS.has(tagName);
-}
-function isRawTextElement(tagName) {
-  return RAW_TEXT_ELEMENTS.has(tagName);
-}
-function dropsLeadingNewline(tagName) {
-  return LEADING_NEWLINE_ELEMENTS.has(tagName);
-}
-
-// ../packages/common/src/utils/key-event/key-event.util.ts
-var KEY_MODIFIERS = { alt: 1, control: 2, meta: 4, shift: 8 };
-function parseKeyEvent(name) {
-  const dot = name.indexOf(".");
-  const event = dot < 0 ? name : name.slice(0, dot);
-  if (dot < 0 || event !== "keydown" && event !== "keyup") {
-    return void 0;
-  }
-  const parts = name.slice(dot + 1).toLowerCase().split(".");
-  const key = parts[parts.length - 1];
-  if (!key) {
-    throw new Error(`The key event "${name}" names no key: write it after the last dot, e.g. ${event}.enter`);
-  }
-  let modifiers = 0;
-  let code = false;
-  for (let i2 = 0; i2 < parts.length - 1; i2++) {
-    const part = parts[i2];
-    const modifier = Object.hasOwn(KEY_MODIFIERS, part) ? KEY_MODIFIERS[part] : 0;
-    if (!modifier && part !== "code") {
-      throw new Error(`"${part}" is not a modifier of the key event "${name}": alt, control, meta, shift or code`);
-    }
-    if (modifier ? modifiers & modifier : code) {
-      throw new Error(`The key event "${name}" names "${part}" twice`);
-    }
-    modifiers |= modifier;
-    code ||= !modifier;
-  }
-  const filter = { event, key: key === "esc" ? "escape" : key, modifiers };
-  return code ? Object.assign(filter, { code: true }) : filter;
-}
-
-// ../packages/common/src/utils/model/model.util.ts
-var MODEL_CHANGE_SUFFIX = "Change";
-function toModelChangeEvent(name) {
-  return `${name}${MODEL_CHANGE_SUFFIX}`;
-}
-
-// ../packages/common/src/utils/small-set/small-set.util.ts
-var EMPTY = Object.freeze([]);
-
 // ../packages/common/src/utils/string/string.util.ts
 function slice(value, start, end) {
   return JSON.parse(JSON.stringify(value.slice(start, end)));
-}
-
-// ../packages/common/src/costants/not-alllowed-tags.constants.ts
-var NOT_ALLOWED_TAGS = [
-  "annotation-xml",
-  "color-profile",
-  "font-face",
-  "font-face-src",
-  "font-face-uri",
-  "font-face-format",
-  "font-face-name",
-  "missing-glyph"
-];
-
-// ../packages/common/src/utils/tags/tags.util.ts
-var PCEN_CHAR = String.raw`\-.0-9_a-z\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u{10000}-\u{EFFFF}`;
-var CUSTOM_ELEMENT_NAME_RE = new RegExp(`^[a-z][${PCEN_CHAR}]*-[${PCEN_CHAR}]*$`, "u");
-function isValidCustomElementName(tagName, logErrors = true) {
-  if (!CUSTOM_ELEMENT_NAME_RE.test(tagName)) {
-    logErrors && console.error(`Tag <${tagName}> is not a valid custom element name. Custom element names must:
-- start with a lowercase ASCII letter.
-- contain a hyphen.
-- not contain uppercase ASCII letters, whitespace, or ASCII symbols other than '-', '.' and '_'.
-`);
-    return false;
-  }
-  if (isReservedTagName(tagName)) {
-    logErrors && console.error(`Tag <${tagName}> is a reserved tag name and cannot be used as a custom element name.
-Reserved names are: 
-- ${NOT_ALLOWED_TAGS.join("\n- ")}`);
-    return false;
-  }
-  return true;
-}
-function matchesCustomElementPattern(tagName, patterns) {
-  return patterns.some((pattern) => {
-    const source = pattern.split("*").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*");
-    return new RegExp(`^${source}$`).test(tagName);
-  });
-}
-function isReservedTagName(tagName) {
-  return NOT_ALLOWED_TAGS.includes(tagName);
 }
 
 // ../packages/compiler/src/parser/types/node.enum.ts
@@ -20475,6 +20274,207 @@ function appliesStructuralDirectives({ branches }) {
 
 // ../packages/compiler/src/costants/scope-header.costant.ts
 var SCOPE_HEADER = 5;
+
+// ../packages/internals/src/utils/css/css.util.ts
+var CSS_UNITS = /* @__PURE__ */ new Set([
+  "%",
+  "cap",
+  "ch",
+  "em",
+  "ex",
+  "ic",
+  "lh",
+  "rcap",
+  "rch",
+  "rem",
+  "rex",
+  "ric",
+  "rlh",
+  "vb",
+  "vh",
+  "vi",
+  "vw",
+  "vmin",
+  "vmax",
+  "dvb",
+  "dvh",
+  "dvi",
+  "dvw",
+  "dvmin",
+  "dvmax",
+  "lvb",
+  "lvh",
+  "lvi",
+  "lvw",
+  "lvmin",
+  "lvmax",
+  "svb",
+  "svh",
+  "svi",
+  "svw",
+  "svmin",
+  "svmax",
+  "cqb",
+  "cqh",
+  "cqi",
+  "cqw",
+  "cqmin",
+  "cqmax",
+  "cm",
+  "mm",
+  "q",
+  "in",
+  "pc",
+  "pt",
+  "px",
+  "deg",
+  "grad",
+  "rad",
+  "turn",
+  "s",
+  "ms",
+  "hz",
+  "khz",
+  "dpi",
+  "dpcm",
+  "dppx",
+  "x",
+  "fr"
+]);
+function toCssPropertyName(name) {
+  return name.startsWith("--") ? name : name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+}
+
+// ../packages/internals/src/utils/host-directive/host-directive.util.ts
+function describeDuplicateHostDirective(className, directiveName) {
+  return `${className} declares the host directive ${directiveName} more than once`;
+}
+function describeInputExposure(declared, input, member, name, alias, className, directiveName) {
+  if (!declared) {
+    return `${directiveName} does not declare an input named "${name}"`;
+  }
+  if (input) {
+    return `${className} already has an input named "${alias}", which ${directiveName} cannot expose`;
+  }
+  return member ? `${className} already has a member named "${alias}", which ${directiveName} cannot expose as an input` : void 0;
+}
+function describeEventExposure(declared, event, name, alias, className, directiveName) {
+  if (!declared) {
+    return `${directiveName} does not declare an event named "${name}"`;
+  }
+  return event ? `${className} already has an event named "${alias}", which ${directiveName} cannot expose` : void 0;
+}
+
+// ../packages/internals/src/utils/html-serialization/html-serialization.util.ts
+var VOID_ELEMENTS = /* @__PURE__ */ new Set(["area", "base", "basefont", "bgsound", "br", "col", "embed", "frame", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"]);
+var RAW_TEXT_ELEMENTS = /* @__PURE__ */ new Set(["iframe", "noembed", "noframes", "noscript", "plaintext", "script", "style", "xmp"]);
+var LEADING_NEWLINE_ELEMENTS = /* @__PURE__ */ new Set(["listing", "pre", "textarea"]);
+var ESCAPES = {
+  "&": "&amp;",
+  '"': "&quot;",
+  "<": "&lt;",
+  ">": "&gt;"
+};
+function escapeText(value) {
+  return value.replace(/[&<>]/g, (char) => ESCAPES[char]);
+}
+function escapeAttribute(value) {
+  return value.replace(/[&"<>]/g, (char) => ESCAPES[char]);
+}
+function escapeRawText(value, tagName) {
+  return value.replace(new RegExp(`</(${tagName})`, "gi"), "<\\/$1");
+}
+function isVoidElement(tagName) {
+  return VOID_ELEMENTS.has(tagName);
+}
+function isRawTextElement(tagName) {
+  return RAW_TEXT_ELEMENTS.has(tagName);
+}
+function dropsLeadingNewline(tagName) {
+  return LEADING_NEWLINE_ELEMENTS.has(tagName);
+}
+
+// ../packages/internals/src/utils/key-event/key-event.util.ts
+var KEY_MODIFIERS = { alt: 1, control: 2, meta: 4, shift: 8 };
+function parseKeyEvent(name) {
+  const dot = name.indexOf(".");
+  const event = dot < 0 ? name : name.slice(0, dot);
+  if (dot < 0 || event !== "keydown" && event !== "keyup") {
+    return void 0;
+  }
+  const parts = name.slice(dot + 1).toLowerCase().split(".");
+  const key = parts[parts.length - 1];
+  if (!key) {
+    throw new Error(`The key event "${name}" names no key: write it after the last dot, e.g. ${event}.enter`);
+  }
+  let modifiers = 0;
+  let code = false;
+  for (let i2 = 0; i2 < parts.length - 1; i2++) {
+    const part = parts[i2];
+    const modifier = Object.hasOwn(KEY_MODIFIERS, part) ? KEY_MODIFIERS[part] : 0;
+    if (!modifier && part !== "code") {
+      throw new Error(`"${part}" is not a modifier of the key event "${name}": alt, control, meta, shift or code`);
+    }
+    if (modifier ? modifiers & modifier : code) {
+      throw new Error(`The key event "${name}" names "${part}" twice`);
+    }
+    modifiers |= modifier;
+    code ||= !modifier;
+  }
+  const filter = { event, key: key === "esc" ? "escape" : key, modifiers };
+  return code ? Object.assign(filter, { code: true }) : filter;
+}
+
+// ../packages/internals/src/utils/model/model.util.ts
+var MODEL_CHANGE_SUFFIX = "Change";
+function toModelChangeEvent(name) {
+  return `${name}${MODEL_CHANGE_SUFFIX}`;
+}
+
+// ../packages/internals/src/utils/small-set/small-set.util.ts
+var EMPTY = Object.freeze([]);
+
+// ../packages/internals/src/costants/not-alllowed-tags.constants.ts
+var NOT_ALLOWED_TAGS = [
+  "annotation-xml",
+  "color-profile",
+  "font-face",
+  "font-face-src",
+  "font-face-uri",
+  "font-face-format",
+  "font-face-name",
+  "missing-glyph"
+];
+
+// ../packages/internals/src/utils/tags/tags.util.ts
+var PCEN_CHAR = String.raw`\-.0-9_a-z\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u{10000}-\u{EFFFF}`;
+var CUSTOM_ELEMENT_NAME_RE = new RegExp(`^[a-z][${PCEN_CHAR}]*-[${PCEN_CHAR}]*$`, "u");
+function isValidCustomElementName(tagName, logErrors = true) {
+  if (!CUSTOM_ELEMENT_NAME_RE.test(tagName)) {
+    logErrors && console.error(`Tag <${tagName}> is not a valid custom element name. Custom element names must:
+- start with a lowercase ASCII letter.
+- contain a hyphen.
+- not contain uppercase ASCII letters, whitespace, or ASCII symbols other than '-', '.' and '_'.
+`);
+    return false;
+  }
+  if (isReservedTagName(tagName)) {
+    logErrors && console.error(`Tag <${tagName}> is a reserved tag name and cannot be used as a custom element name.
+Reserved names are: 
+- ${NOT_ALLOWED_TAGS.join("\n- ")}`);
+    return false;
+  }
+  return true;
+}
+function matchesCustomElementPattern(tagName, patterns) {
+  return patterns.some((pattern) => {
+    const source = pattern.split("*").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*");
+    return new RegExp(`^${source}$`).test(tagName);
+  });
+}
+function isReservedTagName(tagName) {
+  return NOT_ALLOWED_TAGS.includes(tagName);
+}
 
 // ../packages/compiler/src/models/compiler-context/compiler-context.model.ts
 var CompilerContext = class {

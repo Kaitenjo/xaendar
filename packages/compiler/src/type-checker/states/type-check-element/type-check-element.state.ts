@@ -1,4 +1,4 @@
-import { toModelChangeEvent } from '@xaendar/common';
+import { toModelChangeEvent } from '@xaendar/internals';
 import type { Expression, Identifier } from 'typescript';
 import { isIdentifier } from 'typescript';
 import { resolveExpression } from '../../../generator/utils/generator/generator.utils';

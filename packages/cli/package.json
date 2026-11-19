@@ -31,5 +31,8 @@
     "entry": "src/index.ts",
     "dts": false,
     "executable": true
+  },
+  "peerDependencies": {
+    "@xaendar/internals": "1.4.1"
   }
 }

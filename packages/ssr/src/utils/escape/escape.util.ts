@@ -1,4 +1,4 @@
-import { escapeAttribute, escapeRawText, escapeText } from '@xaendar/common';
+import { escapeAttribute, escapeRawText, escapeText } from '@xaendar/internals';
 import { _attributeValue } from '@xaendar/core';
 
 /**

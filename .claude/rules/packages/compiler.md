@@ -5,7 +5,7 @@ paths:
 
 # @xaendar/compiler
 
-Turns a Xaendar template into a JS render-function body plus a type-check result. Depends on `common`, `types` only (**not** `core`: the generated code targets core's runtime without a dependency edge).
+Turns a Xaendar template into a JS render-function body plus a type-check result. Depends on `common`, `types` and the peer `internals` only (**not** `core`: the generated code targets core's runtime without a dependency edge).
 
 ## Pipeline
 
@@ -68,7 +68,7 @@ Turns a Xaendar template into a JS render-function body plus a type-check result
 ## Bindings and events
 
 - `[(value)]="count"` is parsed by `parseTwoWayBinding` into an attribute and a `valueChange` event calling `count.set($event.detail)`, both marked `twoWay`; everything treats them as hand-written, only the checks read `twoWay` (`assertTwoWayBindable`). `@Model` is read as `@Property` plus the event `<alias or name>Change`.
-- Key events keep `name` as written; `parseKeyEvent` of `@xaendar/common` (shared with `@HostListener` and language-core) gives the `key` filter, written into the handler (`if (_isKey($event, 'enter', 0)) …`). A key event making the same call as the last filtered listener of its event joins it (`||`). N.B. Deliberate, to save memory: the filter is never kept in the listener; unfiltered listeners and different calls are never joined, so listeners run in written order. `$event` is typed by the DOM event, never an `@Event` named like the key event.
+- Key events keep `name` as written; `parseKeyEvent` of `@xaendar/internals` (shared with `@HostListener` and language-core) gives the `key` filter, written into the handler (`if (_isKey($event, 'enter', 0)) …`). A key event making the same call as the last filtered listener of its event joins it (`||`). N.B. Deliberate, to save memory: the filter is never kept in the listener; unfiltered listeners and different calls are never joined, so listeners run in written order. `$event` is typed by the DOM event, never an `@Event` named like the key event.
 - Native events type `$event` from the event map, never an error. With `strictEvents` (default `true`) an unknown name is a warning (`'name' satisfies keyof HTMLElementEventMap;`, `findEventCheck`); key events and `customElements` are not checked.
 - `@default never;` is `exhaustive` of `SwitchNode`/`SwitchBindingNode`, never a branch, ignored by generators; the type-check writes `default: __switch<offset> satisfies never;` (`describeExhaustiveSwitch`).
 - `class.x`/`style.x` are parsed by `parseStylingBinding` (no brackets). An element's `class` and `style` are mapped once each (`mapStyling`, `generator/utils/styling`, shared with `ssr-compiler`) into static parts, string expression and single keys, one indexed binding site per attribute, unless a component declares an input with that name. `styling` flags tell the runtime another source may write the attribute; directives of an element get their source `order`. Units must be in `CSS_UNITS`.

@@ -17,6 +17,7 @@ export default defineConfig({
       { find: /^@xaendar\/core$/, replacement: path.resolve(monorepoRoot, 'packages/core/src/public-api.ts') },
       { find: /^@xaendar\/core\/signals$/, replacement: path.resolve(monorepoRoot, 'packages/core/src/signals/index.ts') },
       { find: /^@xaendar\/core\/testing$/, replacement: path.resolve(monorepoRoot, 'packages/core/src/testing/index.ts') },
+      { find: /^@xaendar\/internals$/, replacement: path.resolve(monorepoRoot, 'packages/internals/src/public-api.ts') },
       { find: /^@xaendar\/directives$/, replacement: path.resolve(monorepoRoot, 'packages/directives/src/public-api.ts') },
       { find: /^@xaendar\/ssr$/, replacement: path.resolve(monorepoRoot, 'packages/ssr/src/public-api') },
       { find: /^@xaendar\/ssr\/dom$/, replacement: path.resolve(monorepoRoot, 'packages/ssr/src/dom/index') },

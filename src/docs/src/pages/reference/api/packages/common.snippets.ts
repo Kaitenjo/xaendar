@@ -112,25 +112,6 @@ isNonEmpty({ name: undefined }); // true: a key counts, whatever its value`
 };
 
 /**
- * The snippet `is-valid-custom-element-name.ts`, shown by the API reference of common.
- */
-export const IS_VALID_CUSTOM_ELEMENT_NAME: SourceFile = {
-  name: 'is-valid-custom-element-name.ts',
-  lang: 'ts',
-  code: `import { isValidCustomElementName } from '@xaendar/common';
-
-isValidCustomElementName('user-card');    // true
-isValidCustomElementName('x-1');          // true
-isValidCustomElementName('my.card_v2-x'); // true: digits, dots and underscores are allowed
-isValidCustomElementName('card');         // false: no hyphen
-isValidCustomElementName('User-card');    // false: an uppercase letter
-isValidCustomElementName('font-face');    // false: a reserved name
-isValidCustomElementName('my-élément');   // true: most non-ASCII characters are accepted
-isValidCustomElementName('my-card!');     // false: an ASCII symbol
-isValidCustomElementName('card', false);  // false, without logging`
-};
-
-/**
  * The snippet `keys.ts`, shown by the API reference of common.
  */
 export const KEYS: SourceFile = {
@@ -159,27 +140,6 @@ let total = 0;
 for (let i = 0; i < panels.length; i++) {
   total += heights[panels[i]]; // a key of heights: no cast needed
 }`
-};
-
-/**
- * The snippet `matches-custom-element-pattern.ts`, shown by the API reference of common.
- */
-export const MATCHES_CUSTOM_ELEMENT_PATTERN: SourceFile = {
-  name: 'matches-custom-element-pattern.ts',
-  lang: 'ts',
-  code: `import { matchesCustomElementPattern } from '@xaendar/common';
-
-/**
- * The tags of other libraries, as declared in customElements of xaendar.json.
- */
-const patterns = ['sl-*', 'vanilla-stars'];
-
-matchesCustomElementPattern('sl-button', patterns);       // true
-matchesCustomElementPattern('sl-icon-button', patterns);  // true: * matches hyphens too
-matchesCustomElementPattern('vanilla-stars', patterns);   // true
-matchesCustomElementPattern('vanilla-stars-2', patterns); // false: a pattern matches the whole name
-matchesCustomElementPattern('xsl-button', patterns);      // false
-matchesCustomElementPattern('sl-button', []);             // false: no patterns, no match`
 };
 
 /**
@@ -220,47 +180,6 @@ const source = '<user-card name="Ada" />';
  * The name of its first tag: a copy, which does not keep the source in memory.
  */
 const tagName = slice(source, 1, source.indexOf(' ')); // 'user-card'`
-};
-
-/**
- * The snippet `small-set.ts`, shown by the API reference of common.
- */
-export const SMALL_SET: SourceFile = {
-  name: 'small-set.ts',
-  lang: 'ts',
-  code: `import { addToSmallSet, deleteFromSmallSet, emptySmallSet, forEachInSmallSet, type SmallSet, smallSetHas, smallSetSize } from '@xaendar/common';
-
-/**
- * A view reading a value.
- */
-type View = { readonly name: string };
-
-/**
- * Logs the name of a view.
- *
- * @param view - The view.
- * @param prefix - What the name follows.
- */
-function logView(view: View, prefix: string): void {
-  console.log(\`\${prefix}\${view.name}\`);
-}
-
-const cart: View = { name: 'cart' };
-const summary: View = { name: 'summary' };
-
-/**
- * The views reading the price: one, most of the times.
- */
-let readers: SmallSet<View> = emptySmallSet();
-
-readers = addToSmallSet(readers, cart);    // cart itself: no array for a single item
-readers = addToSmallSet(readers, cart);    // the second cart is ignored
-readers = addToSmallSet(readers, summary); // [cart, summary], an array of exactly two items
-smallSetSize(readers);                     // 2
-smallSetHas(readers, summary);             // true
-readers = deleteFromSmallSet(readers, cart); // summary itself again
-
-forEachInSmallSet(readers, logView, 'read by '); // 'read by summary', in insertion order`
 };
 
 /**
@@ -336,91 +255,6 @@ values(undefined);                                     // undefined`
 };
 
 /**
- * The snippet `escape-text.ts`, shown by the API reference of common.
- */
-export const ESCAPE_TEXT: SourceFile = {
-  name: 'escape-text.ts',
-  lang: 'ts',
-  code: `import { escapeText } from '@xaendar/common';
-
-escapeText('Tom & Jerry <3'); // 'Tom &amp; Jerry &lt;3'
-escapeText('"Hi", I said');   // '"Hi", I said': a quote ends nothing in a text`
-};
-
-/**
- * The snippet `escape-attribute.ts`, shown by the API reference of common.
- */
-export const ESCAPE_ATTRIBUTE: SourceFile = {
-  name: 'escape-attribute.ts',
-  lang: 'ts',
-  code: `import { escapeAttribute } from '@xaendar/common';
-
-/**
- * The title of the link, typed by the user.
- */
-const title = 'Say "hi" & <wave>';
-
-\`<a title="\${escapeAttribute(title)}">\`; // '<a title="Say &quot;hi&quot; &amp; &lt;wave&gt;">'`
-};
-
-/**
- * The snippet `escape-raw-text.ts`, shown by the API reference of common.
- */
-export const ESCAPE_RAW_TEXT: SourceFile = {
-  name: 'escape-raw-text.ts',
-  lang: 'ts',
-  code: `import { escapeRawText } from '@xaendar/common';
-
-escapeRawText('a > b { color: red }', 'style'); // unchanged: the parser decodes nothing in a stylesheet
-escapeRawText('x = "</STYLE>"', 'style');        // 'x = "<\\/STYLE>"': no longer ends the element`
-};
-
-/**
- * The snippet `is-void-element.ts`, shown by the API reference of common.
- */
-export const IS_VOID_ELEMENT: SourceFile = {
-  name: 'is-void-element.ts',
-  lang: 'ts',
-  code: `import { isVoidElement } from '@xaendar/common';
-
-isVoidElement('input'); // true: <input> has no end tag
-isVoidElement('div');   // false`
-};
-
-/**
- * The snippet `is-raw-text-element.ts`, shown by the API reference of common.
- */
-export const IS_RAW_TEXT_ELEMENT: SourceFile = {
-  name: 'is-raw-text-element.ts',
-  lang: 'ts',
-  code: `import { isRawTextElement } from '@xaendar/common';
-
-isRawTextElement('script');   // true
-isRawTextElement('textarea'); // false: the parser decodes its character references`
-};
-
-/**
- * The snippet `drops-leading-newline.ts`, shown by the API reference of common.
- */
-export const DROPS_LEADING_NEWLINE: SourceFile = {
-  name: 'drops-leading-newline.ts',
-  lang: 'ts',
-  code: `import { dropsLeadingNewline } from '@xaendar/common';
-
-/**
- * Writes the start tag of an element, and the line feed the parser drops after it when it drops one.
- *
- * @param tagName - The tag name of the element.
- * @returns The start tag.
- */
-function writeStartTag(tagName: string): string {
-  return dropsLeadingNewline(tagName) ? \`<\${tagName}>\\n\` : \`<\${tagName}>\`;
-}
-
-writeStartTag('pre'); // '<pre>\\n': a content starting with a line feed keeps it`
-};
-
-/**
  * The snippet `server.ts` reading the path of a request, shown by the API reference of common.
  */
 export const TO_SAME_ORIGIN_PATH: SourceFile = {
@@ -436,27 +270,4 @@ createServer(async (request, response) => {
   const { pathname } = new URL(url, 'https://api.example.com');
   response.end(await renderPage(pathname));
 }).listen(3000);`
-};
-
-/**
- * The snippet `parse-key-event.ts`, shown by the API reference of common.
- */
-export const PARSE_KEY_EVENT: SourceFile = {
-  name: 'parse-key-event.ts',
-  lang: 'ts',
-  code: `import { parseKeyEvent } from '@xaendar/common';
-
-// { event: 'keydown', key: 'enter', modifiers: 0 }
-parseKeyEvent('keydown.Enter');
-// { event: 'keyup', key: 'z', modifiers: 10 }, KEY_MODIFIERS.control | KEY_MODIFIERS.shift
-parseKeyEvent('keyup.shift.control.z');
-// { event: 'keydown', key: 'keya', modifiers: 1, code: true }
-parseKeyEvent('keydown.alt.code.keyA');
-// { event: 'keydown', key: 'escape', modifiers: 0 }
-parseKeyEvent('keydown.esc');
-// undefined: not key events
-parseKeyEvent('keydown');
-parseKeyEvent('click.outside');
-// Throws: "ctrl" is not a modifier of the key event "keydown.ctrl.s": alt, control, meta, shift or code
-parseKeyEvent('keydown.ctrl.s');`
 };

@@ -1,4 +1,4 @@
-import { toModelChangeEvent } from '@xaendar/common';
+import { toModelChangeEvent } from '@xaendar/internals';
 import type { AccessorDecorator, ClassAccessorDecoratorValue, DecoratorMetadataContext, Function } from '@xaendar/types';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
 import { createModelPrototype, model } from '../../signals/model/model';

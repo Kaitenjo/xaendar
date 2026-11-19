@@ -1,4 +1,4 @@
-import { parseStyleDeclarations } from '@xaendar/common';
+import { parseStyleDeclarations } from '@xaendar/internals';
 import type { HostStylingRun } from '../../models/host-styling-run/host-styling-run';
 import type { _RenderStyling } from '../../types/styling/render-styling.type';
 import type { StylingAttribute } from '../../types/styling/styling-attribute.type';

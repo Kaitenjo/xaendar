@@ -1,4 +1,5 @@
-import { isValidCustomElementName, slice, toModelChangeEvent } from '@xaendar/common';
+import { slice } from '@xaendar/common';
+import { isValidCustomElementName, toModelChangeEvent } from '@xaendar/internals';
 import { ClassDeclaration, CompilerOptions, Decorator, EntityName, Expression, forEachChild, getCombinedModifierFlags, getDecorators, getNameOfDeclaration, Identifier, isArrowFunction, isCallExpression, isClassDeclaration, isDecorator, isEnumDeclaration, isFunctionExpression, isIdentifier, isImportDeclaration, isInterfaceDeclaration, isMethodDeclaration, isNamedImports, isNamespaceImport, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isQualifiedName, isShorthandPropertyAssignment, isStringLiteral, isTypeAliasDeclaration, isTypeReferenceNode, ModifierFlags, ModifierLike, Node, ObjectLiteralElementLike, ObjectLiteralExpression, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
 import { ComponentPropertyMetadataWithSpan } from '../../models/component-property-metadata-with-span/component-property-metadata-with-span.model';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';

@@ -1,4 +1,4 @@
-import { describeDuplicateHostDirective, describeEventExposure, describeInputExposure } from '@xaendar/common';
+import { describeDuplicateHostDirective, describeEventExposure, describeInputExposure } from '@xaendar/internals';
 import { CompilerOptions, Expression, isArrayLiteralExpression, isIdentifier, isObjectLiteralExpression, isPropertyAssignment, isShorthandPropertyAssignment, isStringLiteralLike, Node, ObjectLiteralExpression } from 'typescript';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
 import { ComponentMetadata } from '../../types/component-metadata.type';

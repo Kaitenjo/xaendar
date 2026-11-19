@@ -1,4 +1,4 @@
-import { parseKeyEvent, type KeyEventFilter } from '@xaendar/common';
+import { parseKeyEvent, type KeyEventFilter } from '@xaendar/internals';
 import { NoArgsFunction } from '@xaendar/types';
 import { Expression } from 'typescript';
 import { TokenType } from '../../../lexer/types/token-type.enum';
@@ -16,7 +16,7 @@ import { parseCast } from '../parse-cast/parse-cast.state';
 /**
  * Parses EVENT + EVENT_HANDLER tokens, the EVENT_PARAMETER tokens following them and the CAST token closing each
  * parameter, if any, into an `EventNode`. The name of a key event (`keydown.enter`) gives the key the listener is filtered
- * by (see `parseKeyEvent` of `@xaendar/common`).
+ * by (see `parseKeyEvent` of `@xaendar/internals`).
  *
  * @param cursor - Parser cursor; advanced past the EVENT token.
  * @param _parseNode - Unused parser function (kept for signature consistency).

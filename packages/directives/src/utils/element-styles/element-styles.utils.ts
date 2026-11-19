@@ -1,4 +1,4 @@
-import { CSS_UNITS, parseStyleDeclarations, styleValue, toCssPropertyName } from '@xaendar/common';
+import { CSS_UNITS, parseStyleDeclarations, styleValue, toCssPropertyName } from '@xaendar/internals';
 import type { ElementStyles } from '../../types/element-styles.type';
 
 /**

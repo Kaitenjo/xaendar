@@ -93,17 +93,18 @@ The owner reviews every change before it reaches `main`, and decides each step: 
 | Package | Target | `@xaendar/*` dependencies | Role |
 | --- | --- | --- | --- |
 | `types` | browser | — | shared TS utility types |
-| `common` | browser | — | utilities shared by compiler, runtime and tooling |
-| `signals` | browser | common, types | TC39 Signals polyfill (`loadSignals()`) |
-| `core` | browser | common, signals, types | components, directives, decorators, template runtime |
-| `directives` | library | common, types; peer core | `@@animation`, `@@class`, `@@style`, `@@innerHtml`, `@@componentOutlet` |
-| `ssr` | browser (run by Node) | common, types; exact peer core | runtime of the rendering on the server |
-| `compiler` | node | common, types | template → render code + type-check |
-| `ssr-compiler` | node | common, compiler, types | template → server render code |
-| `language-core` | node | common, compiler | language service |
+| `common` | browser | — | general utilities for the packages and the applications (`Stack`, object, array, case and string helpers, `toSameOriginPath`) |
+| `internals` | browser | — | the logic the packages share (styling and HTML rules, key events, models, custom element names, host directive checks, `SmallSet`): not a public API |
+| `signals` | browser | common, types; peer internals | TC39 Signals polyfill (`loadSignals()`) |
+| `core` | browser | common, signals, types; peer internals | components, directives, decorators, template runtime |
+| `directives` | library | types; peer core, internals | `@@animation`, `@@class`, `@@style`, `@@innerHtml`, `@@componentOutlet` |
+| `ssr` | browser (run by Node) | common, types; exact peer core, internals | runtime of the rendering on the server |
+| `compiler` | node | common, types; peer internals | template → render code + type-check |
+| `ssr-compiler` | node | common, compiler, types; peer internals | template → server render code |
+| `language-core` | node | compiler; peer internals | language service |
 | `language-server` | not built | compiler, language-core, types | LSP server, bundled by the extension and the plugin |
 | `build-tools` | node | common, compiler, language-core, ssr-compiler, types | Vite plugin, `buildLibrary` |
-| `cli` | node | build-tools, common | the `xd` CLI |
+| `cli` | node | build-tools, common; peer internals | the `xd` CLI |
 | `vscode-client` | extension | — | VS Code extension, launches `language-server` |
 
 ### Rendering on the server

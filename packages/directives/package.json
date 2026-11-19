@@ -15,10 +15,10 @@
     "library": true
   },
   "dependencies": {
-    "@xaendar/common": "1.4.0",
     "@xaendar/types": "1.4.0"
   },
   "peerDependencies": {
-    "@xaendar/core": "1.4.1"
+    "@xaendar/core": "1.4.1",
+    "@xaendar/internals": "1.4.1"
   }
 }

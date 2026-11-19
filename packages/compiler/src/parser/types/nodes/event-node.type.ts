@@ -1,4 +1,4 @@
-import type { KeyEventFilter } from '@xaendar/common';
+import type { KeyEventFilter } from '@xaendar/internals';
 import { Expression } from 'typescript';
 import { ASTNodeType } from '../node.enum';
 import type { Span } from '../../../types/span.type';
@@ -43,7 +43,7 @@ export type EventNode = ASTNodeWithSpan<{
    */
   twoWay?: true;
   /**
-   * The key the listener of a key event is filtered by (`(keydown.enter)`, see `parseKeyEvent` of `@xaendar/common`):
+   * The key the listener of a key event is filtered by (`(keydown.enter)`, see `parseKeyEvent` of `@xaendar/internals`):
    * the listener listens to its `event`, and calls the handler only for its key.
    */
   key?: KeyEventFilter;

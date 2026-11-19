@@ -1,4 +1,4 @@
-import { isValidCustomElementName, type KeyEventFilter } from '@xaendar/common';
+import { isValidCustomElementName, type KeyEventFilter } from '@xaendar/internals';
 import type { AsyncFunction, Function } from '@xaendar/types';
 import { factory, identifierToKeywordKind, SyntaxKind, type Expression } from 'typescript';
 import { ASTNodeType } from '../../../parser/types/node.enum';

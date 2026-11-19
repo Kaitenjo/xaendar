@@ -1889,7 +1889,7 @@
           "@xaendar/build-tools": "The Vite plugin compiling templates and stylesheets, for the browser and for the server, and its options.",
           "@xaendar/ssr": "Server-side rendering: renderToString, which renders a component to HTML with declarative shadow roots, and the type of its inputs.",
           "@xaendar/ssr/dom": "The server DOM, installed by loadServerDom: the HTMLElement and the customElements the modules of the components need in Node.",
-          "@xaendar/common": "Utilities shared by the packages: case conversion, object helpers, custom element names, HTML serialization.",
+          "@xaendar/common": "General utilities: case conversion, object and array helpers, indentation, a stack, the path of a URL on its own origin.",
           "@xaendar/types": "Utility types shared by the packages: constructors, decorators, functions."
         }
       },

@@ -1,4 +1,4 @@
-import { isValidCustomElementName } from '@xaendar/common';
+import { isValidCustomElementName } from '@xaendar/internals';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
 import type { ResolvedLibrary } from '../../types/resolved-library.type';

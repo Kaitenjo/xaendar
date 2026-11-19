@@ -19,5 +19,8 @@
     "entities": "^9.0.0",
     "typescript": "^6.0.3",
     "globals": "^17.14.0"
+  },
+  "peerDependencies": {
+    "@xaendar/internals": "1.4.1"
   }
 }

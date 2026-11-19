@@ -18,8 +18,10 @@
     "dts": true
   },
   "dependencies": {
-    "@xaendar/common": "1.4.0",
     "@xaendar/compiler": "1.4.0",
     "typescript": "^6.0.3"
+  },
+  "peerDependencies": {
+    "@xaendar/internals": "1.4.1"
   }
 }

@@ -1,4 +1,4 @@
-import { CSS_UNITS, KEY_MODIFIERS, toModelChangeEvent } from '@xaendar/common';
+import { CSS_UNITS, KEY_MODIFIERS, toModelChangeEvent } from '@xaendar/internals';
 import { type ComponentOrDirectiveMetadata, getBindingContext, getExpressionContext, getImportContext, getImportInsertion, getImportPathContext, getKeywordContext, getSelectorContext, getTriggerContext, type KeywordContext, resolveShimPosition, type Span, type TriggerContext } from '@xaendar/compiler';
 import { dirname } from 'node:path';
 import { forEachChild, type Identifier, isClassDeclaration, isImportDeclaration, isNamespaceImport, isVariableStatement, type Node, ScriptElementKind, type SourceFile, type Symbol, SymbolFlags, type TypeChecker } from 'typescript';
@@ -304,7 +304,7 @@ export function getTemplateStyleCompletions(source: string, offset: number): Tem
  * Proposes what the name of a key event is being written with at an offset of a template, while it doesn't compile
  * too: after `(keydown.` or `(keyup.`, and after each modifier, the modifiers it doesn't name yet, `code` and the keys
  * most listened to; after `code.`, the modifiers alone, since the codes of the keys are written as the browser names them
- * (see `parseKeyEvent` of `@xaendar/common`).
+ * (see `parseKeyEvent` of `@xaendar/internals`).
  *
  * @param source - The current source of the template.
  * @param offset - The offset in the template.

@@ -5,7 +5,7 @@ paths:
 
 # @xaendar/directives
 
-The built-in directives: `AnimationDirective` (`@@animation`), `InnerHtmlDirective` (`@@innerHtml`) with `sanitizeHtml` and `trustHtml`, `ClassDirective` (`@@class`), `StyleDirective` (`@@style`), `ComponentOutlet` (`@@componentOutlet`). `@xaendar/core` is a peerDependency, `@xaendar/common` and `@xaendar/types` dependencies (external, shared with core).
+The built-in directives: `AnimationDirective` (`@@animation`), `InnerHtmlDirective` (`@@innerHtml`) with `sanitizeHtml` and `trustHtml`, `ClassDirective` (`@@class`), `StyleDirective` (`@@style`), `ComponentOutlet` (`@@componentOutlet`). `@xaendar/core` and `@xaendar/internals` are peerDependencies, `@xaendar/types` a dependency (external, shared with core).
 
 ## Build and specs
 

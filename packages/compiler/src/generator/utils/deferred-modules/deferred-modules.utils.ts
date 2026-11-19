@@ -1,4 +1,4 @@
-import { isValidCustomElementName } from '@xaendar/common';
+import { isValidCustomElementName } from '@xaendar/internals';
 import type { ASTNode } from '../../../parser/types/ast.type';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';

@@ -1,4 +1,4 @@
-import { parseKeyEvent, type KeyEventFilter } from '@xaendar/common';
+import { parseKeyEvent, type KeyEventFilter } from '@xaendar/internals';
 import type { DecoratorMetadataContext } from '@xaendar/types';
 import { INTERNAL_HOST_LISTENERS } from '../../costants';
 import type { EventHost } from '../../types/event/event-host.type';
@@ -25,7 +25,7 @@ const TARGETS = ['window', 'document', 'visualViewport'];
  * to it from its content.
  *
  * A key event names the key it listens to after a dot, as in templates and in Angular: `keydown.enter`,
- * `document:keydown.escape`, `keyup.control.shift.z`, `keydown.code.keya` (see `parseKeyEvent` of `@xaendar/common`). The
+ * `document:keydown.escape`, `keyup.control.shift.z`, `keydown.code.keya` (see `parseKeyEvent` of `@xaendar/internals`). The
  * method is called only for that key, with exactly the modifiers named, and receives a `KeyboardEvent`.
  *
  * The type of the event the method receives follows the name: the event of `HTMLElementEventMap` for an event of the

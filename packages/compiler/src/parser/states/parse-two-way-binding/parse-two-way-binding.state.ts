@@ -1,4 +1,4 @@
-import { toModelChangeEvent } from '@xaendar/common';
+import { toModelChangeEvent } from '@xaendar/internals';
 import type { NoArgsFunction } from '@xaendar/types';
 import { type Expression, isElementAccessExpression, isIdentifier, isPropertyAccessExpression } from 'typescript';
 import type { AttributeToken } from '../../../lexer/types/tokens/attribute-token.type';

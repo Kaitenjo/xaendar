@@ -3,7 +3,7 @@ import { ComputedState } from '../../types/computed-state.type';
 import { SignalEqual } from '../../types/signal-equal.type';
 import { SignalOptions } from '../../types/signal-options.type';
 import { isDevMode } from '../../utils/dev-mode/dev-mode';
-import { addToSmallSet, deleteFromSmallSet, emptySmallSet, findInSmallSet, forEachInSmallSet, type SmallSet, smallSetHas, smallSetSize, smallSetToArray } from '@xaendar/common';
+import { addToSmallSet, deleteFromSmallSet, emptySmallSet, findInSmallSet, forEachInSmallSet, type SmallSet, smallSetHas, smallSetSize, smallSetToArray } from '@xaendar/internals';
 import { GLOBAL_STATE, popComputed, pushComputed } from '../../utils/globals/globals';
 import { PRIVATE, assertPrivateContext } from '../../utils/private-symbol/private-symbol';
 import { State } from '../state/state';

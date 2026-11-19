@@ -5,7 +5,7 @@ paths:
 
 # @xaendar/language-core
 
-Language-service layer on `compiler` (`language-service`, `compiler-options.utils`, `shim.utils`), used by `language-server` and `build-tools`. Depends on `common`, `compiler`.
+Language-service layer on `compiler` (`language-service`, `compiler-options.utils`, `shim.utils`), used by `language-server` and `build-tools`. Depends on `compiler` and the peer `internals`.
 
 - Single sources shared by the build and the editor: `getTemplateWarnings(ast, shadowingMembers)` (what the server cannot read) and `getComponentDiagnostics` (`@WebComponent` problems of a component file: `findWebComponentErrors`, missing `templateUrl`/`styleUrl` files, a selector declared by another component; `findReflectedInputs` as `ComponentDiagnostic.warning`).
 - Options come from the nearest `xaendar.json`: `readSsr`, `readCustomElements`, `readStrictEvents` (default `true`) read a library's own options under the `root` of one of its `libs` (`ssr` default `false`; `strictEvents` falls back to the project's), the project's elsewhere. `ssr` `false` makes the type-check reject `@hydrate`/`@client` and completions leave them out (with a `@client`'s `@placeholder`); `undefined` (no file) reports and hides neither. `@defer` and its blocks are proposed everywhere. Rejected event names are warnings (`findEventCheck`).

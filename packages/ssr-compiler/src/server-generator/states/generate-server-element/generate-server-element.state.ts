@@ -1,4 +1,4 @@
-import { dropsLeadingNewline, escapeAttribute, isValidCustomElementName, isVoidElement } from '@xaendar/common';
+import { dropsLeadingNewline, escapeAttribute, isValidCustomElementName, isVoidElement } from '@xaendar/internals';
 import { appendBlockPosition, ASTNodeType, declareExpression, describeStyling, getDirectiveOrder, mapContentTemplates, orderDirectives, splitStylingAttributes, GeneratorContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
 import type { Function } from '@xaendar/types';
 import type { ServerCodePiece } from '../../types/server-code-piece.type';

@@ -1,4 +1,4 @@
-import { escapeAttribute } from '@xaendar/common';
+import { escapeAttribute } from '@xaendar/internals';
 import { _EVENT_CONTRACT_KEY, _RECORDED_EVENTS, _SUBMIT_ATTRIBUTE, type _EventContract } from '@xaendar/core';
 
 /**

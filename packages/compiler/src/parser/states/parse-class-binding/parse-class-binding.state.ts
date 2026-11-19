@@ -1,4 +1,4 @@
-import { CSS_UNITS, toCssPropertyName } from '@xaendar/common';
+import { CSS_UNITS, toCssPropertyName } from '@xaendar/internals';
 import type { NoArgsFunction } from '@xaendar/types';
 import type { AttributeToken } from '../../../lexer/types/tokens/attribute-token.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
