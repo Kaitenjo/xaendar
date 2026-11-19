@@ -82,6 +82,12 @@ const EXPOSED_ACCESSORS = new WeakMap<Constructor<CustomDirective>, Map<string, 
 const PENDING_INPUTS = new WeakMap<Element, Dictionary<string, unknown>>();
 
 /**
+ * The component classes whose fields were found named apart from the inputs their host directives expose (see
+ * {@link _checkExposedFields}).
+ */
+const CHECKED_FIELDS = new WeakSet<object>();
+
+/**
  * Creates the host directives of a component, the ones `@WebComponent` declares on its class and on its ancestors (see
  * {@link _resolveHostDirectives}): each directive is instantiated and applied to the component element, and takes the
  * values bound to its exposed inputs before the element was upgraded, by the templates or by code outside them.
@@ -111,6 +117,39 @@ export function _createHostDirectives(element: CustomElement): HostDirectives {
   }
 
   return instances as unknown as HostDirectives;
+}
+
+/**
+ * Checks that no field of a component is named like an input its host directives expose. A field is an own property the
+ * constructor of the class declaring it creates on the element, after the one of `CustomElement`: the prototype
+ * {@link _resolveHostDirectives} checks does not hold it, and it would hide the accessor of the exposed input, so that
+ * code outside the templates assigning it would write into the field and never into the input.
+ *
+ * N.B. Checked when an element of the class connects, the first moment its fields exist that the runtime controls, and
+ * once per class: every element of a class has the same fields, and the ones that the upgrade found assigned by code
+ * outside the templates were removed by {@link _createHostDirectives} already. A class found faulty is checked again,
+ * throwing for each of its elements. Do not check every element, nor in the constructor, which runs before the fields
+ * of the subclasses are created.
+ *
+ * @param element - The component, connecting.
+ * @throws When a field of the component has the name an input of one of its host directives is exposed with.
+ */
+export function _checkExposedFields(element: CustomElement): void {
+  const klass = element.constructor;
+  if (CHECKED_FIELDS.has(klass)) {
+    return;
+  }
+
+  const { inputs } = _resolveHostDirectives(klass);
+  if (inputs) {
+    for (const name in inputs) {
+      if (Object.hasOwn(element, name)) {
+        throw new Error(`${klass.name} already has a member named "${name}", which ${inputs[name]!.directive.name} cannot expose as an input`);
+      }
+    }
+  }
+
+  CHECKED_FIELDS.add(klass);
 }
 
 /**
