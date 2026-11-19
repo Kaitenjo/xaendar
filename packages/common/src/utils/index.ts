@@ -1,6 +1,7 @@
 export * from './array/array.util';
 export * from './case/case.util';
 export * from './css/css.util';
+export * from './host-directive/host-directive.util';
 export * from './html-serialization/html-serialization.util';
 export * from './indent/indent.util';
 export * from './key-event/key-event.util';

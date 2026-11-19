@@ -1,3 +1,4 @@
+import { describeDuplicateHostDirective, describeEventExposure, describeInputExposure } from '@xaendar/common';
 import type { Constructor, Dictionary } from '@xaendar/types';
 import { DIRECTIVE_ORDER, INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_EVENTS, INTERNAL_HOST_DIRECTIVES, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
 import type { CustomDirective } from '../../models/custom-directive/custom-directive';
@@ -143,9 +144,7 @@ export function _checkExposedFields(element: CustomElement): void {
   const { inputs } = _resolveHostDirectives(klass);
   if (inputs) {
     for (const name in inputs) {
-      if (Object.hasOwn(element, name)) {
-        throw new Error(`${klass.name} already has a member named "${name}", which ${inputs[name]!.directive.name} cannot expose as an input`);
-      }
+      throwIfDescribed(describeInputExposure(true, false, Object.hasOwn(element, name), name, name, klass.name, inputs[name]!.directive.name));
     }
   }
 
@@ -251,7 +250,7 @@ function computeHostDirectives(klass: object): ResolvedHostDirectives {
     const declaration = declarations[i];
     const { directive: Directive, properties, events }: HostDirectiveOptions = typeof declaration === 'function' ? { directive: declaration } : declaration;
     if (directives.some(resolved => resolved.directive === Directive)) {
-      throw new Error(`${className} declares the host directive ${Directive.name} more than once`);
+      throw new Error(describeDuplicateHostDirective(className, Directive.name));
     }
 
     directives.push({ directive: Directive, events: resolveEvents(Directive, events, className, metadata, directives) });
@@ -277,13 +276,8 @@ function checkInherited({ directives, inputs }: ResolvedHostDirectives, classNam
   if (inputs) {
     const componentInputs = metadata?.[INTERNAL_ALIAS_TO_ATTRIBUTE];
     for (const name in inputs) {
-      if (componentInputs?.[name]) {
-        throw new Error(`${className} already has an input named "${name}", which ${inputs[name]!.directive.name} cannot expose`);
-      }
-
-      if (Object.hasOwn(prototype, name)) {
-        throw new Error(`${className} already has a member named "${name}", which ${inputs[name]!.directive.name} cannot expose as an input`);
-      }
+      // The members of the ancestors were checked when they were resolved, the accessor being one of them
+      throwIfDescribed(describeInputExposure(true, !!componentInputs?.[name], Object.hasOwn(prototype, name), name, name, className, inputs[name]!.directive.name));
     }
   }
 
@@ -291,9 +285,7 @@ function checkInherited({ directives, inputs }: ResolvedHostDirectives, classNam
   if (componentEvents?.size) {
     for (let i = 0; i < directives.length; i++) {
       for (const [, alias] of directives[i].events) {
-        if (componentEvents.has(alias)) {
-          throw new Error(`${className} already has an event named "${alias}", which ${directives[i].directive.name} cannot expose`);
-        }
+        throwIfDescribed(describeEventExposure(true, componentEvents.has(alias), alias, alias, className, directives[i].directive.name));
       }
     }
   }
@@ -321,13 +313,7 @@ function resolveEvents(Directive: Constructor<CustomDirective>, members: HostDir
   const events = new Map<string, string>();
   for (let i = 0; i < members.length; i++) {
     const { name, alias } = toExposure(members[i]);
-    if (!declared?.has(name)) {
-      throw new Error(`${Directive.name} does not declare an event named "${name}"`);
-    }
-
-    if (metadata?.[INTERNAL_EVENTS]?.has(alias) || isExposedEvent(directives, alias)) {
-      throw new Error(`${className} already has an event named "${alias}", which ${Directive.name} cannot expose`);
-    }
+    throwIfDescribed(describeEventExposure(!!declared?.has(name), !!metadata?.[INTERNAL_EVENTS]?.has(alias) || isExposedEvent(directives, alias), name, alias, className, Directive.name));
 
     events.set(name, alias);
   }
@@ -376,21 +362,11 @@ function exposeInputs(Directive: Constructor<CustomDirective>, members: HostDire
   for (let i = 0; i < members.length; i++) {
     const { name, alias } = toExposure(members[i]);
     const property = aliasToAttribute?.[name];
-    if (!property) {
-      throw new Error(`${Directive.name} does not declare an input named "${name}"`);
-    }
-
-    if (metadata?.[INTERNAL_ALIAS_TO_ATTRIBUTE]?.[alias] || exposed[alias]) {
-      throw new Error(`${className} already has an input named "${alias}", which ${Directive.name} cannot expose`);
-    }
-
     // A member of the class, of an ancestor or of `HTMLElement` would be hidden by the accessor, or hide it
-    if (alias in prototype) {
-      throw new Error(`${className} already has a member named "${alias}", which ${Directive.name} cannot expose as an input`);
-    }
-
-    Object.defineProperty(prototype, alias, getExposedAccessor(Directive, property));
-    exposed[alias] = { directive: Directive, property };
+    throwIfDescribed(describeInputExposure(!!property, !!metadata?.[INTERNAL_ALIAS_TO_ATTRIBUTE]?.[alias] || !!exposed[alias], alias in prototype, name, alias, className, Directive.name));
+    // ! is safe: an input the directive does not declare has thrown
+    Object.defineProperty(prototype, alias, getExposedAccessor(Directive, property!));
+    exposed[alias] = { directive: Directive, property: property! };
   }
 
   return exposed;
@@ -482,6 +458,19 @@ function restorePreUpgradeInputs(element: CustomElement, instances: ReadonlyMap<
  */
 function inputOf(instances: ReadonlyMap<Constructor<CustomDirective>, CustomDirective>, { directive, property }: ExposedInput): SettableInputSignal {
   return instances.get(directive)![property] as SettableInputSignal;
+}
+
+/**
+ * Throws a problem of the host directives of a class, described by `@xaendar/common` as the compiler reports it, so that
+ * the build and the browser give the same message.
+ *
+ * @param message - The description of the problem, `undefined` when there is none.
+ * @throws When there is a problem.
+ */
+function throwIfDescribed(message: string | undefined): void {
+  if (message) {
+    throw new Error(message);
+  }
 }
 
 /**

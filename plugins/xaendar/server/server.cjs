@@ -20250,6 +20250,26 @@ function toCssPropertyName(name) {
   return name.startsWith("--") ? name : name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 }
 
+// ../packages/common/src/utils/host-directive/host-directive.util.ts
+function describeDuplicateHostDirective(className, directiveName) {
+  return `${className} declares the host directive ${directiveName} more than once`;
+}
+function describeInputExposure(declared, input, member, name, alias, className, directiveName) {
+  if (!declared) {
+    return `${directiveName} does not declare an input named "${name}"`;
+  }
+  if (input) {
+    return `${className} already has an input named "${alias}", which ${directiveName} cannot expose`;
+  }
+  return member ? `${className} already has a member named "${alias}", which ${directiveName} cannot expose as an input` : void 0;
+}
+function describeEventExposure(declared, event, name, alias, className, directiveName) {
+  if (!declared) {
+    return `${directiveName} does not declare an event named "${name}"`;
+  }
+  return event ? `${className} already has an event named "${alias}", which ${directiveName} cannot expose` : void 0;
+}
+
 // ../packages/common/src/utils/html-serialization/html-serialization.util.ts
 var VOID_ELEMENTS = /* @__PURE__ */ new Set(["area", "base", "basefont", "bgsound", "br", "col", "embed", "frame", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"]);
 var RAW_TEXT_ELEMENTS = /* @__PURE__ */ new Set(["iframe", "noembed", "noframes", "noscript", "plaintext", "script", "style", "xmp"]);
@@ -26972,7 +26992,7 @@ function checkHostDirectives(sources, component, compilerOptions, extractBinding
       }
       const directiveName = resolved.declaration.name?.text;
       if (declared.has(resolved.declaration)) {
-        report2(`${className} declares the host directive ${directiveName} more than once`, own ? directive : void 0);
+        report2(describeDuplicateHostDirective(className, directiveName), own ? directive : void 0);
         continue;
       }
       declared.add(resolved.declaration);
@@ -26983,7 +27003,7 @@ function checkHostDirectives(sources, component, compilerOptions, extractBinding
       if (dirProperties?.length) {
         for (let k = 0; k < dirProperties.length; k++) {
           const { name, alias, node } = dirProperties[k];
-          const message = describeInputConflict(exposed.properties.has(name), name, alias, className, directiveName, properties2.has(alias) || inputs.has(alias), members.has(alias));
+          const message = describeInputExposure(exposed.properties.has(name), properties2.has(alias) || inputs.has(alias), members.has(alias), name, alias, className, directiveName);
           if (message) {
             report2(message, own ? node : void 0);
           }
@@ -26993,25 +27013,15 @@ function checkHostDirectives(sources, component, compilerOptions, extractBinding
       if (dirEvents?.length) {
         for (let k = 0; k < dirEvents.length; k++) {
           const { name, alias, node } = dirEvents[k];
-          if (!exposed.events.has(name)) {
-            report2(`${directiveName} does not declare an event named "${name}"`, own ? node : void 0);
-          } else if (events.has(alias) || outputs.has(alias)) {
-            report2(`${className} already has an event named "${alias}", which ${directiveName} cannot expose`, own ? node : void 0);
+          const message = describeEventExposure(exposed.events.has(name), events.has(alias) || outputs.has(alias), name, alias, className, directiveName);
+          if (message) {
+            report2(message, own ? node : void 0);
           }
           outputs.add(alias);
         }
       }
     }
   }
-}
-function describeInputConflict(declared, name, alias, className, directiveName, input, member) {
-  if (!declared) {
-    return `${directiveName} does not declare an input named "${name}"`;
-  }
-  if (input) {
-    return `${className} already has an input named "${alias}", which ${directiveName} cannot expose`;
-  }
-  return member ? `${className} already has a member named "${alias}", which ${directiveName} cannot expose as an input` : void 0;
 }
 function readHostDirectives(decorator) {
   const options = decorator.expression.arguments[0];
