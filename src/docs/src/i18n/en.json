@@ -3846,7 +3846,7 @@
         "lead": "The repository contains a VS Code extension for templates, made of two parts: a grammar for syntax highlighting, and a client starting <code>@xaendar/language-server</code>, which brings the checks of the compiler into the editor while you type.",
         "callout1": {
           "heading": "On the Marketplace",
-          "body": "The extension is published on the VS Code Marketplace as <em>Xaendar</em> (<code>xaendar.language-service</code>): install it from the Extensions view, or with <code>code --install-extension xaendar.language-service</code>. The compiler messages are also available in the terminal of <code>xd start</code>, as described in <a href=\"#/en/tools/build\">Build and Vite plugin</a>."
+          "body": "The extension is published on the VS Code Marketplace as <em>Xaendar Language Service</em> (<code>xaendar.language-service</code>): install it from the Extensions view, or with <code>code --install-extension xaendar.language-service</code>. The compiler messages are also available in the terminal of <code>xd start</code>, as described in <a href=\"#/en/tools/build\">Build and Vite plugin</a>."
         },
         "runningTheExtension": {
           "title": "Running the extension",

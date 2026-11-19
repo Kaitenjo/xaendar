@@ -4,7 +4,7 @@
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
-  "displayName": "Xaendar",
+  "displayName": "Xaendar Language Service",
   "description": "Language support for Xaendar templates: syntax highlighting, completion, diagnostics and formatting.",
   "keywords": [
     "xaendar",
