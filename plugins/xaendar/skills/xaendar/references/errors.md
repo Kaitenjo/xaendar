@@ -1004,7 +1004,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `Error: XCard already has a member named "label", which TipDirective cannot expose as an input`
 
-- **Cause:** An exposed input named like a field, a getter, a method or an accessor of the component, of a class it extends or of HTMLElement (`title`, `id`…): the component gets an accessor named after each exposed input, which would hide the member or be hidden by it. Reported by the build (except for the members of HTMLElement); thrown when the class is registered, or for a field when an element of the class first connects.
+- **Cause:** An exposed input named like a field, a getter, a method or an accessor of the component, of a class it extends or of HTMLElement (`title`, `id`…): the component gets an accessor named after each exposed input, which would hide the member or be hidden by it. Reported by the build; thrown when the class is registered, or for a field when an element of the class first connects.
 - **Fix:** Expose it under another name, or rename the member.
 
 ### `Error: Invalid symbol for InputSignal set method`

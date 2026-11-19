@@ -98,7 +98,7 @@ export function resolveBaseClass({ sourceFile, declaration }: ResolvedClass, con
  * @param declaration - The class declaration to inspect.
  * @returns The extended expression, or `undefined` when the class extends nothing.
  */
-function getBaseClassExpression(declaration: ClassDeclaration): Expression | undefined {
+export function getBaseClassExpression(declaration: ClassDeclaration): Expression | undefined {
   const extendsClause = declaration.heritageClauses?.find(clause => clause.token === SyntaxKind.ExtendsKeyword);
   return extendsClause?.types[0].expression;
 }
