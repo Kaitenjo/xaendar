@@ -65,6 +65,16 @@ A browser package's `vite.config.ts` calls `getViteConfig(name, dirName, options
 
 `plugins/xaendar` is the Claude Code plugin for applications written with Xaendar (the `xaendar` skill and references, the `check`, `test`, `new-component`, `new-directive` skills, the `xaendar-reviewer` agent, the bundled language server), listed by `.claude-plugin/marketplace.json`; `.claude/rules/claude-plugin.md` says what to update in it.
 
+## Workflow
+
+The owner reviews every change before it reaches `main`, and decides each step: follow it in every session, whatever the size of the change.
+
+- A request for a development, a fix or a set of fixes starts a new branch from the latest `origin/main` (`git fetch` first), named after the work (`standalone-create-component`, never `claude/…`). Never commit to `main`, nor push to it, unless the owner asks for it explicitly in that request.
+- The requests that follow go on the same branch, one commit per change (see Commits), until the owner says the work is done: a new branch only when the owner asks for one or the previous one is merged.
+- Push the branch to `origin` as the work goes on, so the owner can look at it; a branch is published, never a pull request on its own.
+- Open the pull request, merge it and close it only when the owner says so; delete the branch once merged.
+- Never start a release on your own, not even after a merge: a merged pull request is not a release. Run the Release workflow (`gh workflow run release.yml -f bump=…`) only when the owner asks for it, with the bump the owner names.
+
 ## Commits
 
 - One commit per change.
