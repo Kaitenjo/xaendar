@@ -13,6 +13,5 @@ The logic several packages of Xaendar must apply alike, written once: a peerDepe
 - Key events (`parseKeyEvent`, `KEY_MODIFIERS`, `KeyEventFilter`): the compiler, `@HostListener` and language-core.
 - Models (`MODEL_CHANGE_SUFFIX`, `toModelChangeEvent`, `toModelName`): the compiler, core and language-core.
 - Host directives (`describeDuplicateHostDirective`, `describeInputExposure`, `describeEventExposure`): the rules, their order and the messages, which the compiler reports and core throws, so that the build and the browser agree.
-- `SmallSet` holds the sources and sinks of the `signals` nodes: the item alone, an array of 2–32 items, a `Set` beyond. Its functions return the value to store; read it with `forEachInSmallSet`, `findInSmallSet`, `smallSetToArray`. Items (`SmallSetItem`) are objects that are neither arrays nor `Set`s.
 
 A check or a rule two packages apply (the compiler and the runtime, the client and the server) is written here once, each package keeping only the code reading its own sources; never a copy in each.

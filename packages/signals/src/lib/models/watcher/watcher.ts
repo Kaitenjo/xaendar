@@ -5,7 +5,7 @@ import { State } from '../state/state';
 import { WatcherState } from '../../types/watcher-state.type';
 import { Computed } from '../computed/computed';
 import { isDevMode } from '../../utils/dev-mode/dev-mode';
-import { addToSmallSet, deleteFromSmallSet, emptySmallSet, forEachInSmallSet, SmallSet, smallSetHas, smallSetSize, smallSetToArray } from '@xaendar/internals';
+import { addToSmallSet, deleteFromSmallSet, emptySmallSet, forEachInSmallSet, SmallSet, smallSetHas, smallSetSize, smallSetToArray } from '@xaendar/common';
 
 /**
  * A `Watcher` observes a set of Signals and fires a `notify` callback

@@ -183,6 +183,47 @@ const tagName = slice(source, 1, source.indexOf(' ')); // 'user-card'`
 };
 
 /**
+ * The snippet `small-set.ts`, shown by the API reference of common.
+ */
+export const SMALL_SET: SourceFile = {
+  name: 'small-set.ts',
+  lang: 'ts',
+  code: `import { addToSmallSet, deleteFromSmallSet, emptySmallSet, forEachInSmallSet, type SmallSet, smallSetHas, smallSetSize } from '@xaendar/common';
+
+/**
+ * A view reading a value.
+ */
+type View = { readonly name: string };
+
+/**
+ * Logs the name of a view.
+ *
+ * @param view - The view.
+ * @param prefix - What the name follows.
+ */
+function logView(view: View, prefix: string): void {
+  console.log(\`\${prefix}\${view.name}\`);
+}
+
+const cart: View = { name: 'cart' };
+const summary: View = { name: 'summary' };
+
+/**
+ * The views reading the price: one, most of the times.
+ */
+let readers: SmallSet<View> = emptySmallSet();
+
+readers = addToSmallSet(readers, cart);    // cart itself: no array for a single item
+readers = addToSmallSet(readers, cart);    // the second cart is ignored
+readers = addToSmallSet(readers, summary); // [cart, summary], an array of exactly two items
+smallSetSize(readers);                     // 2
+smallSetHas(readers, summary);             // true
+readers = deleteFromSmallSet(readers, cart); // summary itself again
+
+forEachInSmallSet(readers, logView, 'read by '); // 'read by summary', in insertion order`
+};
+
+/**
  * The snippet `stack.ts`, shown by the API reference of common.
  */
 export const STACK: SourceFile = {

@@ -93,9 +93,9 @@ The owner reviews every change before it reaches `main`, and decides each step: 
 | Package | Target | `@xaendar/*` dependencies | Role |
 | --- | --- | --- | --- |
 | `types` | browser | — | shared TS utility types |
-| `common` | browser | — | general utilities for the packages and the applications (`Stack`, object, array, case and string helpers, `toSameOriginPath`) |
-| `internals` | browser | — | the logic the packages share (styling and HTML rules, key events, models, custom element names, host directive checks, `SmallSet`): not a public API |
-| `signals` | browser | common, types; peer internals | TC39 Signals polyfill (`loadSignals()`) |
+| `common` | browser | — | general utilities for the packages and the applications (`Stack`, `SmallSet`, object, array, case and string helpers, `toSameOriginPath`) |
+| `internals` | browser | — | the logic the packages share (styling and HTML rules, key events, models, custom element names, host directive checks): not a public API |
+| `signals` | browser | common, types | TC39 Signals polyfill (`loadSignals()`) |
 | `core` | browser | common, signals, types; peer internals | components, directives, decorators, template runtime |
 | `directives` | library | types; peer core, internals | `@@animation`, `@@class`, `@@style`, `@@innerHtml`, `@@componentOutlet` |
 | `ssr` | browser (run by Node) | common, types; exact peer core, internals | runtime of the rendering on the server |

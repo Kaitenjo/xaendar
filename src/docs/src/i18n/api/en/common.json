@@ -15,6 +15,52 @@
       }
     }
   },
+  "SmallSet": {
+    "summary": "A set kept as the item itself while it holds one, in an array while it holds few items, and in a <code>Set</code> beyond 32: one or two items take far less memory.",
+    "description": "<p>A <code>Set</code> allocates a hash table even for one item, while most of the sets of a reactive graph hold one or two: a <code>SmallSet</code> is the item itself while it holds one, an array of exactly two items with the second one, an array while it holds up to 32 items, and a <code>Set</code> from the 33rd, staying one when the items decrease. Every empty <code>SmallSet</code> is one shared frozen empty array.</p><p>It is a plain value, not an object wrapping one: <code>addToSmallSet</code> and <code>deleteFromSmallSet</code> return the value to store in place of the one given, and it is read through <code>smallSetHas</code>, <code>smallSetSize</code>, <code>forEachInSmallSet</code>, <code>findInSmallSet</code> and <code>smallSetToArray</code>, in insertion order: an item alone is not iterable. Its items are objects that are neither arrays nor <code>Set</code>s (<code>SmallSetItem</code>), so that an item alone is never taken for a collection.</p><p>The signals runtime of Xaendar keeps the sources and the sinks of its nodes, and the signals of its watchers, in it.</p>",
+    "usage": {
+      "tracking": {
+        "title": "Tracking the readers of a value",
+        "body": "<p>Most values have one reader: it is kept as it is, two of them in an array of exactly two items, and a value read by many moves them to a <code>Set</code>. Every change stores the value returned.</p>"
+      }
+    }
+  },
+  "SmallSetItem": {
+    "summary": "What a <code>SmallSet</code> can hold: an object that is not iterable.",
+    "description": "<p>A <code>SmallSet</code> keeps an item alone as it is, and tells it apart from an array or a <code>Set</code> of items: a primitive, an array or a <code>Set</code> does not fit this type, which TypeScript rejects. The nodes and the watchers of the signals fit it.</p>"
+  },
+  "emptySmallSet": {
+    "summary": "Returns an empty <code>SmallSet</code>: the shared frozen empty array, or a new <code>Set</code> when it is expected to hold more than 32 items.",
+    "description": "<p>The shared empty array allocates nothing. <code>expectedSize</code>, 0 by default, is the number of items the set is expected to hold, e.g. the size of the set it replaces: beyond 32 the set starts as a <code>Set</code>, without filling an array first.</p>"
+  },
+  "addToSmallSet": {
+    "summary": "Adds an item to a <code>SmallSet</code>, after the others, and returns the value to store.",
+    "description": "<p>An item the set holds already is ignored. On an empty set it returns the item itself; on an item alone it returns a new array of exactly the two items; on an array it pushes the item, in place, and on the 33rd item it returns a new <code>Set</code> holding all of them, in the same order.</p>"
+  },
+  "deleteFromSmallSet": {
+    "summary": "Removes an item from a <code>SmallSet</code>, keeping the order of the others, and returns the value to store.",
+    "description": "<p>An array of three items or more loses the item in place; an array of two returns the item left, kept as it is; the shared empty array is returned when the item was the last one. A <code>Set</code> stays a <code>Set</code>.</p>"
+  },
+  "smallSetHas": {
+    "summary": "Tells whether a <code>SmallSet</code> holds an item.",
+    "description": "<p>The items are compared by identity, as a <code>Set</code> compares objects.</p>"
+  },
+  "smallSetSize": {
+    "summary": "Returns the number of items of a <code>SmallSet</code>.",
+    "description": "<p>1 for an item alone, the <code>length</code> of its array, or the <code>size</code> of its <code>Set</code>.</p>"
+  },
+  "forEachInSmallSet": {
+    "summary": "Visits the items of a <code>SmallSet</code>, in insertion order.",
+    "description": "<p>The visit receives each item and the argument given, so that a function declared once serves every visit, without a closure created for it.</p>"
+  },
+  "findInSmallSet": {
+    "summary": "Returns the first item of a <code>SmallSet</code>, in insertion order, satisfying a predicate.",
+    "description": "<p>The predicate receives each item and the argument given, until one satisfies it: <code>undefined</code> when none does.</p>"
+  },
+  "smallSetToArray": {
+    "summary": "Copies the items of a <code>SmallSet</code> into a new array, in insertion order.",
+    "description": "<p>The array is a copy: changing it changes nothing of the set.</p>"
+  },
   "toPascalCase": {
     "summary": "Converts a kebab-case, snake_case, dot.case or camelCase string to PascalCase.",
     "description": "<p>Removes every <code>-</code>, <code>_</code> and <code>.</code> and upper-cases the character that follows it, then upper-cases the first character. Nothing else changes: the other letters keep their case, so <code>'USER-CARD'</code> becomes <code>'USERCARD'</code>, and spaces stay where they are.</p><p>The CLI uses it to name the class of a component after its selector: <code>xd g c user-card</code> declares <code>UserCardComponent</code>, and <code>xd g c my.card-x</code> declares <code>MyCardXComponent</code>. The CLI also drops the characters a selector accepts but a class name does not, such as an emoji. See <a href=\"#/en/tools/cli\">CLI</a>.</p>",

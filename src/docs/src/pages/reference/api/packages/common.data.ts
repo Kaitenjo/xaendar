@@ -1,5 +1,5 @@
 import type { ApiPackage } from '../api.data';
-import { ENTRIES, INDENT, IS_EMPTY, IS_NON_EMPTY, KEYS, REMOVE_ITEM, SLICE, STACK, TO_KEBAB_CASE, TO_PASCAL_CASE, TO_SAME_ORIGIN_PATH, VALUES } from './common.snippets';
+import { ENTRIES, INDENT, IS_EMPTY, IS_NON_EMPTY, KEYS, REMOVE_ITEM, SLICE, SMALL_SET, STACK, TO_KEBAB_CASE, TO_PASCAL_CASE, TO_SAME_ORIGIN_PATH, VALUES } from './common.snippets';
 
 /**
  * The symbols of `@xaendar/common`.
@@ -25,6 +25,57 @@ export const COMMON_API: ApiPackage = {
         { name: 'pop', group: 'methods', signature: 'pop(): T | undefined' }
       ],
       usage: [{ key: 'pushingAndPopping', snippets: [STACK] }]
+    },
+    {
+      name: 'SmallSet',
+      kind: 'type',
+      signature: 'type SmallSet<T extends SmallSetItem> = T | T[] | Set<T>',
+      usage: [{ key: 'tracking', snippets: [SMALL_SET] }]
+    },
+    {
+      name: 'SmallSetItem',
+      kind: 'type',
+      signature: 'type SmallSetItem = object & { readonly [Symbol.iterator]?: never }'
+    },
+    {
+      name: 'emptySmallSet',
+      kind: 'function',
+      signature: 'function emptySmallSet<T extends SmallSetItem>(expectedSize?: number): SmallSet<T>'
+    },
+    {
+      name: 'addToSmallSet',
+      kind: 'function',
+      signature: 'function addToSmallSet<T extends SmallSetItem>(set: SmallSet<T>, item: T): SmallSet<T>'
+    },
+    {
+      name: 'deleteFromSmallSet',
+      kind: 'function',
+      signature: 'function deleteFromSmallSet<T extends SmallSetItem>(set: SmallSet<T>, item: T): SmallSet<T>'
+    },
+    {
+      name: 'smallSetHas',
+      kind: 'function',
+      signature: 'function smallSetHas<T extends SmallSetItem>(set: SmallSet<T>, item: T): boolean'
+    },
+    {
+      name: 'smallSetSize',
+      kind: 'function',
+      signature: 'function smallSetSize<T extends SmallSetItem>(set: SmallSet<T>): number'
+    },
+    {
+      name: 'forEachInSmallSet',
+      kind: 'function',
+      signature: 'function forEachInSmallSet<T extends SmallSetItem, Argument>(set: SmallSet<T>, visit: (item: T, argument: Argument) => void, argument: Argument): void'
+    },
+    {
+      name: 'findInSmallSet',
+      kind: 'function',
+      signature: 'function findInSmallSet<T extends SmallSetItem, Argument>(set: SmallSet<T>, predicate: (item: T, argument: Argument) => boolean, argument: Argument): T | undefined'
+    },
+    {
+      name: 'smallSetToArray',
+      kind: 'function',
+      signature: 'function smallSetToArray<T extends SmallSetItem>(set: SmallSet<T>): T[]'
     },
     {
       name: 'toPascalCase',

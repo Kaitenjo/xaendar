@@ -15,6 +15,52 @@
       }
     }
   },
+  "SmallSet": {
+    "summary": "Un insieme tenuto come l’elemento stesso finché ne contiene uno, in un array finché contiene pochi elementi, e in un <code>Set</code> oltre 32: uno o due elementi occupano molta meno memoria.",
+    "description": "<p>Un <code>Set</code> alloca una tabella hash anche per un solo elemento, mentre quasi tutti gli insiemi di un grafo reattivo ne contengono uno o due: uno <code>SmallSet</code> è l’elemento stesso finché ne contiene uno, un array di esattamente due elementi con il secondo, un array finché contiene al massimo 32 elementi, e un <code>Set</code> dal 33°, e resta tale quando gli elementi calano. Tutti gli <code>SmallSet</code> vuoti sono un unico array vuoto congelato e condiviso.</p><p>È un valore semplice, non un oggetto che ne contiene uno: <code>addToSmallSet</code> e <code>deleteFromSmallSet</code> restituiscono il valore da salvare al posto di quello ricevuto, e si legge con <code>smallSetHas</code>, <code>smallSetSize</code>, <code>forEachInSmallSet</code>, <code>findInSmallSet</code> e <code>smallSetToArray</code>, in ordine di inserimento: un elemento da solo non è iterabile. I suoi elementi sono oggetti che non sono né array né <code>Set</code> (<code>SmallSetItem</code>), così che un elemento da solo non sia mai scambiato per una collezione.</p><p>Il runtime dei signal di Xaendar ci tiene le sorgenti e i dipendenti dei suoi nodi, e i signal dei suoi watcher.</p>",
+    "usage": {
+      "tracking": {
+        "title": "Tenere traccia di chi legge un valore",
+        "body": "<p>Quasi tutti i valori hanno un solo lettore: è tenuto così com’è, due in un array di esattamente due elementi, e un valore letto da molti li sposta in un <code>Set</code>. Ogni modifica salva il valore restituito.</p>"
+      }
+    }
+  },
+  "SmallSetItem": {
+    "summary": "Ciò che uno <code>SmallSet</code> può contenere: un oggetto non iterabile.",
+    "description": "<p>Uno <code>SmallSet</code> tiene un elemento da solo così com’è, e lo distingue da un array o da un <code>Set</code> di elementi: un primitivo, un array o un <code>Set</code> non rientrano in questo tipo, e TypeScript li rifiuta. I nodi e i watcher dei signal ci rientrano.</p>"
+  },
+  "emptySmallSet": {
+    "summary": "Restituisce uno <code>SmallSet</code> vuoto: l’array vuoto congelato e condiviso, oppure un nuovo <code>Set</code> se dovrà contenere più di 32 elementi.",
+    "description": "<p>L’array vuoto condiviso non alloca nulla. <code>expectedSize</code>, 0 di default, è il numero di elementi che l’insieme dovrebbe contenere, per esempio la dimensione dell’insieme che sostituisce: oltre 32 l’insieme parte come <code>Set</code>, senza riempire prima un array.</p>"
+  },
+  "addToSmallSet": {
+    "summary": "Aggiunge un elemento a uno <code>SmallSet</code>, dopo gli altri, e restituisce il valore da salvare.",
+    "description": "<p>Un elemento che l’insieme contiene già viene ignorato. Su un insieme vuoto restituisce l’elemento stesso; su un elemento da solo restituisce un nuovo array di esattamente i due elementi; su un array aggiunge l’elemento sul posto, e al 33° elemento restituisce un nuovo <code>Set</code> che li contiene tutti, nello stesso ordine.</p>"
+  },
+  "deleteFromSmallSet": {
+    "summary": "Toglie un elemento da uno <code>SmallSet</code>, mantenendo l’ordine degli altri, e restituisce il valore da salvare.",
+    "description": "<p>Un array di tre o più elementi perde l’elemento sul posto; un array di due restituisce l’elemento rimasto, tenuto così com’è; viene restituito l’array vuoto condiviso quando l’elemento era l’ultimo. Un <code>Set</code> resta un <code>Set</code>.</p>"
+  },
+  "smallSetHas": {
+    "summary": "Dice se uno <code>SmallSet</code> contiene un elemento.",
+    "description": "<p>Gli elementi sono confrontati per identità, come un <code>Set</code> confronta gli oggetti.</p>"
+  },
+  "smallSetSize": {
+    "summary": "Restituisce il numero di elementi di uno <code>SmallSet</code>.",
+    "description": "<p>1 per un elemento da solo, la <code>length</code> del suo array, o la <code>size</code> del suo <code>Set</code>.</p>"
+  },
+  "forEachInSmallSet": {
+    "summary": "Visita gli elementi di uno <code>SmallSet</code>, in ordine di inserimento.",
+    "description": "<p>La visita riceve ogni elemento e l’argomento passato, così che una funzione dichiarata una volta serva ogni visita, senza una closure creata apposta.</p>"
+  },
+  "findInSmallSet": {
+    "summary": "Restituisce il primo elemento di uno <code>SmallSet</code>, in ordine di inserimento, che soddisfa un predicato.",
+    "description": "<p>Il predicato riceve ogni elemento e l’argomento passato, finché uno lo soddisfa: <code>undefined</code> quando nessuno lo fa.</p>"
+  },
+  "smallSetToArray": {
+    "summary": "Copia gli elementi di uno <code>SmallSet</code> in un nuovo array, in ordine di inserimento.",
+    "description": "<p>L’array è una copia: modificarlo non cambia l’insieme.</p>"
+  },
   "toPascalCase": {
     "summary": "Converte una stringa in kebab-case, snake_case, dot.case o camelCase in PascalCase.",
     "description": "<p>Toglie ogni <code>-</code>, <code>_</code> e <code>.</code> e rende maiuscolo il carattere che lo segue, poi rende maiuscolo il primo carattere. Nient’altro cambia: le altre lettere restano come sono, quindi <code>'USER-CARD'</code> diventa <code>'USERCARD'</code>, e gli spazi restano al loro posto.</p><p>La CLI lo usa per dare alla classe di un componente il nome del suo selettore: <code>xd g c user-card</code> dichiara <code>UserCardComponent</code>, e <code>xd g c my.card-x</code> dichiara <code>MyCardXComponent</code>. La CLI toglie anche i caratteri che un selettore accetta ma il nome di una classe no, come un’emoji. Vedi <a href=\"#/it/tools/cli\">CLI</a>.</p>",
