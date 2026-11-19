@@ -1,9 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
-    "GIT_AUTHOR_NAME": "Dario Spinosa",
-    "GIT_AUTHOR_EMAIL": "dariospinosa123@gmail.com",
-    "GIT_COMMITTER_NAME": "Dario Spinosa",
-    "GIT_COMMITTER_EMAIL": "dariospinosa123@gmail.com"
+    "GIT_AUTHOR_NAME": "Kaitenjo",
+    "GIT_AUTHOR_EMAIL": "61583183+Kaitenjo@users.noreply.github.com",
+    "GIT_COMMITTER_NAME": "Kaitenjo",
+    "GIT_COMMITTER_EMAIL": "61583183+Kaitenjo@users.noreply.github.com"
   }
 }

@@ -64,8 +64,8 @@ jobs:
       # The commit and the tag of the release are the owner's, as every commit of the repository (CLAUDE.md)
       - name: Configure git
         run: |
-          git config user.name "Dario Spinosa"
-          git config user.email "dariospinosa123@gmail.com"
+          git config user.name "Kaitenjo"
+          git config user.email "61583183+Kaitenjo@users.noreply.github.com"
 
       # The input reaches the script through the environment, never pasted into the command
       - name: Release
