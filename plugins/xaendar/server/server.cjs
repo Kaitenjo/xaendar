@@ -27238,7 +27238,8 @@ function toPosixPath(path) {
   return path.replaceAll("\\", "/");
 }
 function normalizeFileName(fileName) {
-  return toPosixPath(fileName).replace(/^[A-Z]:/, (drive) => drive.toLowerCase());
+  const path = toPosixPath(fileName);
+  return `${path.charAt(0).toLowerCase()}${path.slice(1)}`;
 }
 
 // ../packages/compiler/src/utils/metadata/metadata.utils.ts
