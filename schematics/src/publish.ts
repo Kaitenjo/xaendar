@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
@@ -54,10 +54,29 @@ function checkAuth(): void {
 }
 
 /**
+ * Tells whether the version of a built package is already on the registry, published by an earlier run of a release
+ * that stopped at a later step: `npm view <name>@<version> version` prints the version when it exists, nothing when it
+ * does not (a package never published fails, which counts as not published).
+ *
+ * @param projectPath - The folder of the built package, holding its `package.json`.
+ * @returns The name and version of the package, and whether that version is published.
+ */
+function readPublication(projectPath: string): { name: string, version: string, published: boolean } {
+  const { name, version } = JSON.parse(readFileSync(resolve(projectPath, 'package.json'), { encoding: 'utf-8' })) as { name: string, version: string };
+  try {
+    return { name, version, published: execSync(`npm view ${name}@${version} version`, { stdio: 'pipe' }).toString().trim() === version };
+  } catch {
+    return { name, version, published: false };
+  }
+}
+
+/**
  * Publishes all packages found in {@link DIST_FOLDER} to the npm registry.
  *
  * Iterates over every subdirectory of the dist folder, treating each as a
  * scoped `@xaendar/*` package, and runs `npm publish --access public` inside it.
+ * A package whose version is already on the registry is skipped, so a release stopped at a later step can run again
+ * (`npm run deploy -- --bump=none`) without failing here.
  *
  * Exits the process with code `1` if any package fails to publish.
  *
@@ -74,6 +93,12 @@ async function publishAll(): Promise<void> {
   for (let i = 0; i < packages.length; i++) {
     const project = packages[i];
     const projectPath = resolve(DIST_FOLDER, project);
+    const { name, version, published } = readPublication(projectPath);
+    if (published) {
+      console.log(`⏭️  ${name}@${version} is already published\n`);
+      continue;
+    }
+
     console.log(`🚀 Publishing @xaendar/${project}...`);
 
     try {

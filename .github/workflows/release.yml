@@ -14,9 +14,9 @@ on:
   workflow_dispatch:
     inputs:
       bump:
-        description: Part of the version to increase
+        description: Part of the version to increase (none finishes a release stopped halfway, without a new version)
         type: choice
-        options: [patch, minor, major]
+        options: [patch, minor, major, none]
         default: patch
 
 # One release at a time, never cancelled halfway

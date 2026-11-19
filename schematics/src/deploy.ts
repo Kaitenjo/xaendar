@@ -20,11 +20,12 @@ const REPOSITORY_ROOT = resolve(SCHEMATICS_DIR, '..');
 /**
  * Accepted values of `--bump`, passed to `update-version`.
  */
-const BUMPS = ['patch', 'minor', 'major'];
+const BUMPS = ['patch', 'minor', 'major', 'none'];
 
 /**
- * Reads the part of the version to increase from `--bump=patch|minor|major` (`npm run deploy -- --bump=minor`),
- * `patch` by default as the release always did.
+ * Reads the part of the version to increase from `--bump=patch|minor|major|none` (`npm run deploy -- --bump=minor`),
+ * `patch` by default as the release always did. `none` releases the version already in the `package.json` files, to
+ * finish a release stopped halfway: the steps skip what is already done (published packages, extension, commit, tag).
  *
  * @returns The value of `--bump` for `update-version`.
  */
@@ -56,25 +57,39 @@ function schematic(label: string, script: string, args: string[] = []): DeploySt
  * a release failing a check changes nothing; the commit of the release comes after the install updating the lockfile,
  * and the tag after the commit, so it names the commit holding its version.
  *
- * @param bump - The part of the version to increase.
+ * With `none` the version is not updated and the published versions are not installed again: the release finishes one
+ * stopped halfway, whose commit is already made, and the later steps skip what is already done.
+ *
+ * @param bump - The part of the version to increase, or `none`.
  * @returns The steps.
  */
 function listSteps(bump: string): DeployStep[] {
-  return [
+  const checks: DeployStep[] = [
     schematic('Check the token of the VS Code extension', 'publish-extension', ['--check']),
     schematic('Check the dependencies of the packages', 'check-dependencies'),
     schematic('Type-check the specs', 'typecheck-specs'),
     { label: 'Run the tests', command: 'node', args: [resolve(REPOSITORY_ROOT, 'node_modules/vitest/vitest.mjs'), 'run'], cwd: REPOSITORY_ROOT },
-    schematic('Type-check the packages', 'typecheck-projects'),
-    schematic('Update the version', 'update-version', [`--bump=${bump}`]),
+    schematic('Type-check the packages', 'typecheck-projects')
+  ];
+  const publication: DeployStep[] = [
     schematic('Build the packages', 'build-projects'),
     schematic('Pack the packages', 'pack-projects'),
     schematic('Publish the packages', 'publish'),
-    schematic('Publish the VS Code extension', 'publish-extension'),
-    { label: 'Install the published versions', command: 'npm', args: ['i'], cwd: REPOSITORY_ROOT },
+    schematic('Publish the VS Code extension', 'publish-extension')
+  ];
+  const tagging: DeployStep[] = [
     schematic('Commit and push the release', 'commit-release'),
     schematic('Tag the release', 'tag-release')
   ];
+
+  return bump === 'none'
+    ? checks.concat(publication, tagging)
+    : checks.concat(
+      schematic('Update the version', 'update-version', [`--bump=${bump}`]),
+      publication,
+      { label: 'Install the published versions', command: 'npm', args: ['i'], cwd: REPOSITORY_ROOT },
+      tagging
+    );
 }
 
 /**

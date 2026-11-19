@@ -38,8 +38,8 @@ function tagExists(tag: string): boolean {
 /**
  * Creates the tag `xaendar--v<version>` on the current commit and pushes it to `origin`.
  *
- * The version is the one of the root `package.json`. Exits the process with code `1` if the tag already exists
- * or if the creation or the push fails.
+ * The version is the one of the root `package.json`. Does nothing when the tag already exists, as in a release run
+ * again without a bump (`--bump=none`). Exits the process with code `1` if the creation or the push fails.
  *
  * @example
  * tagRelease(); // creates and pushes xaendar--v1.3.2
@@ -47,9 +47,10 @@ function tagExists(tag: string): boolean {
 function tagRelease(): void {
   const tag = `xaendar--v${readVersion()}`;
 
+  // A release run again without a bump (--bump=none) finds its tag already made
   if (tagExists(tag)) {
-    console.error(`❌ The tag ${tag} already exists`);
-    process.exit(1);
+    console.log(`⏭️  The tag ${tag} already exists`);
+    return;
   }
 
   console.log(`🏷️  Creating and pushing the tag ${tag}...`);

@@ -25,7 +25,8 @@ function isTrustedPublishing(): boolean {
  * In the release workflow it authenticates through Trusted Publishing (see {@link isTrustedPublishing}). Elsewhere
  * the Personal Access Token is read from the `VSCE_PAT` environment variable (scope Marketplace > Manage): `vsce` picks
  * it up on its own, so it never appears on the command line.
- * Run `npm run build:projects` first: the extension is published as it is in `dist`.
+ * Run `npm run build:projects` first: the extension is published as it is in `dist`. A version already on the
+ * Marketplace is skipped (`--skip-duplicate`), so a release stopped at a later step can run again.
  * With `--check` it only verifies the authentication, to fail early before a release.
  *
  * Exits the process with code `1` if the extension is not built, the token is missing or the publication fails.
@@ -55,7 +56,7 @@ function publishExtension(): void {
   console.log('🚀 Publishing the VS Code extension...');
 
   try {
-    execSync(`npx --yes @vscode/vsce publish --no-dependencies${trusted ? ' --oidc' : ''}`, { stdio: 'inherit', cwd: extensionPath });
+    execSync(`npx --yes @vscode/vsce publish --no-dependencies --skip-duplicate${trusted ? ' --oidc' : ''}`, { stdio: 'inherit', cwd: extensionPath });
     console.log('✅ VS Code extension published successfully');
   } catch (err) {
     const error = err as Error;

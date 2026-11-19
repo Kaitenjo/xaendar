@@ -33,7 +33,8 @@ function readVersion(): string {
  * commit holding the version it names. The identity of the commit is the one git is configured with: the release
  * workflow sets the owner's (see the Commits section of `CLAUDE.md`).
  *
- * Exits the process with code `1` if nothing changed or if the commit or the push fails.
+ * Does nothing when nothing changed, as in a release run again without a bump (`--bump=none`). Exits the process
+ * with code `1` if the commit or the push fails.
  *
  * @example
  * commitRelease(); // commits and pushes "Release 1.3.7"
@@ -41,9 +42,10 @@ function readVersion(): string {
 function commitRelease(): void {
   const message = `Release ${readVersion()}`;
 
+  // A release run again without a bump (--bump=none) finds its commit already made
   if (!execFileSync('git', ['status', '--porcelain', '--untracked-files=no'], { encoding: 'utf-8' }).trim()) {
-    console.error(`❌ Nothing to commit for ${message}: the version was not updated`);
-    process.exit(1);
+    console.log(`⏭️  Nothing to commit for ${message}: the commit of the release is already made`);
+    return;
   }
 
   console.log(`📝 Committing and pushing "${message}"...`);

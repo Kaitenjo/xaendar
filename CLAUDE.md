@@ -48,7 +48,9 @@ npm run deploy              # build:schematics, then schematics/src/deploy.ts ru
                             # at the first failure: check extension token → check dependencies → typecheck specs →
                             # tests → typecheck:projects → update version → build:projects → pack → publish → publish
                             # extension → npm i → commit and push "Release <version>" → tag xaendar--v<version> on that
-                            # commit and push it. `npm run deploy -- --bump=minor` (patch|minor|major, default patch)
+                            # commit and push it. `npm run deploy -- --bump=minor` (patch|minor|major, default patch);
+                            # `--bump=none` finishes a release stopped halfway: no new version, no install, and the
+                            # published packages and extension, the commit and the tag already made are skipped
 npm run build:projects      # each package into dist/@xaendar/<name> by "xaendar.target": Vite (browser), tsup (node),
                             # `xd build` for a "xaendar.library" (@xaendar/directives, with its manifest)
 npm run typecheck:projects  # each package with its tsconfig.typecheck.json
