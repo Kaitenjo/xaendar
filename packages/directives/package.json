@@ -1,0 +1,24 @@
+{
+  "name": "@xaendar/directives",
+  "version": "1.4.1",
+  "type": "module",
+  "author": "Kaitenjo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/directives"
+  },
+  "description": "The built-in directives of Xaendar: the animations of the elements entering and leaving, the rendering of HTML sanitized, and the classes and the styles of an expression",
+  "xaendar": {
+    "target": "browser",
+    "library": true
+  },
+  "dependencies": {
+    "@xaendar/common": "1.4.0",
+    "@xaendar/types": "1.4.0"
+  },
+  "peerDependencies": {
+    "@xaendar/core": "1.4.1"
+  }
+}

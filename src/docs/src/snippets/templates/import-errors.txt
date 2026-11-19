@@ -1,0 +1,14 @@
+@import { Card } from './card.xd.component.ts'           a wrong path
+Error: Unable to resolve module path "./card.xd.component.ts" for "Card".
+
+@import { Card } from '@my-lib/card'                       a package not installed, an alias tsconfig.json doesn't declare
+Error: Unable to resolve module path "@my-lib/card" for "Card".
+
+@import Card from './card.xd.component.ts'                 a default import without braces
+[Lexer] [Ln 1, Col 12] - Expected { after @import
+
+@import { Crad } from './card.xd.component.ts'             a name the module does not export
+Module '"…/card.xd.component"' has no exported member 'Crad'.
+
+@import { title } from './utils.ts'                        a name that is also a member of the component
+'title' is also a member of XCard: import it under another name (… as name), or rename the member.

@@ -1,0 +1,120 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
+@import { MarkdownPreviewComponent } from '../../../examples/directives/inner-html/markdown-preview/markdown-preview.xd.component.ts'
+@import { SanitizedCommentComponent } from '../../../examples/directives/inner-html/sanitized-comment/sanitized-comment.xd.component.ts'
+@import { INNER_HTML_OPTIONS, SANITIZE_HTML } from './inner-html.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.directives.innerHtml.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.directives.innerHtml.title') }
+</h1>
+<p @@htmlTranslation(key="pages.directives.innerHtml.lead") class="lead" />
+<docs-code snippet="directives/animations-install.sh" />
+
+<h2>
+  { t(translations(), 'pages.directives.innerHtml.rendering.title') }
+</h2>
+<docs-example name="directives/inner-html/markdown-preview"
+  heading="{translations().pages.directives.innerHtml.rendering.example1}">
+  <ex-markdown-preview />
+</docs-example>
+<p @@htmlTranslation(key="pages.directives.innerHtml.rendering.p1") />
+<docs-code snippet="directives/inner-html-interpolation.html" />
+<p @@htmlTranslation(key="pages.directives.innerHtml.rendering.p2") />
+
+<h2>
+  { t(translations(), 'pages.directives.innerHtml.sanitizing.title') }
+</h2>
+<docs-example name="directives/inner-html/sanitized-comment"
+  heading="{translations().pages.directives.innerHtml.sanitizing.example1}">
+  <ex-sanitized-comment />
+</docs-example>
+<p @@htmlTranslation(key="pages.directives.innerHtml.sanitizing.p1") />
+<p @@htmlTranslation(key="pages.directives.innerHtml.sanitizing.p2") />
+<docs-code snippet="directives/inner-html-options.html" />
+<docs-code snippet="{INNER_HTML_OPTIONS}" />
+<p @@htmlTranslation(key="pages.directives.innerHtml.sanitizing.p3") />
+<docs-code snippet="{SANITIZE_HTML}" />
+
+<docs-callout kind="warning" heading="{translations().pages.directives.innerHtml.sanitizing.callout1.heading}">
+  <p @@htmlTranslation(key="pages.directives.innerHtml.sanitizing.callout1.p1") />
+</docs-callout>
+
+<h2>
+  { t(translations(), 'pages.directives.innerHtml.trustedTypes.title') }
+</h2>
+<p @@htmlTranslation(key="pages.directives.innerHtml.trustedTypes.p1") />
+<docs-code snippet="directives/inner-html-csp.txt" />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.directives.innerHtml.edgeCases.title') }
+  </h2>
+  <docs-callout kind="edge">
+    <docs-callout-item @@htmlTranslation(key="pages.directives.innerHtml.edgeCases.callout1.body")
+      heading="{translations().pages.directives.innerHtml.edgeCases.callout1.heading}" />
+    <docs-callout-item @@htmlTranslation(key="pages.directives.innerHtml.edgeCases.callout2.body")
+      heading="{translations().pages.directives.innerHtml.edgeCases.callout2.heading}" />
+    <docs-callout-item @@htmlTranslation(key="pages.directives.innerHtml.edgeCases.callout3.body")
+      heading="{translations().pages.directives.innerHtml.edgeCases.callout3.heading}" />
+  </docs-callout>
+</section>
+
+<h2>
+  { t(translations(), 'pages.directives.innerHtml.summary.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.directives.innerHtml.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.directives.innerHtml.summary.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <code>{ '{ html() }' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.directives.innerHtml.summary.td1') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@@innerHtml(html="{ html() }")' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.directives.innerHtml.summary.td2') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@@innerHtml(html="{ html() }" options="{ … }")' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.directives.innerHtml.summary.td3') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@@innerHtml(html="{ trustHtml(…) }")' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.directives.innerHtml.summary.td4') }
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

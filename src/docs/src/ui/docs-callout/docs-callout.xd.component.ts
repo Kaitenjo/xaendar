@@ -1,0 +1,49 @@
+import { CustomElement, Property, WebComponent } from '@xaendar/core';
+import type { InputSignal } from '@xaendar/core/signals';
+import { computed } from '@xaendar/core/signals';
+import type { Messages } from '../../core/i18n/i18n';
+import { translations } from '../../core/i18n/i18n';
+
+/**
+ * Kinds of callout.
+ */
+export type CalloutKind = keyof Messages['callout'];
+
+/**
+ * A highlighted aside: a note, a tip, a warning, an edge case or something not supported.
+ * Its content is projected in its default slot.
+ */
+@WebComponent({
+  selector: 'docs-callout',
+  styleUrl: './docs-callout.xd.component.css',
+  templateUrl: './docs-callout.xd.component.html'
+})
+export class DocsCalloutComponent extends CustomElement {
+  /**
+   * The kind of callout, one of {@link CalloutKind}. Typed as a string so that it can be bound
+   * statically (`kind="tip"`): static values are type-checked as strings.
+   */
+  @Property('note')
+  public accessor kind!: InputSignal<string>;
+  /**
+   * An optional title, shown after the label of the kind.
+   */
+  @Property('')
+  public accessor heading!: InputSignal<string>;
+  /**
+   * The label of the kind.
+   */
+  public readonly label = computed(() => this._computeLabel());
+
+  /**
+   * Computes the value of `label`.
+   *
+   * @returns The label of the kind.
+   */
+  private _computeLabel(): string {
+    const kind = this.kind();
+    const callout = translations().callout;
+    const isValidKind = (kind: string): kind is keyof typeof callout => kind in callout
+    return isValidKind(kind) ? callout[kind] : '';
+  }
+}

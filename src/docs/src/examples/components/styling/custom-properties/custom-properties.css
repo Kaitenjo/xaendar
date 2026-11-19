@@ -1,0 +1,30 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.swatch {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Inherited by everything inside, shadow roots included */
+.themed {
+  display: flex;
+  gap: 0.5rem;
+  font-family: Georgia, serif;
+}
+
+p {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+}

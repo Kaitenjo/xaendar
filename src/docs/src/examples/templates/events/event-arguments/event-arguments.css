@@ -1,0 +1,22 @@
+:host {
+  display: block;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+input {
+  font: inherit;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}
+
+.log {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}

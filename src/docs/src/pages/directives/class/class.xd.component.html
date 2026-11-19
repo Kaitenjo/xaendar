@@ -1,0 +1,90 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
+@import { TaskBoardComponent } from '../../../examples/directives/class/task-board/task-board.xd.component.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.directives.class.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.directives.class.title') }
+</h1>
+<p @@htmlTranslation(key="pages.directives.class.lead") class="lead" />
+<docs-code snippet="directives/animations-install.sh" />
+
+<h2>
+  { t(translations(), 'pages.directives.class.values.title') }
+</h2>
+<docs-example name="directives/class/task-board" heading="{translations().pages.directives.class.values.example1}">
+  <ex-task-board />
+</docs-example>
+<p @@htmlTranslation(key="pages.directives.class.values.p1") />
+<docs-code snippet="directives/class-values.html" />
+<p @@htmlTranslation(key="pages.directives.class.values.p2") />
+
+<h2>
+  { t(translations(), 'pages.directives.class.merging.title') }
+</h2>
+<p @@htmlTranslation(key="pages.directives.class.merging.p1") />
+<docs-code snippet="directives/class-merging.html" />
+<p @@htmlTranslation(key="pages.directives.class.merging.p2") />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.directives.class.edgeCases.title') }
+  </h2>
+  <docs-callout kind="edge">
+    <docs-callout-item @@htmlTranslation(key="pages.directives.class.edgeCases.callout1.body")
+      heading="{translations().pages.directives.class.edgeCases.callout1.heading}" />
+    <docs-callout-item @@htmlTranslation(key="pages.directives.class.edgeCases.callout2.body")
+      heading="{translations().pages.directives.class.edgeCases.callout2.heading}" />
+  </docs-callout>
+</section>
+
+<h2>
+  { t(translations(), 'pages.directives.class.summary.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.directives.class.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.directives.class.summary.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <code>{ 'class.name="{ condition }"' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.directives.class.summary.td1') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ 'class="{`a ${b()}`}"' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.directives.class.summary.td2') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@@class(value="{ classes }")' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.directives.class.summary.td3') }
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,9 @@
+@if(ready()) { … }
+[Lexer] [Ln 1, Col 4] - Unknown flow-control keyword
+
+<p>…</p>
+@else { … }
+[Parser] [Ln 2, Col 2] - No transition function for token of type ELSE
+
+@if (user(); as u) { … }
+[Parser] [Ln 1, Col 2] - 'user(); as u' must be a single expression, got '; as u' after 'user()'.

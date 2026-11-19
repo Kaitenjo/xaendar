@@ -1,0 +1,2 @@
+Xaendar: The templateUrl option of RatingComponent must be a string literal - /src/rating/rating.xd.component.ts
+RolldownError: Failed to compile component - /src/rating/rating.xd.component.ts

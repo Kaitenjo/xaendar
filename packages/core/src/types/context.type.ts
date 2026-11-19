@@ -1,0 +1,38 @@
+import type { Cleanup } from './cleanup.type';
+import type { _ScopeLayout } from './scope-layout.type';
+
+/**
+ * The scope of a block of a template at runtime (the root of a component, the body of an item of a `@for`, a branch of
+ * an `@if`...): a plain array of the exact length its layout gives (see `_ScopeLayout`), whose slots the compiler
+ * decides. The header holds what every scope has, at the indices of `costants.ts` (`PARENT`, `PARENT_NODE`,
+ * `COMPONENT`, `CLEANUP`, `LAYOUT`), followed by the variables the block declares, by the nodes at its top
+ * and by the containers of its blocks, which hold the scopes inside it.
+ *
+ * Read and written only through the functions of `utils/context`: the generated code reads a variable with `_read` and
+ * writes one with `_set`, given how many scopes up it is declared and its slot.
+ */
+export interface _Context extends Array<unknown> {
+  /**
+   * The scope declaring the block: the one its variables of the enclosing blocks are read from. `null` for the root of a
+   * render, and for the scopes the runtime creates outside of any template (the staging scopes of the components and of
+   * the directives, the scope of a component `createComponent` creates).
+   */
+  0: _Context | null;
+  /**
+   * The node the nodes at the top of the block are inserted into, the same for all of them: set by the first node
+   * tracked, `null` before.
+   */
+  1: Node | null;
+  /**
+   * The component whose template the scope renders: the expressions of the template are called with it as `this`.
+   */
+  2: unknown;
+  /**
+   * What the scope runs or disposes when it is cleared: `null`, a single cleanup, or an array of them from the second.
+   */
+  3: Cleanup | Cleanup[] | null;
+  /**
+   * The layout of the scope, shared by every instance of its block.
+   */
+  4: _ScopeLayout;
+}

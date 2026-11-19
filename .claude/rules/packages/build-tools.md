@@ -1,0 +1,25 @@
+---
+paths:
+  - "packages/build-tools/**"
+---
+
+# @xaendar/build-tools
+
+The Vite plugin wiring the compiler into a build (`xaendarPlugin`) and `buildLibrary`. Depends on `common`, `compiler`, `language-core`, `ssr-compiler`, `types`.
+
+## Strategies and hooks
+
+- Hooks never test their environment: they call the functions of its strategy, `state.strategies[this.environment.config.consumer]` (`costants/plugin-strategies.ts`, chosen once in `xaendarPlugin`). With the `ssr` option the server consumer gets `SERVER_STRATEGY` (`compileServer`, registered with `_defineServerRender` of `@xaendar/ssr`, stylesheet as a string, no type-check); otherwise `CLIENT_STRATEGY`.
+- Dev server: `appType: 'custom'`, a middleware rendering each page in place of `<!--xd-ssr-->` (`render(toSameOriginPath(url))`), a full reload when a server-only module changes.
+- `transform` fails on a missing `styleUrl` file (it would otherwise give no stylesheet silently); `hotUpdate` recompiles a component when that file or its template appears. It passes `ssr` (without it `@hydrate`/`@client` fail) and `strictEvents` (the library's, else the plugin's, default `true`) to `compile`; event-name diagnostics and `findReflectedInputs` are `this.warn`, never failures. `load` reports `getTemplateWarnings` of language-core once per template (strategy with `server`).
+- A template module imports, for their side effects, the modules of `resolveTemplateModules` (the files declaring its imported components and directives, through barrels too, and the modules of other project symbols; not `@import lazy`), and `load` watches them. `generateTemplateModule` drops the static imports of modules loaded dynamically (`@hydrate`, `@defer`), so they become chunks; `getServerDependencies` leaves out what only a `@client` or the non-placeholder parts of a `@defer` need.
+
+## Static components
+
+Only in a build with `ssr.staticComponents` (default `false`), `buildStart` runs `findStaticComponents` (`utils/static-components`): it reads every component (`findComponentLogic`, `findModuleLogic`, `getTemplateUsage`) and the code imports, and spreads interactivity through the templates until nothing changes (a component the browser may create makes interactive everything it renders, at any depth). `transform` compiles static components' modules with `generateStaticModule`; `load` gives the server the `islands` of a template. Never in the dev server (a save would change other components and lose HMR). Specs and the server entry are ignored.
+
+## Libraries
+
+- `libraries` (a workspace's `libs`, `utils/workspace-libraries`): Vite aliases lead each library name to its sources (`getLibraryAliases`); its files compile with its own `ssr` and `customElements` (`findWorkspaceLibrary`); components of a library without `ssr` are client-only on the project's server (`markClientOnly`), as with its build.
+- `buildLibrary` (`library/`): `analyzeLibrary` reads the program and entries (the entry plus every module declaring a component or directive), failing on a component outside the folder or a selector declared twice; `createLibraryManifest` fails, before writing anything, on a binding type reading a name its module does not export or a source outside the library. Built by Vite (`createLibraryBuildConfig`: lib mode, ES, not minified, `@xaendar/*` and dependencies external, component modules with side effects), again into `server/` with `ssr`. `emitLibraryDeclarations` emits relative `.js` paths plus the hand-written declaration files; `createLibraryPackageJson` writes `exports` (`types`, `xaendar-server`, `default`), `sideEffects` and the `@xaendar/core` (and optional `@xaendar/ssr`) peers.
+- Compiled libraries a project depends on (`state.packageLibraries`) are read from their manifests (`readLibraryMetadata`, `registerLibraryMetadata`), imported by `importPath` without watching, deduped and pre-bundled (`getPackageLibrariesConfig`, Xaendar packages excluded); `buildStart` registers their selectors (`registerLibrarySelectors`), rejected for project components (`claimSelectors`) and between two libraries. `buildLibrary` clears the registry and language service first (libraries build in one process); `withLibraryDependencies` leads workspace dependencies to their builds, so they stay external.

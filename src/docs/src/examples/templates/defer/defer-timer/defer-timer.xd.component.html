@@ -1,0 +1,10 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<ex-button (click)="toggle()">{ shown() ? 'Remove the block' : 'Render the block' }</ex-button>
+@if (shown()) {
+  @defer (timer(2s)) {
+    <p>Rendered { elapsed() } ms after the block.</p>
+  } @placeholder {
+    <p class="note">The content arrives in 2 seconds…</p>
+  }
+}

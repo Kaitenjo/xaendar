@@ -1,0 +1,17 @@
+{
+  "name": "docs",
+  "customElements": [
+    "vanilla-*"
+  ],
+  "generate": {
+    "components": {
+      "style": "css"
+    }
+  },
+  "ssr": {
+    "entry": "src/entry-server",
+    "prerender": [
+      "/"
+    ]
+  }
+}

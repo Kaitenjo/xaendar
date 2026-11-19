@@ -1,0 +1,10 @@
+<ul class="options">
+  @for (item of options(); track item) {
+    <li (click)="select(item)">
+      @render option()(item, item === selected())
+    </li>
+  }
+</ul>
+@if (!options().length) {
+  @render emptyTemplate()()
+}

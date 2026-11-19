@@ -1,0 +1,8 @@
+{
+  "name": "my-site",
+  "ssr": {
+    "entry": "src/entry-server",
+    "prerender": ["/", "/about", "/blog"],
+    "staticComponents": true
+  }
+}

@@ -1,0 +1,8 @@
+@import { Row } from './row.ts'
+
+<p>{ selected() as Row }</p>                                  <!-- the whole interpolation -->
+<input (input)="search($event.target as HTMLInputElement)" /> <!-- an argument of a listener -->
+<button (click)="pick(row() as Row, 1)">Pick</button>         <!-- the other arguments as they are -->
+<p>{ format(value() as Date) }</p>                            <!-- an argument of a function -->
+@render line(selected() as Row)                               <!-- an argument of a @render -->
+<p>{ (selected() as Row).id }</p>                             <!-- ✗ not an argument -->

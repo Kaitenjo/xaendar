@@ -1,0 +1,9 @@
+@import { ComponentOutlet } from '@xaendar/directives'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="controls">
+  <ex-button (click)="showInfo()">Info</ex-button>
+  <ex-button (click)="showWarning()">Warning</ex-button>
+  <ex-button (click)="rename()">Rename</ex-button>
+</div>
+<div @@componentOutlet(component="{card()}" options="{options}") class="panel" />

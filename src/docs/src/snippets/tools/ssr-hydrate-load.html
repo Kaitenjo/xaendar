@@ -1,0 +1,6 @@
+@import { RichEditorComponent } from './rich-editor/rich-editor.xd.component.ts'
+
+<!-- Hydrates with the rest of the page, but the code of the editor comes in a chunk of its own -->
+@hydrate (load) {
+  <app-rich-editor content="{draft()}" />
+}

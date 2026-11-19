@@ -1,0 +1,130 @@
+/**
+ * Discriminant values that identify the type of each AST node produced by the parser.
+ */
+export enum ASTNodeType {
+  /**
+   * An HTML element node with a tag name, attributes, events, and children.
+   */
+  Element,
+  /**
+   * An attribute node representing a key-value pair on an HTML element.
+   */
+  Attribute,
+  /**
+   * An event binding node attached to an HTML element.
+   */
+  Event,
+  /**
+   * A plain text node.
+   */
+  Text,
+  /**
+   * An inline interpolation expression or literal.
+   */
+  Interpolation,
+  /**
+   * An `@if` conditional node.
+   */
+  If,
+  /**
+   * An `@else` branch node attached to an `@if`.
+   */
+  Else,
+  /**
+   * An `@else if` branch node attached to an `@if`.
+   */
+  ElseIf,
+  /**
+   * An `@for` iteration node.
+   */
+  For,
+  /**
+   * An `@switch` node containing one or more case nodes.
+   */
+  Switch,
+  /**
+   * A `@case` or `@default` branch inside a `@switch`.
+   */
+  Case,
+  /**
+   * An import statement node, typically used to import modules or components.
+   */
+  Import,
+  /**
+   * A conditional binding declared as an `@if` chain among the bindings of an element or of a directive.
+   */
+  IfBinding,
+  /**
+   * A conditional binding declared as a `@switch` among the bindings of an element or of a directive.
+   */
+  SwitchBinding,
+  /**
+   * A branch of a conditional binding: the bindings declared in an `@if`, `@else if`, `@else`, `@case` or `@default` block.
+   */
+  ConditionalBindingBranch,
+  /**
+   * A directive applied to an HTML element.
+   */
+  Directive,
+  /**
+   * A structural directive deciding whether an HTML element is rendered.
+   */
+  StructuralDirective,
+  /**
+   * The declaration of a template with parameters, `<template name(…)>`.
+   */
+  Template,
+  /**
+   * The render of a template, `@render name(…)`.
+   */
+  Render,
+  /**
+   * The declaration of a name for the value of an expression, `@let name = value;`, also called a template variable.
+   */
+  Let,
+  /**
+   * A class toggled on an HTML element by the value of an expression, `class.name="{expression}"`.
+   */
+  ClassBinding,
+  /**
+   * Content rendered on the server whose hydration waits for a trigger, `@hydrate (visible) { … }`.
+   */
+  Hydrate,
+  /**
+   * Content only the browser renders, `@client { … }`.
+   */
+  Client,
+  /**
+   * What the server renders in place of the content of a `@client`, or of a `@defer` until a trigger fires,
+   * `@placeholder { … }`.
+   */
+  Placeholder,
+  /**
+   * Content whose first render may throw, `@try { … }`, with the `@catch` rendered in its place when it does.
+   */
+  Try,
+  /**
+   * What a `@try` renders when its content throws, `@catch (error) { … }`.
+   */
+  Catch,
+  /**
+   * Content rendered once a trigger fires, `@defer (idle) { … }`, with the blocks following it.
+   */
+  Defer,
+  /**
+   * What a `@defer` renders while the modules of its content load, `@loading { … }`.
+   */
+  Loading,
+  /**
+   * What a `@defer` renders when the modules of its content fail to load, `@error (error) { … }`.
+   */
+  Error,
+  /**
+   * What a `@for` renders while it has no items, `@empty { … }`.
+   */
+  Empty,
+  /**
+   * A style property set on an HTML element by the value of an expression, `style.name="{expression}"`.
+   */
+  StyleBinding
+}

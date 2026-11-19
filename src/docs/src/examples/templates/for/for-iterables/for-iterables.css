@@ -1,0 +1,19 @@
+:host {
+  display: block;
+}
+
+.scores {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+li {
+  cursor: pointer;
+}
+
+.empty {
+  color: var(--xd-text-muted);
+}

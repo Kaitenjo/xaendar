@@ -1,0 +1,14 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+textarea {
+  font: 0.9rem ui-monospace, monospace;
+}
+
+output {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}

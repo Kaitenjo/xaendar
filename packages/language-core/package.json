@@ -1,0 +1,25 @@
+{
+  "name": "@xaendar/language-core",
+  "version": "1.4.1",
+  "type": "module",
+  "author": "Kaitenjo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/language-core"
+  },
+  "description": "A library containing common functionalities for build tools and language service",
+  "exports": {
+    ".": "./src/public-api.ts"
+  },
+  "xaendar": {
+    "target": "node",
+    "dts": true
+  },
+  "dependencies": {
+    "@xaendar/common": "1.4.0",
+    "@xaendar/compiler": "1.4.0",
+    "typescript": "^6.0.3"
+  }
+}

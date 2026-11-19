@@ -1,0 +1,21 @@
+:host {
+  display: inline-block;
+}
+
+.avatar {
+  display: inline-grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #6750a4;
+  color: #fff;
+  font-weight: 700;
+}
+
+.badge {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #00796b 25%, transparent);
+  font-size: 0.8rem;
+}

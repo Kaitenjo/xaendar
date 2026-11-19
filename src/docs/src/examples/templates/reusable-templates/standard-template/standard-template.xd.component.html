@@ -1,0 +1,11 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<template #row>
+  <li class="clone">
+    Row
+    <span class="number" />
+  </li>
+</template>
+
+<ul #list class="clones" />
+<ex-button (click)="add()">add()</ex-button>

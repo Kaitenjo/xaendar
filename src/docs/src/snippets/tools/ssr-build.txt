@@ -1,0 +1,8 @@
+$ npm run build
+dist/
+├─ client/                    # served as it is: index.html with <!--xd-ssr-->, assets/
+│  ├─ index.html
+│  └─ assets/
+└─ server/                    # the entry built for Node, @xaendar/* imported from node_modules
+   ├─ entry-server.js
+   └─ assets/

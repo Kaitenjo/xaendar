@@ -1,0 +1,6 @@
+<input (keydown.enter)="save()" />                              <!-- Enter, without modifiers -->
+<input (keyup.escape)="close()" />                              <!-- when Escape is released; esc works too -->
+<input (keydown.control.shift.z)="redo()" />                    <!-- modifiers in any order, matched exactly -->
+<input (keydown.space)="toggle($event)" />                      <!-- space and dot for ' ' and '.' -->
+<input (keydown.alt.code.digit1)="selectTab(0)" />              <!-- code: the place of the key, whatever it types -->
+<input (keydown.enter)="save()" (keydown.control.s)="save()" /> <!-- the same call: one listener for both keys -->

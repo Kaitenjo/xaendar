@@ -1,0 +1,3 @@
+<p *exTint>…</p>   (a custom directive used as a structural one)
+
+Error: Directive TintDirective registered for selector "exTint" is not a StructuralDirective

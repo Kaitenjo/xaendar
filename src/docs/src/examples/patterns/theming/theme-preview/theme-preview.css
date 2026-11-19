@@ -1,0 +1,52 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+select,
+input {
+  font: inherit;
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: var(--stage-bg);
+}
+
+.stage[data-theme='light'] {
+  --stage-bg: #f7f7fb;
+  --card-bg: #ffffff;
+  --card-text: #191b26;
+  --card-border: #e2e4ee;
+}
+
+.stage[data-theme='dark'] {
+  --stage-bg: #0f1018;
+  --card-bg: #1b1d2a;
+  --card-text: #e8e9f2;
+  --card-border: #2c2f42;
+}
+
+.stage[data-theme='sepia'] {
+  --stage-bg: #efe4cf;
+  --card-bg: #fbf3e2;
+  --card-text: #4a3b28;
+  --card-border: #dccaa6;
+}
+
+/* A part is the one element of the shadow root that a selector from outside can reach */
+.loud::part(heading) {
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

@@ -1,0 +1,80 @@
+@import { translations } from '../../core/i18n/i18n.ts'
+@import { lang as currentLang, navPath } from '../../core/router/router.ts'
+@import { itemTitle, NAV, pageTitle } from '../../core/routes/routes.ts'
+@import { AnimationDirective } from '@xaendar/directives'
+
+@let navPathValue = navPath();
+@let selectedValue = selected();
+@let openedValue = opened();
+
+<nav class="nav">
+  @if (!selectedValue) {
+    <ul class="column sections">
+      @for (section of NAV; track section.key) {
+        <li>
+          <button class="section" type="button" class.section--current="{section === currentSection()}"
+            (click)="select(section)">
+            <span class="section__icon" style="{`--icon: url(/${section.iconUrl})`}" />
+            <span class="section__title">{ translations().nav.sections[section.key] }</span>
+          </button>
+        </li>
+      }
+    </ul>
+  } @else {
+    <div class="column column--items">
+      <button class="back" type="button" (click)="back()">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+          <path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+        <span>{ translations().nav.back }</span>
+      </button>
+      <h2 class="column__title">{ translations().nav.sections[selectedValue.key] }</h2>
+      <ul class="list">
+        @for (item of selectedValue.items; track item) {
+          <li>
+            @if (item.page) {
+              <a class="link" href="{`#/${currentLang()}/${item.page.path}`}"
+                class.link--active="{item.page.path === navPathValue}">
+                { itemTitle(item, translations()) }
+              </a>
+            } @else {
+              <button class="link group" type="button" aria-expanded="{item === openedValue ? 'true' : 'false'}"
+                class.group--open="{item === openedValue}" class.group--current="{item === currentGroup()}"
+                (click)="toggle(item)">
+                <span>{ itemTitle(item, translations()) }</span>
+                <svg class="chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  <path d="M10 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    </div>
+    @if (openedValue) {
+      <div @@animation(enter="fade-in" leave="fade-out") class="column column--pages">
+        <div class="column__header">
+          <h2 class="column__title">{ itemTitle(openedValue, translations()) }</h2>
+          <button class="close" type="button" aria-label="{translations().nav.close}" (click)="close()">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        <ul class="list">
+          @for (page of openedValue.pages; track page.path) {
+            <li>
+              <a class="link" href="{`#/${currentLang()}/${page.path}`}"
+                class.link--active="{page.path === navPathValue}">
+                { pageTitle(page, translations()) }
+              </a>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  }
+</nav>

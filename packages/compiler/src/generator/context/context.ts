@@ -1,0 +1,615 @@
+import { CONTAINER_SLOTS } from '../../costants/container-slots.costant';
+import { SCOPE_HEADER } from '../../costants/scope-header.costant';
+import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
+import type { DeferNode } from '../../parser/types/nodes/defer-node.type';
+import type { HydrateNode } from '../../parser/types/nodes/hydrate-node.type';
+import type { ComponentMetadata } from '../../types/component-metadata.type';
+import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
+import type { ContextCache } from '../../types/context-cache.type';
+import type { ElementNamespace } from '../../types/element-namespace.type';
+import type { BlockBranch } from '../types/block-branch.type';
+import type { PendingBlock } from '../types/pending-block.type';
+import type { ScopeKind } from '../types/scope-kind.type';
+import { toArrayLiteral, toObjectLiteral } from '../utils/module-code/module-code.utils';
+
+/**
+ * Tracks identifier scope during render code generation.
+ * Each `Context` instance represents one lexical scope (e.g. a `@for` loop body)
+ * and can be chained to a parent context for outer-scope resolution.
+ */
+export class GeneratorContext extends CompilerContext {
+  /**
+   * The compiler cache associated with this context, used to store and retrieve
+   * intermediate compilation results for efficiency.
+   */
+  public cache: ContextCache;
+  /**
+   * The modules each `@hydrate` and `@defer` of the template loads before its content is rendered: the ones of the
+   * components its content alone renders, which the module of the template does not import (see `getDeferredModules`).
+   */
+  public deferredModules?: ReadonlyMap<HydrateNode | DeferNode, readonly string[]>;
+  /**
+   * Whether the function being generated renders the nodes at the top of the block of this scope, whose runtime scope
+   * tracks them in slots of its own (see {@link allocateNodeSlot}): set by the generator while it generates the body of
+   * a function creating the runtime scope, other than the root of the render, which tracks none. The children of an
+   * element, generated in the scope of the element, are rendered into it, and track nothing.
+   */
+  public tracksNodes = false;
+  /**
+   * Parent context representing the enclosing scope.
+   */
+  protected declare parent: GeneratorContext | undefined;
+  /**
+   * The components the template renders that render only in the browser, by tag name (see {@link getClientComponent}).
+   */
+  private readonly _clientComponents = new Map<string, ComponentMetadata>();
+  /**
+   * The components and the directives the template imports, by tag name and by `@@selector` (see
+   * {@link getImportedMetadata}).
+   */
+  private readonly _importedMetadata = new Map<string, ComponentOrDirectiveMetadata>();
+  /**
+   * The tag names of the interactive components a static template renders, which hydrate by themselves (see
+   * {@link isIsland}).
+   */
+  private readonly _islands = new Set<string>();
+  /**
+   * The events the template listens to, held by the root scope (see {@link addEventName}).
+   */
+  private readonly _eventNames = new Set<string>();
+  /**
+   * The constants of the module listing the variables of the template a binding reads (see {@link getReads}), by the
+   * identifiers they list, joined: held by the root scope.
+   */
+  private readonly _reads = new Map<string, string>();
+  /**
+   * The constants of the module describing the layouts of the runtime scopes (see {@link declareLayout}), by their
+   * value: held by the root scope.
+   */
+  private readonly _layouts = new Map<string, string>();
+  /**
+   * The number of nodes at the top of the block of this scope given a slot (see {@link allocateNodeSlot}).
+   */
+  private _nodeCount = 0;
+  /**
+   * The number of blocks of this scope given a container (see {@link allocateContainer}).
+   */
+  private _containerCount = 0;
+  /**
+   * The number of slots reserved for the bindings of this scope (see {@link declareBinding}).
+   */
+  private _bindingSlots = 0;
+  /**
+   * The constants of the module describing the bindings of this scope given slots, in the order they are rendered,
+   * which its layout lists (see {@link declareLayout}).
+   */
+  private readonly _sites = new Array<string>();
+  /**
+   * The blocks of this scope rendering some branches inline, whose constants are declared with its layout (see
+   * {@link declareBlock}).
+   */
+  private readonly _pendingBlocks = new Array<PendingBlock>();
+  /**
+   * The slots of the nodes at the top of this branch rendered inline, counted from its first slot (see
+   * {@link allocateNodeSlot}).
+   */
+  private readonly _inlineNodes = new Array<number>();
+  /**
+   * The slot of this branch rendered inline holding its cleanups, counted from its first slot (see
+   * {@link reserveCleanup}), `undefined` while it has none.
+   */
+  private _cleanupSlot: number | undefined;
+  /**
+   * The declarations of the constants of the module (see {@link declareConstant}), in the order they are declared: held
+   * by the root scope.
+   */
+  private readonly _constants = new Array<string>();
+  /**
+   * The declarations of the functions of the module computing the expressions of the template (see
+   * {@link declareFunction}), in the order they are declared: held by the root scope.
+   */
+  private readonly _functions = new Array<string>();
+  /**
+   * The names of the constants and of the functions declared, which no other declaration takes: held by the root scope.
+   */
+  private readonly _moduleNames = new Set<string>();
+
+  /**
+   * The events the template listens to, read from the root scope.
+   *
+   * @returns The names of the events.
+   */
+  public get eventNames(): ReadonlySet<string> {
+    return this._eventNames;
+  }
+
+  /**
+   * The number of slots this branch rendered inline fills, from the first slot of the area of its block (see
+   * {@link describeInline}).
+   *
+   * @returns The number of slots.
+   */
+  public get inlineSlots(): number {
+    return this._bindingSlots;
+  }
+
+  /**
+   * The declarations of the constants listing the variables the bindings read (see {@link getReads}), read from the root
+   * scope, to write at the top of the module.
+   *
+   * @returns The declarations, one per list, e.g. `const _reads0 = [0, 3];`.
+   */
+  public get readsDeclarations(): string[] {
+    const declarations = new Array<string>();
+    for (const [ids, constant] of this._reads) {
+      declarations.push(`const ${constant} = [${ids.split(',').join(', ')}];`);
+    }
+
+    return declarations;
+  }
+
+  /**
+   * The declarations of the constants of the module (see {@link declareConstant}), read from the root scope, to write
+   * before the functions, once the ones of `readsDeclarations`, which they read.
+   *
+   * @returns The declarations, in the order they were declared.
+   */
+  public get constantDeclarations(): readonly string[] {
+    return this._constants;
+  }
+
+  /**
+   * The declarations of the functions of the module computing the expressions of the template (see
+   * {@link declareFunction}), read from the root scope, to write after the functions rendering the blocks.
+   *
+   * @returns The declarations, in the order they were declared.
+   */
+  public get functionDeclarations(): readonly string[] {
+    return this._functions;
+  }
+
+  /**
+   * Creates a new scope context.
+   *
+   * @param parentContext - Parent context representing the enclosing scope.
+   * @param namespace - The namespace the elements declared in this scope are created in, when it differs from the one of
+   *   the enclosing scope, i.e. for the children of an `<svg>`, a `<math>` or a `<foreignObject>` element.
+   * @param scopeKind - Whether the scope stands for a scope of the runtime (see `ScopeKind`). Defaults to `scope`.
+   */
+  constructor(parentContext: GeneratorContext, namespace?: ElementNamespace, scopeKind?: ScopeKind);
+  /**
+   * Creates a new root scope context.
+   *
+   * @param cache - Cache object to prevent recalculation when not needed
+   * @param namespace - The namespace the elements declared in this scope are created in, when it differs from the one of
+   *   the enclosing scope, i.e. for the children of an `<svg>`, a `<math>` or a `<foreignObject>` element.
+   */
+  constructor(cache: ContextCache, namespace?: ElementNamespace);
+  constructor(parentContextOrCache: GeneratorContext | ContextCache, namespace?: ElementNamespace, scopeKind?: ScopeKind) {
+    if (parentContextOrCache instanceof GeneratorContext) {
+      super(parentContextOrCache, namespace, scopeKind);
+      this.cache = parentContextOrCache.cache;
+      this.deferredModules = parentContextOrCache.deferredModules;
+    } else {
+      super(undefined, namespace);
+      this.cache = parentContextOrCache;
+    }
+  }
+
+  /**
+   * Registers a tag name of an interactive component the template renders, the template being a static one.
+   *
+   * @param tagName - The tag name.
+   */
+  public addIsland(tagName: string): void {
+    this._islands.add(tagName);
+  }
+
+  /**
+   * Registers an event the template listens to, in the root scope, which holds the ones of the whole template.
+   *
+   * @param name - The name of the event.
+   */
+  public addEventName(name: string): void {
+    this.parent?.addEventName(name) ?? this._eventNames.add(name);
+  }
+
+  /**
+   * Registers a component the template renders that renders only in the browser.
+   *
+   * @param component - The metadata of the component.
+   */
+  public addClientComponent(component: ComponentMetadata): void {
+    this._clientComponents.set(component.selector, component);
+  }
+
+  /**
+   * Registers a component or a directive the template imports.
+   *
+   * @param metadata - The metadata of the component or of the directive.
+   */
+  public addImportedMetadata(metadata: ComponentOrDirectiveMetadata): void {
+    this._importedMetadata.set(metadata.type === 'directive' ? `@@${metadata.selector}` : metadata.selector, metadata);
+  }
+
+  /**
+   * Tells whether a tag name is the one of an interactive component a static template renders, registered in this scope
+   * or any of its ancestor scopes: it hydrates by itself, from the inputs written on its element.
+   *
+   * @param tagName - The tag name to check.
+   * @returns `true` if the component hydrates by itself, `false` otherwise.
+   */
+  public isIsland(tagName: string): boolean {
+    return this._islands.has(tagName) || (this.parent?.isIsland(tagName) ?? false);
+  }
+
+  /**
+   * Returns the component rendering only in the browser a tag name is the one of, registered in this scope or any of its
+   * ancestor scopes.
+   *
+   * @param tagName - The tag name to check.
+   * @returns The metadata of the component, `undefined` when the tag name is not the one of such a component.
+   */
+  public getClientComponent(tagName: string): ComponentMetadata | undefined {
+    return this._clientComponents.get(tagName) ?? this.parent?.getClientComponent(tagName);
+  }
+
+  /**
+   * Returns the constant of the module listing the variables of the template a binding reads, which the runtime receives
+   * to run the binding again when one of them changes (see `_bindEffect` of the runtime): one per list, held by the root
+   * scope and declared at the top of the module (see {@link readsDeclarations}), so that the bindings of a template,
+   * however many times it renders, share it.
+   *
+   * N.B. Deliberate, to save memory: a constant of the module instead of an array literal written in the render code,
+   * which would allocate an array per binding at each render, in every row of a table. Do not inline it.
+   *
+   * @param variables - The identifiers of the variables the binding reads, if any.
+   * @returns The name of the constant, `undefined` when the binding reads no variable.
+   */
+  public getReads(variables: readonly number[] | undefined): string | undefined {
+    if (!variables?.length) {
+      return undefined;
+    }
+
+    if (this.parent) {
+      return this.parent.getReads(variables);
+    }
+
+    const key = variables.slice().sort((first, second) => first - second).join(',');
+    let constant = this._reads.get(key);
+    if (!constant) {
+      constant = `_reads${this._reads.size}`;
+      this._reads.set(key, constant);
+    }
+
+    return constant;
+  }
+
+  /**
+   * Gives the next node at the top of the block of this scope its slot in the runtime scope, after the header and the
+   * variables, while the function being generated tracks them (see {@link tracksNodes}).
+   *
+   * @returns The slot, `undefined` for a node no runtime scope tracks.
+   */
+  public allocateNodeSlot(): number | undefined {
+    if (!this.tracksNodes) {
+      return undefined;
+    }
+
+    // A branch rendered inline counts its nodes with its bindings, from its first slot
+    if (this.inlineBranch) {
+      const slot = this._bindingSlots++;
+      this._inlineNodes.push(slot);
+      return slot;
+    }
+
+    return SCOPE_HEADER + this.identifierCount + this._nodeCount++;
+  }
+
+  /**
+   * Reserves the slot holding the cleanups of the branch rendered inline this scope renders in, if any (see
+   * `InlineBranch` of the runtime), once: a scope of the runtime holds its cleanups in its header.
+   */
+  public reserveCleanup(): void {
+    const scope = this._scopeContext();
+    if (scope.inlineBranch) {
+      scope._cleanupSlot ??= scope._bindingSlots++;
+    }
+  }
+
+  /**
+   * Gives the next block of this scope (`@if`, `@switch`, `@for`, `@defer`, `@try`, `@hydrate`, `@client`,
+   * `@render`, an element structural directives are applied to) its container in the runtime scope (see `_ScopeLayout`
+   * of the runtime), which holds what the block shows: the blocks rendered into an element of the scope too, since the
+   * element renders its children in the runtime scope it is rendered in.
+   *
+   * @returns The index of the container among the containers of the scope, which the runtime adds to the slot of the
+   *   first one: the compiler counts the nodes as it generates them, so it does not know that slot yet.
+   */
+  public allocateContainer(): number {
+    return this._scopeContext()._containerCount++;
+  }
+
+  /**
+   * Declares the constant of the module describing a binding of this scope (see `BindingSite` of the runtime), and
+   * reserves its slots in the runtime scope rendering it, after the nodes at its top: the one of its effect, and, when it
+   * reads variables of the template and writes a target, the one of the target, with which the scope runs it again. The
+   * layout of the scope lists it (see {@link declareLayout}). A binding rendered in a scope the runtime creates with a
+   * layout of its own (see `ScopeKind`) gets no slot: the runtime keeps it among the cleanups of that scope.
+   *
+   * N.B. Deliberate, to save memory: the slots are counted from the first binding of the scope, which the layout gives,
+   * since the compiler counts the nodes as it generates them, so it does not know where the bindings start yet. The
+   * callback, the reads and the constant parameters of the binding stay in the module, so that an instance of the scope
+   * keeps one or two slots per binding instead of an object. Do not give a binding of a compiled scope an object again.
+   *
+   * @param name - The name of the constant (`span0$text0$binding`, `td0__if0$if`).
+   * @param members - The members of the constant, to which the callback and the slots are appended.
+   * @param update - The callback of the binding, a function of the runtime (`_updateText`, `_runIf`), which the scope
+   *   runs it again with: a binding without slots is run by the callback the runtime gives it.
+   * @param target - Whether the binding keeps its target: it writes one and reads variables of the template.
+   * @param indexed - Whether the binding keeps, after its target, the values it computed last (see `BindingSite.indexed`
+   *   of the runtime): the bindings of `class` and `style`, which always keep their target.
+   * @returns The name the constant is declared with, `undefined` when the binding gets no slot and nothing is declared.
+   */
+  public declareBinding(name: string, members: string[], update: string, target: boolean, indexed = false): string | undefined {
+    const scope = this._scopeContext();
+    if (scope.runtimeScope) {
+      return undefined;
+    }
+
+    members.push(`update: ${update}`, `effect: ${scope._bindingSlots++}`);
+    if (indexed) {
+      members.push(`target: ${scope._bindingSlots}`, 'indexed: true');
+      scope._bindingSlots += 2;
+    } else if (target) {
+      members.push(`target: ${scope._bindingSlots++}`);
+    }
+
+    const constant = this.declareConstant(name, toObjectLiteral(members));
+    scope._sites.push(constant);
+    return constant;
+  }
+
+  /**
+   * Declares the constant of an `@if` or of a `@switch`, a binding of this scope (see {@link declareBinding}), its
+   * branches last. A block rendering a branch inline (see `ScopeKind`) is declared with the layout of the scope holding
+   * it (see {@link declareLayout}), which reserves an area of slots for its branches, as large as the largest one: the
+   * slots of a branch are known only once the functions rendering it, and the children of its elements, are generated.
+   *
+   * @param name - The name of the constant (`td0__switch0$switch`).
+   * @param members - The members of the constant before its branches.
+   * @param branches - The branches.
+   * @param update - The callback of the binding (`_runIf`).
+   * @returns The name the constant is declared with.
+   */
+  public declareBlock(name: string, members: string[], branches: readonly BlockBranch[], update: string): string {
+    const scope = this._scopeContext();
+    members.push(`update: ${update}`, `effect: ${scope._bindingSlots++}`);
+    const root = this._rootContext();
+    const constant = root._uniqueName(name);
+    scope._sites.push(constant);
+    const block: PendingBlock = { name: constant, members, branches };
+    if (branches.some(branch => branch.context)) {
+      scope._pendingBlocks.push(block);
+    } else {
+      root._constants.push(`const ${constant} = ${writeBlock(block, 0)};`);
+    }
+
+    return constant;
+  }
+
+  /**
+   * Declares the layout of the runtime scope of this scope (see `_ScopeLayout` of the runtime), once its body is
+   * generated: its size, the slot of its first node, the slot of its first container, if any, and the names of its
+   * variables. Identical layouts share a constant of the module, held by the root scope.
+   *
+   * @returns The name of the constant.
+   */
+  public declareLayout(): string {
+    const nodes = SCOPE_HEADER + this.identifierCount;
+    const bindings = nodes + this._nodeCount;
+    // The areas of the branches rendered inline follow the bindings, one per block, as large as its largest branch
+    let containers = bindings + this._bindingSlots;
+    const root = this._rootContext();
+    for (let i = 0; i < this._pendingBlocks.length; i++) {
+      const block = this._pendingBlocks[i];
+      root._constants.push(`const ${block.name} = ${writeBlock(block, containers)};`);
+      containers += areaSize(block.branches);
+    }
+
+    const members = [`size: ${containers + CONTAINER_SLOTS * this._containerCount}`, `nodes: ${nodes}`];
+    if (this._sites.length) {
+      members.push(`bindings: ${bindings}`, `sites: ${toArrayLiteral(this._sites)}`);
+    }
+
+    if (this._containerCount) {
+      members.push(`containers: ${containers}`);
+    }
+
+    if (this.identifierCount) {
+      members.push(`variables: [${this.variableNames.map(name => `'${name}'`).join(', ')}]`);
+    }
+
+    return root._layout(toObjectLiteral(members));
+  }
+
+  /**
+   * Describes a branch rendered inline once its slots are known (see `InlineBranch` of the runtime): the first slot of
+   * the area of its block, how many slots it fills, the slots of its nodes, its bindings and the slot of its cleanups,
+   * the ones it has.
+   *
+   * @param base - The first slot of the area of its block.
+   * @returns The members describing it.
+   */
+  public describeInline(base: number): string[] {
+    const members = [`base: ${base}`, `size: ${this._bindingSlots}`, `nodes: ${toArrayLiteral(this._inlineNodes.map(String))}`];
+    if (this._sites.length) {
+      members.push(`sites: ${toArrayLiteral(this._sites)}`);
+    }
+
+    if (this._cleanupSlot !== undefined) {
+      members.push(`cleanup: ${this._cleanupSlot}`);
+    }
+
+    return members;
+  }
+
+  /**
+   * Declares a constant of the module, held by the root scope and written before the functions (see
+   * {@link constantDeclarations}): the configuration of an element or of a block, the variables of a `@for`, a template,
+   * which the runtime receives at every render of the template and only reads.
+   *
+   * N.B. Deliberate, to save memory: what does not change from an instance of the template to another is declared once in
+   * the module, instead of an array or an object literal written in the render code, which would allocate it at each
+   * render, in every row of a table. Do not inline it.
+   *
+   * @param name - The name of the constant, derived from the one of the element or of the block it describes, followed by
+   *   `$` and its role (`td0$element`, `div0__if0$if`): a name already declared gets a number after it.
+   * @param value - The code of its value, the first line on the line of its name.
+   * @returns The name the constant is declared with.
+   */
+  public declareConstant(name: string, value: string): string {
+    if (this.parent) {
+      return this.parent.declareConstant(name, value);
+    }
+
+    const unique = this._uniqueName(name);
+    this._constants.push(`const ${unique} = ${value};`);
+    return unique;
+  }
+
+  /**
+   * Declares a function of the module computing an expression of the template, held by the root scope and written after
+   * the functions rendering the blocks (see {@link functionDeclarations}): the runtime calls it with the component as
+   * `this` and the parameters it lists, the context first, so it reads nothing else.
+   *
+   * N.B. Deliberate, to save memory: an expression is a function declared once in the module, instead of an arrow
+   * function written in the render code, which would create a closure at each render, in every row of a table. Do not
+   * write expressions as closures.
+   *
+   * @param name - The name of the function, derived from the one of the element or of the block holding the expression,
+   *   followed by `$` and its role (`tr0$class`, `table0__for0$track`): a name already declared gets a number after it.
+   * @param parameters - The parameters of the function (`context`, `context, $event`).
+   * @param body - The lines of its body.
+   * @returns The name the function is declared with.
+   */
+  public declareFunction(name: string, parameters: string, body: readonly string[]): string {
+    if (this.parent) {
+      return this.parent.declareFunction(name, parameters, body);
+    }
+
+    const unique = this._uniqueName(name);
+    const lines = [`function ${unique}(${parameters}) {`];
+    for (let i = 0; i < body.length; i++) {
+      lines.push(`  ${body[i]}`);
+    }
+
+    lines.push('}');
+    this._functions.push(lines.join('\n'));
+    return unique;
+  }
+
+  /**
+   * Returns the metadata of a component or of a directive the template imports, registered in this scope or any of its
+   * ancestor scopes.
+   *
+   * @param key - The tag name of the component, or the selector of the directive as applied in templates (`@@selector`).
+   * @returns The metadata, `undefined` when the template imports no such component or directive.
+   */
+  public getImportedMetadata(key: string): ComponentOrDirectiveMetadata | undefined {
+    return this._importedMetadata.get(key) ?? this.parent?.getImportedMetadata(key);
+  }
+
+  /**
+   * Returns the root scope of the template.
+   *
+   * @returns The root scope.
+   */
+  private _rootContext(): GeneratorContext {
+    return this.parent ? this.parent._rootContext() : this;
+  }
+
+  /**
+   * Returns the scope standing for the runtime scope this one renders in: itself, or the closest ancestor opening one, as
+   * the children of an element opening a namespace are rendered in the runtime scope of the element.
+   *
+   * @returns The scope.
+   */
+  private _scopeContext(): GeneratorContext {
+    let context: GeneratorContext = this;
+    // A branch rendered inline holds the slots of what it renders, in the area of its block
+    while (!context.opensScope && !context.inlineBranch) {
+      context = context.parent!;
+    }
+
+    return context;
+  }
+
+  /**
+   * Returns the constant of the module holding a layout, declaring it the first time.
+   *
+   * @param value - The code of the layout.
+   * @returns The name of the constant.
+   */
+  private _layout(value: string): string {
+    let constant = this._layouts.get(value);
+    if (!constant) {
+      constant = this.declareConstant(`_layout${this._layouts.size}`, value);
+      this._layouts.set(value, constant);
+    }
+
+    return constant;
+  }
+
+  /**
+   * Returns a name of the module no declaration takes yet, and takes it: the name given, or, when it is taken, the name
+   * followed by the first number not taken (`td0$on_click1`). A name declared is the one of an element or of a block,
+   * ending with its index, then `$` and a role: the names of the module the generator writes otherwise (the functions
+   * rendering the blocks, `render`, `_reads0`) never take that form.
+   *
+   * @param name - The name wanted.
+   * @returns The name to declare.
+   */
+  private _uniqueName(name: string): string {
+    let unique = name;
+    for (let i = 1; this._moduleNames.has(unique); i++) {
+      unique = `${name}${i}`;
+    }
+
+    this._moduleNames.add(unique);
+    return unique;
+  }
+}
+
+/**
+ * Writes the constant of an `@if` or of a `@switch` (see `GeneratorContext.declareBlock`): its members, then its
+ * branches, each one rendered inline described with its slots.
+ *
+ * @param block - The block.
+ * @param base - The first slot of the area of the branches rendered inline.
+ * @returns The code of the constant.
+ */
+function writeBlock({ members, branches }: PendingBlock, base: number): string {
+  const described = new Array<string>(branches.length);
+  for (let i = 0; i < branches.length; i++) {
+    const { members: branch, context } = branches[i];
+    described[i] = toObjectLiteral(context ? branch.concat(context.describeInline(base)) : branch);
+  }
+
+  return toObjectLiteral(members.concat(`branches: ${toArrayLiteral(described)}`));
+}
+
+/**
+ * Returns the number of slots of the area of the branches of a block rendered inline: the slots of the largest one.
+ *
+ * @param branches - The branches.
+ * @returns The number of slots.
+ */
+function areaSize(branches: readonly BlockBranch[]): number {
+  let size = 0;
+  for (let i = 0; i < branches.length; i++) {
+    size = Math.max(size, branches[i].context?.inlineSlots ?? 0);
+  }
+
+  return size;
+}

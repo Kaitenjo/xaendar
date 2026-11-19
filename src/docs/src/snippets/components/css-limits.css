@@ -1,0 +1,5 @@
+/* rating.css */
+@import url('./shared.css');         /* ✗ dropped, with a warning in the console */
+.star {
+  background: url('./star.svg');     /* resolved against the page, not against this file */
+}

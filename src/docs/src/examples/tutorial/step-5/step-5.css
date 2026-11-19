@@ -1,0 +1,40 @@
+:host {
+  display: block;
+}
+
+h3 {
+  margin: 0 0 0.5rem;
+}
+
+form,
+.filters {
+  display: flex;
+  gap: 0.5rem;
+}
+
+input {
+  font: inherit;
+}
+
+ul {
+  padding-left: 1.25rem;
+}
+
+label {
+  margin-right: 1rem;
+}
+
+.done {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.active {
+  border-color: var(--xd-accent);
+  background: var(--xd-accent-soft);
+  color: var(--xd-accent);
+}
+
+p {
+  margin: 0.5rem 0 0;
+}

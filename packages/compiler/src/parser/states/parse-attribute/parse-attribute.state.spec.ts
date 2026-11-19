@@ -1,0 +1,68 @@
+import { describe, expect, it } from 'vitest';
+import { TokenType } from '../../../lexer/types/token-type.enum';
+import { Token } from '../../../lexer/types/token.type';
+import { AttributeToken } from '../../../lexer/types/tokens/attribute-token.type';
+import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
+import { ASTNodeType } from '../../types/node.enum';
+import { parseAttribute } from './parse-attribute.state';
+
+const attribute: Token = { type: TokenType.ATTRIBUTE, parts: ['disabled'], span: { start: 0, end: 8 } };
+
+const run = (...following: Token[]) => {
+  const cursor = new ParserCursor('disabled', [attribute, ...following]);
+  return parseAttribute(cursor, () => undefined, cursor.peek() as AttributeToken);
+};
+
+describe('parseAttribute', () => {
+  it.each([
+    ['another attribute', { type: TokenType.ATTRIBUTE, parts: ['x'], span: { start: 9, end: 10 } } as Token],
+    ['a closing tag name', { type: TokenType.TAG_CLOSE_NAME, parts: ['div'], span: { start: 9, end: 12 } } as Token],
+    ['an event', { type: TokenType.EVENT, parts: ['click'], span: { start: 9, end: 14 } } as Token],
+    ['the end of the opening tag', { type: TokenType.TAG_OPEN_END, parts: [], span: { start: 9, end: 10 } } as Token],
+    ['the end of a self-closing tag', { type: TokenType.TAG_SELF_CLOSE, parts: [], span: { start: 9, end: 11 } } as Token],
+    ['an @if', { type: TokenType.IF, span: { start: 9, end: 12 } } as Token],
+    ['an @else if', { type: TokenType.ELSE_IF, span: { start: 9, end: 17 } } as Token],
+    ['an @else', { type: TokenType.ELSE, span: { start: 9, end: 14 } } as Token],
+    ['a @switch', { type: TokenType.SWITCH, span: { start: 9, end: 16 } } as Token],
+    ['a @case', { type: TokenType.CASE, span: { start: 9, end: 14 } } as Token],
+    ['a @default', { type: TokenType.DEFAULT, span: { start: 9, end: 17 } } as Token],
+    ['the end of a block of a conditional binding', { type: TokenType.BLOCK_CLOSE, span: { start: 9, end: 10 } } as Token],
+    ['a directive', { type: TokenType.DIRECTIVE, parts: ['myDirective'], span: { start: 9, end: 22 } } as Token],
+    ['a structural directive', { type: TokenType.STRUCTURAL_DIRECTIVE, parts: ['hasRole'], span: { start: 9, end: 17 } } as Token],
+    ['the end of a directive', { type: TokenType.DIRECTIVE_CLOSE, span: { start: 9, end: 10 } } as Token],
+    ['an element ref', { type: TokenType.ELEMENT_REF, parts: ['field'], span: { start: 10, end: 15 } } as Token]
+  ])('treats an attribute followed by %s as a boolean attribute', (_name, next) => {
+    expect(run(next)).toEqual({
+      type: ASTNodeType.Attribute,
+      name: 'disabled',
+      nameSpan: { start: 0, end: 8 },
+      value: 'true',
+      bare: true,
+      span: { start: 0, end: 8 }
+    });
+  });
+
+  it('parses a literal attribute value', () => {
+    const node = run({ type: TokenType.ATTRIBUTE_VALUE, parts: ['abc'], span: { start: 9, end: 12 } });
+    expect(node).toMatchObject({ name: 'disabled', value: 'abc', span: { start: 0, end: 12 } });
+  });
+
+  it('decodes the character references of a literal attribute value', () => {
+    const node = run({ type: TokenType.ATTRIBUTE_VALUE, parts: ['a &amp; b &quot;&#64;&lbrace;'], span: { start: 9, end: 38 } });
+    expect(node).toMatchObject({ value: 'a & b "@{' });
+  });
+
+  it('parses an interpolated value', () => {
+    const node = run({ type: TokenType.INTERPOLATION_EXPRESSION, parts: ['value'], span: { start: 9, end: 16 } });
+    expect(node).toMatchObject({
+      name: 'disabled',
+      nameSpan: { start: 0, end: 8 },
+      value: { type: ASTNodeType.Interpolation },
+      span: { start: 0, end: 16 }
+    });
+  });
+
+  it('throws when the attribute is followed by an unrelated token', () => {
+    expect(() => run({ type: TokenType.TEXT, parts: ['x'], span: { start: 9, end: 10 } })).toThrow('Attribute value missing for disabled');
+  });
+});

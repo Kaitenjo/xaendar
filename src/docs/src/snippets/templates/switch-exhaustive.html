@@ -1,0 +1,12 @@
+@switch (status()) {                   <!-- status(): 'pending' | 'shipped' | 'delivered' -->
+  @case ('pending') {
+    <p>Preparing</p>
+  }
+  @case ('shipped') {
+    <p>On its way</p>
+  }
+  @case ('delivered') {
+    <p>Delivered</p>
+  }
+  @default never;                      <!-- every value has a @case: checked by the build -->
+}

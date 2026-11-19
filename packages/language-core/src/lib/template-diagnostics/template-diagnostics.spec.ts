@@ -1,0 +1,755 @@
+import { createSourceFile, type Diagnostic, DiagnosticCategory, type LanguageService, ScriptTarget } from 'typescript';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { analyzeTemplate } from '../template-analysis/template-analysis';
+import type { TemplateAnalysisResult } from '../types/template-analysis-result.type';
+import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
+import type { FixtureProject } from '../types/fixture-project.type';
+import { getTemplateDiagnostics } from './template-diagnostics';
+
+const TIMEOUT = 60_000;
+let project: FixtureProject;
+
+beforeAll(() => {
+  project = createFixtureProject();
+});
+
+afterAll(() => {
+  project.dispose();
+});
+
+/**
+ * Analyzes a template and returns its diagnostics as the text of the template they are reported on and their message.
+ */
+const diagnose = async (source: string) => getTemplateDiagnostics(await project.analyze(source)).map(({ span, message, category }): [text: string, message: string, category: DiagnosticCategory] => [source.slice(span.start, span.end), message, category]);
+
+describe('getTemplateDiagnostics of a @hydrate', () => {
+  it('reports a trigger without elements to watch at the trigger, checking the content of the block too', async () => {
+    const diagnostics = await diagnose('@hydrate (visible) { @client { <x-unknown></x-unknown> } }');
+
+    expect(diagnostics.map(([text]) => text)).toContain('visible');
+    expect(diagnostics.some(([, message]) => message.includes('The trigger "visible" watches the elements the server renders'))).toBe(true);
+    expect(diagnostics.some(([, message]) => message.includes('x-unknown'))).toBe(true);
+  }, TIMEOUT);
+
+  it('reports a trigger next to never, which stops the parser, as the only problem of the template', async () => {
+    expect(await diagnose('<p>@hydrate (never, idle) { <b></b> }</p>')).toEqual([
+      [expect.any(String), 'The trigger "never" stands alone: any other trigger would hydrate the content', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports nothing once the @client has a @placeholder holding an element', async () => {
+    expect(await diagnose('@hydrate (visible) { @client { <b></b> } @placeholder { <i></i> } }')).toEqual([]);
+  }, TIMEOUT);
+});
+
+describe('getTemplateDiagnostics', () => {
+  describe('where the project renders', () => {
+    /**
+     * The diagnostics of a template of a directory, whose `xaendar.json` declares what is given, if anything, as the text
+     * of the template they are reported on, their message and their category.
+     */
+    const diagnoseIn = async (directory: string, source: string, config?: object) => {
+      if (config) {
+        project.write(`src/${directory}/xaendar.json`, JSON.stringify(config));
+      }
+
+      const diagnostics = getTemplateDiagnostics(await analyzeTemplate(project.path(`src/${directory}/app.html`), source, new Map([[project.path('src/app.ts'), ['App']]])));
+      return diagnostics.map(({ span, message, category }) => [source.slice(span.start, span.end), message, category]);
+    };
+
+    it('reports the reads of the globals of the browser in a project rendering on the server', async () => {
+      expect(await diagnoseIn('with-ssr', '{ document.title } @client { { document.title } }', { ssr: { entry: 'src/entry-server' } })).toEqual([
+        ['document', '\'document\' exists only in the browser: on the server it is undefined. Read it in a @client block, or check it with typeof.', DiagnosticCategory.Warning]
+      ]);
+    }, TIMEOUT);
+
+    it('rejects the blocks in a project rendering in the browser only, on their keyword, checking their content too', async () => {
+      expect(await diagnoseIn('without-ssr', '@hydrate (idle) { <x-unknown></x-unknown> @client { a } }', {})).toEqual([
+        ['@hydrate', '@hydrate is only for a project rendering on the server: declare "ssr" in its xaendar.json, or remove the block', DiagnosticCategory.Error],
+        ['@client', '@client is only for a project rendering on the server: declare "ssr" in its xaendar.json, or remove the block', DiagnosticCategory.Error],
+        ['x-unknown', 'x-unknown selector is not associated to any WebComponent imported in the template, nor declared in customElements', DiagnosticCategory.Error]
+      ]);
+    }, TIMEOUT);
+
+    it('says nothing about where the project renders without a xaendar.json', async () => {
+      expect(await diagnoseIn('without-config', '@client { { document.title } }')).toEqual([]);
+    }, TIMEOUT);
+
+    it('warns about an event the element does not declare on its name, typing its $event as Event, unless strictEvents is false', async () => {
+      const source = '<div (bubbling)="select($event.timeStamp)" (click)="select(1)"></div>';
+
+      expect(await diagnoseIn('strict-events', source)).toEqual([
+        ['bubbling', '\'bubbling\' is not an event of <div>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set "strictEvents": false in xaendar.json to turn this warning off.', DiagnosticCategory.Warning]
+      ]);
+      expect(await diagnoseIn('loose-events', source, { strictEvents: false })).toEqual([]);
+    }, TIMEOUT);
+  });
+
+  it('types the error of a @catch as TypeScript types the one of a catch, unknown until it is narrowed', async () => {
+    const source = '@try { { title } } @catch (failure) { { failure.message } { failure instanceof Error ? failure.message : \'\' } }';
+
+    expect(await diagnose(source)).toEqual([
+      ['failure', '\'failure\' is of type \'unknown\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('types the error of an @error as the one of a catch, and reports the trigger of a @defer watching no element', async () => {
+    const source = '@defer (visible, when title) { { title } } @error (failure) { { failure.message } }';
+
+    expect(await diagnose(source)).toEqual([
+      ['visible', 'The trigger "visible" watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element, or name the element to watch with an element ref, such as hover(button)', DiagnosticCategory.Error],
+      ['failure', '\'failure\' is of type \'unknown\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports a trigger naming what is not an element, and options the observer of visible does not take', async () => {
+    const source = '<input #field />@defer (hover(field), interaction(title), visible({ rootMargin: 1, threshold: 0.5 })) { a } @placeholder { <p></p> }';
+
+    expect(await diagnose(source)).toEqual([
+      ['title', 'Type \'string\' does not satisfy the expected type \'Element\'.', DiagnosticCategory.Error],
+      ['rootMargin', 'Type \'number\' is not assignable to type \'string\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports the type errors on the exact characters of the template they come from', async () => {
+    const source = '<b (click)="nope()">{ missing }</b>\n@for (item of items; track item.id) { {item.nam} }';
+
+    expect(await diagnose(source)).toEqual([
+      ['nope', 'Property \'nope\' does not exist on type \'App\'.', DiagnosticCategory.Error],
+      ['missing', 'Property \'missing\' does not exist on type \'App\'.', DiagnosticCategory.Error],
+      ['nam', 'Property \'nam\' does not exist on type \'{ id: number; name: string; }\'. Did you mean \'name\'?', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('checks the casts of the interpolations and of the arguments of a handler, reporting a type on its name and a conversion on the cast', async () => {
+    const source = '@import { Row } from \'./utils\';\n<b (click)="select($event as unknown as number)" title="{ items[0] as Row }">{ title as Missing } { title as number }</b>';
+
+    expect(await diagnose(source)).toEqual([
+      ['Missing', 'Cannot find name \'Missing\'.', DiagnosticCategory.Error],
+      ['title as number', expect.stringContaining('Conversion of type \'string\' to type \'number\' may be a mistake'), DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('checks the casts of the arguments of the calls, the ones of a @render included', async () => {
+    const source = [
+      '@import { Row } from \'./utils\';',
+      '<template row(item: Row)>{ item.id }</template>',
+      '@render row(items[0] as Row)',
+      '{ select(title as unknown as number) } { select(title as Unknown) }'
+    ].join('\n');
+
+    expect(await diagnose(source)).toEqual([
+      ['Unknown', 'Cannot find name \'Unknown\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('types an element ref with the type of the element it names, reporting its reads before the element and its duplicates', async () => {
+    expect(await diagnose('<p>{ field.value }</p>\n<input #field />\n{ field.valu }')).toEqual([
+      ['field', '"field" is read before the element it names is created: only an event handler can read an element ref declared after it', DiagnosticCategory.Error],
+      ['valu', 'Property \'valu\' does not exist on type \'HTMLInputElement\'. Did you mean \'value\'?', DiagnosticCategory.Error]
+    ]);
+
+    expect(await diagnose('<input #field />\n<select #field />')).toEqual([
+      ['field', 'Cannot redeclare block-scoped variable \'field\'.', DiagnosticCategory.Error],
+      ['field', 'Cannot redeclare block-scoped variable \'field\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('types the properties of $event and the calls passed to a handler, checking them against its parameters', async () => {
+    const source = [
+      '@import { formatDate } from \'./utils\';',
+      '<input (keydown)="select($event.keyCode)" (input)="select($event.key)" />',
+      '<b (click)="select(formatDate($event.timeStamp).length)" (dblclick)="select(formatDate($event.detail))">x</b>'
+    ].join('\n');
+
+    expect(await diagnose(source)).toEqual([
+      ['key', 'Property \'key\' does not exist on type \'InputEvent\'.', DiagnosticCategory.Error],
+      ['formatDate', 'Argument of type \'string\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('types a @let with its value, the one reading a signal too, reporting its reads before it', async () => {
+    project.write('src/store.ts', 'import type { Signal } from \'@xaendar/core/signals\';\nexport declare const total: Signal<number>;\n');
+    const source = [
+      '@import { total } from \'./store\';',
+      '<p>{ early }</p>',
+      '@let early = 1;',
+      '@let sum = total() + 1;',
+      '@let label = title;',
+      '{ sum.toFixed() } { label.length } { sum.nope } { label }'
+    ].join('\n');
+
+    expect(await diagnose(source)).toEqual([
+      ['early', '"early" is read before its @let: only an event handler can read a @let declared after it', DiagnosticCategory.Error],
+      ['nope', 'Property \'nope\' does not exist on type \'number\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('tells that a variable of the template is not a signal when an expression calls it, unless its value is a function', async () => {
+    project.write('src/handlers.ts', 'export type Handler = () => string;\n');
+    const source = [
+      '@import { Handler } from \'./handlers\';',
+      '@let total = items.length;',
+      '<template row(item: { id: number }, format: Handler)>{ item().id } { format() }</template>',
+      '@for (row of items; track row.id; i = $index) { { row() } { $even() } { i() } { total() } }'
+    ].join('\n');
+    const message = (name: string) => `'${name}' is a template variable, not a signal: remove the parentheses and read it as ${name}, since the variables of a template (@for, @let, parameters of a template) hold their values`;
+
+    expect(await diagnose(source)).toEqual([
+      ['item', message('item'), DiagnosticCategory.Error],
+      ['row', message('row'), DiagnosticCategory.Error],
+      ['$even', message('$even'), DiagnosticCategory.Error],
+      ['i', message('i'), DiagnosticCategory.Error],
+      ['total', message('total'), DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('checks the arguments of a @render against the parameters of the template, typed with imported types too, which its content reads as signals', async () => {
+    const source = [
+      '@import { Row } from \'./utils\';',
+      '@render row(items[0], 1)',
+      '@render row(items[0], \'a\')',
+      '@render row(items[0])',
+      '@render row(items[0], 1, 2)',
+      '<template row(item: Row, index: number)>{ item.id } { item.nam } { index.toFixed() }</template>',
+      '<template wrong(value: Nope) />'
+    ].join('\n');
+
+    // The templates are declared at the start of their scope, before the @render, and their parameters are checked with their content
+    expect(await diagnose(source)).toEqual([
+      ['\'a\'', 'Argument of type \'string\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error],
+      ['@render row(items[0])', 'Expected 2 arguments, but got 1.', DiagnosticCategory.Error],
+      ['2', 'Expected 2 arguments, but got 3.', DiagnosticCategory.Error],
+      ['nam', 'Property \'nam\' does not exist on type \'Row\'.', DiagnosticCategory.Error],
+      ['Nope', 'Cannot find name \'Nope\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('lets a @render leave out the arguments of the optional parameters and of the ones with a default value, typed by it or as declared', async () => {
+    const source = [
+      '@import { Row } from \'./utils\';',
+      '@render row(items[0])',
+      '@render row(items[0], \'x\', true, 2)',
+      '@render row(items[0], undefined)',
+      '@render row(items[0], \'x\', 1)',
+      '@render row()',
+      '<template row(item: Row, label = \'#\' + item.id, dense: boolean = title === \'\', count?: number)>',
+      '  { label.toUpperCase() } { dense } { count.toFixed() } { label.nope }',
+      '</template>',
+      '<template wrong(first: number = \'a\', second = third, third: number = 1) />'
+    ].join('\n');
+
+    expect(await diagnose(source)).toEqual([
+      ['undefined', 'Argument of type \'undefined\' is not assignable to parameter of type \'string\'.', DiagnosticCategory.Error],
+      ['1', 'Argument of type \'number\' is not assignable to parameter of type \'boolean\'.', DiagnosticCategory.Error],
+      ['@render row()', 'Expected 1-4 arguments, but got 0.', DiagnosticCategory.Error],
+      ['count', '\'count\' is possibly \'undefined\'.', DiagnosticCategory.Error],
+      ['nope', 'Property \'nope\' does not exist on type \'string\'.', DiagnosticCategory.Error],
+      ['first', 'Type \'string\' is not assignable to type \'number\'.', DiagnosticCategory.Error],
+      ['third', 'Parameter \'second\' cannot reference identifier \'third\' declared after it.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports the render of a name that is not a template, and the reads of a template before the elements they need', async () => {
+    expect(await diagnose('<input #field />\n@render field()')).toEqual([
+      ['field', 'Argument of type \'HTMLInputElement\' is not assignable to parameter of type \'__Template<unknown[]>\'.\n  Property \'__template\' is missing in type \'HTMLInputElement\' but required in type \'__Template<unknown[]>\'.', DiagnosticCategory.Error]
+    ]);
+    expect(await diagnose('@render row()\n<input #field />\n<template row()>{ field.value }</template>')).toEqual([
+      ['row', '"field" is read by the template rendered by @render row before the element it names is created: render the template after the element, or read the ref from an event handler', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reads the members and the imports of the template in the track expression of a @for', async () => {
+    expect(await diagnose('@import { formatDate } from \'./utils\';\n@for (item of items; track title + formatDate(item.id)) { {item.name} }')).toEqual([]);
+    expect(await diagnose('@for (item of items; track nope(item)) { }')).toEqual([
+      ['nope', 'Property \'nope\' does not exist on type \'App\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('types an element ref naming a component with its class', async () => {
+    expect(await diagnose('@import { Child } from \'./child\';\n<my-child #child label="a"></my-child>\n{ child.label() } { child.nope }')).toEqual([
+      ['nope', 'Property \'nope\' does not exist on type \'Child\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports the type errors of a binding that cannot be located more precisely on the whole binding', async () => {
+    const source = '@import { Child } from \'./child\';\n<my-child label="a" size="big" (picked)="select()"></my-child>';
+
+    expect(await diagnose(source)).toEqual([
+      ['size="big"', 'Type \'string\' does not satisfy the expected type \'number\'.', DiagnosticCategory.Error],
+      // The callee is copied verbatim from the template
+      ['select', 'Expected 1 arguments, but got 0.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports the errors of the compiler on the name of the element, directive or attribute they refer to', async () => {
+    expect(await diagnose('@import { Child } from \'./child\';\n<my-child></my-child>')).toEqual([
+      ['my-child', 'my-child is missing the following required properties:\n ● label', DiagnosticCategory.Error]
+    ]);
+    expect(await diagnose('<my-unknown></my-unknown>')).toEqual([
+      ['my-unknown', 'my-unknown selector is not associated to any WebComponent imported in the template, nor declared in customElements', DiagnosticCategory.Error]
+    ]);
+    expect(await diagnose('<div @@tooltip></div>')).toEqual([
+      ['tooltip', '@@tooltip selector is not associated to any Directive imported in the template', DiagnosticCategory.Error]
+    ]);
+    expect(await diagnose('@import { Tooltip } from \'./directives\';\n<div @@tooltip(txt="a")></div>')).toEqual([
+      ['txt', 'Unknown property "txt" on @@tooltip (Tooltip has no @Property with this name).', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports every node failing, the imports that cannot be resolved among them, and still type-checks the others', async () => {
+    const source = '@import { Missing } from \'./child\';\n<my-unknown></my-unknown>\n<div @@tooltip></div>\n<p><my-unknown></my-unknown></p>\n<b>{ missing }</b>';
+
+    expect(await diagnose(source)).toEqual([
+      ['my-unknown', 'my-unknown selector is not associated to any WebComponent imported in the template, nor declared in customElements', DiagnosticCategory.Error],
+      ['tooltip', '@@tooltip selector is not associated to any Directive imported in the template', DiagnosticCategory.Error],
+      ['my-unknown', 'my-unknown selector is not associated to any WebComponent imported in the template, nor declared in customElements', DiagnosticCategory.Error],
+      // An export the module doesn't have is reported by TypeScript on its name
+      ['Missing', expect.stringMatching(/child"' has no exported member 'Missing'\.$/), DiagnosticCategory.Error],
+      ['missing', 'Property \'missing\' does not exist on type \'App\'.', DiagnosticCategory.Error],
+      ['Missing', '\'Missing\' is declared but never used.', DiagnosticCategory.Suggestion]
+    ]);
+  }, TIMEOUT);
+
+  it('reports a syntax error on its span', async () => {
+    expect(await diagnose('<b>{ a = 1 }</b>')).toEqual([
+      ['=', '\'FirstAssignment\' is not allowed inside template expressions.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports an error without span at the start of the template', () => {
+    const result: TemplateAnalysisResult = { analysis: undefined, error: new Error('boom'), ast: undefined };
+
+    expect(getTemplateDiagnostics(result)).toEqual([{ span: { start: 0, end: 0 }, message: 'boom', category: DiagnosticCategory.Error }]);
+  });
+
+  it('reports the diagnostics of the unmapped lines on the element enclosing them, and the others at the start', async () => {
+    const source = '<ul>\n  @for (item of items; track item.id) { <li>{ item.name }</li> }\n</ul>';
+    const { analysis } = await project.analyze(source);
+    const shimFile = createSourceFile(analysis!.shimPath, analysis!.languageService.getProgram()!.getSourceFile(analysis!.shimPath)!.text, ScriptTarget.Latest);
+    // `let $index!: Signal<number>;`, declared by the shim only
+    const unmapped = shimFile.text.indexOf('let $index');
+    const diagnostic = (file: Diagnostic['file'], start?: number): Diagnostic => ({ file, start, length: 1, messageText: { messageText: 'chain', category: DiagnosticCategory.Warning, code: 1, next: [{ messageText: 'next', category: DiagnosticCategory.Warning, code: 2 }] }, category: DiagnosticCategory.Warning, code: 1 });
+    const languageService = {
+      getSyntacticDiagnostics: () => [diagnostic(shimFile, unmapped)],
+      getSemanticDiagnostics: () => [diagnostic(shimFile, 0), diagnostic(undefined)],
+      getProgram: () => analysis!.languageService.getProgram()
+    } as unknown as LanguageService;
+
+    expect(getTemplateDiagnostics({ analysis: { ...analysis!, languageService }, error: undefined, ast: analysis!.ast })).toEqual([
+      { span: { start: 1, end: 3 }, message: 'chain\n  next', category: DiagnosticCategory.Warning, code: 1 },
+      { span: { start: 0, end: 0 }, message: 'chain\n  next', category: DiagnosticCategory.Warning, code: 1 },
+      { span: { start: 0, end: 0 }, message: 'chain\n  next', category: DiagnosticCategory.Warning, code: 1 }
+    ]);
+  }, TIMEOUT);
+});
+
+describe('getTemplateDiagnostics unused imports', () => {
+  it('reports the imports the template never uses as unnecessary, not as problems', async () => {
+    const source = '@import { Child } from \'./child\';\n@import { Tooltip, Media as M } from \'./directives\';\n<my-child label="a" @@tooltip></my-child>';
+    const diagnostics = getTemplateDiagnostics(await project.analyze(source));
+
+    expect(diagnostics).toEqual([{ span: { start: source.indexOf('Media as M'), end: source.indexOf('Media as M') + 'Media as M'.length }, message: '\'M\' is declared but never used.', category: DiagnosticCategory.Suggestion, unnecessary: true }]);
+  }, TIMEOUT);
+
+  it('reports nothing for a template using its imports', async () => {
+    expect(await diagnose('@import { Child } from \'./child\';\n<my-child label="a"></my-child>')).toEqual([]);
+  }, TIMEOUT);
+});
+
+describe('getTemplateDiagnostics imported symbols', () => {
+  const imports = '@import { formatDate, Status, Shape, Row, LIMIT, default as shout, * as utils } from \'./utils\';\n@import { Rows } from \'./rows\';\n';
+
+  beforeAll(() => {
+    project.write('src/rows.ts', [
+      'import { Directive, InputSignal, Property } from \'@xaendar/core\';',
+      '@Directive({ selector: \'rows\' })',
+      'export class Rows<Item extends { id: number }> {',
+      '  @Property([]) accessor items!: InputSignal<Item[]>;',
+      '}',
+      ''
+    ].join('\n'));
+  });
+
+  it('reads functions, enums, constants, classes, default exports and namespaces in the expressions, and types in the type arguments', async () => {
+    const source = `${imports}<p title="{ formatDate(LIMIT) }" @@rows<Row>(items="{ items }")>{ Status.Active } { items[0] instanceof Shape } { shout('a') } { utils.LIMIT }</p>`;
+
+    expect(await diagnose(source)).toEqual([]);
+  }, TIMEOUT);
+
+  it('reports what TypeScript reports about the symbols, on the template', async () => {
+    const source = '@import { formatDate, Row } from \'./utils\';\n{ formatDate(\'a\') } { Row }';
+
+    expect(await diagnose(source)).toEqual([
+      ['\'a\'', 'Argument of type \'string\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error],
+      ['Row', '\'Row\' only refers to a type, but is being used as a value here.', DiagnosticCategory.Error],
+      // A type read as a value is not a reference to it
+      ['Row', '\'Row\' is declared but never used.', DiagnosticCategory.Suggestion]
+    ]);
+  }, TIMEOUT);
+
+  it('reports a symbol imported under the name of a member of the component on its name', async () => {
+    expect(await diagnose('@import { title } from \'./utils\';\n{ title() }')).toEqual([
+      ['title', '\'title\' is also a member of App: import it under another name (… as name), or rename the member.', DiagnosticCategory.Error]
+    ]);
+    expect(await diagnose('@import { title as heading } from \'./utils\';\n{ heading() }')).toEqual([]);
+  }, TIMEOUT);
+
+  it('reports a symbol imported under a name the generated code reserves, without telling it unused', async () => {
+    expect(await diagnose('@import { title as root } from \'./utils\';')).toEqual([
+      ['root', '"root" is reserved in templates: import it under another name (… as name).', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reads the exports of a package, and the components and the symbols reached through an alias of the project', async () => {
+    const source = '@import { CURRENCY, formatPrice } from \'@acme/format\';\n@import { Child } from \'@app/child\';\n@import { LIMIT } from \'@app/utils\';\n<my-child label="{ formatPrice(LIMIT) }" />{ CURRENCY }';
+
+    expect(await diagnose(source)).toEqual([]);
+    expect(await diagnose('@import { formatPrice } from \'@acme/format\';\n{ formatPrice(\'a\') }')).toEqual([
+      ['\'a\'', 'Argument of type \'string\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error]
+    ]);
+    expect(await diagnose('@import { nope } from \'@acme/format\';')).toEqual([
+      ['nope', 'Module \'"@acme/format"\' has no exported member \'nope\'.', DiagnosticCategory.Error],
+      ['nope', '\'nope\' is declared but never used.', DiagnosticCategory.Suggestion]
+    ]);
+  }, TIMEOUT);
+
+  it('reports a package that is not installed, and an alias the project doesn\'t declare, on their path', async () => {
+    expect(await diagnose('@import { x } from \'@acme/missing\';\n@import { y } from \'@nope/utils\';')).toEqual([
+      ['@acme/missing', 'Cannot find module "@acme/missing"', DiagnosticCategory.Error],
+      ['@nope/utils', 'Cannot find module "@nope/utils"', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports the symbols no expression and no type argument reads as unnecessary', async () => {
+    const source = '@import { formatDate, Status, Row as Line } from \'./utils\';\n{ formatDate(1) }';
+
+    expect(await diagnose(source)).toEqual([
+      ['Status', '\'Status\' is declared but never used.', DiagnosticCategory.Suggestion],
+      ['Row as Line', '\'Line\' is declared but never used.', DiagnosticCategory.Suggestion]
+    ]);
+  }, TIMEOUT);
+});
+
+describe('getTemplateDiagnostics generic directives', () => {
+  const imports = '@import { List } from \'./generic\';\n';
+
+  beforeAll(() => {
+    project.write('src/generic.ts', [
+      'import { Directive, Event, InputSignal, Output, Property } from \'@xaendar/core\';',
+      '@Directive({ selector: \'list\' })',
+      'export class List<Item extends { id: number }, Key = string> {',
+      '  @Property([]) accessor items!: InputSignal<Item[]>;',
+      '  @Event() accessor picked!: Output<Key>;',
+      '  @Event() accessor selected!: Output<Item>;',
+      '}',
+      ''
+    ].join('\n'));
+  });
+
+  it('checks the properties and the events of a directive against the type arguments the template declares', async () => {
+    const events = (key: string) => `${imports}<p @@list<{ id: number; name: string }, ${key}>(items="{ items }" (picked)="select($event)")></p>`;
+
+    // The event of the directive carries the second type argument
+    expect((await diagnose(events('number')))[0][1]).toContain('CustomEvent<number>');
+    expect((await diagnose(events('string')))[0][1]).toContain('CustomEvent<string>');
+  }, TIMEOUT);
+
+  it('checks the value of a property against the type argument', async () => {
+    const source = `${imports}<p @@list<{ id: number; name: string }>(items="{ items }")></p>\n<p @@list<{ id: number; name: string }>(items="{ [{ id: 1 }] }")></p>`;
+
+    const diagnostics = await diagnose(source);
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0][1]).toContain('name');
+  }, TIMEOUT);
+
+  it('reports a type argument that does not satisfy the constraint of the type parameter on the type arguments', async () => {
+    const source = `${imports}<p @@list<string>(items="{ [] }")></p>`;
+
+    expect(await diagnose(source)).toContainEqual(['string', 'Type \'string\' does not satisfy the constraint \'{ id: number; }\'.', DiagnosticCategory.Error]);
+  }, TIMEOUT);
+
+  it('accepts a generic directive without type arguments: a type parameter gets its default type, or any', async () => {
+    expect(await diagnose(`${imports}<p @@list(items="{ items }")></p>`)).toEqual([]);
+
+    // Key defaults to string, Item has no default
+    const events = await diagnose(`${imports}<p @@list(items="{ items }" (picked)="select($event)")></p>`);
+    expect(events[0][1]).toContain('CustomEvent<string>');
+  }, TIMEOUT);
+
+  it('infers the type parameters from the values bound to the properties', async () => {
+    const events = await diagnose(`${imports}<p @@list(items="{ items }" (selected)="select($event)")></p>`);
+
+    // Item is the type of the elements of the array bound to items, which the component declares
+    expect(events).toHaveLength(1);
+    expect(events[0][1]).toContain('CustomEvent<{ id: number; name: string; }>');
+  }, TIMEOUT);
+
+  it('uses the type arguments of the template instead of inferring, leaving the others to their default type', async () => {
+    const source = `${imports}<p @@list<{ id: number }>(items="{ items }" (selected)="select($event)" (picked)="select($event)")></p>`;
+    const events = await diagnose(source);
+
+    // The type argument is written as is in the instantiation of the class
+    expect(events.map(([, message]) => message.match(/CustomEvent<[^>]*>/)?.[0])).toEqual(['CustomEvent<{ id: number; }>', 'CustomEvent<string>']);
+  }, TIMEOUT);
+
+  it('reports an inferred type that does not satisfy the constraint of the type parameter on the directive', async () => {
+    const diagnostics = await diagnose(`${imports}<p @@list(items="{ [1, 2] }")></p>`);
+
+    expect(diagnostics).toContainEqual(['list', 'Type \'number\' does not satisfy the constraint \'{ id: number; }\'.', DiagnosticCategory.Error]);
+  }, TIMEOUT);
+
+  it('does not report the errors of the call inferring the type parameters, only those of the bindings', async () => {
+    const diagnostics = await diagnose(`${imports}<p @@list(items="{ missing }")></p>`);
+
+    expect(diagnostics).toEqual([['missing', 'Property \'missing\' does not exist on type \'App\'.', DiagnosticCategory.Error]]);
+  }, TIMEOUT);
+
+  it('gives the type parameters the template leaves out their default type', async () => {
+    const events = await diagnose(`${imports}<p @@list<{ id: number; name: string }>(items="{ items }" (picked)="select($event)")></p>`);
+
+    expect(events[0][1]).toContain('CustomEvent<string>');
+  }, TIMEOUT);
+
+  it('reports the type arguments of a directive that is not generic, or more than it has type parameters', async () => {
+    expect(await diagnose('@import { Tooltip } from \'./directives\';\n<p @@tooltip<string>(text="a")></p>')).toEqual([
+      ['string', '@@tooltip declares type arguments, but Tooltip is not generic.', DiagnosticCategory.Error]
+    ]);
+    expect(await diagnose(`${imports}<p @@list<{ id: number }, string, number>(items="{ [] }")></p>`)).toEqual([
+      ['{ id: number }, string, number', '@@list declares 3 type arguments, but List has 2 type parameters (Item, Key).', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+});
+
+describe('getTemplateDiagnostics generic components', () => {
+  const imports = '@import { Grid } from \'./grid\';\n';
+
+  beforeAll(() => {
+    project.write('src/grid.ts', [
+      'import { Event, InputSignal, Output, Property, WebComponent } from \'@xaendar/core\';',
+      '@WebComponent({ selector: \'my-grid\', templateUrl: \'./grid.html\' })',
+      'export class Grid<Row extends { id: number }, Key = string> {',
+      '  @Property([]) accessor rows!: InputSignal<Row[]>;',
+      '  @Property(null!) accessor key!: InputSignal<Key>;',
+      '  @Event() accessor picked!: Output<Key>;',
+      '  @Event() accessor selected!: Output<Row>;',
+      '}',
+      ''
+    ].join('\n'));
+  });
+
+  it('infers the type parameters from the values bound to the properties', async () => {
+    const events = await diagnose(`${imports}<my-grid rows="{ items }" (selected)="select($event)"></my-grid>`);
+
+    // Row is the type of the elements of the array bound to rows, which the component declares
+    expect(events).toHaveLength(1);
+    expect(events[0][1]).toContain('CustomEvent<{ id: number; name: string; }>');
+  }, TIMEOUT);
+
+  it('checks the value of a property against the inferred type parameter', async () => {
+    expect(await diagnose(`${imports}<my-grid rows="{ items }" (picked)="select($event)"></my-grid>`)).toEqual([
+      ['$event', 'Argument of type \'CustomEvent<string>\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports an inferred type that does not satisfy the constraint of the type parameter on the tag name', async () => {
+    expect(await diagnose(`${imports}<my-grid rows="{ [1, 2] }"></my-grid>`)).toContainEqual(
+      ['my-grid', 'Type \'number\' does not satisfy the constraint \'{ id: number; }\'.', DiagnosticCategory.Error]
+    );
+  }, TIMEOUT);
+
+  it('accepts a generic component binding nothing to infer from: a type parameter gets its default type, or any', async () => {
+    expect(await diagnose(`${imports}<my-grid></my-grid>`)).toEqual([]);
+
+    // Key defaults to string, Row has no default
+    const events = await diagnose(`${imports}<my-grid (picked)="select($event)"></my-grid>`);
+    expect(events[0][1]).toContain('CustomEvent<string>');
+  }, TIMEOUT);
+
+  it('instantiates the component with the type arguments the element declares, leaving the others to their default type', async () => {
+    const explicit = await diagnose(`${imports}<my-grid({ id: number }, number) rows="{ items }" (picked)="select($event)"></my-grid>`);
+    expect(explicit).toHaveLength(1);
+    expect(explicit[0][1]).toContain('CustomEvent<number>');
+
+    const partial = await diagnose(`${imports}<my-grid({ id: number }) rows="{ items }" (selected)="select($event)"></my-grid>`);
+    expect(partial).toHaveLength(1);
+    expect(partial[0][1]).toContain('CustomEvent<{ id: number; }>');
+  }, TIMEOUT);
+
+  it('does not infer the type parameters the element leaves out from the bindings: they take their default type', async () => {
+    // Key would be inferred as number from the value without type arguments, it is string with them
+    expect(await diagnose(`${imports}<my-grid rows="{ items }" key="{ 1 }"></my-grid>`)).toEqual([]);
+    expect(await diagnose(`${imports}<my-grid({ id: number }) key="{ 1 }"></my-grid>`)).toEqual([
+      ['key="{ 1 }"', 'Type \'number\' does not satisfy the expected type \'string\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('type-checks the template of a generic component, reading its type parameters as their constraints', async () => {
+    const source = '{ rows()[0].id }{ rows()[0].missing }';
+    const analysis = await analyzeTemplate(project.path('src/grid.html'), source, new Map([[project.path('src/grid.ts'), ['Grid']]]));
+
+    expect(getTemplateDiagnostics(analysis).map(({ span, message }) => [source.slice(span.start, span.end), message])).toEqual([
+      ['missing', 'Property \'missing\' does not exist on type \'{ id: number; }\'.']
+    ]);
+  }, TIMEOUT);
+
+  it('reports a type argument that does not satisfy the constraint of the type parameter on the type arguments', async () => {
+    expect(await diagnose(`${imports}<my-grid(string)></my-grid>`)).toContainEqual(
+      ['string', 'Type \'string\' does not satisfy the constraint \'{ id: number; }\'.', DiagnosticCategory.Error]
+    );
+  }, TIMEOUT);
+
+  it('does not report the errors of the call inferring the type parameters, only those of the bindings', async () => {
+    expect(await diagnose(`${imports}<my-grid rows="{ missing }"></my-grid>`)).toEqual([
+      ['missing', 'Property \'missing\' does not exist on type \'App\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('types an element ref naming a generic component with the instantiation of the component', async () => {
+    expect(await diagnose(`${imports}<my-grid #grid rows="{ items }"></my-grid>\n{ grid.rows()[0].name } { grid.rows()[0].missing }`)).toEqual([
+      ['missing', 'Property \'missing\' does not exist on type \'{ id: number; name: string; }\'.', DiagnosticCategory.Error]
+    ]);
+    expect(await diagnose(`${imports}<my-grid({ id: number }) #grid></my-grid>\n{ grid.rows()[0].name }`)).toEqual([
+      ['name', 'Property \'name\' does not exist on type \'{ id: number; }\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+});
+
+describe('getTemplateDiagnostics narrowed signals', () => {
+  beforeAll(() => {
+    project.write('src/profile.ts', [
+      'import { CustomElement, WebComponent } from \'@xaendar/core\';',
+      'import type { Signal } from \'@xaendar/core/signals\';',
+      'type User = { name: string, address?: { city: string } };',
+      '@WebComponent({ selector: \'my-profile\', templateUrl: \'./profile.html\' })',
+      'export class Profile extends CustomElement {',
+      '  declare user: Signal<User | null>;',
+      '  declare count: Signal<number | undefined>;',
+      '  rows = [{ label: \'a\' }, null];',
+      '  take(user: Signal<User | null>): void { }',
+      '  pick(name: string): void { }',
+      '}',
+      ''
+    ].join('\n'));
+  });
+
+  /**
+   * Analyzes a source as the template of `Profile` and returns its diagnostics as the text they are reported on and their message.
+   */
+  const diagnoseProfile = async (source: string) => {
+    const analysis = await analyzeTemplate(project.path('src/profile.html'), source, new Map([[project.path('src/profile.ts'), ['Profile']]]));
+    return getTemplateDiagnostics(analysis).map(({ span, message }) => [source.slice(span.start, span.end), message]);
+  };
+
+  it('leaves out null and undefined from a signal of the component in the branches of the @if calling it, keeping the signal where it is not called', async () => {
+    const source = [
+      '@if (user()) { { user().name } <b (click)="take(user)" (dblclick)="pick(user().name)">{ user().address?.city }</b> }',
+      '@if (user()?.address) { { user().address.city } }',
+      '@if (!user()) { } @else if (count() === undefined) { { user().name } } @else { { count().toFixed() } }',
+      '{ user().name }'
+    ].join('\n');
+
+    // Only the read outside of the @if keeps null
+    expect(await diagnoseProfile(source)).toEqual([
+      ['user().name }', 'Object is possibly \'null\'.']
+    ]);
+  }, TIMEOUT);
+
+  it('narrows the item of a @for, a @let and a template parameter, reporting what the condition does not leave out on the call', async () => {
+    const source = [
+      '@for (row of rows; track $index) { @if (row) { { row.label } } }',
+      '@let current = user();',
+      '@if (current) { { current.name } { current.address.city } }',
+      '<template card(person: { name: string } | null)>@if (person) { { person.name } }</template>'
+    ].join('\n');
+
+    expect(await diagnoseProfile(source)).toEqual([
+      ['current', '\'current.address\' is possibly \'undefined\'.']
+    ]);
+  }, TIMEOUT);
+});
+
+describe('getTemplateDiagnostics host directives', () => {
+  beforeAll(() => {
+    project.write('src/field.ts', [
+      'import { CustomElement, WebComponent } from \'@xaendar/core\';',
+      'import { Tooltip } from \'./directives\';',
+      '@WebComponent({ selector: \'my-field\', hostDirectives: [{ directive: Tooltip, properties: [{ name: \'text\', alias: \'hint\' }], events: [\'shown\'] }], templateUrl: \'./field.html\' })',
+      'export class Field extends CustomElement {}',
+      ''
+    ].join('\n'));
+  });
+
+  it('checks the inputs and the events the component exposes against the ones of the directive', async () => {
+    const source = '@import { Field } from \'./field\';\n<my-field hint="a" (shown)="select($event)"></my-field>\n<my-field hint="{ 3 }"></my-field>';
+
+    expect(await diagnose(source)).toEqual([
+      ['$event', 'Argument of type \'CustomEvent<string>\' is not assignable to parameter of type \'number\'.', DiagnosticCategory.Error],
+      ['hint="{ 3 }"', 'Type \'number\' does not satisfy the expected type \'string\'.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('treats what the component does not expose as an attribute and a native event of the element', async () => {
+    expect(await diagnose('@import { Field } from \'./field\';\n<my-field text="a" (nope)="select(1)"></my-field>')).toEqual([
+      ['nope', '\'nope\' is not an event of <my-field>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set "strictEvents": false in xaendar.json to turn this warning off.', DiagnosticCategory.Warning]
+    ]);
+  }, TIMEOUT);
+});
+
+describe('getTemplateDiagnostics of an exhaustive @switch', () => {
+  beforeAll(() => {
+    project.write('src/status.ts', [
+      'import { CustomElement, WebComponent } from \'@xaendar/core\';',
+      'import type { Signal } from \'@xaendar/core/signals\';',
+      'import { Status } from \'./utils\';',
+      '@WebComponent({ selector: \'my-status\', templateUrl: \'./status.html\' })',
+      'export class StatusView extends CustomElement {',
+      '  declare state: Signal<\'idle\' | \'loading\' | \'error\'>;',
+      '  declare level: Signal<1 | 2>;',
+      '  declare kind: Signal<Status>;',
+      '  declare label: Signal<string>;',
+      '}',
+      ''
+    ].join('\n'));
+  });
+
+  /**
+   * Analyzes a source as the template of `StatusView` and returns its diagnostics as the text they are reported on and
+   * their message.
+   */
+  const diagnoseStatus = async (source: string) => {
+    const analysis = await analyzeTemplate(project.path('src/status.html'), source, new Map([[project.path('src/status.ts'), ['StatusView']]]));
+    return getTemplateDiagnostics(analysis).map(({ span, message, category }) => [source.slice(span.start, span.end), message, category]);
+  };
+
+  it('reports nothing when the cases cover every value of a union', async () => {
+    expect(await diagnoseStatus([
+      '@import { Status } from \'./utils\';',
+      '@switch (state()) { @case (\'idle\') @case (\'loading\') { a } @case (\'error\') { b } @default never; }',
+      '@switch (level()) { @case (1) { a } @case (2) { b } @default never; }',
+      '@switch (kind()) { @case (Status.Active) { a } @case (Status.Archived) { b } @default never; }',
+      '<p @switch (level()) { @case (1) { title="a" } @case (2) { title="b" } @default never; }></p>'
+    ].join('\n'))).toEqual([]);
+  }, TIMEOUT);
+
+  it('names the values the cases leave uncovered on @default never;, in the content and among the bindings of a tag', async () => {
+    expect(await diagnoseStatus([
+      '@import { Status } from \'./utils\';',
+      '@switch (state()) { @case (\'idle\') { a } @default never; }',
+      '@switch (level()) { @case (1) { a } @default never; }',
+      '@switch (kind()) { @case (Status.Active) { a } @default never; }',
+      '<p @switch (state()) { @case (\'idle\') @case (\'loading\') { title="a" } @default never; }></p>'
+    ].join('\n'))).toEqual([
+      ['@default never;', '@switch is not exhaustive: no @case covers "loading" | "error". Add the missing @case, or replace @default never; with a @default branch.', DiagnosticCategory.Error],
+      ['@default never;', '@switch is not exhaustive: no @case covers 2. Add the missing @case, or replace @default never; with a @default branch.', DiagnosticCategory.Error],
+      ['@default never;', '@switch is not exhaustive: no @case covers Status.Archived. Add the missing @case, or replace @default never; with a @default branch.', DiagnosticCategory.Error],
+      ['@default never;', '@switch is not exhaustive: no @case covers "error". Add the missing @case, or replace @default never; with a @default branch.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+
+  it('reports a type no case can cover, as string', async () => {
+    expect(await diagnoseStatus('@switch (label()) { @case (\'a\') { a } @default never; }')).toEqual([
+      ['@default never;', '@switch is not exhaustive: no @case covers string. Add the missing @case, or replace @default never; with a @default branch.', DiagnosticCategory.Error]
+    ]);
+  }, TIMEOUT);
+});

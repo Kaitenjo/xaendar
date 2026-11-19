@@ -1,0 +1,8 @@
+:host {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  background: var(--xd-accent-soft);
+}

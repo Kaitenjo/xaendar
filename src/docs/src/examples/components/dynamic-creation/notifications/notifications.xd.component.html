@@ -1,0 +1,11 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="controls">
+  <ex-button (click)="add()">Add a notification</ex-button>
+  <label>
+    <input type="checkbox" (change)="toggleUrgent()" />
+    Urgent
+  </label>
+</div>
+<div class="stack" />
+<p class="status">Open: { open() }</p>

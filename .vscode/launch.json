@@ -1,0 +1,87 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to nodemon",
+      "port": 9229,
+      "restart": true,
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
+      "sourceMapPathOverrides": {
+        "tsx://*": "${workspaceFolder}/*",
+        "../*": "${workspaceFolder}/*"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch test.ts (tsx)",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--inspect-brk", "--import", "tsx/esm"],
+      "program": "${workspaceFolder}/src/test.ts",
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
+      "sourceMapPathOverrides": {
+        "tsx://*": "${workspaceFolder}/*",
+        "../*": "${workspaceFolder}/*"
+      },
+      "env": {
+        "TSX_TSCONFIG_PATH": "${workspaceFolder}/tsconfig.json"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug xd start (docs)",
+      "program": "${workspaceFolder}/packages/cli/bin/xd.mjs",
+      "args": ["start"],
+      "cwd": "${workspaceFolder}/src/docs",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ]
+    },
+    {
+      "name": "Run Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/dist/@xaendar/vscode-client"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/dist/@xaendar/vscode-client/dist/**/*.cjs"
+      ],
+      "preLaunchTask": "build:watch:extension"
+    },
+    {
+      "name": "Attach to Server",
+      "type": "node",
+      "request": "attach",
+      "port": 6009,
+      "restart": true,
+      "outFiles": [
+        "${workspaceFolder}/dist/@xaendar/vscode-client/server/**/*.cjs"
+      ]
+    },
+  ],
+  "compounds": [
+    {
+      "name": "Dev Extension",
+      "configurations": ["Run Extension", "Attach to Server"],
+    }
+  ]
+}

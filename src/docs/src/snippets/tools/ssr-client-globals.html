@@ -1,0 +1,10 @@
+<!-- ⚠ Warned: on the server navigator is undefined -->
+<p>Your language: { navigator.language }</p>
+
+<!-- ✓ Only the browser renders it -->
+@client {
+  <p>Your language: { navigator.language }</p>
+}
+
+<!-- ✓ Checked in the same expression: the server writes nothing, the browser the language -->
+<p>{ typeof navigator === 'undefined' ? '' : navigator.language }</p>

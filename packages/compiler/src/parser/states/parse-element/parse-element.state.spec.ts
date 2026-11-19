@@ -1,0 +1,417 @@
+import { describe, expect, it } from 'vitest';
+import { Lexer } from '../../../lexer/lexer/lexer';
+import { TokenType } from '../../../lexer/types/token-type.enum';
+import { Token } from '../../../lexer/types/token.type';
+import { ElementNode } from '../../types/nodes/element-node.type';
+import type { TemplateNode } from '../../types/nodes/template-node.type';
+import { Parser } from '../../parser/parser';
+import { ASTNodeType } from '../../types/node.enum';
+
+const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse();
+const parseTokens = (tokens: Token[]) => new Parser('', tokens).parse();
+
+describe('parseElement', () => {
+  it('parses an element with children', () => {
+    const [node] = parse('<div>text<span></span></div>') as ElementNode[];
+    expect(node.tagName).toBe('div');
+    expect(node.children.map(c => c.type)).toEqual([ASTNodeType.Text, ASTNodeType.Element]);
+  });
+
+  it('parses a self-closing element', () => {
+    const [node] = parse('<input />') as ElementNode[];
+    expect(node).toMatchObject({ tagName: 'input', children: [] });
+  });
+
+  it('parses attributes, events and conditional bindings', () => {
+    const [node] = parse('<div class="a" (click)="f()" @if (cond()) { title="x" } @switch (mode()) { @case (1) { id="y" } }></div>') as ElementNode[];
+    expect(node.attributes).toHaveLength(1);
+    expect(node.events).toHaveLength(1);
+    expect(node.conditionalBindings.map(({ type }) => type)).toEqual([ASTNodeType.IfBinding, ASTNodeType.SwitchBinding]);
+  });
+
+  it('parses the conditional bindings of a self-closing element', () => {
+    const [node] = parse('<input @if (cond()) { disabled } />') as ElementNode[];
+    expect(node.conditionalBindings).toHaveLength(1);
+    expect(node.children).toEqual([]);
+  });
+
+  it('parses the type arguments following the tag name, with their span in the template', () => {
+    const template = '<my-list(string, Map<string, number>) items="{rows}"></my-list>';
+    const [node] = parse(template) as ElementNode[];
+
+    expect(node.tagName).toBe('my-list');
+    expect(node.nameSpan).toEqual({ start: 1, end: 8 });
+    expect(node.typeArguments).toEqual([
+      { text: 'string', span: { start: 9, end: 15 } },
+      { text: 'Map<string, number>', span: { start: template.indexOf('Map'), end: template.indexOf(') items') } }
+    ]);
+    expect(node.closeNameSpan).toEqual({ start: template.lastIndexOf('my-list'), end: template.lastIndexOf('>') });
+  });
+
+  it('parses the type arguments of a self-closing element', () => {
+    const [node] = parse('<my-list(string)/>') as ElementNode[];
+
+    expect(node).toMatchObject({ tagName: 'my-list', typeArguments: [{ text: 'string' }], children: [] });
+  });
+
+  it('parses directives', () => {
+    const [node] = parse('<div @@first @@second(display="block")></div>') as ElementNode[];
+    expect(node.directives.map(({ selector }) => selector)).toEqual(['first', 'second']);
+  });
+
+  it('parses the directives of a self-closing element', () => {
+    const [node] = parse('<input @@myDirective />') as ElementNode[];
+    expect(node.directives).toHaveLength(1);
+  });
+
+  it('throws when a directive is applied more than once', () => {
+    expect(() => parse('<div @@myDirective @@myDirective(display="block")></div>')).toThrow('Directive "myDirective" is applied more than once on <div>');
+  });
+
+  it('throws when a directive property is bound more than once', () => {
+    expect(() => parse('<div @@myDirective(display="block" display="{none()}")></div>')).toThrow('Property "display" of directive "myDirective" is bound more than once on <div>');
+  });
+
+  it.each([
+    ['on the element and inside a conditional binding', '<div @@myDirective @if (cond()) { @@myDirective }></div>'],
+    ['inside a conditional binding and on the element after it', '<div @if (cond()) { @@myDirective } @@myDirective></div>'],
+    ['inside two conditional bindings', '<div @if (first()) { @@myDirective } @if (second()) { @@myDirective }></div>'],
+    ['inside a nested conditional binding', '<div @if (first()) { @@myDirective @if (second()) { @@myDirective } }></div>'],
+    ['in a branch of a switch and inside another conditional binding', '<div @switch (mode()) { @case (1) { @@other } @default { @@myDirective } } @if (cond()) { @@myDirective }></div>']
+  ])('throws when a directive is applied more than once %s', (_description, template) => {
+    expect(() => parse(template)).toThrow('Directive "myDirective" is applied more than once on <div>');
+  });
+
+  it.each([
+    ['in the directive and inside one of its conditional bindings', '<div @@myDirective(display="block" @if (cond()) { display="none" })></div>'],
+    ['inside two conditional bindings of the directive', '<div @@myDirective(@if (first()) { display="block" } @if (second()) { display="none" })></div>'],
+    ['in a directive applied inside a conditional binding', '<div @if (cond()) { @@myDirective(display="block" display="none") }></div>']
+  ])('throws when a directive property is bound more than once %s', (_description, template) => {
+    expect(() => parse(template)).toThrow('Property "display" of directive "myDirective" is bound more than once on <div>');
+  });
+
+  it('allows a directive property to share its name with an element attribute or another directive property', () => {
+    const [node] = parse('<div title="a" @@first(title="b") @@second(title="c")></div>') as ElementNode[];
+    expect(node.directives).toHaveLength(2);
+  });
+
+  it('allows the same event to be bound more than once', () => {
+    const [node] = parse('<div (click)="f()" (click)="g()" @if (cond()) { (click)="h()" }></div>') as ElementNode[];
+    expect(node.events).toHaveLength(2);
+  });
+
+  it.each([
+    ['on the element', '<div title="a" title="{b}"></div>'],
+    ['on the element and in a conditional binding', '<div title="a" @if (cond()) { title="b" }></div>'],
+    ['in a conditional binding and on the element after it', '<div @if (cond()) { title="b" } title="a"></div>'],
+    ['on the element and in the last branch of a conditional binding', '<div title="a" @if (cond()) { id="b" } @else if (other()) { id="c" } @else { title="d" }></div>'],
+    ['in two conditional bindings', '<div @if (cond()) { title="a" } @if (other()) { title="b" }></div>'],
+    ['in a branch of a switch and in a following conditional binding', '<div @switch (mode()) { @case (1) { title="a" } @default { id="b" } } @if (cond()) { title="c" }></div>'],
+    ['in a nested conditional binding', '<div @if (cond()) { title="a" @if (other()) { title="b" } }></div>'],
+    ['in a branch and in the branches of a conditional binding nested in it', '<div @if (cond()) { @if (other()) { title="a" } @else { title="b" } title="c" }></div>'],
+    ['twice in the same branch', '<div @if (cond()) { id="a" } @else { title="b" title="c" }></div>']
+  ])('throws when an attribute is bound more than once %s', (_description, template) => {
+    expect(() => parse(template)).toThrow('Attribute "title" is bound more than once on <div>');
+  });
+
+  describe('attributes written with attr.', () => {
+    it('keeps the name as written and the attribute it writes, static, bound or bare, in the branches too', () => {
+      const [node] = parse('<my-el attr.title="Close" attr.aria-label="{ label() }" attr.hidden @if (cond()) { attr.id="x" }></my-el>') as ElementNode[];
+      expect(node.attributes.map(({ name, attribute }) => [name, attribute])).toEqual([['attr.title', 'title'], ['attr.aria-label', 'aria-label'], ['attr.hidden', 'hidden']]);
+      expect(node.attributes[0].nameSpan).toEqual({ start: 7, end: 17 });
+      expect(node.conditionalBindings[0].branches[0].attributes[0].attribute).toBe('id');
+    });
+
+    it.each([
+      ['attr.', 'attr. names no attribute: write attr. followed by the name of the attribute'],
+      ['attr.class', 'attr.class cannot be written: class is merged with the directives and the component writing it, bound with class="…" and class.name="{ expression }"'],
+      ['attr.style', 'attr.style cannot be written: style is merged']
+    ])('rejects %s', (name, message) => {
+      expect(() => parse(`<div ${name}="x"></div>`)).toThrow(message);
+    });
+
+    it('counts x and attr.x as the same attribute of a native element, in the branches too', () => {
+      expect(() => parse('<div title="a" attr.title="b"></div>')).toThrow('Attribute "title" is bound more than once on <div>');
+      expect(() => parse('<div attr.title="a" @if (cond()) { title="b" }></div>')).toThrow('Attribute "title" is bound more than once on <div>');
+    });
+
+    it('tells x and attr.x apart on a custom element, whose x may be an input, but not attr.x twice', () => {
+      expect(() => parse('<my-el title="a" attr.title="b"></my-el>')).not.toThrow();
+      expect(() => parse('<my-el attr.title="a" attr.title="b"></my-el>')).toThrow('Attribute "attr.title" is bound more than once on <my-el>');
+    });
+
+    it.each([
+      ['in the parentheses of a directive', '<div @@tip(attr.title="x")></div>', 'attr.title cannot be bound inside a directive: bind it on the element'],
+      ['in a branch of a directive', '<div @@tip(@if (cond()) { attr.title="x" })></div>', 'attr.title cannot be bound inside a directive: bind it on the element'],
+      ['in a structural directive', '<div *when(attr.title="x")></div>', 'attr.title cannot be bound inside a directive: bind it on the element'],
+      ['in a two-way binding', '<my-el [(attr.title)]="title"></my-el>', '[(attr.title)] binds a model of a component or of a directive, while attr. writes an attribute of the element']
+    ])('rejects one %s', (_description, template, message) => {
+      expect(() => parse(template)).toThrow(message);
+    });
+  });
+
+  it.each([
+    ['an @if chain', '<div @if (a()) { title="x" } @else if (b()) { title="y" } @else { title="z" }></div>'],
+    ['a @switch', '<div @switch (mode()) { @case (1) { title="x" } @case (2) { title="y" } @default { title="z" } }></div>'],
+    ['nested conditional bindings', '<div @if (a()) { @if (b()) { title="x" } @else { title="y" } } @else { title="z" }></div>']
+  ])('allows an attribute to be bound in every branch of %s, since only one of them is applied at a time', (_description, template) => {
+    expect(() => parse(template)).not.toThrow();
+  });
+
+  it.each([
+    ['on the element', '<div class.on="{a}" class.on="{b}"></div>'],
+    ['on the element and in a conditional binding', '<div class.on="{a}" @if (cond()) { class.on="{b}" }></div>'],
+    ['in two conditional bindings', '<div @if (cond()) { class.on="{a}" } @switch (mode()) { @default { class.on="{b}" } }></div>'],
+    ['in a nested conditional binding', '<div @if (cond()) { class.on="{a}" @if (other()) { class.on="{b}" } }></div>']
+  ])('throws when a class is bound more than once %s', (_description, template) => {
+    expect(() => parse(template)).toThrow('Class "on" is bound more than once on <div>');
+  });
+
+  it('allows a class to be bound in every branch of a conditional binding, and next to an attribute named like it', () => {
+    expect(() => parse('<div class="on" on="x" class.on="{a}" class.off="{b}"></div>')).not.toThrow();
+    expect(() => parse('<div @if (a()) { class.on="{x}" } @else { class.on="{y}" }></div>')).not.toThrow();
+  });
+
+  it('allows a directive to be applied, and its properties to be bound, in every branch of a conditional binding', () => {
+    expect(() => parse('<div @if (a()) { @@myDirective(display="block") } @else { @@myDirective(display="none") }></div>')).not.toThrow();
+    expect(() => parse('<div @@myDirective(@switch (mode()) { @case (1) { display="block" } @default { display="none" } })></div>')).not.toThrow();
+  });
+
+  describe('structural directives', () => {
+    it('parses structural directives, keeping them apart from the directives', () => {
+      const [node] = parse('<div *first @@myDirective *second(role="admin")></div>') as ElementNode[];
+      expect(node.structuralDirectives.map(({ selector }) => selector)).toEqual(['first', 'second']);
+      expect(node.directives.map(({ selector }) => selector)).toEqual(['myDirective']);
+    });
+
+    it('parses the structural directives of a self-closing element', () => {
+      const [node] = parse('<input *hasRole />') as ElementNode[];
+      expect(node.structuralDirectives).toHaveLength(1);
+    });
+
+    it('parses a valueless attribute followed by a structural directive, on the element and in a conditional binding', () => {
+      const [node] = parse('<span hidden *hasRole(role="admin") @if (cond()) { disabled *visible }></span>') as ElementNode[];
+      expect(node.attributes).toMatchObject([{ name: 'hidden', value: 'true' }]);
+      expect(node.structuralDirectives.map(({ selector }) => selector)).toEqual(['hasRole']);
+      expect(node.conditionalBindings[0].branches[0]).toMatchObject({ attributes: [{ name: 'disabled', value: 'true' }], structuralDirectives: [{ selector: 'visible' }] });
+    });
+
+    it.each([
+      ['on the element', '<div *hasRole *hasRole(role="admin")></div>'],
+      ['on the element and inside a conditional binding', '<div *hasRole @if (cond()) { *hasRole }></div>'],
+      ['inside two conditional bindings', '<div @if (first()) { *hasRole } @if (second()) { *hasRole }></div>'],
+      ['inside a nested conditional binding', '<div @if (first()) { *hasRole @if (second()) { *hasRole } }></div>']
+    ])('throws when a structural directive is applied more than once %s', (_description, template) => {
+      expect(() => parse(template)).toThrow('Structural directive "hasRole" is applied more than once on <div>');
+    });
+
+    it('throws when a structural directive property is bound more than once', () => {
+      expect(() => parse('<div *hasRole(role="admin" role="{other()}")></div>')).toThrow('Property "role" of structural directive "hasRole" is bound more than once on <div>');
+    });
+
+    it('allows a structural directive to be applied in every branch of a conditional binding', () => {
+      expect(() => parse('<div @if (a()) { *hasRole(role="admin") } @else { *hasRole(role="user") }></div>')).not.toThrow();
+    });
+
+    it('allows a structural directive to share its selector with a directive applied to the same element', () => {
+      expect(() => parse('<div @@shared *shared></div>')).not.toThrow();
+    });
+  });
+
+  describe('element refs', () => {
+    it('parses the element ref naming the element, with the span of its name and of the whole of it', () => {
+      const template = '<input disabled #field type="text" />';
+      const [node] = parse(template) as ElementNode[];
+      expect(node.ref).toEqual({
+        name: 'field',
+        nameSpan: { start: template.indexOf('field'), end: template.indexOf('field') + 5 },
+        span: { start: template.indexOf('#'), end: template.indexOf('field') + 5 }
+      });
+      expect(node.attributes.map(({ name }) => name)).toEqual(['disabled', 'type']);
+    });
+
+    it('leaves the variable out of an element declaring none', () => {
+      const [node] = parse('<input />') as ElementNode[];
+      expect(node).not.toHaveProperty('ref');
+    });
+
+    it('throws when an element declares more than one element ref, pointing to the second one', () => {
+      const template = '<input #first #second />';
+      expect(() => parse(template)).toThrow('<input> declares more than one element ref (#first, #second): an element has a single name');
+      expect(() => parse(template)).toThrow(expect.objectContaining({ span: { start: template.indexOf('#second'), end: template.indexOf(' />') } }));
+    });
+
+    it.each([
+      ['directly', '<div #panel *hasRole(role="admin")></div>'],
+      ['by a conditional binding', '<div #panel @if (cond()) { title="a" } @else { *hasRole }></div>'],
+      ['by a nested conditional binding', '<div #panel @if (cond()) { @switch (mode()) { @case (1) { *hasRole } } }></div>']
+    ])('throws for an element ref on an element a structural directive is applied to %s', (_description, template) => {
+      expect(() => parse(template)).toThrow('<div> cannot declare #panel: its structural directives may not render it');
+    });
+
+    it('allows an element ref on an element whose conditional bindings apply no structural directive', () => {
+      expect(() => parse('<div #panel @if (cond()) { title="a" @if (other()) { @@tint } }></div>')).not.toThrow();
+    });
+
+    it.each([
+      ['not an identifier', '<input #2fields />', '\'2fields\' is not a valid name for an element ref'],
+      ['reserved', '<input #root />', '\'root\' is reserved in templates']
+    ])('throws for a name %s', (_description, template, message) => {
+      expect(() => parse(template)).toThrow(message);
+    });
+  });
+
+  describe('templates', () => {
+    it('parses a <template> into the declaration of a template, with its name, its parameters and its content', () => {
+      const template = '<template row(item: Item, index: number)><li>{ item }</li></template>';
+      const [node] = parse(template) as TemplateNode[];
+      const at = (text: string) => ({ start: template.indexOf(text), end: template.indexOf(text) + text.length });
+      expect(node).toMatchObject({
+        type: ASTNodeType.Template,
+        nameSpan: { start: 1, end: 9 },
+        closeNameSpan: { start: template.lastIndexOf('template'), end: template.lastIndexOf('template') + 8 },
+        declaration: { name: 'row', nameSpan: at('row') },
+        parameters: [
+          { name: 'item', nameSpan: at('item'), type: 'Item', typeSpan: at('Item') },
+          { name: 'index', nameSpan: at('index'), type: 'number', typeSpan: at('number') }
+        ],
+        span: { start: 0, end: template.length }
+      });
+      expect(node.children.map(({ type }) => type)).toEqual([ASTNodeType.Element]);
+    });
+
+    it('parses a self-closing template without parameters', () => {
+      const [node] = parse('<template empty() />') as TemplateNode[];
+      expect(node).toMatchObject({ type: ASTNodeType.Template, parameters: [], children: [] });
+      expect(node).not.toHaveProperty('closeNameSpan');
+    });
+
+    it('throws for a template without parameters, pointing to its name', () => {
+      const tokens: Token[] = [
+        { type: TokenType.TAG_OPEN_NAME, parts: ['template'], span: { start: 0, end: 9 } },
+        { type: TokenType.TEMPLATE_DECLARATION, parts: ['row'], span: { start: 10, end: 13 } },
+        { type: TokenType.TAG_OPEN_END, parts: [], span: { start: 13, end: 14 } }
+      ];
+      expect(() => new Parser('<template row>', tokens).parse()).toThrow('A template lists its parameters in parentheses after its name, even when it has none: <template row()>');
+      expect(() => new Parser('<template row>', tokens).parse()).toThrow(expect.objectContaining({ span: { start: 10, end: 13 } }));
+    });
+
+    describe('standard <template> elements', () => {
+      it('parses a <template> without a declaration into an element, its static content serialized as HTML', () => {
+        const [node] = parse('<template id="row" #row><li class="item &amp; more">A &lt; b</li><br /><pre>x</pre><style>a > b</style></template>') as ElementNode[];
+        expect(node).toMatchObject({ type: ASTNodeType.Element, tagName: 'template', attributes: [{ name: 'id', value: 'row' }], ref: { name: 'row' } });
+        expect(node.content).toBe('<li class="item &amp; more">A &lt; b</li><br><pre>\nx</pre><style>a > b</style>');
+        expect(node.children.map(({ type }) => type)).toEqual([ASTNodeType.Element, ASTNodeType.Element, ASTNodeType.Element, ASTNodeType.Element]);
+      });
+
+      it('parses a <template> with a boolean attribute, and one with attributes bound to expressions', () => {
+        const [boolean, bound] = parse('<template row></template><template id="{ name() }" class.on="{ on() }"></template>') as ElementNode[];
+        expect(boolean).toMatchObject({ tagName: 'template', attributes: [{ name: 'row' }], content: '' });
+        expect(bound).toMatchObject({ tagName: 'template', classBindings: [{ className: 'on' }], content: '' });
+      });
+
+      it('parses a self-closing <template>, without content', () => {
+        const [node] = parse('<template id="empty" />') as ElementNode[];
+        expect(node).toMatchObject({ tagName: 'template', content: '', children: [] });
+      });
+
+      it('serializes a nested standard <template>', () => {
+        const [node] = parse('<template><template id="inner"><b>x</b></template></template>') as ElementNode[];
+        expect(node.content).toBe('<template id="inner"><b>x</b></template>');
+      });
+
+      it.each([
+        ['shadowrootmode', '<template shadowrootmode="open"></template>'],
+        ['shadowrootclonable', '<template shadowrootclonable></template>']
+      ])('throws for a <template> declaring a shadow root with %s, pointing to it', (name, template) => {
+        expect(() => parse(template)).toThrow(`A <template> cannot declare a shadow root with "${name}": the server writes the shadow root of each component`);
+        expect(() => parse(template)).toThrow(expect.objectContaining({ span: expect.objectContaining({ start: template.indexOf(name) }) }));
+      });
+
+      it.each([
+        ['an interpolation', '<template><b>{ name() }</b></template>', 'name()'],
+        ['a block', '<template>@if (on()) { <b></b> }</template>', '@if'],
+        ['the declaration of a template', '<template><template row()></template></template>', '<template row()>']
+      ])('throws for content holding %s, pointing to it', (_description, template, node) => {
+        expect(() => parse(template)).toThrow('The content of a <template> is static HTML, which the code using the template clones: it cannot interpolate values, render blocks or declare templates. Declare a template with <template name(…)> and render it with @render to bind values');
+        expect(() => parse(template)).toThrow(expect.objectContaining({ span: expect.objectContaining({ start: template.indexOf(node) }) }));
+      });
+
+      it.each([
+        ['an element ref', '<template><b #name></b></template>', '#name'],
+        ['type arguments', '<template><my-list(string)></my-list></template>', 'string'],
+        ['a class binding', '<template><b class.on="{ on() }"></b></template>', 'class.on'],
+        ['an event', '<template><b (click)="go()"></b></template>', '(click)'],
+        ['a conditional binding', '<template><b @if (on()) { title="a" }></b></template>', '@if'],
+        ['a directive', '<template><b @@tint></b></template>', 'tint'],
+        ['a structural directive', '<template><b *hasRole></b></template>', 'hasRole'],
+        ['an attribute bound to an expression', '<template><b title="{ title() }"></b></template>', 'title=']
+      ])('throws for an element of the content declaring %s, pointing to it', (_description, template, binding) => {
+        expect(() => parse(template)).toThrow(/<(b|my-list)> is in the content of a <template>, static HTML which the code using the template clones: it takes only static attributes/);
+        expect(() => parse(template)).toThrow(expect.objectContaining({ span: expect.objectContaining({ start: template.indexOf(binding) }) }));
+      });
+    });
+
+    it.each([
+      ['type arguments', '<template(string) row()></template>', 'string'],
+      ['an attribute', '<template row() class="a"></template>', 'class="a"'],
+      ['a class binding', '<template row() class.on="{a}"></template>', 'class.on'],
+      ['an event', '<template row() (click)="go()"></template>', '(click)="go()"'],
+      ['a conditional binding', '<template row() @if (on()) { title="a" }></template>', '@if (on()) { title="a" }'],
+      ['a directive', '<template row() @@tint></template>', 'tint'],
+      ['a structural directive', '<template row() *hasRole></template>', 'hasRole']
+    ])('throws for a template declaring %s, pointing to it', (_description, template, binding) => {
+      expect(() => parse(template)).toThrow('A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it');
+      expect(() => parse(template)).toThrow(expect.objectContaining({ span: expect.objectContaining({ start: template.indexOf(binding) }) }));
+    });
+
+    it('throws for invalid parameters', () => {
+      expect(() => parse('<template row(item)></template>')).toThrow('The parameter \'item\' of template "row" needs a type or a default value, e.g. item: string or item = \'\'');
+    });
+  });
+
+  it('throws on a flow-control keyword not belonging to a conditional binding', () => {
+    expect(() => parse('<div @else { title="x" }></div>')).toThrow('Unexpected token ELSE');
+    expect(() => parse('<div @if (cond()) { title="x" } id="y" @else { title="z" }></div>')).toThrow('Unexpected token ELSE');
+    expect(() => parse('<div hidden @case (1) { title="x" }></div>')).toThrow('Unexpected token CASE');
+  });
+
+  it('skips children for which parseNode returns nothing', () => {
+    const tokens: Token[] = [
+      { type: TokenType.TAG_OPEN_NAME, parts: ['div'], span: { start: 0, end: 4 } },
+      { type: TokenType.TAG_OPEN_END, parts: [], span: { start: 4, end: 5 } },
+      { type: TokenType.TAG_CLOSE_NAME, parts: ['div'], span: { start: 5, end: 11 } }
+    ];
+    expect(parseTokens(tokens)).toHaveLength(1);
+  });
+
+  it('throws when the opening tag is not terminated', () => {
+    const tokens: Token[] = [{ type: TokenType.TAG_OPEN_NAME, parts: ['div'], span: { start: 0, end: 4 } }];
+    expect(() => parseTokens(tokens)).toThrow('Unexpected token');
+  });
+
+  it('throws when the closing tag is missing', () => {
+    const tokens: Token[] = [
+      { type: TokenType.TAG_OPEN_NAME, parts: ['div'], span: { start: 0, end: 4 } },
+      { type: TokenType.TAG_OPEN_END, parts: [], span: { start: 4, end: 5 } }
+    ];
+    expect(() => parseTokens(tokens)).toThrow('Expected closing tag div while file is over');
+  });
+
+  it('throws when the closing tag does not match', () => {
+    expect(() => parse('<div></span>')).toThrow('Expected closing tag div, found span');
+  });
+
+  it('locates the tag name in the opening and in the closing tag', () => {
+    const template = '<docs-search a="b"><i /></docs-search>';
+    const [node] = parse(template) as ElementNode[];
+    const [child] = node.children as ElementNode[];
+
+    expect(node.nameSpan).toEqual({ start: 1, end: 12 });
+    expect(node.closeNameSpan).toEqual({ start: 26, end: 37 });
+    expect(template.slice(node.closeNameSpan!.start, node.closeNameSpan!.end)).toBe('docs-search');
+    // A self-closing tag has no closing tag
+    expect(child.nameSpan).toEqual({ start: 20, end: 21 });
+    expect(child.closeNameSpan).toBeUndefined();
+  });
+});

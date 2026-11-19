@@ -1,0 +1,14 @@
+@import { InnerHtmlDirective } from '@xaendar/directives'
+
+<div class="panes">
+  <textarea rows="7" (input)="edit($event)">{ source() }</textarea>
+  <div @@innerHtml(html="{source()}" (sanitized)="report($event.detail)") class="comment" />
+</div>
+@let lastReport = removed();
+@if (lastReport) {
+  <p class="removed">
+    Removed: { lastReport.removedElements.concat(lastReport.removedAttributes).join(', ') }
+  </p>
+} @else {
+  <p class="removed">Nothing removed</p>
+}

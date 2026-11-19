@@ -1,0 +1,66 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { UntrackedReadComponent } from '../../../examples/signals/untracked/untracked-read/untracked-read.xd.component.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.signals.untracked.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.signals.untracked.title') }
+</h1>
+<p @@htmlTranslation(key="pages.signals.untracked.lead") class="lead" />
+
+<h2>
+  { t(translations(), 'pages.signals.untracked.whenToUseIt.title') }
+</h2>
+<p @@htmlTranslation(key="pages.signals.untracked.whenToUseIt.p1") />
+<docs-example name="signals/untracked/untracked-read"
+  heading="{translations().pages.signals.untracked.whenToUseIt.example1}">
+  <ex-untracked-read />
+</docs-example>
+
+<h2>
+  { t(translations(), 'pages.signals.untracked.updateIsAlreadyUntracked.title') }
+</h2>
+<p @@htmlTranslation(key="pages.signals.untracked.updateIsAlreadyUntracked.p1") />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.signals.untracked.edgeCases.title') }
+  </h2>
+  <docs-callout kind="edge" heading="{translations().pages.signals.untracked.edgeCases.callout1.heading}">
+    { t(translations(), 'pages.signals.untracked.edgeCases.callout1.body') }
+  </docs-callout>
+</section>
+
+<h2>
+  { t(translations(), 'pages.signals.untracked.summary.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.signals.untracked.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.signals.untracked.summary.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <a href="{`#/${currentLang()}/reference/api/core/signals/untracked`}">
+            <code>untracked(fn)</code>
+          </a>
+        </td>
+        <td @@htmlTranslation(key="pages.signals.untracked.summary.td1") />
+      </tr>
+    </tbody>
+  </table>
+</div>

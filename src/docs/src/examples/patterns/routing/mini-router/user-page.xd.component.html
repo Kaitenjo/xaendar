@@ -1,0 +1,6 @@
+@if (person()) {
+  <h3>{ person()?.name }</h3>
+  <p>{ person()?.role } — user { userId() }</p>
+} @else {
+  <h3>No user { userId() }</h3>
+}

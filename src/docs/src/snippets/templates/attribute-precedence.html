@@ -1,0 +1,5 @@
+<!-- <ex-tab> writes @HostAttribute('role') = 'tab', @@exSelectable writes @HostAttribute('role') = 'option' -->
+<ex-tab @@exSelectable />                                <!-- role="option": a directive wins over the component -->
+<ex-tab @@exSelectable attr.role="{role()}" />           <!-- role() wins; while it is null, "option" comes back -->
+<ex-tab attr.aria-selected="{false}" />                  <!-- aria-selected="false": false is a value -->
+<ex-tab attr.hidden="{false}" />                         <!-- hidden removed, even if the component writes it -->

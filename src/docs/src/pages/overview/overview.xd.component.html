@@ -1,0 +1,181 @@
+@import { translations } from '../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { GranularUpdatesComponent } from '../../examples/overview/granular-updates/granular-updates.xd.component.ts'
+@import { translate as t } from '../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.overview.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.overview.title') }
+</h1>
+<p class="lead">
+  { t(translations(), 'pages.overview.lead') }
+</p>
+
+<h2>
+  { t(translations(), 'pages.overview.fineGrainedReactivityDecided.title') }
+</h2>
+<p>
+  { t(translations(), 'pages.overview.fineGrainedReactivityDecided.p1') }
+</p>
+<docs-code snippet="overview/virtual-dom.txt" />
+<p>
+  { t(translations(), 'pages.overview.fineGrainedReactivityDecided.p2') }
+</p>
+<docs-code snippet="overview/binding-graph.txt" />
+
+<docs-example name="overview/granular-updates"
+  heading="{translations().pages.overview.fineGrainedReactivityDecided.example1}">
+  <ex-granular-updates />
+</docs-example>
+<p @@htmlTranslation(key="pages.overview.fineGrainedReactivityDecided.p3") />
+
+<h2>
+  { t(translations(), 'pages.overview.theBuildingBlocks.title') }
+</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.overview.theBuildingBlocks.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.overview.theBuildingBlocks.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.overview.theBuildingBlocks.th3') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          { t(translations(), 'pages.overview.theBuildingBlocks.td1') }
+        </td>
+        <td @@htmlTranslation(key="pages.overview.theBuildingBlocks.td2") />
+        <td @@htmlTranslation(key="pages.overview.theBuildingBlocks.td3") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.overview.theBuildingBlocks.td4') }
+        </td>
+        <td @@htmlTranslation(key="pages.overview.theBuildingBlocks.td5") />
+        <td @@htmlTranslation(key="pages.overview.theBuildingBlocks.td6") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.overview.theBuildingBlocks.td7') }
+        </td>
+        <td>
+          { t(translations(), 'pages.overview.theBuildingBlocks.td8') }
+        </td>
+        <td @@htmlTranslation(key="pages.overview.theBuildingBlocks.td9") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.overview.theBuildingBlocks.td10') }
+        </td>
+        <td @@htmlTranslation(key="pages.overview.theBuildingBlocks.td11") />
+        <td @@htmlTranslation(key="pages.overview.theBuildingBlocks.td12") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.overview.theBuildingBlocks.td13') }
+        </td>
+        <td>
+          { t(translations(), 'pages.overview.theBuildingBlocks.td14') }
+        </td>
+        <td @@htmlTranslation(key="pages.overview.theBuildingBlocks.td15") />
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>
+  { t(translations(), 'pages.overview.theLifeOfA.title') }
+</h2>
+<ol class="steps">
+  <li @@htmlTranslation(key="pages.overview.theLifeOfA.li1") />
+  <li @@htmlTranslation(key="pages.overview.theLifeOfA.li2") />
+  <li @@htmlTranslation(key="pages.overview.theLifeOfA.li3") />
+  <li @@htmlTranslation(key="pages.overview.theLifeOfA.li4") />
+  <li @@htmlTranslation(key="pages.overview.theLifeOfA.li5") />
+</ol>
+
+<h2>
+  { t(translations(), 'pages.overview.thePackages.title') }
+</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.overview.thePackages.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.overview.thePackages.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <code>{ '@xaendar/core' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.overview.thePackages.td1") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@xaendar/signals' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.overview.thePackages.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@xaendar/compiler' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.overview.thePackages.td3') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@xaendar/build-tools' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.overview.thePackages.td4") />
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@xaendar/cli' }</code>
+        </td>
+        <td @@htmlTranslation(key="pages.overview.thePackages.td5") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.overview.thePackages.td6") />
+        <td>
+          { t(translations(), 'pages.overview.thePackages.td7') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@xaendar/common' }</code>,
+          <code>{ '@xaendar/types' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.overview.thePackages.td8') }
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<docs-callout @@htmlTranslation(key="pages.overview.thePackages.callout1.body") kind="note" />
+
+<h2>
+  { t(translations(), 'pages.overview.whatXaendarDoesNot.title') }
+</h2>
+<p @@htmlTranslation(key="pages.overview.whatXaendarDoesNot.p1") />

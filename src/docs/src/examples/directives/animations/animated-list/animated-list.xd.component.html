@@ -1,0 +1,17 @@
+@import { AnimationDirective } from '@xaendar/directives'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="controls">
+  <ex-button (click)="add()">Add a task</ex-button>
+  <ex-button (click)="rotate()">Move the last to the top</ex-button>
+</div>
+<ul class="tasks">
+  @for (task of tasks(); track task.id) {
+    <li @@animation(enter="fade-in" leave="fade-out")>
+      <span>{ task.label }</span>
+      <ex-button aria-label="{`Remove ${task.label}`}" (click)="complete(task.id)">Done</ex-button>
+    </li>
+  } @empty {
+    <li @@animation(enter="fade-in") class="empty">Nothing left to do</li>
+  }
+</ul>

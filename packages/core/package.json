@@ -1,0 +1,22 @@
+{
+  "name": "@xaendar/core",
+  "version": "1.4.1",
+  "type": "module",
+  "author": "Kaitenjo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/core"
+  },
+  "description": "A library containing core utils such as webcomponent base classes and theming support",
+  "xaendar": {
+    "target": "browser"
+  },
+  "dependencies": {
+    "@xaendar/common": "1.4.0",
+    "@xaendar/signals": "1.4.0",
+    "@xaendar/types": "1.4.0",
+    "type-fest": "^6.0.1"
+  }
+}

@@ -1,0 +1,156 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { GENERATED_COMPONENT } from './cli.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.tools.cli.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.tools.cli.title') }
+</h1>
+<p @@htmlTranslation(key="pages.tools.cli.lead") class="lead" />
+<docs-code snippet="tools/cli-help.txt" />
+
+<h2>
+  { t(translations(), 'pages.tools.cli.xdNew.title') }
+</h2>
+<docs-code snippet="tools/new-command.sh" />
+<p @@htmlTranslation(key="pages.tools.cli.xdNew.p1") />
+<p @@htmlTranslation(key="pages.tools.cli.xdNew.p2") />
+<docs-code snippet="tools/style-prompt.txt" />
+<p @@htmlTranslation(key="pages.tools.cli.xdNew.p3") />
+<docs-code snippet="tools/xaendar-json.json" />
+<p @@htmlTranslation(key="pages.tools.cli.xdNew.p4") />
+
+<h2>
+  { t(translations(), 'pages.tools.cli.xdStartAndXd.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.cli.xdStartAndXd.p1") />
+<p @@htmlTranslation(key="pages.tools.cli.xdStartAndXd.p2") />
+
+<h2>
+  { t(translations(), 'pages.tools.cli.xdPrerender.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.cli.xdPrerender.p1") />
+
+<h2>
+  { t(translations(), 'pages.tools.cli.xdTest.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.cli.xdTest.p1") />
+
+<h2>
+  { t(translations(), 'pages.tools.cli.xdComponent.title') }
+</h2>
+<docs-code snippet="tools/component-command.sh" />
+<p @@htmlTranslation(key="pages.tools.cli.xdComponent.p1") />
+<docs-code snippet="{GENERATED_COMPONENT}" />
+<p @@htmlTranslation(key="pages.tools.cli.xdComponent.p2") />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.tools.cli.edgeCases.title') }
+  </h2>
+  <docs-callout kind="edge" heading="{translations().pages.tools.cli.edgeCases.callout2.heading}">
+    <p>
+      { t(translations(), 'pages.tools.cli.edgeCases.callout2.p1') }
+    </p>
+    <docs-code snippet="tools/component-name-errors.txt" />
+    <p @@htmlTranslation(key="pages.tools.cli.edgeCases.callout2.p2") />
+    <docs-code snippet="tools/project-name-error.txt" />
+  </docs-callout>
+</section>
+
+<h2>
+  { t(translations(), 'pages.tools.cli.commandSummary.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.tools.cli.commandSummary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.tools.cli.commandSummary.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.tools.cli.commandSummary.th3') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td @@htmlTranslation(key="pages.tools.cli.commandSummary.td1") />
+        <td>
+          <code>-p, --path</code>,
+          <code>-s, --style</code>,
+          <code>--ssr</code>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.cli.commandSummary.td2") />
+      </tr>
+      <tr>
+        <td>
+          <code>xd start</code>,
+          <code>xd s</code>
+        </td>
+        <td>—</td>
+        <td>
+          { t(translations(), 'pages.tools.cli.commandSummary.td3') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>xd build</code>,
+          <code>xd b</code>
+        </td>
+        <td>
+          <code>--static-report</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.tools.cli.commandSummary.td4') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>xd prerender</code>,
+          <code>xd p</code>
+        </td>
+        <td>—</td>
+        <td>
+          { t(translations(), 'pages.tools.cli.commandSummary.td9') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>xd test</code>,
+          <code>xd t</code>
+        </td>
+        <td>—</td>
+        <td>
+          { t(translations(), 'pages.tools.cli.commandSummary.td8') }
+        </td>
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.tools.cli.commandSummary.td5") />
+        <td>
+          <code>-p, --path</code>,
+          <code>-f, --force</code>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.cli.commandSummary.td6") />
+      </tr>
+      <tr>
+        <td>
+          <code>xd --version</code>,
+          <code>xd --help</code>
+        </td>
+        <td>—</td>
+        <td>
+          { t(translations(), 'pages.tools.cli.commandSummary.td7') }
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

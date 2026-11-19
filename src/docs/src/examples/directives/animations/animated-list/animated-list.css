@@ -1,0 +1,52 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tasks {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tasks li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+  padding: 0.4rem 0.4rem 0.4rem 0.75rem;
+  border: 1px solid var(--xd-border-strong);
+  border-radius: 8px;
+}
+
+.tasks .empty {
+  color: var(--xd-text-muted);
+}
+
+.fade-in {
+  animation: fade-in 0.25s ease-out;
+}
+
+.fade-out {
+  animation: fade-out 0.25s ease-in forwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}

@@ -1,0 +1,569 @@
+// @vitest-environment happy-dom
+import { CLEANUP } from '../../costants';
+import type { Constructor } from '@xaendar/types';
+import type { Aliased } from '../../signals/types/aliased.type';
+import type { InputSignal } from '../../signals/types/input-signal.type';
+import type { ModelSignal } from '../../signals/types/model-signal.type';
+import { describe, expect, it, vi } from 'vitest';
+import type { _Context } from '../../types/context.type';
+
+await vi.hoisted(async () => {
+  const { loadSignals } = await import('@xaendar/signals');
+  loadSignals();
+});
+
+const { input } = await import('../../signals/input/input');
+const { createModelPrototype, model } = await import('../../signals/model/model');
+const { computed, effect, signal } = await import('../../signals');
+const { CustomDirective } = await import('../../models/custom-directive/custom-directive');
+const { CustomElement } = await import('../../models/custom-element/custom-element');
+const { Output } = await import('../../models/output/output');
+const { StructuralDirective } = await import('../../models/structural-directive/structural-directive');
+const { _scope, forEachChild, EMPTY_LAYOUT, clear, moveTo } = await import('../context/context.util');
+const { _defineRender } = await import('../render-registry/render-registry.util');
+const { _createComponent } = await import('./create-component.util');
+
+/**
+ * The scopes a scope holds: the ones of its containers, then the ones its cleanups hold, as the branch of a conditional
+ * binding or the scope of a component created in code.
+ */
+function childrenOf(context: _Context): _Context[] {
+  const children = new Array<_Context>();
+  forEachChild(context, (child, list) => list.push(child), children);
+  const cleanup = context[CLEANUP];
+  const cleanups = Array.isArray(cleanup) ? cleanup : cleanup ? [cleanup] : [];
+  for (let i = 0; i < cleanups.length; i++) {
+    const item = cleanups[i];
+    if (typeof item !== 'function' && 'scope' in item) {
+      children.push(item.scope as _Context);
+    }
+  }
+
+  return children;
+}
+
+const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
+
+let counter = 0;
+
+/**
+ * Registers a component class as `@WebComponent` does, with an empty render function.
+ */
+function define<T extends Constructor<InstanceType<typeof CustomElement>>>(klass: T): T {
+  const selector = `x-created-${counter++}`;
+  Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { selector } });
+  _defineRender(klass, () => _scope(null, EMPTY_LAYOUT));
+  customElements.define(selector, klass);
+  return klass;
+}
+
+/**
+ * Component declaring two models, one aliased.
+ */
+const Picker = define(class Picker extends CustomElement {
+  public readonly value: ModelSignal<number> = model<number>(createModelPrototype(0, { name: 'valueChange', event: undefined, equals: Object.is }), this, undefined);
+  public readonly checked = model<boolean>(createModelPrototype(false, { name: 'onChange', event: undefined, equals: Object.is }), this, undefined) as Aliased<ModelSignal<boolean>, 'on'>;
+});
+
+const Card = define(class Card extends CustomElement {
+  public readonly heading = input<string>('default heading');
+  public readonly count = input<number>(0);
+  public readonly mode = input<'compact' | 'wide'>('wide');
+  public readonly size = input<number, string>(0, { transform: value => Number(value) });
+  public readonly double = computed(() => this.count() * 2);
+  public readonly changed = new Output<number>((value, _options?) => { this.dispatchEvent(new CustomEvent('changed', { detail: value })); });
+  public readonly closed = new Output(() => { this.dispatchEvent(new CustomEvent('closed')); });
+  public readonly headingOnInit = new Array<string>();
+  public readonly destroyed = vi.fn();
+
+  public onInit(): void {
+    this.headingOnInit.push(this.heading());
+  }
+
+  public onDestroy(): void {
+    this.destroyed();
+  }
+});
+
+/**
+ * Directive recording its instances, whether its element is mounted when it starts and its destruction.
+ */
+class Tooltip extends CustomDirective {
+  public static readonly instances = new Array<Tooltip>();
+
+  public readonly text = input<string>('');
+  public readonly toggled = new Output<boolean>((value, _options?) => { this.dispatchEvent(new CustomEvent('toggled', { detail: value })); });
+  public readonly destroyed = vi.fn();
+  public mounted?: boolean;
+  public children?: number;
+
+  constructor() {
+    super();
+    Tooltip.instances.push(this);
+  }
+
+  public onInit(): void {
+    this.mounted = this.element.isConnected;
+    this.children = this.element.childNodes.length;
+  }
+
+  public onDestroy(): void {
+    this.destroyed();
+  }
+}
+
+/**
+ * Structural directive, which `createComponent` can't apply.
+ */
+class Visible extends StructuralDirective {
+  public shouldRender(): boolean {
+    return true;
+  }
+}
+
+const lastTooltip = () => Tooltip.instances.at(-1)!;
+
+/**
+ * Component declaring a required input, as `@Property.required` registers it in the metadata of the class.
+ */
+const Profile = define(class Profile extends CustomElement {
+  public readonly name = input<string>('');
+});
+Object.assign((Profile as unknown as Record<symbol, object>)[Symbol.for('Symbol.metadata')], { requiredInputs: new Set(['name']) });
+
+/**
+ * Component whose inputs declare aliases, the name of the property of one being the alias of the other, as `@Property`
+ * registers them in the metadata of the class.
+ */
+const Crossed = define(class Crossed extends CustomElement {
+  public readonly internalValue = input<string>('internal') as Aliased<InputSignal<string>, 'value'>;
+  public readonly value = input<number, string>(0, { transform: text => Number(text) }) as Aliased<InputSignal<number, string>, 'initialValue'>;
+});
+Object.assign((Crossed as unknown as Record<symbol, object>)[Symbol.for('Symbol.metadata')], { aliasToAttribute: { value: 'internalValue', initialValue: 'value' } });
+
+/**
+ * Directive whose input declares an alias.
+ */
+class Hint extends CustomDirective {
+  public static last?: Hint;
+
+  public readonly text = input<string>('') as Aliased<InputSignal<string>, 'hint'>;
+
+  constructor() {
+    super();
+    Hint.last = this;
+  }
+}
+Object.defineProperty(Hint, Symbol.for('Symbol.metadata'), { value: { aliasToAttribute: { hint: 'text' } } });
+
+/**
+ * Component exposing the input of a host directive under another name, as `@WebComponent` registers it in the metadata
+ * of the class.
+ */
+const Tipped = define(class Tipped extends CustomElement { });
+Object.assign((Tipped as unknown as Record<symbol, object>)[Symbol.for('Symbol.metadata')], { hostDirectives: [{ directive: Hint, properties: [{ name: 'hint', alias: 'tip' }] }] });
+
+/**
+ * Component declaring an input and an output next to a member typed `any`, which matches every conditional type.
+ */
+const Loose = define(class Loose extends CustomElement {
+  public readonly label = input<string>('');
+  public readonly picked = new Output<number>((value, _options?) => { this.dispatchEvent(new CustomEvent('picked', { detail: value })); });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public data: any;
+});
+
+/**
+ * Directive declaring a required input.
+ */
+class Label extends CustomDirective {
+  public readonly text = input<string>('');
+}
+Object.defineProperty(Label, Symbol.for('Symbol.metadata'), { value: { requiredInputs: new Set(['text']) } });
+
+/**
+ * The context of the component or of the directive creating the components: never cleared, unless a test does.
+ */
+const root = _scope(null, EMPTY_LAYOUT);
+const owner = () => root;
+
+describe('_createComponent', () => {
+  it('appends the component to the target and returns its element', () => {
+    const target = document.createElement('div');
+    document.body.append(target);
+    target.append(document.createElement('span'));
+
+    const { element } = _createComponent(owner, Card, { target });
+
+    expect(element).toBeInstanceOf(Card);
+    expect(target.lastChild).toBe(element);
+    expect(element.isConnected).toBe(true);
+  });
+
+  it('sets the inputs before the component is initialized', () => {
+    const { element } = _createComponent(owner, Card, { target: document.body, properties: [{ heading: () => 'Hello', size: () => '21' }] });
+
+    expect(element.headingOnInit).toEqual(['Hello']);
+    // The value goes through the transform of the input
+    expect(element.size()).toBe(21);
+  });
+
+  it('updates an input when a signal read by its getter changes', async () => {
+    const heading = signal('first');
+    const { element } = _createComponent(owner, Card, { target: document.body, properties: [{ heading: () => heading() }] });
+
+    heading.set('second');
+    await flush();
+
+    expect(element.heading()).toBe('second');
+  });
+
+  it('binds a group of inputs only while its condition holds, resetting them to their default value', async () => {
+    const enabled = signal(false);
+    const { element } = _createComponent(owner, Card, { target: document.body, properties: [{ heading: () => 'fixed' }, { condition: () => enabled(), count: () => 5, mode: () => 'compact' }] });
+    expect([element.count(), element.mode()]).toEqual([0, 'wide']);
+
+    enabled.set(true);
+    await flush();
+    expect([element.count(), element.mode()]).toEqual([5, 'compact']);
+
+    enabled.set(false);
+    await flush();
+    expect([element.heading(), element.count(), element.mode()]).toEqual(['fixed', 0, 'wide']);
+  });
+
+  it('throws when an input is bound by more than one group', () => {
+    expect(() => _createComponent(owner, Card, { target: document.body, properties: [{ count: () => 1 }, { condition: () => true, count: () => 2 }] }))
+      .toThrow('Property "count" is bound by more than one group');
+  });
+
+  it('binds the inputs declaring an alias by it, setting them by the name of their property', async () => {
+    const value = signal('first');
+    const { element } = _createComponent(owner, Crossed, {
+      target: document.body,
+      properties: [{ value: () => value(), initialValue: () => '7' }],
+      directives: [{ directive: Hint, properties: [{ hint: () => 'tip' }] }]
+    });
+
+    expect(element.internalValue()).toBe('first');
+    expect(element.value()).toBe(7);
+    expect(Hint.last!.text()).toBe('tip');
+
+    value.set('second');
+    await flush();
+
+    expect(element.internalValue()).toBe('second');
+    expect(element.value()).toBe(7);
+  });
+
+  it('binds an input a host directive exposes by the name it is exposed with, setting it into the directive', async () => {
+    const enabled = signal(true);
+    const tip = signal('first');
+    const { element } = _createComponent(owner, Tipped, { target: document.body, properties: [{ condition: () => enabled(), tip: () => tip() }] });
+    const hint = element.hostDirectives.get(Hint) as Hint;
+
+    expect(hint.text()).toBe('first');
+
+    tip.set('second');
+    await flush();
+    expect(hint.text()).toBe('second');
+
+    enabled.set(false);
+    await flush();
+    expect(hint.text()).toBe('');
+  });
+
+  it('throws when a name is neither an input of the component nor one its host directives expose, as a template does', () => {
+    const target = document.createElement('div');
+
+    expect(() => _createComponent(owner, Card, { target, properties: [{ hedaing: () => 'x' }] })).toThrow('Card does not declare a property named "hedaing"');
+    expect(() => _createComponent(owner, Card, { target, properties: [{ double: () => 1 }] })).toThrow('Card does not declare a property named "double"');
+    expect(() => _createComponent(owner, Tipped, { target, properties: [{ hint: () => 'x' }] })).toThrow('Tipped does not declare a property named "hint"');
+    expect(target.childNodes).toHaveLength(0);
+  });
+
+  it('throws when an input declaring an alias is bound by the name of its property', () => {
+    expect(() => _createComponent(owner, Crossed, { target: document.body, properties: [{ internalValue: () => 'x' } as never] }))
+      .toThrow('"internalValue" is the property of an input of Crossed declaring an alias: bind it by its alias');
+  });
+
+  it('requires the required inputs of the component and of its directives to be bound by a group without condition', () => {
+    const missing = 'is not bound by a group without condition of createComponent';
+    const target = document.createElement('div');
+
+    expect(() => _createComponent(owner, Profile, { target })).toThrow(`The required input "name" of Profile ${missing}`);
+    expect(() => _createComponent(owner, Profile, { target, properties: [{ condition: () => true, name: () => 'Ada' }] })).toThrow(`The required input "name" of Profile ${missing}`);
+    expect(() => _createComponent(owner, Card, { target, directives: [Label] })).toThrow(`The required input "text" of Label ${missing}`);
+    expect(() => _createComponent(owner, Card, { target, directives: [{ directive: Label, properties: [{ condition: () => true, text: () => 'x' }] }] })).toThrow(`The required input "text" of Label ${missing}`);
+    expect(target.childNodes).toHaveLength(0);
+
+    const { element } = _createComponent(owner, Profile, { target, properties: [{ name: () => 'Ada' }], directives: [{ directive: Label, condition: () => true, properties: [{ text: () => 'x' }] }] });
+
+    expect(element.name()).toBe('Ada');
+  });
+
+  it('listens to the events of the component and to the native ones', () => {
+    const onChanged = vi.fn();
+    const onClick = vi.fn();
+    const { element } = _createComponent(owner, Card, { target: document.body, events: [{ changed: event => onChanged(event.detail), click: onClick }] });
+
+    element.changed.dispatch(3);
+    element.click();
+
+    expect(onChanged).toHaveBeenCalledWith(3);
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it('binds a model as an input and listens to its event of change', () => {
+    const onValueChange = vi.fn();
+    const value = signal(3);
+    const { element } = _createComponent(owner, Picker, { target: document.body, properties: [{ value: () => value() }], events: [{ valueChange: event => onValueChange(event.detail) }] });
+
+    expect(element.value()).toBe(3);
+    element.value.set(4);
+
+    expect(onValueChange).toHaveBeenCalledWith(4);
+  });
+
+  it('calls a listener with the event alone, the element being this, as addEventListener does', () => {
+    const targets = new Array<EventTarget | null>();
+    const onClick = vi.fn((event: MouseEvent) => targets.push(event.currentTarget));
+    const { element } = _createComponent(owner, Card, { target: document.body, events: [{ click: onClick }] });
+
+    element.click();
+
+    expect(onClick.mock.calls[0]).toHaveLength(1);
+    expect(onClick.mock.calls[0][0]).toBeInstanceOf(MouseEvent);
+    expect(targets).toEqual([element]);
+    expect(onClick.mock.contexts[0]).toBe(element);
+  });
+
+  it('listens to a group of events only while its condition holds', async () => {
+    const enabled = signal(true);
+    const onClosed = vi.fn();
+    const { element } = _createComponent(owner, Card, { target: document.body, events: [{ condition: () => enabled(), closed: onClosed }] });
+
+    element.closed.dispatch();
+    enabled.set(false);
+    await flush();
+    element.closed.dispatch();
+
+    expect(onClosed).toHaveBeenCalledOnce();
+  });
+
+  it('throws when the class is not decorated with @WebComponent', () => {
+    const Undecorated = class Undecorated extends CustomElement { };
+
+    expect(() => _createComponent(owner, Undecorated, { target: document.body })).toThrow('Undecorated does not seem to be decorated with @WebComponent');
+  });
+
+  it('is not tracked by an effect it is created in', async () => {
+    const heading = signal('first');
+    const runs = vi.fn();
+    const dispose = effect(() => {
+      runs();
+      _createComponent(owner, Card, { target: document.body, properties: [{ heading: () => heading() }] });
+    });
+
+    heading.set('second');
+    await flush();
+    dispose();
+
+    expect(runs).toHaveBeenCalledOnce();
+  });
+
+  describe('directives', () => {
+    it('applies a directive given by its class, once the component is mounted', () => {
+      const { element } = _createComponent(owner, Card, { target: document.body, directives: [Tooltip] });
+
+      expect(lastTooltip().element).toBe(element);
+      expect(lastTooltip().mounted).toBe(true);
+    });
+
+    it('binds the inputs and listens to the events of a directive, also conditionally', async () => {
+      const enabled = signal(false);
+      const onToggled = vi.fn();
+      const onConditionalToggled = vi.fn();
+      _createComponent(owner, Card, {
+        target: document.body,
+        directives: [{
+          directive: Tooltip,
+          properties: [{ condition: () => enabled(), text: () => 'Hint' }],
+          events: [{ toggled: event => onToggled(event.detail) }, { condition: () => enabled(), toggled: onConditionalToggled }]
+        }]
+      });
+      const tooltip = lastTooltip();
+      expect(tooltip.text()).toBe('');
+
+      enabled.set(true);
+      await flush();
+      tooltip.toggled.dispatch(true);
+
+      expect(tooltip.text()).toBe('Hint');
+      expect(onToggled).toHaveBeenCalledWith(true);
+      expect(onConditionalToggled).toHaveBeenCalledOnce();
+    });
+
+    it('applies a directive only while its condition holds, a new instance each time it holds again', async () => {
+      const enabled = signal(true);
+      _createComponent(owner, Card, { target: document.body, directives: [{ directive: Tooltip, condition: () => enabled(), properties: [{ text: () => 'Hint' }] }] });
+      const first = lastTooltip();
+      expect([first.mounted, first.text()]).toEqual([true, 'Hint']);
+
+      enabled.set(false);
+      await flush();
+      expect(first.destroyed).toHaveBeenCalledOnce();
+
+      enabled.set(true);
+      await flush();
+      expect(lastTooltip()).not.toBe(first);
+      expect(lastTooltip().text()).toBe('Hint');
+    });
+
+    it('throws when a directive is not a custom directive', () => {
+      expect(() => _createComponent(owner, Card, { target: document.body, directives: [Visible as never] })).toThrow('Directive Visible is not a CustomDirective');
+    });
+  });
+
+  describe('destroy', () => {
+    it('removes the element, destroying the component and its directives and unbinding its inputs', async () => {
+      const target = document.createElement('div');
+      document.body.append(target);
+      const heading = signal('first');
+      const { element, destroy } = _createComponent(owner, Card, { target, properties: [{ heading: () => heading() }], directives: [Tooltip] });
+
+      destroy();
+      heading.set('second');
+      await flush();
+
+      expect(target.childNodes).toHaveLength(0);
+      expect(element.destroyed).toHaveBeenCalledOnce();
+      expect(lastTooltip().destroyed).toHaveBeenCalledOnce();
+      expect(element.heading()).toBe('first');
+    });
+
+    it('removes the context of the component from the context its owner has when destroyed', () => {
+      const staging = _scope(null, EMPTY_LAYOUT);
+      const connected = _scope(null, EMPTY_LAYOUT);
+      let current = staging;
+      const { destroy } = _createComponent(() => current, Card, { target: document.body });
+      expect(childrenOf(staging)).toHaveLength(1);
+
+      moveTo(staging, connected);
+      current = connected;
+      destroy();
+
+      expect(childrenOf(connected)).toHaveLength(0);
+    });
+
+    it('does nothing when called again, or after its owner is cleared', () => {
+      const context = _scope(null, EMPTY_LAYOUT);
+      const { element, destroy } = _createComponent(() => context, Card, { target: document.body });
+
+      clear(context);
+      destroy();
+      destroy();
+
+      expect(element.isConnected).toBe(false);
+      expect(element.destroyed).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('owner', () => {
+    it('destroys the component when the context of its owner is cleared', async () => {
+      const context = _scope(null, EMPTY_LAYOUT);
+      const heading = signal('first');
+      const { element } = _createComponent(() => context, Card, { target: document.body, properties: [{ heading: () => heading() }], directives: [Tooltip] });
+
+      clear(context);
+      heading.set('second');
+      await flush();
+
+      expect(element.isConnected).toBe(false);
+      expect(element.destroyed).toHaveBeenCalledOnce();
+      expect(lastTooltip().destroyed).toHaveBeenCalledOnce();
+      expect(element.heading()).toBe('first');
+    });
+  });
+
+  describe('content', () => {
+    it('appends the nodes to the element once its directives are applied', () => {
+      const text = document.createTextNode('text');
+      const span = document.createElement('span');
+      const { element } = _createComponent(owner, Card, { target: document.body, directives: [Tooltip], content: [text, span] });
+
+      expect([...element.childNodes]).toEqual([text, span]);
+      expect(lastTooltip().children).toBe(0);
+    });
+
+    it('appends the nodes of a fragment', () => {
+      const fragment = document.createDocumentFragment();
+      const first = document.createElement('b');
+      const second = document.createElement('i');
+      fragment.append(first, second);
+
+      const { element } = _createComponent(owner, Card, { target: document.body, content: [fragment] });
+
+      expect([...element.childNodes]).toEqual([first, second]);
+    });
+
+    it('keeps the nodes in the element when the component is destroyed', () => {
+      const span = document.createElement('span');
+      const { element, destroy } = _createComponent(owner, Card, { target: document.body, content: [span] });
+
+      destroy();
+
+      expect(span.parentNode).toBe(element);
+    });
+  });
+
+  it('types the bindings after the inputs and the events of the component and of each directive', () => {
+    const check = () => {
+      const host = null as unknown as InstanceType<typeof CustomElement>;
+      // A native event gets the type its map declares, a literal value is kept for an input typed as a union of literals
+      host.createComponent(Card, { target: document.body, properties: [{ mode: () => 'compact' }], events: [{ click: event => event.clientX }] });
+      // @ts-expect-error the value of an input has its type
+      host.createComponent(Card, { target: document.body, properties: [{ count: () => 'one' }] });
+      // The value of an input with a transform is the one its transform takes
+      host.createComponent(Card, { target: document.body, properties: [{ size: () => '21' }] });
+      // @ts-expect-error the transform of the input takes a string, not the type of its value
+      host.createComponent(Card, { target: document.body, properties: [{ size: () => 21 }] });
+      // An input declaring an alias is bound by it, with the type its transform takes
+      host.createComponent(Crossed, { target: document.body, properties: [{ value: () => 'x', initialValue: () => '1' }], directives: [{ directive: Hint, properties: [{ hint: () => 'tip' }] }] });
+      // @ts-expect-error the input named like the alias of another one takes the type of its transform
+      host.createComponent(Crossed, { target: document.body, properties: [{ initialValue: () => 1 }] });
+      // @ts-expect-error the input of a directive declaring an alias is not bound by the name of its property
+      host.createComponent(Card, { target: document.body, directives: [{ directive: Hint, properties: [{ text: () => 'tip' }] }] });
+      // @ts-expect-error the detail of an event is the value of its output
+      host.createComponent(Card, { target: document.body, events: [{ changed: event => event.detail.toUpperCase() }] });
+      // @ts-expect-error the value of a directive input has its type
+      host.createComponent(Card, { target: document.body, directives: [{ directive: Tooltip, properties: [{ text: () => 1 }] }] });
+      // @ts-expect-error the detail of a directive event is the value of its output
+      host.createComponent(Card, { target: document.body, directives: [{ directive: Tooltip, events: [{ toggled: event => event.detail.toUpperCase() }] }] });
+      // A model is bound as an input, by its alias when it declares one, and its event of change is named after it, its detail being its value
+      host.createComponent(Picker, { target: document.body, properties: [{ value: () => 1, on: () => true }], events: [{ valueChange: event => event.detail.toFixed(), onChange: event => !event.detail }] });
+      // @ts-expect-error the value of a model has its type
+      host.createComponent(Picker, { target: document.body, properties: [{ value: () => 'one' }] });
+      // @ts-expect-error the detail of the event of change of a model is its value
+      host.createComponent(Picker, { target: document.body, events: [{ valueChange: event => event.detail.toUpperCase() }] });
+      /*
+        A name the component does not declare may be one a host directive exposes, which TypeScript cannot see: it is
+        accepted, with a getter of any value or a listener taking an event
+      */
+      host.createComponent(Card, { target: document.body, properties: [{ double: () => 1, tip: () => true }], events: [{ heading: () => 'x', tipShown: (event: CustomEvent<string>) => event.detail.toUpperCase() }] });
+      host.createComponent(Picker, { target: document.body, events: [{ checkedChange: event => event.type, value: () => undefined }] });
+      // @ts-expect-error the inputs of a directive are the ones it declares, since a directive exposes nothing
+      host.createComponent(Card, { target: document.body, directives: [{ directive: Tooltip, properties: [{ tip: () => 1 }] }] });
+      // @ts-expect-error the events of a directive are the ones it declares
+      host.createComponent(Card, { target: document.body, directives: [{ directive: Tooltip, events: [{ tipShown: () => undefined }] }] });
+      // A member typed any is neither an input nor an event, and leaves the others typed
+      host.createComponent(Loose, { target: document.body, properties: [{ label: () => 'x' }], events: [{ picked: event => event.detail.toFixed() }] });
+      // @ts-expect-error the value of an input keeps its type next to a member typed any
+      host.createComponent(Loose, { target: document.body, properties: [{ label: () => 1 }] });
+      // @ts-expect-error the detail of an event keeps its type next to a member typed any
+      host.createComponent(Loose, { target: document.body, events: [{ picked: event => event.detail.toUpperCase() }] });
+    };
+
+    expect(check).toBeTypeOf('function');
+  });
+});

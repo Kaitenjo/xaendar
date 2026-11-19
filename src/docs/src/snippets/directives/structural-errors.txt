@@ -1,0 +1,5 @@
+<p *exVisibleWhen(condition="{ shown() }" (click)="log()")>…</p>
+[Lexer] [Ln 2, Col 16] - Structural directives cannot listen to events: they hold no element to dispatch them on
+
+<p *exVisibleWhen(@if (ready()) { condition="{ shown() }" })>…</p>
+[Lexer] [Ln 2, Col 16] - The properties of a structural directive cannot be bound conditionally

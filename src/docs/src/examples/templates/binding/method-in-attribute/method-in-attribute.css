@@ -1,0 +1,16 @@
+:host {
+  display: block;
+}
+
+ex-button {
+  margin-bottom: 0.4rem;
+}
+
+p {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.3rem 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}

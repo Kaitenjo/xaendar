@@ -1,0 +1,16 @@
+:host {
+  display: block;
+}
+
+vanilla-stars button {
+  padding: 0 0.1rem;
+  border: none;
+  background: none;
+  color: #f5a524;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+p {
+  margin: 0.25rem 0 0;
+}

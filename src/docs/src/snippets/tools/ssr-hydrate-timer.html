@@ -1,0 +1,6 @@
+@import { ChatComponent } from './chat/chat.xd.component.ts'
+
+<!-- Hydrates 3 seconds after the page, whatever the user does meanwhile -->
+@hydrate (timer(3s)) {
+  <app-chat />
+}

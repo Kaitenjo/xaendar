@@ -1,0 +1,3 @@
+Xaendar: Failed to compile template - /src/form/form.xd.component.html
+[Parser] [Ln 1, Col 2] - Expected closing tag input while file is over
+ ---> <input type="text">

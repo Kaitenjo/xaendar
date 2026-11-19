@@ -1,0 +1,43 @@
+import type { BindingSite } from './binding-site.type';
+import type { Function } from '@xaendar/types';
+import type { _Context } from './context.type';
+import type { BlockPosition } from './block-position.type';
+import type { IterationVariables } from './iteration-variables.type';
+import type { NodeStrategy } from './node-strategy.type';
+import type { TemplateExpression } from './template-expression.type';
+import type { TrackExpression } from './track-expression.type';
+
+/**
+ * A `@for`, as `_for` renders it: where its items come from, how they are keyed, and what renders each one.
+ *
+ * N.B. Deliberate, to save memory: a constant of the module of the template, shared by every instance of the `@for`,
+ * whose functions are the ones of the module as they are, instead of the arrows and the bound function a `@for` would
+ * create at each render, in every row of an outer `@for`. The runtime never writes it: the rows rendered are kept by the
+ * `@for` (see `ForRun`). Do not build it in the render code.
+ */
+export type ForConfig = BindingSite & BlockPosition & {
+  /**
+   * Computes the items to iterate: an array, a number `n`, iterated as `0, 1, ..., n - 1`, or any other iterable (a
+   * `Map`, a `Set`…) but a string (see `_forItems`). A function of the module, called with the component and the
+   * context of the scope holding the `@for`.
+   */
+  readonly items: TemplateExpression<Iterable<unknown> | number>;
+  /**
+   * Computes the key of an item.
+   */
+  readonly track: TrackExpression;
+  /**
+   * Renders a new item, returning the context of its body, where `_iterationVariables` declares the `variables`: a
+   * function of the module, called as it is.
+   */
+  readonly block: Function<[HTMLElement, _Context, unknown[], number, Node | null, NodeStrategy], _Context>;
+  /**
+   * Renders the content of the `@empty` following the `@for` while there are no items, returning its context: a
+   * function of the module, called as it is. Left out when the `@for` has no `@empty`.
+   */
+  readonly empty?: Function<[HTMLElement, _Context, Node | null, NodeStrategy], _Context>;
+  /**
+   * The variables the body reads, left out when it reads none.
+   */
+  readonly variables?: IterationVariables;
+};

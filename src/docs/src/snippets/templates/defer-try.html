@@ -1,0 +1,19 @@
+<!-- ✓ The @try is rendered with the content, when the trigger fires: it catches its first render -->
+@defer (idle) {
+  @try {
+    <app-chart data="{report()}" />
+  } @catch {
+    <p>The chart cannot be drawn.</p>
+  }
+} @error {
+  <p>The chart cannot be loaded.</p>
+}
+
+<!-- ✗ The content is rendered after the first render of the @try: nothing is caught -->
+@try {
+  @defer (idle) {
+    <app-chart data="{report()}" />
+  }
+} @catch {
+  <p>Never rendered</p>
+}

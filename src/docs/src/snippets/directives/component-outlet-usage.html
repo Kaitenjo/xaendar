@@ -1,0 +1,6 @@
+@import { ComponentOutlet } from '@xaendar/directives'
+
+<!-- card() returns the class of a component: it is created inside the div, and created again when card() changes -->
+<div @@componentOutlet(component="{card()}") />
+<!-- The options bind its inputs and its events -->
+<div @@componentOutlet(component="{card()}" options="{cardOptions}") />

@@ -1,0 +1,18 @@
+@import { VolumeComponent } from './volume.xd.component.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="controls">
+  <ex-button (click)="toggle()">
+    @if (linked()) {
+      Unbind
+    } @else {
+      Bind
+    }
+  </ex-button>
+  <ex-button (click)="raise()">Level: { level() }</ex-button>
+</div>
+<ex-volume
+  @if (linked()) {
+    level="{level()}"
+  }
+/>

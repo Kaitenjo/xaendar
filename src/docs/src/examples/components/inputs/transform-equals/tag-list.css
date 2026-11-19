@@ -1,0 +1,24 @@
+:host {
+  display: block;
+}
+
+ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+li {
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, #6750a4 20%, transparent);
+  font-size: 0.85rem;
+}
+
+p {
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+}

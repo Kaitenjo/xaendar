@@ -1,0 +1,21 @@
+{
+  "name": "@xaendar-demo/next",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "next build --webpack && node ./scripts/copy-out.mjs",
+    "start": "next dev"
+  },
+  "dependencies": {
+    "@xaendar-demo/qty-picker": "file:../qty-picker",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^5.9.3"
+  }
+}

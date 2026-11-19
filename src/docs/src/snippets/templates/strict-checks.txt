@@ -1,0 +1,7 @@
+prices: Record<string, number>, with noUncheckedIndexedAccess in tsconfig.json
+<p>{ prices.coffee }</p>
+[Ln 1, Col 6] - 'root.prices.coffee' is possibly 'undefined'.
+
+a = 1, a readonly member: its type is the literal 1
+<p>{ a !== 2 }</p>
+[Ln 1, Col 18] - This comparison appears to be unintentional because the types '1' and '2' have no overlap.

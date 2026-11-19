@@ -1,0 +1,8 @@
+@import { StyleDirective } from '@xaendar/directives'
+
+<!-- kebab-case or camelCase, a unit after the dot, custom properties as they are written -->
+<div @@style(value="{({ 'background-color': color(), 'width.px': width(), '--accent': accent() })}") />
+<!-- null, undefined and '' set nothing: the property is left to the other sources -->
+<div @@style(value="{({ fontWeight: bold() ? 700 : null, opacity: hidden() ? '0 !important' : '' })}") />
+<!-- An object computed in the class -->
+<section @@style(value="{layout()}") />

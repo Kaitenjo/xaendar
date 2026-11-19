@@ -1,0 +1,38 @@
+{
+  "getDeferBlocks": {
+    "summary": "Finds the <code>@defer</code> blocks a component renders in its shadow root, to drive them in a test.",
+    "description": "<p><code>getDeferBlocks(host)</code> returns the <code>@defer</code> blocks the component of <code>host</code> renders in its shadow root, in the order they are rendered: the ones rendered by the content of another block are found once that content is rendered, and the ones destroyed, as by an <code>@if</code> becoming false, are left out. Each one is a <a href=\"#/en/reference/api/core/testing/DeferBlockFixture\"><code>DeferBlockFixture</code></a>, telling the part it shows and showing another one at once.</p><p>Only the blocks rendered once <code>@xaendar/core/testing</code> is imported are found: import it in the spec, before rendering the component. The blocks of the components the component renders are found from their own elements.</p>",
+    "members": {
+      "host": "<p>The element of the component.</p>"
+    },
+    "usage": {
+      "drivingByHand": {
+        "title": "Driving a block by hand",
+        "body": "<p>With <a href=\"#/en/reference/api/core/testing/setDeferBlockBehavior\"><code>setDeferBlockBehavior('manual')</code></a> the triggers never fire: the test shows each part with <code>render</code>, the content once its modules are loaded.</p>"
+      }
+    }
+  },
+  "setDeferBlockBehavior": {
+    "summary": "Sets how the <code>@defer</code> blocks rendered from now on behave in the tests.",
+    "description": "<p><code>'playthrough'</code>, the default once <code>@xaendar/core/testing</code> is imported, lets the blocks behave as in the browser: their triggers fire, and their times pass. <code>'manual'</code> arms neither their triggers nor their <code>when</code>, nor the triggers following <code>prefetch</code>: each block shows its <code>@placeholder</code> until the test shows another part with the <code>render</code> of the blocks <a href=\"#/en/reference/api/core/testing/getDeferBlocks\"><code>getDeferBlocks</code></a> finds.</p><p>It applies to the blocks rendered after the call: call it before rendering the component, and set <code>'playthrough'</code> again after the test, so that the next ones play through.</p>",
+    "members": {
+      "value": "<p>The behavior: <code>'playthrough'</code> or <code>'manual'</code>.</p>"
+    }
+  },
+  "DeferBlockFixture": {
+    "summary": "A <code>@defer</code> block a component renders, as a test drives it.",
+    "description": "<p>It is what <a href=\"#/en/reference/api/core/testing/getDeferBlocks\"><code>getDeferBlocks</code></a> returns for each block: the part the block shows, and the function showing another one at once, whatever its triggers and its times.</p>",
+    "members": {
+      "state": "<p>The part the block shows: <code>'placeholder'</code> before a trigger fires, <code>'loading'</code> while the modules of the content load, <code>'complete'</code> once the content is rendered, <code>'error'</code> when the modules fail to load.</p>",
+      "render": "<p>Shows a part of the block at once, stopping its triggers and its times: <code>'complete'</code> once the modules of the content are loaded, <code>'error'</code> with the error given, which the <code>@error</code> receives under its name. The promise is rejected when the block does not declare the part, or the modules fail to load.</p>"
+    }
+  },
+  "DeferBlockState": {
+    "summary": "The part a <code>@defer</code> block shows.",
+    "description": "<p><code>'placeholder'</code>: its <code>@placeholder</code>, before a trigger fires, or nothing without one. <code>'loading'</code>: its <code>@loading</code>, while the modules of the content load. <code>'complete'</code>: the content. <code>'error'</code>: its <code>@error</code>, when the modules fail to load.</p>"
+  },
+  "DeferBlockBehavior": {
+    "summary": "How the <code>@defer</code> blocks behave in the tests.",
+    "description": "<p><code>'playthrough'</code>: as in the browser, their triggers firing and their times passing. <code>'manual'</code>: their triggers never fire, and the test shows each part with <code>render</code>. See <a href=\"#/en/reference/api/core/testing/setDeferBlockBehavior\"><code>setDeferBlockBehavior</code></a>.</p>"
+  }
+}

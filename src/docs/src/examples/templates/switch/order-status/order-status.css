@@ -1,0 +1,24 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.option {
+  font-family: ui-monospace, monospace;
+}
+
+.option--active {
+  border-color: var(--xd-accent);
+  background: var(--xd-accent-soft);
+  color: var(--xd-accent);
+}
+
+p {
+  margin: 0;
+}

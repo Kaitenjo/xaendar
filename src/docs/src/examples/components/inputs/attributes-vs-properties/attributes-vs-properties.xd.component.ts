@@ -1,0 +1,35 @@
+import { CustomElement, Query, WebComponent } from '@xaendar/core';
+import { signal } from '@xaendar/core/signals';
+import type { QuerySignal } from '@xaendar/core/signals';
+
+/**
+ * Binds the same input with a static value and with an expression, then writes the attribute of the same name from
+ * outside.
+ */
+@WebComponent({
+  selector: 'ex-attributes-vs-properties',
+  styleUrl: './attributes-vs-properties.css',
+  templateUrl: './attributes-vs-properties.xd.component.html'
+})
+export class AttributesVsPropertiesComponent extends CustomElement {
+  /**
+   * The first component, bound with a static value.
+   */
+  @Query('ex-value-type')
+  public accessor first!: QuerySignal<HTMLElement | null>;
+  /**
+   * The attributes of the first component, as they are in the DOM.
+   */
+  public readonly attributesProp = signal('none');
+
+  /**
+   * Writes the value attribute of the first component, as code outside Xaendar would do.
+   */
+  public writeAttribute(): void {
+    const first = this.first();
+    if (first) {
+      first.setAttribute('value', '42');
+      this.attributesProp.set([...first.attributes].map(({ name, value }) => `${name}="${value}"`).join(' '));
+    }
+  }
+}

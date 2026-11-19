@@ -1,0 +1,16 @@
+{
+  "name": "@xaendar/types",
+  "version": "1.4.1",
+  "type": "module",
+  "author": "Kaitenjo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/types"
+  },
+  "description": "A library containing common types shared across packages and consumers",
+  "xaendar": {
+    "target": "browser"
+  }
+}

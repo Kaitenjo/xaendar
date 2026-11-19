@@ -1,0 +1,33 @@
+:host {
+  display: block;
+}
+
+p {
+  margin: 0.5rem 0 0;
+}
+
+.note {
+  color: var(--xd-text-muted);
+}
+
+.viewport {
+  height: 9rem;
+  overflow: auto;
+  padding: 0 0.75rem;
+  border: 1px solid var(--xd-border);
+  border-radius: 8px;
+}
+
+.spacer {
+  height: 12rem;
+}
+
+.frame {
+  display: grid;
+  place-items: center;
+  height: 4rem;
+  margin: 0.5rem 0;
+  border: 1px dashed var(--xd-border-strong);
+  border-radius: 8px;
+  color: var(--xd-text-muted);
+}

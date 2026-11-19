@@ -1,0 +1,80 @@
+import type { Span } from '../../../types/span.type';
+import { ASTNode } from '../ast.type';
+import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
+import { ASTNodeType } from '../node.enum';
+import { AttributeNode } from './attribute-node.type';
+import type { ClassBindingNode } from './class-binding-node.type';
+import type { StyleBindingNode } from './style-binding-node.type';
+import { ConditionalBindingNode } from './conditional-binding-node.type';
+import { DirectiveNode } from './directive-node.type';
+import { EventNode } from './event-node.type';
+import { StructuralDirectiveNode } from './structural-directive-node.type';
+import type { ElementRefNode } from './element-ref-node.type';
+
+/**
+ * AST node representing an HTML element with a tag name, attributes, events, and children.
+ */
+export type ElementNode = ASTNodeWithSpan<{
+  /**
+   * Discriminant identifying this node as an element.
+   */
+  type: ASTNodeType.Element
+  /**
+   * The HTML tag name of the element.
+   */
+  tagName: string;
+  /**
+   * Span of the tag name in the opening tag, e.g. `docs-search` in `<docs-search>`.
+   */
+  nameSpan: Span;
+  /**
+   * The type arguments the element declares for the generic class of its web component, e.g. `string` and `number` in `<my-list(string, number)>`.
+   */
+  typeArguments?: DirectiveNode['typeArguments'];
+  /**
+   * Span of the tag name in the closing tag, e.g. `docs-search` in `</docs-search>`, `undefined` for a self-closing tag.
+   */
+  closeNameSpan?: Span;
+  /**
+   * The element ref naming the element, e.g. `#name` in `<input #name />`, if it declares one.
+   */
+  ref?: ElementRefNode;
+  /**
+   * Attribute nodes bound to this element.
+   */
+  attributes: AttributeNode[];
+  /**
+   * Classes toggled on this element, `class.name="{expression}"`.
+   */
+  classBindings: ClassBindingNode[];
+  /**
+   * Style properties set on this element, `style.name="{expression}"`.
+   */
+  styleBindings: StyleBindingNode[];
+  /**
+   * Event binding nodes attached to this element.
+   */
+  events: EventNode[];
+  /**
+   * Child AST nodes nested inside this element.
+   */
+  children: ASTNode[];
+  /**
+   * Conditional binding nodes attached to this element.
+   */
+  conditionalBindings: ConditionalBindingNode[];
+  /**
+   * Directive nodes applied to this element.
+   */
+  directives: DirectiveNode[];
+  /**
+   * Structural directive nodes deciding whether this element is rendered.
+   */
+  structuralDirectives: StructuralDirectiveNode[];
+  /**
+   * The HTML of the content of a standard `<template>` element, one declaring no template (`<template id="row">`):
+   * static HTML, which the client assigns to the `innerHTML` of the element and the server writes as it is. Its
+   * children stay in `children`, for the editor, but no code renders them. `undefined` for any other element.
+   */
+  content?: string;
+}>

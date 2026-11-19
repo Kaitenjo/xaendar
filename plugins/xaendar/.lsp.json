@@ -1,0 +1,14 @@
+{
+  "xaendar": {
+    "command": "node",
+    "args": ["${CLAUDE_PLUGIN_ROOT}/server/server.cjs", "--stdio"],
+    "extensionToLanguage": {
+      ".html": "html"
+    },
+    "env": {
+      "NODE_PATH": "${CLAUDE_PROJECT_DIR}/node_modules"
+    },
+    "workspaceFolder": "${CLAUDE_PROJECT_DIR}",
+    "startupTimeout": 30000
+  }
+}

@@ -1,0 +1,91 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
+@import { CardDesignerComponent } from '../../../examples/directives/style/card-designer/card-designer.xd.component.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.directives.style.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.directives.style.title') }
+</h1>
+<p @@htmlTranslation(key="pages.directives.style.lead") class="lead" />
+<docs-code snippet="directives/animations-install.sh" />
+
+<h2>
+  { t(translations(), 'pages.directives.style.properties.title') }
+</h2>
+<docs-example name="directives/style/card-designer" heading="{translations().pages.directives.style.properties.example1}">
+  <ex-card-designer />
+</docs-example>
+<p @@htmlTranslation(key="pages.directives.style.properties.p1") />
+<docs-code snippet="directives/style-values.html" />
+<p @@htmlTranslation(key="pages.directives.style.properties.p2") />
+
+<h2>
+  { t(translations(), 'pages.directives.style.merging.title') }
+</h2>
+<p @@htmlTranslation(key="pages.directives.style.merging.p1") />
+<p @@htmlTranslation(key="pages.directives.style.merging.p2") />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.directives.style.edgeCases.title') }
+  </h2>
+  <docs-callout kind="edge">
+    <docs-callout-item @@htmlTranslation(key="pages.directives.style.edgeCases.callout1.body")
+      heading="{translations().pages.directives.style.edgeCases.callout1.heading}" />
+    <docs-callout-item @@htmlTranslation(key="pages.directives.style.edgeCases.callout2.body")
+      heading="{translations().pages.directives.style.edgeCases.callout2.heading}" />
+    <docs-callout-item @@htmlTranslation(key="pages.directives.style.edgeCases.callout3.body")
+      heading="{translations().pages.directives.style.edgeCases.callout3.heading}" />
+  </docs-callout>
+</section>
+
+<h2>
+  { t(translations(), 'pages.directives.style.summary.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.directives.style.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.directives.style.summary.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <code>{ 'style.name="{ value }"' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.directives.style.summary.td1') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ 'style="{`a: ${b()}`}"' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.directives.style.summary.td2') }
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <code>{ '@@style(value="{ styles }")' }</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.directives.style.summary.td3') }
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

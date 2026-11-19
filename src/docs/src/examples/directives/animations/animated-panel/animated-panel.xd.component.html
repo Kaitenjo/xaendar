@@ -1,0 +1,26 @@
+@import { AnimationDirective } from '@xaendar/directives'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<div class="stage">
+  @switch (step()) {
+    @case ('account') {
+      <section @@animation(enter="{slideIn}" leave="{slideOut}")>
+        <h3>Account</h3>
+        <p>Choose a name and a password.</p>
+      </section>
+    }
+    @case ('profile') {
+      <section @@animation(enter="{slideIn}" leave="{slideOut}")>
+        <h3>Profile</h3>
+        <p>Tell us something about you.</p>
+      </section>
+    }
+    @default {
+      <section @@animation(enter="{slideIn}" leave="{slideOut}")>
+        <h3>Done</h3>
+        <p>Your account is ready.</p>
+      </section>
+    }
+  }
+</div>
+<ex-button (click)="next()">Next step</ex-button>

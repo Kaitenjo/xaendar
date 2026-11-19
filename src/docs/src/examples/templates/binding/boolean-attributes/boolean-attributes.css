@@ -1,0 +1,13 @@
+:host {
+  display: block;
+}
+
+p {
+  margin: 0.5rem 0 0;
+}
+
+button {
+  font: inherit;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}

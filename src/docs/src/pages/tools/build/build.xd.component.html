@@ -1,0 +1,115 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { INSTALLATION_VITE_CONFIG } from '../../installation/installation.snippets.ts'
+@import { CSS_MINIFY, INJECTED_CODE } from './build.snippets.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.tools.build.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.tools.build.title') }
+</h1>
+<p @@htmlTranslation(key="pages.tools.build.lead") class="lead" />
+
+<h2>
+  { t(translations(), 'pages.tools.build.configuration.title') }
+</h2>
+<docs-code snippet="{INSTALLATION_VITE_CONFIG}" />
+<p @@htmlTranslation(key="pages.tools.build.configuration.p1") />
+<p @@htmlTranslation(key="pages.tools.build.configuration.p2") />
+<p @@htmlTranslation(key="pages.tools.build.configuration.p3") />
+
+<h2>
+  { t(translations(), 'pages.tools.build.whatThePluginDoes.title') }
+</h2>
+<docs-code snippet="components/build-pipeline.txt" />
+<p @@htmlTranslation(key="pages.tools.build.whatThePluginDoes.p1") />
+<docs-code snippet="{INJECTED_CODE}" />
+<docs-code snippet="tools/file-naming.txt" />
+<p @@htmlTranslation(key="pages.tools.build.whatThePluginDoes.p2") />
+<docs-code snippet="tools/style-module.js" />
+<p @@htmlTranslation(key="pages.tools.build.whatThePluginDoes.p3") />
+<docs-code snippet="{CSS_MINIFY}" />
+
+<h2>
+  { t(translations(), 'pages.tools.build.errors.title') }
+</h2>
+<p @@htmlTranslation(key="pages.tools.build.errors.p1") />
+<docs-code snippet="tools/plugin-errors.txt" />
+<p @@htmlTranslation(key="pages.tools.build.errors.p2") />
+
+<h2>
+  { t(translations(), 'pages.tools.build.devServer.title') }
+</h2>
+<p>
+  { t(translations(), 'pages.tools.build.devServer.p1') }
+</p>
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.tools.build.edgeCases.title') }
+  </h2>
+  <docs-callout @@htmlTranslation(key="pages.tools.build.edgeCases.callout4.body") kind="edge"
+    heading="{translations().pages.tools.build.edgeCases.callout4.heading}" />
+  <docs-callout @@htmlTranslation(key="pages.tools.build.edgeCases.callout5.body") kind="unsupported"
+    heading="{translations().pages.tools.build.edgeCases.callout5.heading}" />
+</section>
+
+<h2>
+  { t(translations(), 'pages.tools.build.summary.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.tools.build.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.tools.build.summary.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <a href="{`#/${currentLang()}/reference/api/build-tools/xaendarPlugin`}">
+            <code>xaendarPlugin()</code>
+          </a>
+        </td>
+        <td @@htmlTranslation(key="pages.tools.build.summary.td1") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.tools.build.summary.td2') }
+        </td>
+        <td @@htmlTranslation(key="pages.tools.build.summary.td3") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.tools.build.summary.td4') }
+        </td>
+        <td>
+          <code>virtual:xaendar-template:…</code>,
+          <code>virtual:xaendar-style?…</code>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.tools.build.summary.td5') }
+        </td>
+        <td @@htmlTranslation(key="pages.tools.build.summary.td6") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.tools.build.summary.td7') }
+        </td>
+        <td @@htmlTranslation(key="pages.tools.build.summary.td8") />
+      </tr>
+    </tbody>
+  </table>
+</div>

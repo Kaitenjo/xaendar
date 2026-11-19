@@ -1,0 +1,17 @@
+@HostAttribute('class.')
+Error: @HostAttribute('class.') names no class
+
+@HostListener('')
+Error: @HostListener('') names no event
+
+@HostListener('window:')
+Error: @HostListener('window:') names no event
+
+@HostListener('keydown.ctrl.s')
+Error: @HostListener('keydown.ctrl.s'): "ctrl" is not a modifier of the key event "keydown.ctrl.s": alt, control, meta, shift or code
+
+@HostAttribute('role') static defaultRole = 'switch';
+Error: @HostAttribute('role') cannot decorate the static member defaultRole
+
+@HostListener('click') static handle(): void { … }
+Error: @HostListener('click') cannot decorate the static method handle

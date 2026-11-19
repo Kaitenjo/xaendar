@@ -1,0 +1,35 @@
+import type { Span } from '../../../types/span.type';
+import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
+import { ASTNodeType } from '../node.enum';
+import { ImportSpecifier } from './import-specifier.type';
+
+/**
+ * AST node representing a `@import` statement.
+ * 
+ * Imports symbols from external modules to make them available
+ * in template expressions.
+ */
+export type ImportNode = ASTNodeWithSpan<{
+  /**
+   * Discriminant identifying this node as an import.
+   */
+  type: ASTNodeType.Import;
+  /**
+   * Array of import specifiers with optional aliases.
+   * Each specifier maps an exported symbol to a local name.
+   */
+  specifiers: ImportSpecifier[];
+  /**
+   * Module path where the symbols are imported from.
+   */
+  path: string;
+  /**
+   * Span of the module path, without the quotes.
+   */
+  pathSpan: Span;
+  /**
+   * Whether the statement is `@import lazy`: the symbols are type-checked, but the template module does not
+   * import the module, which something else loads on demand.
+   */
+  lazy?: true;
+}>;

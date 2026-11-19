@@ -1,0 +1,91 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { InventoryComponent } from '../../../examples/patterns/lists/inventory/inventory.xd.component.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.patterns.lists.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.patterns.lists.title') }
+</h1>
+<p @@htmlTranslation(key="pages.patterns.lists.lead") class="lead" />
+
+<h2>
+  { t(translations(), 'pages.patterns.lists.anInventory.title') }
+</h2>
+<docs-example name="patterns/lists/inventory" heading="{translations().pages.patterns.lists.anInventory.example1}">
+  <ex-inventory />
+</docs-example>
+<p @@htmlTranslation(key="pages.patterns.lists.anInventory.p1") />
+<p @@htmlTranslation(key="pages.patterns.lists.anInventory.p2") />
+<p @@htmlTranslation(key="pages.patterns.lists.anInventory.p3") />
+<p @@htmlTranslation(key="pages.patterns.lists.anInventory.p4") />
+
+<section class="edge-cases">
+  <h2>
+    { t(translations(), 'pages.patterns.lists.edgeCases.title') }
+  </h2>
+  <docs-callout kind="edge" heading="{translations().pages.patterns.lists.edgeCases.callout2.heading}">
+    { t(translations(), 'pages.patterns.lists.edgeCases.callout2.body') }
+  </docs-callout>
+</section>
+
+<h2>
+  { t(translations(), 'pages.patterns.lists.summary.title') }
+</h2>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.patterns.lists.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.patterns.lists.summary.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          { t(translations(), 'pages.patterns.lists.summary.td1') }
+        </td>
+        <td>
+          <code>{ 'items.update(list => [...list, item])' }</code>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.patterns.lists.summary.td2') }
+        </td>
+        <td>
+          <code>{ 'items.update(list => list.filter(other => other !== item))' }</code>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.patterns.lists.summary.td3') }
+        </td>
+        <td @@htmlTranslation(key="pages.patterns.lists.summary.td4") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.patterns.lists.summary.td5') }
+        </td>
+        <td @@htmlTranslation(key="pages.patterns.lists.summary.td6") />
+      </tr>
+      <tr>
+        <td>
+          { t(translations(), 'pages.patterns.lists.summary.td7') }
+        </td>
+        <td>
+          <code>{ '@for (item of visible(); track item.id)' }</code>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

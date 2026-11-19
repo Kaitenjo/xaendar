@@ -1,0 +1,29 @@
+:host {
+  display: block;
+}
+
+.stage {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+section {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--xd-border-strong);
+  border-radius: 8px;
+}
+
+/* The step leaving is inert: out of the flow, it lets the next one take its place at once */
+section[inert] {
+  position: absolute;
+  inset: 0;
+}
+
+h3 {
+  margin: 0 0 0.25rem;
+}
+
+p {
+  margin: 0;
+}

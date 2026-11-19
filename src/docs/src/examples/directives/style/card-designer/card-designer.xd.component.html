@@ -1,0 +1,23 @@
+@import { StyleDirective } from '@xaendar/directives'
+
+<div class="controls">
+  <label>
+    Width
+    <input type="range" min="40" max="100" value="{width()}" (input)="setWidth($event)" />
+  </label>
+  <label>
+    Radius
+    <input type="range" min="0" max="24" value="{radius()}" (input)="setRadius($event)" />
+  </label>
+  <label>
+    Hue
+    <input type="range" min="0" max="360" value="{hue()}" (input)="setHue($event)" />
+  </label>
+  <label>
+    <input type="checkbox" checked="{bold()}" (change)="toggleBold()" />
+    Bold
+  </label>
+</div>
+<div class="preview">
+  <div @@style(value="{styles()}") class="card">A card styled by an object</div>
+</div>

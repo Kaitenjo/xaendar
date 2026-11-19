@@ -1,0 +1,9 @@
+@import { ProductGalleryComponent } from './product-gallery/product-gallery.xd.component.ts'
+@import { ReviewsComponent } from './reviews/reviews.xd.component.ts'
+
+<app-product-gallery product="{product()}" />
+
+<!-- Loaded and hydrated at the first interaction, or once the reviews are open -->
+@hydrate (interaction, when reviewsOpen()) {
+  <app-reviews product="{product().id}" />
+}

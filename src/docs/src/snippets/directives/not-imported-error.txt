@@ -1,0 +1,5 @@
+<p @@exTint>…</p>   (no @import of TintDirective)
+
+Xaendar: Failed to compile template - <path>
+[TypeChecker] @@exTint selector is not associated to any Directive imported in the template
+----> exTint

@@ -1,0 +1,17 @@
+:host {
+  display: block;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background: var(--xd-accent-soft);
+  font-size: 0.9rem;
+}
+
+.card[data-level="urgent"] {
+  background: color-mix(in srgb, #e5484d 22%, transparent);
+}

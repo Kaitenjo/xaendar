@@ -1,0 +1,9 @@
+@import { ClassDirective } from '@xaendar/directives'
+
+<!-- A string of classes separated by spaces -->
+<div @@class(value="{theme()}") />
+<!-- A list or a set of classes -->
+<div @@class(value="{['card', size()]}") />
+<div @@class(value="{selectedTags()}") />
+<!-- An object: each key is given while its value is truthy, and a key can hold several classes -->
+<li @@class(value="{({ active: item.id === selected(), 'is-done muted': item.done })}") />

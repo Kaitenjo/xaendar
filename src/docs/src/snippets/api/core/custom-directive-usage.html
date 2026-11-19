@@ -1,0 +1,3 @@
+@import { CopyDirective } from './copy.directive.ts'
+
+<button @@exCopy(text="{link()}" (copied)="notify($event)") type="button">Copy the link</button>

@@ -1,0 +1,30 @@
+:host {
+  display: block;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.controls label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.preview {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px dashed rgba(127, 127, 127, 0.35);
+  border-radius: 6px;
+}
+
+/* The width, the radius and --hue come from @@style */
+.card {
+  padding: 1rem;
+  color: #fff;
+  background: hsl(var(--hue, 260) 45% 45%);
+}

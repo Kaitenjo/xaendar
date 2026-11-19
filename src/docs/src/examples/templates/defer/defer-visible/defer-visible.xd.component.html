@@ -1,0 +1,9 @@
+<div class="viewport">
+  <p class="note">Scroll down: the map is rendered when its frame enters the viewport.</p>
+  <div class="spacer" />
+  @defer (visible) {
+    <p class="frame">The map, rendered when its frame became visible.</p>
+  } @placeholder {
+    <div class="frame">Map</div>
+  }
+</div>

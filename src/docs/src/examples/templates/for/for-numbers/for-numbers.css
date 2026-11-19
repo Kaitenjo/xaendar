@@ -1,0 +1,28 @@
+:host {
+  display: block;
+}
+
+p {
+  display: flex;
+  gap: 0.3rem;
+  min-height: 1.6rem;
+  margin: 0.4rem 0;
+}
+
+.dot {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: #6750a4;
+}
+
+.stars {
+  color: #f5a524;
+  font-size: 1.4rem;
+}
+
+label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}

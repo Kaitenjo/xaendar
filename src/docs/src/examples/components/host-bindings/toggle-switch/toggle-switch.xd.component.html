@@ -1,0 +1,5 @@
+@import { ToggleComponent } from './toggle.xd.component.ts'
+
+<ex-toggle (checkedChange)="setAirplane($event)">Airplane mode</ex-toggle>
+<ex-toggle locked="{airplane()}" (checkedChange)="setWifi($event)">Wi-Fi</ex-toggle>
+<p class="state">Airplane mode { airplane() ? 'on' : 'off' }, Wi-Fi { wifi() ? 'on' : 'off' }</p>

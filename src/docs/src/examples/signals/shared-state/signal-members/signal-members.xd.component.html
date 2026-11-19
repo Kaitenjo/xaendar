@@ -1,0 +1,21 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { level } from './level.store.ts'
+
+<ex-button (click)="raise()">Raise the level</ex-button>
+<dl>
+  <dt>{ '@import { level }' }</dt>
+  <dd>
+    <progress max="10" value="{level()}" />
+    text: { level() }
+  </dd>
+  <dt>fromHelper = readLevel()</dt>
+  <dd>
+    <progress max="10" value="{fromHelper()}" />
+    text: { fromHelper() }
+  </dd>
+  <dt>{ 'wrapped = computed(() => readLevel()())' }</dt>
+  <dd>
+    <progress max="10" value="{wrapped()}" />
+    text: { wrapped() }
+  </dd>
+</dl>

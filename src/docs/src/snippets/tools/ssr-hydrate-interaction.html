@@ -1,0 +1,6 @@
+@import { SizePickerComponent } from './size-picker/size-picker.xd.component.ts'
+
+<!-- Does nothing until it is touched: the first click hydrates it, then reaches its listener -->
+@hydrate (interaction) {
+  <app-size-picker sizes="{product().sizes}" />
+}

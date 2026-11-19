@@ -1,0 +1,65 @@
+@if (items().length > 10) {
+  <p>Many</p>
+} @else if (items().length > 0) {
+  <p>A few</p>
+} @else {
+  <p>None</p>
+}
+
+@for (item of items(); track item.id) {
+  <li>{ $index + 1 }. { item.name } { $first ? '(first)' : '' }</li>
+}
+@for (row of rows(); track row.id; index = $index) {    <!-- alias -->
+  …
+}
+@for (5) {                                               <!-- a number of times -->
+  <span>★</span>
+}
+@for (step of count()) {                                 <!-- 0 … count() - 1 -->
+  <span>{ step }</span>
+}
+
+@switch (status()) {
+  @case ('draft')
+  @case ('review') {
+    <p>In progress</p>
+  }
+  @case ('done') {
+    <p>Done</p>
+  }
+  @default {
+    <p>Unknown</p>
+  }
+}
+
+@switch (state()) {                    <!-- state(): 'idle' | 'error' -->
+  @case ('idle') { … }
+  @case ('error') { … }
+  @default never;                      <!-- every value has a @case: checked by the build -->
+}
+
+@try {                                                    <!-- the first render only -->
+  <p>{ settings().theme.name }</p>
+} @catch (error) {                                         <!-- or @catch { … } -->
+  <p>{ error instanceof Error ? error.message : 'Error' }</p>
+}
+
+@hydrate (visible, when ready()) {                         <!-- or load, idle, timer(2s), interaction, hover, never, prefetch idle; none: idle -->
+  <app-reviews />
+}
+
+@client {                                                  <!-- only the browser renders it -->
+  <app-notify-button />
+} @placeholder {                                           <!-- optional: the server renders it instead -->
+  <p>Loading…</p>
+}
+
+@defer (interaction, prefetch hover) {                     <!-- or load, idle, timer(2s), visible, hover(ref), when expr; none: idle -->
+  <app-comments />
+} @placeholder (minimum 500ms) {                           <!-- optional: until a trigger fires -->
+  <button>Show the comments</button>
+} @loading (after 100ms, minimum 1s) {                     <!-- optional: while the modules load -->
+  <p>Loading…</p>
+} @error (error) {                                         <!-- optional: the modules failed to load -->
+  <p>Not available</p>
+}

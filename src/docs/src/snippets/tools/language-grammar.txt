@@ -1,0 +1,12 @@
+Highlighted in .xd.component.html files:
+  @import { A } from './a.ts'          keyword, names and path
+  <my-card>  <my-list(Item)>           component tags (azure) and their type arguments
+  (click)="save()"                     event name and handler
+  title="{ expr }"  { expr }           bound attributes and interpolations
+  @@tooltip(…)  *when(…)               directives
+  #field  @let total = …;              element refs and template variables
+  <template row(item)>  @render row(…) templates and their rendering
+  @if @else @for @switch @case @default
+
+Colored by the server once the template compiles:
+  inputs, events, directives and template variables

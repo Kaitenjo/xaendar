@@ -1,0 +1,375 @@
+{
+  "Stack": {
+    "summary": "A last-in, first-out stack whose elements can also be read by index.",
+    "description": "<p>A <code>Stack</code> keeps its elements in the order they were pushed: <code>push</code> adds one on top, <code>pop</code> removes the one on top. Indexes count from the bottom, as in an array: <code>stack[0]</code> is the first element pushed, <code>stack[stack.length - 1]</code> the top, and an index without an element reads <code>undefined</code>.</p><p>Indexes are only for reading: the stack changes only through <code>push</code> and <code>pop</code>. A stack cannot be iterated or spread either: loop on <code>values</code>, a copy of its elements.</p><p>Xaendar uses it where a nested operation, once it ends, must restore the state it interrupted: the states of the lexer of the compiler, and the computations in progress in the signals runtime.</p>",
+    "members": {
+      "length": "<p>The number of elements in the stack.</p>",
+      "values": "<p>A copy of the elements, from the bottom to the top: changing it does not change the stack. Every read makes a new copy.</p>",
+      "push": "<p>Adds an element on top of the stack and returns the new length.</p>",
+      "pop": "<p>Removes the element on top of the stack and returns it, or returns <code>undefined</code> when the stack is empty.</p>"
+    },
+    "usage": {
+      "pushingAndPopping": {
+        "title": "Pushing, reading and popping",
+        "body": "<p>The tags opened and not closed yet, as a parser keeps them: the innermost tag is on top, and closing it pops it.</p>"
+      }
+    }
+  },
+  "SmallSet": {
+    "summary": "A set kept as the item itself while it holds one, in an array while it holds few items, and in a <code>Set</code> beyond 32: one or two items take far less memory.",
+    "description": "<p>A <code>Set</code> allocates a hash table even for one item, while most of the sets of a reactive graph hold one or two: a <code>SmallSet</code> is the item itself while it holds one, an array of exactly two items with the second one, an array while it holds up to 32 items, and a <code>Set</code> from the 33rd, staying one when the items decrease. Every empty <code>SmallSet</code> is one shared frozen empty array.</p><p>It is a plain value, not an object wrapping one: <code>addToSmallSet</code> and <code>deleteFromSmallSet</code> return the value to store in place of the one given, and it is read through <code>smallSetHas</code>, <code>smallSetSize</code>, <code>forEachInSmallSet</code>, <code>findInSmallSet</code> and <code>smallSetToArray</code>, in insertion order: an item alone is not iterable. Its items are objects that are neither arrays nor <code>Set</code>s (<code>SmallSetItem</code>), so that an item alone is never taken for a collection.</p><p>The signals runtime of Xaendar keeps the sources and the sinks of its nodes, and the signals of its watchers, in it.</p>",
+    "usage": {
+      "tracking": {
+        "title": "Tracking the readers of a value",
+        "body": "<p>Most values have one reader: it is kept as it is, two of them in an array of exactly two items, and a value read by many moves them to a <code>Set</code>. Every change stores the value returned.</p>"
+      }
+    }
+  },
+  "SmallSetItem": {
+    "summary": "What a <code>SmallSet</code> can hold: an object that is not iterable.",
+    "description": "<p>A <code>SmallSet</code> keeps an item alone as it is, and tells it apart from an array or a <code>Set</code> of items: a primitive, an array or a <code>Set</code> does not fit this type, which TypeScript rejects. The nodes and the watchers of the signals fit it.</p>"
+  },
+  "emptySmallSet": {
+    "summary": "Returns an empty <code>SmallSet</code>: the shared frozen empty array, or a new <code>Set</code> when it is expected to hold more than 32 items.",
+    "description": "<p>The shared empty array allocates nothing. <code>expectedSize</code>, 0 by default, is the number of items the set is expected to hold, e.g. the size of the set it replaces: beyond 32 the set starts as a <code>Set</code>, without filling an array first.</p>"
+  },
+  "addToSmallSet": {
+    "summary": "Adds an item to a <code>SmallSet</code>, after the others, and returns the value to store.",
+    "description": "<p>An item the set holds already is ignored. On an empty set it returns the item itself; on an item alone it returns a new array of exactly the two items; on an array it pushes the item, in place, and on the 33rd item it returns a new <code>Set</code> holding all of them, in the same order.</p>"
+  },
+  "deleteFromSmallSet": {
+    "summary": "Removes an item from a <code>SmallSet</code>, keeping the order of the others, and returns the value to store.",
+    "description": "<p>An array of three items or more loses the item in place; an array of two returns the item left, kept as it is; the shared empty array is returned when the item was the last one. A <code>Set</code> stays a <code>Set</code>.</p>"
+  },
+  "smallSetHas": {
+    "summary": "Tells whether a <code>SmallSet</code> holds an item.",
+    "description": "<p>The items are compared by identity, as a <code>Set</code> compares objects.</p>"
+  },
+  "smallSetSize": {
+    "summary": "Returns the number of items of a <code>SmallSet</code>.",
+    "description": "<p>1 for an item alone, the <code>length</code> of its array, or the <code>size</code> of its <code>Set</code>.</p>"
+  },
+  "forEachInSmallSet": {
+    "summary": "Visits the items of a <code>SmallSet</code>, in insertion order.",
+    "description": "<p>The visit receives each item and the argument given, so that a function declared once serves every visit, without a closure created for it.</p>"
+  },
+  "findInSmallSet": {
+    "summary": "Returns the first item of a <code>SmallSet</code>, in insertion order, satisfying a predicate.",
+    "description": "<p>The predicate receives each item and the argument given, until one satisfies it: <code>undefined</code> when none does.</p>"
+  },
+  "smallSetToArray": {
+    "summary": "Copies the items of a <code>SmallSet</code> into a new array, in insertion order.",
+    "description": "<p>The array is a copy: changing it changes nothing of the set.</p>"
+  },
+  "toPascalCase": {
+    "summary": "Converts a kebab-case, snake_case, dot.case or camelCase string to PascalCase.",
+    "description": "<p>Removes every <code>-</code>, <code>_</code> and <code>.</code> and upper-cases the character that follows it, then upper-cases the first character. Nothing else changes: the other letters keep their case, so <code>'USER-CARD'</code> becomes <code>'USERCARD'</code>, and spaces stay where they are.</p><p>The CLI uses it to name the class of a component after its selector: <code>xd g c user-card</code> declares <code>UserCardComponent</code>, and <code>xd g c my.card-x</code> declares <code>MyCardXComponent</code>. The CLI also drops the characters a selector accepts but a class name does not, such as an emoji. See <a href=\"#/en/tools/cli\">CLI</a>.</p>",
+    "usage": {
+      "converting": {
+        "title": "Converting names",
+        "body": "<p>The three conventions give the same result, and a name in capitals stays in capitals.</p>"
+      }
+    }
+  },
+  "toKebabCase": {
+    "summary": "Converts a camelCase, PascalCase or snake_case string to kebab-case.",
+    "description": "<p>Puts a <code>-</code> between a lowercase letter and the uppercase letter that follows it, replaces every <code>_</code> with <code>-</code>, then lower-cases the whole string.</p><p>Only a lowercase letter followed by an uppercase one starts a new word: a run of capitals, as in an acronym, is not split, and neither is a digit followed by a capital. <code>'parseXML'</code> becomes <code>'parse-xml'</code>, but <code>'XMLParser'</code> becomes <code>'xmlparser'</code>. Spaces are kept.</p><p>For names made of lowercase words it undoes <a href=\"#/en/reference/api/common/toPascalCase\"><code>toPascalCase</code></a>: <code>toKebabCase(toPascalCase('user-card'))</code> is <code>'user-card'</code>.</p>",
+    "usage": {
+      "converting": {
+        "title": "Converting names",
+        "body": "<p>Class and property names become names in the style of custom elements and CSS classes.</p>"
+      }
+    }
+  },
+  "indent": {
+    "summary": "Indents a line, or each line of an array, by two spaces.",
+    "description": "<p>Prepends two spaces to a string, or to each string of an array. An array gives a new array, and the one passed in is left as it is. Empty lines are indented too. The compiler uses it to indent the code it generates, one level per call.</p><p>A string is treated as one line: when it contains line breaks, only its first line is indented. Split it first, and pass the array.</p>",
+    "usage": {
+      "indenting": {
+        "title": "Indenting generated code",
+        "body": "<p>Each call adds one level, two spaces, to what it receives. A block in one string is split into lines first.</p>"
+      }
+    }
+  },
+  "isNonEmpty": {
+    "summary": "Checks whether an object has at least one own enumerable property, and narrows its type when it does.",
+    "description": "<p>Returns <code>true</code> when <code>Object.keys(object)</code> is not empty: when the object has at least one own enumerable property with a string key. A property holding <code>undefined</code> counts; inherited properties, non-enumerable ones and symbol keys do not.</p><p>It is a type guard: where it returns <code>true</code>, the object has the type <code>NonEmptyObject&lt;Obj&gt;</code> of <a href=\"https://github.com/sindresorhus/type-fest\">type-fest</a>. A type whose keys are all optional becomes a type requiring at least one of them, as <a href=\"#/en/reference/api/types/RequireOne\"><code>RequireOne</code></a> does, and a type with a required key stays as it is. The guard reads the keys, not the values: an object whose only key holds <code>undefined</code> passes it.</p><p>Arrays are objects: <code>[]</code> is empty, <code>[0]</code> is not. A <code>Map</code> or a <code>Set</code> keeps its entries outside its properties, so they do not count: check its <code>size</code>.</p>",
+    "usage": {
+      "narrowing": {
+        "title": "Requiring at least one filter",
+        "body": "<p>A function needing at least one of some optional keys declares its parameter with <code>RequireOne</code>. An object of the plain type does not fit it, until <code>isNonEmpty</code> has checked it.</p>"
+      }
+    }
+  },
+  "isEmpty": {
+    "summary": "Checks whether an object has no own enumerable properties.",
+    "description": "<p>The opposite of <a href=\"#/en/reference/api/common/isNonEmpty\"><code>isNonEmpty</code></a>: returns <code>true</code> when <code>Object.keys(object)</code> is empty. The same properties count: own, enumerable, with a string key, even when they hold <code>undefined</code>. The entries of a <code>Map</code> or a <code>Set</code> are not properties, so they do not count.</p><p>It is not a type guard: it returns a plain <code>boolean</code>, and the type of the object does not change.</p>",
+    "usage": {
+      "whatCounts": {
+        "title": "What counts as empty",
+        "body": "<p>The result follows <code>Object.keys</code>, for arrays, maps and symbol keys too.</p>"
+      }
+    }
+  },
+  "keys": {
+    "summary": "Returns the own enumerable property names of an object, typed with the keys of its type.",
+    "description": "<p>Calls <code>Object.keys</code> and types the result as an array of the keys of the type of the object, instead of <code>string[]</code>, so each name can index the object without a cast. Called with <code>undefined</code>, it returns <code>undefined</code>.</p><p>The type trusts the object: properties it does not declare are returned anyway, and numeric keys are typed as strings, as <code>Object.keys</code> always returns them: <code>keys({ 1: 'one' })</code> is <code>['1']</code>, typed <code>'1'[]</code>.</p><p>A value typed as an object or <code>undefined</code> is accepted too: the result is then typed as an array or <code>undefined</code>.</p>",
+    "usage": {
+      "typedKeys": {
+        "title": "Typed keys",
+        "body": "<p>The names come back typed with the keys of the object, so a loop over them reads its values without a cast.</p>"
+      }
+    }
+  },
+  "entries": {
+    "summary": "Returns the own enumerable [key, value] pairs of an object, typed with the keys and the values of its type.",
+    "description": "<p>Calls <code>Object.entries</code> and types each pair as <code>[Key, Value]</code>: a key of the type of the object, where <code>Object.entries</code> gives <code>string</code>, and its values, where <code>Object.entries</code> gives <code>any</code> for an interface or a class. Called with <code>undefined</code>, it returns <code>undefined</code>.</p><p>The key and the value of a pair are typed separately: for <code>{ id: number; name: string }</code> a pair is <code>['id' | 'name', string | number]</code>, so checking the key does not narrow the value. As with <a href=\"#/en/reference/api/common/keys\"><code>keys</code></a>, the type trusts the object, numeric keys are typed as strings, and a value typed as an object or <code>undefined</code> is accepted.</p>",
+    "usage": {
+      "typedPairs": {
+        "title": "Typed pairs",
+        "body": "<p>The pairs are destructured in the loop, the name typed with the keys of the theme.</p>"
+      }
+    }
+  },
+  "values": {
+    "summary": "Returns the own enumerable property values of an object, typed with the values of its type.",
+    "description": "<p>Calls <code>Object.values</code> and types the result with the values of the type of the object, a union when they differ. <code>Object.values</code> infers the same for an object literal type, but gives <code>any[]</code> for an interface or a class. Called with <code>undefined</code>, it returns <code>undefined</code>.</p><p>As with <a href=\"#/en/reference/api/common/keys\"><code>keys</code></a>, the type trusts the object, and a value typed as an object or <code>undefined</code> is accepted.</p>",
+    "usage": {
+      "typedValues": {
+        "title": "Typed values",
+        "body": "<p>The values come back typed, ready for the array methods.</p>"
+      }
+    }
+  },
+  "removeItem": {
+    "summary": "Removes the first occurrence of an item from an array, in place, and tells whether it found it.",
+    "description": "<p>Looks for the item with <code>indexOf</code>, so with <code>===</code>, and removes it with <code>splice</code>: the array passed in changes, and nothing is copied. Only the first occurrence goes; the others stay. Returns <code>true</code> when the item was removed, <code>false</code> when the array does not contain it.</p><p><code>NaN</code> is never found, since <code>NaN === NaN</code> is false.</p>",
+    "usage": {
+      "removing": {
+        "title": "Removing an item",
+        "body": "<p>The array changes in place, and the result tells whether the item was there.</p>"
+      }
+    }
+  },
+  "slice": {
+    "summary": "Extracts a part of a string as a new string, which does not keep the original in memory.",
+    "description": "<p>Returns the same characters as <code>value.slice(start, end)</code>, with the same indexes: <code>start</code> included, <code>end</code> excluded, a negative index counted from the end, a missing one meaning the start or the end of the string.</p><p>The difference is in memory. V8, the engine of Chrome and Node.js, can return the result of <code>String.prototype.slice</code> as a view on the original string, a <em>sliced string</em>, which keeps the whole original alive as long as the part is. <code>slice</code> copies the part through <code>JSON.stringify</code> and <code>JSON.parse</code>, so the result owns its characters and the original can be garbage collected.</p><p>The compiler and the Vite plugin use it for the parts of a source they keep after reading it: names, expressions, texts. The copy has a cost, worth paying for short parts that outlive a long string.</p>",
+    "usage": {
+      "keepingAPart": {
+        "title": "Keeping a part of a long string",
+        "body": "<p>The indexes work as in <code>String.prototype.slice</code>. The name kept from the source does not hold the source.</p>"
+      }
+    }
+  },
+  "isValidCustomElementName": {
+    "summary": "Checks whether a string can be the name of a custom element, and logs why when it cannot.",
+    "description": "<p>A name is valid when it:</p><ul><li>starts with a lowercase ASCII letter;</li><li>contains a hyphen;</li><li>contains only lowercase ASCII letters, digits, <code>-</code>, <code>.</code>, <code>_</code> and most non-ASCII characters, such as <code>é</code> or <code>α</code>, as the HTML specification allows; never an uppercase ASCII letter, a space or another ASCII symbol;</li><li>is not one of the names reserved by the HTML specification: <code>annotation-xml</code>, <code>color-profile</code>, <code>font-face</code>, <code>font-face-src</code>, <code>font-face-uri</code>, <code>font-face-format</code>, <code>font-face-name</code>, <code>missing-glyph</code>.</li></ul><p>These are the rules of the specification, the ones <code>customElements.define</code> applies: a name is valid here exactly when it is valid for the browser. The reserved names are the SVG and MathML elements with a hyphen; the other native elements have none, so their names are never valid.</p><p>An invalid name returns <code>false</code>: nothing is thrown. The Vite plugin checks with it the selector of every component, and the CLI the name of a new component (<code>xd g c</code>) and of the root component of a new project (<code>xd new</code>): both print its message when a name is invalid. See <a href=\"#/en/components/registration\">Selectors and registration</a>.</p>",
+    "members": {
+      "tagName": "<p>The name to check, as it is: it is neither trimmed nor lower-cased, so a space or a capital letter makes it invalid.</p>",
+      "logErrors": "<p>Whether to print with <code>console.error</code> why the name is invalid, with the rules or the reserved names. The compiler passes <code>false</code> to tell the custom elements of a template from the native elements without printing anything.</p>"
+    },
+    "usage": {
+      "checking": {
+        "title": "Valid and invalid names",
+        "body": "<p>Each name is checked as written, against the rules above.</p>"
+      }
+    }
+  },
+  "matchesCustomElementPattern": {
+    "summary": "Checks whether a tag name matches at least one of a list of patterns, where <code>*</code> stands for any sequence of characters.",
+    "description": "<p>A pattern matches the whole tag name. <code>*</code> stands for any sequence of characters, hyphens and the empty sequence included, so <code>sl-*</code> matches <code>sl-button</code> and <code>sl-icon-button</code>, but not <code>xsl-button</code>. Every other character matches only itself, case included: a <code>.</code> is a dot, not any character. With no patterns, the result is <code>false</code>.</p><p>The patterns are the ones of <code>customElements</code> in <code>xaendar.json</code>: the compiler uses this function to recognize the tags of the custom elements of other libraries, which it treats as native elements. See <a href=\"#/en/components/registration\">Selectors and registration</a>.</p>",
+    "usage": {
+      "otherLibraries": {
+        "title": "Matching the tags of other libraries",
+        "body": "<p>A list as <code>customElements</code> declares it: a pattern for a whole library, and the name of a single element.</p>"
+      }
+    }
+  },
+  "escapeText": {
+    "summary": "Escapes a text written as the content of an element: the parser of HTML reads it back as the same text.",
+    "description": "<p>Replaces <code>&amp;</code>, <code>&lt;</code> and <code>&gt;</code> with their character references. The quotes stay as they are: they end nothing in a text. The rendering on the server escapes the texts and the interpolations of the templates this way.</p>",
+    "usage": {
+      "escaping": {
+        "title": "Escaping a text",
+        "body": "<p>The characters that would open a tag or a character reference are replaced.</p>"
+      }
+    }
+  },
+  "escapeAttribute": {
+    "summary": "Escapes the value of an attribute written between double quotes: the parser of HTML reads it back as the same value.",
+    "description": "<p>Replaces <code>&amp;</code>, <code>\"</code>, <code>&lt;</code> and <code>&gt;</code> with their character references, so that the value can neither end the attribute nor open a tag. The rendering on the server escapes the values of the attributes this way.</p>",
+    "usage": {
+      "escaping": {
+        "title": "Escaping a value",
+        "body": "<p>A value holding quotes stays inside the attribute.</p>"
+      }
+    }
+  },
+  "escapeRawText": {
+    "summary": "Prepares a text written as the content of an element whose text the parser of HTML does not decode, such as <code>&lt;style&gt;</code> or <code>&lt;script&gt;</code>.",
+    "description": "<p>The parser reads the content of these elements up to their end tag without decoding any character reference, so a text written there cannot be escaped: it is written as it is, except for the sequences that would end the element early, such as <code>&lt;/style</code> in a <code>&lt;style&gt;</code>, whatever their case, whose slash is escaped. A stylesheet or a script reads <code>&lt;\\/style</code> as the same text. See <a href=\"#/en/reference/api/common/isRawTextElement\"><code>isRawTextElement()</code></a>.</p>",
+    "usage": {
+      "rawText": {
+        "title": "Writing a stylesheet",
+        "body": "<p>The CSS is left untouched, except for the end tag.</p>"
+      }
+    }
+  },
+  "isVoidElement": {
+    "summary": "Tells whether an element of the HTML namespace is a void element, whose end tag is never written.",
+    "description": "<p>The void elements of HTML, the obsolete ones included, such as <code>input</code>, <code>br</code> and <code>img</code>, have no content: the parser closes them on its own, and an end tag would be an error. An element of SVG or of MathML is never a void element: check the namespace first.</p>",
+    "usage": {
+      "checking": {
+        "title": "Closing an element",
+        "body": "<p>A serializer writes the end tag of every element but the void ones.</p>"
+      }
+    }
+  },
+  "isRawTextElement": {
+    "summary": "Tells whether the text of an element of the HTML namespace is written as it is.",
+    "description": "<p><code>script</code>, <code>style</code>, <code>noscript</code>, <code>iframe</code>, <code>noembed</code>, <code>noframes</code>, <code>xmp</code> and <code>plaintext</code>: the parser does not decode their content, which the serialization of HTML writes literally. <code>textarea</code> and <code>title</code> are not among them: their character references are decoded. See <a href=\"#/en/reference/api/common/escapeRawText\"><code>escapeRawText()</code></a>.</p>",
+    "usage": {
+      "checking": {
+        "title": "Choosing how to escape",
+        "body": "<p>The text of these elements goes through <code>escapeRawText()</code>, any other one through <code>escapeText()</code>.</p>"
+      }
+    }
+  },
+  "dropsLeadingNewline": {
+    "summary": "Tells whether the parser of HTML drops a line feed right after the start tag of an element of the HTML namespace.",
+    "description": "<p><code>pre</code>, <code>textarea</code> and <code>listing</code>: the parser drops a line feed following their start tag, so a serializer always writes one after it, and a content starting with a line feed keeps it.</p>",
+    "usage": {
+      "writing": {
+        "title": "Writing the start tag",
+        "body": "<p>The line feed written after the start tag is the one the parser drops.</p>"
+      }
+    }
+  },
+  "toSameOriginPath": {
+    "summary": "Returns the path of a URL, or of the target of an HTTP request, with its query string: resolved against any base, it stays on the origin of the base.",
+    "description": "<p>A URL starting with slashes or backslashes is a path, whose first segment is never read as a host: <code>//evil.com/x</code> gives <code>/evil.com/x</code>. Any other URL is parsed as the browser parses it: the origin and the fragment are dropped, the tabs and the line feeds removed, the backslashes read as slashes and the dot segments resolved. The result always starts with a single slash, since a path starting with <code>//</code> would be read as a URL of another origin, and a URL that cannot be parsed gives <code>/</code>. The servers of the rendering on the server give <code>render(url)</code> the path of each request this way.</p>",
+    "usage": {
+      "serving": {
+        "title": "Reading the path of a request",
+        "body": "<p>The page is chosen from the path of the request, which no target can move to another origin.</p>"
+      }
+    }
+  },
+  "toCssPropertyName": {
+    "summary": "Converts the name of a style property to the one CSS uses.",
+    "description": "<p>A name in camelCase becomes kebab-case, each uppercase letter turning into <code>-</code> followed by the lowercase letter: <code>'fontSize'</code> becomes <code>'font-size'</code>, <code>'WebkitTransform'</code> <code>'-webkit-transform'</code>. A custom property, starting with <code>--</code>, is returned as it is, since its name is case-sensitive.</p><p>The template compiler and <code>@HostAttribute</code> convert with it the property of <code>style.name</code> and <code>'style.name'</code>.</p>",
+    "usage": {
+      "converting": {
+        "title": "Converting a property",
+        "body": "<p><code>toCssPropertyName('backgroundColor')</code> is <code>'background-color'</code>, <code>toCssPropertyName('--mainColor')</code> is <code>'--mainColor'</code>.</p>"
+      }
+    }
+  },
+  "splitClasses": {
+    "summary": "Splits the text of a class attribute into its classes.",
+    "description": "<p>The classes are separated by ASCII whitespace (space, tab, line feed, form feed, carriage return), as the browser reads them. Each class is returned once, in the order it first appears.</p>",
+    "usage": {
+      "splitting": {
+        "title": "Splitting classes",
+        "body": "<p><code>splitClasses(' a b\\ta ')</code> is <code>['a', 'b']</code>; a text without classes gives <code>undefined</code>, so the caller checks <code>?.length</code> instead of looping over an empty array.</p>"
+      }
+    }
+  },
+  "parseStyleDeclarations": {
+    "summary": "Parses the text of a style attribute into the names and the values of its declarations.",
+    "description": "<p>Returns a flat list, <code>[name, value, name, value]</code>. The declarations are separated by <code>;</code> and the name from the value by the first <code>:</code>, both outside parentheses and quotes: <code>url(a;b.png)</code>, <code>var(--x, a)</code> and <code>\"a;b\"</code> stay whole. The name of a property that is not custom is lowercased, as CSS compares them, and a value ending with <code>!important</code> keeps it, normalized to <code> !important</code>.</p><p>A declaration without name or value is left out, and a property declared twice keeps its last value, as the browser does. A text without declarations gives <code>undefined</code>.</p><p>The template compiler parses with it the static <code>style</code> of an element, and the runtime the strings it merges, in the browser and on the server.</p>",
+    "usage": {
+      "parsing": {
+        "title": "Parsing a style",
+        "body": "<p><code>parseStyleDeclarations('display: flex; background: url(a;b.png) !important')</code> is <code>['display', 'flex', 'background', 'url(a;b.png) !important']</code>.</p>"
+      }
+    }
+  },
+  "stylePriority": {
+    "summary": "Gives the priority a value of a style property is written with.",
+    "description": "<p>Returns <code>'important'</code> for a value ending with <code>!important</code>, in any case and with any spaces before it, an empty string otherwise: the third argument of <code>style.setProperty</code>. See <a href=\"#/en/reference/api/common/styleValue\"><code>styleValue</code></a> for the value without it.</p>",
+    "usage": {
+      "writing": {
+        "title": "Writing a property",
+        "body": "<p><code>style.setProperty(name, styleValue(value), stylePriority(value))</code> writes a value as <a href=\"#/en/reference/api/common/parseStyleDeclarations\"><code>parseStyleDeclarations</code></a> gives it.</p>"
+      }
+    }
+  },
+  "styleValue": {
+    "summary": "Gives a value of a style property without the !important it may end with.",
+    "description": "<p>Removes a final <code>!important</code>, in any case and with the spaces before it, leaving any other value as it is. See <a href=\"#/en/reference/api/common/stylePriority\"><code>stylePriority</code></a> for the priority.</p>",
+    "usage": {
+      "writing": {
+        "title": "Writing a property",
+        "body": "<p><code>styleValue('red !important')</code> is <code>'red'</code>, <code>styleValue('red')</code> is <code>'red'</code>.</p>"
+      }
+    }
+  },
+  "CSS_UNITS": {
+    "summary": "The units a style binding can follow its property with.",
+    "description": "<p>The lengths, the angles, the times, the frequencies, the resolutions and the flex fraction of CSS, in lowercase, and <code>%</code>: <code>px</code>, <code>rem</code>, <code>em</code>, <code>vh</code>, <code>dvh</code>, <code>cqi</code>, <code>deg</code>, <code>ms</code>, <code>fr</code> and the others. A unit outside the set, in <code>style.width.foo</code> or <code>@HostAttribute('style.width.foo')</code>, is an error.</p>",
+    "usage": {
+      "checking": {
+        "title": "Checking a unit",
+        "body": "<p><code>CSS_UNITS.has('px')</code> is <code>true</code>, <code>CSS_UNITS.has('PX')</code> is <code>false</code>: the units are written in lowercase.</p>"
+      }
+    }
+  },
+  "MODEL_CHANGE_SUFFIX": {
+    "summary": "The suffix of the name of the event of change of a model, after the name the model is bound with.",
+    "description": "<p><code>'Change'</code>: the model <code>value</code> dispatches <code>valueChange</code>, and a two-way binding <code>[(value)]</code> listens to it. The compiler, the language server and the runtime use it to pair an input with its event.</p>"
+  },
+  "toModelChangeEvent": {
+    "summary": "Gets the name of the event a model dispatches when it changes its value.",
+    "description": "<p>Appends <a href=\"#/en/reference/api/common/MODEL_CHANGE_SUFFIX\"><code>MODEL_CHANGE_SUFFIX</code></a> to the name the model is bound with: its alias when it declares one, else the name of its accessor. <code>@Model</code> names its event with it, and the compiler the event a two-way binding listens to.</p>",
+    "members": {
+      "name": "<p>The name the model is bound with.</p>"
+    },
+    "usage": {
+      "converting": {
+        "title": "Converting a name",
+        "body": "<p><code>toModelChangeEvent('value')</code> is <code>'valueChange'</code>, <code>toModelChangeEvent('on')</code> is <code>'onChange'</code>.</p>"
+      }
+    }
+  },
+  "toModelName": {
+    "summary": "Gets the name of the model an event of change belongs to: the inverse of <code>toModelChangeEvent</code>.",
+    "description": "<p>Drops <a href=\"#/en/reference/api/common/MODEL_CHANGE_SUFFIX\"><code>MODEL_CHANGE_SUFFIX</code></a> from the end of the name. A name that does not end with it, or is made of the suffix alone, gives <code>undefined</code>. The name is not checked against any class: the runtime uses it to recognize, among the events a component exposes from a host directive, the events of change of its models.</p>",
+    "members": {
+      "event": "<p>The name of the event.</p>"
+    },
+    "usage": {
+      "converting": {
+        "title": "Converting a name",
+        "body": "<p><code>toModelName('valueChange')</code> is <code>'value'</code>; <code>toModelName('Change')</code> and <code>toModelName('closed')</code> are <code>undefined</code>.</p>"
+      }
+    }
+  },
+  "parseKeyEvent": {
+    "summary": "Reads the key a listener is filtered by from the name of its event: <code>keydown.enter</code>, <code>keyup.control.shift.z</code>, <code>keydown.code.keya</code>.",
+    "description": "<p>The name is <code>keydown</code> or <code>keyup</code>, followed by the modifiers, in any order, by <code>code</code> to match the code of the key instead of the key it types, and by the key, all of them separated by dots. The modifiers and the key are read in lowercase, <code>esc</code> is <code>escape</code>, and the keys that cannot be written in a name are <code>space</code> and <code>dot</code>. Any other name, <code>keydown</code> alone included, gives <code>undefined</code>. The compiler reads the key events of the templates with it, <code>@HostListener</code> its name, and the language server the name being written.</p>",
+    "members": {
+      "name": "<p>The name of the event, as written in the template or given to <code>@HostListener</code>, without the prefix <code>window:</code> or <code>document:</code>. A key event naming no key, a modifier that does not exist or a part twice throws.</p>"
+    },
+    "usage": {
+      "reading": {
+        "title": "Reading a name",
+        "body": "<p>The name is read in lowercase, the modifiers in any order; a name that is not a key event gives <code>undefined</code>, and a key event written wrong throws the message the compiler reports.</p>"
+      }
+    }
+  },
+  "KEY_MODIFIERS": {
+    "summary": "The modifiers a key event can name, each one a bit of the mask of <code>KeyEventFilter.modifiers</code>.",
+    "description": "<p><code>{ alt: 1, control: 2, meta: 4, shift: 8 }</code>: the bits of <code>altKey</code>, <code>ctrlKey</code>, <code>metaKey</code> and <code>shiftKey</code>. <code>keyup.control.shift.z</code> has the modifiers <code>2 | 8</code>, that is <code>10</code>.</p>"
+  },
+  "KeyEventFilter": {
+    "summary": "The key a listener of a key event is filtered by: the listener is called only for that key, with exactly its modifiers.",
+    "description": "<p>What <a href=\"#/en/reference/api/common/parseKeyEvent\"><code>parseKeyEvent</code></a> reads from a name such as <code>keydown.control.s</code>: the event listened to, the key and the modifiers.</p>",
+    "members": {
+      "event": "<p>The event listened to: <code>keydown</code> or <code>keyup</code>.</p>",
+      "key": "<p>The key, in lowercase, as it is read from the event: <code>enter</code>, <code>escape</code>, <code>a</code>, <code>space</code> for <code>' '</code>, <code>dot</code> for <code>'.'</code>, the code of the key with <code>code</code> (<code>keya</code>, <code>digit1</code>).</p>",
+      "modifiers": "<p>The modifiers that must be pressed, and no other one: the bits of <a href=\"#/en/reference/api/common/KEY_MODIFIERS\"><code>KEY_MODIFIERS</code></a>, <code>0</code> for none.</p>",
+      "code": "<p>Set when the key is matched against <code>event.code</code>, its place on the keyboard, instead of <code>event.key</code>, the character it types.</p>"
+    }
+  }
+}

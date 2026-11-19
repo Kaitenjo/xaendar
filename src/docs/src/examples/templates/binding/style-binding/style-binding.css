@@ -1,0 +1,17 @@
+:host {
+  display: block;
+}
+
+.track {
+  margin: 0 0 0.75rem;
+  border: 1px solid var(--xd-border);
+  border-radius: 999px;
+}
+
+.bar {
+  min-width: 2.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: var(--bar-color);
+  transition: width 0.2s;
+}

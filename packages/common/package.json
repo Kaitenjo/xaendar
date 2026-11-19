@@ -1,0 +1,19 @@
+{
+  "name": "@xaendar/common",
+  "version": "1.4.1",
+  "type": "module",
+  "author": "Kaitenjo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/common"
+  },
+  "description": "A library containing common classes and utilities",
+  "xaendar": {
+    "target": "browser"
+  },
+  "dependencies": {
+    "type-fest": "^6.0.1"
+  }
+}

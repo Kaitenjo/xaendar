@@ -1,0 +1,11 @@
+@import { ReviewsComponent } from './reviews/reviews.xd.component.ts'
+
+<!-- The code of the reviews loads when the browser is idle, the reviews hydrate at the first interaction -->
+@hydrate (interaction, prefetch idle) {
+  <app-reviews product="{product().id}" />
+}
+
+<!-- No triggers: hydrates when the browser is idle, as with idle -->
+@hydrate {
+  <app-reviews product="{product().id}" />
+}

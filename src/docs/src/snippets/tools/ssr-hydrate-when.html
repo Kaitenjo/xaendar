@@ -1,0 +1,6 @@
+@import { CartDrawerComponent } from './cart-drawer/cart-drawer.xd.component.ts'
+
+<!-- Hydrates once the cart is open, whatever opened it -->
+@hydrate (when cartOpen()) {
+  <app-cart-drawer />
+}

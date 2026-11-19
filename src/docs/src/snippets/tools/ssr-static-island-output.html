@@ -1,0 +1,13 @@
+<!-- No class defines article-page in the browser: it stays as the server wrote it -->
+<article-page>
+  <template shadowrootmode="open">
+    <article>
+      <h1><!---->Desk lamps</h1>
+      <p><!---->Five lamps tested for a month</p>
+      <!-- Nothing adopts it: it hydrates by itself, with the inputs written here -->
+      <app-like-button data-xd-inputs="{&quot;articleId&quot;:&quot;42&quot;}">
+        <template shadowrootmode="open">…</template>
+      </app-like-button>
+    </article>
+  </template>
+</article-page>

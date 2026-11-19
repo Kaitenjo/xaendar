@@ -1,0 +1,6 @@
+$ xd build --static-report
+Xaendar: 9 of 12 components are static, left out of the bundle of the browser
+  app-root, app-header, app-footer, app-hero, …
+  app-cart: listens to (click)
+  app-cart-badge: reads the signal count of a module
+  app-chart: passes to <app-tooltip> the input format, which cannot be written into the HTML

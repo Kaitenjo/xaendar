@@ -1,0 +1,16 @@
+:host {
+  display: grid;
+  gap: 0.5rem;
+}
+
+input {
+  font: inherit;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}
+
+.log {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+}

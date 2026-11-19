@@ -1,0 +1,6 @@
+@import { ProductSpecsComponent } from './product-specs/product-specs.xd.component.ts'
+
+<!-- Stays the HTML of the server: the module is never requested, and its links keep working -->
+@hydrate (never) {
+  <app-product-specs product="{product().id}" />
+}

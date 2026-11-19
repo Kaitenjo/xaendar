@@ -1,0 +1,8 @@
+(keydown.ctrl.s)="save()"
+[Parser] "ctrl" is not a modifier of the key event "keydown.ctrl.s": alt, control, meta, shift or code
+
+(keydown.)="save()"
+[Parser] The key event "keydown." names no key: write it after the last dot, e.g. keydown.enter
+
+(keydown.shift.shift.a)="select()"
+[Parser] The key event "keydown.shift.shift.a" names "shift" twice

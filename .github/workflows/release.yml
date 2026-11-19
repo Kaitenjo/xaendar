@@ -1,0 +1,74 @@
+# Releases the @xaendar packages, the VS Code extension and the tag of the version, run by hand from the Actions tab
+# (or the GitHub app): it runs `npm run deploy` (schematics/src/deploy.ts), the same steps as a release from a computer.
+#
+# Set up once:
+# - npm: a trusted publisher for each published @xaendar package (npmjs.com → package → Settings → Trusted publishing →
+#   GitHub Actions: owner Kaitenjo, repository xaendar, workflow release.yml, environment release). npm then
+#   authenticates this workflow through OIDC (`id-token: write`): no npm token is stored anywhere.
+# - VS Code Marketplace: a Trusted Publishing policy of the publisher (marketplace.visualstudio.com/manage → publisher →
+#   Trusted Publishing → Create: owner Kaitenjo, repository xaendar, workflow release.yml, environment release).
+#   `vsce publish --oidc` then authenticates this workflow through OIDC too: no Personal Access Token.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Part of the version to increase (none finishes a release stopped halfway, without a new version)
+        type: choice
+        options: [patch, minor, major, none]
+        default: patch
+
+# One release at a time, never cancelled halfway
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: release
+    # Releases only from main
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      # Pushes the commit "Release <version>" and the tag xaendar--v<version>
+      contents: write
+      # Trusted publishing on npm and on the VS Code Marketplace
+      id-token: write
+    steps:
+      # The whole history and the tags: tag-release refuses a tag that already exists
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # No registry-url: it would set NODE_AUTH_TOKEN to the token of GitHub, which npm would try instead of OIDC
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            src/docs/package-lock.json
+
+      # Trusted publishing needs npm 11.5.1 or later, the engines of package.json npm 12
+      - name: Update npm
+        run: npm install --global npm@latest
+
+      - name: Install
+        run: |
+          npm ci --ignore-scripts
+          npm ci --ignore-scripts --prefix src/docs
+
+      # The commit and the tag of the release are the owner's, as every commit of the repository (CLAUDE.md)
+      - name: Configure git
+        run: |
+          git config user.name "Kaitenjo"
+          git config user.email "61583183+Kaitenjo@users.noreply.github.com"
+
+      # The input reaches the script through the environment, never pasted into the command
+      - name: Release
+        run: npm run deploy -- "--bump=$BUMP"
+        env:
+          BUMP: ${{ inputs.bump }}

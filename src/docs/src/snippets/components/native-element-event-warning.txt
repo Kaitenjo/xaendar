@@ -1,0 +1,3 @@
+[plugin xaendar] /src/examples/components/outputs/event-options/event-options.xd.component.html
+[Ln 4, Col 21] - 'bubbling' is not an event of <div>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set "strictEvents": false in xaendar.json to turn this warning off.
+ ---> bubbling

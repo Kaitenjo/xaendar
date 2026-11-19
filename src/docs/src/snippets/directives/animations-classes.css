@@ -1,0 +1,24 @@
+/* @@animation(enter="fade-in"): a @keyframes animation runs as soon as the class is applied */
+.fade-in {
+  animation: fade-in 0.25s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* @@animation(enter="grow"): a transition needs a style to start from, which @starting-style gives */
+.grow {
+  transition: scale 0.2s;
+
+  @starting-style {
+    scale: 0.9;
+  }
+}
+
+/* @@animation(leave="fade-out"): forwards keeps the last frame until the element is removed */
+.fade-out {
+  animation: fade-in 0.25s ease-in reverse forwards;
+}

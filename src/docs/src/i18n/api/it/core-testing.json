@@ -1,0 +1,38 @@
+{
+  "getDeferBlocks": {
+    "summary": "Trova i blocchi <code>@defer</code> che un componente renderizza nel suo shadow root, per pilotarli in un test.",
+    "description": "<p><code>getDeferBlocks(host)</code> restituisce i blocchi <code>@defer</code> che il componente di <code>host</code> renderizza nel suo shadow root, nell’ordine in cui vengono renderizzati: quelli renderizzati dal contenuto di un altro blocco si trovano una volta renderizzato quel contenuto, e quelli distrutti, come da un <code>@if</code> che diventa falso, restano fuori. Ognuno è un <a href=\"#/it/reference/api/core/testing/DeferBlockFixture\"><code>DeferBlockFixture</code></a>, che dice la parte che mostra e ne mostra subito un’altra.</p><p>Si trovano solo i blocchi renderizzati dopo l’import di <code>@xaendar/core/testing</code>: importalo nello spec, prima di renderizzare il componente. I blocchi dei componenti che il componente renderizza si trovano dai loro elementi.</p>",
+    "members": {
+      "host": "<p>L’elemento del componente.</p>"
+    },
+    "usage": {
+      "drivingByHand": {
+        "title": "Pilotare un blocco a mano",
+        "body": "<p>Con <a href=\"#/it/reference/api/core/testing/setDeferBlockBehavior\"><code>setDeferBlockBehavior('manual')</code></a> i trigger non scattano mai: il test mostra ogni parte con <code>render</code>, il contenuto una volta caricati i suoi moduli.</p>"
+      }
+    }
+  },
+  "setDeferBlockBehavior": {
+    "summary": "Imposta come si comportano nei test i blocchi <code>@defer</code> renderizzati da qui in poi.",
+    "description": "<p><code>'playthrough'</code>, il default una volta importato <code>@xaendar/core/testing</code>, lascia che i blocchi si comportino come nel browser: i loro trigger scattano, e i loro tempi passano. <code>'manual'</code> non attiva né i loro trigger né il loro <code>when</code>, né i trigger che seguono <code>prefetch</code>: ogni blocco mostra il suo <code>@placeholder</code> finché il test non mostra un’altra parte con il <code>render</code> dei blocchi che trova <a href=\"#/it/reference/api/core/testing/getDeferBlocks\"><code>getDeferBlocks</code></a>.</p><p>Vale per i blocchi renderizzati dopo la chiamata: chiamala prima di renderizzare il componente, e reimposta <code>'playthrough'</code> dopo il test, così che i successivi funzionino come nel browser.</p>",
+    "members": {
+      "value": "<p>Il comportamento: <code>'playthrough'</code> o <code>'manual'</code>.</p>"
+    }
+  },
+  "DeferBlockFixture": {
+    "summary": "Un blocco <code>@defer</code> che un componente renderizza, come lo pilota un test.",
+    "description": "<p>È ciò che <a href=\"#/it/reference/api/core/testing/getDeferBlocks\"><code>getDeferBlocks</code></a> restituisce per ogni blocco: la parte che il blocco mostra, e la funzione che ne mostra subito un’altra, qualunque siano i suoi trigger e i suoi tempi.</p>",
+    "members": {
+      "state": "<p>La parte che il blocco mostra: <code>'placeholder'</code> prima che scatti un trigger, <code>'loading'</code> mentre i moduli del contenuto si caricano, <code>'complete'</code> una volta renderizzato il contenuto, <code>'error'</code> quando i moduli non si caricano.</p>",
+      "render": "<p>Mostra subito una parte del blocco, fermando i suoi trigger e i suoi tempi: <code>'complete'</code> una volta caricati i moduli del contenuto, <code>'error'</code> con l’errore dato, che l’<code>@error</code> riceve con il suo nome. La promise viene rifiutata quando il blocco non dichiara la parte, o i moduli non si caricano.</p>"
+    }
+  },
+  "DeferBlockState": {
+    "summary": "La parte che mostra un blocco <code>@defer</code>.",
+    "description": "<p><code>'placeholder'</code>: il suo <code>@placeholder</code>, prima che scatti un trigger, o niente senza. <code>'loading'</code>: il suo <code>@loading</code>, mentre i moduli del contenuto si caricano. <code>'complete'</code>: il contenuto. <code>'error'</code>: il suo <code>@error</code>, quando i moduli non si caricano.</p>"
+  },
+  "DeferBlockBehavior": {
+    "summary": "Come si comportano i blocchi <code>@defer</code> nei test.",
+    "description": "<p><code>'playthrough'</code>: come nel browser, con i trigger che scattano e i tempi che passano. <code>'manual'</code>: i trigger non scattano mai, e il test mostra ogni parte con <code>render</code>. Vedi <a href=\"#/it/reference/api/core/testing/setDeferBlockBehavior\"><code>setDeferBlockBehavior</code></a>.</p>"
+  }
+}

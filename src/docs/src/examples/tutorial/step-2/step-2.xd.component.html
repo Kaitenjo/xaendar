@@ -1,0 +1,7 @@
+<h3>My todos</h3>
+<ul>
+  @for (todo of todos(); track todo.id) {
+    <li>{ todo.title }</li>
+  }
+</ul>
+<p>{ todos().length } todos</p>

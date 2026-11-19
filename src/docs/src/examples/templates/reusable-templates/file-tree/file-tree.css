@@ -1,0 +1,26 @@
+:host {
+  display: block;
+}
+
+ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  list-style: none;
+}
+
+.tree {
+  margin-bottom: 0.75rem;
+  padding-left: 0;
+}
+
+.folder {
+  font-weight: 600;
+}
+
+.folder::before {
+  content: '▸ ';
+}
+
+.file {
+  font-family: ui-monospace, monospace;
+}

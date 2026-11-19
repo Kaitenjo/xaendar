@@ -1,0 +1,15 @@
+:host {
+  display: block;
+}
+
+p {
+  margin: 0 0 0.25rem;
+}
+
+.name {
+  font-weight: 600;
+}
+
+ex-button {
+  margin-top: 0.5rem;
+}

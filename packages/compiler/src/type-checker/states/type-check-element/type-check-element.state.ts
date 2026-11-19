@@ -1,0 +1,1110 @@
+import { toModelChangeEvent } from '@xaendar/common';
+import type { Expression, Identifier } from 'typescript';
+import { isIdentifier } from 'typescript';
+import { resolveExpression } from '../../../generator/utils/generator/generator.utils';
+import { ASTNodeType } from '../../../parser/types/node.enum';
+import type { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
+import type { ClassBindingNode } from '../../../parser/types/nodes/class-binding-node.type';
+import type { ConditionalBindingBranchNode } from '../../../parser/types/nodes/conditional-binding-branch-node.type';
+import type { ConditionalBindingNode } from '../../../parser/types/nodes/conditional-binding-node.type';
+import type { DirectiveNode } from '../../../parser/types/nodes/directive-node.type';
+import { ElementNode } from '../../../parser/types/nodes/element-node.type';
+import type { EventNode } from '../../../parser/types/nodes/event-node.type';
+import type { IfBindingNode } from '../../../parser/types/nodes/if-binding-node.type';
+import type { StructuralDirectiveNode } from '../../../parser/types/nodes/structural-directive-node.type';
+import type { StyleBindingNode } from '../../../parser/types/nodes/style-binding-node.type';
+import type { SwitchBindingNode } from '../../../parser/types/nodes/switch-binding-node.type';
+import { isStructuralElement } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
+import { assertUniqueAttributes } from '../../../parser/utils/unique-attributes/unique-attributes.utils';
+import type { ComponentEventMetadata } from '../../../types/component-event-metadata.type';
+import { ComponentMetadata } from '../../../types/component-metadata.type';
+import type { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
+import type { Span } from '../../../types/span.type';
+import { getChildrenNamespace, getElementNamespace } from '../../../utils/element-namespace/element-namespace.utils';
+import { readsEvent } from '../../../utils/event-reads/event-reads.utils';
+import { getOwnerType } from '../../../utils/metadata/metadata.utils';
+import { ComponentPropertyMetadata } from '../../models/component-property-metadata/component-property-metadata.model';
+import { TypeCheckContext } from '../../models/context/context';
+import type { LineMapping } from '../../types/line-mapping.type';
+import type { LinePart } from '../../types/line-part.type';
+import type { Line } from '../../types/line.type';
+import type { NativeEvents } from '../../types/native-events.type';
+import { ProcessNode } from '../../types/type-checker-process-node.type';
+import { castExpression } from '../../utils/cast/cast.utils';
+import { indentLines, line, mapped, mappedSegments, plain } from '../../utils/line-builder/line-builder.utils';
+import { typeCheckExhaustiveDefault, typeCheckSwitchHeader } from '../../utils/exhaustive-switch/exhaustive-switch.utils';
+import { mappedExpression, mappedInterpolation } from '../../utils/mapped-expression/mapped-expression.utils';
+import { getEventMap } from '../../utils/namespace-types/namespace-types.utils';
+import { getInstantiationSuffix, INSTANCE, typeCheckScope } from '../../utils/scope/scope.utils';
+
+/**
+ * Type-checks an element node: emits the type-check lines for its
+ * attributes, class bindings, events, conditional bindings, directives and structural directives, then recurses into its children.
+ *
+ * Custom elements (tag names containing a dash) are checked against the
+ * metadata of the component imported for their selector; native elements, and the custom elements of other
+ * libraries matching the `customElements` patterns, only get their expressions and event handlers checked.
+ *
+ * The native events of the element are typed through the event map of its namespace (see `getElementNamespace`),
+ * which its children inherit: the children of an `<svg>`, a `<math>` or a `<foreignObject>` element are type-checked in
+ * a scope declaring their namespace.
+ * An event the map doesn't declare (one bubbling up from the content of the element) types `$event` as `Event`, its
+ * name a warning (see `typeCheckNativeEvent`); a custom element of another library may dispatch events of its own:
+ * their `$event` is `any`, without warning.
+ *
+ * The content of an element a structural directive is applied to is a scope of its own: a block of the type-check code
+ * when it declares element refs. The content of a standard `<template>` element is static HTML: it is not type-checked.
+ *
+ * @param node - The `ElementNode` to type-check.
+ * @param processNode - Callback used to type-check each child node.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines.
+ * @throws If the tag is a custom element, or one of its directives, whose selector is not imported in the template,
+ *   or a custom element both imported and matching the `customElements` patterns.
+ */
+export function typeCheckElement(node: ElementNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
+  const lines = new Array<Line>();
+  const { tagName } = node;
+  const namespace = getElementNamespace(tagName, context.namespace);
+  const eventMap = getEventMap(namespace);
+  let nativeEvents: NativeEvents = { eventMap, tagName, foreign: false };
+
+  if (isCustomElementTag(tagName)) {
+    const metadata = context.getImportBySelector(tagName);
+    const isForeign = context.isForeignElement(tagName);
+    if (metadata && isForeign) {
+      throw new Error(`${tagName} is both imported as a WebComponent and declared in customElements`, { cause: node.span });
+    } else if (metadata) {
+      lines.push(...typeCheckComponentBindings(node, metadata, nativeEvents, context));
+    } else if (isForeign) {
+      assertUniqueForeignAttributes(node);
+      nativeEvents = { eventMap, tagName, foreign: true };
+      lines.push(...typeCheckNativeBindings(node, nativeEvents, context));
+    } else {
+      throw new Error(`${tagName} selector is not associated to any WebComponent imported in the template, nor declared in customElements`, { cause: node.span });
+    }
+  } else {
+    lines.push(...typeCheckNativeBindings(node, nativeEvents, context));
+  }
+
+  lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], tagName, nativeEvents, context));
+
+  // The element is type-checked: the element ref naming its generic component is typed with the instantiation
+  if (node.ref && context.getImportBySelector(tagName)?.typeParameters) {
+    context.addInstantiation(node.span.start);
+  }
+
+  // The content of a standard <template> is static HTML, cloned by the code using it: nothing of it binds anything
+  if (node.content !== undefined) {
+    return lines;
+  }
+
+  const childrenNamespace = getChildrenNamespace(tagName, namespace);
+  const childrenContext = childrenNamespace === context.namespace ? context : new TypeCheckContext(context, childrenNamespace);
+  const children = node.children;
+  if (isStructuralElement(node)) {
+    const { declarations, lines: content } = typeCheckScope(children, new TypeCheckContext(childrenContext), processNode);
+    lines.push(...(declarations.length ? [plain('{'), ...indentLines(declarations.concat(content)), plain('}')] : content));
+  } else {
+    for (let i = 0; i < children.length; i++) {
+      lines.push(...processNode(children[i], childrenContext))
+    }
+  }
+
+  return lines;
+}
+
+/**
+ * Type-checks the bindings of a custom element against its component metadata:
+ * attributes, events and conditional bindings.
+ *
+ * Required properties must always be bound: directly on the element, or by a
+ * conditional binding that binds them whatever branch is selected, since a
+ * property bound inside a conditional binding is only set while its branch
+ * is the selected one (see {@link getAlwaysBoundAttributes}).
+ *
+ * A generic component is instantiated with the type arguments the element declares (`<my-list(Row)>`), then with the
+ * types inferred from the values bound to its properties (see {@link instantiateTypeParameters}).
+ *
+ * @param node - The custom element node.
+ * @param declaredMetadata - Metadata of the component registered for the element's selector.
+ * @param nativeEvents - What types the native events bound on the element and in its directives.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines.
+ * @throws If the element declares type arguments its component doesn't accept, a required property is missing, or is
+ *   bound inside a conditional binding that may not bind it.
+ */
+function typeCheckComponentBindings(node: ElementNode, declaredMetadata: ComponentMetadata, nativeEvents: NativeEvents, context: TypeCheckContext): Line[] {
+  assertTypeArguments(node.typeArguments, declaredMetadata, `<${node.tagName}>`);
+  // The instantiation of a component named by an element ref is declared in the scope of the ref, which is typed with it
+  const suffix = node.ref ? getInstantiationSuffix(node) : undefined;
+  const { metadata, declarations } = instantiateTypeParameters(declaredMetadata, node.typeArguments, node.attributes, node.nameSpan, context, suffix);
+  assertUniqueComponentAttributes(node, metadata);
+  const requiredProperties = new Set(metadata.properties.entries().filter(([_, value]) => value.required).map(([key]) => key));
+  const alwaysBoundAttributes = getAlwaysBoundAttributes(node.conditionalBindings);
+  const lines = typeCheckComponentAttributes(node.attributes, metadata, context);
+
+  /*
+    Checked before the missing required properties, so that a required property bound
+    inside a conditional binding that may not bind it gets the more specific error.
+  */
+  const conditionalBindingLines = typeCheckConditionalBindings(node.conditionalBindings, context, branch => {
+    assertRequiredPropertiesAlwaysBound(branch.attributes, metadata, `<${node.tagName}>`, alwaysBoundAttributes);
+
+    return [
+      ...typeCheckComponentAttributes(branch.attributes, metadata, context),
+      ...typeCheckClassBindings(branch.classBindings, context),
+      ...typeCheckStyleBindings(branch.styleBindings, context),
+      ...typeCheckComponentEvents(branch.events, metadata, nativeEvents, context),
+      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEvents, context)
+    ];
+  });
+
+  for (let i = 0; i < node.attributes.length; i++) {
+    const { name } = node.attributes[i];
+    requiredProperties.delete(name);
+  }
+
+  for (const name of alwaysBoundAttributes) {
+    requiredProperties.delete(name);
+  }
+
+  if (requiredProperties.size) {
+    throw new Error(`${node.tagName} is missing the following required properties:\n ● ${Array.from(requiredProperties.values()).join('\n ● ')}`, { cause: node.span });
+  }
+
+  lines.push(...typeCheckClassBindings(node.classBindings, context));
+  lines.push(...typeCheckStyleBindings(node.styleBindings, context));
+  lines.push(...typeCheckComponentEvents(node.events, metadata, nativeEvents, context));
+  lines.push(...conditionalBindingLines);
+
+  if (!declarations) {
+    return lines;
+  }
+
+  /*
+    The instantiation of a generic component is declared around the checks, as the types of the bindings name it,
+    or in the scope of the element ref naming the element, under names of its own
+  */
+  return suffix === undefined ? [plain('{'), ...indentLines([...declarations, ...lines]), plain('}')] : [...declarations, ...lines];
+}
+
+/**
+ * Ensures an attribute of the element of a component is written once at a time (see `assertUniqueAttributes`): an
+ * attribute that is not an input of the component and the same one written with `attr.` (`title` and `attr.title`)
+ * write the same attribute of the element, while an input and the attribute of its name (`attr.title`) are two things.
+ *
+ * @param node - The element of the component.
+ * @param metadata - Metadata of the component.
+ * @throws If an attribute is written twice.
+ */
+function assertUniqueComponentAttributes(node: ElementNode, metadata: ComponentMetadata): void {
+  assertUniqueAttributes(
+    node.attributes,
+    node.conditionalBindings,
+    ({ name, attribute }) => attribute === undefined && metadata.properties.has(name) ? name : `attr.${attribute ?? name}`,
+    key => {
+      const name = key.slice('attr.'.length);
+      return `Attribute "${name}" is written more than once on <${node.tagName}>: "${name}" is not an input of ${metadata.className}, so ${name}="…" and attr.${name}="…" write the same attribute of the element`;
+    }
+  );
+}
+
+/**
+ * Ensures an attribute of a custom element of another library is written once at a time (see
+ * `assertUniqueAttributes`): without metadata, it has no input, so `title` and `attr.title` write the same attribute.
+ *
+ * @param node - The element.
+ * @throws If an attribute is written twice.
+ */
+function assertUniqueForeignAttributes(node: ElementNode): void {
+  assertUniqueAttributes(node.attributes, node.conditionalBindings, ({ name, attribute }) => attribute ?? name, name => `Attribute "${name}" is written more than once on <${node.tagName}>: it is not a component imported in the template, so ${name}="…" and attr.${name}="…" write the same attribute of the element`);
+}
+
+/**
+ * Type-checks the directives and the structural directives applied to an element against their metadata.
+ *
+ * Every attribute declared in a directive must match one of its properties,
+ * since a directive has no underlying element attribute to fall back to, and
+ * every required property must always be bound: directly in the directive, or by
+ * a conditional binding that binds it whatever branch is selected, since a
+ * property bound inside a conditional binding is only set while its branch
+ * is the selected one (see {@link getAlwaysBoundAttributes}). Values and events
+ * are then checked like the ones of a component, except that an event not declared as an `@Event` of the
+ * directive is a native event of the element it is applied to, since its listener is attached to the element.
+ *
+ * A structural directive is checked the same way, except that it declares neither events nor conditional bindings.
+ *
+ * @param directives - The directive and structural directive nodes applied to the element.
+ * @param tagName - Tag name of the element, used in error messages.
+ * @param nativeEvents - What types the native events bound in the directives.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines.
+ * @throws If a directive is not imported, binds an unknown property, misses a required property or binds it inside a conditional binding that may not bind it.
+ */
+function typeCheckDirectives(directives: (DirectiveNode | StructuralDirectiveNode)[], tagName: string, nativeEvents: NativeEvents, context: TypeCheckContext): Line[] {
+  const lines = new Array<Line>();
+
+  for (let i = 0; i < directives.length; i++) {
+    const directive = directives[i];
+    const { selector, attributes, span, type, typeArguments } = directive;
+    const { events, conditionalBindings } = type === ASTNodeType.Directive ? directive : { events: [], conditionalBindings: [] };
+    const owner = `${type === ASTNodeType.Directive ? '@@' : '*'}${selector}`;
+    const declaredMetadata = context.getDirectiveBySelector(selector);
+    if (!declaredMetadata) {
+      throw new Error(`${owner} selector is not associated to any Directive imported in the template`, { cause: span });
+    }
+
+    assertTypeArguments(typeArguments, declaredMetadata, owner);
+    const { metadata, declarations } = instantiateTypeParameters(declaredMetadata, typeArguments, attributes, directive.selectorSpan, context);
+    assertDirectiveProperties(attributes, metadata, owner);
+    const alwaysBoundAttributes = getAlwaysBoundAttributes(conditionalBindings);
+
+    /*
+      Checked before the missing required properties, so that a required property bound
+      inside a conditional binding that may not bind it gets the more specific error.
+    */
+    const conditionalBindingLines = typeCheckConditionalBindings(conditionalBindings, context, branch => {
+      assertDirectiveProperties(branch.attributes, metadata, owner);
+      assertRequiredPropertiesAlwaysBound(branch.attributes, metadata, owner, alwaysBoundAttributes);
+
+      return [
+        ...typeCheckComponentAttributes(branch.attributes, metadata, context),
+        ...typeCheckComponentEvents(branch.events, metadata, nativeEvents, context)
+      ];
+    });
+
+    const requiredProperties = new Set(metadata.properties.entries().filter(([_, value]) => value.required).map(([key]) => key));
+    for (let j = 0; j < attributes.length; j++) {
+      requiredProperties.delete(attributes[j].name);
+    }
+
+    for (const name of alwaysBoundAttributes) {
+      requiredProperties.delete(name);
+    }
+
+    if (requiredProperties.size) {
+      throw new Error(`${owner} on <${tagName}> is missing the following required properties:\n ● ${Array.from(requiredProperties.values()).join('\n ● ')}`, { cause: span });
+    }
+
+    const directiveLines = [
+      ...typeCheckComponentAttributes(attributes, metadata, context),
+      ...typeCheckComponentEvents(events, metadata, nativeEvents, context),
+      ...conditionalBindingLines
+    ];
+
+    // The type arguments the template passes are declared around the checks, as the types of the bindings name them
+    if (declarations) {
+      lines.push(plain('{'), ...indentLines([...declarations, ...directiveLines]), plain('}'));
+    } else {
+      lines.push(...directiveLines);
+    }
+  }
+
+  return lines;
+}
+
+/**
+ * Ensures the type arguments a directive or an element declares fit the class of the directive or of the web component:
+ * a class that is not generic accepts none, and a generic one at most as many as it has type parameters (see
+ * {@link instantiateTypeParameters} for the omitted ones).
+ *
+ * @param typeArguments - The type arguments the directive or the element declares, if any.
+ * @param metadata - Metadata of the directive or of the web component.
+ * @param owner - The directive (`@@selector`), the structural directive (`*selector`) or the element (`<tag-name>`), used in error messages.
+ * @throws If type arguments are declared and the class is not generic, or more than its type parameters are declared.
+ */
+function assertTypeArguments(typeArguments: DirectiveNode['typeArguments'], metadata: ComponentOrDirectiveMetadata, owner: string): void {
+  if (!typeArguments) {
+    return;
+  }
+
+  const cause = getTypeArgumentsSpan(typeArguments);
+  if (!metadata.typeParameters) {
+    throw new Error(`${owner} declares type arguments, but ${metadata.className} is not generic.`, { cause });
+  }
+
+  if (typeArguments.length > metadata.typeParameters.length) {
+    throw new Error(`${owner} declares ${typeArguments.length} type arguments, but ${metadata.className} has ${metadata.typeParameters.length} type parameters (${metadata.typeParameters.map(({ name }) => name).join(', ')}).`, { cause });
+  }
+}
+
+/**
+ * Returns the span of a list of type arguments, from the start of the first one to the end of the last one.
+ *
+ * @param typeArguments - The type arguments, at least one.
+ * @returns The span covering them.
+ */
+function getTypeArgumentsSpan(typeArguments: NonNullable<DirectiveNode['typeArguments']>): Span {
+  return { start: typeArguments[0].span.start, end: typeArguments[typeArguments.length - 1].span.end };
+}
+
+/**
+ * The function inferring the type parameters of a generic directive from the values bound to its properties.
+ */
+const PROBE = '__probe';
+
+/**
+ * The result of the call to {@link PROBE}.
+ */
+const PROBED_VALUE = '__probed';
+
+/**
+ * The type of {@link PROBED_VALUE}: the tuple of the types inferred for the type parameters.
+ */
+const PROBED = '__Probed';
+
+/**
+ * Instantiates the type parameters of a generic component or directive, so that the types of its properties and events,
+ * written in terms of its type parameters, resolve to the types of the template.
+ *
+ * As TypeScript does for a call, the type parameters are either all given or all inferred:
+ * - when the template passes type arguments (`@@list<Row>(…)`, `<my-list(Row)>`), the class is instantiated with them
+ *   only, each one written as is and mapped onto its span in the template (`List<Row>`): the type parameters left out
+ *   take their default type, and TypeScript reports the ones without it. A type argument can name a type the template
+ *   imports, even one named like the type parameter;
+ * - otherwise, a type parameter gets the type TypeScript infers from the values bound to the properties, when it finds
+ *   one: a call to a function declared with the same type parameters and the types of those properties infers them, as
+ *   it does for a function. The call is not checked: the real checks of the bindings report its errors. A type parameter
+ *   nothing is inferred for gets its default type, if it has one, or `any`.
+ *
+ * The type parameters are always read through the class instantiated with them, in a line mapped onto the type arguments
+ * (or the selector of the directive, or the tag name of the element, when there are none), so that a type that doesn't
+ * satisfy a constraint is reported there.
+ *
+ * The declarations of a generic component named by an element ref are written in the scope of the ref, which
+ * is typed with the instantiation: their names end with a suffix telling them apart from the ones of the other elements
+ * of the scope, and the instantiation is declared even when nothing is inferred.
+ *
+ * @param metadata - Metadata of the component or of the directive.
+ * @param typeArguments - The type arguments the template passes, if any.
+ * @param attributes - The attributes bound to the properties, whose values the type parameters are inferred from.
+ * @param ownerSpan - Span of the selector of the directive, or of the tag name of the element.
+ * @param context - Current type-check scope.
+ * @param suffix - The suffix of the names of the declarations of a component named by an element ref (see
+ *   `getInstantiationSuffix`), `undefined` when they are written around the checks of the bindings.
+ * @returns The metadata to check the bindings against, and the lines to write before the checks, `undefined` when the
+ *   type parameters are neither declared nor inferred, and the instantiation needs no name.
+ */
+function instantiateTypeParameters<Metadata extends ComponentOrDirectiveMetadata>(metadata: Metadata, typeArguments: DirectiveNode['typeArguments'], attributes: AttributeNode[], ownerSpan: Span, context: TypeCheckContext, suffix?: string): { metadata: Metadata, declarations?: Line[] } {
+  const { typeParameters } = metadata;
+  if (!typeParameters) {
+    return { metadata };
+  }
+
+  const base = getOwnerType(metadata, false);
+  const generic = getOwnerType(metadata, true);
+  const instanceName = `${INSTANCE}${suffix ?? ''}`;
+  const probedName = `${PROBED}${suffix ?? ''}`;
+
+  if (typeArguments) {
+    // Each type argument is written as is, mapped onto its own span, inside the instantiation mapped onto all of them
+    let instance = `${base}<`;
+    const segments = new Array<LineMapping>();
+    for (let i = 0; i < typeArguments.length; i++) {
+      const { text, span } = typeArguments[i];
+      instance = `${instance}${i ? ', ' : ''}`;
+      segments.push({ columnStart: instance.length, columnEnd: instance.length + text.length, original: span });
+      instance = `${instance}${text}`;
+    }
+
+    const declaration = line(`type ${instanceName} = `, mappedSegments(`${instance}>`, getTypeArgumentsSpan(typeArguments), segments), ';');
+    return { metadata: withOwnerType(metadata, generic, instanceName), declarations: [declaration] };
+  }
+
+  const probe = inferTypeParameters(metadata, base, attributes, context, suffix);
+
+  // The parameters with a default type come last: the ones nothing gives a type to take it when the class is instantiated without them
+  const firstDefault = typeParameters.findIndex(({ hasDefault }) => hasDefault);
+  const given = new Array<string>();
+  for (let i = 0; i < (firstDefault === -1 ? typeParameters.length : firstDefault); i++) {
+    given.push(typeArgumentOf(probedName, !!probe, i));
+  }
+
+  let instance = instantiate(base, given);
+  if (!probe) {
+    // An element ref is typed with the instantiation, even when nothing is inferred
+    return suffix === undefined
+      ? { metadata: withOwnerType(metadata, generic, instance) }
+      : { metadata: withOwnerType(metadata, generic, instanceName), declarations: [plain(`type ${instanceName} = ${instance};`)] };
+  }
+
+  if (firstDefault !== -1) {
+    const defaults = typeParameters.slice(firstDefault).map((_, offset) => firstDefault + offset);
+    const inferred = instantiate(base, [...given, ...defaults.map(index => typeArgumentOf(probedName, true, index))]);
+    const none = `[${defaults.map(() => 'unknown').join(', ')}] extends [${defaults.map(index => `${probedName}[${index}]`).join(', ')}]`;
+    instance = `${none} ? ${instance} : ${inferred}`;
+  }
+
+  return { metadata: withOwnerType(metadata, generic, instanceName), declarations: [...probe, line(`type ${instanceName} = `, mapped(instance, ownerSpan), ';')] };
+}
+
+/**
+ * Writes the lines inferring the type parameters of a generic component or directive from the values bound to its properties: a
+ * function declared with the same type parameters, whose parameters have the types of those properties, called with
+ * the values, returns the inferred types. The function and its call are not checked (`@ts-ignore`): its type parameters
+ * have no constraint, and a value that doesn't fit its property is reported by the real checks of the bindings.
+ *
+ * @param metadata - Metadata of the generic component or directive.
+ * @param base - The type of the class, without type arguments.
+ * @param attributes - The attributes bound to the properties.
+ * @param context - Current type-check scope.
+ * @param suffix - The suffix of the names of the declarations, if any (see {@link instantiateTypeParameters}).
+ * @returns The lines declaring `Probed`, the tuple of the inferred types, `undefined` if no property bound can infer one.
+ */
+function inferTypeParameters(metadata: ComponentOrDirectiveMetadata, base: string, attributes: AttributeNode[], context: TypeCheckContext, suffix = ''): Line[] | undefined {
+  const names = metadata.typeParameters!.map((_, index) => `P${index}`);
+  const owner = `${base}<${names.join(', ')}>`;
+  const parameters = new Array<string>();
+  const values = new Array<LinePart>();
+
+  for (let i = 0; i < attributes.length; i++) {
+    const { name, value } = attributes[i];
+    const property = metadata.properties.get(name);
+    // The type of a property is the one of the value of its accessor only when it is read from it
+    if (property?.type.startsWith('ReturnType<')) {
+      parameters.push(`value${parameters.length}: ${owner}['${property.name}']`);
+      if (values.length) {
+        values.push(', ');
+      }
+
+      if (typeof value === 'object') {
+        values.push('() => (', mappedInterpolation(value, context), ')');
+      } else {
+        values.push('(): string => \'\'');
+      }
+    }
+  }
+
+  if (!parameters.length) {
+    return undefined;
+  }
+
+  return [
+    plain('// @ts-ignore'),
+    plain(`function ${PROBE}${suffix}<${names.join(', ')}>(${parameters.join(', ')}): [${names.join(', ')}] { return null!; }`),
+    plain('// @ts-ignore'),
+    line(`const ${PROBED_VALUE}${suffix} = ${PROBE}${suffix}(`, ...values, ');'),
+    plain(`type ${PROBED}${suffix} = typeof ${PROBED_VALUE}${suffix};`)
+  ];
+}
+
+/**
+ * Copies the metadata of a component or of a directive writing the types of its properties and events in terms of
+ * another type of its class.
+ *
+ * @param metadata - Metadata of the component or of the directive.
+ * @param from - The type of the class the types are written in terms of.
+ * @param to - The type of the class to write them in terms of.
+ * @returns The metadata, with `from` replaced by `to` in every type.
+ */
+function withOwnerType<Metadata extends ComponentOrDirectiveMetadata>(metadata: Metadata, from: string, to: string): Metadata {
+  const properties = new Map<string, ComponentPropertyMetadata>();
+  for (const [name, property] of metadata.properties) {
+    properties.set(name, new ComponentPropertyMetadata(property.name, property.type.replaceAll(from, () => to), { required: property.required, alias: property.alias, declaration: property.declaration, exposed: property.exposed }));
+  }
+
+  const events = new Map<string, ComponentEventMetadata>();
+  for (const [name, event] of metadata.events) {
+    events.set(name, { ...event, type: event.type.replaceAll(from, () => to) });
+  }
+
+  return { ...metadata, properties, events };
+}
+
+/**
+ * Ensures every attribute bound to a directive matches one of its properties.
+ *
+ * @param attributes - The attribute nodes bound to the directive.
+ * @param metadata - Metadata of the directive the attributes are bound to.
+ * @param owner - The directive (`@@selector`) or the structural directive (`*selector`) the attributes are bound to, used in error messages.
+ * @throws If an attribute doesn't match any property of the directive, or is the name of the property of an input declaring
+ *   an alias, or a two-way binding binds no model of the directive.
+ */
+function assertDirectiveProperties(attributes: AttributeNode[], metadata: ComponentOrDirectiveMetadata, owner: string): void {
+  for (let i = 0; i < attributes.length; i++) {
+    const { name, span } = attributes[i];
+    assertTwoWayBindable(attributes[i], metadata);
+    if (!metadata.properties.has(name)) {
+      assertNotAliasedProperty(attributes[i], metadata);
+      throw new Error(`Unknown property "${name}" on ${owner} (${metadata.className} has no @Property with this name).`, { cause: span });
+    }
+  }
+}
+
+/**
+ * Ensures the input a two-way binding binds (`[(value)]`) has its event of change (`valueChange`): a model (`@Model`),
+ * or an input and an event named so (`@Property` and `@Event`). Any other attribute passes.
+ *
+ * @param attribute - The attribute node.
+ * @param metadata - Metadata of the component or directive the attribute is bound to.
+ * @throws If the attribute is bound by a two-way binding and the component or the directive has no input with its name or
+ *   no event of change.
+ */
+function assertTwoWayBindable({ name, span, twoWay }: AttributeNode, metadata: ComponentOrDirectiveMetadata): void {
+  const event = toModelChangeEvent(name);
+  if (twoWay && !(metadata.properties.has(name) && metadata.events.has(event))) {
+    throw new Error(`[(${name})] binds the input "${name}" and its event "${event}", which ${metadata.className} does not both declare: declare a model with @Model, or an input and an event with these names.`, { cause: span });
+  }
+}
+
+/**
+ * Ensures an attribute matching no input is not the name of the property of an input declaring an alias, which is bound
+ * only by its alias: the name of its property would be an attribute of the element, which the input never reads.
+ *
+ * @param attribute - The attribute node, matching no input.
+ * @param metadata - Metadata of the component or directive the attribute is bound to.
+ * @throws If the attribute is the name of the property of an input declaring an alias.
+ */
+function assertNotAliasedProperty({ name, span }: AttributeNode, metadata: ComponentOrDirectiveMetadata): void {
+  for (const property of metadata.properties.values()) {
+    if (property.name === name && property.alias && !property.exposed) {
+      // A directive has no attribute of its own: only the element of a component has one with the name of the property
+      const attribute = metadata.type === 'component' ? `, or write the attribute of the element with attr.${name}="…"` : '';
+      throw new Error(`"${name}" is the property of an input of ${metadata.className} declaring the alias "${property.alias}": bind it as ${property.alias}="…"${attribute}.`, { cause: span });
+    }
+  }
+}
+
+/**
+ * Ensures the required properties bound in a branch of a conditional binding are bound whatever branch
+ * is selected: a required property the selected branch doesn't bind, or bound by a conditional binding
+ * that may select no branch at all, would be left without a value.
+ *
+ * @param attributes - The attribute nodes bound in the branch.
+ * @param metadata - Metadata of the component or directive the attributes are bound to.
+ * @param owner - The element (`<tag-name>`) or the directive (`@@selector`) the attributes are bound to, used in error messages.
+ * @param alwaysBoundAttributes - Names of the attributes the conditional bindings of the owner bind whatever branch is selected.
+ * @throws If a required property is bound in the branch without being bound whatever branch is selected.
+ */
+function assertRequiredPropertiesAlwaysBound(attributes: AttributeNode[], metadata: ComponentOrDirectiveMetadata, owner: string, alwaysBoundAttributes: ReadonlySet<string>): void {
+  for (let i = 0; i < attributes.length; i++) {
+    const { name, span } = attributes[i];
+    if (metadata.properties.get(name)?.required && !alwaysBoundAttributes.has(name)) {
+      throw new Error(`Required property "${name}" of ${owner} must always be bound: bind it in every branch of its conditional binding, including an @else or @default one, or outside of it.`, { cause: span });
+    }
+  }
+}
+
+/**
+ * Collects the names of the attributes a list of conditional bindings binds whatever branch is selected.
+ *
+ * A conditional binding always binds an attribute when it always selects a branch, i.e. it ends with an
+ * `@else` or a `@default` branch, and each of its branches binds the attribute: directly, or through the
+ * conditional bindings nested in the branch, which must in turn always bind it.
+ *
+ * @param conditionalBindings - The conditional bindings declared on an element, in a directive or in a branch.
+ * @returns The names of the attributes bound whatever branch is selected.
+ */
+function getAlwaysBoundAttributes(conditionalBindings: ConditionalBindingNode[]): Set<string> {
+  const alwaysBoundAttributes = new Set<string>();
+
+  for (let i = 0; i < conditionalBindings.length; i++) {
+    const { branches } = conditionalBindings[i];
+
+    // Without an `@else` or a `@default` branch closing it, a conditional binding may select no branch at all
+    if (branches.at(-1)?.condition !== null) {
+      continue;
+    }
+
+    const [first, ...others] = branches.map(branch => new Set([
+      ...branch.attributes.map(({ name }) => name),
+      ...getAlwaysBoundAttributes(branch.conditionalBindings)
+    ]));
+
+    for (const name of first) {
+      if (others.every(boundInBranch => boundInBranch.has(name))) {
+        alwaysBoundAttributes.add(name);
+      }
+    }
+  }
+
+  return alwaysBoundAttributes;
+}
+
+/**
+ * Type-checks attributes bound to component or directive properties, checking each value
+ * `satisfies` the property's declared type. Expression values are checked
+ * against the resolved expression, literal values as a `string`. Attributes
+ * that don't match a property are ignored, unless they are the name of the property of an input declaring an alias.
+ * An attribute written with `attr.` is never a property: its expression is checked as on a native element.
+ *
+ * A property is an input, so it always needs a value: the form without one (`<my-el label>`), which is only valid
+ * for the attributes of a native element, is rejected.
+ *
+ * @param attributes - The attribute nodes to type-check.
+ * @param metadata - Metadata of the component or directive the attributes are bound to.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines, one block per bound property.
+ * @throws If a property is bound without a value, an attribute is the name of the property of an input declaring an alias,
+ *   or a two-way binding binds no model.
+ */
+function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: ComponentOrDirectiveMetadata, context: TypeCheckContext): Line[] {
+  const lines = new Array<Line>();
+
+  for (let i = 0; i < attributes.length; i++) {
+    const { name, value, span, bare, attribute } = attributes[i];
+    // Written with `attr.`, the attribute of the element takes any value, as on a native element
+    if (attribute !== undefined) {
+      if (typeof value !== 'string') {
+        lines.push(line(mappedInterpolation(value, context, ';')));
+      }
+
+      continue;
+    }
+
+    assertTwoWayBindable(attributes[i], metadata);
+    const property = metadata.properties.get(name);
+    if (!property) {
+      assertNotAliasedProperty(attributes[i], metadata);
+    } else {
+      if (bare) {
+        throw new Error(`Property "${name}" needs a value: write ${name}="…" or ${name}="{ expression }". An attribute without a value is only valid on a native element.`, { cause: span });
+      }
+
+      lines.push(
+        plain('{'),
+        ...indentLines(typeof value === 'object'
+          // `satisfies` and the type are mapped onto the binding, as TypeScript reports a value that doesn't satisfy the type on `satisfies`
+          ? [line('(', mappedInterpolation(value, context), ') ', mapped(`satisfies ${property.type}`, span), ';')]
+          : [plain('let x!: string;'), line(mapped(`x satisfies ${property.type};`, span))]
+        ),
+        plain('}')
+      );
+    }
+  }
+
+  return lines;
+}
+
+/**
+ * Type-checks event bindings against the component's or directive's `@Event`s, typing `$event` as
+ * `CustomEvent<payload type>`, or `CustomEvent<null>` for an event without payload (see {@link typeCheckEvent}).
+ * An event not declared as an `@Event` is a native event of the element the component is, or the directive is
+ * applied to, since its listener is attached to the element (see {@link typeCheckNativeEvent}): an event name the
+ * element doesn't declare either, such as a misspelled `@Event` or an event bubbling up from the content of the
+ * element, is a warning. A key event (`keydown.enter`) is always the native event it names first, `keydown`.
+ *
+ * @param events - The event nodes to type-check.
+ * @param metadata - Metadata of the component or directive emitting the events.
+ * @param nativeEvents - What types the native events of the element.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines, one call per event, wrapped in a block when it declares `$event`.
+ */
+function typeCheckComponentEvents(events: EventNode[], metadata: ComponentOrDirectiveMetadata, nativeEvents: NativeEvents, context: TypeCheckContext): Line[] {
+  const lines = new Array<Line>();
+
+  for (let i = 0; i < events.length; i++) {
+    const event = events[i];
+    const declared = event.key ? undefined : metadata.events.get(event.name);
+
+    // An event without payload is emitted without detail, which the CustomEvent sets to null
+    lines.push(...(declared
+      ? typeCheckEvent(event, `CustomEvent<${declared.type === 'void' ? 'null' : declared.type}>`, context)
+      : typeCheckNativeEvent(event, nativeEvents, context)
+    ));
+  }
+
+  return lines;
+}
+
+/**
+ * Type-checks the bindings of a native element, or of a custom element of another library: attributes, events and
+ * conditional bindings.
+ *
+ * @param node - The element node.
+ * @param nativeEvents - What types the native events of the element and of the directives applied to it.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines.
+ * @throws If the element declares type arguments: only a web component imported in the template has a class to pass them
+ *   to, or a two-way binding: only a component or a directive declares models.
+ */
+function typeCheckNativeBindings(node: ElementNode, nativeEvents: NativeEvents, context: TypeCheckContext): Line[] {
+  if (node.typeArguments) {
+    throw new Error(`<${node.tagName}> declares type arguments, but only a WebComponent imported in the template can declare them.`, { cause: getTypeArgumentsSpan(node.typeArguments) });
+  }
+
+  return [
+    ...typeCheckNativeAttributes(node.attributes, node.tagName, context),
+    ...typeCheckClassBindings(node.classBindings, context),
+    ...typeCheckStyleBindings(node.styleBindings, context),
+    ...typeCheckNativeEvents(node.events, nativeEvents, context),
+    ...typeCheckConditionalBindings(node.conditionalBindings, context, branch => [
+      ...typeCheckNativeAttributes(branch.attributes, node.tagName, context),
+      ...typeCheckClassBindings(branch.classBindings, context),
+      ...typeCheckStyleBindings(branch.styleBindings, context),
+      ...typeCheckNativeEvents(branch.events, nativeEvents, context),
+      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEvents, context)
+    ])
+  ];
+}
+
+/**
+ * Type-checks the expression attributes of a native element by emitting each
+ * resolved expression as a statement. Literal attributes are skipped.
+ *
+ * @param attributes - The attribute nodes to type-check.
+ * @param tagName - The tag name of the element, used in the error message.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines, one per expression attribute.
+ * @throws If an attribute is bound by a two-way binding: a native element, or a custom element of another library, has no
+ *   model.
+ */
+function typeCheckNativeAttributes(attributes: AttributeNode[], tagName: string, context: TypeCheckContext): Line[] {
+  const lines = new Array<Line>();
+
+  for (let i = 0; i < attributes.length; i++) {
+    const { name, value, span, twoWay } = attributes[i];
+    if (twoWay) {
+      throw new Error(`[(${name})] binds a model of a component or of a directive: <${tagName}> is not a component imported in the template.`, { cause: span });
+    }
+
+    if (typeof value !== 'string') {
+      lines.push(line(mappedInterpolation(value, context, ';')));
+    }
+  };
+
+  return lines;
+}
+
+/**
+ * Type-checks the classes toggled on an element, native or not, by emitting each expression as a statement:
+ * a value of any type toggles the class, by whether it is truthy.
+ *
+ * @param classBindings - The class binding nodes to type-check.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines, one per class binding.
+ */
+function typeCheckClassBindings(classBindings: ClassBindingNode[], context: TypeCheckContext): Line[] {
+  const lines = new Array<Line>();
+
+  for (let i = 0; i < classBindings.length; i++) {
+    const { value } = classBindings[i];
+    lines.push(line(mappedInterpolation(value, context, ';')));
+  }
+
+  return lines;
+}
+
+/**
+ * Type-checks the style properties set on an element, native or not: the value of a property with a unit must be a
+ * number, written followed by the unit, the one of any other property a string or a number, and `null` and `undefined`
+ * leave the property to the other sources writing it.
+ *
+ * @param styleBindings - The style binding nodes to type-check.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines, one per style binding.
+ */
+function typeCheckStyleBindings(styleBindings: StyleBindingNode[], context: TypeCheckContext): Line[] {
+  const lines = new Array<Line>();
+
+  for (let i = 0; i < styleBindings.length; i++) {
+    const { value, unit } = styleBindings[i];
+    lines.push(line('(', mappedInterpolation(value, context, unit ? ') satisfies number | null | undefined;' : ') satisfies string | number | null | undefined;')));
+  }
+
+  return lines;
+}
+
+/**
+ * Type-checks the event bindings of a native element (see {@link typeCheckNativeEvent}).
+ *
+ * @param events - The event nodes to type-check.
+ * @param nativeEvents - What types the native events of the element.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines, one call per event, wrapped in a block when it declares `$event`.
+ */
+function typeCheckNativeEvents(events: EventNode[], nativeEvents: NativeEvents, context: TypeCheckContext): Line[] {
+  return events.flatMap(event => typeCheckNativeEvent(event, nativeEvents, context));
+}
+
+/**
+ * Type-checks the binding of a native event of an element, typing `$event` through the event map of the element (see
+ * {@link typeCheckEvent}), e.g. `MouseEvent` for `click`, the one of a key event by its event (`KeyboardEvent` for
+ * `keydown.enter`), and `Event` for an event the map does not declare, such as an event dispatched by the content of the
+ * element bubbling up to it (`any` on a custom element of another library, see {@link getNativeEventType}).
+ *
+ * With the `strictEvents` option, the name of an event that is not a key event is checked against the event map, on a
+ * line of its own (`'bubbling' satisfies keyof HTMLElementEventMap;`), whether the handler is passed `$event` or not,
+ * and the check is recorded: TypeScript rejecting it is a warning (see `findEventCheck`). The names of the events of a
+ * custom element of another library are not checked, since it may dispatch events of its own.
+ *
+ * @param event - The event node to type-check.
+ * @param nativeEvents - What types the native events of the element.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines: the check of the name, if any, then the call.
+ */
+function typeCheckNativeEvent(event: EventNode, nativeEvents: NativeEvents, context: TypeCheckContext): Line[] {
+  const { name, key, span, nameSpan } = event;
+  const lines = typeCheckEvent(event, getNativeEventType(nativeEvents, key?.event ?? name), context);
+  if (key || nativeEvents.foreign || !context.strictEvents) {
+    return lines;
+  }
+
+  context.recordEventCheck({
+    span,
+    nameSpan,
+    message: `'${name}' is not an event of <${nativeEvents.tagName}>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set "strictEvents": false in xaendar.json to turn this warning off.`
+  });
+  return [line(mappedEventName(`'${name}' satisfies keyof ${nativeEvents.eventMap};`, event)), ...lines];
+}
+
+/**
+ * Type-checks an event binding by emitting a call to the handler on `root`, or as written for a handler the template
+ * imports, with its resolved arguments, each one cast to the type of its cast, if any (see `castExpression`).
+ * When an argument reads `$event`, whole or in part, the call is wrapped in a block declaring `$event` with the type
+ * of the event, so that the following events can declare it again.
+ *
+ * @param event - The event node to type-check.
+ * @param eventType - The type of `$event`.
+ * @param context - Current type-check scope.
+ * @returns The generated type-check lines: the call, wrapped in a block when it declares `$event`.
+ */
+function typeCheckEvent(event: EventNode, eventType: string, context: TypeCheckContext): Line[] {
+  const { handler, handlerSpan, parameters, casts, span } = event;
+  const eventContext = new TypeCheckContext(context);
+  eventContext.addUnresolvableIdentifier('$event');
+  for (let i = 0; i < parameters.length; i++) {
+    // The beginning of `$event` is left as written, not read from the component, so that TypeScript proposes `$event`
+    const parameter = parameters[i];
+    if (isEventBeginning(parameter) && parameter.text !== '$event') {
+      eventContext.addUnresolvableIdentifier(parameter.text);
+    }
+  }
+
+  /*
+    The whole call is mapped onto the span of the event binding (the whole `(click)="handler($event)"`),
+    the handler onto its name and each argument finely, like any other expression.
+
+    A handler on a variable of the template (`item.set()`, `dialog.showModal()`) or one the template imports (`track()`,
+    `analytics.track()`) is called as written, as the generated code does, any other one as a method on the component
+  */
+  const head = handler.split(/\?\.|[.[]/)[0];
+  const receiver = context.hasUnresolvableIdentifier(head) || context.getImportedIdentifier(head) ? '' : 'root.';
+  const callee = `${receiver}${handler}(`;
+  const segments: LineMapping[] = [{ columnStart: receiver.length, columnEnd: receiver.length + handler.length, original: handlerSpan }];
+  let call = callee;
+
+  for (let i = 0; i < parameters.length; i++) {
+    const separator = i ? ', ' : '';
+    const argumentSegments = new Array<LineMapping>();
+    const resolved = resolveExpression(parameters[i], eventContext, { resolver: 'root', preserveTypeScript: true, narrowedSignal: name => eventContext.getNarrowedSignal(name) }, argumentSegments).expression;
+    const cast = casts?.get(i);
+    const argument = cast ? castExpression(parameters[i], resolved, argumentSegments, cast) : resolved;
+    const column = call.length + separator.length;
+
+    for (let j = 0; j < argumentSegments.length; j++) {
+      const { columnStart, columnEnd, original } = argumentSegments[j];
+      segments.push({ columnStart: column + columnStart, columnEnd: column + columnEnd, original });
+    }
+
+    call = `${call}${separator}${argument}`;
+  }
+
+  const callLine = line(mappedSegments(`${call});`, span, segments));
+
+  return passesEvent(parameters)
+    ? [
+      plain('{'),
+      ...indentLines([
+        line(mappedEventName(`let $event!: ${eventType};`, event)),
+        callLine
+      ]),
+      plain('}')
+    ]
+    : [callLine];
+}
+
+/**
+ * Maps a text typing an event by its name (e.g. `let $event!: HTMLElementEventMap['click'];`) onto the span of the
+ * event binding, and the name quoted in it onto the name of the event, where TypeScript reports an unknown event: the
+ * beginning of the name of a key event, its event (`keydown` of `keydown.enter`).
+ *
+ * @param text - The text typing the event.
+ * @param event - The event binding.
+ * @returns The mapped fragment.
+ */
+function mappedEventName(text: string, { span, name, nameSpan, key }: EventNode): LinePart {
+  const typed = key?.event ?? name;
+  const nameColumn = text.indexOf(`'${typed}'`) + 1;
+  return mappedSegments(text, span, nameColumn ? [{ columnStart: nameColumn, columnEnd: nameColumn + typed.length, original: { start: nameSpan.start, end: nameSpan.start + typed.length } }] : []);
+}
+
+/**
+ * Tells whether an event binding passes `$event` to its handler: an argument reads it, whole or in part, as in
+ * `$event`, `$event.target` or `format($event.detail)`.
+ *
+ * The beginning of `$event` being written (`$`, `$ev`…) counts too, so that `$event` is declared, and TypeScript
+ * proposes it: the incomplete name itself is reported by TypeScript, as it is not declared.
+ *
+ * @param parameters - The parameters of the event binding.
+ * @returns `true` if one of the parameters reads `$event`, or is its beginning, `false` otherwise.
+ */
+function passesEvent(parameters: Expression[]): boolean {
+  return parameters.some(parameter => isEventBeginning(parameter) || readsEvent(parameter));
+}
+
+/**
+ * Tells whether an expression is `$event`, or the beginning of it being written (`$`, `$ev`…).
+ *
+ * @param expression - The expression.
+ * @returns `true` if the expression is an identifier `$event` starts with.
+ */
+function isEventBeginning(expression: Expression): expression is Identifier {
+  return isIdentifier(expression) && expression.text.startsWith('$') && '$event'.startsWith(expression.text);
+}
+
+/**
+ * Type-checks conditional bindings as real, nested TypeScript control flow, exactly like the `@if`
+ * and `@switch` blocks declared in the template content: an `@if` chain becomes an `if` / `else if` / `else`
+ * chain and a `@switch` a `switch` statement. Conditions and expressions are therefore checked (and narrow
+ * inside their block), while the bound attributes/events/directives of each branch are checked by `bindings`,
+ * exactly as if they were declared directly on the element or on the directive.
+ *
+ * @param conditionalBindings - The conditional bindings to type-check.
+ * @param context - Current type-check scope.
+ * @param bindings - Emits the type-check lines for the attributes, events and directives of a single branch.
+ * @returns The generated type-check lines.
+ */
+function typeCheckConditionalBindings(conditionalBindings: ConditionalBindingNode[], context: TypeCheckContext, bindings: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
+  const lines = new Array<Line>();
+
+  for (let i = 0; i < conditionalBindings.length; i++) {
+    const conditionalBinding = conditionalBindings[i];
+    lines.push(...(conditionalBinding.type === ASTNodeType.SwitchBinding
+      ? typeCheckSwitchBinding(conditionalBinding, context, bindings)
+      : typeCheckIfBinding(conditionalBinding, context, bindings)
+    ));
+  }
+
+  return lines;
+}
+
+/**
+ * Type-checks the content of a branch of a conditional binding: its bindings, followed by the conditional bindings
+ * nested in it.
+ *
+ * @param branch - The branch.
+ * @param context - Current type-check scope.
+ * @param bindings - Emits the type-check lines for the attributes, events and directives of a single branch.
+ * @returns The generated type-check lines, indented.
+ */
+function typeCheckBranch(branch: ConditionalBindingBranchNode, context: TypeCheckContext, bindings: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
+  return indentLines([
+    ...bindings(branch),
+    ...typeCheckConditionalBindings(branch.conditionalBindings, context, bindings)
+  ]);
+}
+
+/**
+ * Type-checks an `@if` conditional binding as a real TypeScript `if` / `else if` / `else` chain,
+ * which gives each branch the negated narrowing of every condition preceding it.
+ *
+ * @param node - The `@if` conditional binding to type-check.
+ * @param context - Current type-check scope.
+ * @param bindings - Emits the type-check lines for the attributes, events and directives of a single branch.
+ * @returns The generated type-check lines.
+ */
+function typeCheckIfBinding(node: IfBindingNode, context: TypeCheckContext, bindings: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
+  const lines = new Array<Line>();
+  const { branches } = node;
+
+  for (let i = 0; i < branches.length; i++) {
+    const branch = branches[i];
+    const { condition, span } = branch;
+
+    lines.push(
+      // Only the first branch opens the chain, only the `@else` one has no condition
+      condition
+        ? line(i ? 'else if (' : 'if (', mappedExpression(condition, context, span), ') {')
+        : plain('else {'),
+      ...typeCheckBranch(branch, context, bindings),
+      plain('}')
+    );
+  }
+
+  return lines;
+}
+
+/**
+ * Type-checks a `@switch` conditional binding as a real TypeScript `switch` statement, which validates
+ * each `@case` value against the type of the expression and narrows the expression inside each branch.
+ *
+ * The `@case`s sharing a branch are emitted as stacked `case` labels sharing the same body. A `@switch` ending with
+ * `@default never;` requires its cases to cover every value of the expression (see `typeCheckExhaustiveDefault`).
+ *
+ * @param node - The `@switch` conditional binding to type-check.
+ * @param context - Current type-check scope.
+ * @param bindings - Emits the type-check lines for the attributes, events and directives of a single branch.
+ * @returns The generated type-check lines.
+ */
+function typeCheckSwitchBinding(node: SwitchBindingNode, context: TypeCheckContext, bindings: (branch: ConditionalBindingBranchNode) => Line[]): Line[] {
+  const { branches, exhaustive, span } = node;
+  const lines = typeCheckSwitchHeader(node.expression, span, !!exhaustive, context);
+  for (let i = 0; i < branches.length; i++) {
+    const branch = branches[i];
+    const labels = branch.condition?.map((condition, index) => line('case ', mapped(condition, branch.conditionSpans[index]), ':')) ?? [plain('default:')];
+
+    lines.push(...indentLines([
+      ...labels,
+      ...typeCheckBranch(branch, context, bindings),
+      ...indentLines([plain('break;')])
+    ]));
+  }
+
+  if (exhaustive) {
+    lines.push(...indentLines(typeCheckExhaustiveDefault(span, exhaustive, context)));
+  }
+
+  lines.push(plain('}'));
+
+  return lines;
+}
+
+/**
+ * Returns the type of `$event` for a native event: the type the event map of the element declares for the event name,
+ * or, for an event the map doesn't declare, `Event`, or `any` on a custom element of another library, which may
+ * dispatch events of its own. The type is inferred instead of indexed, since TypeScript checks an indexed access even in
+ * the branch of a conditional type that excludes it.
+ *
+ * @param nativeEvents - What types the native events of the element the event is bound to.
+ * @param name - Name of the event.
+ * @returns The conditional type typing `$event`.
+ */
+function getNativeEventType({ eventMap, foreign }: NativeEvents, name: string): string {
+  return `(${eventMap} extends { '${name}': infer Event } ? Event : ${foreign ? 'any' : 'Event'})`;
+}
+
+/**
+ * Tells whether a tag name identifies a custom element, i.e. it starts with
+ * a lowercase letter and contains at least one dash.
+ *
+ * @param tagName - The tag name to classify.
+ * @returns `true` if the tag name is a custom element name, `false` otherwise.
+ */
+export function isCustomElementTag(tagName: string): boolean {
+  return /^[a-z][a-z0-9._\-]*-[a-z0-9._\-]*$/.test(tagName);
+}
+
+/**
+ * Writes the instantiation of a generic class with some type arguments.
+ *
+ * @param base - The name of the class.
+ * @param names - The type arguments, none for the class without them.
+ * @returns The type.
+ */
+function instantiate(base: string, names: readonly string[]): string {
+  return names.length ? `${base}<${names.join(', ')}>` : base;
+}
+
+/**
+ * Writes the type argument inferred for a type parameter by the probe of the class: `any` when nothing gives it a type.
+ *
+ * @param probedName - The name of the type of the inferred type arguments.
+ * @param probed - Whether the probe is written.
+ * @param index - The index of the type parameter.
+ * @returns The type argument.
+ */
+function typeArgumentOf(probedName: string, probed: boolean, index: number): string {
+  return probed ? `unknown extends ${probedName}[${index}] ? any : ${probedName}[${index}]` : 'any';
+}

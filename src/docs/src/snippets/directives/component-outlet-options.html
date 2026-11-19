@@ -1,0 +1,5 @@
+<!-- cardOptions is a field of the class, created once: public readonly cardOptions = { properties: [{ heading: () => this.heading() }] }; -->
+<div @@componentOutlet(component="{card()}" options="{cardOptions}") />
+
+<!-- With a target the card is appended there, and the div stays empty: public readonly withTarget = { target: this.sidebar }; -->
+<div @@componentOutlet(component="{card()}" options="{withTarget}") />

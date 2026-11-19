@@ -1,0 +1,24 @@
+@import { BindValueDirective } from './bind-value.directive.ts'
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+
+<label>
+  Attribute
+  <input type="text" value="{text()}" (input)="type($event)" />
+</label>
+<label>
+  Directive
+  <input @@exBindValue(value="{text()}") type="text" (input)="type($event)" />
+</label>
+<label>
+  Size
+  <select @@exBindValue(value="{size()}") (change)="choose($event)">
+    <option value="s">Small</option>
+    <option value="m">Medium</option>
+    <option value="l">Large</option>
+  </select>
+</label>
+<div class="controls">
+  <ex-button (click)="reset()">Reset</ex-button>
+  <ex-button (click)="shout()">Upper case</ex-button>
+  <span>Signals: "{ text() }", { size() }</span>
+</div>
