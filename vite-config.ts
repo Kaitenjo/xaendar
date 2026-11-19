@@ -182,7 +182,12 @@ function createGeneratePackageJsonPlugin(dirName: string, fileName: string, outD
         exports
       };
 
-      const { peerDependencies, dependencies } = pkg;
+      const { peerDependencies, dependencies, repository } = pkg;
+      // npm checks the repository against the one of the workflow publishing with provenance
+      if (repository) {
+        distPkg.repository = repository;
+      }
+
       if (peerDependencies && Object.keys(peerDependencies).length) {
         distPkg.peerDependencies = peerDependencies;
       }

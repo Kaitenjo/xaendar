@@ -4,6 +4,11 @@
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/common"
+  },
   "description": "A library containing common classes and utilities",
   "xaendar": {
     "target": "browser"

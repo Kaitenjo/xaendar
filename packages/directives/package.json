@@ -4,6 +4,11 @@
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/directives"
+  },
   "description": "The built-in directives of Xaendar: the animations of the elements entering and leaving, the rendering of HTML sanitized, and the classes and the styles of an expression",
   "xaendar": {
     "target": "browser",

@@ -4,6 +4,11 @@
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/build-tools"
+  },
   "description": "A library containing build tools for Xaendar framework",
   "exports": {
     ".": "./src/public-api.ts"

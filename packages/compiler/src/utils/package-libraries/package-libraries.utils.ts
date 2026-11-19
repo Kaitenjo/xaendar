@@ -350,9 +350,15 @@ function toPosixPath(path: string): string {
  * Normalizes a path to compare it with another one written in another way: with forward slashes and a lowercase drive
  * letter, as the paths of a file may differ in both on Windows.
  *
- * @param fileName - The path.
+ * N.B. The first character is lowered whatever it is: the paths compared are absolute, so it is the drive letter on
+ * Windows and `/` elsewhere, which stays as it is. Lowering only a drive letter would need a branch (or a callback of
+ * `replace`) that runs on Windows only, and the coverage, enforced at 100%, would fail on the other systems, the Linux
+ * runners of the CI included. Do not replace it with a test of the drive letter.
+ *
+ * @param fileName - The absolute path.
  * @returns The normalized path.
  */
 function normalizeFileName(fileName: string): string {
-  return toPosixPath(fileName).replace(/^[A-Z]:/, drive => drive.toLowerCase());
+  const path = toPosixPath(fileName);
+  return `${path.charAt(0).toLowerCase()}${path.slice(1)}`;
 }

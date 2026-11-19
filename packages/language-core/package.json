@@ -4,6 +4,11 @@
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/language-core"
+  },
   "description": "A library containing common functionalities for build tools and language service",
   "exports": {
     ".": "./src/public-api.ts"

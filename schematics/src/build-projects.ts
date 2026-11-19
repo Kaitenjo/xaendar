@@ -202,6 +202,8 @@ function writePackageJsonForNodeProject(projectName: string, pkg: XaendarPackage
     description: pkg.description ?? '',
     author: pkg.author ?? '',
     license: pkg.license ?? 'MIT',
+    // npm checks the repository against the one of the workflow publishing with provenance
+    repository: pkg.repository,
     type: 'module',
     ...bin,
     exports: {

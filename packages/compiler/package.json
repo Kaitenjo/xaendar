@@ -4,6 +4,11 @@
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/compiler"
+  },
   "description": "A library for transpiling Xaendar Templates into JavaScript code",
   "xaendar": {
     "target": "node"

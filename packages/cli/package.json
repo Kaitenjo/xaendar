@@ -4,6 +4,11 @@
   "description": "Cli tool for Xaendar framework",
   "author": "Kaitenjo",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/cli"
+  },
   "type": "module",
   "bin": {
     "xd": "./bin/xd.mjs"
