@@ -4,6 +4,11 @@
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/ssr"
+  },
   "description": "A library rendering Xaendar components to HTML with Declarative Shadow DOM on the server",
   "xaendar": {
     "target": "browser"

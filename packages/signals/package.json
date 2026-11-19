@@ -4,6 +4,11 @@
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/signals"
+  },
   "description": "A library implementing a reactive system for Xaendar framework. This signal implementation is based on the TC39 Stage1 proposal for reactive primitives.",
   "xaendar": {
     "target": "browser"

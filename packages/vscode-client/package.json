@@ -14,7 +14,8 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Kaitenjo/xaendar.git"
+    "url": "git+https://github.com/Kaitenjo/xaendar.git",
+    "directory": "packages/vscode-client"
   },
   "homepage": "https://github.com/Kaitenjo/xaendar#readme",
   "exports": {
