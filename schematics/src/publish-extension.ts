@@ -22,7 +22,8 @@ function publishExtension(): void {
 
   if (!process.env['VSCE_PAT']) {
     console.error('❌ VSCE_PAT is not set. Set it to your Marketplace Personal Access Token:');
-    console.error('   $env:VSCE_PAT = "<token>"');
+    console.error('   PowerShell: $env:VSCE_PAT = "<token>"   bash: export VSCE_PAT="<token>"');
+    console.error('   GitHub Actions: the VSCE_PAT secret of the repository');
     process.exit(1);
   }
 

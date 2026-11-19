@@ -1,4 +1,4 @@
-import { exec } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -7,18 +7,11 @@ import { resolve } from 'node:path';
  * and places them in `../output`.
  *
  * For each package, runs `npm pack --pack-destination ../../../output` in its
- * build directory. The `../output` folder is created automatically if it does
- * not exist.
+ * build directory, one after the other, through the default shell of the system
+ * (`cmd.exe` on Windows, `/bin/sh` elsewhere), so it runs on Windows as on the
+ * Linux runners of GitHub Actions. The `../output` folder is created anew.
  *
- * @returns {void}
- *
- * @remarks
- * - Uses the asynchronous {@link exec} without awaiting the result, so the
- *   success log (`✅`) is printed optimistically before the command completes.
- *   Errors thrown asynchronously by `exec` will therefore be unhandled.
- *   Consider switching to {@link execSync} or promisifying `exec` if you need
- *   reliable error handling.
- * - The shell is hardcoded to `cmd.exe`, making this script **Windows-only**.
+ * A package failing to pack fails the script (exit code `1`) after the others are packed.
  *
  * @example
  * // ../dist/@xaendar/ contains: core/, ui/
@@ -29,7 +22,6 @@ import { resolve } from 'node:path';
 function packAll(): void {
   const outputPath = '../output';
   const buildPackagesPath = '../dist/@xaendar';
-
 
   if (existsSync(outputPath)) {
     rmSync(outputPath, { recursive: true, force: true });
@@ -46,14 +38,12 @@ function packAll(): void {
     console.log(`\n▶ Pack: ${project}`);
 
     try {
-      exec('npm pack --pack-destination ../../../output', {
-        cwd: projectPath,
-        shell: 'C:\\Windows\\System32\\cmd.exe',
-      });
+      execSync('npm pack --pack-destination ../../../output', { cwd: projectPath, stdio: 'inherit' });
       console.log(`✅ ${project} completato`);
     } catch (err) {
-      const error = err as Error
+      const error = err as Error;
       console.error(`❌ ${project} fallito:`, error.message);
+      process.exitCode = 1;
     }
   }
 }

@@ -53,7 +53,8 @@ function schematic(label: string, script: string, args: string[] = []): DeploySt
 
 /**
  * Lists the steps of the release, in the order they run: every check comes before the first change (the version), so
- * a release failing a check changes nothing.
+ * a release failing a check changes nothing; the commit of the release comes after the install updating the lockfile,
+ * and the tag after the commit, so it names the commit holding its version.
  *
  * @param bump - The part of the version to increase.
  * @returns The steps.
@@ -70,8 +71,9 @@ function listSteps(bump: string): DeployStep[] {
     schematic('Pack the packages', 'pack-projects'),
     schematic('Publish the packages', 'publish'),
     schematic('Publish the VS Code extension', 'publish-extension'),
-    schematic('Tag the release', 'tag-release'),
-    { label: 'Install the published versions', command: 'npm', args: ['i'], cwd: REPOSITORY_ROOT }
+    { label: 'Install the published versions', command: 'npm', args: ['i'], cwd: REPOSITORY_ROOT },
+    schematic('Commit and push the release', 'commit-release'),
+    schematic('Tag the release', 'tag-release')
   ];
 }
 

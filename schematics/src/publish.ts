@@ -16,15 +16,32 @@ const DIST_FOLDER = '../dist/@xaendar';
 const EXCLUDED_PROJECTS = ['vscode-client'];
 
 /**
+ * Tells whether the packages are published by a GitHub Actions workflow through trusted publishing: npm exchanges the
+ * OIDC token of the job (`id-token: write`, which sets `ACTIONS_ID_TOKEN_REQUEST_URL`) for a short-lived token at
+ * `npm publish`, so there is no login to check and no npm token at all.
+ *
+ * @returns `true` when the job can request an OIDC token.
+ */
+function isTrustedPublishing(): boolean {
+  return Boolean(process.env['GITHUB_ACTIONS'] && process.env['ACTIONS_ID_TOKEN_REQUEST_URL']);
+}
+
+/**
  * Verifies that the current environment is authenticated with npm.
  *
- * Runs `npm whoami` to check for a valid session or token.
+ * Runs `npm whoami` to check for a valid session or token; a workflow publishing through trusted publishing has none
+ * to check (see {@link isTrustedPublishing}).
  * Exits the process with code `1` if authentication fails.
  *
  * @example
  * checkAuth(); // logs "Logged in as: yourname" or exits with an error
  */
 function checkAuth(): void {
+  if (isTrustedPublishing()) {
+    console.log('✅ Trusted publishing: npm authenticates the workflow through OIDC');
+    return;
+  }
+
   try {
     const user = execSync('npm whoami', { stdio: 'pipe' }).toString().trim();
     console.log(`✅ Logged in as: ${user}`);

@@ -47,8 +47,8 @@ Driven from `schematics/` (its own TS project, `npm run build:schematics`): `pac
 npm run deploy              # build:schematics, then schematics/src/deploy.ts runs each step in its own process, stopping
                             # at the first failure: check extension token → check dependencies → typecheck specs →
                             # tests → typecheck:projects → update version → build:projects → pack → publish → publish
-                            # extension → tag (pushes xaendar--v<version>) → npm i. `npm run deploy -- --bump=minor`
-                            # (patch|minor|major, default patch)
+                            # extension → npm i → commit and push "Release <version>" → tag xaendar--v<version> on that
+                            # commit and push it. `npm run deploy -- --bump=minor` (patch|minor|major, default patch)
 npm run build:projects      # each package into dist/@xaendar/<name> by "xaendar.target": Vite (browser), tsup (node),
                             # `xd build` for a "xaendar.library" (@xaendar/directives, with its manifest)
 npm run typecheck:projects  # each package with its tsconfig.typecheck.json
@@ -56,6 +56,8 @@ npm run check:dependencies  # depcheck across packages
 npm run build:claude-plugin # bundles packages/language-server into plugins/xaendar/server/server.cjs
 npm run release:claude-plugin  # build:claude-plugin, validate, stop if server.cjs changed, push the plugin tag
 ```
+
+Releases run on GitHub Actions: `.github/workflows/release.yml`, started by hand from the Actions tab with the bump, runs `npm run deploy` on `main` in the `release` environment; npm authenticates it through trusted publishing (OIDC, `id-token: write`, no npm token: `publish.ts` skips `npm whoami` there), the Marketplace through the `VSCE_PAT` secret of the environment, and the commit and tag are made in the owner's name. Each package's `package.json` has a `repository` (with its `directory`) the builds copy into the published one, which npm checks against the workflow. `.github/workflows/ci.yml` runs lint, the type-checks, the tests with coverage and the docs specs on every push to `main` and pull request, on Linux: the schematics and the tests must work there as on Windows (no `cmd.exe`, no `node:path/win32`, no branch covered on one system only).
 
 A browser package's `vite.config.ts` calls `getViteConfig(name, dirName, options)` of the root `vite-config.ts`: ESM build of `src/public-api.ts` plus `secondaryEntryPoints` (core's `signals`/`testing`, ssr's `dom`), `.d.ts` bundled by `vite-plugin-dts` with cross-package imports rewritten to `@xaendar/*`, a trimmed `package.json` and the `README.md`.
 
