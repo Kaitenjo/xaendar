@@ -31,13 +31,15 @@ const REQUIRED_INPUTS_BINDER = 'a group without condition of createComponent';
  * Creates a component and appends it to the target, binding its inputs and its events, applying directives to it and appending the
  * content to it, as a template does for the tag of the component: the inputs are set before the element is mounted, so that its `onInit`
  * reads them, the directives are applied and the content appended once it is. Implements `createComponent` of `CustomElement` and of
- * `CustomDirective`.
+ * `CustomDirective`, and the standalone `createComponent`.
  *
  * The context of the component is a child of the context of its owner, so it is cleared along with it; `destroy` clears it earlier,
  * removing it from the context the owner has at that moment, which is not the one it had at the creation when the owner was not
- * connected yet. The creation is not tracked by an effect it is called in.
+ * connected yet. Without owner (the standalone `createComponent`) nothing holds the context: the component lives until `destroy`.
+ * The creation is not tracked by an effect it is called in.
  *
- * @param owner - Returns the current context of the component or of the directive creating the component.
+ * @param owner - Returns the current context of the component or of the directive creating the component, `null` for a component
+ *   created outside of them, bound to no lifecycle.
  * @param component - The class of the component, decorated with `@WebComponent`.
  * @param options - The target the component is appended to, the groups of its inputs and of its events, the directives applied to it and its content.
  * @returns The element of the component, along with the function destroying it.
@@ -48,7 +50,7 @@ const REQUIRED_INPUTS_BINDER = 'a group without condition of createComponent';
 export function _createComponent<
   Component extends CustomElement, 
   Directives extends readonly CustomDirective[]
->(owner: NoArgsFunction<_Context>, component: Constructor<Component>, options: CreateComponentOptions<Component, Directives>): ComponentRef<Component> {
+>(owner: NoArgsFunction<_Context> | null, component: Constructor<Component>, options: CreateComponentOptions<Component, Directives>): ComponentRef<Component> {
   const selector = getSelector(component);
   const bindings = collectBindings(component, options.properties, options.events);
   const entries = options.directives;
@@ -78,9 +80,12 @@ export function _createComponent<
 
   // The root of the component's own bindings: it is never a scope of identifiers, only the owner of their cleanup
   const context = _scope(null, ELEMENT_LAYOUT);
-  // Held by the owner before the render, so that what a render failing halfway leaves is cleared along with the owner
+  // Held by the owner, when there is one, before the render, so that what a render failing halfway leaves is cleared along with the owner
   const holder: ScopeHolder = { scope: context };
-  addCleanup(owner(), holder);
+  if (owner) {
+    addCleanup(owner(), holder);
+  }
+
   const { attributes, events, conditionalBindings, directives } = bindings;
   const element = untracked(() => {
     _renderElement(options.target, context, null, { tagName: selector, attributes, events, conditionalBindings, directives, slot: HEADER });
@@ -97,7 +102,10 @@ export function _createComponent<
   return {
     element,
     destroy: () => {
-      removeCleanup(owner(), holder);
+      if (owner) {
+        removeCleanup(owner(), holder);
+      }
+
       clear(context);
     }
   };

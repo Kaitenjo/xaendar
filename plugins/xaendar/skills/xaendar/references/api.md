@@ -280,6 +280,14 @@ onLeave(element: Element, handler: (element: Element) => Promise<void> | void): 
 
 Registers the function called when an `@if`, `@switch`, `@for` or structural directive is about to remove the element: the element stays in the DOM until the promise settles (at most 5 s), then it is removed; no promise, a throw or a rejection remove it at once (the error reported). Call it in the `onInit` of a directive, on `this.element`. Everything else of the block is disposed at once, queries stop finding the element at once, and the block goes on without it (new branch at its place, `@for` rows placed ignoring it, a returning key gets a new row). Only elements at the top of the removed block wait; a destroyed component, or a block removed with its parent, removes them at once without calling the function. A second call replaces the first. No-op on the server. The built-in `@@animation(leave=…)` uses it.
 
+### createComponent (function)
+
+```ts
+createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<Component, Directives>): ComponentRef<Component>
+```
+
+Creates a component outside of any component or directive (the root of an application in `main.ts`, a component mounted from a service), with the same options as the method but `target` required. The component belongs to nothing: it lives until `ref.destroy()`, which removes it and disposes the effects binding its inputs. Inside a component or a directive use `this.createComponent`, which destroys it along with them. On the server it constructs the component without rendering it.
+
 ## `@xaendar/directives`
 
 The built-in directives, imported by the templates (`@import { AnimationDirective } from '@xaendar/directives'`), and the sanitizer of HTML. `@xaendar/core` is a peer, `@xaendar/common` a dependency.

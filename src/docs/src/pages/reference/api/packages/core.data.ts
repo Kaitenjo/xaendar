@@ -12,7 +12,7 @@ import { CONSTRUCTOR_ACCESS, HOST_DIRECTIVE } from '../../../directives/custom/c
 import { DIRECTIVE_REGISTRATION } from '../../../directives/overview/overview.snippets';
 import { HYDRATE_COMPONENT } from '../../../tools/ssr/progressive-hydration/progressive-hydration.snippets';
 import { TRANSFER_STATE_COMPONENT, TRANSFER_STATE_ENTRY } from '../../../tools/ssr/transfer-state/transfer-state.snippets';
-import { CANCELABLE_EVENT, CREATE_COMPONENT_DIRECTIVES, CREATE_COMPONENT_GROUPS, CUSTOM_DIRECTIVE, DIRECTIVE_CREATE_COMPONENT, DIRECTIVE_KINDS, HOST_BINDINGS_DIRECTIVE, HOST_DIRECTIVE_MEMBERS, HOST_LISTENER, HOST_LISTENER_KEYS, HOST_LISTENER_TARGETS, HOST_ATTRIBUTE, HOST_ATTRIBUTE_VALUES, MODEL_CREATE_COMPONENT, MODEL_DIRECTIVE, MODEL_HOST_DIRECTIVE, OUTPUT_DISPATCH, QUERY_CONTENT, QUERY_CONTENT_OPTIONS, QUERY_READ, QUERY_TIMING, STRUCTURAL_DIRECTIVE } from './core.snippets';
+import { CANCELABLE_EVENT, CREATE_COMPONENT_DIRECTIVES, CREATE_COMPONENT_GROUPS, CUSTOM_DIRECTIVE, DIRECTIVE_CREATE_COMPONENT, DIRECTIVE_KINDS, HOST_ATTRIBUTE, HOST_ATTRIBUTE_VALUES, HOST_BINDINGS_DIRECTIVE, HOST_DIRECTIVE_MEMBERS, HOST_LISTENER, HOST_LISTENER_KEYS, HOST_LISTENER_TARGETS, MODEL_CREATE_COMPONENT, MODEL_DIRECTIVE, MODEL_HOST_DIRECTIVE, OUTPUT_DISPATCH, QUERY_CONTENT, QUERY_CONTENT_OPTIONS, QUERY_READ, QUERY_TIMING, STANDALONE_CREATE_COMPONENT, STRUCTURAL_DIRECTIVE } from './core.snippets';
 
 /**
  * The symbols of `@xaendar/core`.
@@ -758,6 +758,27 @@ export const CORE_API: ApiPackage = {
         { key: 'directive', snippets: [LEAVE_HANDLER_DIRECTIVE] }
       ],
       guides: ['directives/animations', 'directives/custom']
+    },
+    {
+      name: 'createComponent',
+      kind: 'function',
+      signature: 'function createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options: CreateComponentOptions<Component, Directives>): ComponentRef<Component>',
+      members: [
+        {
+          name: 'component',
+          group: 'parameters',
+          signature: 'component: Constructor<Component>'
+        },
+        {
+          name: 'options',
+          group: 'parameters',
+          signature: 'options: CreateComponentOptions<Component, Directives>'
+        }
+      ],
+      usage: [
+        { key: 'root', snippets: [STANDALONE_CREATE_COMPONENT] }
+      ],
+      guides: ['components/dynamic-creation']
     }
   ]
 };

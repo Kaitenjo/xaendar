@@ -5,6 +5,7 @@ export { _hasAttributeState, _mergeAttributes } from './attribute-state/attribut
 export type * from '../types/styling/render-styling.type';
 export type * from '../types/render-element-binding.type';
 export * from './component-runtime/component-runtime.util';
+export { createComponent } from './component-creation/component-creation.util';
 export type * from '../types/component-runtime.type';
 export { _declare, _read, _scope, _set } from './context/context.util';
 export type * from '../types/context.type';

@@ -434,7 +434,7 @@
   },
   "ComponentRef": {
     "summary": "A component created by <code>createComponent</code>: its element, and the function destroying it ahead of the component or the directive that created it.",
-    "description": "<p>Returned by <code>createComponent</code> of <a href=\"#/en/reference/api/core/CustomElement\"><code>CustomElement</code></a> and of <a href=\"#/en/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>. The component created is destroyed along with the component, or the directive, that created it: keep the reference to destroy it earlier. Removing the element with the DOM APIs disconnects it, but leaves its bindings alive.</p>",
+    "description": "<p>Returned by <code>createComponent</code> of <a href=\"#/en/reference/api/core/CustomElement\"><code>CustomElement</code></a> and of <a href=\"#/en/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>, and by the standalone <a href=\"#/en/reference/api/core/createComponent\"><code>createComponent</code></a>. The component created is destroyed along with the component, or the directive, that created it: keep the reference to destroy it earlier. One created by the standalone function belongs to nothing, and lives until <code>destroy</code>. Removing the element with the DOM APIs disconnects it, but leaves its bindings alive.</p>",
     "members": {
       "element": "<p>The instance of the component, already in the DOM: its public members, queries and outputs included, are available at once.</p>",
       "destroy": "<p>Removes the element from the target, unbinds its inputs and its events and destroys its directives, ahead of the component or the directive that created it. Calling it again, or once its creator is destroyed, does nothing.</p>"
@@ -472,6 +472,20 @@
       "directive": {
         "title": "In a directive",
         "body": "<p>The directive registers the exit of its element in <code>onInit</code>: the height collapses, so the elements below move up smoothly, then the element is removed.</p>"
+      }
+    }
+  },
+  "createComponent": {
+    "summary": "Creates a component outside of any component or directive and appends it to the target: the root of an application, or a component mounted from a service or a plain module.",
+    "description": "<p>Creates the component and appends it to <code>target</code>, binding its inputs and its events, applying directives to it and appending its content, as a tag of the template does: the options are described by <a href=\"#/en/reference/api/core/CreateComponentOptions\"><code>CreateComponentOptions</code></a>, with <code>target</code> required. It returns a <a href=\"#/en/reference/api/core/ComponentRef\"><code>ComponentRef</code></a>: the element, already in the DOM, and the function destroying it.</p><p>Unlike <code>createComponent</code> of <a href=\"#/en/reference/api/core/CustomElement\"><code>CustomElement</code></a> and of <a href=\"#/en/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>, the component belongs to nothing: it lives until <code>destroy</code>, which removes it and disposes the effects binding its inputs. Inside a component or a directive use their method, which destroys the component along with them. On the server it constructs the component without rendering it, as the methods do. The creation is not tracked by an effect it is called in.</p>",
+    "members": {
+      "component": "<p>The class of the component, decorated with <code>@WebComponent</code>.</p>",
+      "options": "<p>The target the component is appended to, the groups of its inputs and of its events, the directives applied to it and its content.</p>"
+    },
+    "usage": {
+      "root": {
+        "title": "Mounting the root of an application",
+        "body": "<p>The entry of the application creates its root component, binding an input to a signal of the module and listening to an event; <code>destroy</code> unmounts it.</p>"
       }
     }
   }

@@ -434,7 +434,7 @@
   },
   "ComponentRef": {
     "summary": "Un componente creato da <code>createComponent</code>: il suo elemento, e la funzione che lo distrugge prima del componente o della direttiva che l’ha creato.",
-    "description": "<p>Restituito da <code>createComponent</code> di <a href=\"#/it/reference/api/core/CustomElement\"><code>CustomElement</code></a> e di <a href=\"#/it/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>. Il componente creato viene distrutto insieme al componente, o alla direttiva, che l’ha creato: conserva il riferimento per distruggerlo prima. Rimuovere l’elemento con le API del DOM lo disconnette, ma lascia vivi i suoi binding.</p>",
+    "description": "<p>Restituito da <code>createComponent</code> di <a href=\"#/it/reference/api/core/CustomElement\"><code>CustomElement</code></a> e di <a href=\"#/it/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>, e dalla funzione <a href=\"#/it/reference/api/core/createComponent\"><code>createComponent</code></a>. Il componente creato viene distrutto insieme al componente, o alla direttiva, che l’ha creato: conserva il riferimento per distruggerlo prima. Uno creato dalla funzione non appartiene a nessuno, e vive fino a <code>destroy</code>. Rimuovere l’elemento con le API del DOM lo disconnette, ma lascia vivi i suoi binding.</p>",
     "members": {
       "element": "<p>L’istanza del componente, già nel DOM: i suoi membri pubblici, query e output compresi, sono subito disponibili.</p>",
       "destroy": "<p>Rimuove l’elemento dal target, scollega i suoi input e i suoi eventi e distrugge le sue direttive, prima del componente o della direttiva che l’ha creato. Chiamarla di nuovo, o dopo che chi l’ha creato è stato distrutto, non fa nulla.</p>"
@@ -472,6 +472,20 @@
       "directive": {
         "title": "In una direttiva",
         "body": "<p>La direttiva registra l’uscita del suo elemento in <code>onInit</code>: l’altezza si riduce a zero, così gli elementi sotto risalgono senza scatti, poi l’elemento viene rimosso.</p>"
+      }
+    }
+  },
+  "createComponent": {
+    "summary": "Crea un componente fuori da qualsiasi componente o direttiva e lo aggiunge al target: la radice di un’applicazione, o un componente montato da un servizio o da un modulo qualunque.",
+    "description": "<p>Crea il componente e lo aggiunge a <code>target</code>, legando i suoi input e i suoi eventi, applicandogli direttive e aggiungendo il suo contenuto, come fa un tag del template: le opzioni sono descritte da <a href=\"#/it/reference/api/core/CreateComponentOptions\"><code>CreateComponentOptions</code></a>, con <code>target</code> obbligatorio. Restituisce un <a href=\"#/it/reference/api/core/ComponentRef\"><code>ComponentRef</code></a>: l’elemento, già nel DOM, e la funzione che lo distrugge.</p><p>A differenza di <code>createComponent</code> di <a href=\"#/it/reference/api/core/CustomElement\"><code>CustomElement</code></a> e di <a href=\"#/it/reference/api/core/CustomDirective\"><code>CustomDirective</code></a>, il componente non appartiene a nessuno: vive fino a <code>destroy</code>, che lo rimuove e ferma gli effect che legano i suoi input. Dentro un componente o una direttiva usa il loro metodo, che distrugge il componente insieme a loro. Sul server costruisce il componente senza renderizzarlo, come fanno i metodi. La creazione non viene tracciata dall’effect in cui è chiamata.</p>",
+    "members": {
+      "component": "<p>La classe del componente, decorata con <code>@WebComponent</code>.</p>",
+      "options": "<p>Il target a cui il componente viene aggiunto, i gruppi dei suoi input e dei suoi eventi, le direttive applicate e il suo contenuto.</p>"
+    },
+    "usage": {
+      "root": {
+        "title": "Montare la radice di un’applicazione",
+        "body": "<p>L’entry dell’applicazione crea il suo componente radice, legando un input a un signal del modulo e ascoltando un evento; <code>destroy</code> lo smonta.</p>"
       }
     }
   }

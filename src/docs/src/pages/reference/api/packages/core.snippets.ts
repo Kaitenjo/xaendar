@@ -732,3 +732,26 @@ export class CanEditDirective extends StructuralDirective {
   }
 }`
 };
+
+/**
+ * The snippet `main.ts`, shown by the API reference of core for the standalone createComponent.
+ */
+export const STANDALONE_CREATE_COMPONENT: SourceFile = {
+  name: 'main.ts',
+  lang: 'ts',
+  code: `import { createComponent } from '@xaendar/core';
+import { signal } from '@xaendar/core/signals';
+import { AppComponent } from './app/app.xd.component';
+
+const theme = signal<'light' | 'dark'>('light');
+
+// Mounted outside of any component: it lives until destroy()
+const app = createComponent(AppComponent, {
+  target: document.body,
+  properties: [{ theme: () => theme() }],
+  events: [{ themeToggled: () => theme.update(value => value === 'light' ? 'dark' : 'light') }]
+});
+
+// Later, to unmount it
+app.destroy();`
+};
