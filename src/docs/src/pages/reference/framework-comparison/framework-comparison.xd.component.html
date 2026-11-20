@@ -1,5 +1,4 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
-@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { translate as t } from '../../../core/i18n/i18n.utils.ts'
 @import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
@@ -31,12 +30,22 @@
   <li @@htmlTranslation(key="pages.reference.frameworkComparison.telemetry.li3") />
   <li @@htmlTranslation(key="pages.reference.frameworkComparison.telemetry.li4") />
 </ul>
-<docs-callout @@htmlTranslation(key="pages.reference.frameworkComparison.telemetry.callout1.body") kind="warning"
-  heading="{translations().pages.reference.frameworkComparison.telemetry.callout1.heading}" />
 
 <h2>
   { t(translations(), 'pages.reference.frameworkComparison.pages.title') }
 </h2>
+<aside class="comparison-warning" role="note">
+  <p class="comparison-warning-title">
+    { t(translations(), 'pages.reference.frameworkComparison.pages.warning.title') }
+  </p>
+  <p @@htmlTranslation(key="pages.reference.frameworkComparison.pages.warning.p1") />
+  <ul>
+    <li @@htmlTranslation(key="pages.reference.frameworkComparison.pages.warning.li1") />
+    <li @@htmlTranslation(key="pages.reference.frameworkComparison.pages.warning.li2") />
+    <li @@htmlTranslation(key="pages.reference.frameworkComparison.pages.warning.li3") />
+  </ul>
+  <p @@htmlTranslation(key="pages.reference.frameworkComparison.pages.warning.p2") class="comparison-warning-action" />
+</aside>
 @for (frame of frames; track frame.src) {
   <figure class="comparison">
     <figcaption class="comparison-head">

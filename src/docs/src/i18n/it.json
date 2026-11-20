@@ -1968,14 +1968,18 @@
           "li1": "<strong>Startup</strong>: il tempo dall’inizio della navigazione alle prime righe della tabella, il JavaScript scaricato e il numero di elementi della pagina.",
           "li2": "<strong>Interactions</strong>: ogni clic e ogni input, con due tempi. <em>Update</em> va dall’evento al frame di animazione successivo, quando il framework ha applicato le sue modifiche al DOM; <em>paint</em> arriva al frame dopo, quindi comprende stili, layout e disegno.",
           "li3": "<strong>Long frames</strong>: i frame di animazione oltre i 50 ms, con lo script che in ognuno ha impiegato più tempo (Long Animation Frames API, Chromium 123 e successivi).",
-          "li4": "<strong>Memory</strong>: l’heap JavaScript usato e allocato, campionato nel tempo (<code>performance.memory</code>, solo Chromium). La memoria dell’intera pagina, DOM compreso, si misura su richiesta in una pagina aperta nella sua scheda, l’unico posto in cui è cross-origin isolated.",
-          "callout1": {
-            "heading": "Confrontale nelle loro schede",
-            "body": "I frame di questa pagina condividono un solo thread e un solo heap JavaScript tra loro e con la documentazione: un aggiornamento in un frame rallenta gli altri, e l’heap di ogni pannello li conta tutti. Apri ogni pagina con <strong>Apri in una scheda</strong> per leggere numeri che appartengono solo a lei."
-          }
+          "li4": "<strong>Memory</strong>: l’heap JavaScript usato e allocato, campionato nel tempo (<code>performance.memory</code>, solo Chromium). La memoria dell’intera pagina, DOM compreso, si misura su richiesta in una pagina aperta nella sua scheda, l’unico posto in cui è cross-origin isolated."
         },
         "pages": {
-          "title": "Le tre pagine"
+          "title": "Le tre pagine",
+          "warning": {
+            "title": "Non confrontare i numeri di questi tre frame",
+            "p1": "Le tre pagine girano dentro questa, quindi ne condividono il thread e l’heap JavaScript: i numeri che i loro pannelli mostrano qui non sono solo loro, e <strong>peggiorano frame dopo frame, nell’ordine in cui le pagine sono mostrate</strong>. Angular viene per primo, React per secondo e Xaendar per ultimo, quindi Xaendar è la pagina più penalizzata:",
+            "li1": "<strong>Startup</strong>: ogni frame parte mentre quelli prima stanno ancora caricando e disegnando le loro 1.000 righe, e aspetta il thread principale che occupano. Più un frame viene dopo, più il suo avvio sembra lento.",
+            "li2": "<strong>Memoria</strong>: c’è un solo heap JavaScript per la documentazione e i tre frame, e ogni pannello lo riporta tutto. Cresce frame dopo frame, quindi l’ultima pagina sembra la più pesante anche quando occupa meno delle altre.",
+            "li3": "<strong>Interazioni</strong>: un aggiornamento in un frame rallenta gli altri mentre è in corso.",
+            "p2": "Per confrontare i tre framework, apri ogni pagina con <strong>Apri in una scheda</strong>, una alla volta: lì ogni numero appartiene solo a quella pagina."
+          }
         }
       },
       "templateSyntax": {
