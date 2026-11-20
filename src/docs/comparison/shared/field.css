@@ -1,0 +1,17 @@
+/* The text, select and date components of the three frameworks: a label above a control */
+:host { display: contents; }
+.ui-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ui-field__label { color: #3d4459; font-size: 12px; font-weight: 600; }
+.ui-field__control {
+  box-sizing: border-box;
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  background: #fff;
+  border: 1px solid #d5d9e5;
+  border-radius: 8px;
+  color: #1f2433;
+  font: inherit;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+.ui-field__control:focus { outline: none; border-color: #3b63ff; box-shadow: 0 0 0 3px rgb(59 99 255 / 20%); }

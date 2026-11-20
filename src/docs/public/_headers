@@ -1,0 +1,7 @@
+# Headers of the static assets on Cloudflare Workers.
+# The pages of the framework comparison are cross-origin isolated when opened in their own tab, so that their
+# telemetry panel can measure the memory of the whole page (performance.measureUserAgentSpecificMemory).
+# Inside the frames of the documentation the headers change nothing: the documentation is not isolated.
+/comparison/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp

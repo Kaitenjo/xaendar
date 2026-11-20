@@ -142,6 +142,9 @@ vite.config.ts.timestamp-*
 # Their sources are in src/docs/demos; `npm run build:demos` produces this folder.
 src/docs/public/demos/
 
+# Build output of the pages of the framework comparison, from src/docs/comparison (`npm run build:comparison`).
+src/docs/public/comparison/
+
 # Angular cache of the demo application
 .angular/
 

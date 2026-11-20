@@ -1,0 +1,8 @@
+<label class="ui-field">
+  <span class="ui-field__label">{ label() }</span>
+  <select class="ui-field__control" (change)="write($event.target as HTMLSelectElement)">
+    @for (option of options(); track option.value) {
+      <option value="{option.value}">{ option.label }</option>
+    }
+  </select>
+</label>
