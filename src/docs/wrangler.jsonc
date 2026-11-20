@@ -1,5 +1,6 @@
 // The documentation site on Cloudflare Workers, as static assets only: `npm run prerender` writes the page already
-// rendered on the server into dist/client, which the Worker serves as it is.
+// rendered on the server into dist/client, which the Worker serves as it is. Deployed only by the job `docs` of
+// .github/workflows/release.yml, after a release: the Worker has no Git integration.
 {
   "name": "xaendar-docs",
   "compatibility_date": "2026-11-04",
