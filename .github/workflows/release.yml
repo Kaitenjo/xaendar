@@ -8,10 +8,8 @@
 # - VS Code Marketplace: a Trusted Publishing policy of the publisher (marketplace.visualstudio.com/manage → publisher →
 #   Trusted Publishing → Create: owner Kaitenjo, repository xaendar, workflow release.yml, environment release).
 #   `vsce publish --oidc` then authenticates this workflow through OIDC too: no Personal Access Token.
-# - Cloudflare: the documentation is deployed by the job `docs` below, after the release, and only then: the Worker
-#   xaendar-docs has no Git integration (Workers & Pages → xaendar-docs → Settings → Build: disconnected), so neither
-#   a push nor a pull request builds it. The environment release holds two secrets: CLOUDFLARE_API_TOKEN, a token
-#   made from the template "Edit Cloudflare Workers", and CLOUDFLARE_ACCOUNT_ID.
+# - Cloudflare: the documentation is deployed by docs.yml, which the job `docs` below runs after the release (see the
+#   setup there).
 name: Release
 
 on:
@@ -77,50 +75,9 @@ jobs:
         env:
           BUMP: ${{ inputs.bump }}
 
-  # The documentation of the version just released, deployed to Cloudflare only after the packages are published
+  # The documentation of the version just released, deployed only after the packages are published (docs.yml)
   docs:
-    name: Deploy the documentation
+    name: Documentation
     needs: release
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    environment: release
-    permissions:
-      contents: read
-    steps:
-      # main as the release left it, with its commit "Release <version>", not the commit the workflow started from
-      - uses: actions/checkout@v7
-        with:
-          ref: main
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 26
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            src/docs/package-lock.json
-
-      - name: Install
-        run: |
-          npm ci --ignore-scripts
-          npm ci --ignore-scripts --prefix src/docs
-
-      # The applications shown in frames are not committed: without them the frames of the site stay empty
-      - name: Build the demos and the framework comparison
-        working-directory: src/docs
-        run: |
-          npm run build:demos
-          npm run build:comparison
-
-      # dist/client, the static assets the Worker serves (wrangler.jsonc)
-      - name: Prerender
-        working-directory: src/docs
-        run: npm run prerender
-
-      - name: Deploy
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: src/docs
-          command: deploy
+    uses: ./.github/workflows/docs.yml
+    secrets: inherit
