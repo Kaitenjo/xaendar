@@ -58,9 +58,11 @@ jobs:
         working-directory: src/docs
         run: npm run prerender
 
+      # Wrangler 4: the action installs Wrangler 3 by default, which refuses a Worker of static assets only (no `main`)
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
         with:
+          wranglerVersion: '4'
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: src/docs
