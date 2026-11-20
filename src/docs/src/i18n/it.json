@@ -163,6 +163,7 @@
       "reference/api": "Riferimenti API",
       "reference/template-syntax": "Prontuario della sintassi",
       "reference/errors": "Enciclopedia degli errori",
+      "reference/framework-comparison": "Confronto tra framework",
       "reference/coming-from-angular": "Arrivando da Angular"
     }
   },
@@ -1948,6 +1949,33 @@
         "callout1": {
           "heading": "Leggere un messaggio del compilatore",
           "body": "Gli errori dei template iniziano con <code>Xaendar: Failed to compile template</code> e il percorso del template, seguiti dalla fase tra parentesi quadre, dalla riga e dalla colonna, e dall’estratto coinvolto. Gli errori del type checker senza fase sono messaggi di TypeScript, controllati rispetto alla classe del componente. Posizioni e percorsi sono omessi qui sotto."
+        }
+      },
+      "frameworkComparison": {
+        "eyebrow": "Riferimento",
+        "title": "Confronto tra framework",
+        "lead": "La stessa pagina scritta tre volte, con Angular, React e Xaendar, e mostrata qui sotto in tre frame: una tabella di 1.000 dipendenti e 8 colonne, con dei filtri sopra. Ogni pagina ha un pannello di telemetria che mostra, mentre la usi, quanto ci mette il framework ad avviarsi e ad aggiornare, i frame lunghi che bloccano la pagina e la memoria che occupa.",
+        "samePage": {
+          "title": "La stessa pagina",
+          "p1": "Le tre pagine condividono i dati, gli stili e il layout: cambia solo il codice che le disegna. Sono suddivise nello stesso modo in ogni framework:",
+          "li1": "quattro piccoli componenti, un pulsante e tre campi (testo, data, select), ognuno attorno a un controllo nativo con la sua etichetta;",
+          "li2": "una pagina che tiene i filtri in modifica e quelli applicati: <strong>Apply filters</strong> copia i primi nei secondi, <strong>Reset</strong> li svuota entrambi, e la tabella mostra le righe dei filtri applicati;",
+          "li3": "le stesse 1.000 righe, generate dallo stesso seed, e la stessa funzione di filtro."
+        },
+        "telemetry": {
+          "title": "Il pannello di telemetria",
+          "p1": "Il pannello galleggia sopra la pagina: trascinalo dall’intestazione, chiudilo, e scegli nelle impostazioni (<strong>⚙</strong>) le sezioni mostrate, ogni quanto campionare la memoria e quante voci elencare. Il browser ricorda le impostazioni.",
+          "li1": "<strong>Startup</strong>: il tempo dall’inizio della navigazione alle prime righe della tabella, il JavaScript scaricato e il numero di elementi della pagina.",
+          "li2": "<strong>Interactions</strong>: ogni clic e ogni input, con due tempi. <em>Update</em> va dall’evento al frame di animazione successivo, quando il framework ha applicato le sue modifiche al DOM; <em>paint</em> arriva al frame dopo, quindi comprende stili, layout e disegno.",
+          "li3": "<strong>Long frames</strong>: i frame di animazione oltre i 50 ms, con lo script che in ognuno ha impiegato più tempo (Long Animation Frames API, Chromium 123 e successivi).",
+          "li4": "<strong>Memory</strong>: l’heap JavaScript usato e allocato, campionato nel tempo (<code>performance.memory</code>, solo Chromium). La memoria dell’intera pagina, DOM compreso, si misura su richiesta in una pagina aperta nella sua scheda, l’unico posto in cui è cross-origin isolated.",
+          "callout1": {
+            "heading": "Confrontale nelle loro schede",
+            "body": "I frame di questa pagina condividono un solo thread e un solo heap JavaScript tra loro e con la documentazione: un aggiornamento in un frame rallenta gli altri, e l’heap di ogni pannello li conta tutti. Apri ogni pagina con <strong>Apri in una scheda</strong> per leggere numeri che appartengono solo a lei."
+          }
+        },
+        "pages": {
+          "title": "Le tre pagine"
         }
       },
       "templateSyntax": {

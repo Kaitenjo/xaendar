@@ -1,0 +1,50 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.reference.frameworkComparison.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.reference.frameworkComparison.title') }
+</h1>
+<p @@htmlTranslation(key="pages.reference.frameworkComparison.lead") class="lead" />
+
+<h2>
+  { t(translations(), 'pages.reference.frameworkComparison.samePage.title') }
+</h2>
+<p @@htmlTranslation(key="pages.reference.frameworkComparison.samePage.p1") />
+<ul>
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.samePage.li1") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.samePage.li2") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.samePage.li3") />
+</ul>
+
+<h2>
+  { t(translations(), 'pages.reference.frameworkComparison.telemetry.title') }
+</h2>
+<p @@htmlTranslation(key="pages.reference.frameworkComparison.telemetry.p1") />
+<ul>
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.telemetry.li1") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.telemetry.li2") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.telemetry.li3") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.telemetry.li4") />
+</ul>
+<docs-callout @@htmlTranslation(key="pages.reference.frameworkComparison.telemetry.callout1.body") kind="warning"
+  heading="{translations().pages.reference.frameworkComparison.telemetry.callout1.heading}" />
+
+<h2>
+  { t(translations(), 'pages.reference.frameworkComparison.pages.title') }
+</h2>
+@for (frame of frames; track frame.src) {
+  <figure class="comparison">
+    <figcaption class="comparison-head">
+      <span class="comparison-name">{ frame.label }</span>
+      <a class="comparison-open" href="{frame.src}" target="_blank" rel="noreferrer">
+        { translations().example.openInTab }
+      </a>
+    </figcaption>
+    <iframe class="comparison-frame" src="{frame.src}" title="{frame.label}" loading="lazy" />
+  </figure>
+}
