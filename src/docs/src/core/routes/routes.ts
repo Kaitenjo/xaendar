@@ -252,6 +252,7 @@ export const NAV: readonly NavSection[] = [
       link(page(API_REFERENCE_PATH, 'api exports symbols packages')),
       link(page('reference/template-syntax', 'cheat sheet syntax')),
       link(page('reference/errors', 'error message lexer parser type checker runtime')),
+      link(page('reference/framework-comparison', 'performance benchmark telemetry memory heap angular react table filters')),
       link(page('reference/coming-from-angular', 'angular migration comparison'))
     ]
   }

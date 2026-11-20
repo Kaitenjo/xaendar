@@ -335,3 +335,89 @@ a.card:hover {
     font-size: 2.2rem;
   }
 }
+
+.comparison {
+  margin: 1.25rem 0 2rem;
+  border: 1px solid var(--xd-border);
+  border-radius: var(--xd-radius);
+  background: var(--xd-bg-elevated);
+  box-shadow: var(--xd-shadow);
+  overflow: hidden;
+}
+
+.comparison-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--xd-border);
+  background: var(--xd-bg-soft);
+}
+
+.comparison-name {
+  flex: 1;
+  color: var(--xd-text);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.comparison-open {
+  color: var(--xd-text-soft);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.comparison-open:hover {
+  color: var(--xd-accent);
+  text-decoration: underline;
+}
+
+.comparison-frame {
+  display: block;
+  width: 100%;
+  height: 46rem;
+  border: 0;
+  background: #f6f7fb;
+}
+
+.comparison-warning {
+  margin: 1.25rem 0 1.75rem;
+  padding: 1.25rem 1.5rem 1.35rem;
+  border: 2px solid var(--xd-warning);
+  border-radius: var(--xd-radius);
+  background: color-mix(in srgb, var(--xd-warning) 12%, var(--xd-bg));
+  color: var(--xd-text);
+  font-size: 1rem;
+}
+
+.comparison-warning p,
+.comparison-warning ul {
+  margin: 0 0 0.75rem;
+}
+
+.comparison-warning li + li {
+  margin-top: 0.4rem;
+}
+
+.comparison-warning-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--xd-warning);
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.comparison-warning-title::before {
+  content: '⚠';
+  font-size: 1.5rem;
+}
+
+.comparison-warning .comparison-warning-action {
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--xd-warning) 35%, transparent);
+  font-weight: 600;
+}

@@ -1,0 +1,67 @@
+# Deploys the documentation to the Cloudflare Worker xaendar-docs, from main: run by release.yml after every release,
+# or by hand from the Actions tab for a fix of the documentation alone, without publishing anything.
+#
+# Set up once:
+# - The Worker has no Git integration (Workers & Pages → xaendar-docs → Settings → Build: disconnected), so neither a
+#   push nor a pull request deploys it: only this workflow does.
+# - The environment release holds two secrets: CLOUDFLARE_API_TOKEN, a token made from the template "Edit Cloudflare
+#   Workers", and CLOUDFLARE_ACCOUNT_ID.
+name: Documentation
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+# One deploy at a time, never cancelled halfway
+concurrency:
+  group: docs
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy the documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: release
+    # Deploys only from main
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    steps:
+      # The tip of main: after a release, main with its commit "Release <version>", not the commit the workflow started from
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            src/docs/package-lock.json
+
+      - name: Install
+        run: |
+          npm ci --ignore-scripts
+          npm ci --ignore-scripts --prefix src/docs
+
+      # The applications shown in frames are not committed: without them the frames of the site stay empty
+      - name: Build the demos and the framework comparison
+        working-directory: src/docs
+        run: |
+          npm run build:demos
+          npm run build:comparison
+
+      # dist/client, the static assets the Worker serves (wrangler.jsonc)
+      - name: Prerender
+        working-directory: src/docs
+        run: npm run prerender
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: src/docs
+          command: deploy

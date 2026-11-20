@@ -1,0 +1,17 @@
+/* The button component of the three frameworks */
+:host { display: contents; }
+.ui-button {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 120ms, border-color 120ms, box-shadow 120ms;
+}
+.ui-button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgb(59 99 255 / 30%); }
+.ui-button--primary { background: #3b63ff; color: #fff; }
+.ui-button--primary:hover { background: #2f52e0; }
+.ui-button--secondary { background: #fff; border-color: #d5d9e5; color: #1f2433; }
+.ui-button--secondary:hover { background: #f3f5fa; }

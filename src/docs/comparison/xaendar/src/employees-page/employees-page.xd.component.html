@@ -1,0 +1,51 @@
+@import { UiButtonComponent } from '../ui-button/ui-button.xd.component.ts'
+@import { UiDateInputComponent } from '../ui-date-input/ui-date-input.xd.component.ts'
+@import { UiSelectComponent } from '../ui-select/ui-select.xd.component.ts'
+@import { UiTextInputComponent } from '../ui-text-input/ui-text-input.xd.component.ts'
+
+<main class="page">
+  <header class="page__header">
+    <h1 class="page__title">Employees</h1>
+    <span class="page__framework">Xaendar</span>
+  </header>
+  <div class="filters">
+    <ui-text-input label="Search" placeholder="Name or email" [(value)]="search" />
+    <ui-select label="Department" options="{departments}" [(value)]="department" />
+    <ui-select label="Status" options="{statuses}" [(value)]="status" />
+    <ui-date-input label="Hired from" [(value)]="from" />
+    <ui-date-input label="Hired to" [(value)]="to" />
+    <div class="filters__actions">
+      <ui-button variant="primary" (click)="apply()">Apply</ui-button>
+      <ui-button (click)="clearFilters()">Reset</ui-button>
+    </div>
+  </div>
+  <p class="summary">Showing { rows().length } of { employees.length } employees</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          @for (column of columns; track column) {
+            <th>{ column }</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (employee of rows(); track employee.id) {
+          <tr>
+            <td class="cell--muted">{ employee.id }</td>
+            <td>{ employee.name }</td>
+            <td class="cell--muted">{ employee.email }</td>
+            <td>{ employee.department }</td>
+            <td>{ employee.role }</td>
+            <td><span class="{badge(employee.status)}">{ employee.status }</span></td>
+            <td>{ day(employee.hireDate) }</td>
+            <td class="cell--number">{ money(employee.salary) }</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    @if (rows().length === 0) {
+      <p class="empty">No employee matches the filters.</p>
+    }
+  </div>
+</main>

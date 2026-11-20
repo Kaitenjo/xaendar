@@ -8,6 +8,8 @@
 # - VS Code Marketplace: a Trusted Publishing policy of the publisher (marketplace.visualstudio.com/manage → publisher →
 #   Trusted Publishing → Create: owner Kaitenjo, repository xaendar, workflow release.yml, environment release).
 #   `vsce publish --oidc` then authenticates this workflow through OIDC too: no Personal Access Token.
+# - Cloudflare: the documentation is deployed by docs.yml, which the job `docs` below runs after the release (see the
+#   setup there).
 name: Release
 
 on:
@@ -72,3 +74,10 @@ jobs:
         run: npm run deploy -- "--bump=$BUMP"
         env:
           BUMP: ${{ inputs.bump }}
+
+  # The documentation of the version just released, deployed only after the packages are published (docs.yml)
+  docs:
+    name: Documentation
+    needs: release
+    uses: ./.github/workflows/docs.yml
+    secrets: inherit

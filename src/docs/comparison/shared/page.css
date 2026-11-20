@@ -1,0 +1,54 @@
+/* The layout of the page: header, filters, table. Global in React and Angular, in the shadow root of the page in Xaendar */
+:host { display: block; }
+/* The page fills the window and the table scrolls inside it, under a sticky header, at every width */
+.page {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100vh;
+  padding: 20px 24px;
+}
+.page__header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.page__title { margin: 0; font-size: 20px; font-weight: 650; letter-spacing: -0.01em; }
+.page__framework { color: #5b6275; font-size: 13px; }
+.filters {
+  display: grid;
+  grid-template-columns: minmax(200px, 2fr) repeat(4, minmax(140px, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e3e6ef;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgb(16 24 40 / 4%);
+}
+.filters__actions { display: flex; justify-content: flex-end; gap: 8px; }
+@media (max-width: 1100px) {
+  .filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.summary { margin: 14px 2px 10px; color: #5b6275; font-size: 13px; }
+.table-wrap { flex: 1; min-height: 0; background: #fff; border: 1px solid #e3e6ef; border-radius: 12px; overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th {
+  position: sticky;
+  top: 0;
+  padding: 10px 12px;
+  background: #f0f2f8;
+  color: #3d4459;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: left;
+  text-transform: uppercase;
+}
+td { padding: 9px 12px; border-top: 1px solid #edf0f5; white-space: nowrap; }
+tbody tr:nth-child(even) { background: #fafbfd; }
+tbody tr:hover { background: #eef3ff; }
+.cell--number { text-align: right; }
+.cell--muted { color: #5b6275; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 550; }
+.badge--active { background: #e3f6ea; color: #17673a; }
+.badge--on-leave { background: #fff3d6; color: #8a5a00; }
+.badge--remote { background: #e4edff; color: #2448a6; }
+.badge--inactive { background: #eceef3; color: #5b6275; }
+.empty { padding: 28px; color: #5b6275; text-align: center; }
