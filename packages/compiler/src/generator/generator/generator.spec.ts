@@ -14,6 +14,14 @@ const parse = (template: string) => new Parser(template, new Lexer(template).tok
 const generate = (template: string, signals: string[] = []) => new Generator(template, parse(template), cache).generate(signals);
 
 describe('Generator', () => {
+  it('keeps as written the comment markers of a static attribute value and of the strings of an expression', async () => {
+    const code = await generate('<p title="a<!-- x -->b"><!-- note -->{ "<!-- y -->" + x() }</p>');
+
+    expect(code).toContain('{ name: \'title\', value: \'a<!-- x -->b\', setter: _setProperty }');
+    expect(code).toContain('return "<!-- y -->" + this.x();');
+    expect(code).not.toContain('note');
+  });
+
   it('wraps the generated nodes in a module-level render function, giving the component to the root context', async () => {
     const code = await generate('hello');
     expect(code).toBe([

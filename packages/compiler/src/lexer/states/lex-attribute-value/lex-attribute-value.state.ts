@@ -20,7 +20,7 @@ export function lexAttributeValue(cursor: LexerCursor, context: LexerTransitionF
   let retVal!: LexerTransitionFunctionReturnType;
 
   while (read) {
-    switch (cursor.peek()) {
+    switch (cursor.peekVerbatim()) {
       case DOUBLE_QUOTE:
         cursor.advance();
         read = false;

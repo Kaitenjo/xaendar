@@ -242,6 +242,13 @@ describe('LexerCursor', () => {
       expect(cursor.peek()).toBe('x'.charCodeAt(0));
     });
 
+    it('peeks a comment as written when peeking verbatim, then reaches the end of the input', () => {
+      const cursor = new LexerCursor('<!--');
+      expect(cursor.peekVerbatim()).toBe('<'.charCodeAt(0));
+      cursor.advance(4);
+      expect(() => cursor.peekVerbatim()).toThrow(expect.objectContaining({ cause: endOfFile }));
+    });
+
     it('skips a comment closing the input, then reaches its end', () => {
       const cursor = new LexerCursor('a<!---->');
       cursor.advance();

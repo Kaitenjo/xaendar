@@ -155,6 +155,17 @@ export class LexerCursor extends Cursor {
   }
 
   /**
+   * Peeks the next character as it is written, without skipping the HTML comments as {@link peek} does: for the content
+   * read verbatim, where `<!--` is text (a static attribute value, an expression and its strings, an import path).
+   *
+   * @returns The code of the next character.
+   * @throws Error with cause `EOF` if the input is over.
+   */
+  public peekVerbatim(): number {
+    return this._peekOneChar(this._currentChar.index + 1);
+  }
+
+  /**
    * Checks whether the characters following the whitespace (spaces, tabs and line breaks) after the current position
    * start with a text, without advancing the cursor: e.g. the parentheses following a keyword on another line. Reaching
    * the end of the input does not throw.

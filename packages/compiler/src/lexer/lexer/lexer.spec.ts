@@ -433,6 +433,25 @@ describe('Lexer', () => {
     });
   });
 
+  it('skips the comments of the text, keeping as written the ones in an attribute value, an expression and an import path', () => {
+    const template = '@import { A } from \'./<!--a-->\';\n<p title="a<!-- x -->b" alt="<!--c-->"><!-- skipped -->{ "<!-- y -->" + x() }</p>{ \'<!--\' }';
+    const tokens: ReadToken[] = new Lexer(template).tokenize();
+
+    expect(tokens.filter(({ type }) => type !== TokenType.TEXT).map(({ type, parts }) => [type, parts])).toEqual([
+      [TokenType.IMPORT, ['A']],
+      [TokenType.IMPORT_PATH, ['./<!--a-->']],
+      [TokenType.TAG_OPEN_NAME, ['p']],
+      [TokenType.ATTRIBUTE, ['title']],
+      [TokenType.ATTRIBUTE_VALUE, ['a<!-- x -->b']],
+      [TokenType.ATTRIBUTE, ['alt']],
+      [TokenType.ATTRIBUTE_VALUE, ['<!--c-->']],
+      [TokenType.TAG_OPEN_END, []],
+      [TokenType.INTERPOLATION_EXPRESSION, ['"<!-- y -->" + x()']],
+      [TokenType.TAG_CLOSE_NAME, ['p']],
+      [TokenType.INTERPOLATION_EXPRESSION, ['\'<!--\'']]
+    ]);
+  });
+
   it('rejects an unclosed comment instead of dropping the rest of the template', () => {
     expect(() => new Lexer('<p>a</p>\n<!-- note\n<p>b</p>').tokenize()).toThrow('Comment never closed: \'<!--\' without \'-->\'');
   });

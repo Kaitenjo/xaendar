@@ -57,7 +57,7 @@ export function lexImportPath(cursor: LexerCursor, _context: LexerTransitionFunc
   const delimiter = singleQuote ? SINGLE_QUOTE : DOUBLE_QUOTE;
 
   while (read) {
-    switch (cursor.peek()) {
+    switch (cursor.peekVerbatim()) {
       case delimiter:
         cursor.advance();
         // The `;` closing the statement, as in JavaScript, is part of it with the spaces before it: it is not a text of the template
