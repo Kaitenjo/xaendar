@@ -357,6 +357,23 @@ describe('State', () => {
     });
   });
 
+  describe('hasSinks()', () => {
+    it('rejects calls without the private symbol', () => {
+      const state = new State(0);
+      expect(() => state.hasSinks(Symbol('wrong'))).toThrow();
+    });
+
+    it('tells whether a sink is registered', () => {
+      const state = new State(0);
+      const watcher = makeMockWatcher();
+      expect(state.hasSinks(PRIVATE)).toBe(false);
+      state.addSink(watcher, PRIVATE);
+      expect(state.hasSinks(PRIVATE)).toBe(true);
+      state.removeSink(watcher, PRIVATE);
+      expect(state.hasSinks(PRIVATE)).toBe(false);
+    });
+  });
+
   describe('integration', () => {
     it('watched → set → unwatched lifecycle fires callbacks in order', () => {
       const calls: string[] = [];

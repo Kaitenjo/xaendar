@@ -70,7 +70,7 @@ export function introspectSinks(signal: State | Computed): (Computed | Watcher)[
  * @returns `true` if the Signal has at least one sink.
  */
 export function hasSinks(signal: State | Computed): boolean {
-  return signal.getSinks(PRIVATE).length > 0;
+  return signal.hasSinks(PRIVATE);
 }
 
 /**
@@ -82,5 +82,5 @@ export function hasSinks(signal: State | Computed): boolean {
  * @returns `true` if the node has at least one source.
  */
 export function hasSources(signal: Computed | Watcher): boolean {
-  return signal.getSources(PRIVATE).length > 0;
+  return signal.hasSources(PRIVATE);
 }

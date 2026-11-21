@@ -50,6 +50,21 @@ export class Watcher {
     return smallSetToArray(this.#signals);
   }
   /**
+   * Tells whether the Watcher watches any Signal, without copying it as {@link getSources} does.
+   *
+   * N.B. Deliberate: `Signal.subtle.hasSources` runs for every binding of a template, to drop the ones reading no
+   * Signal, so it reads the size of the set instead of building an array only to test its length. Do not go back to
+   * `getSources(symbol).length`.
+   *
+   * @param symbol - Private access symbol; rejects calls from outside the library.
+   * @returns `true` if at least one Signal is in the set.
+   * @internal
+   */
+  public hasSources(symbol: symbol): boolean {
+    assertPrivateContext(symbol);
+    return smallSetSize(this.#signals) !== 0;
+  }
+  /**
    * The callback invoked synchronously when a watched Signal (or one of its
    * recursive dependencies) changes for the first time since the last
    * `watch` call.

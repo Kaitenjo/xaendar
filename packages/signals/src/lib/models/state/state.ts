@@ -82,6 +82,20 @@ export class State<T = any> {
     assertPrivateContext(symbol);
     return smallSetToArray(this.#sinks);
   }
+  /**
+   * Tells whether the sinks set holds any Signal or Watcher, without copying it as {@link getSinks} does.
+   *
+   * N.B. Deliberate: it reads the size of the set instead of building an array only to test its length, as
+   * `hasSources` does. Do not go back to `getSinks(symbol).length`.
+   *
+   * @param symbol - Private access symbol; rejects calls from outside the library.
+   * @returns `true` if at least one sink is in the set.
+   * @internal
+   */
+  public hasSinks(symbol: symbol): boolean {
+    assertPrivateContext(symbol);
+    return smallSetSize(this.#sinks) !== 0;
+  }
 
   /**
    * Creates a new `State` signal.

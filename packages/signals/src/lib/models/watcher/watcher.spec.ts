@@ -421,6 +421,23 @@ describe('Watcher', () => {
     });
   });
 
+  describe('hasSources()', () => {
+    it('rejects calls with wrong symbol', () => {
+      const watcher = new Watcher(vi.fn());
+      expect(() => watcher.hasSources(Symbol('x'))).toThrow();
+    });
+
+    it('tells whether a Signal is watched', () => {
+      const watcher = new Watcher(vi.fn());
+      const state = new State(1);
+      expect(watcher.hasSources(PRIVATE)).toBe(false);
+      watcher.watch(state);
+      expect(watcher.hasSources(PRIVATE)).toBe(true);
+      watcher.unwatch(state);
+      expect(watcher.hasSources(PRIVATE)).toBe(false);
+    });
+  });
+
   describe('integration', () => {
     it('full lifecycle: watch → notify → unwatch', () => {
       const events: string[] = [];

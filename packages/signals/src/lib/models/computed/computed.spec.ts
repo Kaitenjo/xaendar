@@ -601,6 +601,25 @@ describe('Computed', () => {
     });
   });
 
+  describe('hasSinks() / hasSources()', () => {
+    it('reject calls with wrong symbol', () => {
+      const computed = new Computed(() => 1);
+      expect(() => computed.hasSinks(Symbol('x'))).toThrow();
+      expect(() => computed.hasSources(Symbol('x'))).toThrow();
+    });
+
+    it('tell whether the sets hold anything', () => {
+      const state = new State(1);
+      const computed = new Computed(() => state.get());
+      expect(computed.hasSources(PRIVATE)).toBe(false);
+      expect(computed.hasSinks(PRIVATE)).toBe(false);
+      computed.get();
+      computed.addSink(makeMockWatcher(), PRIVATE);
+      expect(computed.hasSources(PRIVATE)).toBe(true);
+      expect(computed.hasSinks(PRIVATE)).toBe(true);
+    });
+  });
+
   describe('dynamic dependency tracking', () => {
     it('stops tracking a source that is no longer read', () => {
       const flag = new State(true);
