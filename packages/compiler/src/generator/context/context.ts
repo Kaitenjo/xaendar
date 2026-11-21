@@ -113,6 +113,14 @@ export class GeneratorContext extends CompilerContext {
    * The names of the constants and of the functions declared, which no other declaration takes: held by the root scope.
    */
   private readonly _moduleNames = new Set<string>();
+  /**
+   * The number following the last name taken for each name wanted (see {@link _uniqueName}), held by the root scope.
+   *
+   * N.B. Deliberate, for speed: the search for a name not taken goes on from the last number taken. Trying every number
+   * from 1 each time was quadratic in the names wanted alike (`td0$element` in every row of a large table). Do not
+   * start it from 1.
+   */
+  private readonly _nameSuffixes = new Map<string, number>();
 
   /**
    * The events the template listens to, read from the root scope.
@@ -571,11 +579,15 @@ export class GeneratorContext extends CompilerContext {
    * @returns The name to declare.
    */
   private _uniqueName(name: string): string {
-    let unique = name;
-    for (let i = 1; this._moduleNames.has(unique); i++) {
-      unique = `${name}${i}`;
+    // The names before the last one taken for the same name are taken: the names are never released
+    let suffix = this._nameSuffixes.get(name) ?? 0;
+    let unique = suffix ? `${name}${suffix}` : name;
+    while (this._moduleNames.has(unique)) {
+      suffix++;
+      unique = `${name}${suffix}`;
     }
 
+    this._nameSuffixes.set(name, suffix + 1);
     this._moduleNames.add(unique);
     return unique;
   }

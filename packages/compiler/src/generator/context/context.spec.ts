@@ -148,6 +148,26 @@ describe('GeneratorContext', () => {
       expect(context.constantDeclarations).toEqual(['const div0$if = 1;', 'const div0$if1 = 2;', 'const div0$if2 = 3;']);
     });
 
+    it('skips the numbered names already taken by other declarations, going on from the last number taken', () => {
+      const context = new GeneratorContext(cache);
+      context.declareConstant('a$element1', '0');
+      const names = ['a$element', 'a$element', 'a$element', 'a$element2'].map(name => context.declareConstant(name, '1'));
+
+      expect(names).toEqual(['a$element', 'a$element2', 'a$element3', 'a$element21']);
+      expect(context.declareFunction('a$element', '', [])).toBe('a$element4');
+    });
+
+    it('takes thousands of names alike in linear time', () => {
+      const context = new GeneratorContext(cache);
+      const start = performance.now();
+      for (let i = 0; i < 20000; i++) {
+        context.declareConstant('td0$element', '1');
+      }
+
+      expect(context.constantDeclarations.at(-1)).toBe('const td0$element19999 = 1;');
+      expect(performance.now() - start).toBeLessThan(1000);
+    });
+
     it('holds the constants of every scope in the root one, in the order they are declared', () => {
       const root = new GeneratorContext(cache);
       const scope = new GeneratorContext(new GeneratorContext(root));
