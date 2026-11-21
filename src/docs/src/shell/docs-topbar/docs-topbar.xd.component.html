@@ -1,4 +1,5 @@
 @import { translations } from '../../core/i18n/i18n.ts'
+@import { lang as currentLang } from '../../core/router/router.ts'
 @import { theme, toggleTheme } from '../../core/theme/theme.ts'
 @import { DocsSearchComponent } from '../docs-search/docs-search.xd.component.ts'
 @import { SwitchButtonComponent } from '../../pages/components/switch-button/switch-button.xd.component'
@@ -17,7 +18,7 @@
   <div class="actions">
     
     <div class="langs" role="group" aria-label="{translations().topbar.language}">
-      <ex-switch-button items="{langs}" (valueChange)="switchTo($event)" />
+      <ex-switch-button items="{langs}" value="{currentLang()}" (valueChange)="switchTo($event)" />
     </div>
     <button class="icon" type="button" aria-label="{translations().topbar.theme}" (click)="toggleTheme()">
       @if (theme() === 'dark') {
