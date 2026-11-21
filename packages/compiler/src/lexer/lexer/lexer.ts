@@ -183,7 +183,7 @@ export class Lexer {
 
         if (tokens?.length) {
           const stateEndIndex = cursor.currentChar.index + 1;
-          this._tokens.push(...this._withTokenSpans(tokens, { start: stateStartIndex, end: stateEndIndex }));
+          this._appendTokens(tokens, { start: stateStartIndex, end: stateEndIndex });
         }
 
         if (pushState) {
@@ -272,19 +272,22 @@ export class Lexer {
   }
 
   /**
-   * Ensures every emitted token has a source span.
+   * Appends the tokens a state emitted, ensuring every one has a source span.
    *
    * States can provide a more accurate `token.span` (e.g. Event Parameter and Import States)
    * otherwise the lexer falls back to the full state-consumption range.
    *
+   * N.B. Deliberate, for speed: the span is set on the token the state created, which nothing else holds, and the
+   * token is appended in a loop. A copy of every token, appended by a spread, cost an object per token. Do not copy them.
+   *
    * @param tokens - The tokens emitted by a state.
    * @param fallbackSpan - The range of the input the state consumed, for the tokens without a span of their own.
-   * @returns The tokens, each one with its span.
    */
-  private _withTokenSpans(tokens: TokenWithOptionalSpan[], fallbackSpan: Span): Token[] {
-    return tokens.map<Token>(token => ({
-      ...token,
-      span: token.span ?? fallbackSpan
-    }));
+  private _appendTokens(tokens: TokenWithOptionalSpan[], fallbackSpan: Span): void {
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      token.span ??= fallbackSpan;
+      this._tokens.push(token as unknown as Token);
+    }
   }
 }

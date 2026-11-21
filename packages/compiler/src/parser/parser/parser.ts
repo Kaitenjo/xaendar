@@ -76,6 +76,15 @@ export class Parser {
    * How many nodes enclose the one being parsed: `0` for a top-level node.
    */
   private _depth = 0;
+  /**
+   * Parses the next node, given to the states to parse the nodes they hold.
+   *
+   * N.B. Deliberate, for speed: one function per parser. Binding `parseNode` for every node parsed created a function
+   * per node. Do not bind it in `parseNode`.
+   *
+   * @returns The node, or `undefined` at the end of the tokens.
+   */
+  private readonly _parseChild = (): ASTNode | undefined => this.parseNode();
 
   /**
    * Creates a new Parser instance.
@@ -135,18 +144,14 @@ export class Parser {
       }
 
       this._depth++;
-      const node = state(this._cursor, this.parseNode.bind(this), token as never);
+      const node = state(this._cursor, this._parseChild, token as never);
       this._depth--;
       const currentToken = this._cursor.getCurrentToken().value;
       const endOffset = 'span' in currentToken ? currentToken.span.end : token.span.end;
 
-      return {
-        ...node,
-        span: node.span ?? {
-          start: startOffset,
-          end: endOffset,
-        },
-      };
+      // The span is set on the node the state created, which nothing else holds: copying it cost an object per node
+      node.span ??= { start: startOffset, end: endOffset };
+      return node as unknown as ASTNode;
     } catch (err) {
       if (this.thrown) {
         throw err;
