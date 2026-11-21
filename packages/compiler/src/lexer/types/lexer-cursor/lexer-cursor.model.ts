@@ -151,7 +151,7 @@ export class LexerCursor extends Cursor {
     this._consumeComment();
     const chars = typeof charsOrOptions === 'number' ? charsOrOptions : 1;
     const offset = (typeof charsOrOptions === 'object' ? charsOrOptions : options)?.offset ?? 0;
-    return chars === 1 ? this._peekOneChar(this._currentChar.index + offset + 1) : this._peekMany(chars + offset);
+    return chars === 1 ? this._peekOneChar(this._currentChar.index + offset + 1) : this._peekMany(chars, offset);
   }
 
   /**
@@ -220,12 +220,13 @@ export class LexerCursor extends Cursor {
    * Peeks multiple characters ahead.
    *
    * @param chars - The number of characters to peek.
+   * @param offset - The number of characters to skip after the current one before the first one peeked.
    * @returns The codes of the characters.
    * @throws Error with cause `EOF` if the peek exceeds input length.
    */
-  private _peekMany(chars: number): number[] {
+  private _peekMany(chars: number, offset: number): number[] {
     const peekedChars = new Array<number>;
-    const nextCharIndex = this._currentChar.index + 1;
+    const nextCharIndex = this._currentChar.index + offset + 1;
 
     for (let i = nextCharIndex; i < nextCharIndex + chars; i++) {
       peekedChars.push(this._peekOneChar(i));

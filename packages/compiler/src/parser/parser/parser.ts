@@ -157,7 +157,7 @@ export class Parser {
       const stateEndIndex = currentToken.type !== TokenType.EOF ? currentToken.span.end : this._input.length;
       // An error raised with its own span (e.g. an invalid expression, a duplicated attribute) points to it
       const span = err instanceof Error && isSpan(err.cause) ? err.cause : { start: startOffset, end: stateEndIndex };
-      throw new TemplateError(`[Parser] ${this._cursor.getPositionFromCharacterIndex(startOffset + 1)} - ${message}\n ---> ${slice(this._input, startOffset, stateEndIndex)}`, span, message);
+      throw new TemplateError(`[Parser] ${this._cursor.getPositionFromCharacterIndex(span.start)} - ${message}\n ---> ${slice(this._input, startOffset, stateEndIndex)}`, span, message);
     }
   }
 }

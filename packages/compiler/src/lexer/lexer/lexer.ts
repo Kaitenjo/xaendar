@@ -259,7 +259,8 @@ export class Lexer {
           const nextNeighbourhood = slice(this._input, stateEndIndex, endInterval).replace(/\s+$/, '');
           const message = isError ? err.message : `${err}`;
           return new TemplateError(
-            `[Lexer] ${cursor.getPositionFromCharacterIndex(stateEndIndex + 1)} - ${message}\n ---> ${previousNeighbourhood}${underlinedError}${nextNeighbourhood}`,
+            // The position of the character the state stopped at, the one it could not read
+            `[Lexer] ${cursor.getPositionFromCharacterIndex(currentIndex + 1)} - ${message}\n ---> ${previousNeighbourhood}${underlinedError}${nextNeighbourhood}`,
             { start: stateStartIndex, end: stateEndIndex },
             message
           );

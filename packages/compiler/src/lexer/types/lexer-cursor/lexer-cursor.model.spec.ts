@@ -125,9 +125,11 @@ describe('LexerCursor', () => {
       expect(cursor.peek(3)).toEqual(['a', 'b', 'c'].map(c => c.charCodeAt(0)));
     });
 
-    it('peeks multiple characters with an offset', () => {
+    it('peeks multiple characters after an offset, skipping the ones before it', () => {
       const cursor = new LexerCursor('abcdef');
-      expect(cursor.peek(2, { offset: 2 })).toEqual(['a', 'b', 'c', 'd'].map(c => c.charCodeAt(0)));
+      expect(cursor.peek(2, { offset: 2 })).toEqual(['c', 'd'].map(c => c.charCodeAt(0)));
+      cursor.advance();
+      expect(cursor.peek(3, { offset: 1 })).toEqual(['c', 'd', 'e'].map(c => c.charCodeAt(0)));
     });
 
     it('peeks the same character again at the same position', () => {

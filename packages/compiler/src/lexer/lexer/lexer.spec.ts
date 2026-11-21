@@ -456,6 +456,14 @@ describe('Lexer', () => {
     expect(() => new Lexer('<p>a</p>\n<!-- note\n<p>b</p>').tokenize()).toThrow('Comment never closed: \'<!--\' without \'-->\'');
   });
 
+  it.each([
+    ['a character the state peeks', '<input type=text>', '[Ln 1, Col 13]'],
+    ['a character on another line', '<p>\n  <input type=text>', '[Ln 2, Col 15]'],
+    ['the first character a state reads', '<p @foo>x</p>', '[Ln 1, Col 4]']
+  ])('reports the position of %s, where the state stopped', (_name, template, position) => {
+    expect(() => new Lexer(template).tokenize()).toThrow(`[Lexer] ${position} - `);
+  });
+
   it('formats a thrown Error with position and source context', () => {
     let caught: unknown;
     try {
