@@ -177,6 +177,33 @@ describe('compile', () => {
 });
 
 describe('parseTemplate', () => {
+  it('gives the same nodes for a template parsed again, while it is among the last 16 parsed or read', () => {
+    const template = '<i>{ cached }</i>';
+    const nodes = parseTemplate(template);
+    for (let i = 0; i < 15; i++) {
+      parseTemplate(`<i>{ other${i} }</i>`);
+    }
+
+    expect(parseTemplate(template)).toBe(nodes);
+    for (let i = 0; i < 15; i++) {
+      parseTemplate(`<b>{ other${i} }</b>`);
+    }
+
+    expect(parseTemplate(template)).toBe(nodes);
+    for (let i = 0; i < 16; i++) {
+      parseTemplate(`<u>{ other${i} }</u>`);
+    }
+
+    const parsedAgain = parseTemplate(template);
+    expect(parsedAgain).not.toBe(nodes);
+    expect(parsedAgain).toEqual(nodes);
+  });
+
+  it('parses again a template that failed to parse, keeping nothing of it', () => {
+    expect(() => parseTemplate('<b>{')).toThrow(TemplateError);
+    expect(() => parseTemplate('<b>{')).toThrow(TemplateError);
+  });
+
   it('tokenises and parses a template into its AST', () => {
     expect(parseTemplate('<b>{x}</b>')).toMatchObject([{ type: ASTNodeType.Element, tagName: 'b', children: [{ type: ASTNodeType.Interpolation }] }]);
   });

@@ -13,6 +13,22 @@ import type { ContextCache } from '../types/context-cache.type';
 import type { SymbolImport } from '../types/symbol-import.type';
 
 /**
+ * How many templates {@link parseTemplate} keeps the nodes of, the ones parsed last.
+ */
+const PARSED_TEMPLATES_SIZE = 16;
+
+/**
+ * The nodes of the templates parsed last, by their source, the one parsed or read last at the end (see
+ * {@link parseTemplate}).
+ *
+ * N.B. Deliberate, for speed: a build parses each template several times, one step after the other (the modules it
+ * imports, the render code, the type-check, the server code and its dependencies): the steps share the nodes of the last
+ * templates parsed instead of parsing them again. The nodes are shared: never change them. Do not drop this cache, nor
+ * let it grow without bound (the editor parses a new source at every change).
+ */
+const PARSED_TEMPLATES = new Map<string, ASTNode[]>();
+
+/**
  * Compiles a template string into a Javascript render function body.
  *
  * Runs the three-stage pipeline:
@@ -53,14 +69,27 @@ export async function compile(input: string, options: CompileOptions): Promise<s
   }
 }
 /**
- * Tokenises and parses a template into its AST, the first two stages of {@link compile}.
+ * Tokenises and parses a template into its AST, the first two stages of {@link compile}. The nodes of the last
+ * templates parsed are kept: parsing one of them again gives the same nodes, which no caller may change.
  *
  * @param input - The raw HTML-like template source.
  * @returns The top-level AST nodes of the template.
  * @throws A `TemplateError` if the template cannot be tokenised or parsed.
  */
 export function parseTemplate(input: string): ASTNode[] {
-  return new Parser(input, new Lexer(input).tokenize()).parse();
+  let nodes = PARSED_TEMPLATES.get(input);
+  if (nodes) {
+    // Moved to the end, as the template read last
+    PARSED_TEMPLATES.delete(input);
+  } else {
+    nodes = new Parser(input, new Lexer(input).tokenize()).parse();
+    if (PARSED_TEMPLATES.size === PARSED_TEMPLATES_SIZE) {
+      PARSED_TEMPLATES.delete(PARSED_TEMPLATES.keys().next().value!);
+    }
+  }
+
+  PARSED_TEMPLATES.set(input, nodes);
+  return nodes;
 }
 
 /**
