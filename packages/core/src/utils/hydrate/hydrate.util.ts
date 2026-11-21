@@ -2,11 +2,11 @@ import type { NoArgsVoidFunction } from '@xaendar/types';
 import { _SSR_MARKERS, COMPONENT, HEADER } from '../../costants';
 import { _bindEffect } from '../../signals/effect/effect';
 import { untracked } from '../../signals/untracked';
+import type { _Context } from '../../types/context.type';
 import type { HydrateBlock } from '../../types/hydrate-block.type';
 import type { HydrateRun } from '../../types/hydrate-run.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { ClaimNodes } from '../claim-nodes/claim-nodes.util';
-import type { _Context } from '../../types/context.type';
 import { _scope, addCleanup, containerSlot, getNodeStrategy, removeCleanup, setNodeStrategy, trackNode } from '../context/context.util';
 import { armTriggers, disarmAll, recordEvents, replayEvents, watchedTriggers } from '../hydration-triggers/hydration-triggers.util';
 

@@ -1,13 +1,13 @@
+import type { ContentLayout } from '../../types/content-layout.type';
 import type { TemplateFormatOptions } from '../../types/template-format-options.type';
 import type { LayoutAtom } from '../../types/template-layout/layout-atom.type';
-import type { LayoutElement } from '../../types/template-layout/layout-element.type';
-import type { LayoutItem } from '../../types/template-layout/layout-item.type';
 import type { LayoutBlock } from '../../types/template-layout/layout-block.type';
 import type { LayoutBranch } from '../../types/template-layout/layout-branch.type';
+import type { LayoutElement } from '../../types/template-layout/layout-element.type';
+import type { LayoutItem } from '../../types/template-layout/layout-item.type';
 import { findClosing } from '../balanced-text/balanced-text.utils';
 import { formatImportHeader } from '../import-organization/import-organization.utils';
 import { parseTemplateLayout } from '../template-layout/template-layout.utils';
-import type { ContentLayout } from '../../types/content-layout.type';
 
 /**
  * The rows of a content, as they are written.

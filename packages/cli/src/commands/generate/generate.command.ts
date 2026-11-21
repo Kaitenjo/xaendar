@@ -1,9 +1,9 @@
 import { Command } from 'commander';
 import { dirname, resolve } from 'node:path';
-import { STYLES } from '../../utils/style/style';
-import { addLibraryExport, findProjectLibrary } from '../../utils/library/library.utils';
-import { readProject } from '../../utils/xaendar-config/xaendar-config.utils';
 import type { ResolvedLibrary } from '../../types/resolved-library.type';
+import { addLibraryExport, findProjectLibrary } from '../../utils/library/library.utils';
+import { STYLES } from '../../utils/style/style';
+import { readProject } from '../../utils/xaendar-config/xaendar-config.utils';
 import { generateComponent } from './component/component.command';
 import { generateLibrary } from './library/library.command';
 

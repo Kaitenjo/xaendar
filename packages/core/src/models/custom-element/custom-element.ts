@@ -12,8 +12,8 @@ import { _scope, addCleanup, clear, EMPTY_LAYOUT, moveTo, removeCleanup } from '
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import { _checkExposedFields, _createHostDirectives } from '../../utils/host-directives/host-directives.util';
-import { deferElementHydration, replayContractEvents, replayElementEvents } from '../../utils/hydration-triggers/hydration-triggers.util';
 import { HYDRATION } from '../../utils/hydration-flag/hydration-flag.util';
+import { deferElementHydration, replayContractEvents, replayElementEvents } from '../../utils/hydration-triggers/hydration-triggers.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
 import { _parseState } from '../../utils/state-serialization/state-serialization.util';
 import { runConnection } from '../../utils/try-scope/try-scope.util';

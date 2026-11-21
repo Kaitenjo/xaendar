@@ -1,8 +1,8 @@
 import { removeRealFile, removeVirtualFile } from '@xaendar/language-core';
 import type { HookHandler, Plugin } from 'vite';
-import { COMPONENT_TS_FILE_RE, COMPONENT_HTML_FILE_RE } from '../../costants/component-filename-regex';
+import { COMPONENT_HTML_FILE_RE, COMPONENT_TS_FILE_RE } from '../../costants/component-filename-regex';
 import { clearDependenciesForComponent } from '../../registry/dependency-registry/dependency-registry';
-import { clearImportToComponents, clearComponentToImports, findComponentsForImport } from '../../registry/import-registry/import-registry';
+import { clearComponentToImports, clearImportToComponents, findComponentsForImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile } from '../../registry/metadata-registry/metadata-registry';
 import { clearStyleDependenciesForComponent, findComponentPathsForStyleDependency } from '../../registry/style-registry/style-registry';
 import { findComponentPathsForTemplate, removeComponentPath } from '../../registry/template-registry/template-registry';

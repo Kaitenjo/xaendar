@@ -1,7 +1,7 @@
 import type { HtmlContent } from '../../types/html-content.type';
 import type { HtmlSanitizeReport } from '../../types/html-sanitize-report.type';
-import type { HtmlSanitizer } from '../../types/html-sanitizer.type';
 import type { HtmlSanitizerOptions } from '../../types/html-sanitizer-options.type';
+import type { HtmlSanitizer } from '../../types/html-sanitizer.type';
 import type { TrustedTypePolicy } from '../../types/trusted-types/trusted-type-policy.type';
 import { sanitizeHtmlWithReport } from '../html-sanitizer/html-sanitizer.utils';
 import { SAFE_HTML } from '../trust-html/trust-html.utils';

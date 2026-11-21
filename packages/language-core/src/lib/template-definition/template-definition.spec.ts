@@ -1,12 +1,12 @@
 import { ASTNodeType } from '@xaendar/compiler';
 import { readFileSync } from 'node:fs';
+import type { LanguageService } from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { COUNTER_FIXTURE, createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import type { FixtureProject } from '../types/fixture-project.type';
-import { findDefinitionTarget, getTemplateDefinition } from './template-definition';
+import type { TemplateAnalysis } from '../types/template-analysis.type';
 import type { TemplateDefinition } from '../types/template-definition.type';
-import type { LanguageService } from 'typescript';
+import { findDefinitionTarget, getTemplateDefinition } from './template-definition';
 
 const TIMEOUT = 60_000;
 const template = [

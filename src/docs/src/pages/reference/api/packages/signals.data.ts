@@ -1,8 +1,8 @@
-import type { ApiPackage } from '../api.data';
 import { MAIN } from '../../../installation/installation.snippets';
-import { COMPUTED, EQUALS, EXTRACT_SIGNAL_TYPE, INTROSPECTION, SIGNALS_SETUP, SIGNAL_EQUAL, STATE, STATE_WRAPPER, WATCHED_CLOCK, WATCHER_EFFECT } from './signals.snippets';
 import { DEV_MODE } from '../../../signals/advanced/advanced.snippets';
 import { COMPUTED_THIS } from '../../../signals/computed/computed.snippets';
+import type { ApiPackage } from '../api.data';
+import { COMPUTED, EQUALS, EXTRACT_SIGNAL_TYPE, INTROSPECTION, SIGNALS_SETUP, SIGNAL_EQUAL, STATE, STATE_WRAPPER, WATCHED_CLOCK, WATCHER_EFFECT } from './signals.snippets';
 
 /**
  * The symbols of `@xaendar/signals`.

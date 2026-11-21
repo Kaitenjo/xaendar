@@ -11,23 +11,23 @@ import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
 import type { ASTNode } from '../../types/ast.type';
 import { ASTNodeType } from '../../types/node.enum';
 import type { AttributeNode } from '../../types/nodes/attribute-node.type';
+import type { ClassBindingNode } from '../../types/nodes/class-binding-node.type';
 import type { ConditionalBindingBranchNode } from '../../types/nodes/conditional-binding-branch-node.type';
 import type { ConditionalBindingNode } from '../../types/nodes/conditional-binding-node.type';
 import type { DirectiveNode } from '../../types/nodes/directive-node.type';
 import type { EventNode } from '../../types/nodes/event-node.type';
 import type { IfBindingNode } from '../../types/nodes/if-binding-node.type';
 import type { StructuralDirectiveNode } from '../../types/nodes/structural-directive-node.type';
+import type { StyleBindingNode } from '../../types/nodes/style-binding-node.type';
 import type { SwitchBindingNode } from '../../types/nodes/switch-binding-node.type';
 import { parseDefaultNever } from '../../utils/default-never/default-never.utils';
 import { validateExpression } from '../../utils/expression-validator/expression-validator';
-import type { ClassBindingNode } from '../../types/nodes/class-binding-node.type';
-import type { StyleBindingNode } from '../../types/nodes/style-binding-node.type';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
 import { isStylingBinding, parseStylingBinding } from '../parse-class-binding/parse-class-binding.state';
-import { isTwoWayBinding, parseTwoWayBinding } from '../parse-two-way-binding/parse-two-way-binding.state';
 import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseEvent } from '../parse-event/parse-event.state';
 import { parseStructuralDirective } from '../parse-structural-directive/parse-structural-directive.state';
+import { isTwoWayBinding, parseTwoWayBinding } from '../parse-two-way-binding/parse-two-way-binding.state';
 
 /**
  * Parses a conditional binding, i.e. an IF or a SWITCH token declared among the bindings of an element or of

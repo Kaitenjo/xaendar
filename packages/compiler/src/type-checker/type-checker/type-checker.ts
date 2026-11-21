@@ -4,30 +4,30 @@ import { ComponentOrDirectiveMetadata } from '../../types/component-or-directive
 import type { SymbolImport } from '../../types/symbol-import.type.js';
 import { catchErrorWithPrefix, formatErrorWithPrefix } from '../../utils/catch-error-generation/catch-error-generation.utils.js';
 import { TypeCheckContext } from '../models/context/context.js';
+import { typeCheckClient } from '../states/type-check-client/type-check-client.state.js';
+import { typeCheckDefer } from '../states/type-check-defer/type-check-defer.state.js';
 import { typeCheckElement } from '../states/type-check-element/type-check-element.state.js';
 import { typeCheckFor } from '../states/type-check-for/type-check-for.state.js';
+import { typeCheckHydrate } from '../states/type-check-hydrate/type-check-hydrate.state.js';
 import { typeCheckIf } from '../states/type-check-if/type-check-if.state.js';
 import { typeCheckImport } from '../states/type-check-import/type-check-import.state.js';
 import { typeCheckLet } from '../states/type-check-let/type-check-let.state.js';
 import { typeCheckRender } from '../states/type-check-render/type-check-render.state.js';
-import { typeCheckClient } from '../states/type-check-client/type-check-client.state.js';
-import { typeCheckTry } from '../states/type-check-try/type-check-try.state.js';
-import { typeCheckDefer } from '../states/type-check-defer/type-check-defer.state.js';
-import { typeCheckHydrate } from '../states/type-check-hydrate/type-check-hydrate.state.js';
 import { typeCheckSwitch } from '../states/type-check-switch/type-check-switch.state.js';
 import { typeCheckTemplate } from '../states/type-check-template/type-check-template.state.js';
 import { typeCheckTextAndInterpolation } from '../states/type-check-text-and-interpolation/type-check-text-and-interpolation.state.js';
-import type { Line } from '../types/line.type.js';
+import { typeCheckTry } from '../states/type-check-try/type-check-try.state.js';
 import type { LineMapping } from '../types/line-mapping.type.js';
+import type { Line } from '../types/line.type.js';
 import type { TypeCheckResult } from '../types/type-checker-result.type.js';
-import type { TypeCheckTolerantResult } from '../types/type-checker-tolerant-result.type.js';
 import type { TypeCheckerStates } from '../types/type-checker-states.type.js';
+import type { TypeCheckTolerantResult } from '../types/type-checker-tolerant-result.type.js';
 import { hoistImportTypes } from '../utils/import-hoisting/import-hoisting.utils.js';
 import { indentLines, plain } from '../utils/line-builder/line-builder.utils.js';
 import { typeCheckScope } from '../utils/scope/scope.utils.js';
+import { checkServerBlocks } from '../utils/server-blocks/server-blocks.utils.js';
 import { getTemplateHelpers } from '../utils/template-types/template-types.utils.js';
 import { checkTriggerTargets } from '../utils/trigger-targets/trigger-targets.utils.js';
-import { checkServerBlocks } from '../utils/server-blocks/server-blocks.utils.js';
 import { checkVariableOrder } from '../utils/variable-order/variable-order.utils.js';
 
 /**

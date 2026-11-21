@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { setDevMode } from '../../utils/dev-mode/dev-mode';
 import { GLOBAL_STATE } from '../../utils/globals/globals';
 import { PRIVATE } from '../../utils/private-symbol/private-symbol';
-import { setDevMode } from '../../utils/dev-mode/dev-mode';
 import { Computed } from '../computed/computed';
 import { State } from './state';
 

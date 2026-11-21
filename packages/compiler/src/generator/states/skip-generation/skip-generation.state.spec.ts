@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ASTNode } from '../../../parser/types/ast.type';
+import type { ContextCache } from '../../../types/context-cache.type';
 import { GeneratorContext } from '../../context/context';
 import { skipGeneration } from './skip-generation.state';
-import type { ContextCache } from '../../../types/context-cache.type';
 
 const cache = {} as ContextCache;
 

@@ -1,7 +1,7 @@
+import type { Expression } from 'typescript';
 import type { AttributeNode } from '../parser/types/nodes/attribute-node.type';
 import type { CaseNode } from '../parser/types/nodes/case-node.type';
 import type { ClassBindingNode } from '../parser/types/nodes/class-binding-node.type';
-import type { StyleBindingNode } from '../parser/types/nodes/style-binding-node.type';
 import type { ClientNode } from '../parser/types/nodes/client-node.type';
 import type { DeferNode } from '../parser/types/nodes/defer-node.type';
 import type { DirectiveNode } from '../parser/types/nodes/directive-node.type';
@@ -14,12 +14,12 @@ import type { ImportNode } from '../parser/types/nodes/import-node.type';
 import type { LetNode } from '../parser/types/nodes/let-node.type';
 import type { RenderNode } from '../parser/types/nodes/render-node.type';
 import type { StructuralDirectiveNode } from '../parser/types/nodes/structural-directive-node.type';
+import type { StyleBindingNode } from '../parser/types/nodes/style-binding-node.type';
 import type { TemplateNode } from '../parser/types/nodes/template-node.type';
 import type { TryNode } from '../parser/types/nodes/try-node.type';
 import type { ComponentMetadata } from './component-metadata.type';
 import type { ComponentOrDirectiveMetadata } from './component-or-directive-metadata.type';
 import type { DirectiveMetadata } from './directive-metadata.type';
-import type { Expression } from 'typescript';
 
 /**
  * Callbacks invoked by {@link walkTemplate} for the parts of a template. Every callback is optional.

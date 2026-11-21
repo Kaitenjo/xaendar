@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { HEADER } from '../../costants';
+import type { _Context } from '../../types/context.type';
 import type { DeferBlockFixture } from '../../types/defer-testing/defer-block-fixture.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
-import { HEADER } from '../../costants';
-import type { _Context } from '../../types/context.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');

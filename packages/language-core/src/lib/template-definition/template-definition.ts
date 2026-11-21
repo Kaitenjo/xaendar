@@ -1,12 +1,12 @@
 import { type ComponentOrDirectiveMetadata, resolveShimPosition, type Span, walkTemplate } from '@xaendar/compiler';
 import { dirname } from 'node:path';
 import type { CompilerOptions } from 'typescript';
+import type { DefinitionTarget } from '../types/definition-target.type';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
+import type { TemplateDefinition } from '../types/template-definition.type';
 import { resolveModulePath } from '../utils/module-path/module-path.utils';
 import { normalizeFileName } from '../utils/path/path.utils';
 import { findInnermostSpan, toTemplateSpan } from '../utils/template-span/template-span.utils';
-import type { TemplateDefinition } from '../types/template-definition.type';
-import type { DefinitionTarget } from '../types/definition-target.type';
 
 /**
  * Finds the definitions of the symbol at an offset of a template:

@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import { KEY_MODIFIERS } from '@xaendar/internals';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { _isKey } from '../key-event/key-event.util';
 import { _EVENT_CONTRACT_KEY, WAITS_FOR_HYDRATION } from '../../costants';
-import { _scope, EMPTY_LAYOUT } from '../context/context.util';
 import type { _Context } from '../../types/context.type';
+import { _scope, EMPTY_LAYOUT } from '../context/context.util';
+import { _isKey } from '../key-event/key-event.util';
 import { armTriggers, deferElementHydration, recordEvents, replayContractEvents, replayElementEvents, replayEvents, toIdle, waitedForTrigger, watchedTriggers } from './hydration-triggers.util';
 
 /**

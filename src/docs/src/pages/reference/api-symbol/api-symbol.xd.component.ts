@@ -2,10 +2,10 @@ import { CustomElement, WebComponent } from '@xaendar/core';
 import { computed, signal, untracked } from '@xaendar/core/signals';
 import { translations } from '../../../core/i18n/i18n';
 import { href, lang, path } from '../../../core/router/router';
-import { API_REFERENCE_PATH } from '../../../core/routes/routes';
 import type { PagePath } from '../../../core/routes/routes';
-import { findApiSymbol, packageFile } from '../api/api.data';
+import { API_REFERENCE_PATH } from '../../../core/routes/routes';
 import type { ApiKind, ApiMember, ApiMemberGroup, ApiPackageTexts, ApiSymbolEntry, ApiSymbolTexts, ApiUsage } from '../api/api.data';
+import { findApiSymbol, packageFile } from '../api/api.data';
 
 /**
  * The texts of every package in every language, loaded on demand: a page loads the ones of the package of its symbol,

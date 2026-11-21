@@ -1,16 +1,16 @@
-import { CSS_UNITS, KEY_MODIFIERS, toModelChangeEvent } from '@xaendar/internals';
 import { type ComponentOrDirectiveMetadata, getBindingContext, getExpressionContext, getImportContext, getImportInsertion, getImportPathContext, getKeywordContext, getSelectorContext, getTriggerContext, type KeywordContext, resolveShimPosition, type Span, type TriggerContext } from '@xaendar/compiler';
+import { CSS_UNITS, KEY_MODIFIERS, toModelChangeEvent } from '@xaendar/internals';
 import { dirname } from 'node:path';
 import { forEachChild, type Identifier, isClassDeclaration, isImportDeclaration, isNamespaceImport, isVariableStatement, type Node, ScriptElementKind, type SourceFile, type Symbol, SymbolFlags, type TypeChecker } from 'typescript';
 import { analyzeCompletionTemplate, resolveExportCandidates, resolveImportCandidates, resolveModuleExports, resolveModuleMetadatas, resolveTemplateImports } from '../template-analysis/template-analysis';
+import type { ShimPosition } from '../types/shim-position.type';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
+import type { TemplateCompletion } from '../types/template-completion.type';
+import { getCssProperties } from '../utils/css-properties/css-properties.utils';
 import { listModuleEntries } from '../utils/module-entries/module-entries.utils';
 import { toModulePath } from '../utils/module-path/module-path.utils';
 import { normalizeFileName, resolvePosixPath } from '../utils/path/path.utils';
-import { getCssProperties } from '../utils/css-properties/css-properties.utils';
 import { getSymbolKind } from '../utils/symbol-kind/symbol-kind.utils';
-import type { TemplateCompletion } from '../types/template-completion.type';
-import type { ShimPosition } from '../types/shim-position.type';
 import { readSsr } from '../utils/xaendar-config/xaendar-config.utils';
 
 /**

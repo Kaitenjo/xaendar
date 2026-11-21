@@ -1,8 +1,8 @@
 import type { ASTNode, GeneratorContext } from '@xaendar/compiler';
 import type { Function } from '@xaendar/types';
+import type { GenerateChildren } from './generate-children.type';
 import type { ServerParent } from './server-parent.type';
 import type { ServerTransitionResult } from './server-transition-result.type';
-import type { GenerateChildren } from './generate-children.type';
 
 /**
  * Generates the code rendering a node on the server.

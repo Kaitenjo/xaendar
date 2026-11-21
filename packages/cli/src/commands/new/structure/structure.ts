@@ -1,19 +1,19 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { PackageJson } from 'type-fest';
+import type { Entry } from '../../../types/entry.type';
+import { addLibraryPaths, addLibraryToConfig, LIBRARIES_FOLDER } from '../../../utils/library/library.utils';
+import { buildLibraryStructure } from '../../generate/library/library-structure/library-structure';
+import { workspaceRootHtml } from '../../generate/library/templates/workspace-root-html/workspace-root-html';
 import { bootstrapTs } from '../templates/bootstrap-ts/bootstrap-ts';
 import { indexHtml } from '../templates/index-html/index-html';
 import { mainTs } from '../templates/main-ts/main-ts';
 import { packageJson } from '../templates/package-json/package-json';
+import { styles } from '../templates/styles/styles';
 import { tsconfigJson } from '../templates/tsconfig-json/tsconfig-json';
 import { viteConfigTs } from '../templates/vite-config-ts/vite-config-ts';
 import { xaendarJson } from '../templates/xaendar-json/xaendar-json';
-import { styles } from '../templates/styles/styles';
 import type { ProjectContext } from '../types/project-context.type';
-import { addLibraryPaths, addLibraryToConfig, LIBRARIES_FOLDER } from '../../../utils/library/library.utils';
-import { buildLibraryStructure } from '../../generate/library/library-structure/library-structure';
-import { workspaceRootHtml } from '../../generate/library/templates/workspace-root-html/workspace-root-html';
-import type { Entry } from '../../../types/entry.type';
 
 /**
  * Reads the current Xaendar version from the CLI's own `package.json`.

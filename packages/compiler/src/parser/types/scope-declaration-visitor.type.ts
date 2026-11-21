@@ -1,9 +1,9 @@
 import type { VoidFunction } from '@xaendar/types';
 import type { ElementNamespace } from '../../types/element-namespace.type';
 import type { ElementNode } from './nodes/element-node.type';
+import type { ElementRefNode } from './nodes/element-ref-node.type';
 import type { LetNode } from './nodes/let-node.type';
 import type { TemplateNode } from './nodes/template-node.type';
-import type { ElementRefNode } from './nodes/element-ref-node.type';
 
 /**
  * Callbacks invoked by {@link visitScopeDeclarations} for the names a scope of a template declares. Every callback is optional.

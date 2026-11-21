@@ -1,6 +1,6 @@
 import { CustomElement, Query, WebComponent } from '@xaendar/core';
-import { computed } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
+import { computed } from '@xaendar/core/signals';
 
 /**
  * HTML inside a foreignObject: the elements are created in the HTML namespace.

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { addToSmallSet, deleteFromSmallSet, emptySmallSet, forEachInSmallSet, type SmallSet, smallSetSize, smallSetToArray } from '@xaendar/common';
+import { addToSmallSet, deleteFromSmallSet, emptySmallSet, forEachInSmallSet, smallSetSize, smallSetToArray, type SmallSet } from '@xaendar/common';
 import { NoArgsVoidFunction } from '@xaendar/types';
 import { SignalEqual } from '../../types/signal-equal.type';
 import { SignalOptions } from '../../types/signal-options.type';

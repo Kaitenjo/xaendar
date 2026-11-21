@@ -3,12 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import { effect } from '../../signals/effect/effect';
+import type { _ComponentRuntime } from '../../types/component-runtime.type';
 import { _createComponent } from '../create-component/create-component.util';
 import { registerLeave } from '../leave/leave.util';
 import { onLeave } from '../on-leave/on-leave.util';
 import { _readPageTransferState } from '../transfer-state/transfer-state.util';
 import { _getComponentRuntime, _setComponentRuntime } from './component-runtime.util';
-import type { _ComponentRuntime } from '../../types/component-runtime.type';
 
 class ProbeElement extends CustomElement { }
 customElements.define('runtime-probe', ProbeElement);

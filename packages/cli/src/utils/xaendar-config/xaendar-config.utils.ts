@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import type { XaendarSsrConfig } from '../../types/xaendar-ssr-config.type';
 import type { XaendarConfig } from '../../types/xaendar-config.type';
 import type { XaendarProject } from '../../types/xaendar-project.type';
+import type { XaendarSsrConfig } from '../../types/xaendar-ssr-config.type';
 
 /**
  * The comment of `index.html` the HTML rendered on the server replaces, the one the dev server of the Vite plugin

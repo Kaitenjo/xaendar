@@ -1,5 +1,5 @@
-import type { LayoutItem } from './layout-item.type';
 import type { LayoutAtom } from './layout-atom.type';
+import type { LayoutItem } from './layout-item.type';
 
 /**
  * An element, with the content between its tags as written.

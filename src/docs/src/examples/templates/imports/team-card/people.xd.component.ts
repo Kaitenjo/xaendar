@@ -1,6 +1,6 @@
 import { CustomElement, Property, WebComponent } from '@xaendar/core';
-import { computed } from '@xaendar/core/signals';
 import type { Aliased, InputSignal } from '@xaendar/core/signals';
+import { computed } from '@xaendar/core/signals';
 
 /**
  * A round avatar with the initials of a name.

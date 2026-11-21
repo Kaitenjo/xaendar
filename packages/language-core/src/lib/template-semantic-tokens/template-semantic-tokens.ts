@@ -1,8 +1,8 @@
 import { forEachExpressionChild, getTemplateSpan, type Span, walkTemplate } from '@xaendar/compiler';
 import { isIdentifier, isPropertyAccessExpression, isPropertyAssignment, type Node } from 'typescript';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
-import type { TemplateSemanticTokenType } from '../types/template-semantic-token-type.type';
 import type { TemplateSemanticTokenModifier } from '../types/template-semantic-token-modifier.type';
+import type { TemplateSemanticTokenType } from '../types/template-semantic-token-type.type';
 import type { TemplateSemanticToken } from '../types/template-semantic-token.type';
 
 /**

@@ -1,9 +1,9 @@
 import type { ImportInsertion } from '../../types/import-insertion.type';
+import type { ImportOrganizationOptions } from '../../types/import-organization-options.type';
+import type { ImportStatement } from '../../types/import-statement.type';
 import { TokenType } from '../../types/token-type.enum';
 import type { ImportToken } from '../../types/tokens/import-token.type';
 import { IMPORT_STATEMENT_END, lexImportHeader } from '../import-header/import-header.utils';
-import type { ImportStatement } from '../../types/import-statement.type';
-import type { ImportOrganizationOptions } from '../../types/import-organization-options.type';
 
 /**
  * The comments written on a line after the last `@import` statement, with the spaces before them.

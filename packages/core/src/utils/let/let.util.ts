@@ -1,8 +1,8 @@
 import { COMPONENT } from '../../costants';
 import { _bindSite } from '../../signals/effect/effect';
 import { untracked } from '../../signals/untracked';
-import type { LetBinding } from '../../types/let-binding.type';
 import type { _Context } from '../../types/context.type';
+import type { LetBinding } from '../../types/let-binding.type';
 import { propagate, update } from '../context/context.util';
 
 /**

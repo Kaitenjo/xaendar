@@ -1,6 +1,6 @@
-import type { ProjectRendering } from './project-rendering.type';
 import type { Style } from '../../../types/style.type';
 import type { WorkspaceLibrary } from '../../../types/workspace-library.type';
+import type { ProjectRendering } from './project-rendering.type';
 
 /**
  * The context required to resolve all file contents when scaffolding

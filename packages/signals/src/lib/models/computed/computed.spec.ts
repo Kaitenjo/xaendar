@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { setDevMode } from '../../utils/dev-mode/dev-mode';
 import { GLOBAL_STATE } from '../../utils/globals/globals';
 import { PRIVATE } from '../../utils/private-symbol/private-symbol';
 import { State } from '../state/state';
 import { Watcher } from '../watcher/watcher';
 import { Computed } from './computed';
-import { setDevMode } from '../../utils/dev-mode/dev-mode';
 
 beforeEach(() => {
   GLOBAL_STATE.frozen = false;

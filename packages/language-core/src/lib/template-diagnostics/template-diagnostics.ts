@@ -1,12 +1,12 @@
 import { type ASTNode, describeExhaustiveSwitch, describeVariableCall, findEventCheck, resolveTemplateSpan, type Span, TemplateError } from '@xaendar/compiler';
 import { type Diagnostic, DiagnosticCategory, flattenDiagnosticMessageText } from 'typescript';
-import type { TemplateAnalysisResult } from '../types/template-analysis-result.type';
-import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { findUnusedImports } from '../template-imports/template-imports';
 import { getTemplateWarnings } from '../template-warnings/template-warnings';
+import type { TemplateAnalysisResult } from '../types/template-analysis-result.type';
+import type { TemplateAnalysis } from '../types/template-analysis.type';
+import type { TemplateDiagnostic } from '../types/template-diagnostic.type';
 import { getImportConflictDiagnostics } from '../utils/import-conflicts/import-conflicts.utils';
 import { getEnclosingElementName, getErrorSpan, toTemplateSpan } from '../utils/template-span/template-span.utils';
-import type { TemplateDiagnostic } from '../types/template-diagnostic.type';
 
 /**
  * Collects the problems of a template: the error preventing it from being analyzed, reported on its span, or

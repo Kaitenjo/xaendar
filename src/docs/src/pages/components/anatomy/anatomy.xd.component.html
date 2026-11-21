@@ -1,14 +1,14 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
 @import { lang as currentLang } from '../../../core/router/router.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 @import { RatingComponent } from '../../../examples/components/anatomy/rating/rating.xd.component.ts'
 @import { ShadowInspectorComponent } from '../../../examples/components/anatomy/shadow-inspector/shadow-inspector.xd.component.ts'
-@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { ATTACH_SHADOW, GENERIC_COMPONENT, NON_LITERAL_OPTIONS, WEB_COMPONENT_OPTIONS } from './anatomy.snippets.ts'
-@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
-@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
 <span class="eyebrow">
   { t(translations(), 'pages.components.anatomy.eyebrow') }

@@ -1,5 +1,5 @@
-import { toComponentClassName } from '../../../../../utils/component-class-name/component-class-name.utils';
 import type { WorkspaceLibrary } from '../../../../../types/workspace-library.type';
+import { toComponentClassName } from '../../../../../utils/component-class-name/component-class-name.utils';
 import { getExampleComponentName } from '../../../../../utils/library/library.utils';
 
 /**

@@ -1,7 +1,7 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
-import componentCode from '../../../../demos/qty-picker/src/qty-picker.xd.component.ts?raw';
-import templateCode from '../../../../demos/qty-picker/src/qty-picker.xd.component.html?raw';
 import entryCode from '../../../../demos/qty-picker/src/public-api.ts?raw';
+import templateCode from '../../../../demos/qty-picker/src/qty-picker.xd.component.html?raw';
+import componentCode from '../../../../demos/qty-picker/src/qty-picker.xd.component.ts?raw';
 import configCode from '../../../../demos/qty-picker/vite.config.ts?raw';
 import startCode from '../../../../demos/react/src/main.tsx?raw';
 import type { SourceFile } from '../../../core/sources/source-files.utils';

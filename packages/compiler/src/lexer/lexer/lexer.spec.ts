@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { LexerState } from '../types/lexer-state.enum';
-import { TokenType } from '../types/token-type.enum';
 import { TemplateError } from '../../models/template-error/template-error.model';
 import type { Span } from '../../types/span.type';
+import { LexerState } from '../types/lexer-state.enum';
+import { TokenType } from '../types/token-type.enum';
 import { Lexer } from './lexer';
 
 /**

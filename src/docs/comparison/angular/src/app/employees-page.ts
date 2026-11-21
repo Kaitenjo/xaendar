@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { COLUMNS, createEmployees, DEPARTMENT_OPTIONS, EMPTY_FILTERS, type Filters, filterEmployees, formatDate, formatSalary, STATUS_OPTIONS, statusClass } from '../../../shared/data';
+import { COLUMNS, createEmployees, DEPARTMENT_OPTIONS, EMPTY_FILTERS, filterEmployees, formatDate, formatSalary, STATUS_OPTIONS, statusClass, type Filters } from '../../../shared/data';
 import { UiButton } from './ui-button';
 import { UiDateInput } from './ui-date-input';
 import { UiSelect } from './ui-select';

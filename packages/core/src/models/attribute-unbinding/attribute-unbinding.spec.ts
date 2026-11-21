@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
 import type { _Context } from '../../types/context.type';
+import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
 import { AttributeUnbinding } from './attribute-unbinding';
 
 const context = { component: undefined } as unknown as _Context;

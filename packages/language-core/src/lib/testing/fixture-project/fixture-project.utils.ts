@@ -2,8 +2,8 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { analyzeTemplate } from '../../template-analysis/template-analysis';
-import { toPosixPath } from '../../utils/path/path.utils';
 import type { FixtureProject } from '../../types/fixture-project.type';
+import { toPosixPath } from '../../utils/path/path.utils';
 
 /**
  * The files of the fixture project, keyed by their path relative to its root.

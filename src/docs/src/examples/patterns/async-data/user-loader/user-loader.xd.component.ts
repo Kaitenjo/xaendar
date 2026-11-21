@@ -1,7 +1,7 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
-import { fetchUser } from './api';
 import type { User } from './api';
+import { fetchUser } from './api';
 
 /**
  * Loads a user, showing the loading, error and data states.

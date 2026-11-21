@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { InterpolationExpressionToken } from '../../../lexer/types/tokens/interpolation-expression-token.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
-import { ASTNodeType } from '../../types/node.enum';
-import { parseInterpolation } from './parse-interpolation.state';
 import { Parser } from '../../parser/parser';
+import { ASTNodeType } from '../../types/node.enum';
 import type { ElementNode } from '../../types/nodes/element-node.type';
 import type { InterpolationNode } from '../../types/nodes/interpolation-node.type';
 import { getTemplateSpan } from '../../utils/expression-validator/expression-validator';
+import { parseInterpolation } from './parse-interpolation.state';
 
 const run = (template: string) => {
   const cursor = new ParserCursor(template, new Lexer(template).tokenize());

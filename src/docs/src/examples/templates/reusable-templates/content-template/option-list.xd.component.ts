@@ -1,7 +1,7 @@
-import { CustomElement, Property, Query, WebComponent } from '@xaendar/core';
 import type { TemplateRef } from '@xaendar/core';
-import { signal } from '@xaendar/core/signals';
+import { CustomElement, Property, Query, WebComponent } from '@xaendar/core';
 import type { InputSignal, QuerySignal } from '@xaendar/core/signals';
+import { signal } from '@xaendar/core/signals';
 
 /**
  * A list of options, one selectable, which renders each option with the template `option` passed to it as content, and

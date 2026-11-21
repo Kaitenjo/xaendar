@@ -1,18 +1,18 @@
-import type { LayoutRender } from '../../types/template-layout/layout-render.type';
-import type { LayoutLet } from '../../types/template-layout/layout-let.type';
 import type { LayoutAtom } from '../../types/template-layout/layout-atom.type';
-import type { LayoutElement } from '../../types/template-layout/layout-element.type';
-import type { LayoutItem } from '../../types/template-layout/layout-item.type';
-import type { LayoutConditionalBinding } from '../../types/template-layout/layout-conditional-binding.type';
+import type { LayoutAttribute } from '../../types/template-layout/layout-attribute.type';
 import type { LayoutBlock } from '../../types/template-layout/layout-block.type';
 import type { LayoutBranch } from '../../types/template-layout/layout-branch.type';
+import type { LayoutConditionalBinding } from '../../types/template-layout/layout-conditional-binding.type';
 import type { LayoutDirective } from '../../types/template-layout/layout-directive.type';
-import type { LayoutTemplateDeclaration } from '../../types/template-layout/layout-template-declaration.type';
 import type { LayoutElementRef } from '../../types/template-layout/layout-element-ref.type';
+import type { LayoutElement } from '../../types/template-layout/layout-element.type';
 import type { LayoutEvent } from '../../types/template-layout/layout-event.type';
-import type { LayoutAttribute } from '../../types/template-layout/layout-attribute.type';
-import { findClosing, findEnd } from '../balanced-text/balanced-text.utils';
+import type { LayoutItem } from '../../types/template-layout/layout-item.type';
+import type { LayoutLet } from '../../types/template-layout/layout-let.type';
+import type { LayoutRender } from '../../types/template-layout/layout-render.type';
+import type { LayoutTemplateDeclaration } from '../../types/template-layout/layout-template-declaration.type';
 import type { Reader } from '../../types/template-layout/reader.type';
+import { findClosing, findEnd } from '../balanced-text/balanced-text.utils';
 
 /**
  * The elements whose content is kept as written: its spaces and line breaks are part of what is rendered.

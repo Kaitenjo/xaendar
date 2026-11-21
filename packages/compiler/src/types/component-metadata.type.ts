@@ -1,7 +1,7 @@
 import type { ComponentPropertyMetadata } from '../type-checker/models/component-property-metadata/component-property-metadata.model';
 import type { ClassTypeParameter } from './class-type-parameter.type';
-import type { ComponentEventMetadata } from './component-event-metadata.type';
 import type { ComponentDeclaration } from './component-declaration.type';
+import type { ComponentEventMetadata } from './component-event-metadata.type';
 
 /**
  * Metadata for a web component extracted from the @WebComponent decorator.

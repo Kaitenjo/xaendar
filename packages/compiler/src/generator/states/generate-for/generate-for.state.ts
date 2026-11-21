@@ -1,12 +1,12 @@
 import { ForImplicitVariables } from '../../../parser/types/nodes/for-implicit-variables.type';
-import { FOR_IMPLICIT_VARIABLES } from '../../../parser/utils/for-variables/for-variables.utils';
 import { ForNode } from '../../../parser/types/nodes/for-node.type';
+import { FOR_IMPLICIT_VARIABLES } from '../../../parser/utils/for-variables/for-variables.utils';
 import { GeneratorContext } from '../../context/context';
-import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import type { GeneratorFunctionToProcess } from '../../types/generator-function-to-process.type';
+import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
+import { allocateBlockSlot, appendBlockPosition, appendContainer, getContentAnchor } from '../../utils/block-position/block-position.utils';
 import { getReadForVariables, writeIterationVariables } from '../../utils/for-reads/for-reads.utils';
 import { getBlockIdentifier, getTextIdentifier, joinVariables, resolveExpression } from '../../utils/generator/generator.utils';
-import { allocateBlockSlot, appendBlockPosition, appendContainer, getContentAnchor } from '../../utils/block-position/block-position.utils';
 import { declareExpression } from '../../utils/module-code/module-code.utils';
 
 /**

@@ -1,5 +1,5 @@
-import type { ASTNode } from '../../../parser/types/ast.type';
 import type { IdentifierKind } from '../../../generator/types/identifier-kind.type';
+import type { ASTNode } from '../../../parser/types/ast.type';
 import type { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import type { LetNode } from '../../../parser/types/nodes/let-node.type';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';

@@ -1,14 +1,14 @@
-import { ASTNodeType } from '../../../parser/types/node.enum';
-import { GeneratorContext } from '../../context/context';
-import type { BlockBranch } from '../../types/block-branch.type';
-import type { GeneratorFunctionToProcess } from '../../types/generator-function-to-process.type';
-import type { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import type { ASTNode } from '../../../parser/types/ast.type';
+import { ASTNodeType } from '../../../parser/types/node.enum';
 import type { CaseNode } from '../../../parser/types/nodes/case-node.type';
 import type { ElseIfNode } from '../../../parser/types/nodes/else-if-node.type';
 import type { ElseNode } from '../../../parser/types/nodes/else-node.type';
 import type { IfNode } from '../../../parser/types/nodes/if-node.type';
 import { isStructuralElement } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
+import { GeneratorContext } from '../../context/context';
+import type { BlockBranch } from '../../types/block-branch.type';
+import type { GeneratorFunctionToProcess } from '../../types/generator-function-to-process.type';
+import type { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 /**
  * Tells whether a node is the last one its parent renders: every sibling following it renders nothing (an `@import`, a
  * `<template>` declaration, a `@let`). A block in this position, when its parent ends where the node it is rendered into

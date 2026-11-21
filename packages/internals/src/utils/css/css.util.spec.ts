@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CSS_UNITS, parseStyleDeclarations, splitClasses, styleValue, stylePriority, toCssPropertyName } from './css.util';
+import { CSS_UNITS, parseStyleDeclarations, splitClasses, stylePriority, styleValue, toCssPropertyName } from './css.util';
 
 describe('CSS_UNITS', () => {
   it('holds the units of CSS in lowercase, and %', () => {

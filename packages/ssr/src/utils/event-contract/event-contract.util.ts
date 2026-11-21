@@ -1,5 +1,5 @@
+import { _EVENT_CONTRACT_KEY, _RECORDED_EVENTS, _SUBMIT_ATTRIBUTE } from '@xaendar/core';
 import { escapeAttribute } from '@xaendar/internals';
-import { _EVENT_CONTRACT_KEY, _RECORDED_EVENTS, _SUBMIT_ATTRIBUTE, type _EventContract } from '@xaendar/core';
 
 /**
  * The most events the contract keeps. A page made only of static components never loads the runtime that empties the

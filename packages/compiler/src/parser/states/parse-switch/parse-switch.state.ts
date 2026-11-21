@@ -8,8 +8,8 @@ import type { MaybeASTNodeWithSpan } from '../../types/maybe-ast-node-with-span.
 import { ASTNodeType } from '../../types/node.enum';
 import { CaseNode } from '../../types/nodes/case-node.type';
 import { SwitchNode } from '../../types/nodes/switch-node.type';
-import { validateExpression } from '../../utils/expression-validator/expression-validator';
 import { parseDefaultNever } from '../../utils/default-never/default-never.utils';
+import { validateExpression } from '../../utils/expression-validator/expression-validator';
 import { parseBlockChildren } from '../parse-block-children/parse-block-children.state';
 
 /**

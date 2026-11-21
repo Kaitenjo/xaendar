@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { _Context } from '../../types/context.type';
 import type { RenderConditionalBinding } from '../../types/render-conditional-binding.type';
 import { _scope, EMPTY_LAYOUT } from '../context/context.util';
-import type { _Context } from '../../types/context.type';
 import { _selectBranch, _selectBranchIndex } from './select-branch.util';
 
 /**

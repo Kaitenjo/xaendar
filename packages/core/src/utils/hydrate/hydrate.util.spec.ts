@@ -1,10 +1,9 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { _EVENT_CONTRACT_KEY } from '../../costants';
-import type { RenderElementEvent } from '../../types/render-element-event.type';
-import type { NodeStrategy } from '../../types/node-strategy.type';
-import { CLEANUP, HEADER } from '../../costants';
+import { _EVENT_CONTRACT_KEY, CLEANUP, HEADER } from '../../costants';
 import type { _Context } from '../../types/context.type';
+import type { NodeStrategy } from '../../types/node-strategy.type';
+import type { RenderElementEvent } from '../../types/render-element-event.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');

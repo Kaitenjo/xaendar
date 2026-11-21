@@ -1,4 +1,4 @@
-import type { Span, ComponentMetadata } from '@xaendar/compiler';
+import type { ComponentMetadata, Span } from '@xaendar/compiler';
 
 /**
  * A part of a `@WebComponent` decorator leading to the files of its component.

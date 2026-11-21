@@ -5,7 +5,7 @@ import type { _Context } from '../../types/context.type';
 import { _scope, EMPTY_LAYOUT, getNodeStrategy } from '../context/context.util';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { deferElementHydration } from '../hydration-triggers/hydration-triggers.util';
-import { claimShadowRoot, ClaimNodes, isClaimed, releaseClaim } from './claim-nodes.util';
+import { ClaimNodes, claimShadowRoot, isClaimed, releaseClaim } from './claim-nodes.util';
 
 /**
  * The number of node slots of the contexts of the tests.

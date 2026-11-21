@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
 import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
-import type { LibraryManifest } from '../../types/library-manifest/library-manifest.type';
 import type { LibraryManifestDeclaration } from '../../types/library-manifest/library-manifest-declaration.type';
+import type { LibraryManifest } from '../../types/library-manifest/library-manifest.type';
 import { listTypeReferences, mapTypeModules, toLibraryDeclaration, toLibraryMetadata } from './library-manifest.utils';
 
 /**

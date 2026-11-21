@@ -1,6 +1,6 @@
 import type { SignalOptions } from '@xaendar/signals';
-import type { Signal as SignalType } from '../types/signal.type';
 import { NODE } from '../node/node.symbol';
+import type { Signal as SignalType } from '../types/signal.type';
 import { untracked } from '../untracked';
 
 /**

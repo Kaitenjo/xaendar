@@ -1,6 +1,6 @@
+import { provideZonelessChangeDetection } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { defineQtyPicker } from '@xaendar-demo/qty-picker';
-import { provideZonelessChangeDetection } from '@angular/core';
 import { App } from './app/app';
 
 /*

@@ -1,13 +1,13 @@
 import { CompilerContext } from '../../../models/compiler-context/compiler-context.model';
+import type { ImportSpecifier } from '../../../parser/types/nodes/import-specifier.type';
 import { ComponentMetadata } from '../../../types/component-metadata.type';
 import { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
 import { DirectiveMetadata } from '../../../types/directive-metadata.type';
-import type { ImportSpecifier } from '../../../parser/types/nodes/import-specifier.type';
 import type { ElementNamespace } from '../../../types/element-namespace.type';
+import type { Span } from '../../../types/span.type';
 import type { SymbolImport } from '../../../types/symbol-import.type';
 import type { ElementEventMap } from '../../types/element-event-map.type';
 import type { EventCheck } from '../../types/event-check.type';
-import type { Span } from '../../../types/span.type';
 import type { VariableCall } from '../../types/variable-call.type';
 import { getEventMap } from '../../utils/namespace-types/namespace-types.utils';
 

@@ -1,4 +1,4 @@
-import { LexerState } from '../lexer-state.enum'
+import { LexerState } from '../lexer-state.enum';
 import type { TokenWithOptionalSpan } from '../token-with-optional-span.type';
 
 /**

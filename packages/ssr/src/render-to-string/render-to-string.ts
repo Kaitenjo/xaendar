@@ -5,8 +5,8 @@ import type { RenderInputs } from '../types/render-inputs.type';
 import type { RenderOptions } from '../types/render-options.type';
 import type { ServerOutput } from '../types/server-output.type';
 import { _writeEventContract } from '../utils/event-contract/event-contract.util';
-import { _createServerRuntime, _runOnServer } from '../utils/server-runtime/server-runtime.util';
 import { _getServerRender } from '../utils/server-render-registry/server-render-registry.util';
+import { _createServerRuntime, _runOnServer } from '../utils/server-runtime/server-runtime.util';
 import { _isClientComponent, _renderComponent, _writeClientRoot } from '../utils/ssr-element/ssr-element.util';
 
 /**

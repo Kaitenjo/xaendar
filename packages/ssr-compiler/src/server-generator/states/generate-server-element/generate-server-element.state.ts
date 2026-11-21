@@ -1,13 +1,13 @@
+import { appendBlockPosition, ASTNodeType, declareExpression, describeStyling, GeneratorContext, getChildrenNamespace, getDirectiveOrder, getElementIdentifier, getElementNamespace, isStructuralElement, mapContentTemplates, orderDirectives, resolveExpression, splitStylingAttributes, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
 import { dropsLeadingNewline, escapeAttribute, isValidCustomElementName, isVoidElement } from '@xaendar/internals';
-import { appendBlockPosition, ASTNodeType, declareExpression, describeStyling, getDirectiveOrder, mapContentTemplates, orderDirectives, splitStylingAttributes, GeneratorContext, getChildrenNamespace, getElementIdentifier, getElementNamespace, isStructuralElement, resolveExpression, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
 import type { Function } from '@xaendar/types';
+import { SUBMIT_ATTRIBUTE } from '../../../costants/ssr-markers.constants';
+import type { GenerateChildren } from '../../types/generate-children.type';
 import type { ServerCodePiece } from '../../types/server-code-piece.type';
 import type { ServerFunctionToProcess } from '../../types/server-function-to-process.type';
 import type { ServerParent } from '../../types/server-parent.type';
-import type { GenerateChildren } from '../../types/generate-children.type';
 import type { ServerTransitionResult } from '../../types/server-transition-result.type';
 import { SERVER_RESOLVE_OPTIONS, toStatements } from '../../utils/server-code/server-code.utils';
-import { SUBMIT_ATTRIBUTE } from '../../../costants/ssr-markers.constants';
 
 /**
  * Generates the code writing an element: its start tag, its children and its end tag.

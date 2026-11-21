@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import type { NodeStrategy } from '../types/node-strategy.type';
 import { HEADER } from '../costants';
 import type { _Context } from '../types/context.type';
+import type { NodeStrategy } from '../types/node-strategy.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');

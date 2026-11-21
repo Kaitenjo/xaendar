@@ -1,6 +1,6 @@
 import { CustomElement, Property, WebComponent } from '@xaendar/core';
-import { signal } from '@xaendar/core/signals';
 import type { InputSignal } from '@xaendar/core/signals';
+import { signal } from '@xaendar/core/signals';
 
 /**
  * A panel of a tab group: its content is shown only while the group marks it as active.

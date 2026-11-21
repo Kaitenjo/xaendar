@@ -1,4 +1,4 @@
-import type { ContextCache, ComponentOrDirectiveMetadata } from '@xaendar/compiler';
+import type { ComponentOrDirectiveMetadata, ContextCache } from '@xaendar/compiler';
 import { describe, expect, it, vi } from 'vitest';
 import { getServerDependencies } from './server-dependencies.utils';
 

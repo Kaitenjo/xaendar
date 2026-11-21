@@ -1,6 +1,6 @@
 import type { Span } from '../../../types/span.type';
-import { ASTNode } from '../ast.type';
 import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
+import { ASTNode } from '../ast.type';
 import { ASTNodeType } from '../node.enum';
 
 /**

@@ -1,8 +1,8 @@
 import { CustomElement, Property, WebComponent } from '@xaendar/core';
-import { computed, signal, untracked } from '@xaendar/core/signals';
 import type { InputSignal } from '@xaendar/core/signals';
-import { loadExampleFiles } from '../../core/sources/sources';
+import { computed, signal, untracked } from '@xaendar/core/signals';
 import type { SourceFile } from '../../core/sources/source-files.utils';
+import { loadExampleFiles } from '../../core/sources/sources';
 
 /**
  * A live example: the running component, projected in its default slot, next to its source files.

@@ -13,6 +13,7 @@ import type { Signal as SignalType } from '../../signals/types/signal.type';
 import { untracked } from '../../signals/untracked';
 import type { BindingHost } from '../../types/binding-host.type';
 import type { ConditionalBindingRun } from '../../types/conditional-binding-run.type';
+import type { _Context } from '../../types/context.type';
 import type { ElementBinding } from '../../types/element-binding.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { RenderChildren } from '../../types/render-children.type';
@@ -28,17 +29,16 @@ import type { RenderElement } from '../../types/render-element.type';
 import type { StructuralCollector } from '../../types/structural-collector.type';
 import type { TemplateExpression } from '../../types/template-expression.type';
 import { _addAppliedDirective, _removeAppliedDirective } from '../applied-directives/applied-directives.util';
-import type { _Context } from '../../types/context.type';
+import { _prepareAttributes, removeTemplateAttribute, writeTemplateAttribute } from '../attribute-binding/attribute-binding.util';
+import { _setContentTemplates } from '../content-templates/content-templates.util';
 import { _scope, addCleanup, clear, containerSlot, EMPTY_LAYOUT, getNodeStrategy, STRUCTURAL_LAYOUT, swapNodeStrategy, trackNode } from '../context/context.util';
 import { _setElementRef } from '../element-refs/element-refs.util';
 import { _dropPendingInput, _exposedInputOf, _keepPendingInput } from '../host-directives/host-directives.util';
 import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { _selectBranch } from '../select-branch/select-branch.util';
-import { connectChild } from '../try-scope/try-scope.util';
-import { _setContentTemplates } from '../content-templates/content-templates.util';
-import { _prepareAttributes, removeTemplateAttribute, writeTemplateAttribute } from '../attribute-binding/attribute-binding.util';
 import { _prepareStyling } from '../styling-binding/styling-binding.util';
 import { ensureStylingState } from '../styling-state/styling-state.util';
+import { connectChild } from '../try-scope/try-scope.util';
 
 /**
  * Creates a DOM element, applies attributes and event listeners, appends it

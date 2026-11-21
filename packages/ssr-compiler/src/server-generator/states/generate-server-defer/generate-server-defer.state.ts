@@ -1,4 +1,4 @@
-import { getBlockIdentifier, type GeneratorContext, type DeferNode } from '@xaendar/compiler';
+import { getBlockIdentifier, type DeferNode, type GeneratorContext } from '@xaendar/compiler';
 import { SSR_MARKERS } from '../../../costants/ssr-markers.constants';
 import type { ServerParent } from '../../types/server-parent.type';
 import type { ServerTransitionResult } from '../../types/server-transition-result.type';

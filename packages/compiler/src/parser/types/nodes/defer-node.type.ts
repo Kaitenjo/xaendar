@@ -1,7 +1,7 @@
-import type { ASTNode } from '../ast.type';
 import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
-import type { DeferTrigger } from '../triggers/defer-trigger.type';
+import type { ASTNode } from '../ast.type';
 import { ASTNodeType } from '../node.enum';
+import type { DeferTrigger } from '../triggers/defer-trigger.type';
 import type { ErrorNode } from './error-node.type';
 import type { LoadingNode } from './loading-node.type';
 import type { PlaceholderNode } from './placeholder-node.type';

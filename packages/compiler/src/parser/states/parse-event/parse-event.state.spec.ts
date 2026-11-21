@@ -3,11 +3,11 @@ import { Lexer } from '../../../lexer/lexer/lexer';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { Token } from '../../../lexer/types/token.type';
 import { EventToken } from '../../../lexer/types/tokens/event-token.type';
+import type { Span } from '../../../types/span.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
 import { ASTNodeType } from '../../types/node.enum';
-import { parseEvent } from './parse-event.state';
-import type { Span } from '../../../types/span.type';
 import { getTemplateSpan } from '../../utils/expression-validator/expression-validator';
+import { parseEvent } from './parse-event.state';
 
 const runTokens = (tokens: Token[], template = '') => {
   const cursor = new ParserCursor(template, tokens);

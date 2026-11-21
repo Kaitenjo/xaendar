@@ -1,8 +1,8 @@
 import type { LanguageService, QuickInfo } from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import type { FixtureProject } from '../types/fixture-project.type';
+import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { getTemplateHover } from './template-hover';
 
 const TIMEOUT = 60_000;

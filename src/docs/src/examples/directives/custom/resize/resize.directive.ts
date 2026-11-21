@@ -1,5 +1,5 @@
-import { CustomDirective, Directive, Event } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
+import { CustomDirective, Directive, Event } from '@xaendar/core';
 
 /**
  * Emits `resized` with the size of the element whenever it changes.

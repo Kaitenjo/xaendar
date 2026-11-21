@@ -1,8 +1,8 @@
-import type { ApiPackage } from '../api.data';
 import { INSTALLATION_VITE_CONFIG } from '../../../installation/installation.snippets';
-import { BUILD_TOOLS_VITE_CONFIG } from './build-tools.snippets';
 import { CSS_MINIFY } from '../../../tools/build/build.snippets';
 import { SSR_VITE_CONFIG } from '../../../tools/ssr/deployment/deployment.snippets';
+import type { ApiPackage } from '../api.data';
+import { BUILD_TOOLS_VITE_CONFIG } from './build-tools.snippets';
 
 /**
  * The symbols of `@xaendar/build-tools`.

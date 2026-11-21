@@ -1,6 +1,6 @@
-import type { RenderConditionalBinding } from '../../types/render-conditional-binding.type';
 import { COMPONENT } from '../../costants';
 import type { _Context } from '../../types/context.type';
+import type { RenderConditionalBinding } from '../../types/render-conditional-binding.type';
 
 /**
  * Selects the branch of a conditional binding to apply: the first one, in declaration order, whose condition holds

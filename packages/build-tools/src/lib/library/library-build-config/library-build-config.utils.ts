@@ -1,8 +1,8 @@
 import type { InlineConfig, Plugin, PluginOption } from 'vite';
 import { xaendarPlugin } from '../../plugin/plugin/plugin';
 import type { LibraryAnalysis } from '../../types/library-analysis.type';
-import type { LibraryPackageJson } from '../../types/library-package-json.type';
 import type { LibraryBuild } from '../../types/library-build.type';
+import type { LibraryPackageJson } from '../../types/library-package-json.type';
 
 /**
  * Creates the matcher of the imports a library leaves to the application installing it: the Xaendar packages, which the

@@ -1,5 +1,5 @@
-import { collectFolder, langOf } from './source-files.utils';
 import type { SourceFile } from './source-files.utils';
+import { collectFolder, langOf } from './source-files.utils';
 
 /**
  * The loader of the raw source of every live example, keyed by path. Examples are real components: the code

@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../lexer/lexer/lexer';
 import { Parser } from '../../parser/parser/parser';
 import { ASTNode } from '../../parser/types/ast.type';
-import type { ElementNode } from '../../parser/types/nodes/element-node.type';
 import { ASTNodeType } from '../../parser/types/node.enum';
-import { Generator } from './generator';
+import type { ElementNode } from '../../parser/types/nodes/element-node.type';
 import type { ContextCache } from '../../types/context-cache.type';
 import type { SymbolImport } from '../../types/symbol-import.type';
+import { Generator } from './generator';
 
 const cache = {} as ContextCache;
 

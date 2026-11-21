@@ -1,4 +1,4 @@
-import { ASTNodeType, parseTemplate, TemplateError, type ASTNode, type ComponentMetadata, type DirectiveMetadata, type SymbolImport, type ContextCache } from '@xaendar/compiler';
+import { ASTNodeType, parseTemplate, TemplateError, type ASTNode, type ComponentMetadata, type ContextCache, type DirectiveMetadata, type SymbolImport } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { ServerGenerator } from './server-generator';
 

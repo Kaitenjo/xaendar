@@ -1,5 +1,5 @@
-import { CustomElement, Event, WebComponent } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
+import { CustomElement, Event, WebComponent } from '@xaendar/core';
 
 /**
  * Emits an event from each lifecycle hook.

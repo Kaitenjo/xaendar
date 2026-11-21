@@ -1,6 +1,6 @@
 import { CustomElement, Query, WebComponent } from '@xaendar/core';
-import { computed, signal } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
+import { computed, signal } from '@xaendar/core/signals';
 
 /**
  * Binds the same styles to `style` as an object and as a string.

@@ -1,10 +1,10 @@
 @import { translations } from '../../../../core/i18n/i18n.ts'
-@import { lang as currentLang } from '../../../../core/router/router.ts'
-@import { DocsCodeComponent } from '../../../../ui/docs-code/docs-code.xd.component.ts'
-@import { DocsCalloutComponent } from '../../../../ui/docs-callout/docs-callout.xd.component.ts'
-@import { BROWSER_GLOBALS, ENTRY_SERVER, RENDER_INPUTS, SERVER_DIRECTIVE } from './overview.snippets.ts'
 @import { translate as t } from '../../../../core/i18n/i18n.utils.ts'
+@import { lang as currentLang } from '../../../../core/router/router.ts'
 @import { HtmlTranslationDirective } from '../../../../directives/html-translation.directive.ts'
+@import { DocsCalloutComponent } from '../../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCodeComponent } from '../../../../ui/docs-code/docs-code.xd.component.ts'
+@import { BROWSER_GLOBALS, ENTRY_SERVER, RENDER_INPUTS, SERVER_DIRECTIVE } from './overview.snippets.ts'
 
 <span class="eyebrow">
   { t(translations(), 'pages.tools.ssr.overview.eyebrow') }

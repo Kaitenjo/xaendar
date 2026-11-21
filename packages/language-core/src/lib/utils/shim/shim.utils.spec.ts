@@ -5,9 +5,9 @@ vi.mock('../../language-service/language-service', () => ({
   upsertVirtualFile: vi.fn()
 }));
 
+import type { ProjectLanguageService } from '../../language-service/language-service';
 import { upsertVirtualFile } from '../../language-service/language-service';
 import { createShim } from './shim.utils';
-import type { ProjectLanguageService } from '../../language-service/language-service';
 
 beforeEach(() => {
   vi.clearAllMocks();

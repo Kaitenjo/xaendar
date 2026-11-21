@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { parseTemplate } from '../../../compile/compile';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
+import type { ContextCache } from '../../../types/context-cache.type';
 import { GeneratorContext } from '../../context/context';
 import type { TemplateFunctionFactory } from '../../types/template-function-factory.type';
 import { createScope, declareScope, declareTemplateParameters } from './scope-generation.utils';
-import type { ContextCache } from '../../../types/context-cache.type';
 
 const cache = {} as ContextCache;
 

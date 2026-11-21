@@ -1,13 +1,13 @@
 import type { ASTNode } from '../../../parser/types/ast.type';
 import type { LetNode } from '../../../parser/types/nodes/let-node.type';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
-import type { ElementNamespace } from '../../../types/element-namespace.type';
 import { visitScopeDeclarations } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
+import type { ElementNamespace } from '../../../types/element-namespace.type';
 import { GeneratorContext } from '../../context/context';
 import type { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import type { ResolveExpressionOptions } from '../../types/resolve-expresion-options.type';
-import { isConstantExpression, resolveExpression } from '../generator/generator.utils';
 import type { TemplateFunctionFactory } from '../../types/template-function-factory.type';
+import { isConstantExpression, resolveExpression } from '../generator/generator.utils';
 import { declareLetBinding, toArrayLiteral, toObjectLiteral, toRoleName } from '../module-code/module-code.utils';
 
 /**

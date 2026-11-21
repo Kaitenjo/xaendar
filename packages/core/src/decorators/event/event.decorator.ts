@@ -1,8 +1,8 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue, DecoratorMetadataContext, Function } from '@xaendar/types';
-import type { EventHost } from '../../types/event/event-host.type';
-import { EventDecoratorReturnType } from '../../types/event/event-return-type.type';
 import { EventOptions } from '../../models/event-options/event-options';
 import { Output } from '../../models/output/output';
+import type { EventHost } from '../../types/event/event-host.type';
+import { EventDecoratorReturnType } from '../../types/event/event-return-type.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { registerEvent } from '../../utils/event-registration/event-registration.util';
 

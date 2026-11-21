@@ -1,11 +1,11 @@
-import { LOADING_PARAMETERS, PLACEHOLDER_PARAMETERS } from '../../../parser/utils/block-parameters/block-parameters.utils';
 import { ExpressionScanner } from '../../../models/expression-scanner/expression-scanner.model';
-import { splitTopLevel } from '../balanced-text/balanced-text.utils';
+import { LOADING_PARAMETERS, PLACEHOLDER_PARAMETERS } from '../../../parser/utils/block-parameters/block-parameters.utils';
 import { DEFER_TRIGGER_KEYWORDS, HYDRATE_TRIGGER_KEYWORDS } from '../../../parser/utils/triggers/triggers.utils';
 import { Lexer } from '../../lexer/lexer';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
 import type { TriggerContext } from '../../types/trigger-context.type';
+import { splitTopLevel } from '../balanced-text/balanced-text.utils';
 
 /**
  * The name of a trigger being written at the end of its part, after `prefetch` or not.

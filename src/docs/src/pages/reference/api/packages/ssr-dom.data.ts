@@ -1,5 +1,5 @@
-import type { ApiPackage } from '../api.data';
 import { ENTRY_SERVER } from '../../../tools/ssr/overview/overview.snippets';
+import type { ApiPackage } from '../api.data';
 
 /**
  * The symbols of `@xaendar/ssr/dom`.

@@ -1,8 +1,8 @@
 import type { KeyEventFilter } from '@xaendar/internals';
 import { Expression } from 'typescript';
-import { ASTNodeType } from '../node.enum';
 import type { Span } from '../../../types/span.type';
 import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
+import { ASTNodeType } from '../node.enum';
 import type { CastNode } from './cast-node.type';
 
 /**

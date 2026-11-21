@@ -1,5 +1,5 @@
-import type { DirectiveDecorator } from './typescript-decorator-nodes/directive-decorator.type';
 import type { ClassDeclarationWithName } from './typescript-decorator-nodes/class-declaration-with-name.type';
+import type { DirectiveDecorator } from './typescript-decorator-nodes/directive-decorator.type';
 
 /**
  * Represents a class declaration and its associated `Directive` decorator.

@@ -1,6 +1,6 @@
 import { _TRANSFER_STATE_ATTRIBUTE } from '../../costants';
-import { HYDRATION } from '../hydration-flag/hydration-flag.util';
 import { _getComponentRuntime } from '../component-runtime/component-runtime.util';
+import { HYDRATION } from '../hydration-flag/hydration-flag.util';
 import { _parseState } from '../state-serialization/state-serialization.util';
 
 /**

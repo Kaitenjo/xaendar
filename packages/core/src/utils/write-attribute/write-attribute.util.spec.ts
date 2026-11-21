@@ -4,7 +4,6 @@ import { HostAttribute } from '../../decorators/host-attribute/host-attribute.de
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
 import { EMPTY_LAYOUT, _scope } from '../context/context.util';
-import type { _Context } from '../../types/context.type';
 import { _bindHost } from '../host-bindings/host-bindings.util';
 import { _setExpressionProperty, _setProperty } from '../render-element/render-element.util';
 import { _attributeValue, writeAttribute } from './write-attribute.util';

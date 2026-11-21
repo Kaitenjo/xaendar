@@ -1,6 +1,6 @@
 import { dirname } from 'node:path';
-import { findConfigFile, parseJsonConfigFileContent, readConfigFile, sys } from 'typescript';
 import type { ParsedCommandLine } from 'typescript';
+import { findConfigFile, parseJsonConfigFileContent, readConfigFile, sys } from 'typescript';
 
 /**
  * Loads the `tsconfig.json` applicable to the given directory, using

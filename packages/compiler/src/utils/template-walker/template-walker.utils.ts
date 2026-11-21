@@ -1,4 +1,6 @@
+import { isIdentifier } from 'typescript';
 import type { ASTNode } from '../../parser/types/ast.type';
+import { ASTNodeType } from '../../parser/types/node.enum';
 import type { CaseNode } from '../../parser/types/nodes/case-node.type';
 import type { CatchNode } from '../../parser/types/nodes/catch-node.type';
 import type { ClientNode } from '../../parser/types/nodes/client-node.type';
@@ -15,13 +17,11 @@ import type { HydrateNode } from '../../parser/types/nodes/hydrate-node.type';
 import type { IfNode } from '../../parser/types/nodes/if-node.type';
 import type { StructuralDirectiveNode } from '../../parser/types/nodes/structural-directive-node.type';
 import type { HydrateTrigger } from '../../parser/types/triggers/hydrate-trigger.type';
+import { getForVariables } from '../../parser/utils/for-variables/for-variables.utils';
+import { isStructuralElement, visitScopeDeclarations } from '../../parser/utils/scope-declarations/scope-declarations.utils';
 import type { ComponentMetadata } from '../../types/component-metadata.type';
 import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
 import type { DirectiveMetadata } from '../../types/directive-metadata.type';
-import { isIdentifier } from 'typescript';
-import { ASTNodeType } from '../../parser/types/node.enum';
-import { getForVariables } from '../../parser/utils/for-variables/for-variables.utils';
-import { isStructuralElement, visitScopeDeclarations } from '../../parser/utils/scope-declarations/scope-declarations.utils';
 import type { TemplateVisitor } from '../../types/template-visitor.type';
 
 /**

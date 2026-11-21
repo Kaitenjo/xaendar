@@ -3,9 +3,9 @@ import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import { InterpolationNode } from '../../../parser/types/nodes/interpolation-node.type';
 import { TextNode } from '../../../parser/types/nodes/text-node.type';
+import type { ContextCache } from '../../../types/context-cache.type';
 import { GeneratorContext } from '../../context/context';
 import { generateTextAndInterpolation } from './generate-text-and-interpolation.state';
-import type { ContextCache } from '../../../types/context-cache.type';
 
 const cache = {} as ContextCache;
 

@@ -1,4 +1,4 @@
-import { GeneratorContext, parseTemplate, type ForNode, type ContextCache } from '@xaendar/compiler';
+import { GeneratorContext, parseTemplate, type ContextCache, type ForNode } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { generateServerFor } from './generate-server-for.state';
 

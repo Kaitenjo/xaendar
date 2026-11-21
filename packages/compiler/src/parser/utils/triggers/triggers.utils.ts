@@ -1,4 +1,5 @@
 import { isIdentifier, isObjectLiteralExpression } from 'typescript';
+import { splitTopLevel } from '../../../lexer/utils/balanced-text/balanced-text.utils';
 import type { Span } from '../../../types/span.type';
 import type { DeferNode } from '../../types/nodes/defer-node.type';
 import type { HydrateNode } from '../../types/nodes/hydrate-node.type';
@@ -11,7 +12,6 @@ import type { TriggerTarget } from '../../types/triggers/trigger-target.type';
 import type { VisibleTrigger } from '../../types/triggers/visible-trigger.type';
 import { parseDuration } from '../durations/durations.utils';
 import { validateExpression } from '../expression-validator/expression-validator';
-import { splitTopLevel } from '../../../lexer/utils/balanced-text/balanced-text.utils';
 
 /**
  * The triggers of a `@defer` named by a keyword, followed by their arguments between parentheses when they take any.

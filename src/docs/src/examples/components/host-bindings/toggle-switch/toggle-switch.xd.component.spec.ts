@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { ToggleComponent } from './toggle.xd.component';
 import { ToggleSwitchComponent } from './toggle-switch.xd.component';
+import { ToggleComponent } from './toggle.xd.component';
 
 /**
  * Waits for the effects, which run again in a microtask.

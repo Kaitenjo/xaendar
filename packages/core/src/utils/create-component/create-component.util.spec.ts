@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
-import { CLEANUP } from '../../costants';
 import type { Constructor } from '@xaendar/types';
+import { describe, expect, it, vi } from 'vitest';
+import { CLEANUP } from '../../costants';
 import type { Aliased } from '../../signals/types/aliased.type';
 import type { InputSignal } from '../../signals/types/input-signal.type';
 import type { ModelSignal } from '../../signals/types/model-signal.type';
-import { describe, expect, it, vi } from 'vitest';
 import type { _Context } from '../../types/context.type';
 
 await vi.hoisted(async () => {

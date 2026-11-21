@@ -1,6 +1,6 @@
 import { CustomElement, Property } from '@xaendar/core';
-import { computed, signal } from '@xaendar/core/signals';
 import type { InputSignal } from '@xaendar/core/signals';
+import { computed, signal } from '@xaendar/core/signals';
 
 /**
  * The logic shared by two counters with different templates. It is not a component: it has no decorator and no

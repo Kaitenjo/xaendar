@@ -1,9 +1,9 @@
 import type { ComponentOrDirectiveMetadata } from '@xaendar/compiler';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { removeDocumentOverlay, setDocumentOverlay } from '../language-service/language-service';
-import { loadTsConfig } from '../utils/compiler-options/compiler-options.utils';
 import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import type { FixtureProject } from '../types/fixture-project.type';
+import { loadTsConfig } from '../utils/compiler-options/compiler-options.utils';
 import { TemplateMetadataCache } from './template-metadata-cache';
 
 let project: FixtureProject;

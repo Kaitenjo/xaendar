@@ -2,12 +2,12 @@ import { describeDuplicateHostDirective, describeEventExposure, describeInputExp
 import { CompilerOptions, Expression, isArrayLiteralExpression, isIdentifier, isObjectLiteralExpression, isPropertyAssignment, isShorthandPropertyAssignment, isStringLiteralLike, Node, ObjectLiteralExpression } from 'typescript';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
 import { ComponentMetadata } from '../../types/component-metadata.type';
-import type { WebComponentDecorator } from '../../types/typescript-decorator-nodes/web-component-decorator.type';
-import { resolveClassReference } from '../resolve-declaration/resolve-declaration.utils';
 import type { Exposure } from '../../types/exposure.type';
+import type { ExtractBindings } from '../../types/extract-bindings.type';
 import type { HostDirectiveDeclaration } from '../../types/host-directive-declaration.type';
 import type { HostDirectiveSource } from '../../types/host-directive-source.type';
-import type { ExtractBindings } from '../../types/extract-bindings.type';
+import type { WebComponentDecorator } from '../../types/typescript-decorator-nodes/web-component-decorator.type';
+import { resolveClassReference } from '../resolve-declaration/resolve-declaration.utils';
 
 /**
  * Adds to the metadata of a component the inputs and the events its host directives expose, the ones of its ancestors

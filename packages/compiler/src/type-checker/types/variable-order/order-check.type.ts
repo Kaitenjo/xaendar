@@ -1,7 +1,7 @@
-import type { Level } from './level.type';
 import type { Declaration } from './declaration.type';
-import type { ScopeNames } from './scope-names.type';
+import type { Level } from './level.type';
 import type { RenderSite } from './render-site.type';
+import type { ScopeNames } from './scope-names.type';
 
 /**
  * The state of the check of a template.

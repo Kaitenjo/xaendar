@@ -1,7 +1,7 @@
-import type { BindingSite } from './binding-site.type';
 import type { Function } from '@xaendar/types';
-import type { _Context } from './context.type';
+import type { BindingSite } from './binding-site.type';
 import type { BlockPosition } from './block-position.type';
+import type { _Context } from './context.type';
 import type { IterationVariables } from './iteration-variables.type';
 import type { NodeStrategy } from './node-strategy.type';
 import type { TemplateExpression } from './template-expression.type';

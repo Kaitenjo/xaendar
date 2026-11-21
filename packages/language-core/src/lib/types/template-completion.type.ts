@@ -1,4 +1,4 @@
-import type { Span, ImportInsertion } from '@xaendar/compiler';
+import type { ImportInsertion, Span } from '@xaendar/compiler';
 import type { CompletionEntry } from 'typescript';
 
 /**

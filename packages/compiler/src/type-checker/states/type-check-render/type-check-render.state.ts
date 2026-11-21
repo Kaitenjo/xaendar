@@ -2,10 +2,10 @@ import type { RenderNode } from '../../../parser/types/nodes/render-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import { getRenderedTemplate } from '../../../utils/render-target/render-target.utils';
 import type { TypeCheckContext } from '../../models/context/context';
+import type { LinePart } from '../../types/line-part.type';
 import type { Line } from '../../types/line.type';
 import type { ProcessNode } from '../../types/type-checker-process-node.type';
 import { line, mapped } from '../../utils/line-builder/line-builder.utils';
-import type { LinePart } from '../../types/line-part.type';
 import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
 import { RENDER } from '../../utils/template-types/template-types.utils';
 

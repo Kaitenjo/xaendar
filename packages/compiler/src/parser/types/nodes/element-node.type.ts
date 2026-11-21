@@ -1,15 +1,15 @@
 import type { Span } from '../../../types/span.type';
-import { ASTNode } from '../ast.type';
 import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
+import { ASTNode } from '../ast.type';
 import { ASTNodeType } from '../node.enum';
 import { AttributeNode } from './attribute-node.type';
 import type { ClassBindingNode } from './class-binding-node.type';
-import type { StyleBindingNode } from './style-binding-node.type';
 import { ConditionalBindingNode } from './conditional-binding-node.type';
 import { DirectiveNode } from './directive-node.type';
+import type { ElementRefNode } from './element-ref-node.type';
 import { EventNode } from './event-node.type';
 import { StructuralDirectiveNode } from './structural-directive-node.type';
-import type { ElementRefNode } from './element-ref-node.type';
+import type { StyleBindingNode } from './style-binding-node.type';
 
 /**
  * AST node representing an HTML element with a tag name, attributes, events, and children.

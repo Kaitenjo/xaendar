@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import type { BlockConfig } from '../../types/if/block-config.type';
 import { CONTAINER_SLOTS, HEADER, LEAVE_HANDLER } from '../../costants';
-import type { LeaveHandler } from '../../types/leave-handler.type';
 import type { _Context } from '../../types/context.type';
+import type { BlockConfig } from '../../types/if/block-config.type';
+import type { LeaveHandler } from '../../types/leave-handler.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 
 await vi.hoisted(async () => {

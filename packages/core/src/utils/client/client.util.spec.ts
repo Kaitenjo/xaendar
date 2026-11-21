@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { HEADER } from '../../costants';
+import type { _Context } from '../../types/context.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { ClaimNodes } from '../claim-nodes/claim-nodes.util';
-import { HEADER } from '../../costants';
-import { _scope, STRUCTURAL_LAYOUT, clear, ELEMENT_LAYOUT, EMPTY_LAYOUT } from '../context/context.util';
-import type { _Context } from '../../types/context.type';
+import { _scope, clear, ELEMENT_LAYOUT, EMPTY_LAYOUT, STRUCTURAL_LAYOUT } from '../context/context.util';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { _client } from './client.util';
 

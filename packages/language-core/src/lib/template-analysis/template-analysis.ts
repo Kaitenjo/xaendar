@@ -1,8 +1,13 @@
-import { type ASTNode, ASTNodeType, type ClassDeclarationWithName, type ComponentMetadata, type ComponentOrDirectiveMetadata, type DirectiveMetadata, extractComponentMembers, type ImportNode, parseImportStatements, type SymbolImport, parseTemplate, TemplateError, typeCheckTemplateTolerant } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type ClassDeclarationWithName, type ComponentMetadata, type ComponentOrDirectiveMetadata, type DirectiveMetadata, extractComponentMembers, type ImportNode, parseImportStatements, parseTemplate, type SymbolImport, TemplateError, typeCheckTemplateTolerant } from '@xaendar/compiler';
 import { dirname, resolve } from 'node:path';
 import { type CompilerOptions, createSourceFile, isClassDeclaration, type Program, ScriptTarget } from 'typescript';
 import { getProjectLanguageService, type ProjectLanguageService, readDocument } from '../language-service/language-service';
 import { TemplateMetadataCache } from '../template-metadata-cache/template-metadata-cache';
+import type { ExportCandidate } from '../types/export-candidate.type';
+import type { ImportCandidate } from '../types/import-candidate.type';
+import type { TemplateAnalysisResult } from '../types/template-analysis-result.type';
+import type { TemplateAnalysis } from '../types/template-analysis.type';
+import type { TemplateImport } from '../types/template-import.type';
 import { findTsConfigPath, loadTsConfig } from '../utils/compiler-options/compiler-options.utils';
 import { NOT_IMPORTABLE } from '../utils/module-entries/module-entries.utils';
 import { resolveModulePath } from '../utils/module-path/module-path.utils';
@@ -10,11 +15,6 @@ import { normalizeFileName, toPosixPath } from '../utils/path/path.utils';
 import { createShim } from '../utils/shim/shim.utils';
 import { getSymbolKind } from '../utils/symbol-kind/symbol-kind.utils';
 import { readCustomElements, readSsr, readStrictEvents } from '../utils/xaendar-config/xaendar-config.utils';
-import type { TemplateImport } from '../types/template-import.type';
-import type { ImportCandidate } from '../types/import-candidate.type';
-import type { ExportCandidate } from '../types/export-candidate.type';
-import type { TemplateAnalysis } from '../types/template-analysis.type';
-import type { TemplateAnalysisResult } from '../types/template-analysis-result.type';
 
 /**
  * The last successful analysis of each template, keyed by its normalized path.

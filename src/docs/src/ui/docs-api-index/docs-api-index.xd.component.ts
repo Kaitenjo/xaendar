@@ -1,8 +1,8 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
 import { href } from '../../core/router/router';
-import { API, symbolPath } from '../../pages/reference/api/api.data';
 import type { ApiKind, ApiPackage, ApiSymbol } from '../../pages/reference/api/api.data';
+import { API, symbolPath } from '../../pages/reference/api/api.data';
 
 /**
  * The index of the API reference: the symbols of every package, in columns, linked to their pages. A filter narrows

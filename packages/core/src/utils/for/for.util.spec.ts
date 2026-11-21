@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
+import { CONTAINER_SLOTS, HEADER, LAYOUT, LEAVE_HANDLER } from '../../costants';
+import type { _Context } from '../../types/context.type';
 import type { ForConfig } from '../../types/for-config.type';
 import type { IterationVariables } from '../../types/iteration-variables.type';
-import { CONTAINER_SLOTS, HEADER, LAYOUT, LEAVE_HANDLER } from '../../costants';
 import type { LeaveHandler } from '../../types/leave-handler.type';
-import type { _Context } from '../../types/context.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 
 await vi.hoisted(async () => {

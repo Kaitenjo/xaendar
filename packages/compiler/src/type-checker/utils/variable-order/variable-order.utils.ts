@@ -1,10 +1,11 @@
 import type { Expression } from 'typescript';
-import { collectReads } from '../../../utils/expression-reads/expression-reads.utils';
 import type { ASTNode } from '../../../parser/types/ast.type';
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import type { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
+import type { CatchNode } from '../../../parser/types/nodes/catch-node.type';
 import type { ConditionalBindingBranchNode } from '../../../parser/types/nodes/conditional-binding-branch-node.type';
 import type { ConditionalBindingNode } from '../../../parser/types/nodes/conditional-binding-node.type';
+import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
 import type { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import type { ElseIfNode } from '../../../parser/types/nodes/else-if-node.type';
 import type { ElseNode } from '../../../parser/types/nodes/else-node.type';
@@ -13,17 +14,16 @@ import type { HydrateNode } from '../../../parser/types/nodes/hydrate-node.type'
 import type { IfNode } from '../../../parser/types/nodes/if-node.type';
 import type { RenderNode } from '../../../parser/types/nodes/render-node.type';
 import type { TemplateNode } from '../../../parser/types/nodes/template-node.type';
-import type { CatchNode } from '../../../parser/types/nodes/catch-node.type';
-import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
 import type { HydrateTrigger } from '../../../parser/types/triggers/hydrate-trigger.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import { getForVariables } from '../../../parser/utils/for-variables/for-variables.utils';
 import { isStructuralElement, visitScopeDeclarations } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
 import type { Span } from '../../../types/span.type';
-import type { Level } from '../../types/variable-order/level.type';
+import { collectReads } from '../../../utils/expression-reads/expression-reads.utils';
 import type { Declaration } from '../../types/variable-order/declaration.type';
-import type { ScopeNames } from '../../types/variable-order/scope-names.type';
+import type { Level } from '../../types/variable-order/level.type';
 import type { OrderCheck } from '../../types/variable-order/order-check.type';
+import type { ScopeNames } from '../../types/variable-order/scope-names.type';
 
 /**
  * Checks that the element refs are read when their element exists, and the `@let` once they are initialized. A

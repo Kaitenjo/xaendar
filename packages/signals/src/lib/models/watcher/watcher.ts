@@ -1,11 +1,11 @@
-import { NoArgsVoidFunction } from '@xaendar/types';
-import { GLOBAL_STATE } from '../../utils/globals/globals';
-import { PRIVATE, assertPrivateContext } from '../../utils/private-symbol/private-symbol';
-import { State } from '../state/state';
-import { WatcherState } from '../../types/watcher-state.type';
-import { Computed } from '../computed/computed';
-import { isDevMode } from '../../utils/dev-mode/dev-mode';
 import { addToSmallSet, deleteFromSmallSet, emptySmallSet, forEachInSmallSet, SmallSet, smallSetHas, smallSetSize, smallSetToArray } from '@xaendar/common';
+import { NoArgsVoidFunction } from '@xaendar/types';
+import { WatcherState } from '../../types/watcher-state.type';
+import { isDevMode } from '../../utils/dev-mode/dev-mode';
+import { GLOBAL_STATE } from '../../utils/globals/globals';
+import { assertPrivateContext, PRIVATE } from '../../utils/private-symbol/private-symbol';
+import { Computed } from '../computed/computed';
+import { State } from '../state/state';
 
 /**
  * A `Watcher` observes a set of Signals and fires a `notify` callback

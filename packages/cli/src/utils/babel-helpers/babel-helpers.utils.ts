@@ -1,4 +1,4 @@
-import { buildExternalHelpers, type File, type PluginAPI, type PluginObject, type types as BabelTypes } from '@babel/core';
+import { buildExternalHelpers, type types as BabelTypes, type File, type PluginAPI, type PluginObject } from '@babel/core';
 import type { Plugin } from 'vite';
 
 /**

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../lexer/lexer/lexer';
+import type { TemplateError } from '../../models/template-error/template-error.model';
 import { Parser } from '../../parser/parser/parser';
 import { ASTNode } from '../../parser/types/ast.type';
 import { ASTNodeType } from '../../parser/types/node.enum';
-import type { TemplateError } from '../../models/template-error/template-error.model';
 import type { ImportNode } from '../../parser/types/nodes/import-node.type';
 import { ComponentMetadata } from '../../types/component-metadata.type';
 import type { SymbolImport } from '../../types/symbol-import.type';

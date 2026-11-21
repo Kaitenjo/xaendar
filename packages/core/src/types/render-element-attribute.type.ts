@@ -1,6 +1,6 @@
-import type { _Context } from './context.type';
 import type { BindingHost } from './binding-host.type';
 import type { BindingSite } from './binding-site.type';
+import type { _Context } from './context.type';
 import type { TemplateExpression } from './template-expression.type';
 
 /**

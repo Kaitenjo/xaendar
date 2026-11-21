@@ -2,11 +2,11 @@
 import { loadSignals } from '@xaendar/signals';
 import { describe, expect, it, vi } from 'vitest';
 import { CLEANUP, DIRECTIVE_AFTER_RENDER, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, SET_DIRECTIVE_ELEMENT, SET_DIRECTIVE_EVENTS } from '../../costants';
-import { HostListener } from '../../decorators/host-listener/host-listener.decorator';
 import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
+import { HostListener } from '../../decorators/host-listener/host-listener.decorator';
 import { effect } from '../../signals/effect/effect';
-import { EMPTY_LAYOUT, _scope, forEachChild, addCleanup, clear } from '../../utils/context/context.util';
 import type { _Context } from '../../types/context.type';
+import { EMPTY_LAYOUT, _scope, addCleanup, clear, forEachChild } from '../../utils/context/context.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
 import { CustomElement } from '../custom-element/custom-element';
 import { CustomDirective } from './custom-directive';

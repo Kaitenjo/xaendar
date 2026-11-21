@@ -1,8 +1,8 @@
 import { NoArgsVoidFunction } from '@xaendar/types';
 import { _runBinding, createEffect } from '../../models/effect/effect';
 import type { BindingSite } from '../../types/binding-site.type';
-import type { EffectCallback } from '../../types/effect-callback.type';
 import type { _Context } from '../../types/context.type';
+import type { EffectCallback } from '../../types/effect-callback.type';
 import { addCleanup, bindingsBase } from '../../utils/context/context.util';
 import { EffectOptions } from '../types/effect-options.type';
 
