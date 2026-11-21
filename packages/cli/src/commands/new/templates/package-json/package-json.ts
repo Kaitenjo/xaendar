@@ -1,5 +1,5 @@
-import { STYLE_PREPROCESSORS } from '../../../../utils/style/style';
 import type { Style } from '../../../../types/style.type';
+import { STYLE_PREPROCESSORS } from '../../../../utils/style/style';
 import type { ProjectRendering } from '../../types/project-rendering.type';
 
 /**

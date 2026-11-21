@@ -1,4 +1,4 @@
-import type { Decorator, CallExpression, Expression, PropertyDeclaration } from 'typescript';
+import type { CallExpression, Decorator, Expression, PropertyDeclaration } from 'typescript';
 
 /**
  * TypeScript node of a `@Property(...)` or `@Model(...)` decorator applied to a property declaration, its `required` variant included.

@@ -1,6 +1,6 @@
 import { Directive, Property, StructuralDirective } from '@xaendar/core';
-import { signal } from '@xaendar/core/signals';
 import type { InputSignal, Signal } from '@xaendar/core/signals';
+import { signal } from '@xaendar/core/signals';
 
 /**
  * One signal per media query, shared by every directive using it. A structural directive has no

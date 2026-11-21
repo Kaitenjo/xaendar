@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
 import type { LineMapping } from '../../../type-checker/types/line-mapping.type';
+import type { ContextCache } from '../../../types/context-cache.type';
 import { GeneratorContext } from '../../context/context';
 import { getBlockIdentifier, getElementIdentifier, getSignalCallee, getTextIdentifier, GLOBAL_IDENTIFIERS, isBrowserOnlyGlobal, resolveExpression, ROOT_NODE, toStringLiteral } from './generator.utils';
-import type { ContextCache } from '../../../types/context-cache.type';
 
 const cache = {} as ContextCache;
 

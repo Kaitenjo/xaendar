@@ -1,7 +1,7 @@
 import type { _ScopeLayout } from '@xaendar/core';
 import { describe, expect, it, vi } from 'vitest';
-import type { ServerBindings } from '../../types/server-bindings.type';
 import type { ServerAttribute } from '../../types/server-attribute.type';
+import type { ServerBindings } from '../../types/server-bindings.type';
 import type { ServerOutput } from '../../types/server-output.type';
 
 await vi.hoisted(async () => {

@@ -1,16 +1,16 @@
+import { _applyHostAttributes, _CLIENT_ATTRIBUTE, _COMPONENT, _createStylingState, _DIRECTIVE_ORDER, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _mergeAttributes, _resolveDirective, _selectBranch, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _setContentTemplates, _setExposedInput, _setExpressionExposedInput, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
 import { escapeAttribute, escapeRawText } from '@xaendar/internals';
-import { _applyHostAttributes, _COMPONENT, _createStylingState, _DIRECTIVE_ORDER, _CLIENT_ATTRIBUTE, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _mergeAttributes, _resolveDirective, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _selectBranch, _setContentTemplates, _setExposedInput, _setExpressionExposedInput, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
 import type { Constructor, Dictionary, Function } from '@xaendar/types';
 import { ServerElement } from '../../dom/server-element/server-element';
 import type { ClientComponentOptions } from '../../types/client-component-options.type';
+import type { ServerAttribute } from '../../types/server-attribute.type';
 import type { ServerBindings } from '../../types/server-bindings.type';
 import type { ServerDirective } from '../../types/server-directive.type';
-import type { ServerAttribute } from '../../types/server-attribute.type';
 import type { ServerElementConfig } from '../../types/server-element-config.type';
 import type { ServerOutput } from '../../types/server-output.type';
-import { _getServerRender } from '../server-render-registry/server-render-registry.util';
 import type { ServerRenderDefinition } from '../../types/server-render-definition.type';
 import type { ServerRuntime } from '../../types/server-runtime.type';
+import { _getServerRender } from '../server-render-registry/server-render-registry.util';
 
 /**
  * Writes the start tag of an element with its bindings, applied as the client applies them: the attributes and the

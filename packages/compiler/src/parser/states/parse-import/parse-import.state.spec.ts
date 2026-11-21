@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { Lexer } from '../../../lexer/lexer/lexer';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { Token } from '../../../lexer/types/token.type';
 import { ImportPathToken } from '../../../lexer/types/tokens/import-path-token.type';
-import { Lexer } from '../../../lexer/lexer/lexer';
 import type { Span } from '../../../types/span.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
 import { Parser } from '../../parser/parser';
-import type { ImportNode } from '../../types/nodes/import-node.type';
 import { ASTNodeType } from '../../types/node.enum';
+import type { ImportNode } from '../../types/nodes/import-node.type';
 import { parseImport } from './parse-import.state';
 
 const run = (specifiers: string[]) => {

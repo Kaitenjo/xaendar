@@ -1,26 +1,26 @@
 import { keys } from '@xaendar/common';
 import type { Constructor, Function, NoArgsFunction } from '@xaendar/types';
+import { HEADER } from '../../costants';
 import type { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { CustomElement } from '../../models/custom-element/custom-element';
 import { untracked } from '../../signals/untracked';
+import type { _Context } from '../../types/context.type';
 import { BindableEvents } from '../../types/create-component/bindable-events.type';
 import { BindableProperties } from '../../types/create-component/bindable-properties.type';
 import { BindingGroup } from '../../types/create-component/binding-group.type';
-import type { ExposableBindings } from '../../types/create-component/exposable-bindings.type';
-import type { ExposedEventListener } from '../../types/create-component/exposed-event-listener.type';
+import type { Bindings } from '../../types/create-component/bindings.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
 import type { CreateComponentOptions } from '../../types/create-component/create-component-options.type';
-import { HEADER } from '../../costants';
+import type { ExposableBindings } from '../../types/create-component/exposable-bindings.type';
+import type { ExposedEventListener } from '../../types/create-component/exposed-event-listener.type';
 import type { ScopeHolder } from '../../types/scope-holder.type';
-import type { _Context } from '../../types/context.type';
+import type { TemplateHandler } from '../../types/template-handler.type';
 import { _scope, addCleanup, clear, ELEMENT_LAYOUT, removeCleanup } from '../context/context.util';
 import { getSelector } from '../get-selector/get-selector.util';
-import { _assertRequiredInputs } from '../required-inputs/required-inputs.util';
+import { _resolveHostDirectives } from '../host-directives/host-directives.util';
 import { _toPropertyName } from '../input-names/input-names.util';
 import { _renderElement, _resetExposedInput, _resetProperty, _setReactiveExposedInput, _setReactiveInput } from '../render-element/render-element.util';
-import { _resolveHostDirectives } from '../host-directives/host-directives.util';
-import type { Bindings } from '../../types/create-component/bindings.type';
-import type { TemplateHandler } from '../../types/template-handler.type';
+import { _assertRequiredInputs } from '../required-inputs/required-inputs.util';
 
 /**
  * What binds the inputs of a component `createComponent` creates, for the error of a required input left out.

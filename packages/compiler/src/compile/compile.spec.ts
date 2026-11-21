@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { TemplateError } from '../models/template-error/template-error.model';
 import { Parser } from '../parser/parser/parser';
 import { ASTNode } from '../parser/types/ast.type';
 import { ASTNodeType } from '../parser/types/node.enum';
 import type { ContextCache } from '../types/context-cache.type';
 import type { ImportedSymbol } from '../types/imported-symbol.type';
-import { TemplateError } from '../models/template-error/template-error.model';
 import { compile, parseTemplate, typeCheckTemplate, typeCheckTemplateTolerant } from './compile';
 
 const component = { type: 'component', selector: 'a-b', properties: new Map(), events: new Map() };

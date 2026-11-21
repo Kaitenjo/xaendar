@@ -1,5 +1,5 @@
-import { CustomDirective, Directive, Event, Property } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
+import { CustomDirective, Directive, Event, Property } from '@xaendar/core';
 import type { InputSignal } from '@xaendar/core/signals';
 
 /**

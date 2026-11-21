@@ -1,5 +1,5 @@
-import { signal } from '@xaendar/core/signals';
 import type { Signal } from '@xaendar/core/signals';
+import { signal } from '@xaendar/core/signals';
 
 /**
  * A level from 0 to 10, shared through a module.

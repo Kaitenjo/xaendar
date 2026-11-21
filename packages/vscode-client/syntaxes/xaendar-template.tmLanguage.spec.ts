@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
-import { createOnigScanner, createOnigString, loadWASM } from 'vscode-oniguruma';
-import { type IGrammar, type IRawGrammar, INITIAL, parseRawGrammar, Registry, type StateStack } from 'vscode-textmate';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { createOnigScanner, createOnigString, loadWASM } from 'vscode-oniguruma';
+import { INITIAL, parseRawGrammar, Registry, type IGrammar, type IRawGrammar, type StateStack } from 'vscode-textmate';
 
 /**
  * A minimal HTML grammar standing for the one of VS Code: tags, attributes and comments.

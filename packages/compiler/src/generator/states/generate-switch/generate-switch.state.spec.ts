@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import { SwitchNode } from '../../../parser/types/nodes/switch-node.type';
+import type { ContextCache } from '../../../types/context-cache.type';
 import { GeneratorContext } from '../../context/context';
 import { generateSwitch } from './generate-switch.state';
-import type { ContextCache } from '../../../types/context-cache.type';
 
 const cache = {} as ContextCache;
 

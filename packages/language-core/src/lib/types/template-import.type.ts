@@ -1,4 +1,4 @@
-import type { ImportNode, ImportSpecifier, ComponentOrDirectiveMetadata } from '@xaendar/compiler';
+import type { ComponentOrDirectiveMetadata, ImportNode, ImportSpecifier } from '@xaendar/compiler';
 
 /**
  * A symbol imported by a template through an `@import` statement.

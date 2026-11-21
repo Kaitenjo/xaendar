@@ -1,5 +1,5 @@
-import type { DecoratorMetadataContext } from './decorator-metadata-context.type';
 import type { ClassAccessorDecoratorValue } from './class-accessor-decorator-value.type';
+import type { DecoratorMetadataContext } from './decorator-metadata-context.type';
 
 /**
  * Represents a class accessor decorator function. It may return a replacement getter, setter or initializer,

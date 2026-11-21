@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getTemplateSpan } from '../expression-validator/expression-validator';
 import type { ElementTrigger } from '../../types/triggers/element-trigger.type';
+import { getTemplateSpan } from '../expression-validator/expression-validator';
 import { parseDeferTriggers, parseHydrateTriggers } from './triggers.utils';
 
 /**

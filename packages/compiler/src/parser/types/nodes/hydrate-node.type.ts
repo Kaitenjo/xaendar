@@ -1,8 +1,8 @@
-import type { ASTNode } from '../ast.type';
 import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
+import type { ASTNode } from '../ast.type';
+import { ASTNodeType } from '../node.enum';
 import type { DeferTrigger } from '../triggers/defer-trigger.type';
 import type { HydrateTrigger } from '../triggers/hydrate-trigger.type';
-import { ASTNodeType } from '../node.enum';
 
 /**
  * AST node representing a `@hydrate` block: content rendered on the server whose hydration in the browser waits for a

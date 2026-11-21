@@ -1,6 +1,6 @@
 import { SignalOptions } from '@xaendar/signals';
-import { Computed } from '../types/computed.type';
 import { NODE } from '../node/node.symbol';
+import { Computed } from '../types/computed.type';
 
 /**
  * The prototype shared by every getter returned by {@link computed}: it extends `Function.prototype`, so that the

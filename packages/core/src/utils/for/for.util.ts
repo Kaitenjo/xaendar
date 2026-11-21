@@ -1,13 +1,13 @@
 import { _SSR_MARKERS, COMPONENT, CONTENT, HEADER, KEYS, LAYOUT, PARENT_NODE, POSITION } from '../../costants';
 import { untracked } from '../../signals';
 import { _bindSite } from '../../signals/effect/effect';
-import type { IterationVariable } from '../../types/iteration-variable.type';
-import type { IterationVariables } from '../../types/iteration-variables.type';
 import type { _Context } from '../../types/context.type';
-import { blockAnchor, blockParent, clear, containerSlot, forEachChild, forEachInline, getNodeStrategy, isLeaving, nextStaying, nodesEnd, refresh, update } from '../context/context.util';
 import type { ForConfig } from '../../types/for-config.type';
 import type { InlineBranch } from '../../types/inline-branch.type';
+import type { IterationVariable } from '../../types/iteration-variable.type';
+import type { IterationVariables } from '../../types/iteration-variables.type';
 import type { NodeBlock } from '../../types/node-block.type';
+import { blockAnchor, blockParent, clear, containerSlot, forEachChild, forEachInline, getNodeStrategy, isLeaving, nextStaying, nodesEnd, refresh, update } from '../context/context.util';
 import { _forItems } from '../for-items/for-items.util';
 
 /**
@@ -153,14 +153,18 @@ function renderItems(context: _Context, config: ForConfig, container: number, it
  * The nodes of a row destroyed registered with `onLeave` stay in the DOM while they leave, but no longer count: the rows
  * kept are placed, and the new ones inserted, as if they were gone. A key coming back meanwhile gets a new row.
  *
+ * The rows kept are moved as few times as possible: when their order changed, the longest run of them still in their
+ * previous order stays where it is (see {@link stayingRows}), and only the others move, so that swapping two rows moves
+ * two of them, not every row between them.
+ *
  * A key repeated in the items has a row per occurrence: the n-th occurrence of a key reuses the row of its n-th
  * occurrence in the previous run, and the occurrences beyond its new count are destroyed.
  *
  * The content of the `@empty`, while it is shown, is destroyed once there are items, and rendered again, before the
  * anchor, once there are none: it stays as it is while there are none.
  *
- * N.B. Deliberate, to save memory: the rows to reuse are found through a `Map` of this run, by key, holding the first
- * occurrence of each key, and a second one, created only when a key repeats, holding the others: both are dropped once
+ * N.B. Deliberate, to save memory: the rows to reuse are found through a `Map` of this run, by key, holding the index of
+ * the first occurrence of each key, and a second one, created only when a key repeats, holding the others: both are dropped once
  * the rows are reconciled, and the container keeps only the new rows and keys, arrays of their exact length. Do not keep
  * a `Map` in the container between two runs, nor build the arrays with `push`.
  *
@@ -188,9 +192,9 @@ function updateItems(parentContext: _Context, config: ForConfig, container: numb
   const oldKeys = shownKeys ?? NO_KEYS;
   const occurrences = countOccurrences(newKeys);
   const oldOccurrences = countOccurrences(oldKeys);
-  // The rows kept, by key: the first occurrence of each key, then the following ones of a key repeated
-  const firsts = new Map<string | number, _Context>();
-  let repeated: Map<string | number, _Context[]> | null = null;
+  // The indexes of the rows kept, by key: the first occurrence of each key, then the following ones of a key repeated
+  const firsts = new Map<string | number, number>();
+  let repeated: Map<string | number, number[]> | null = null;
 
   // The rows of the keys gone, and of the occurrences of a key beyond its new count, are destroyed
   for (let i = 0; i < oldRows.length; i++) {
@@ -199,11 +203,11 @@ function updateItems(parentContext: _Context, config: ForConfig, container: numb
     if (occurrence >= (occurrences.counts.get(key) ?? 0)) {
       clear(oldRows[i], true, parentContext);
     } else if (occurrence === 0) {
-      firsts.set(key, oldRows[i]);
+      firsts.set(key, i);
     } else {
       repeated ??= new Map();
       const others = repeated.get(key);
-      others ? others.push(oldRows[i]) : repeated.set(key, [oldRows[i]]);
+      others ? others.push(i) : repeated.set(key, [i]);
     }
   }
 
@@ -213,24 +217,38 @@ function updateItems(parentContext: _Context, config: ForConfig, container: numb
     return;
   }
 
+  // The index of the previous row of each item, -1 for a new one: still increasing, the rows kept are in order
+  const sources = new Int32Array(items.length);
+  let previous = -1;
+  let ordered = true;
+  for (let i = 0; i < items.length; i++) {
+    const key = newKeys[i];
+    const occurrence = occurrences.indexes[i];
+    const source = (occurrence === 0 ? firsts.get(key) : repeated?.get(key)?.[occurrence - 1]) ?? -1;
+    sources[i] = source;
+    if (source !== -1) {
+      ordered &&= source > previous;
+      previous = source;
+    }
+  }
+
+  const staying = ordered ? null : stayingRows(sources);
   const rows = new Array<_Context>(items.length);
   let nextReference: Node | null = blockAnchor(position);
 
   for (let i = items.length - 1; i >= 0; i--) {
-    const key = newKeys[i];
-    const occurrence = occurrences.indexes[i];
-    const existing = occurrence === 0 ? firsts.get(key) : repeated?.get(key)?.[occurrence - 1];
-
+    const source = sources[i];
     let row: _Context;
 
-    if (existing) {
+    if (source !== -1) {
+      const existing = oldRows[source];
       if (variables) {
         updateIterationVariables(existing, variables, items, i);
       }
 
       findItemBounds(parentNode, existing);
       // The rows leaving (see `onLeave`) are no longer part of the @for: a row followed by them is in place
-      if (lastNode && nextStaying(lastNode.nextSibling) !== nextReference) {
+      if (lastNode && nextStaying(lastNode.nextSibling) !== nextReference && !staying?.[i]) {
         moveItem(parentNode, firstNode!, lastNode, nextReference);
       }
 
@@ -249,6 +267,51 @@ function updateItems(parentContext: _Context, config: ForConfig, container: numb
   lastNode = null;
   parentContext[container + CONTENT] = rows;
   parentContext[container + KEYS] = newKeys;
+}
+
+/**
+ * Finds the rows kept that stay where they are when the order of the rows changed: the longest run of them, in the new
+ * order, whose previous indexes increase, so that only the others move around them.
+ *
+ * The run is searched from the last item: between runs equally long, the one whose rows came later in the previous order
+ * stays, as the rows are placed from the last one: with `[c, a]` from `[a, b, c]`, `c` stays and `a` moves after it.
+ *
+ * @param sources - The previous index of the row of each item, -1 for a new item.
+ * @returns For each item, 1 if its row stays where it is.
+ */
+function stayingRows(sources: Int32Array): Uint8Array {
+  // For each length of a run, the item ending the best run of that length, the one whose previous index is the highest
+  const ends = new Int32Array(sources.length);
+  // For each item, the item following it in its run, -1 for the last one
+  const following = new Int32Array(sources.length);
+  let length = 0;
+  for (let i = sources.length - 1; i >= 0; i--) {
+    const source = sources[i];
+    if (source === -1) {
+      continue;
+    }
+
+    // Read from the end, the previous indexes of a run decrease: the item extends the longest run ending higher than it
+    let low = 0;
+    let high = length;
+    while (low < high) {
+      const middle = (low + high) >> 1;
+      sources[ends[middle]] < source ? high = middle : low = middle + 1;
+    }
+
+    following[i] = low ? ends[low - 1] : -1;
+    ends[low] = i;
+    if (low === length) {
+      length++;
+    }
+  }
+
+  const staying = new Uint8Array(sources.length);
+  for (let i = ends[length - 1]; i !== -1; i = following[i]) {
+    staying[i] = 1;
+  }
+
+  return staying;
 }
 
 /**

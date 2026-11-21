@@ -1,7 +1,7 @@
 import type { LayoutBlock } from './layout-block.type';
 import type { LayoutElement } from './layout-element.type';
-import type { LayoutRender } from './layout-render.type';
 import type { LayoutLet } from './layout-let.type';
+import type { LayoutRender } from './layout-render.type';
 
 /**
  * A piece of the content of an element or block, in the order it is written in.

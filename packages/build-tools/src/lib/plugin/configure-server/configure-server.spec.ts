@@ -44,6 +44,7 @@ vi.mock('node:fs/promises', () => ({
 import { clearComponentMembersCache } from '@xaendar/compiler';
 import { disposeLanguageService } from '@xaendar/language-core';
 import { readFile } from 'node:fs/promises';
+import type { MinimalPluginContextWithoutEnvironment, ViteDevServer } from 'vite';
 import { clearDependencyRegistry } from '../../registry/dependency-registry/dependency-registry';
 import { clearImportRegistry } from '../../registry/import-registry/import-registry';
 import { clearMetadataRegistry } from '../../registry/metadata-registry/metadata-registry';
@@ -51,7 +52,6 @@ import { clearStyleRegistry } from '../../registry/style-registry/style-registry
 import { clearTemplateRegistry } from '../../registry/template-registry/template-registry';
 import { resolvePosixPath } from '../../utils/path/path.utils';
 import { createConfigureServerHook } from './configure-server';
-import type { MinimalPluginContextWithoutEnvironment, ViteDevServer } from 'vite';
 
 /**
  * Builds a fresh `XaendarPluginState` with mocked `setLogger`/`logError`, for a test to assert on.

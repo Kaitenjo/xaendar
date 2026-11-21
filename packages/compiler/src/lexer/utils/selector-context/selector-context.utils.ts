@@ -1,6 +1,6 @@
-import type { SelectorContext } from '../../types/selector-context.type';
 import { Lexer } from '../../lexer/lexer';
 import { LexerState } from '../../types/lexer-state.enum';
+import type { SelectorContext } from '../../types/selector-context.type';
 
 /**
  * What ends right before an offset when a selector is being written: the `<` of a tag (spaces may follow it), the

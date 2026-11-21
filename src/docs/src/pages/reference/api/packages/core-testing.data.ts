@@ -1,5 +1,5 @@
-import type { ApiPackage } from '../api.data';
 import { DEFER_TESTING } from '../../../templates/defer/defer.snippets';
+import type { ApiPackage } from '../api.data';
 
 /**
  * The symbols of `@xaendar/core/testing`.

@@ -1,6 +1,6 @@
-import { CustomElement, WebComponent, Property } from '@xaendar/core';
-import { computed } from '@xaendar/core/signals';
+import { CustomElement, Property, WebComponent } from '@xaendar/core';
 import type { Aliased, InputSignal } from '@xaendar/core/signals';
+import { computed } from '@xaendar/core/signals';
 import { USERS } from './users';
 
 /**

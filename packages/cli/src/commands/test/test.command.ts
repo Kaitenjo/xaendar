@@ -1,8 +1,8 @@
 import { Command } from 'commander';
 import { resolve } from 'node:path';
 import type { Plugin } from 'vite';
-import { startVitest } from 'vitest/node';
 import type { CacheKeyIdGeneratorContext, CliOptions, VitestPluginContext } from 'vitest/node';
+import { startVitest } from 'vitest/node';
 import { findModulesDir } from '../../utils/cache-plugin/cache-plugin.utils';
 import { createPlugins } from '../../utils/plugins';
 import { enterProject, readXaendarConfig } from '../../utils/xaendar-config/xaendar-config.utils';

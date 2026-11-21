@@ -1,10 +1,10 @@
-import { type ComponentMetadata, type ContextCache, type ComponentOrDirectiveMetadata, type DirectiveMetadata, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, isReactiveExport, readLibraryMetadata, resolveExportedClass } from '@xaendar/compiler';
+import { type ComponentMetadata, type ComponentOrDirectiveMetadata, type ContextCache, type DirectiveMetadata, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, isReactiveExport, readLibraryMetadata, resolveExportedClass } from '@xaendar/compiler';
 import { type CompilerOptions, createSourceFile, ScriptTarget } from 'typescript';
 import { readDocument } from '../language-service/language-service';
+import type { MetadataEntry } from '../types/metadata-entry.type';
 import { NOT_IMPORTABLE } from '../utils/module-entries/module-entries.utils';
 import { resolveModule, resolveModulePath } from '../utils/module-path/module-path.utils';
 import { normalizeFileName, resolvePosixPath } from '../utils/path/path.utils';
-import type { MetadataEntry } from '../types/metadata-entry.type';
 
 /**
  * What a file declaring a component or a directive contains: the decorator, whose presence tells it from the files that

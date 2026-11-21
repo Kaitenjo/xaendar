@@ -1,4 +1,3 @@
-import type { CompileOptions } from '../types/compile-options.type';
 import { Generator } from '../generator/generator/generator';
 import { Lexer } from '../lexer/lexer/lexer';
 import { Parser } from '../parser/parser/parser';
@@ -8,8 +7,9 @@ import { ImportNode } from '../parser/types/nodes/import-node.type';
 import { TypeChecker } from '../type-checker/type-checker/type-checker';
 import type { TypeCheckResult } from '../type-checker/types/type-checker-result.type';
 import type { TypeCheckTolerantResult } from '../type-checker/types/type-checker-tolerant-result.type';
-import type { ContextCache } from '../types/context-cache.type';
+import type { CompileOptions } from '../types/compile-options.type';
 import type { ComponentOrDirectiveMetadata } from '../types/component-or-directive-metadata.type';
+import type { ContextCache } from '../types/context-cache.type';
 import type { SymbolImport } from '../types/symbol-import.type';
 
 /**

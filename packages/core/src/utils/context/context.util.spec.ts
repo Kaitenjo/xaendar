@@ -11,7 +11,7 @@ import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { closeTryScope, openTryScope } from '../try-scope/try-scope.util';
-import { _declare, _read, _scope, _set, addCleanup, bindingsBase, clear, clearInline, containerSlot, createAnchor, ELEMENT_LAYOUT, EMPTY_LAYOUT, forEachChild, forEachInline, getNodeStrategy, goesWithLeaving, isLeaving, LEAVE_TIMEOUT, markLeavingScope, moveTo, mountNode, nextStaying, nodesEnd, propagate, refresh, removeCleanup, renderInline, setNodeStrategy, STRUCTURAL_LAYOUT, swapNodeStrategy, trackNode, update, withoutLeaving } from './context.util';
+import { _declare, _read, _scope, _set, addCleanup, bindingsBase, clear, clearInline, containerSlot, createAnchor, ELEMENT_LAYOUT, EMPTY_LAYOUT, forEachChild, forEachInline, getNodeStrategy, goesWithLeaving, isLeaving, LEAVE_TIMEOUT, markLeavingScope, mountNode, moveTo, nextStaying, nodesEnd, propagate, refresh, removeCleanup, renderInline, setNodeStrategy, STRUCTURAL_LAYOUT, swapNodeStrategy, trackNode, update, withoutLeaving } from './context.util';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');

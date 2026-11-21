@@ -27,3 +27,21 @@ describe('readDevMode', () => {
     }
   });
 });
+
+describe('DEV_MODE', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  });
+
+  it('follows the value the plugin defines, before NODE_ENV', async () => {
+    vi.stubGlobal('__XAENDAR_DEV__', false);
+    vi.resetModules();
+    expect((await import('./dev-mode.util')).DEV_MODE).toBe(false);
+    vi.stubGlobal('__XAENDAR_DEV__', true);
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.resetModules();
+    expect((await import('./dev-mode.util')).DEV_MODE).toBe(true);
+    vi.unstubAllEnvs();
+  });
+});

@@ -4,10 +4,10 @@ import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_REQUIRED_INPUTS } from '../../cos
 import type { Aliased } from '../../signals/types/aliased.type';
 import type { InputSignal } from '../../signals/types/input-signal.type';
 import type { BindingHost } from '../../types/binding-host.type';
+import type { PropertyDecoratorOptionsWithRequired } from '../../types/property-decorator-options-with-required.type';
+import type { PropertyDecoratorOptions } from '../../types/property-decorator-options.type';
 import type { PropertyDecoratorReturnType } from '../../types/property/property-return-type.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
-import type { PropertyDecoratorOptions } from '../../types/property-decorator-options.type';
-import type { PropertyDecoratorOptionsWithRequired } from '../../types/property-decorator-options-with-required.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');

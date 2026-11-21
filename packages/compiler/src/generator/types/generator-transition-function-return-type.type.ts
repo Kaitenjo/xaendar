@@ -1,5 +1,5 @@
-import { ASTNode } from '../../parser/types/ast.type'
-import { GeneratorContext } from '../context/context'
+import { ASTNode } from '../../parser/types/ast.type';
+import { GeneratorContext } from '../context/context';
 
 export type GeneratorTransitionFunctionReturnType = {
   /**

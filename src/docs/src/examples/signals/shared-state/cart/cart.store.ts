@@ -1,5 +1,5 @@
-import { computed, signal } from '@xaendar/core/signals';
 import type { Computed, Signal } from '@xaendar/core/signals';
+import { computed, signal } from '@xaendar/core/signals';
 
 /**
  * A line of the cart.

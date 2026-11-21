@@ -3,8 +3,9 @@ import { resolve } from 'node:path';
 import type { Logger, Plugin } from 'vite';
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import { NodeCompilerHost } from '../../models/node-compiler-host/node-compiler-host.model';
-import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import type { XaendarPluginOptions } from '../../types/xaendar-plugin-options.type';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
+import { resolveWorkspaceLibraries, withLibraryDependencies } from '../../utils/workspace-libraries/workspace-libraries.utils';
 import { createBuildEndHook } from '../build-end/build-end';
 import { createBuildStartHook } from '../build-start/build-start';
 import { createConfigResolvedHook } from '../config-resolved/config-resolved';
@@ -15,7 +16,6 @@ import { createLoadHook } from '../load/load';
 import { createResolveIdHook } from '../resolve-id/resolve-id';
 import { createTransformHook } from '../transform/transform';
 import { createWatchChangeHook } from '../watch-change/watch-change';
-import { resolveWorkspaceLibraries, withLibraryDependencies } from '../../utils/workspace-libraries/workspace-libraries.utils';
 
 /**
  * Vite plugin that compiles Xaendar DSL template files (`.xd.component.html`)

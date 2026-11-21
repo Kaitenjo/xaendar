@@ -2,14 +2,14 @@ import { slice } from '@xaendar/common';
 import { Dictionary } from '@xaendar/types';
 import globals from 'globals';
 import { Expression, forEachChild, Identifier, isAsExpression, isCallExpression, isIdentifier, isNonNullExpression, isPropertyAccessExpression, isPropertyAssignment, isShorthandPropertyAssignment, isTypeNode, Node } from 'typescript';
+import type { CompilerContext } from '../../../models/compiler-context/compiler-context.model';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import type { LineMapping } from '../../../type-checker/types/line-mapping.type';
 import type { Span } from '../../../types/span.type';
-import type { CompilerContext } from '../../../models/compiler-context/compiler-context.model';
-import type { EmittedNode } from '../../types/emitted-node.type';
 import { forEachExpressionChild } from '../../../utils/expression-children/expression-children.utils';
 import { collectReads } from '../../../utils/expression-reads/expression-reads.utils';
+import type { EmittedNode } from '../../types/emitted-node.type';
 import type { IdentifierKind } from '../../types/identifier-kind.type';
 import { ResolveExpressionOptions } from '../../types/resolve-expresion-options.type';
 

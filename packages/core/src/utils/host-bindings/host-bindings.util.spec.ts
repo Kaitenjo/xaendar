@@ -1,13 +1,12 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { HostListener } from '../../decorators/host-listener/host-listener.decorator';
-import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
-import { CustomDirective } from '../../models/custom-directive/custom-directive';
-import { _hasStylingState } from '../styling-state/styling-state.util';
-import { EMPTY_LAYOUT, _scope, clear } from '../context/context.util';
-import type { _Context } from '../../types/context.type';
-import { _applyHostAttributes, _bindHost } from './host-bindings.util';
 import { CLEANUP } from '../../costants';
+import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
+import { HostListener } from '../../decorators/host-listener/host-listener.decorator';
+import { CustomDirective } from '../../models/custom-directive/custom-directive';
+import { EMPTY_LAYOUT, _scope, clear } from '../context/context.util';
+import { _hasStylingState } from '../styling-state/styling-state.util';
+import { _applyHostAttributes, _bindHost } from './host-bindings.util';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');

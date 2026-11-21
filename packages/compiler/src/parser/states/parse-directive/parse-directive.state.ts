@@ -16,9 +16,9 @@ import type { EventNode } from '../../types/nodes/event-node.type';
 import { parseTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
 import { assertNoElementBindings } from '../parse-class-binding/parse-class-binding.state';
-import { isTwoWayBinding, parseTwoWayBinding } from '../parse-two-way-binding/parse-two-way-binding.state';
 import { parseConditionalBinding } from '../parse-conditional-binding/parse-conditional-binding.state';
 import { parseEvent } from '../parse-event/parse-event.state';
+import { isTwoWayBinding, parseTwoWayBinding } from '../parse-two-way-binding/parse-two-way-binding.state';
 
 /**
  * Parses a DIRECTIVE token and the attributes, events and conditional bindings declared in its body,

@@ -1,8 +1,8 @@
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { CompilerOptions } from 'typescript';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 
 vi.mock('@xaendar/language-core', async importOriginal => ({

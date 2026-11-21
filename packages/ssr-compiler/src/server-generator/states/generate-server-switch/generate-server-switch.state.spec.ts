@@ -1,4 +1,4 @@
-import { GeneratorContext, parseTemplate, type SwitchNode, type ContextCache } from '@xaendar/compiler';
+import { GeneratorContext, parseTemplate, type ContextCache, type SwitchNode } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { generateServerSwitch } from './generate-server-switch.state';
 

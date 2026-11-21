@@ -8,9 +8,9 @@ vi.mock('../../utils/static-components/static-components.utils', () => ({
 
 import type { PluginContext } from 'rolldown';
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
+import { clearMetadataRegistry, getLibrarySelectorOwner } from '../../registry/metadata-registry/metadata-registry';
 import type { StaticComponents } from '../../types/static-components.type';
 import { describeStaticComponents, findStaticComponents } from '../../utils/static-components/static-components.utils';
-import { clearMetadataRegistry, getLibrarySelectorOwner } from '../../registry/metadata-registry/metadata-registry';
 import { createBuildStartHook } from './build-start';
 
 const STATIC_COMPONENTS = { statics: [] } as unknown as StaticComponents;

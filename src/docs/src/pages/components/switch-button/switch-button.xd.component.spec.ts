@@ -19,14 +19,25 @@ function createItems(): Item[] {
 /**
  * Mounts a switch as the template of a parent does: listens to `valueChange`, binds the items, then adds it to the document.
  */
-function mount(items: Item[]) {
+function mount(items: Item[], value?: string) {
   const element = document.createElement('ex-switch-button') as SwitchButtonComponent;
   const onValueChange = vi.fn<(event: CustomEvent<Item>) => void>();
   element.addEventListener('valueChange', onValueChange as unknown as EventListener);
   _setExpressionInput(_scope(null, { size: 7, nodes: 7 }), element, { name: 'items', value: () => items, setter: _setExpressionInput });
+  if (value !== undefined) {
+    setValue(element, value);
+  }
+
   document.body.append(element);
 
   return { element, onValueChange };
+}
+
+/**
+ * Sets the value of a switch, as its parent does.
+ */
+function setValue(element: SwitchButtonComponent, value: string): void {
+  _setExpressionInput(_scope(null, { size: 7, nodes: 7 }), element, { name: 'value', value: () => value, setter: _setExpressionInput });
 }
 
 /**
@@ -73,14 +84,29 @@ describe('SwitchButtonComponent', () => {
     expect(buttonsOf(element).map(button => button.textContent.trim())).toEqual(['EN', 'IT']);
   });
 
-  it('selects the first item after the render and emits it', async () => {
+  it('selects the first item after the render, without emitting it', async () => {
     const { element, onValueChange } = mount(createItems());
     await flush();
 
     expect(element.selected()).toEqual({ label: 'EN', value: 'en' });
-    expect(onValueChange).toHaveBeenCalledOnce();
-    expect(onValueChange.mock.calls[0][0].detail).toEqual({ label: 'EN', value: 'en' });
+    expect(onValueChange).not.toHaveBeenCalled();
     expect(activeLabelOf(element)).toBe('EN');
+  });
+
+  it('shows the item of its value and follows it, without emitting it', async () => {
+    const { element, onValueChange } = mount(createItems(), 'it');
+    await flush();
+    expect(element.selected()).toEqual({ label: 'IT', value: 'it' });
+    expect(activeLabelOf(element)).toBe('IT');
+
+    setValue(element, 'en');
+    await flush();
+    expect(element.selected()).toEqual({ label: 'EN', value: 'en' });
+
+    setValue(element, 'de');
+    await flush();
+    expect(element.selected()).toEqual({ label: 'EN', value: 'en' });
+    expect(onValueChange).not.toHaveBeenCalled();
   });
 
   it('selects the item of the button clicked and emits it', async () => {
@@ -90,8 +116,8 @@ describe('SwitchButtonComponent', () => {
     await flush();
 
     expect(element.selected()).toEqual({ label: 'IT', value: 'it' });
-    expect(onValueChange).toHaveBeenCalledTimes(2);
-    expect(onValueChange.mock.calls[1][0].detail).toEqual({ label: 'IT', value: 'it' });
+    expect(onValueChange).toHaveBeenCalledOnce();
+    expect(onValueChange.mock.calls[0][0].detail).toEqual({ label: 'IT', value: 'it' });
     expect(activeLabelOf(element)).toBe('IT');
   });
 
@@ -130,7 +156,7 @@ describe('SwitchButtonComponent', () => {
     document.body.append(element);
     await flush();
 
-    expect(onValueChange).toHaveBeenCalledTimes(2);
+    expect(onValueChange).toHaveBeenCalledOnce();
     expect(element.selected()).toEqual({ label: 'IT', value: 'it' });
     expect(activeLabelOf(element)).toBe('IT');
   });

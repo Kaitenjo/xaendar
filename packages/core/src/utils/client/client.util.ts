@@ -1,6 +1,6 @@
 import { _SSR_MARKERS } from '../../costants';
-import type { Block } from '../../types/if/block.type';
 import type { _Context } from '../../types/context.type';
+import type { Block } from '../../types/if/block.type';
 import { containerSlot, getNodeStrategy } from '../context/context.util';
 
 /**

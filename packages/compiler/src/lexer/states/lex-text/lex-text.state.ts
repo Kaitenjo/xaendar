@@ -1,12 +1,12 @@
 import { AT_SIGN, CR, LEFT_BRACE, LESS_THAN, LF, RIGHT_BRACE, SLASH } from '../../../costants/chars.constant.js';
-import { isNotBlank } from '../../utils/chars/chars.utils.js';
 import { endOfFile, LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model.js';
 import { LexerState } from '../../types/lexer-state.enum.js';
 import { TokenType } from '../../types/token-type.enum.js';
+import type { TokenWithOptionalSpan } from '../../types/token-with-optional-span.type.js';
+import { Token } from '../../types/token.type.js';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type.js';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type.js';
-import { Token } from '../../types/token.type.js';
-import type { TokenWithOptionalSpan } from '../../types/token-with-optional-span.type.js';
+import { isNotBlank } from '../../utils/chars/chars.utils.js';
 
 /**
  * Consumes plain text content, accumulating characters until a structural boundary

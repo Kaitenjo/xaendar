@@ -7,11 +7,11 @@ import { ClassLikeDeclaration, ClassStaticBlockDeclaration, CompilerOptions, cre
 import { LANG_JS_FLAG, RESOLVED_STYLE_MODULE_PREFIX, STYLE_MODULE_PREFIX, STYLE_PATH_PARAM } from '../../costants/style-module-prefix';
 import { RESOLVED_TEMPLATE_MODULE_PREFIX, TEMPLATE_MODULE_PREFIX } from '../../costants/template-module-prefix';
 import { getLibrarySelectorOwner, getMetadata, getSelectorKey, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
+import type { RenderRegistration } from '../../types/render-registration.type';
 import type { SelectorOwner } from '../../types/selector-owner.type';
 import type { TemplateModuleRequest } from '../../types/template-module-request.type';
 import type { TemplateModules } from '../../types/template-modules.type';
 import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
-import type { RenderRegistration } from '../../types/render-registration.type';
 
 /**
  * The declaration files, whose classes keep no decorator: a package compiled to JavaScript declares no component nor

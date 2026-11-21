@@ -1,5 +1,5 @@
-import solid from 'vite-plugin-solid';
 import { defineConfig } from 'vite';
+import solid from 'vite-plugin-solid';
 
 /*
   A plain Solid application. It needs no Xaendar plugin: the component arrives already built, as one ES module,

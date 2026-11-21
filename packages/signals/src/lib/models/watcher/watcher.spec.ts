@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { setDevMode } from '../../utils/dev-mode/dev-mode';
 import { GLOBAL_STATE } from '../../utils/globals/globals';
 import { PRIVATE } from '../../utils/private-symbol/private-symbol';
 import { Computed } from '../computed/computed';
 import { State } from '../state/state';
 import { Watcher } from './watcher';
-import { setDevMode } from '../../utils/dev-mode/dev-mode';
 
 beforeEach(() => {
   GLOBAL_STATE.frozen = false;
@@ -418,6 +418,23 @@ describe('Watcher', () => {
       const snapshot = watcher.getSources(PRIVATE);
       watcher.watch(new State(1));
       expect(snapshot).toHaveLength(0);
+    });
+  });
+
+  describe('hasSources()', () => {
+    it('rejects calls with wrong symbol', () => {
+      const watcher = new Watcher(vi.fn());
+      expect(() => watcher.hasSources(Symbol('x'))).toThrow();
+    });
+
+    it('tells whether a Signal is watched', () => {
+      const watcher = new Watcher(vi.fn());
+      const state = new State(1);
+      expect(watcher.hasSources(PRIVATE)).toBe(false);
+      watcher.watch(state);
+      expect(watcher.hasSources(PRIVATE)).toBe(true);
+      watcher.unwatch(state);
+      expect(watcher.hasSources(PRIVATE)).toBe(false);
     });
   });
 

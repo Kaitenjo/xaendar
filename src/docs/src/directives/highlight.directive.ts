@@ -1,7 +1,7 @@
 import { CustomDirective, Directive, Property } from '@xaendar/core';
 import type { InputSignal } from '@xaendar/core/signals';
-import { highlight } from '../core/highlight/highlight';
 import type { CodeLang } from '../core/highlight/highlight';
+import { highlight } from '../core/highlight/highlight';
 
 /**
  * Renders highlighted code inside its element.

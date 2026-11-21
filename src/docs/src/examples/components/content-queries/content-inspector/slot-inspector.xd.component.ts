@@ -1,6 +1,6 @@
 import { CustomElement, Query, WebComponent } from '@xaendar/core';
-import { computed } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
+import { computed } from '@xaendar/core/signals';
 
 /**
  * Runs content queries with different options on the content passed to it, and lists what each one finds.

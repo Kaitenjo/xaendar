@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs';
 import { posix } from 'node:path';
 import { type CompilerOptions, ModuleKind, ModuleResolutionKind, resolveModuleName, sys } from 'typescript';
-import { normalizeFileName, resolvePosixPath, toPosixPath } from '../path/path.utils';
 import type { ResolvedModule } from '../../types/resolved-module.type';
+import { normalizeFileName, resolvePosixPath, toPosixPath } from '../path/path.utils';
 
 /**
  * How the paths that are not relative are resolved when the project has no options: as a bundler does, reading the

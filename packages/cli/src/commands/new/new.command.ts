@@ -1,11 +1,11 @@
 import { isValidCustomElementName } from '@xaendar/internals';
 import { Command } from 'commander';
-import { resolve } from 'node:path';
-import { buildStructure } from './structure/structure';
 import { execSync } from 'node:child_process';
-import { STYLES } from '../../utils/style/style';
+import { resolve } from 'node:path';
 import { checkAndCreateProjectDirectory, createFiles, resolveStyle } from '../../utils/scaffold/scaffold.utils';
+import { STYLES } from '../../utils/style/style';
 import { CLIENT_RENDERING, SERVER_RENDERING } from './rendering/rendering';
+import { buildStructure } from './structure/structure';
 
 /**
  * Creates and returns the `new` command.

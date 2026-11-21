@@ -1,5 +1,5 @@
-import { escapeAttribute, escapeRawText, escapeText } from '@xaendar/internals';
 import { _attributeValue } from '@xaendar/core';
+import { escapeAttribute, escapeRawText, escapeText } from '@xaendar/internals';
 
 /**
  * Escapes the value of an interpolation written as text, converted to a string as the browser converts it (see

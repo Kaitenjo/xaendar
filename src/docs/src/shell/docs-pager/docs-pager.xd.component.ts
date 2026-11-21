@@ -2,8 +2,8 @@ import { CustomElement, WebComponent } from '@xaendar/core';
 import { computed } from '@xaendar/core/signals';
 import { translations } from '../../core/i18n/i18n';
 import { path } from '../../core/router/router';
-import { findNeighbours, pageTitle } from '../../core/routes/routes';
 import type { DocsPage } from '../../core/routes/routes';
+import { findNeighbours, pageTitle } from '../../core/routes/routes';
 
 /**
  * Links to the previous and the next page, in reading order.

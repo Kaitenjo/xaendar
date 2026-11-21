@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import type { LanguageService } from 'typescript';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import type { FixtureProject } from '../types/fixture-project.type';
-import { getTemplateBindingCompletions, getTemplateCompletions, getTemplateExpressionCompletions, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateKeyEventCompletions, getTemplateSourceBindingCompletions, getTemplateStyleCompletions, getTemplateTriggerCompletions } from './template-completions';
+import type { TemplateAnalysis } from '../types/template-analysis.type';
+import { getTemplateBindingCompletions, getTemplateCompletions, getTemplateExpressionCompletions, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeyEventCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSourceBindingCompletions, getTemplateStyleCompletions, getTemplateTriggerCompletions } from './template-completions';
 
 const TIMEOUT = 60_000;
 const source = '<b title="{ title }">{ items[0].na }</b>';

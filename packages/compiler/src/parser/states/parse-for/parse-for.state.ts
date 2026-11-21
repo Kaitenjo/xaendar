@@ -1,23 +1,23 @@
 import { slice } from '@xaendar/common';
 import { NoArgsFunction } from '@xaendar/types';
-import { splitTopLevel } from '../../../lexer/utils/balanced-text/balanced-text.utils';
 import { TokenType } from '../../../lexer/types/token-type.enum';
+import type { EmptyToken } from '../../../lexer/types/tokens/empty-token.type';
 import { ForToken } from '../../../lexer/types/tokens/for-token.type';
+import { splitTopLevel } from '../../../lexer/utils/balanced-text/balanced-text.utils';
+import type { Span } from '../../../types/span.type';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
 import { ASTNode } from '../../types/ast.type';
-import type { MaybeASTNodeWithSpan } from '../../types/maybe-ast-node-with-span.type';
 import { ForExpression } from '../../types/for-expression.type';
+import type { ForSection } from '../../types/for-section.type';
+import type { MaybeASTNodeWithSpan } from '../../types/maybe-ast-node-with-span.type';
 import { ASTNodeType } from '../../types/node.enum';
-import { ForImplicitVariables } from '../../types/nodes/for-implicit-variables.type';
-import { FOR_IMPLICIT_VARIABLES } from '../../utils/for-variables/for-variables.utils';
-import type { Span } from '../../../types/span.type';
-import { ForNode } from '../../types/nodes/for-node.type';
 import type { EmptyNode } from '../../types/nodes/empty-node.type';
-import type { EmptyToken } from '../../../lexer/types/tokens/empty-token.type';
+import { ForImplicitVariables } from '../../types/nodes/for-implicit-variables.type';
+import { ForNode } from '../../types/nodes/for-node.type';
 import { validateExpression } from '../../utils/expression-validator/expression-validator';
+import { FOR_IMPLICIT_VARIABLES } from '../../utils/for-variables/for-variables.utils';
 import { isValidIdentifier } from '../../utils/identifier/identifier.utils';
 import { parseBlockChildren } from '../parse-block-children/parse-block-children.state';
-import type { ForSection } from '../../types/for-section.type';
 
 /**
  * Parses a `@for` directive, consuming the FOR token, the CONDITION token,

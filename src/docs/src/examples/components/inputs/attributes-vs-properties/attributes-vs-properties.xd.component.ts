@@ -1,6 +1,6 @@
 import { CustomElement, Query, WebComponent } from '@xaendar/core';
-import { signal } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
+import { signal } from '@xaendar/core/signals';
 
 /**
  * Binds the same input with a static value and with an expression, then writes the attribute of the same name from

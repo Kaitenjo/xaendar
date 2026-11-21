@@ -1,7 +1,7 @@
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
-import { PAGES } from '../../../core/routes/routes';
 import { LANGS } from '../../../core/router/route-hash.utils';
+import { PAGES } from '../../../core/routes/routes';
 import type { ApiMember, ApiPackageName, ApiPackageTexts, ApiSymbol } from './api.data';
 import { API, findApiSymbol, packageFile, searchSymbols, symbolPath } from './api.data';
 

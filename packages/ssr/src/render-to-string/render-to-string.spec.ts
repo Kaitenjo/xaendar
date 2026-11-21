@@ -1,7 +1,7 @@
 import type { ComponentOrDirectiveMetadata, ContextCache } from '@xaendar/compiler';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
-import type { ServerCompileOptions } from '@xaendar/ssr-compiler';
 import type { Aliased, InputSignal } from '@xaendar/core/signals';
+import type { ServerCompileOptions } from '@xaendar/ssr-compiler';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import type { ServerRenderFunction } from '../types/server-render-function.type';
 
 await vi.hoisted(async () => {

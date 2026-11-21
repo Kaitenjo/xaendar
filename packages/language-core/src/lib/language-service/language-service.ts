@@ -1,7 +1,7 @@
 import { statSync } from 'node:fs';
 import { CompilerOptions, createDocumentRegistry, createLanguageService, getDefaultLibFilePath, LanguageService, LanguageServiceHost, ScriptSnapshot, sys } from 'typescript';
-import { normalizeFileName } from '../utils/path/path.utils';
 import type { VirtualFileEntry } from '../types/virtual-file-entry.type';
+import { normalizeFileName } from '../utils/path/path.utils';
 
 /**
  * language-service.ts

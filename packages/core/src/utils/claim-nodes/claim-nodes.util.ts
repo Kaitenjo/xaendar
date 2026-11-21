@@ -1,14 +1,14 @@
 import type { NoArgsVoidFunction } from '@xaendar/types';
 import { _HYDRATE_ATTRIBUTE, _SSR_MARKERS, HYDRATE } from '../../costants';
+import type { _Context } from '../../types/context.type';
 import type { NodeBlock } from '../../types/node-block.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
-import type { _Context } from '../../types/context.type';
 import type { RenderElementNamespace } from '../../types/render-element-namespace.type';
+import { setNodeStrategy, trackNode } from '../context/context.util';
 import { createNamespacedElement } from '../create-element/create-element.util';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { deferElementHydration, waitedForTrigger } from '../hydration-triggers/hydration-triggers.util';
 import { _encodeTrackKey } from '../track-key/track-key.util';
-import { setNodeStrategy, trackNode } from '../context/context.util';
 
 /**
  * The elements of components adopted by the component rendering them, which they wait for before hydrating (see
@@ -419,6 +419,17 @@ export function claimShadowRoot(root: ShadowRoot, styled: boolean): ClaimNodes {
  */
 export function isClaimed(element: Element): boolean {
   return claimedElements.has(element);
+}
+
+/**
+ * Forgets that an element was adopted, once its hydration is over: only its first render reads it (see {@link isClaimed}
+ * and {@link claimShadowRoot}), so the element keeps nothing of its hydration afterwards.
+ *
+ * @param element - The element hydrated.
+ */
+export function releaseClaim(element: Element): void {
+  claimedElements.delete(element);
+  quietElements.delete(element);
 }
 
 /**

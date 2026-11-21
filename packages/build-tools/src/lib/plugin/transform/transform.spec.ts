@@ -83,7 +83,7 @@ vi.mock('../plugin-utils/plugin.utils', () => ({
   injectTemplate: vi.fn()
 }));
 
-import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers, findHostDirectiveErrors, findWebComponentErrors } from '@xaendar/compiler';
+import { compile, extractComponentMembers, extractComponentsMetadataFromSourceFile, findHostDirectiveErrors, findWebComponentErrors } from '@xaendar/compiler';
 import { createShim, getImportConflictDiagnostics, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import { TransformPluginContext } from 'rolldown';
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';

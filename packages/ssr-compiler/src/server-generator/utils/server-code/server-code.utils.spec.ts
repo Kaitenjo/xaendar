@@ -1,4 +1,4 @@
-import { GeneratorContext, parseTemplate, type IfNode, type ContextCache } from '@xaendar/compiler';
+import { GeneratorContext, parseTemplate, type ContextCache, type IfNode } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { SERVER_RESOLVE_OPTIONS, toArrayLiteral, toBlockFunction, toStatements } from './server-code.utils';
 

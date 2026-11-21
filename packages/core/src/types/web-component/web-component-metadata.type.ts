@@ -1,9 +1,9 @@
 import type { Constructor, Dictionary } from '@xaendar/types';
-import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_EVENTS, INTERNAL_REQUIRED_INPUTS,INTERNAL_HOST_DIRECTIVES, INTERNAL_HOST_LISTENERS, INTERNAL_HOST_ATTRIBUTES, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_SELECTOR } from '../../costants';
-import type { HydrateTrigger } from '../hydrate-trigger.type';
+import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_EVENTS, INTERNAL_HOST_ATTRIBUTES, INTERNAL_HOST_DIRECTIVES, INTERNAL_HOST_LISTENERS, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_REQUIRED_INPUTS, INTERNAL_SELECTOR } from '../../costants';
 import type { CustomDirective } from '../../models/custom-directive/custom-directive';
-import type { HostListenerBinding } from '../host/host-listener-binding.type';
 import { HostAttributeBinding } from '../host/host-attribute-binding.type';
+import type { HostListenerBinding } from '../host/host-listener-binding.type';
+import type { HydrateTrigger } from '../hydrate-trigger.type';
 import type { HostDirectiveOptions } from './host-directive-options.type';
 
 /**

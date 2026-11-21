@@ -1,5 +1,5 @@
-import type { RenderFunction } from '../../types/render-function.type';
 import type { RenderDefinition } from '../../types/render-definition.type';
+import type { RenderFunction } from '../../types/render-function.type';
 
 /**
  * Module-private registry mapping each component class to its rendering information.

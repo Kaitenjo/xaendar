@@ -1,5 +1,5 @@
-import { createApp } from 'vue';
 import { defineQtyPicker } from '@xaendar-demo/qty-picker';
+import { createApp } from 'vue';
 import App from './App.vue';
 
 /*

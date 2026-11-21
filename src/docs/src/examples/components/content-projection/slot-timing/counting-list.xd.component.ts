@@ -1,6 +1,6 @@
 import { CustomElement, Query, WebComponent } from '@xaendar/core';
-import { signal } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
+import { signal } from '@xaendar/core/signals';
 
 /**
  * A list counting its projected items: in afterRender, and at every slotchange.

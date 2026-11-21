@@ -1,14 +1,14 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
-@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
-@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
-@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
-@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 @import { CartProductsComponent } from '../../../examples/signals/shared-state/cart/cart-products.xd.component.ts'
 @import { CartSummaryComponent } from '../../../examples/signals/shared-state/cart/cart-summary.xd.component.ts'
 @import { SignalMembersComponent } from '../../../examples/signals/shared-state/signal-members/signal-members.xd.component.ts'
+@import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
 @import { MEMBERS, STORE } from './shared-state.snippets.ts'
-@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
-@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 
 <span class="eyebrow">
   { t(translations(), 'pages.signals.sharedState.eyebrow') }

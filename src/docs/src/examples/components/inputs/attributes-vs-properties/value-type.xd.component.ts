@@ -1,6 +1,6 @@
 import { CustomElement, Property, WebComponent } from '@xaendar/core';
-import { computed } from '@xaendar/core/signals';
 import type { InputSignal } from '@xaendar/core/signals';
+import { computed } from '@xaendar/core/signals';
 
 /**
  * Shows the value of its input together with its type.

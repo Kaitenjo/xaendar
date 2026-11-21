@@ -1,6 +1,6 @@
 import { CustomElement, Query, WebComponent } from '@xaendar/core';
-import { signal } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
+import { signal } from '@xaendar/core/signals';
 
 /**
  * Draws a bar chart on a canvas, again whenever the values or the color change.

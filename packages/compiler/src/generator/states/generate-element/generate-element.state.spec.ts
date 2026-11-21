@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
-import type { ContextCache } from '../../../types/context-cache.type';
 import { ComponentPropertyMetadata } from '../../../type-checker/models/component-property-metadata/component-property-metadata.model';
+import type { ContextCache } from '../../../types/context-cache.type';
 import { GeneratorContext } from '../../context/context';
 import { generateElement } from './generate-element.state';
 

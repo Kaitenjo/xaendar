@@ -1,8 +1,8 @@
+import type { NoArgsFunction } from '@xaendar/types';
 import type { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import type { BindableEvents } from './bindable-events.type';
 import type { BindableProperties } from './bindable-properties.type';
-import type { NoArgsFunction } from '@xaendar/types';
 import type { BindingGroup } from './binding-group.type';
 import type { CreateComponentDirective } from './create-component-directive.type';
 import type { ExposableBindings } from './exposable-bindings.type';

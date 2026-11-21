@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
-import { checkAndCreateProjectDirectory, createFiles, resolveStyle } from '../../../utils/scaffold/scaffold.utils';
 import { toWorkspaceLibrary } from '../../../utils/library/library.utils';
+import { checkAndCreateProjectDirectory, createFiles, resolveStyle } from '../../../utils/scaffold/scaffold.utils';
 import { readProject } from '../../../utils/xaendar-config/xaendar-config.utils';
 import { CLIENT_RENDERING, SERVER_RENDERING } from '../../new/rendering/rendering';
 import { buildStructure } from '../../new/structure/structure';

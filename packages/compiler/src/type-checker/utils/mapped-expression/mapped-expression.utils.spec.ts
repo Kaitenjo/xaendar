@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { ASTNodeType } from '../../../parser/types/node.enum';
+import type { InterpolationNode } from '../../../parser/types/nodes/interpolation-node.type';
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
 import { TypeCheckContext } from '../../models/context/context';
 import { line } from '../line-builder/line-builder.utils';
-import { ASTNodeType } from '../../../parser/types/node.enum';
-import type { InterpolationNode } from '../../../parser/types/nodes/interpolation-node.type';
 import { mappedExpression, mappedInterpolation } from './mapped-expression.utils';
 
 describe('mappedExpression', () => {

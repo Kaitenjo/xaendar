@@ -1,6 +1,6 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
-import { computed, signal } from '@xaendar/core/signals';
 import type { Signal } from '@xaendar/core/signals';
+import { computed, signal } from '@xaendar/core/signals';
 
 /**
  * A row of the inventory. The quantity is a signal of its own, so changing it updates one cell,

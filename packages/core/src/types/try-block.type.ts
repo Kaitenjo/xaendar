@@ -1,6 +1,6 @@
 import type { Function } from '@xaendar/types';
-import type { _Context } from './context.type';
 import type { BlockPosition } from './block-position.type';
+import type { _Context } from './context.type';
 import type { Block } from './if/block.type';
 import type { NodeStrategy } from './node-strategy.type';
 

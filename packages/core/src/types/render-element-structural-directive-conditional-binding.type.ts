@@ -1,5 +1,5 @@
-import type { RenderElementStructuralDirective } from './render-element-structural-directive.type';
 import type { RenderConditionalBinding } from './render-conditional-binding.type';
+import type { RenderElementStructuralDirective } from './render-element-structural-directive.type';
 
 /**
  * Describes a single conditional binding applying structural directives to a rendered element only while one of its branches is selected.

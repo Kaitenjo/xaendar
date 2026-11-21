@@ -1,10 +1,10 @@
 import { resolveShimPosition } from '@xaendar/compiler';
 import { displayPartsToString, type QuickInfo } from 'typescript';
-import type { TemplateAnalysis } from '../types/template-analysis.type';
 import { findDefinitionTarget } from '../template-definition/template-definition';
 import type { DefinitionTarget } from '../types/definition-target.type';
-import { toTemplateSpan } from '../utils/template-span/template-span.utils';
+import type { TemplateAnalysis } from '../types/template-analysis.type';
 import type { TemplateHover } from '../types/template-hover.type';
+import { toTemplateSpan } from '../utils/template-span/template-span.utils';
 
 /**
  * Finds what to show on the part of a template at an offset:

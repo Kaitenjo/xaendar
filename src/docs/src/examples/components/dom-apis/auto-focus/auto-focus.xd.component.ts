@@ -1,6 +1,6 @@
 import { CustomElement, Query, WebComponent } from '@xaendar/core';
-import { signal } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
+import { signal } from '@xaendar/core/signals';
 
 /**
  * Edits a title in place, focusing the field as soon as it appears.

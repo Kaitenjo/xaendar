@@ -1,7 +1,7 @@
-import { CustomElement, Query, WebComponent } from '@xaendar/core';
 import type { ComponentRef } from '@xaendar/core';
-import { signal } from '@xaendar/core/signals';
+import { CustomElement, Query, WebComponent } from '@xaendar/core';
 import type { QuerySignal } from '@xaendar/core/signals';
+import { signal } from '@xaendar/core/signals';
 import { NewestDirective } from './newest.directive';
 import { NotificationComponent } from './notification.xd.component';
 

@@ -2,8 +2,8 @@ import { CustomElement, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
 import { translations } from '../../core/i18n/i18n';
 import { lang } from '../../core/router/router';
-import { ERRORS } from '../../pages/reference/errors/errors.data';
 import type { ErrorEntry } from '../../pages/reference/errors/errors.data';
+import { ERRORS } from '../../pages/reference/errors/errors.data';
 
 /**
  * The searchable list of the messages of the compiler, the build, the runtime and the CLI.

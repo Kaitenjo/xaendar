@@ -2,9 +2,9 @@ import type { PackageLibrary } from '@xaendar/compiler';
 import type { CompilerOptions } from 'typescript';
 import type { Environment, Logger, ViteDevServer } from 'vite';
 import type { NodeCompilerHost } from '../models/node-compiler-host/node-compiler-host.model';
+import type { XaendarPluginStrategy } from './plugin-strategy.type';
 import type { StaticComponents } from './static-components.type';
 import type { WorkspaceLibrary } from './workspace-library.type';
-import type { XaendarPluginStrategy } from './plugin-strategy.type';
 import type { XaendarPluginOptions } from './xaendar-plugin-options.type';
 
 /**

@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { Token } from '../../../lexer/types/token.type';
-import { ElementNode } from '../../types/nodes/element-node.type';
-import type { TemplateNode } from '../../types/nodes/template-node.type';
 import { Parser } from '../../parser/parser';
 import { ASTNodeType } from '../../types/node.enum';
+import { ElementNode } from '../../types/nodes/element-node.type';
+import type { TemplateNode } from '../../types/nodes/template-node.type';
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse();
 const parseTokens = (tokens: Token[]) => new Parser('', tokens).parse();

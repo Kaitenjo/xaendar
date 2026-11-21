@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { GLOBAL_STATE } from './utils/globals/globals';
-import { setDevMode } from './utils/dev-mode/dev-mode';
 import { loadSignals } from './load-signals';
 import { Computed } from './models/computed/computed';
 import { State } from './models/state/state';
 import { Watcher } from './models/watcher/watcher';
 import { currentComputed, hasSinks, hasSources, introspectSinks, introspectSources, untrack } from './subtle';
+import { setDevMode } from './utils/dev-mode/dev-mode';
+import { GLOBAL_STATE } from './utils/globals/globals';
 
 loadSignals();
 

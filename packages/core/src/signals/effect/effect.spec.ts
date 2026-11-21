@@ -1,10 +1,10 @@
 import { loadSignals } from '@xaendar/signals';
 import { describe, expect, it, vi } from 'vitest';
-import { _scope, clear, EMPTY_LAYOUT, refresh, update } from '../../utils/context/context.util';
-import type { _Context } from '../../types/context.type';
-import { _bindEffect, effect } from './effect';
 import { CLEANUP, HEADER } from '../../costants';
+import type { _Context } from '../../types/context.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
+import { _scope, clear, EMPTY_LAYOUT, refresh, update } from '../../utils/context/context.util';
+import { _bindEffect, effect } from './effect';
 
 /**
  * The layout of a scope declaring `row`.

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ModelChange } from '../../types/model/model-change.type';
 import type { EventHost } from '../../types/event/event-host.type';
-import { NODE } from '../node/node.symbol';
+import type { ModelChange } from '../../types/model/model-change.type';
 import { INITIAL_VALUE, isInputSignal } from '../input/input-instance.symbol';
+import { NODE } from '../node/node.symbol';
 import { MODEL_CHANGE, MODEL_HOST, isModelSignal } from './model-instance.symbol';
 
 await vi.hoisted(async () => {

@@ -1,8 +1,8 @@
-import { analyzeTemplate, disposeProjectLanguageServices, findUnusedImports, getComponentDefinition, getComponentDiagnostics, getTemplateFormatting, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateExpressionCompletions, getTemplateHover, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSemanticTokens, getTemplateSourceBindingCompletions, invalidateTemplateMetadata, normalizeFileName, organizeTemplateImports, removeDocumentOverlay, removeTemplateAnalysis, removeTemplateImport, setDocumentOverlay, type TemplateAnalysis, type TemplateAnalysisResult } from '@xaendar/language-core';
+import { analyzeTemplate, disposeProjectLanguageServices, findUnusedImports, getComponentDefinition, getComponentDiagnostics, getTemplateCompletions, getTemplateDefinition, getTemplateDiagnostics, getTemplateExpressionCompletions, getTemplateFormatting, getTemplateHover, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSemanticTokens, getTemplateSourceBindingCompletions, invalidateTemplateMetadata, normalizeFileName, organizeTemplateImports, removeDocumentOverlay, removeTemplateAnalysis, removeTemplateImport, setDocumentOverlay, type TemplateAnalysis, type TemplateAnalysisResult } from '@xaendar/language-core';
 import { DiagnosticCategory } from 'typescript';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { CompletionItemKind, type Connection, InsertTextFormat, DiagnosticSeverity, DiagnosticTag, FileChangeType, type TextDocuments } from 'vscode-languageserver/node';
+import { CompletionItemKind, type Connection, DiagnosticSeverity, DiagnosticTag, FileChangeType, InsertTextFormat, type TextDocuments } from 'vscode-languageserver/node';
 import { URI } from 'vscode-uri';
 import { XaendarLanguageServer } from './server-handlers';
 

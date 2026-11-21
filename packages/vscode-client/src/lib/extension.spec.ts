@@ -1,5 +1,5 @@
-import type { ExtensionContext } from 'vscode';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ExtensionContext } from 'vscode';
 
 const mocks = vi.hoisted(() => ({
   watcher: { name: 'watcher' },

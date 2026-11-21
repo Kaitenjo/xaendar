@@ -1,5 +1,5 @@
-import { CustomElement, Event, EventOptions, WebComponent } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
+import { CustomElement, Event, EventOptions, WebComponent } from '@xaendar/core';
 
 /**
  * Emits three events with different options. The detail of each event names the emission.

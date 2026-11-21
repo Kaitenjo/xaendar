@@ -6,7 +6,11 @@ import { getLibraryAliases } from '../../utils/workspace-libraries/workspace-lib
 
 /**
  * Vite plugin `config` hook: when the plugin renders on the server, sets the application type of Vite to `custom`, so
- * that the dev server serves no `index.html` of its own and the page is rendered by the middleware of the plugin. When
+ * that the dev server serves no `index.html` of its own and the page is rendered by the middleware of the plugin. It
+ * always defines `__XAENDAR_HYDRATION__`, the flag of the hydration of `@xaendar/core` (`HYDRATION`), as whether it renders
+ * on the server: without, the bundle leaves out the code adopting the nodes of the server and replaying the events. It
+ * defines `__XAENDAR_DEV__` (`DEV_MODE` of core) too, `false` in the mode `production`, so that a build for production
+ * leaves out the checks of development. When
  * the project belongs to a workspace, its libraries are imported from their sources: their names lead to their
  * entries (see `getLibraryAliases`). The compiled libraries the project depends on, found from the directory Vite is
  * launched from, share the packages of Xaendar with it, and are optimized when the dev server starts (see
@@ -17,20 +21,21 @@ import { getLibraryAliases } from '../../utils/workspace-libraries/workspace-lib
  * @returns The `config` hook handler.
  */
 export function createConfigHook(state: Pick<XaendarPluginState, 'ssr' | 'libraries' | 'packageLibraries'>): NonNullable<HookHandler<Plugin['config']>> {
-  return function config() {
+  return function config(_config, { mode }) {
     state.packageLibraries = findPackageLibraries(process.cwd());
-    let config: UserConfig | undefined;
+    const config: UserConfig = { define: { __XAENDAR_DEV__: mode === 'production' ? 'false' : 'true', __XAENDAR_HYDRATION__: state.ssr ? 'true' : 'false' } };
     if (state.ssr) {
-      config = { appType: 'custom' };
+      config.appType = 'custom';
     }
 
     if (state.libraries?.length) {
-      config = Object.assign({}, config, { resolve: { alias: getLibraryAliases(state.libraries) } });
+      config.resolve = { alias: getLibraryAliases(state.libraries) };
     }
 
     if (state.packageLibraries) {
       const { resolve, optimizeDeps } = getPackageLibrariesConfig(state.packageLibraries);
-      config = Object.assign({}, config, { resolve: Object.assign({}, config?.resolve, resolve), optimizeDeps });
+      config.resolve = Object.assign({}, config.resolve, resolve);
+      config.optimizeDeps = optimizeDeps;
     }
 
     return config;

@@ -2,11 +2,11 @@ import { type ComponentMetadata, extractComponentsMetadataFromSourceFile } from 
 import { existsSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { createSourceFile, ScriptTarget } from 'typescript';
+import type { ComponentTarget } from '../types/component-target.type';
 import type { TemplateDefinition } from '../types/template-definition.type';
 import { findStringOptions } from '../utils/component-options/component-options.utils';
 import { resolvePosixPath } from '../utils/path/path.utils';
 import { findInnermostSpan } from '../utils/template-span/template-span.utils';
-import type { ComponentTarget } from '../types/component-target.type';
 
 /**
  * Finds the files a `@WebComponent` decorator of a component file leads to:

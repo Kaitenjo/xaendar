@@ -6,12 +6,13 @@ import type { _Context } from '../../types/context.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
 import type { CreateComponentOptionsWithOptionalTarget } from '../../types/create-component/create-component-options-with-optional-target.type';
 import type { HostDirectives } from '../../types/web-component/host-directives.type';
-import { claimShadowRoot, isClaimed } from '../../utils/claim-nodes/claim-nodes.util';
+import { claimShadowRoot, isClaimed, releaseClaim } from '../../utils/claim-nodes/claim-nodes.util';
 import { _getComponentRuntime } from '../../utils/component-runtime/component-runtime.util';
 import { _scope, addCleanup, clear, EMPTY_LAYOUT, moveTo, removeCleanup } from '../../utils/context/context.util';
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import { _checkExposedFields, _createHostDirectives } from '../../utils/host-directives/host-directives.util';
+import { HYDRATION } from '../../utils/hydration-flag/hydration-flag.util';
 import { deferElementHydration, replayContractEvents, replayElementEvents } from '../../utils/hydration-triggers/hydration-triggers.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
 import { _parseState } from '../../utils/state-serialization/state-serialization.util';
@@ -64,13 +65,10 @@ export class CustomElement extends HTMLElement {
    *   {@link IS_RENDERED});
    * - `destroyed`: removed from the DOM, its effects and listeners disposed, its shadow root holding what it rendered
    *   until it is inserted again, if ever (see {@link connectedCallback}).
+   *
+   * Never `hydrating` in an application not rendered on the server (see `HYDRATION`), whose bundle has no hydration.
    */
-  private _state: 'hydrating' | 'idle' | 'rendering' | 'rendered' | 'destroyed' = this.shadowRoot !== null || this.hasAttribute(_CLIENT_ATTRIBUTE) ? 'hydrating' : 'idle';
-  /**
-   * Whether the element has a declarative shadow root, whose nodes its first render adopts instead of creating them (the
-   * hydration).
-   */
-  private readonly _hasServerRoot = !!this.shadowRoot;
+  private _state: 'hydrating' | 'idle' | 'rendering' | 'rendered' | 'destroyed' = HYDRATION && (this.shadowRoot !== null || this.hasAttribute(_CLIENT_ATTRIBUTE)) ? 'hydrating' : 'idle';
   /**
    * The root of the Web Component, where the content is rendered: the declarative shadow root of an element rendered on
    * the server, which `attachShadow` would empty, or a new one.
@@ -289,7 +287,8 @@ export class CustomElement extends HTMLElement {
    */
   private _connect(): void {
     const state = this._state;
-    const hydrating = state === 'hydrating';
+    // The guard of the whole hydration: without it, the bundle of an application not rendered on the server has none
+    const hydrating = HYDRATION && state === 'hydrating';
     if (hydrating && this._waitsForHydration()) {
       return;
     }
@@ -305,6 +304,11 @@ export class CustomElement extends HTMLElement {
     }
 
     this._restoreServerInputs();
+    /*
+      Waiting for its first render, it has a declarative shadow root unless it renders only in the browser: the server
+      writes no shadow root with `data-xd-client`. Read here, the element keeps no field for it once hydrated
+    */
+    const serverRoot = hydrating && !this.hasAttribute(_CLIENT_ATTRIBUTE);
     if (hydrating) {
       this.removeAttribute(_CLIENT_ATTRIBUTE);
     }
@@ -320,7 +324,7 @@ export class CustomElement extends HTMLElement {
     }
 
     // The first render of an element rendered on the server adopts its nodes, any other one creates them
-    const nodeStrategy = hydrating && this._hasServerRoot ? claimShadowRoot(this._root, !!styleSheet) : CREATE_NODES;
+    const nodeStrategy = serverRoot ? claimShadowRoot(this._root, !!styleSheet) : CREATE_NODES;
     this._state = 'rendering';
 
     /*
@@ -359,7 +363,9 @@ export class CustomElement extends HTMLElement {
     }
 
     this.afterRender?.();
+    // Hydrated: nothing keeps the marks of its adoption any longer
     if (hydrating) {
+      releaseClaim(this);
       replayElementEvents(this);
       replayContractEvents();
     }
@@ -374,9 +380,9 @@ export class CustomElement extends HTMLElement {
    * @returns `true` when the element waits.
    */
   private _waitsForHydration(): boolean {
-    return this.getRootNode() instanceof ShadowRoot && !this.hasAttribute(_SERVER_INPUTS_ATTRIBUTE)
+    return HYDRATION && (this.getRootNode() instanceof ShadowRoot && !this.hasAttribute(_SERVER_INPUTS_ATTRIBUTE)
       ? !isClaimed(this) || this.hasAttribute(_HYDRATE_ATTRIBUTE)
-      : deferElementHydration(this, () => this.connectedCallback());
+      : deferElementHydration(this, () => this.connectedCallback()));
   }
 
   /**
@@ -395,11 +401,11 @@ export class CustomElement extends HTMLElement {
    * so that the element is the one the browser would render. Any other element has no such attribute.
    */
   private _restoreServerInputs(): void {
-    const serialized = this.getAttribute(_SERVER_INPUTS_ATTRIBUTE);
-    if (serialized === null) {
+    if (!HYDRATION || !this.hasAttribute(_SERVER_INPUTS_ATTRIBUTE)) {
       return;
     }
 
+    const serialized = this.getAttribute(_SERVER_INPUTS_ATTRIBUTE)!;
     this.removeAttribute(_SERVER_INPUTS_ATTRIBUTE);
     const inputs = _parseState<object>(serialized);
     const names = keys(inputs);

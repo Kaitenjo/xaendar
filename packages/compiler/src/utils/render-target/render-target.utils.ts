@@ -1,7 +1,7 @@
+import type { Function } from '@xaendar/types';
 import { isIdentifier } from 'typescript';
 import type { RenderNode } from '../../parser/types/nodes/render-node.type';
 import type { ElementNamespace } from '../../types/element-namespace.type';
-import type { Function } from '@xaendar/types';
 
 /**
  * The names of the namespaces, as the error messages write them.

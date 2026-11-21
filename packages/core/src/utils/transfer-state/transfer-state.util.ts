@@ -1,5 +1,6 @@
 import { _TRANSFER_STATE_ATTRIBUTE } from '../../costants';
 import { _getComponentRuntime } from '../component-runtime/component-runtime.util';
+import { HYDRATION } from '../hydration-flag/hydration-flag.util';
 import { _parseState } from '../state-serialization/state-serialization.util';
 
 /**
@@ -41,7 +42,8 @@ export function getTransferState<Value>(key: string): Value | undefined {
  * @returns The value, `undefined` when there is none.
  */
 export function _readPageTransferState(key: string): unknown {
-  if (typeof document === 'undefined') {
+  // No server transferred anything to an application it does not render (see `HYDRATION`)
+  if (!HYDRATION || typeof document === 'undefined') {
     return undefined;
   }
 

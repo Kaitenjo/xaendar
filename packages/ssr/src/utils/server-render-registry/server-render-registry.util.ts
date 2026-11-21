@@ -1,5 +1,5 @@
-import type { ServerRenderFunction } from '../../types/server-render-function.type';
 import type { ServerRenderDefinition } from '../../types/server-render-definition.type';
+import type { ServerRenderFunction } from '../../types/server-render-function.type';
 
 /**
  * The definition registered for each component class, kept out of the class, as the one of the client.

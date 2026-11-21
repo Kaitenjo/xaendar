@@ -1,6 +1,6 @@
 import { CustomElement, HostListener, Query, WebComponent } from '@xaendar/core';
-import { computed, signal } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
+import { computed, signal } from '@xaendar/core/signals';
 import { translations } from '../../core/i18n/i18n';
 import { navigate } from '../../core/router/router';
 import { pageTitle, searchPages } from '../../core/routes/routes';

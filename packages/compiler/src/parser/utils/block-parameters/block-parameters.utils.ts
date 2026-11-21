@@ -1,8 +1,8 @@
 import { TokenType } from '../../../lexer/types/token-type.enum';
+import { splitTopLevel } from '../../../lexer/utils/balanced-text/balanced-text.utils';
 import type { Span } from '../../../types/span.type';
 import type { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
 import { parseDuration } from '../durations/durations.utils';
-import { splitTopLevel } from '../../../lexer/utils/balanced-text/balanced-text.utils';
 
 /**
  * The parameters of a `@placeholder`: the shortest time it is shown.

@@ -3,10 +3,10 @@ import type { ComponentEventMetadata } from '../../types/component-event-metadat
 import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
 import type { LibraryComponentMetadata } from '../../types/library-component-metadata.type';
 import type { LibraryDirectiveMetadata } from '../../types/library-directive-metadata.type';
-import type { LibraryManifest } from '../../types/library-manifest/library-manifest.type';
 import type { LibraryManifestBinding } from '../../types/library-manifest/library-manifest-binding.type';
 import type { LibraryManifestDeclaration } from '../../types/library-manifest/library-manifest-declaration.type';
 import type { LibraryManifestInput } from '../../types/library-manifest/library-manifest-input.type';
+import type { LibraryManifest } from '../../types/library-manifest/library-manifest.type';
 import type { TypeReference } from '../../types/type-reference.type';
 
 /**

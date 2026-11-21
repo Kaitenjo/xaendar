@@ -1,5 +1,5 @@
-import type { JsonObject } from './json-object.type';
 import type { JsonArray } from './json-array.type';
+import type { JsonObject } from './json-object.type';
 import type { JsonPrimitive } from './json-primitive.type';
 
 /**

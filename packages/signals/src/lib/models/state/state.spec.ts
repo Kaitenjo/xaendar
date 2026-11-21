@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { setDevMode } from '../../utils/dev-mode/dev-mode';
 import { GLOBAL_STATE } from '../../utils/globals/globals';
 import { PRIVATE } from '../../utils/private-symbol/private-symbol';
-import { setDevMode } from '../../utils/dev-mode/dev-mode';
 import { Computed } from '../computed/computed';
 import { State } from './state';
 
@@ -354,6 +354,23 @@ describe('State', () => {
       state.addSink(watcher1, PRIVATE);
       state.addSink(watcher2, PRIVATE);
       expect(state.getSinks(PRIVATE)).toEqual(expect.arrayContaining([watcher1, watcher2]));
+    });
+  });
+
+  describe('hasSinks()', () => {
+    it('rejects calls without the private symbol', () => {
+      const state = new State(0);
+      expect(() => state.hasSinks(Symbol('wrong'))).toThrow();
+    });
+
+    it('tells whether a sink is registered', () => {
+      const state = new State(0);
+      const watcher = makeMockWatcher();
+      expect(state.hasSinks(PRIVATE)).toBe(false);
+      state.addSink(watcher, PRIVATE);
+      expect(state.hasSinks(PRIVATE)).toBe(true);
+      state.removeSink(watcher, PRIVATE);
+      expect(state.hasSinks(PRIVATE)).toBe(false);
     });
   });
 

@@ -1,14 +1,14 @@
 import type { Expression, Identifier } from 'typescript';
-import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
-import { resolveExpression } from '../../../generator/utils/generator/generator.utils';
 import type { ResolveExpressionOptions } from '../../../generator/types/resolve-expresion-options.type';
+import { resolveExpression } from '../../../generator/utils/generator/generator.utils';
 import type { InterpolationNode } from '../../../parser/types/nodes/interpolation-node.type';
+import { getTemplateSpan } from '../../../parser/utils/expression-validator/expression-validator';
 import type { Span } from '../../../types/span.type';
 import type { TypeCheckContext } from '../../models/context/context';
 import type { LineMapping } from '../../types/line-mapping.type';
+import type { LinePart } from '../../types/line-part.type';
 import { castExpression } from '../cast/cast.utils';
 import { mappedSegments } from '../line-builder/line-builder.utils';
-import type { LinePart } from '../../types/line-part.type';
 
 /**
  * The options resolving an expression of the template by default: the members of the component are read through `root`.

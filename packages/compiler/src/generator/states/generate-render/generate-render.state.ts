@@ -1,8 +1,8 @@
 import type { RenderNode } from '../../../parser/types/nodes/render-node.type';
-import { appendContainer } from '../../utils/block-position/block-position.utils';
 import { getRenderedTemplate } from '../../../utils/render-target/render-target.utils';
 import { GeneratorContext } from '../../context/context';
 import type { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
+import { appendContainer } from '../../utils/block-position/block-position.utils';
 import { getBlockIdentifier, joinVariables, resolveExpression } from '../../utils/generator/generator.utils';
 import { declareExpression } from '../../utils/module-code/module-code.utils';
 

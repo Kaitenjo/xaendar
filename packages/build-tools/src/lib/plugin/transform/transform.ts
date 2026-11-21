@@ -1,4 +1,4 @@
-import { compile, extractComponentsMetadataFromSourceFile, extractComponentMembers, ComponentMembers, findHostDirectiveErrors, findReflectedInputs, findWebComponentErrors, TypeCheckResult } from '@xaendar/compiler';
+import { compile, ComponentMembers, extractComponentMembers, extractComponentsMetadataFromSourceFile, findHostDirectiveErrors, findReflectedInputs, findWebComponentErrors, TypeCheckResult } from '@xaendar/compiler';
 import { createShim, getImportConflictDiagnostics, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import MagicString from 'magic-string';
 import { readFile } from 'node:fs/promises';
@@ -14,9 +14,9 @@ import { clearStyleDependenciesForComponent, registerStyleDependency } from '../
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
 import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import { resolvePosixPath } from '../../utils/path/path.utils';
-import { findWorkspaceLibrary } from '../../utils/workspace-libraries/workspace-libraries.utils';
 import { collectProjectDependencies } from '../../utils/project-dependencies/project-dependencies.utils';
 import { collectFileDiagnostics, formatTypeDiagnostics } from '../../utils/type-check/type-check.utils';
+import { findWorkspaceLibrary } from '../../utils/workspace-libraries/workspace-libraries.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, describeEventCheckDiagnostic, extractImportedComponentPaths, generateStaticModule, getImportOrExtract, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 
 /**

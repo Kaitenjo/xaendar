@@ -39,11 +39,11 @@ vi.mock('../../registry/metadata-registry/metadata-registry', async (importOrigi
 import { ASTNodeType, extractComponentsMetadataFromSourceFile, extractDirectivesMetadataFromSourceFile, type ImportedSymbol, type ImportNode, isReactiveExport, parseTemplate, readLibraryMetadata, resolveExportedClass, resolveTemplateSpan } from '@xaendar/compiler';
 import MagicString from 'magic-string';
 import { type CompilerOptions, createProgram, createSourceFile, Diagnostic, ModuleKind, ModuleResolutionKind, ScriptKind, ScriptTarget } from 'typescript';
+import { Span } from '../../../../../compiler/src/types/span.type';
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
 import { getLibrarySelectorOwner, getMetadata, getSelectorOwner, registerMetadata, registerSelectors } from '../../registry/metadata-registry/metadata-registry';
 import { resolvePosixPath, toPosixPath } from '../../utils/path/path.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, describeEventCheckDiagnostic, describeTemplateWarning, extractImportedComponentPaths, generateServerStyleModule, generateServerTemplateModule, generateStaticModule, generateStyleModule, generateTemplateModule, getImportOrExtract, getMetadataOrExtract, injectTemplate, parseStyleModuleId, parseTemplateModuleId, resolveTemplateModules, stripCssComments } from './plugin.utils';
-import { Span } from '../../../../../compiler/src/types/span.type';
 
 function createMetadata(selector: string, className = 'Foo', ownerFile = '/src/foo.ts'): ComponentOrDirectiveMetadata {
   return {

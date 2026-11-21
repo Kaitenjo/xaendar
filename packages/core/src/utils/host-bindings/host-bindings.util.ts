@@ -1,4 +1,4 @@
-import { DIRECTIVE_ORDER, INTERNAL_HOST_LISTENERS, INTERNAL_HOST_ATTRIBUTES } from '../../costants';
+import { DIRECTIVE_ORDER, INTERNAL_HOST_ATTRIBUTES, INTERNAL_HOST_LISTENERS } from '../../costants';
 import { HostAttributeRun } from '../../models/host-attribute-run/host-attribute-run';
 import { HostStylingRun } from '../../models/host-styling-run/host-styling-run';
 import { _bindEffect } from '../../signals/effect/effect';

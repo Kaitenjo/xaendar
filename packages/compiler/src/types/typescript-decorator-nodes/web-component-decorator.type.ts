@@ -1,4 +1,4 @@
-import type { Decorator, CallExpression, Expression } from 'typescript';
+import type { CallExpression, Decorator, Expression } from 'typescript';
 import type { ClassDeclarationWithName } from './class-declaration-with-name.type';
 
 /**

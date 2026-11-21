@@ -1,17 +1,17 @@
-import type { ApiPackage } from '../api.data';
 import { ATTACH_SHADOW, NON_LITERAL_OPTIONS, WEB_COMPONENT_OPTIONS } from '../../../components/anatomy/anatomy.snippets';
 import { CREATE_COMPONENT, CREATE_COMPONENT_CONTENT } from '../../../components/dynamic-creation/dynamic-creation.snippets';
 import { MANUAL_SUBCLASS } from '../../../components/inheritance/inheritance.snippets';
 import { PROPERTY_OPTIONS, PROPERTY_TYPE, READ_ONLY_INPUT, TRANSFORM_TYPE } from '../../../components/inputs/inputs.snippets';
 import { CONNECTED_CALLBACK, LIFECYCLE_HOOKS } from '../../../components/lifecycle/lifecycle.snippets';
 import { EVENT_DECLARATION, MEMBER_NAME_CLASH } from '../../../components/outputs/outputs.snippets';
-import { MODEL_DECLARATION } from '../../../components/two-way-binding/two-way-binding.snippets';
 import { QUERY_DECORATORS, QUERY_REQUIRED } from '../../../components/queries/queries.snippets';
+import { MODEL_DECLARATION } from '../../../components/two-way-binding/two-way-binding.snippets';
 import { LEAVE_HANDLER_DIRECTIVE } from '../../../directives/animations/animations.snippets';
 import { CONSTRUCTOR_ACCESS, HOST_DIRECTIVE } from '../../../directives/custom/custom.snippets';
 import { DIRECTIVE_REGISTRATION } from '../../../directives/overview/overview.snippets';
 import { HYDRATE_COMPONENT } from '../../../tools/ssr/progressive-hydration/progressive-hydration.snippets';
 import { TRANSFER_STATE_COMPONENT, TRANSFER_STATE_ENTRY } from '../../../tools/ssr/transfer-state/transfer-state.snippets';
+import type { ApiPackage } from '../api.data';
 import { CANCELABLE_EVENT, CREATE_COMPONENT_DIRECTIVES, CREATE_COMPONENT_GROUPS, CUSTOM_DIRECTIVE, DIRECTIVE_CREATE_COMPONENT, DIRECTIVE_KINDS, HOST_ATTRIBUTE, HOST_ATTRIBUTE_VALUES, HOST_BINDINGS_DIRECTIVE, HOST_DIRECTIVE_MEMBERS, HOST_LISTENER, HOST_LISTENER_KEYS, HOST_LISTENER_TARGETS, MODEL_CREATE_COMPONENT, MODEL_DIRECTIVE, MODEL_HOST_DIRECTIVE, OUTPUT_DISPATCH, QUERY_CONTENT, QUERY_CONTENT_OPTIONS, QUERY_READ, QUERY_TIMING, STANDALONE_CREATE_COMPONENT, STRUCTURAL_DIRECTIVE } from './core.snippets';
 
 /**

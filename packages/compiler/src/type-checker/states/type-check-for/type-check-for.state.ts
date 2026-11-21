@@ -1,10 +1,10 @@
 import { ForImplicitVariables } from '../../../parser/types/nodes/for-implicit-variables.type';
-import { FOR_IMPLICIT_VARIABLES } from '../../../parser/utils/for-variables/for-variables.utils';
 import { ForNode } from '../../../parser/types/nodes/for-node.type';
+import { FOR_IMPLICIT_VARIABLES } from '../../../parser/utils/for-variables/for-variables.utils';
+import type { Span } from '../../../types/span.type';
 import { TypeCheckContext } from '../../models/context/context';
 import type { Line } from '../../types/line.type';
 import { ProcessNode } from '../../types/type-checker-process-node.type';
-import type { Span } from '../../../types/span.type';
 import { indentLines, line, mapped, plain } from '../../utils/line-builder/line-builder.utils';
 import { mappedExpression } from '../../utils/mapped-expression/mapped-expression.utils';
 import { typeCheckScope } from '../../utils/scope/scope.utils';

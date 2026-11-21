@@ -4,28 +4,28 @@ import { factory, identifierToKeywordKind, SyntaxKind, type Expression } from 't
 import { ASTNodeType } from '../../../parser/types/node.enum';
 import { AttributeNode } from '../../../parser/types/nodes/attribute-node.type';
 import type { ClassBindingNode } from '../../../parser/types/nodes/class-binding-node.type';
-import type { StyleBindingNode } from '../../../parser/types/nodes/style-binding-node.type';
 import { ConditionalBindingBranchNode } from '../../../parser/types/nodes/conditional-binding-branch-node.type';
 import { ConditionalBindingNode } from '../../../parser/types/nodes/conditional-binding-node.type';
 import { DirectiveNode } from '../../../parser/types/nodes/directive-node.type';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { EventNode } from '../../../parser/types/nodes/event-node.type';
 import type { StructuralDirectiveNode } from '../../../parser/types/nodes/structural-directive-node.type';
+import type { StyleBindingNode } from '../../../parser/types/nodes/style-binding-node.type';
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
 import { isStructuralElement } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
+import type { ElementNamespace } from '../../../types/element-namespace.type';
+import { mapContentTemplates } from '../../../utils/content-templates/content-templates.utils';
 import { getChildrenNamespace, getElementNamespace } from '../../../utils/element-namespace/element-namespace.utils';
 import { readsEvent } from '../../../utils/event-reads/event-reads.utils';
-import { mapContentTemplates } from '../../../utils/content-templates/content-templates.utils';
 import { GeneratorContext } from '../../context/context';
-import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { DescriptorOwner } from '../../types/descriptor-owner.type';
+import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import type { StylingExpressions } from '../../types/styling-expressions.type';
 import type { TemplateListenerCode } from '../../types/template-listener-code.type';
-import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
-import { getElementIdentifier, isConstantExpression, joinVariables, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
 import { appendBlockPosition, appendContainer, rendersBlock } from '../../utils/block-position/block-position.utils';
-import { describeStyling, getDirectiveOrder, orderDirectives, splitStylingAttributes } from '../../utils/styling/styling.utils';
+import { getElementIdentifier, isConstantExpression, joinVariables, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
 import { declareExpression, toArrayLiteral, toObjectLiteral, toRoleName } from '../../utils/module-code/module-code.utils';
+import { describeStyling, getDirectiveOrder, orderDirectives, splitStylingAttributes } from '../../utils/styling/styling.utils';
 
 /**
  * Generates code for an HTML element node: creates the DOM element, sets attributes,

@@ -1,5 +1,6 @@
 # Checks every push to main and every pull request: lint, type-checks, tests with the coverage enforced at 100%,
-# and the specs of the documentation site. The release workflow runs the same checks again before publishing.
+# the specs of the documentation site, then the builds of the packages and of the site, whose output is discarded with
+# the runner. The release workflow runs the same checks again before publishing.
 name: CI
 
 on:
@@ -57,3 +58,11 @@ jobs:
 
       - name: Test the documentation site
         run: npm test --prefix src/docs
+
+      # The builds the release runs, so that a package failing to bundle fails here and not halfway through a release
+      - name: Build the packages
+        run: npm run build:projects
+
+      # Type-checks every template of the site, the ones no spec imports too: the tests compile only what they import
+      - name: Build the documentation site
+        run: npm run build --prefix src/docs

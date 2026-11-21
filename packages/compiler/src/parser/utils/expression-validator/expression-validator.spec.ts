@@ -1,6 +1,6 @@
+import type { BinaryExpression } from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { getTemplateSpan, validateExpression } from './expression-validator';
-import type { BinaryExpression } from 'typescript';
 
 const capture = (fn: () => void): Error => {
   try {

@@ -3,11 +3,11 @@ import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
 import type { ASTNodeType } from '../node.enum';
 import type { AttributeNode } from './attribute-node.type';
 import type { ClassBindingNode } from './class-binding-node.type';
-import type { StyleBindingNode } from './style-binding-node.type';
 import type { ConditionalBindingNode } from './conditional-binding-node.type';
 import type { DirectiveNode } from './directive-node.type';
 import type { EventNode } from './event-node.type';
 import type { StructuralDirectiveNode } from './structural-directive-node.type';
+import type { StyleBindingNode } from './style-binding-node.type';
 
 /**
  * AST node representing a branch of a conditional binding, i.e. the bindings declared in the block of an

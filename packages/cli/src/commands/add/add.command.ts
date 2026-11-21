@@ -1,8 +1,8 @@
 import { Command } from 'commander';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { createFiles } from '../../utils/scaffold/scaffold.utils';
 import { addLibraryPaths, addLibraryToConfig, getLibraryPaths, LIBRARIES_FOLDER, toWorkspaceLibrary } from '../../utils/library/library.utils';
+import { createFiles } from '../../utils/scaffold/scaffold.utils';
 import { readProjectStyle } from '../../utils/style/style';
 import { readProject } from '../../utils/xaendar-config/xaendar-config.utils';
 import { buildLibraryStructure } from '../generate/library/library-structure/library-structure';

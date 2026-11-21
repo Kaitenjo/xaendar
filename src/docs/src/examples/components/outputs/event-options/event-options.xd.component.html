@@ -1,5 +1,5 @@
-@import { EventSourceComponent } from './event-source.xd.component.ts'
 @import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { EventSourceComponent } from './event-source.xd.component.ts'
 
 <div class="frame" (bubbling)="onFrame($event)" (escaping)="onFrame($event)" >
   <ex-event-source (plain)="fromTag($event)" (bubbling)="fromTag($event)" (escaping)="fromTag($event)" />

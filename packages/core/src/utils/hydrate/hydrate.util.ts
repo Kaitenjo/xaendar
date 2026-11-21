@@ -2,13 +2,18 @@ import type { NoArgsVoidFunction } from '@xaendar/types';
 import { _SSR_MARKERS, COMPONENT, HEADER } from '../../costants';
 import { _bindEffect } from '../../signals/effect/effect';
 import { untracked } from '../../signals/untracked';
+import type { _Context } from '../../types/context.type';
 import type { HydrateBlock } from '../../types/hydrate-block.type';
 import type { HydrateRun } from '../../types/hydrate-run.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { ClaimNodes } from '../claim-nodes/claim-nodes.util';
-import type { _Context } from '../../types/context.type';
-import { _scope, addCleanup, containerSlot, getNodeStrategy, setNodeStrategy, trackNode } from '../context/context.util';
+import { _scope, addCleanup, containerSlot, getNodeStrategy, removeCleanup, setNodeStrategy, trackNode } from '../context/context.util';
 import { armTriggers, disarmAll, recordEvents, replayEvents, watchedTriggers } from '../hydration-triggers/hydration-triggers.util';
+
+/**
+ * The nodes of the server of a run holding none: before they are skipped, and once its content adopted them.
+ */
+const NO_NODES: readonly Node[] = Object.freeze([]);
 
 /**
  * Renders a `@hydrate` block, whose content the server rendered waits for the first of its triggers to hydrate.
@@ -44,7 +49,7 @@ export function _hydrate(parentNode: HTMLElement, parentContext: _Context, refer
     nodeBlock,
     block,
     disarms: [],
-    serverNodes: [],
+    serverNodes: NO_NODES,
     active: true,
     fired: false,
     hydrated: false,
@@ -221,8 +226,13 @@ function adopt(run: HydrateRun): void {
   claim.close(parentNode, nodeBlock);
   // The hydration of the content is over: it gets its nodes as the component holding it does
   setNodeStrategy(content, getNodeStrategy(parentContext));
-  if (run.recorded) {
-    replayEvents(run.recorded);
+  // Hydrated: the run keeps neither the nodes of the server nor the events recorded
+  run.serverNodes = NO_NODES;
+  const { recorded } = run;
+  if (recorded) {
+    run.recorded = undefined;
+    removeCleanup(parentContext, recorded.stop);
+    replayEvents(recorded);
   }
 }
 

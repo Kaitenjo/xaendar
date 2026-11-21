@@ -1,4 +1,4 @@
-import { GeneratorContext, parseTemplate, type HydrateNode, type ContextCache } from '@xaendar/compiler';
+import { GeneratorContext, parseTemplate, type ContextCache, type HydrateNode } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { generateServerHydrate } from './generate-server-hydrate.state';
 

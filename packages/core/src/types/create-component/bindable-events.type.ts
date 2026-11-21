@@ -1,5 +1,5 @@
-import type { OutputListeners } from './output-listeners.type';
 import type { NativeListeners } from './native-listeners.type';
+import type { OutputListeners } from './output-listeners.type';
 
 /**
  * The events listened to by `createComponent` on the element of a component or of a directive, each one with its listener:

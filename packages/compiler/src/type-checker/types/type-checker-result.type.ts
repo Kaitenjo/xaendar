@@ -1,5 +1,5 @@
-import type { EventCheck } from './event-check.type';
 import type { Span } from '../../types/span.type';
+import type { EventCheck } from './event-check.type';
 import type { LineMapping } from './line-mapping.type';
 import type { VariableCall } from './variable-call.type';
 

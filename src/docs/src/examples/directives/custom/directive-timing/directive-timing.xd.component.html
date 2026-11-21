@@ -1,5 +1,5 @@
-@import { InspectDirective } from './inspect.directive.ts'
 @import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { InspectDirective } from './inspect.directive.ts'
 
 <ex-button (click)="rename()">Change the label</ex-button>
 <ul @@exInspect(label="{label()}" (report)="log($event)") id="fruits">

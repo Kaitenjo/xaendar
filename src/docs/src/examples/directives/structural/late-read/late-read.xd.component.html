@@ -1,6 +1,6 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 @import { EarlyReadDirective } from './early-read.directive.ts'
 @import { LateReadDirective } from './late-read.directive.ts'
-@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
 
 <ex-button (click)="toggle()">Switch user (now { user() })</ex-button>
 <p *exEarlyRead(user="{user()}")>Read before the await: shown only to the admin.</p>

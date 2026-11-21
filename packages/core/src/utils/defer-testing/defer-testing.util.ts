@@ -1,6 +1,6 @@
+import type { _Context } from '../../types/context.type';
 import type { DeferBlockBehavior } from '../../types/defer-testing/defer-block-behavior.type';
 import type { DeferBlockFixture } from '../../types/defer-testing/defer-block-fixture.type';
-import type { _Context } from '../../types/context.type';
 import { addCleanup } from '../context/context.util';
 
 /**

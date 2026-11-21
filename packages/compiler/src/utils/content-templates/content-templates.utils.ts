@@ -1,9 +1,9 @@
+import { toStringLiteral } from '../../generator/utils/generator/generator.utils';
+import { toObjectLiteral } from '../../generator/utils/module-code/module-code.utils';
+import type { CompilerContext } from '../../models/compiler-context/compiler-context.model';
 import { ASTNodeType } from '../../parser/types/node.enum';
 import type { ElementNode } from '../../parser/types/nodes/element-node.type';
 import { isStructuralElement } from '../../parser/utils/scope-declarations/scope-declarations.utils';
-import type { CompilerContext } from '../../models/compiler-context/compiler-context.model';
-import { toStringLiteral } from '../../generator/utils/generator/generator.utils';
-import { toObjectLiteral } from '../../generator/utils/module-code/module-code.utils';
 
 /**
  * Describes the templates passed as content to a component: the `<template name(…)>` written among the children of

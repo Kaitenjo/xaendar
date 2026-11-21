@@ -1,13 +1,13 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
-@import { lang as currentLang } from '../../../core/router/router.ts'
-@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
-@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
-@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
-@import { SignalWatcherComponent } from '../../../examples/signals/advanced/watcher/watcher.xd.component.ts'
-@import { SignalIntrospectionComponent } from '../../../examples/signals/advanced/introspection/introspection.xd.component.ts'
-@import { DEV_MODE } from './advanced.snippets.ts'
 @import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
 @import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+@import { SignalIntrospectionComponent } from '../../../examples/signals/advanced/introspection/introspection.xd.component.ts'
+@import { SignalWatcherComponent } from '../../../examples/signals/advanced/watcher/watcher.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { DEV_MODE } from './advanced.snippets.ts'
 
 <span class="eyebrow">
   { t(translations(), 'pages.signals.advanced.eyebrow') }

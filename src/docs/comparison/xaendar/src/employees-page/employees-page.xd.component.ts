@@ -1,6 +1,6 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
-import { COLUMNS, createEmployees, DEPARTMENT_OPTIONS, type Employee, EMPTY_FILTERS, type Filters, filterEmployees, formatDate, formatSalary, STATUS_OPTIONS, statusClass } from '../../../shared/data';
+import { COLUMNS, createEmployees, DEPARTMENT_OPTIONS, type Employee, EMPTY_FILTERS, filterEmployees, type Filters, formatDate, formatSalary, STATUS_OPTIONS, statusClass } from '../../../shared/data';
 
 /**
  * The page: the filters, edited as a draft and applied on demand, and the table of the employees.

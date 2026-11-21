@@ -1,7 +1,7 @@
-import { CustomElement, Event, HostListener, HostAttribute, Property, WebComponent } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
-import { signal } from '@xaendar/core/signals';
+import { CustomElement, Event, HostAttribute, HostListener, Property, WebComponent } from '@xaendar/core';
 import type { InputSignal } from '@xaendar/core/signals';
+import { signal } from '@xaendar/core/signals';
 
 /**
  * A switch drawn by its own element: the role, the state and the focus are attributes of the host, kept in sync by

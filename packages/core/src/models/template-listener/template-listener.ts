@@ -1,6 +1,6 @@
-import type { RenderElementEvent } from '../../types/render-element-event.type';
 import { COMPONENT } from '../../costants';
 import type { _Context } from '../../types/context.type';
+import type { RenderElementEvent } from '../../types/render-element-event.type';
 
 /**
  * A listener of an element rendered by a template (`(click)="select(row.id)"`): the object the element listens with,

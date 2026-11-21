@@ -1,6 +1,6 @@
 import type { Span } from '@xaendar/compiler';
-import type { TemplateSemanticTokenType } from './template-semantic-token-type.type';
 import type { TemplateSemanticTokenModifier } from './template-semantic-token-modifier.type';
+import type { TemplateSemanticTokenType } from './template-semantic-token-type.type';
 
 /**
  * A part of a template colored by what it is rather than by how it is written.

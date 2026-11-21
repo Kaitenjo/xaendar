@@ -1,8 +1,8 @@
 import { effect } from '../../signals/effect/effect';
+import type { _ComponentRuntime } from '../../types/component-runtime.type';
 import { _createComponent } from '../create-component/create-component.util';
 import { registerLeave } from '../leave/leave.util';
 import { _readPageTransferState } from '../transfer-state/transfer-state.util';
-import type { _ComponentRuntime } from '../../types/component-runtime.type';
 
 /**
  * The runtime in use, created on the first read: the modules of the components import this one before

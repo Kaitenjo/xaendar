@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { Parser } from '../../../parser/parser/parser';
 import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
+import type { ContextCache } from '../../../types/context-cache.type';
 import { GeneratorContext } from '../../context/context';
 import { generateDefer } from './generate-defer.state';
-import type { ContextCache } from '../../../types/context-cache.type';
 
 const cache = {} as ContextCache;
 

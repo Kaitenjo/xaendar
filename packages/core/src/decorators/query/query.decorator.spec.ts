@@ -2,17 +2,17 @@
 import { loadSignals } from '@xaendar/signals';
 import type { AccessorDecorator, Constructor } from '@xaendar/types';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { HEADER, LEAVE_HANDLER } from '../../costants';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import { effect } from '../../signals/effect/effect';
 import type { QuerySignal } from '../../signals/types/query-signal.type';
-import { _addAppliedDirective } from '../../utils/applied-directives/applied-directives.util';
-import { HEADER, LEAVE_HANDLER } from '../../costants';
-import { EMPTY_LAYOUT, _scope, clear, markLeavingScope, trackNode } from '../../utils/context/context.util';
 import type { _Context } from '../../types/context.type';
+import { _addAppliedDirective } from '../../utils/applied-directives/applied-directives.util';
+import { _setContentTemplates } from '../../utils/content-templates/content-templates.util';
+import { EMPTY_LAYOUT, _scope, clear, markLeavingScope, trackNode } from '../../utils/context/context.util';
 import { _setElementRef } from '../../utils/element-refs/element-refs.util';
 import { _defineRender } from '../../utils/render-registry/render-registry.util';
-import { _setContentTemplates } from '../../utils/content-templates/content-templates.util';
 import { WebComponent } from '../web-component/web-component.decorator';
 import { Query, query, queryAll, queryContent, queryContentAll, queryContentRequired, queryRef, queryRefAll, queryRefRequired, queryRequired } from './query.decorator';
 

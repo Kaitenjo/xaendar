@@ -1,6 +1,6 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
-import { signal } from '@xaendar/core/signals';
 import type { Signal } from '@xaendar/core/signals';
+import { signal } from '@xaendar/core/signals';
 
 /**
  * Calls methods from event bindings with every kind of argument a template accepts.

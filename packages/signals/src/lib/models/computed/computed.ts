@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { addToSmallSet, deleteFromSmallSet, emptySmallSet, findInSmallSet, forEachInSmallSet, smallSetHas, smallSetSize, smallSetToArray, type SmallSet } from '@xaendar/common';
 import { ComputedState } from '../../types/computed-state.type';
 import { SignalEqual } from '../../types/signal-equal.type';
 import { SignalOptions } from '../../types/signal-options.type';
 import { isDevMode } from '../../utils/dev-mode/dev-mode';
-import { addToSmallSet, deleteFromSmallSet, emptySmallSet, findInSmallSet, forEachInSmallSet, type SmallSet, smallSetHas, smallSetSize, smallSetToArray } from '@xaendar/common';
 import { GLOBAL_STATE, popComputed, pushComputed } from '../../utils/globals/globals';
 import { PRIVATE, assertPrivateContext } from '../../utils/private-symbol/private-symbol';
 import { State } from '../state/state';
@@ -89,6 +89,21 @@ export class Computed<T = any> {
     return smallSetToArray(this.#sources);
   }
   /**
+   * Tells whether the sources set holds any Signal, without copying it as {@link getSources} does.
+   *
+   * N.B. Deliberate: `Signal.subtle.hasSources` runs for every binding of a template, to drop the ones reading no
+   * Signal, so it reads the size of the set instead of building an array only to test its length. Do not go back to
+   * `getSources(symbol).length`.
+   *
+   * @param symbol - Private access symbol; rejects calls from outside the library.
+   * @returns `true` if at least one Signal is in the set.
+   * @internal
+   */
+  public hasSources(symbol: symbol): boolean {
+    assertPrivateContext(symbol);
+    return smallSetSize(this.#sources) !== 0;
+  }
+  /**
    * The set of Signals and Watchers that directly depend on this Signal.
    *
    * Populated only when this Signal is reachable from at least one active
@@ -112,6 +127,20 @@ export class Computed<T = any> {
   public getSinks(symbol: symbol): (Computed<unknown> | Watcher)[] {
     assertPrivateContext(symbol);
     return smallSetToArray(this.#sinks);
+  }
+  /**
+   * Tells whether the sinks set holds any Signal or Watcher, without copying it as {@link getSinks} does.
+   *
+   * N.B. Deliberate: it reads the size of the set instead of building an array only to test its length, as
+   * `hasSources` does. Do not go back to `getSinks(symbol).length`.
+   *
+   * @param symbol - Private access symbol; rejects calls from outside the library.
+   * @returns `true` if at least one sink is in the set.
+   * @internal
+   */
+  public hasSinks(symbol: symbol): boolean {
+    assertPrivateContext(symbol);
+    return smallSetSize(this.#sinks) !== 0;
   }
   /**
    * The equality function used to determine whether a newly computed value

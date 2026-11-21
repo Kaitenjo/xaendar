@@ -1,5 +1,5 @@
-import { CustomDirective, Directive, Event } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
+import { CustomDirective, Directive, Event } from '@xaendar/core';
 
 /**
  * Emits `outside` when the pointer is pressed anywhere outside the element.

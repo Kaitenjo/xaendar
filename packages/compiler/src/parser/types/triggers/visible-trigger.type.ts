@@ -1,5 +1,5 @@
-import type { ElementTrigger } from './element-trigger.type';
 import type { BaseTrigger } from './base-trigger.type';
+import type { ElementTrigger } from './element-trigger.type';
 import type { TriggerOptions } from './trigger-options.type';
 
 /**

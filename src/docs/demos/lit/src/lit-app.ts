@@ -1,5 +1,5 @@
-import { LitElement, html } from 'lit';
 import type { PropertyDeclarations, TemplateResult } from 'lit';
+import { LitElement, html } from 'lit';
 
 /**
  * Drives the Xaendar element from Lit: `.value` assigns the quantity to its input, and `@changed` reads the

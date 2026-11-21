@@ -1,7 +1,7 @@
-import type { ApiPackage } from '../api.data';
 import { CSP_NONCE } from '../../../tools/ssr/hydration/hydration.snippets';
 import { ENTRY_SERVER, RENDER_INPUTS } from '../../../tools/ssr/overview/overview.snippets';
 import { TRANSFER_STATE_ENTRY } from '../../../tools/ssr/transfer-state/transfer-state.snippets';
+import type { ApiPackage } from '../api.data';
 
 /**
  * The symbols of `@xaendar/ssr`.

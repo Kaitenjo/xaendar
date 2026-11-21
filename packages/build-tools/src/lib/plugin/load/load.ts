@@ -2,15 +2,15 @@ import { type ASTNode, ASTNodeType, type ContextCache, type ImportNode, parseTem
 import { getTemplateWarnings } from '@xaendar/language-core';
 import { dirname } from 'node:path';
 import { registerMetadata } from '../../registry/metadata-registry/metadata-registry';
+import type { LoadHook } from '../../types/load-hook.type';
 import type { XaendarPluginStrategy } from '../../types/plugin-strategy.type';
-import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import type { StyleCompileResult } from '../../types/style-compile-result.type';
 import { TemplateModuleRequest } from '../../types/template-module-request.type';
+import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
+import { findWorkspaceLibrary, markClientOnly } from '../../utils/workspace-libraries/workspace-libraries.utils';
 import { describeTemplateWarning, extractImportedComponentPaths, getImportOrExtract, getMetadataOrExtract, parseStyleModuleId, parseTemplateModuleId, resolveTemplateModules } from '../plugin-utils/plugin.utils';
 import { compileStyle } from '../style/compile-style';
 import { minifyCss } from '../style/minify-css/minify-css.utils';
-import type { LoadHook } from '../../types/load-hook.type';
-import { findWorkspaceLibrary, markClientOnly } from '../../utils/workspace-libraries/workspace-libraries.utils';
 
 /**
  * Compiles a template into the module exporting its render function, and a style

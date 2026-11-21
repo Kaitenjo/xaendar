@@ -1,9 +1,9 @@
 import { CustomElement, Property, WebComponent } from '@xaendar/core';
-import { computed, signal, untracked } from '@xaendar/core/signals';
 import type { InputSignal } from '@xaendar/core/signals';
+import { computed, signal, untracked } from '@xaendar/core/signals';
 import type { CodeLang } from '../../core/highlight/highlight';
-import { describeSnippet, loadSnippet } from '../../core/sources/sources';
 import type { SourceFile } from '../../core/sources/source-files.utils';
+import { describeSnippet, loadSnippet } from '../../core/sources/sources';
 
 /**
  * A highlighted block of code, with a copy button.

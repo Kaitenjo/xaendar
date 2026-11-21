@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { Lexer } from '../../../lexer/lexer/lexer';
 import { TokenType } from '../../../lexer/types/token-type.enum';
 import { Token } from '../../../lexer/types/token.type';
+import type { Span } from '../../../types/span.type';
 import { Parser } from '../../parser/parser';
 import { ASTNodeType } from '../../types/node.enum';
 import { ElementNode } from '../../types/nodes/element-node.type';
 import { IfBindingNode } from '../../types/nodes/if-binding-node.type';
 import { SwitchBindingNode } from '../../types/nodes/switch-binding-node.type';
-import type { Span } from '../../../types/span.type';
 import { getTemplateSpan } from '../../utils/expression-validator/expression-validator';
 
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse() as ElementNode[];

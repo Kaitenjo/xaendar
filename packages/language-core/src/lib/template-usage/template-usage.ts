@@ -1,4 +1,4 @@
-import { type ASTNode, ASTNodeType, type AttributeNode, type ComponentMetadata, type ComponentMembers, type ComponentOrDirectiveMetadata, type ConditionalBindingNode, type ElementNode, forEachExpressionChild, getForVariables, isBrowserOnlyGlobal, type SymbolImport, walkTemplate } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type AttributeNode, type ComponentMembers, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingNode, type ElementNode, forEachExpressionChild, getForVariables, isBrowserOnlyGlobal, type SymbolImport, walkTemplate } from '@xaendar/compiler';
 import { type Expression, type Identifier, isCallExpression, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, type Node } from 'typescript';
 import type { ComponentUsage } from '../types/component-usage.type';
 import type { TemplateUsage } from '../types/template-usage.type';

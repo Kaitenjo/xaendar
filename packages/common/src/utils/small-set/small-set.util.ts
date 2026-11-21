@@ -1,5 +1,5 @@
-import type { SmallSet } from '../../types/small-set.type';
 import type { SmallSetItem } from '../../types/small-set-item.type';
+import type { SmallSet } from '../../types/small-set.type';
 
 /**
  * The number of items a `SmallSet` keeps in an array: adding one more moves them to a `Set`, whose lookup does not grow

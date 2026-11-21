@@ -1,12 +1,12 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
-@import { lang as currentLang } from '../../../core/router/router.ts'
-@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
-@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
-@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
-@import { HookOrderComponent } from '../../../examples/components/lifecycle/hook-order/hook-order.xd.component.ts'
-@import { CONNECTED_CALLBACK, LIFECYCLE_HOOKS } from './lifecycle.snippets.ts'
 @import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { lang as currentLang } from '../../../core/router/router.ts'
 @import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+@import { HookOrderComponent } from '../../../examples/components/lifecycle/hook-order/hook-order.xd.component.ts'
+@import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+@import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { CONNECTED_CALLBACK, LIFECYCLE_HOOKS } from './lifecycle.snippets.ts'
 
 <span class="eyebrow">
   { t(translations(), 'pages.components.lifecycle.eyebrow') }

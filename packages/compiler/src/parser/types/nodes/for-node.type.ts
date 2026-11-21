@@ -1,5 +1,5 @@
-import { ASTNode } from '../ast.type';
 import type { ASTNodeWithSpan } from '../ast-node-with-span.type';
+import { ASTNode } from '../ast.type';
 import { ForExpression } from '../for-expression.type';
 import { ASTNodeType } from '../node.enum';
 import type { EmptyNode } from './empty-node.type';

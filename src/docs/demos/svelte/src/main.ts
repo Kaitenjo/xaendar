@@ -1,5 +1,5 @@
-import { mount } from 'svelte';
 import { defineQtyPicker } from '@xaendar-demo/qty-picker';
+import { mount } from 'svelte';
 import App from './App.svelte';
 
 /*

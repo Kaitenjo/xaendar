@@ -1,4 +1,4 @@
-import { GeneratorContext, parseTemplate, type DeferNode, type ContextCache } from '@xaendar/compiler';
+import { GeneratorContext, parseTemplate, type ContextCache, type DeferNode } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { generateServerDefer } from './generate-server-defer.state';
 

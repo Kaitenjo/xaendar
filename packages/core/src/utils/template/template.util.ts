@@ -1,11 +1,11 @@
+import { BRANCH, COMPONENT, CONTENT, HEADER, PARENT, POSITION } from '../../costants';
 import { _bindSite } from '../../signals/effect/effect';
 import { untracked } from '../../signals/untracked';
+import type { _BoundTemplate } from '../../types/bound-template.type';
+import type { _Context } from '../../types/context.type';
 import type { LetBinding } from '../../types/let-binding.type';
 import type { RenderTemplateConfig } from '../../types/render-template-config.type';
 import type { _Template } from '../../types/template.type';
-import type { _BoundTemplate } from '../../types/bound-template.type';
-import { BRANCH, COMPONENT, CONTENT, HEADER, PARENT, POSITION } from '../../costants';
-import type { _Context } from '../../types/context.type';
 import { _declare, blockAnchor, blockParent, clear, containerSlot, getNodeStrategy, refresh, update } from '../context/context.util';
 import { _let } from '../let/let.util';
 

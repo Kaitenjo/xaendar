@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import type { BlockConfig } from '../../types/if/block-config.type';
-import type { TemplateExpression } from '../../types/template-expression.type';
 import { CONTAINER_SLOTS, HEADER } from '../../costants';
 import type { _Context } from '../../types/context.type';
+import type { BlockConfig } from '../../types/if/block-config.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
+import type { TemplateExpression } from '../../types/template-expression.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');

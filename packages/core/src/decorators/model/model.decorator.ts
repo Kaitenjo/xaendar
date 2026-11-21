@@ -7,8 +7,8 @@ import type { SettableInputSignal } from '../../signals/types/settable-input-sig
 import type { EventHost } from '../../types/event/event-host.type';
 import type { ModelChange } from '../../types/model/model-change.type';
 import type { ModelDecoratorOptions } from '../../types/model/model-decorator-options.type';
-import type { InputAlias } from '../../types/property/input-alias.type';
 import type { ModelDecoratorReturnType } from '../../types/model/model-decorator-return-type.type';
+import type { InputAlias } from '../../types/property/input-alias.type';
 import type { PropertyOptionsArgument } from '../../types/property/property-options-argument.type';
 import type { WithAlias } from '../../types/property/with-alias.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';

@@ -1,5 +1,5 @@
-import { FASTElement, Observable, html } from '@microsoft/fast-element';
 import type { ElementViewTemplate } from '@microsoft/fast-element';
+import { FASTElement, Observable, html } from '@microsoft/fast-element';
 
 /**
  * Drives the Xaendar element from FAST: `:value` assigns the quantity to its input, and `@changed` reads the

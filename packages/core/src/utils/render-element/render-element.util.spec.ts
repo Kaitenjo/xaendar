@@ -1,15 +1,15 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
+import { CLEANUP, DIRECTIVE_ORDER, HEADER, LAYOUT, PARENT_NODE } from '../../costants';
+import type { _Context } from '../../types/context.type';
 import type { RenderChildren } from '../../types/render-children.type';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
 import type { RenderElementConditionalBinding } from '../../types/render-element-conditional-binding.type';
 import type { RenderElementDirective } from '../../types/render-element-directive.type';
 import type { RenderElementStructuralDirective } from '../../types/render-element-structural-directive.type';
 import type { RenderElement } from '../../types/render-element.type';
-import type { TemplateExpression } from '../../types/template-expression.type';
-import { CLEANUP, DIRECTIVE_ORDER, HEADER, LAYOUT, PARENT_NODE } from '../../costants';
-import type { _Context } from '../../types/context.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
+import type { TemplateExpression } from '../../types/template-expression.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');

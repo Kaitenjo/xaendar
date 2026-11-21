@@ -1,5 +1,5 @@
-import { _bindSite } from '../../signals/effect/effect';
 import { COMPONENT } from '../../costants';
+import { _bindSite } from '../../signals/effect/effect';
 import type { _Context } from '../../types/context.type';
 import type { TextBinding } from '../../types/text-binding.type';
 import { getNodeStrategy } from '../context/context.util';

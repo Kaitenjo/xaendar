@@ -1,5 +1,5 @@
-import { CustomElement, Event, Property, WebComponent } from '@xaendar/core';
 import type { Output } from '@xaendar/core';
+import { CustomElement, Event, Property, WebComponent } from '@xaendar/core';
 import type { InputSignal } from '@xaendar/core/signals';
 
 /**

@@ -1,9 +1,8 @@
 import { ASTNodeType } from '../../parser/types/node.enum'
+import type { ClientNode } from '../../parser/types/nodes/client-node.type'
+import type { DeferNode } from '../../parser/types/nodes/defer-node.type'
 import { ElementNode } from '../../parser/types/nodes/element-node.type'
 import { ForNode } from '../../parser/types/nodes/for-node.type'
-import type { ClientNode } from '../../parser/types/nodes/client-node.type'
-import type { TryNode } from '../../parser/types/nodes/try-node.type'
-import type { DeferNode } from '../../parser/types/nodes/defer-node.type'
 import type { HydrateNode } from '../../parser/types/nodes/hydrate-node.type'
 import { IfNode } from '../../parser/types/nodes/if-node.type'
 import { ImportNode } from '../../parser/types/nodes/import-node.type'
@@ -13,8 +12,9 @@ import type { RenderNode } from '../../parser/types/nodes/render-node.type'
 import { SwitchNode } from '../../parser/types/nodes/switch-node.type'
 import type { TemplateNode } from '../../parser/types/nodes/template-node.type'
 import { TextNode } from '../../parser/types/nodes/text-node.type'
+import type { TryNode } from '../../parser/types/nodes/try-node.type'
 import { TypeCheckerTransitionFunction } from '../../type-checker/types/type-checker-transition-function.type'
-import type { OmittedKeys } from './omitted-keys.type';
+import type { OmittedKeys } from './omitted-keys.type'
 
 /**
  * Maps each supported AST node type to its type checker transition function.

@@ -1,5 +1,5 @@
-import { CustomElement, WebComponent } from '@xaendar/core';
 import type { CreateComponentOptionsWithOptionalTarget } from '@xaendar/core';
+import { CustomElement, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 import { InfoCardComponent } from './info-card.xd.component';
 import { WarningCardComponent } from './warning-card.xd.component';

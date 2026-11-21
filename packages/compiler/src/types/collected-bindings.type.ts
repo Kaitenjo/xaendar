@@ -1,5 +1,5 @@
-import type { ComponentEventMetadata } from './component-event-metadata.type';
 import type { ComponentPropertyMetadataWithSpan } from '../models/component-property-metadata-with-span/component-property-metadata-with-span.model';
+import type { ComponentEventMetadata } from './component-event-metadata.type';
 
 /**
  * The `@Property` and `@Event` accessors of a class collected so far, own and inherited.
