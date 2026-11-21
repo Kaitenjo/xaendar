@@ -135,13 +135,29 @@ describe('parseForExpression', () => {
     ['an invalid item alias', '1x of items; track x()', '\'1x\' is not a valid item alias.'],
     ['an alias that is not an identifier', '// of items; track x()', 'is not a valid item alias'],
     ['a second section without track', 'item of items; foo', 'must start with "track"'],
-    ['an alias declaration without "="', 'item of items; track item; $index', 'Invalid alias declaration'],
+    ['an alias declaration without "="', 'item of items; track item; $index', 'Invalid alias declaration \'$index\'. Expected \'alias = $implicit\', e.g. \'i = $index\'.'],
     ['an unknown implicit variable', 'item of items; track item; f = $foo', 'is not a known implicit variable'],
     ['an empty alias identifier', 'item of items; track item; = $index', 'is not a valid alias identifier'],
     ['an invalid alias identifier', 'item of items; track item; 1a = $index', 'is not a valid alias identifier'],
     ['a duplicated implicit alias', 'item of items; track item; a = $index, b = $index', 'is already aliased']
   ])('throws for %s', (_name, source, message) => {
     expect(() => parseForExpression(source)).toThrow(message);
+  });
+
+  it('reads the item alias, its of and the track keyword separated by tabs and line breaks too', () => {
+    const result = parseForExpression('item\n  of\titems();\ntrack\n  item.id', 10);
+
+    expect(result.itemAlias).toBe('item');
+    expect(result.iterableSource).toBe('items()');
+    expect(result.trackSource).toBe('item.id');
+    expect(result.itemAliasSpan).toEqual({ start: 10, end: 14 });
+  });
+
+  it('reads an of inside the iterable of a @for without item alias as part of it', () => {
+    const result = parseForExpression('range("a of b"); track $index');
+
+    expect(result.itemAlias).toBeUndefined();
+    expect(result.iterableSource).toBe('range("a of b")');
   });
 
   it('locates the item alias, the iterable, the track expression and the aliases in the template', () => {
