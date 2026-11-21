@@ -49,6 +49,21 @@ export class ProjectLanguageService {
    */
   private readonly _realFileVersions = new Map<string, string>();
   /**
+   * Whether each real file exists, by its normalized path, as read while the real files are cached (see
+   * {@link cacheRealFiles}).
+   */
+  private readonly _realFileExistence = new Map<string, boolean>();
+  /**
+   * Whether each directory exists, by its normalized path, as read while the real files are cached (see
+   * {@link cacheRealFiles}).
+   */
+  private readonly _directoryExistence = new Map<string, boolean>();
+  /**
+   * Whether the versions and the existence of the real files and of the directories are read from the disk once, then
+   * kept until a change of the file is reported (see {@link cacheRealFiles}, {@link invalidateRealFile}).
+   */
+  private _cachesRealFiles = false;
+  /**
    * Real project files known to the Program, populated as the components are
    * processed (see `registerRealFile`).
    */
@@ -109,7 +124,41 @@ export class ProjectLanguageService {
     this._projectFileNames = [];
     this._virtualFiles.clear();
     this._realFileVersions.clear();
+    this._realFileExistence.clear();
+    this._directoryExistence.clear();
     this._realFiles.clear();
+  }
+
+  /**
+   * Reads the versions and the existence of the real files and of the directories from the disk once, keeping them until
+   * a change of a file is reported with {@link invalidateRealFile}: for a caller told of every change of the files it
+   * depends on, as the build tools are by the watcher of Vite (nothing changes during a build). The files no watcher
+   * reports, as the ones of `node_modules`, are read again only once the instance is disposed. The setting outlives
+   * {@link dispose}.
+   *
+   * N.B. Deliberate, for speed: the LanguageService asks the version of every file of the Program at every request, once
+   * per component in a build, and TypeScript probes the files and the directories of every module it resolves. Read from
+   * the disk each time, they took millions of `stat` calls in the build of the site, a fifth of its time. Do not read
+   * them again without a change reported.
+   */
+  public cacheRealFiles(): void {
+    this._cachesRealFiles = true;
+  }
+
+  /**
+   * Forgets what was read of a real file that changed on disk (see {@link cacheRealFiles}): its version and its existence
+   * and, when it was created or deleted, the existence of every directory, which may have changed with it.
+   *
+   * @param fileName - The path of the file.
+   * @param createdOrDeleted - Whether the file was created or deleted, rather than changed.
+   */
+  public invalidateRealFile(fileName: string, createdOrDeleted: boolean): void {
+    const key = normalizeFileName(fileName);
+    this._realFileVersions.delete(key);
+    this._realFileExistence.delete(key);
+    if (createdOrDeleted) {
+      this._directoryExistence.clear();
+    }
   }
 
   /**
@@ -184,10 +233,10 @@ export class ProjectLanguageService {
       getCurrentDirectory: () => process.cwd(),
       getCompilationSettings: () => this._compilerOptions ?? {},
       getDefaultLibFileName: options => getDefaultLibFilePath(options),
-      fileExists: fileName => this._virtualFiles.has(fileName) || documentOverlays.has(normalizeFileName(fileName)) || sys.fileExists(fileName),
+      fileExists: fileName => this._virtualFiles.has(fileName) || documentOverlays.has(normalizeFileName(fileName)) || this._realFileExists(fileName),
       readFile: fileName => this._readFile(fileName),
       readDirectory: sys.readDirectory,
-      directoryExists: sys.directoryExists,
+      directoryExists: directoryName => this._directoryExists(directoryName),
       getDirectories: sys.getDirectories,
       realpath: sys.realpath,
     };
@@ -200,25 +249,58 @@ export class ProjectLanguageService {
    * @returns Its text, or `undefined` if it doesn't exist or cannot be read.
    */
   private _readFile(fileName: string): string | undefined {
-    return this._virtualFiles.get(fileName)?.content ?? readDocument(fileName);
+    const virtual = this._virtualFiles.get(fileName);
+    if (virtual) {
+      return virtual.content;
+    }
+
+    const overlay = documentOverlays.get(normalizeFileName(fileName));
+    return overlay ? overlay.content : this._realFileExists(fileName) ? sys.readFile(fileName) : undefined;
+  }
+
+  /**
+   * Tells whether a real file exists on disk, as read once while the real files are cached (see {@link cacheRealFiles}).
+   *
+   * @param fileName - The path of the file.
+   * @returns `true` if the file exists.
+   */
+  private _realFileExists(fileName: string): boolean {
+    return this._cachesRealFiles ? readOnce(this._realFileExistence, fileName, sys.fileExists) : sys.fileExists(fileName);
+  }
+
+  /**
+   * Tells whether a directory exists on disk, as read once while the real files are cached (see {@link cacheRealFiles}).
+   *
+   * @param directoryName - The path of the directory.
+   * @returns `true` if the directory exists.
+   */
+  private _directoryExists(directoryName: string): boolean {
+    return this._cachesRealFiles ? readOnce(this._directoryExistence, directoryName, sys.directoryExists) : sys.directoryExists(directoryName);
   }
 
   /**
    * Synthetic version string for a real file, based on its mtime, so the
    * LanguageService can detect when a source file has changed on disk.
    * Falls back to the last known version (or '0') if the file can no longer
-   * be stat'd, to avoid spurious invalidation churn.
+   * be stat'd, to avoid spurious invalidation churn. While the real files are cached (see {@link cacheRealFiles}), the
+   * version read last is given until a change of the file is reported.
    *
    * @param fileName - The path of the file.
    * @returns The version of the file.
    */
   private _getRealFileVersion(fileName: string): string {
+    const key = normalizeFileName(fileName);
+    const known = this._realFileVersions.get(key);
+    if (known !== undefined && this._cachesRealFiles) {
+      return known;
+    }
+
     try {
       const version = String(statSync(fileName).mtimeMs);
-      this._realFileVersions.set(fileName, version);
+      this._realFileVersions.set(key, version);
       return version;
     } catch {
-      return this._realFileVersions.get(fileName) ?? '0';
+      return known ?? '0';
     }
   }
 }
@@ -306,6 +388,25 @@ export function disposeLanguageService(): void {
 }
 
 /**
+ * Reads the versions and the existence of the real files once for the default instance, until a change is reported
+ * with {@link invalidateRealFile} (see {@link ProjectLanguageService.cacheRealFiles}).
+ */
+export function cacheRealFiles(): void {
+  defaultProjectLanguageService.cacheRealFiles();
+}
+
+/**
+ * Forgets what the default instance read of a real file that changed on disk (see
+ * {@link ProjectLanguageService.invalidateRealFile}).
+ *
+ * @param fileName - The path of the file.
+ * @param createdOrDeleted - Whether the file was created or deleted, rather than changed.
+ */
+export function invalidateRealFile(fileName: string, createdOrDeleted: boolean): void {
+  defaultProjectLanguageService.invalidateRealFile(fileName, createdOrDeleted);
+}
+
+/**
  * Registers a real project file as a root file for the Program of the default instance.
  *
  * @param fileName - The path of the file.
@@ -357,4 +458,23 @@ function upsertEntry(entries: Map<string, VirtualFileEntry>, key: string, conten
       version: (existing?.version ?? 0) + 1,
     });
   }
+}
+
+/**
+ * Reads a fact about a path from the disk the first time it is asked, then from the facts read.
+ *
+ * @param facts - The facts read, by the normalized path.
+ * @param path - The path.
+ * @param read - Reads the fact from the disk.
+ * @returns The fact.
+ */
+function readOnce(facts: Map<string, boolean>, path: string, read: (path: string) => boolean): boolean {
+  const key = normalizeFileName(path);
+  let fact = facts.get(key);
+  if (fact === undefined) {
+    fact = read(path);
+    facts.set(key, fact);
+  }
+
+  return fact;
 }

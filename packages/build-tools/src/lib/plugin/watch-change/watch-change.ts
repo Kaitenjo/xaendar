@@ -1,4 +1,4 @@
-import { removeRealFile, removeVirtualFile } from '@xaendar/language-core';
+import { invalidateRealFile, removeRealFile, removeVirtualFile } from '@xaendar/language-core';
 import type { HookHandler, Plugin } from 'vite';
 import { COMPONENT_HTML_FILE_RE, COMPONENT_TS_FILE_RE } from '../../costants/component-filename-regex';
 import { clearDependenciesForComponent } from '../../registry/dependency-registry/dependency-registry';
@@ -9,7 +9,8 @@ import { findComponentPathsForTemplate, removeComponentPath } from '../../regist
 import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 
 /**
- * Vite plugin `watchChange` hook: dispatches deleted files to the handler tearing down the
+ * Vite plugin `watchChange` hook: tells the type-check that a file was created, changed or deleted, so that it reads it
+ * again (see `cacheRealFiles` in the `buildStart` hook), and dispatches deleted files to the handler tearing down the
  * registries for their kind (component TS file, template HTML file, or stylesheet).
  *
  * @param state - The shared plugin state, forwarded to the component TS file handler.
@@ -17,6 +18,7 @@ import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
  */
 export function createWatchChangeHook(state: XaendarPluginState): NonNullable<HookHandler<Plugin['watchChange']>> {
   return function watchChange(path, change) {
+    invalidateRealFile(path, change.event !== 'update');
     switch (change.event) {
       case 'delete':
         if (COMPONENT_TS_FILE_RE.test(path)) {
