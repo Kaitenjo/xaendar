@@ -422,6 +422,17 @@ export function isClaimed(element: Element): boolean {
 }
 
 /**
+ * Forgets that an element was adopted, once its hydration is over: only its first render reads it (see {@link isClaimed}
+ * and {@link claimShadowRoot}), so the element keeps nothing of its hydration afterwards.
+ *
+ * @param element - The element hydrated.
+ */
+export function releaseClaim(element: Element): void {
+  claimedElements.delete(element);
+  quietElements.delete(element);
+}
+
+/**
  * Tells whether a node is a marker of the server.
  *
  * @param node - The node.

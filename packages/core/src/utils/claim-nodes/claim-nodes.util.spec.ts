@@ -5,7 +5,7 @@ import type { _Context } from '../../types/context.type';
 import { _scope, EMPTY_LAYOUT, getNodeStrategy } from '../context/context.util';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { deferElementHydration } from '../hydration-triggers/hydration-triggers.util';
-import { claimShadowRoot, ClaimNodes, isClaimed } from './claim-nodes.util';
+import { claimShadowRoot, ClaimNodes, isClaimed, releaseClaim } from './claim-nodes.util';
 
 /**
  * The number of node slots of the contexts of the tests.
@@ -99,6 +99,18 @@ describe('ClaimNodes', () => {
       expect(isClaimed(child)).toBe(true);
       expect(isClaimed(other)).toBe(true);
       expect(isClaimed(document.createElement('x-child'))).toBe(false);
+    });
+
+    it('forgets an element adopted once it is hydrated', () => {
+      const parent = parse('<x-child></x-child>');
+      const [child] = Array.from(parent.children);
+      const quiet = new ClaimNodes('x-host', true, true);
+
+      quiet.mount(quiet.element(context, parent, 'x-child'), parent);
+      expect(isClaimed(child)).toBe(true);
+      releaseClaim(child);
+
+      expect(isClaimed(child)).toBe(false);
     });
 
     it('leaves an element adopted declaring a trigger waiting for it, in the content of a @hydrate hydrating it at once', async () => {

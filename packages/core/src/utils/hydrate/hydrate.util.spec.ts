@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { _EVENT_CONTRACT_KEY } from '../../costants';
 import type { RenderElementEvent } from '../../types/render-element-event.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
-import { HEADER } from '../../costants';
+import { CLEANUP, HEADER } from '../../costants';
 import type { _Context } from '../../types/context.type';
 
 await vi.hoisted(async () => {
@@ -171,6 +171,8 @@ describe('_hydrate', () => {
       expect(clicks).toHaveLength(1);
       expect(parent.innerHTML).toBe('<p></p><button>x</button><!--/xd-h--><i></i>');
       expect(console.warn).not.toHaveBeenCalled();
+      // Hydrated, the block keeps only the cleanup disarming its triggers, not the one stopping the recording
+      expect(typeof root[CLEANUP]).toBe('function');
     });
 
     it('gets the nodes of the content as the component holding it does, once it adopted them', async () => {

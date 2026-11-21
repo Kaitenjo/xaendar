@@ -277,7 +277,8 @@ function replayReadyEvents(): void {
       : replayEvent(events[i]);
   }
 
-  contractEvents = waiting;
+  // Nothing left to replay: the events and the nodes of their paths are released
+  contractEvents = waiting.length ? waiting : undefined;
 }
 
 /**

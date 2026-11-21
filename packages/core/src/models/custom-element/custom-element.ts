@@ -6,7 +6,7 @@ import type { _Context } from '../../types/context.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
 import type { CreateComponentOptionsWithOptionalTarget } from '../../types/create-component/create-component-options-with-optional-target.type';
 import type { HostDirectives } from '../../types/web-component/host-directives.type';
-import { claimShadowRoot, isClaimed } from '../../utils/claim-nodes/claim-nodes.util';
+import { claimShadowRoot, isClaimed, releaseClaim } from '../../utils/claim-nodes/claim-nodes.util';
 import { _getComponentRuntime } from '../../utils/component-runtime/component-runtime.util';
 import { _scope, addCleanup, clear, EMPTY_LAYOUT, moveTo, removeCleanup } from '../../utils/context/context.util';
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
@@ -69,11 +69,6 @@ export class CustomElement extends HTMLElement {
    * Never `hydrating` in an application not rendered on the server (see `HYDRATION`), whose bundle has no hydration.
    */
   private _state: 'hydrating' | 'idle' | 'rendering' | 'rendered' | 'destroyed' = HYDRATION && (this.shadowRoot !== null || this.hasAttribute(_CLIENT_ATTRIBUTE)) ? 'hydrating' : 'idle';
-  /**
-   * Whether the element has a declarative shadow root, whose nodes its first render adopts instead of creating them (the
-   * hydration).
-   */
-  private readonly _hasServerRoot = !!this.shadowRoot;
   /**
    * The root of the Web Component, where the content is rendered: the declarative shadow root of an element rendered on
    * the server, which `attachShadow` would empty, or a new one.
@@ -309,6 +304,11 @@ export class CustomElement extends HTMLElement {
     }
 
     this._restoreServerInputs();
+    /*
+      Waiting for its first render, it has a declarative shadow root unless it renders only in the browser: the server
+      writes no shadow root with `data-xd-client`. Read here, the element keeps no field for it once hydrated
+    */
+    const serverRoot = hydrating && !this.hasAttribute(_CLIENT_ATTRIBUTE);
     if (hydrating) {
       this.removeAttribute(_CLIENT_ATTRIBUTE);
     }
@@ -324,7 +324,7 @@ export class CustomElement extends HTMLElement {
     }
 
     // The first render of an element rendered on the server adopts its nodes, any other one creates them
-    const nodeStrategy = hydrating && this._hasServerRoot ? claimShadowRoot(this._root, !!styleSheet) : CREATE_NODES;
+    const nodeStrategy = serverRoot ? claimShadowRoot(this._root, !!styleSheet) : CREATE_NODES;
     this._state = 'rendering';
 
     /*
@@ -363,7 +363,9 @@ export class CustomElement extends HTMLElement {
     }
 
     this.afterRender?.();
+    // Hydrated: nothing keeps the marks of its adoption any longer
     if (hydrating) {
+      releaseClaim(this);
       replayElementEvents(this);
       replayContractEvents();
     }
