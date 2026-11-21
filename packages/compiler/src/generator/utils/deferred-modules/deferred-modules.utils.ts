@@ -1,6 +1,7 @@
 import { isValidCustomElementName } from '@xaendar/internals';
 import type { ASTNode } from '../../../parser/types/ast.type';
 import { ASTNodeType } from '../../../parser/types/node.enum';
+import type { ConditionalBindingBranchNode } from '../../../parser/types/nodes/conditional-binding-branch-node.type';
 import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
 import type { HydrateNode } from '../../../parser/types/nodes/hydrate-node.type';
 import type { ContextCache } from '../../../types/context-cache.type';
@@ -74,8 +75,9 @@ async function getModule(key: string, cache: ContextCache): Promise<string | und
 
 /**
  * Collects the tags of the components a list of nodes renders, and the selectors of the custom and structural
- * directives its elements apply, after `@@` as the cache names them: into the set of the content of the `@hydrate` or
- * of the `@defer` they are in, or into the eager ones when they are in none.
+ * directives its elements apply, the ones of their conditional bindings included, after `@@` as the cache names them:
+ * into the set of the content of the `@hydrate` or of the `@defer` they are in, or into the eager ones when they are in
+ * none.
  *
  * @param nodes - The nodes.
  * @param eager - The tags and the selectors rendered outside of the content of every block.
@@ -93,14 +95,7 @@ function collectTags(nodes: readonly ASTNode[], eager: Set<string>, deferred: Ma
           keys.add(node.tagName);
         }
 
-        for (let j = 0; j < node.directives.length; j++) {
-          keys.add(`@@${node.directives[j].selector}`);
-        }
-
-        for (let j = 0; j < node.structuralDirectives.length; j++) {
-          keys.add(`@@${node.structuralDirectives[j].selector}`);
-        }
-
+        collectDirectiveSelectors(node, keys);
         collectTags(node.children, eager, deferred, generatorContext, current);
         break;
       }
@@ -164,6 +159,31 @@ function collectTags(nodes: readonly ASTNode[], eager: Set<string>, deferred: Ma
       default:
         // Texts, interpolations, imports, @render and @let render no component
         break;
+    }
+  }
+}
+
+/**
+ * Collects the selectors of the custom and structural directives an element, or a branch of one of its conditional
+ * bindings, applies, after `@@`: the ones of the branches of its conditional bindings too, which may apply them as soon
+ * as the element renders.
+ *
+ * @param bindings - The element, or the branch of a conditional binding.
+ * @param keys - The tags and the selectors of the content the element is rendered in.
+ */
+function collectDirectiveSelectors({ directives, structuralDirectives, conditionalBindings }: Pick<ConditionalBindingBranchNode, 'directives' | 'structuralDirectives' | 'conditionalBindings'>, keys: Set<string>): void {
+  for (let i = 0; i < directives.length; i++) {
+    keys.add(`@@${directives[i].selector}`);
+  }
+
+  for (let i = 0; i < structuralDirectives.length; i++) {
+    keys.add(`@@${structuralDirectives[i].selector}`);
+  }
+
+  for (let i = 0; i < conditionalBindings.length; i++) {
+    const { branches } = conditionalBindings[i];
+    for (let j = 0; j < branches.length; j++) {
+      collectDirectiveSelectors(branches[j], keys);
     }
   }
 }
