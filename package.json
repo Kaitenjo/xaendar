@@ -18,6 +18,7 @@
     "i:clean": "rimraf package-lock.json node_modules && npm run i",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "organize-imports": "tsx --tsconfig tsconfig.json .claude/hooks/organize-imports.ts",
     "pack:projects": "npm run pack --prefix schematics",
     "pretest": "npm run typecheck:specs",
     "publish:extension": "npm run build:schematics && npm run build:projects && npm run publish-extension --prefix schematics",
