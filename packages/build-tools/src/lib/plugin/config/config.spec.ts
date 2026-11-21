@@ -21,7 +21,11 @@ const LIBRARY = { name: '@acme/ui', root: '/ws/libraries/ui', entry: '/ws/librar
 
 describe('createConfigHook()', () => {
   it('sets the application type to custom when the plugin renders on the server', () => {
-    expect(run(createConfigHook({ ssr: { entry: 'entry-server.ts' } }))).toEqual({ appType: 'custom' });
+    expect(run(createConfigHook({ ssr: { entry: 'entry-server.ts' } }))).toEqual({ appType: 'custom', define: { __XAENDAR_HYDRATION__: 'true' } });
+  });
+
+  it('turns the hydration of core off when the plugin does not render on the server', () => {
+    expect(run(createConfigHook({}))).toEqual({ define: { __XAENDAR_HYDRATION__: 'false' } });
   });
 
   it('leads the names of the libraries of the workspace to their sources', () => {
@@ -34,9 +38,8 @@ describe('createConfigHook()', () => {
     expect(run(createConfigHook({ ssr: { entry: 'entry-server.ts' }, libraries: [LIBRARY] }))).toMatchObject({ appType: 'custom', resolve: { alias: expect.any(Array) } });
   });
 
-  it('leaves the configuration alone otherwise', () => {
-    expect(run(createConfigHook({}))).toBeUndefined();
-    expect(run(createConfigHook({ libraries: [] }))).toBeUndefined();
+  it('sets nothing else otherwise', () => {
+    expect(run(createConfigHook({ libraries: [] }))).toEqual({ define: { __XAENDAR_HYDRATION__: 'false' } });
   });
 });
 

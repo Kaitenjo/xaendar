@@ -13,6 +13,7 @@ import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import { _checkExposedFields, _createHostDirectives } from '../../utils/host-directives/host-directives.util';
 import { deferElementHydration, replayContractEvents, replayElementEvents } from '../../utils/hydration-triggers/hydration-triggers.util';
+import { HYDRATION } from '../../utils/hydration-flag/hydration-flag.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
 import { _parseState } from '../../utils/state-serialization/state-serialization.util';
 import { runConnection } from '../../utils/try-scope/try-scope.util';
@@ -64,8 +65,10 @@ export class CustomElement extends HTMLElement {
    *   {@link IS_RENDERED});
    * - `destroyed`: removed from the DOM, its effects and listeners disposed, its shadow root holding what it rendered
    *   until it is inserted again, if ever (see {@link connectedCallback}).
+   *
+   * Never `hydrating` in an application not rendered on the server (see `HYDRATION`), whose bundle has no hydration.
    */
-  private _state: 'hydrating' | 'idle' | 'rendering' | 'rendered' | 'destroyed' = this.shadowRoot !== null || this.hasAttribute(_CLIENT_ATTRIBUTE) ? 'hydrating' : 'idle';
+  private _state: 'hydrating' | 'idle' | 'rendering' | 'rendered' | 'destroyed' = HYDRATION && (this.shadowRoot !== null || this.hasAttribute(_CLIENT_ATTRIBUTE)) ? 'hydrating' : 'idle';
   /**
    * Whether the element has a declarative shadow root, whose nodes its first render adopts instead of creating them (the
    * hydration).
@@ -289,7 +292,8 @@ export class CustomElement extends HTMLElement {
    */
   private _connect(): void {
     const state = this._state;
-    const hydrating = state === 'hydrating';
+    // The guard of the whole hydration: without it, the bundle of an application not rendered on the server has none
+    const hydrating = HYDRATION && state === 'hydrating';
     if (hydrating && this._waitsForHydration()) {
       return;
     }
@@ -374,9 +378,9 @@ export class CustomElement extends HTMLElement {
    * @returns `true` when the element waits.
    */
   private _waitsForHydration(): boolean {
-    return this.getRootNode() instanceof ShadowRoot && !this.hasAttribute(_SERVER_INPUTS_ATTRIBUTE)
+    return HYDRATION && (this.getRootNode() instanceof ShadowRoot && !this.hasAttribute(_SERVER_INPUTS_ATTRIBUTE)
       ? !isClaimed(this) || this.hasAttribute(_HYDRATE_ATTRIBUTE)
-      : deferElementHydration(this, () => this.connectedCallback());
+      : deferElementHydration(this, () => this.connectedCallback()));
   }
 
   /**
@@ -395,11 +399,11 @@ export class CustomElement extends HTMLElement {
    * so that the element is the one the browser would render. Any other element has no such attribute.
    */
   private _restoreServerInputs(): void {
-    const serialized = this.getAttribute(_SERVER_INPUTS_ATTRIBUTE);
-    if (serialized === null) {
+    if (!HYDRATION || !this.hasAttribute(_SERVER_INPUTS_ATTRIBUTE)) {
       return;
     }
 
+    const serialized = this.getAttribute(_SERVER_INPUTS_ATTRIBUTE)!;
     this.removeAttribute(_SERVER_INPUTS_ATTRIBUTE);
     const inputs = _parseState<object>(serialized);
     const names = keys(inputs);
