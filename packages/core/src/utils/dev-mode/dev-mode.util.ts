@@ -23,6 +23,18 @@ export function readDevMode(): boolean {
 }
 
 /**
- * Whether the application runs in development (see {@link readDevMode}), read once, when the module is evaluated.
+ * Whether the application runs in development, written by the plugin of `@xaendar/build-tools` in place of the
+ * identifier (the `define` of Vite): `false` in a build for production. Nothing defines it where the code of core is
+ * not bundled by the plugin, as in the tests and on the server.
  */
-export const DEV_MODE = readDevMode();
+declare const __XAENDAR_DEV__: boolean | undefined;
+
+/**
+ * Whether the application runs in development: as the plugin of `@xaendar/build-tools` defines it, or else as
+ * {@link readDevMode} tells, read once, when the module is evaluated.
+ *
+ * N.B. Deliberate: the identifier the plugin replaces is read before {@link readDevMode}, so that the bundler folds the
+ * constant into `false` in a build for production and drops the checks it guards, and the function with them; read
+ * through the function alone, the checks stay in every bundle. Do not read it only through `readDevMode`.
+ */
+export const DEV_MODE = typeof __XAENDAR_DEV__ === 'boolean' ? __XAENDAR_DEV__ : readDevMode();

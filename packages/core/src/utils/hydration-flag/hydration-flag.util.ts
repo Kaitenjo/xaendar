@@ -14,7 +14,7 @@ declare const __XAENDAR_HYDRATION__: boolean | undefined;
  *
  * N.B. Deliberate: an expression of the identifier the bundler replaces, exported as a constant, which the bundler then
  * folds into `false` and inlines in the conditions reading it, dropping the code they guard and the modules only that code
- * imports. Do not read it through a function, as `readDevMode` does for `DEV_MODE`: the bundler would no longer see a
- * constant, and the hydration would stay in every bundle.
+ * imports. Do not read it through a function: the bundler would no longer see a constant, and the hydration would stay
+ * in every bundle.
  */
 export const HYDRATION = typeof __XAENDAR_HYDRATION__ !== 'boolean' || __XAENDAR_HYDRATION__;
