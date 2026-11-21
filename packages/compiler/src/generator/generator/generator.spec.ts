@@ -30,6 +30,15 @@ describe('Generator', () => {
     expect(code).toContain('return this.b() + /* ) */ this.c();');
   });
 
+  it('names the elements with valid identifiers and writes their tag names as string literals, whatever characters the tag names hold', async () => {
+    const code = await generate('<a-b.c><x:y>t</x:y></a-b.c><p\'q>{ v() }</p\'q>');
+
+    expect(code).toContain('const a_b_c0$element = { tagName: \'a-b.c\', children: a_b_c0Children };');
+    expect(code).toContain('function a_b_c0__x_y0Children(a_b_c0__x_y0, context) {');
+    expect(code).toContain('tagName: \'p\\\'q\'');
+    expect(() => new Function(code)).not.toThrow();
+  });
+
   it('wraps the generated nodes in a module-level render function, giving the component to the root context', async () => {
     const code = await generate('hello');
     expect(code).toBe([

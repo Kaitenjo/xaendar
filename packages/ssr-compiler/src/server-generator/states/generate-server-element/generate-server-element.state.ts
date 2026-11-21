@@ -127,7 +127,7 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
   if (isComponent || classBindings.length || styleBindings.length || conditionalBindings.length || directives?.length) {
     const descriptors = mapBindings(node, owner, isComponent ? tagName : undefined);
     appendSubmitMark(descriptors, node);
-    const members = [`tagName: '${tagName}'`];
+    const members = [`tagName: ${toStringLiteral(tagName)}`];
     appendList(members, 'attributes', descriptors);
     appendList(members, 'conditionalBindings', conditionalBindings);
     if (isComponent) {

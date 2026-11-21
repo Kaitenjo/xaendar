@@ -36,6 +36,16 @@ export function isIdentifierChar(code: number): boolean {
 }
 
 /**
+ * Tells whether a character is an ASCII letter, the first character of a tag name, as in HTML.
+ *
+ * @param code - The code of the character.
+ * @returns `true` for a letter from `a` to `z` or from `A` to `Z`.
+ */
+export function isAsciiLetter(code: number): boolean {
+  return (code >= a && code <= z) || (code >= A && code <= Z);
+}
+
+/**
  * Tells whether a character is whitespace laying out a template: a space, a tab or a line break.
  *
  * @param code - The code of the character.

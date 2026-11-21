@@ -95,7 +95,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   };
 
   const namespace = getElementNamespace(tagName, generatorContext.namespace);
-  const members = [`tagName: '${tagName}'`];
+  const members = [`tagName: ${toStringLiteral(tagName)}`];
   appendNamespace(members, namespace);
   appendList(members, 'attributes', attributes);
   appendList(members, 'events', events);

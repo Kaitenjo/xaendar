@@ -517,9 +517,19 @@ export function toStringLiteral(value: string): string {
   return `'${value.replace(/[\\'\n\r\p{Zl}\p{Zp}]/gu, char => STRING_LITERAL_ESCAPES[char] ?? `\\u${char.charCodeAt(0).toString(16)}`)}'`;
 }
 
+/**
+ * Names a node in the generated code after its prefix (its tag name, or its kind), its index among its siblings and
+ * the name of its parent, e.g. `div0__span1`. The characters a JavaScript identifier cannot hold (the `-`, `.` and `:`
+ * of a tag name) become `_`.
+ *
+ * @param prefix - The prefix of the name, starting with a letter.
+ * @param parentNode - The name of the parent node, {@link ROOT_NODE} at the root.
+ * @param index - The index of the node among its siblings.
+ * @returns The identifier.
+ */
 function getIdentifier(prefix: string, parentNode: string, index: string): string {
   const identifier = parentNode !== ROOT_NODE ? `${parentNode}__${prefix}${index}` : `${prefix}${index}`;
-  return identifier.replace(/-/g, '_');
+  return identifier.replace(/[^\p{ID_Continue}$]/gu, '_');
 }
 
 function mapDefaultOptions(options?: ResolveExpressionOptions): Required<ResolveExpressionOptions> {

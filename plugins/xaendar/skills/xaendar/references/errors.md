@@ -14,6 +14,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** An HTML comment opened with <!-- and never closed.
 - **Fix:** Close the comment with -->.
 
+### `[Lexer] A tag name starts with a letter, not '…': write a '<' in a text as &lt;`
+
+- **Cause:** A < followed by something other than a letter (a digit, a symbol), which HTML reads as text: a comparison written in a text (1 <2), or a tag name starting with a digit.
+- **Fix:** Write &lt; (or { '<' }) for a literal <, and start the tag names with a letter.
+
 ### `[Lexer] Unexpected character 'p' after '/': expected '>' to close self-closing tag`
 
 - **Cause:** A literal < in text, as in 1 < 2, is read as the start of a tag.
