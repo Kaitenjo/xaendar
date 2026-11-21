@@ -14,7 +14,7 @@ import { LexerTransitionFunctionReturnType } from '../../types/transition-functi
  * @param tokens - The tokens emitted so far.
  * @returns `true` if the last tokens are a DIRECTIVE immediately followed by its DIRECTIVE_CLOSE.
  */
-function isBindinglessDirective(tokens: Token[]): boolean {
+function isBindinglessDirective(tokens: readonly Token[]): boolean {
   return tokens.at(-1)?.type === TokenType.DIRECTIVE_CLOSE && tokens.at(-2)?.type === TokenType.DIRECTIVE;
 }
 

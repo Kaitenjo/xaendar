@@ -1,4 +1,4 @@
-import { slice, Stack } from '@xaendar/common';
+import { slice } from '@xaendar/common';
 import { Dictionary } from '@xaendar/types';
 import { CR, LF, SPACE } from '../../costants/chars.constant';
 import { TemplateError } from '../../models/template-error/template-error.model';
@@ -33,6 +33,7 @@ import { LexerState } from '../types/lexer-state.enum';
 import type { LexerTolerantResult } from '../types/lexer-tolerant-result.type';
 import type { TokenWithOptionalSpan } from '../types/token-with-optional-span.type';
 import { Token } from '../types/token.type';
+import type { LexerTransitionFunctionContext } from '../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunction } from '../types/transition-function/transition-function.type';
 
 /**
@@ -52,9 +53,12 @@ export class Lexer {
    */
   private _state = LexerState.TEXT;
   /**
-   * State stack used to support nested states (e.g. interpolations).
+   * State stack used to support nested states (e.g. interpolations), from the outermost.
+   *
+   * N.B. Deliberate, for speed: a plain array, handed to the transition functions as it is. A `Stack` would copy it
+   * on every read of its values, once per transition. Do not hand out copies.
    */
-  private _stack = new Stack<LexerState>;
+  private readonly _stack = new Array<LexerState>();
   /**
    * Accumulated list of tokens emitted during tokenization.
    */
@@ -107,7 +111,7 @@ export class Lexer {
    * @returns The opening states.
    */
   public get history(): readonly LexerState[] {
-    return this._stack.values;
+    return this._stack;
   }
 
   /**
@@ -165,15 +169,17 @@ export class Lexer {
     let eof = false;
     const cursor = this._cursor;
     let stateStartIndex = -1;
+    /*
+      N.B. Deliberate, for speed: the states read the history and the tokens as they grow, never copies of them. A copy
+      of the tokens per transition made the tokenization quadratic (seconds for a large template). Do not copy them
+    */
+    const context: LexerTransitionFunctionContext = { history: this._stack, tokens: this._tokens };
 
     while (!eof) {
       try {
         stateStartIndex = cursor.currentChar.index + 1;
         const transitionFunction = this._states[this._state];
-        const { state, tokens, popState, pushState } = transitionFunction!(cursor, {
-          history: this._stack.values,
-          tokens: [...this._tokens],
-        });
+        const { state, tokens, popState, pushState } = transitionFunction!(cursor, context);
 
         if (tokens?.length) {
           const stateEndIndex = cursor.currentChar.index + 1;

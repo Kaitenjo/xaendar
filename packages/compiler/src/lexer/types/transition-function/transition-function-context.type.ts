@@ -24,14 +24,14 @@ export type LexerTransitionFunctionContext = {
    * The array is ordered from bottom (oldest state)
    * to top (most recent state).
    */
-  history: LexerState[],
+  history: readonly LexerState[],
   /**
-   * Read-only snapshot of all tokens emitted by the lexer up to this point.
+   * Read-only view of all tokens emitted by the lexer up to this point.
    *
    * This allows transition functions to make decisions based on previously
    * emitted tokens, enabling context-sensitive lexing behavior.
-   * 
-   * Note that this is a snapshot and should not be mutated by transition functions.
+   *
+   * Note that this is the list the lexer keeps growing, not a copy: transition functions never mutate it.
    */
-  tokens: Token[]
+  tokens: readonly Token[]
 }

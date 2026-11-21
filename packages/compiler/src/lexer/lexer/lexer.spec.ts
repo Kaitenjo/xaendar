@@ -22,6 +22,16 @@ describe('Lexer', () => {
     expect(tokens.every(t => t.span)).toBe(true);
   });
 
+  it('tokenizes a large template in linear time, the states reading the tokens without copying them', () => {
+    // A copy of the tokens per transition took more than ten seconds for these 360 KB, now a few tens of milliseconds
+    const row = '<tr class="row" (click)="select(item)"><td>{ item.id }</td>@if (item.done) { <b>done</b> } @else { <i>todo</i> }</tr>\n';
+    const start = performance.now();
+    const tokens = new Lexer(`<table>${row.repeat(3000)}</table>`).tokenize();
+
+    expect(tokens).toHaveLength(3000 * 27 + 3);
+    expect(performance.now() - start).toBeLessThan(2000);
+  });
+
   it('tokenizes an element ref, and the declaration of a template with its parameters', () => {
     const tokens: ReadToken[] = new Lexer('<input #name type="text" />\n<template row(item: Item)></template>').tokenize();
     expect(tokens.map(({ type, parts }) => [type, parts])).toEqual([
