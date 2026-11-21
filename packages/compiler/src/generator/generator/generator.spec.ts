@@ -22,6 +22,14 @@ describe('Generator', () => {
     expect(code).not.toContain('note');
   });
 
+  it('reads the comments of an expression as part of it, a brace in them closing nothing', async () => {
+    const code = await generate('<p>{ a() /* } */ }</p><p>{ b() + /* ) */ c() }</p>');
+
+    expect(code).not.toContain('_renderLiteralText');
+    expect(code).toContain('return this.a();');
+    expect(code).toContain('return this.b() + /* ) */ this.c();');
+  });
+
   it('wraps the generated nodes in a module-level render function, giving the component to the root context', async () => {
     const code = await generate('hello');
     expect(code).toBe([

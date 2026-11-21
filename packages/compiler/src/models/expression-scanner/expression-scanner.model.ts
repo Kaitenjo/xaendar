@@ -1,4 +1,4 @@
-import { BACKSLASH, DOLLAR, DOUBLE_QUOTE, EQUAL_THEN, GRAVE_ACCENT, GREATER_THEN, LEFT_BRACE, LEFT_BRACKET, LESS_THAN, LPAREN, SINGLE_QUOTE } from '../../costants/chars.constant';
+import { BACKSLASH, CR, DOLLAR, DOUBLE_QUOTE, EQUAL_THEN, GRAVE_ACCENT, GREATER_THEN, LEFT_BRACE, LEFT_BRACKET, LESS_THAN, LF, LPAREN, SINGLE_QUOTE, SLASH, STAR } from '../../costants/chars.constant';
 import { CLOSERS } from '../../costants/closers.costant';
 
 /**
@@ -25,12 +25,14 @@ function isTerminator(char: number, terminators: string): boolean {
 }
 
 /**
- * Follows an expression, or a type, of the template character by character, telling where it is: in code or in a
- * literal (a string, the text of a template literal), and in which groups (`(…)`, `[…]`, `{…}`, and `<…>` in a type).
+ * Follows an expression, or a type, of the template character by character, telling where it is: in code, in a
+ * literal (a string, the text of a template literal) or in a comment, and in which groups (`(…)`, `[…]`, `{…}`, and
+ * `<…>` in a type).
  * It is the only reading of the literals and of the groups of the template: the lexer reads the expressions and the
  * types with it, the parser splits them, the formatter and the editor find where they end.
  *
  * - In a literal an escaped character closes nothing, and a template literal reads its substitutions (`${…}`) as groups.
+ * - In a comment (`/* … *\/`, `// …` up to the line break) no character closes or ends anything.
  * - A closing character closes the innermost group it matches and the ones left open in it, as `)` does in `f([a)`; one
  *   matching no open group closes nothing.
  * - The `>` of an arrow (`() => void`) closes nothing.
@@ -45,6 +47,11 @@ export class ExpressionScanner {
    */
   private _quote: number | null = null;
   /**
+   * The comment the scan is in, by the character following its `/`: `*` in a block comment (`/* … *\/`), `/` in a line
+   * comment (`// …`), `null` outside of a comment.
+   */
+  private _comment: number | null = null;
+  /**
    * Whether the last character read, in a literal, escapes the next one.
    */
   private _escaped = false;
@@ -55,21 +62,21 @@ export class ExpressionScanner {
   private _previous = 0;
 
   /**
-   * Whether the scan is in code: outside of the strings and of the text of the template literals.
+   * Whether the scan is in code: outside of the strings, of the text of the template literals and of the comments.
    *
    * @returns `true` in code.
    */
   public get isCode(): boolean {
-    return this._quote === null && this._nesting.at(-1) !== GRAVE_ACCENT;
+    return this._quote === null && this._comment === null && this._nesting.at(-1) !== GRAVE_ACCENT;
   }
 
   /**
    * Whether the scan is in code outside of any group, e.g. where a comma separates two arguments.
    *
-   * @returns `true` outside of any literal and group.
+   * @returns `true` outside of any literal, comment and group.
    */
   public get isTopLevel(): boolean {
-    return this._quote === null && !this._nesting.length;
+    return this._quote === null && this._comment === null && !this._nesting.length;
   }
 
   /**
@@ -120,6 +127,8 @@ export class ExpressionScanner {
 
     if (this._escaped) {
       this._escaped = false;
+    } else if (this._comment !== null) {
+      this._readComment(char, previous);
     } else if (this._quote !== null) {
       this._escaped = char === BACKSLASH;
       this._quote = char === this._quote ? null : this._quote;
@@ -138,6 +147,21 @@ export class ExpressionScanner {
   public readText(text: string): void {
     for (let i = 0; i < text.length; i++) {
       this.read(text.charCodeAt(i));
+    }
+  }
+
+  /**
+   * Reads a character of a comment: the line break ending a line comment, the `/` of the `*\/` ending a block comment.
+   * The character following the end reads no `/` before it: `*\//` does not open a line comment.
+   *
+   * @param char - The code of the character.
+   * @param previous - The code of the character read before it.
+   */
+  private _readComment(char: number, previous: number): void {
+    const ends = this._comment === SLASH ? char === LF || char === CR : char === SLASH && previous === STAR;
+    if (ends) {
+      this._comment = null;
+      this._previous = 0;
     }
   }
 
@@ -167,7 +191,7 @@ export class ExpressionScanner {
   }
 
   /**
-   * Reads a character of code: the start of a literal, a character opening or closing a group.
+   * Reads a character of code: the start of a literal or of a comment, a character opening or closing a group.
    *
    * @param char - The code of the character.
    * @param previous - The code of the character read before it.
@@ -189,6 +213,16 @@ export class ExpressionScanner {
       case LESS_THAN:
         if (this._types) {
           this._nesting.push(char);
+        }
+        break;
+
+      // A `/` or a `*` following a `/` opens a comment: the first `/`, read as code, opened nothing
+      case SLASH:
+      case STAR:
+        if (previous === SLASH) {
+          this._comment = char;
+          // The `*` opening a block comment is not the one of the `*/` closing it, as in `/*/`
+          this._previous = 0;
         }
         break;
 
