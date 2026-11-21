@@ -417,6 +417,63 @@ describe('_for', () => {
     expect(insertBefore).not.toHaveBeenCalled();
   });
 
+  describe('moving as few rows as possible', () => {
+    const letters = Array.from('abcdefghij');
+
+    it('moves only the two rows swapped, not the ones between them', async () => {
+      const { texts, change } = setup(letters);
+      moveBefore.mockClear();
+
+      await change(['a', 'i', 'c', 'd', 'e', 'f', 'g', 'h', 'b', 'j']);
+
+      expect(texts()).toEqual(['a', 'i', 'c', 'd', 'e', 'f', 'g', 'h', 'b', 'j']);
+      expect(moveBefore).toHaveBeenCalledTimes(2);
+    });
+
+    it('moves only the last row brought to the top', async () => {
+      const { parent, texts, change } = setup(letters);
+      const j = parent.querySelectorAll('li')[9];
+      moveBefore.mockClear();
+
+      await change(['j', ...letters.slice(0, 9)]);
+
+      expect(texts()).toEqual(['j', ...letters.slice(0, 9)]);
+      expect(moveBefore).toHaveBeenCalledExactlyOnceWith(j, parent.querySelector('li:nth-child(2)'));
+    });
+
+    it('keeps in place the rows of the longest run in their previous order, around new and removed rows', async () => {
+      const { parent, texts, change } = setup(letters);
+      const [, , , d, e] = Array.from(parent.querySelectorAll('li'));
+      moveBefore.mockClear();
+
+      await change(['d', 'x', 'a', 'c', 'y', 'f', 'e']);
+
+      expect(texts()).toEqual(['d', 'x', 'a', 'c', 'y', 'f', 'e']);
+      // Between the runs a, c, f and a, c, e, the one whose rows came later before stays
+      expect(moveBefore.mock.calls.map(call => call[0])).toEqual([e, d]);
+    });
+
+    it('moves the rows of the repeated keys as the others', async () => {
+      const { texts, change } = setup(['a', 'b', 'a', 'c']);
+      moveBefore.mockClear();
+
+      await change(['c', 'a', 'b', 'a']);
+
+      expect(texts()).toEqual(['c', 'a', 'b', 'a']);
+      expect(moveBefore).toHaveBeenCalledOnce();
+    });
+
+    it('reverses the rows moving all of them but one', async () => {
+      const { texts, change } = setup(letters);
+      moveBefore.mockClear();
+
+      await change(letters.toReversed());
+
+      expect(texts()).toEqual(letters.toReversed());
+      expect(moveBefore).toHaveBeenCalledTimes(9);
+    });
+  });
+
   it('moves the items of a body reading no variable, which declare none', async () => {
     const { texts, entries, change } = setup(['a', 'b'], { variables: null });
 
@@ -548,10 +605,11 @@ describe('_for', () => {
       expect(nodeTexts(parent)).toEqual(['i', 'c', 'a', 'b']);
       expect(Array.from(parent.querySelectorAll('li'))).toEqual([c, a, b]);
 
-      await change(['b', 'c', 'a']);
+      moveBefore.mockClear();
+      await change(['a', 'b', 'c']);
 
-      expect(nodeTexts(parent)).toEqual(['i', 'b', 'c', 'a']);
-      expect(moveBefore.mock.calls.some(call => call[1] === null)).toBe(true);
+      expect(nodeTexts(parent)).toEqual(['i', 'a', 'b', 'c']);
+      expect(moveBefore).toHaveBeenCalledExactlyOnceWith(c, null);
     });
 
     it('keeps the order of items rendered by nested contexts', async () => {
