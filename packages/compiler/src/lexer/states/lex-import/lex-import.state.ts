@@ -9,7 +9,7 @@ import { LexerTransitionFunctionReturnType } from '../../types/transition-functi
 /**
  * The `lazy` modifier of an `@import`, followed by the brace or by spaces.
  */
-const LAZY_KEYWORD = /^lazy(?=[\s{])/;
+const LAZY_KEYWORD = /lazy(?=[\s{])/y;
 
 export function lexImport(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
@@ -35,7 +35,7 @@ export function lexImport(cursor: LexerCursor, _context: LexerTransitionFunction
            ˅
     @import lazy { ...
   */
-  const lazy = cursor.peekMatch(LAZY_KEYWORD, 5);
+  const lazy = cursor.peekMatch(LAZY_KEYWORD);
   if (lazy) {
     cursor.advance(4);
     cursor.skipSpaces();

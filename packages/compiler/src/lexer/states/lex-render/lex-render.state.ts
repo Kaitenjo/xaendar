@@ -9,12 +9,12 @@ import { lexExpressionText, lexGroup } from '../../utils/expression-text/express
 /**
  * A character of a name.
  */
-const IDENTIFIER_CHAR = /^[\w$]/;
+const IDENTIFIER_CHAR = /[\w$]/y;
 
 /**
  * The start of a member access continuing what a `@render` calls: a dot, or `?.`, followed by a name.
  */
-const MEMBER_ACCESS = /^\??\.[\w$]/;
+const MEMBER_ACCESS = /\??\.[\w$]/y;
 
 /**
  * Consumes the call of a template after `@render`, already consumed by the flow-control state, and transitions back
@@ -39,10 +39,10 @@ export function lexRender(cursor: LexerCursor, _context: LexerTransitionFunction
   let args: string | undefined;
   // The characters are matched, not peeked: the template may end right after the call
   for (let read = true; read;) {
-    if (args === undefined && cursor.peekMatch(IDENTIFIER_CHAR, 1)) {
+    if (args === undefined && cursor.peekMatch(IDENTIFIER_CHAR)) {
       cursor.advance();
       callee = `${callee}${cursor.currentChar.value}`;
-    } else if (callee && cursor.peekMatch(MEMBER_ACCESS, 3)) {
+    } else if (callee && cursor.peekMatch(MEMBER_ACCESS)) {
       const access = cursor.peekMatch('?.') ? '?.' : '.';
       callee = `${appendCall(callee, args)}${access}`;
       args = undefined;

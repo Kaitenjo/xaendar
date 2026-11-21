@@ -1,4 +1,3 @@
-import { slice } from '@xaendar/common';
 import { PositiveInteger, TupleOfLength } from '@xaendar/types';
 import { EOF } from '../../../costants/chars.constant';
 import { COMMENT_END, COMMENT_START } from '../../../costants/comment.costant';
@@ -11,6 +10,14 @@ import { CurrentChar } from '../current-char.type';
  * of an error when the template has reached its end.
  */
 export const endOfFile = Symbol('endOfFile');
+
+/**
+ * The error thrown when the cursor reaches the end of the template, its cause being {@link endOfFile}.
+ *
+ * N.B. Deliberate, for speed: one error for every cursor, created once, since its stack trace is never read. Creating
+ * one per end of the input captured a stack trace each time. Do not create it where it is thrown.
+ */
+const END_OF_FILE_ERROR = new Error('', { cause: endOfFile });
 
 /**
  * Cursor abstraction used by the Lexer to navigate the input source.
@@ -41,14 +48,6 @@ export class LexerCursor extends Cursor {
     index: -1,
     value: ''
   };
-  /**
-   * Cache used by peek operations to avoid re-reading
-   * the same character positions multiple times.
-   *
-   * Key: absolute character index
-   * Value: Unicode code point
-   */
-  private readonly _peekCache = new Map<number, number>();
 
   /**
    * Returns a read-only snapshot of the current character.
@@ -91,11 +90,6 @@ export class LexerCursor extends Cursor {
       this._currentChar.value = '';
       this._throwEOFError();
     } else {
-      // Clear cache when advance
-      for (let i = this._currentChar.index + 1; i <= newIndex; i++) {
-        this._peekCache.delete(i);
-      }
-
       this._currentChar.index = newIndex;
       this._currentChar.value = this.input[newIndex];
       this._currentChar.code = this.input.charCodeAt(newIndex);
@@ -107,25 +101,28 @@ export class LexerCursor extends Cursor {
    * without advancing the cursor.
    *
    * - `string`: compares the input from the next character, a pattern longer than what is left does not match
-   * - `RegExp`: slices the input and tests the pattern against it.
-   *   Requires `length` to know how many characters to peek.
+   * - `RegExp`: a sticky pattern (`y` flag, no `^`), matched against the input from the next character: its lookaheads
+   *   read the input that follows, up to its end.
    *
-   * @param pattern - String or RegExp to match against.
-   * @param length - Number of characters to peek — required when `pattern` is a RegExp.
+   * N.B. Deliberate, for speed: a sticky pattern is matched in the input itself. Matching a slice of it copied the rest
+   * of the template for a lookahead of unknown length (the `;` after an `@import`). Do not slice the input.
+   *
+   * @param pattern - String or sticky RegExp to match against.
    * @returns `true` if the upcoming characters match, `false` otherwise.
+   * @throws When the RegExp is not sticky, which would match anywhere after the cursor.
    */
-  public peekMatch(pattern: string): boolean;
-  public peekMatch(pattern: RegExp, length: number): boolean;
-  public peekMatch(pattern: string | RegExp, length?: number): boolean {
+  public peekMatch(pattern: string | RegExp): boolean {
     if (typeof pattern === 'string') {
       this._consumeComment();
       return this.input.startsWith(pattern, this._currentChar.index + 1);
     }
 
-    // RegExp path — slice input and test
-    const start = this._currentChar.index + 1;
-    const slicedInput = slice(this.input, start, start + length!);
-    return pattern.test(slicedInput);
+    if (!pattern.sticky) {
+      throw new Error(`${pattern} must be sticky (y flag) to match from the cursor`);
+    }
+
+    pattern.lastIndex = this._currentChar.index + 1;
+    return pattern.test(this.input);
   }
 
   /**
@@ -136,8 +133,7 @@ export class LexerCursor extends Cursor {
    * - Multi-character lookahead
    * - Optional offset from the current position
    *
-   * Peek operations are cached for performance reasons and do not
-   * modify the cursor state.
+   * Peek operations do not modify the cursor state.
    *
    * @returns
    * - A single Unicode code point when peeking one character
@@ -153,11 +149,9 @@ export class LexerCursor extends Cursor {
   public peek<ReadChars extends number, OffSet extends number>(chars: PositiveInteger<ReadChars>, options?: { offset?: PositiveInteger<OffSet> }): TupleOfLength<ReadChars>;
   public peek(charsOrOptions?: number | { offset?: number }, options?: { offset?: number }): number | number[] {
     this._consumeComment();
-    const cache = this._peekCache;
     const chars = typeof charsOrOptions === 'number' ? charsOrOptions : 1;
     const offset = (typeof charsOrOptions === 'object' ? charsOrOptions : options)?.offset ?? 0;
-    const result = chars === 1 ? this._peekOneChar(this._currentChar.index + offset + 1, cache) : this._peekMany(chars + offset, cache);
-    return result;
+    return chars === 1 ? this._peekOneChar(this._currentChar.index + offset + 1) : this._peekMany(chars + offset);
   }
 
   /**
@@ -215,16 +209,15 @@ export class LexerCursor extends Cursor {
    * Peeks multiple characters ahead.
    *
    * @param chars - The number of characters to peek.
-   * @param cache - The cache of the characters already peeked.
    * @returns The codes of the characters.
    * @throws Error with cause `EOF` if the peek exceeds input length.
    */
-  private _peekMany(chars: number, cache: Map<number, number>): number[] {
+  private _peekMany(chars: number): number[] {
     const peekedChars = new Array<number>;
     const nextCharIndex = this._currentChar.index + 1;
 
     for (let i = nextCharIndex; i < nextCharIndex + chars; i++) {
-      peekedChars.push(this._peekOneChar(i, cache));
+      peekedChars.push(this._peekOneChar(i));
     }
 
     return peekedChars;
@@ -233,23 +226,19 @@ export class LexerCursor extends Cursor {
   /**
    * Peeks a single character at the given absolute index.
    *
+   * N.B. Deliberate, for speed: the code is read from the input each time. A cache of the codes peeked, a `Map` written
+   * on every peek and cleared on every advance, cost far more than `charCodeAt`. Do not cache them.
+   *
    * @param index - The index of the character.
-   * @param cache - The cache of the characters already peeked.
    * @returns The code of the character.
    * @throws Error with cause `EOF` if the index exceeds input length.
    */
-  private _peekOneChar(index: number, cache: Map<number, number>): number {
-    if (cache.has(index)) {
-      return cache.get(index)!;
-    }
-
+  private _peekOneChar(index: number): number {
     if (index >= this.input.length) {
       this._throwEOFError();
     }
 
-    const charCode = this.input.charCodeAt(index);
-    cache.set(index, charCode);
-    return charCode;
+    return this.input.charCodeAt(index);
   }
 
   /**
@@ -280,6 +269,6 @@ export class LexerCursor extends Cursor {
    * @throws Always, an error with cause `EOF`.
    */
   private _throwEOFError(): never {
-    throw new Error('', { cause: endOfFile });
+    throw END_OF_FILE_ERROR;
   }
 }
