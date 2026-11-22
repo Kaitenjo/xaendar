@@ -1,5 +1,5 @@
 import { statSync } from 'node:fs';
-import { CompilerOptions, createDocumentRegistry, createLanguageService, getDefaultLibFilePath, LanguageService, LanguageServiceHost, ScriptSnapshot, sys } from 'typescript';
+import { CompilerOptions, createDocumentRegistry, createLanguageService, createModuleResolutionCache, getDefaultLibFilePath, getModeForUsageLocation, LanguageService, LanguageServiceHost, ModuleResolutionCache, ModuleResolutionHost, resolveModuleName, ResolvedModuleWithFailedLookupLocations, ResolvedProjectReference, ScriptSnapshot, SourceFile, StringLiteralLike, sys } from 'typescript';
 import type { VirtualFileEntry } from '../types/virtual-file-entry.type';
 import { normalizeFileName } from '../utils/path/path.utils';
 
@@ -64,6 +64,11 @@ export class ProjectLanguageService {
    */
   private _cachesRealFiles = false;
   /**
+   * The cache of the module resolutions every Program of the LanguageService shares while the real files are cached
+   * (see {@link cacheRealFiles}), until a change of the files is reported: `undefined` until a module is resolved.
+   */
+  private _moduleResolutionCache: ModuleResolutionCache | undefined;
+  /**
    * Real project files known to the Program, populated as the components are
    * processed (see `registerRealFile`).
    */
@@ -126,6 +131,7 @@ export class ProjectLanguageService {
     this._realFileVersions.clear();
     this._realFileExistence.clear();
     this._directoryExistence.clear();
+    this._moduleResolutionCache = undefined;
     this._realFiles.clear();
   }
 
@@ -134,15 +140,21 @@ export class ProjectLanguageService {
    * a change of the files is reported with {@link invalidateRealFiles}: for a caller told of every change of the files it
    * depends on, as the build tools are by the watcher of Vite (nothing changes during a build). After any change
    * reported, every file is read again, so that the files no watcher reports, as a package installed meanwhile, are
-   * read again too. The setting outlives {@link dispose}.
+   * read again too. The modules are resolved once too, the Programs sharing the cache of the resolutions, which TypeScript
+   * otherwise creates for every Program. The setting outlives {@link dispose}; a LanguageService created before is
+   * created again, with the resolutions cached.
    *
    * N.B. Deliberate, for speed: the LanguageService asks the version of every file of the Program at every request, once
-   * per component in a build, and TypeScript probes the files and the directories of every module it resolves. Read from
-   * the disk each time, they took millions of `stat` calls in the build of the site, a fifth of its time. Do not read
-   * them again without a change reported.
+   * per component served by the dev server, TypeScript probes the files and the directories of every module it resolves,
+   * and every new Program resolved every module again. Read from the disk each time, they took millions of `stat` calls
+   * in the build of the site, a fifth of its time. Do not read them again without a change reported.
    */
   public cacheRealFiles(): void {
-    this._cachesRealFiles = true;
+    if (!this._cachesRealFiles) {
+      this._cachesRealFiles = true;
+      this._languageService?.dispose();
+      this._languageService = undefined;
+    }
   }
 
   /**
@@ -150,6 +162,7 @@ export class ProjectLanguageService {
    * changed or deleted.
    */
   public invalidateRealFiles(): void {
+    this._moduleResolutionCache = undefined;
     this._realFileVersions.clear();
     this._realFileExistence.clear();
     this._directoryExistence.clear();
@@ -210,7 +223,7 @@ export class ProjectLanguageService {
    * @returns The host.
    */
   private _createHost(): LanguageServiceHost {
-    return {
+    const host: LanguageServiceHost = {
       getScriptFileNames: () => [
         ...new Set([...this._projectFileNames, ...this._realFiles]),
         ...this._virtualFiles.keys(),
@@ -234,6 +247,30 @@ export class ProjectLanguageService {
       getDirectories: sys.getDirectories,
       realpath: sys.realpath,
     };
+
+    if (this._cachesRealFiles) {
+      host.resolveModuleNameLiterals = (moduleLiterals, containingFile, redirectedReference, options, containingSourceFile) => this._resolveModuleNameLiterals(host, moduleLiterals, containingFile, redirectedReference, options, containingSourceFile);
+    }
+
+    return host;
+  }
+
+  /**
+   * Resolves the modules a file imports, with the cache of the resolutions every Program shares while the real files are
+   * cached (see {@link cacheRealFiles}), as TypeScript resolves them with a cache of its own for each Program.
+   *
+   * @param host - The host of the LanguageService, which tells the files and the directories that exist.
+   * @param moduleLiterals - The module specifiers.
+   * @param containingFile - The path of the file importing the modules.
+   * @param redirectedReference - The project reference the file is redirected to, if any.
+   * @param options - The compiler options of the Program.
+   * @param containingSourceFile - The file importing the modules, which tells the resolution mode of each import.
+   * @returns The resolution of each module, in the order of the specifiers.
+   */
+  private _resolveModuleNameLiterals(host: ModuleResolutionHost, moduleLiterals: readonly StringLiteralLike[], containingFile: string, redirectedReference: ResolvedProjectReference | undefined, options: CompilerOptions, containingSourceFile: SourceFile): ResolvedModuleWithFailedLookupLocations[] {
+    // The paths are kept as written: on a file system ignoring the case, two spellings of a path only share less
+    const cache = this._moduleResolutionCache ??= createModuleResolutionCache(process.cwd(), fileName => fileName, options);
+    return moduleLiterals.map(literal => resolveModuleName(literal.text, containingFile, options, host, cache, redirectedReference, getModeForUsageLocation(containingSourceFile, literal, options)));
   }
 
   /**

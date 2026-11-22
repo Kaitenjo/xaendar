@@ -12,6 +12,9 @@ vi.mock('typescript', async (importOriginal) => {
     createLanguageService: vi.fn(),
     createDocumentRegistry: vi.fn(),
     getDefaultLibFilePath: vi.fn(),
+    createModuleResolutionCache: vi.fn(() => ({})),
+    getModeForUsageLocation: vi.fn(() => 99),
+    resolveModuleName: vi.fn((moduleName: string) => ({ resolvedModule: { resolvedFileName: `/resolved/${moduleName}.ts` } })),
     sys: {
       fileExists: vi.fn(),
       readFile: vi.fn(),
@@ -452,6 +455,47 @@ describe('LanguageServiceHost', () => {
       expect(fs.statSync).toHaveBeenCalledTimes(2);
       expect(ts.sys.fileExists).toHaveBeenCalledTimes(2);
       expect(ts.sys.directoryExists).toHaveBeenCalledTimes(2);
+    });
+
+    it('gives TypeScript a resolver sharing one cache of the resolutions among the Programs, until a change is reported', async () => {
+      const { mod, ts } = await setupHost();
+      const { hosts, instances } = mockLanguageServiceFactory(ts);
+      mod.cacheRealFiles();
+      mod.cacheRealFiles();
+      mod.getLanguageService({ strict: true });
+      const literals = [{ text: './a' }, { text: './b' }] as never[];
+      const sourceFile = {} as never;
+      const resolve = () => hosts[0].resolveModuleNameLiterals!(literals, '/src/main.ts', undefined, { strict: true }, sourceFile, undefined);
+
+      expect(resolve()).toEqual([{ resolvedModule: { resolvedFileName: '/resolved/./a.ts' } }, { resolvedModule: { resolvedFileName: '/resolved/./b.ts' } }]);
+      resolve();
+      expect(ts.createModuleResolutionCache).toHaveBeenCalledOnce();
+      // The paths are kept as written
+      expect(vi.mocked(ts.createModuleResolutionCache).mock.calls[0][1]('/Src/A.ts')).toBe('/Src/A.ts');
+      const cache = vi.mocked(ts.createModuleResolutionCache).mock.results[0].value;
+      expect(ts.resolveModuleName).toHaveBeenCalledWith('./a', '/src/main.ts', { strict: true }, hosts[0], cache, undefined, 99);
+      expect(ts.getModeForUsageLocation).toHaveBeenCalledWith(sourceFile, literals[0], { strict: true });
+
+      mod.invalidateRealFiles();
+      resolve();
+      expect(ts.createModuleResolutionCache).toHaveBeenCalledTimes(2);
+
+      mod.disposeLanguageService();
+      resolve();
+      expect(ts.createModuleResolutionCache).toHaveBeenCalledTimes(3);
+      expect(instances[0].dispose).toHaveBeenCalledOnce();
+    });
+
+    it('creates the LanguageService again once the real files are cached, with the resolver, disposing the one created before', async () => {
+      const { mod, ts } = await load();
+      const { hosts, instances } = mockLanguageServiceFactory(ts);
+      mod.getLanguageService({});
+
+      expect(hosts[0].resolveModuleNameLiterals).toBeUndefined();
+      mod.cacheRealFiles();
+      expect(instances[0].dispose).toHaveBeenCalledOnce();
+      mod.getLanguageService({});
+      expect(hosts[1].resolveModuleNameLiterals).toBeTypeOf('function');
     });
 
     it('caches the files of the project instances only once asked to', async () => {
