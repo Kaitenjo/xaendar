@@ -1,6 +1,7 @@
 @import { translations } from '../../../core/i18n/i18n.ts'
 @import { translate as t } from '../../../core/i18n/i18n.utils.ts'
 @import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 
 <span class="eyebrow">
   { t(translations(), 'pages.reference.frameworkComparison.eyebrow') }
@@ -19,41 +20,98 @@
   <li @@htmlTranslation(key="pages.reference.frameworkComparison.samePage.li2") />
   <li @@htmlTranslation(key="pages.reference.frameworkComparison.samePage.li3") />
 </ul>
-
-<h2>
-  { t(translations(), 'pages.reference.frameworkComparison.telemetry.title') }
-</h2>
-<p @@htmlTranslation(key="pages.reference.frameworkComparison.telemetry.p1") />
+<p>
+  { t(translations(), 'pages.reference.frameworkComparison.samePage.open') }
+</p>
 <ul>
-  <li @@htmlTranslation(key="pages.reference.frameworkComparison.telemetry.li1") />
-  <li @@htmlTranslation(key="pages.reference.frameworkComparison.telemetry.li2") />
-  <li @@htmlTranslation(key="pages.reference.frameworkComparison.telemetry.li3") />
-  <li @@htmlTranslation(key="pages.reference.frameworkComparison.telemetry.li4") />
+  @for (framework of frameworks; track framework.src) {
+    <li>
+      <a href="{framework.src}" rel="noreferrer" target="_blank">{ framework.label }</a>
+    </li>
+  }
 </ul>
 
 <h2>
-  { t(translations(), 'pages.reference.frameworkComparison.pages.title') }
+  { t(translations(), 'pages.reference.frameworkComparison.method.title') }
 </h2>
-<aside class="comparison-warning" role="note">
-  <p class="comparison-warning-title">
-    { t(translations(), 'pages.reference.frameworkComparison.pages.warning.title') }
-  </p>
-  <p @@htmlTranslation(key="pages.reference.frameworkComparison.pages.warning.p1") />
-  <ul>
-    <li @@htmlTranslation(key="pages.reference.frameworkComparison.pages.warning.li1") />
-    <li @@htmlTranslation(key="pages.reference.frameworkComparison.pages.warning.li2") />
-    <li @@htmlTranslation(key="pages.reference.frameworkComparison.pages.warning.li3") />
-  </ul>
-  <p @@htmlTranslation(key="pages.reference.frameworkComparison.pages.warning.p2") class="comparison-warning-action" />
-</aside>
-@for (frame of frames; track frame.src) {
-  <figure class="comparison">
-    <figcaption class="comparison-head">
-      <span class="comparison-name">{ frame.label }</span>
-      <a class="comparison-open" href="{frame.src}" target="_blank" rel="noreferrer">
-        { translations().example.openInTab }
-      </a>
-    </figcaption>
-    <iframe class="comparison-frame" src="{frame.src}" title="{frame.label}" loading="lazy" />
-  </figure>
+<p @@htmlTranslation(key="pages.reference.frameworkComparison.method.p1") />
+<ol>
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.method.li1") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.method.li2") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.method.li3") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.method.li4") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.method.li5") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.method.li6") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.method.li7") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.method.li8") />
+</ol>
+
+<h2>
+  { t(translations(), 'pages.reference.frameworkComparison.results.title') }
+</h2>
+<ul>
+  <li>
+    <strong>{ t(translations(), 'pages.reference.frameworkComparison.results.date') }</strong>: { date() }
+  </li>
+  <li>
+    <strong>{ t(translations(), 'pages.reference.frameworkComparison.results.browser') }</strong>: { browser }
+  </li>
+  <li>
+    <strong>{ t(translations(), 'pages.reference.frameworkComparison.results.machine') }</strong>: { machine }
+  </li>
+  <li>
+    <strong>{ t(translations(), 'pages.reference.frameworkComparison.results.runs') }</strong>: { runs }
+  </li>
+</ul>
+@for (table of tables(); track table.title) {
+  <h3>
+    { t(translations(), table.title) }
+  </h3>
+  <div class="table-wrap">
+    <table class="comparison-table">
+      <thead>
+        <tr>
+          <th>
+            { t(translations(), 'pages.reference.frameworkComparison.results.measure') }
+          </th>
+          @for (framework of frameworks; track framework.src) {
+            <th>
+              { framework.label }
+            </th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of table.rows; track row.label) {
+          <tr>
+            <td>
+              { t(translations(), row.label) }
+            </td>
+            @for (value of row.values; track $index) {
+              <td>
+                { value }
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
 }
+
+<h2>
+  { t(translations(), 'pages.reference.frameworkComparison.reading.title') }
+</h2>
+<ul>
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.reading.li1") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.reading.li2") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.reading.li3") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.reading.li4") />
+  <li @@htmlTranslation(key="pages.reference.frameworkComparison.reading.li5") />
+</ul>
+
+<h2>
+  { t(translations(), 'pages.reference.frameworkComparison.reproduce.title') }
+</h2>
+<p @@htmlTranslation(key="pages.reference.frameworkComparison.reproduce.p1") />
+<docs-code snippet="reference/framework-comparison.sh" />

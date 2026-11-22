@@ -1,16 +1,15 @@
 # Framework comparison
 
-The same page written with Angular, React and Xaendar, embedded with three iframes in the **Reference → Framework
-comparison** page of the documentation. Each folder is its own npm project, with its own `package.json`,
+The same page written with Angular, React and Xaendar, measured for the **Reference → Framework comparison** page of
+the documentation, which links them. Each folder is its own npm project, with its own `package.json`,
 `node_modules`, toolchain and build, exactly as a reader's application would be.
 
 - `shared` holds what the three pages have in common, so that only the rendering code changes: the data (1,000
-  employees from a fixed seed) and the filtering function, the CSS of the page, of the button and of the fields,
-  and the telemetry panel.
+  employees from a fixed seed) and the filtering function, the CSS of the page, of the button and of the fields.
 - `angular`, `react` and `xaendar` are split the same way: four small components (a button, a text field, a date
   field, a select) and a page holding the filters being edited, the filters applied and the table.
 - Every page builds into `../public/comparison/<name>/`, which is **generated and not committed** (`.gitignore`).
-  Build them once after a clone, and again whenever you change one: otherwise the frames of the page stay empty,
+  Build them once after a clone, and again whenever you change one: otherwise the links of the page lead nowhere,
   and `npm start` and `npm run build` of the site say so instead of failing.
 - The Xaendar page is built with the `xd` CLI and the sources of the packages in this repository, not with a
   published version.
@@ -23,21 +22,23 @@ node comparison/build.mjs react xaendar   # only these
 node comparison/build.mjs --check         # report which ones are missing (what prestart/prebuild run)
 ```
 
-## The telemetry panel
+## Measuring
 
-`shared/telemetry.ts` mounts the panel in a shadow root of its own, outside the application, so that it is the
-same in the three pages and its styles cannot leak into them. It can be dragged by its header, collapsed and
-configured (sections, sampling interval, entries listed); its settings are kept in `localStorage`.
+`measure.mjs` measures the three builds as the documentation reports them, and writes the figures its page shows
+(`src/pages/reference/framework-comparison/framework-comparison.results.json`). The page explains each step; in short:
 
-- **Startup**: the time to the first rows of the table, the JavaScript downloaded and the elements of the page.
-- **Interactions**: every `click` and `input`, with the time to the next animation frame (the framework has
-  updated the DOM) and to the frame after it (style, layout and paint included). `change` is left out: it is
-  not composed, so it never leaves the shadow roots of the Xaendar fields.
-- **Long frames**: the Long Animation Frames over 50 ms, with their longest script (Chromium 123+).
-- **Memory**: the JavaScript heap from `performance.memory` (Chromium only), and the memory of the whole page
-  from `performance.measureUserAgentSpecificMemory()` when the page is cross-origin isolated.
-  `public/_headers` sends the COOP/COEP headers for `/comparison/*` on Cloudflare, so a page opened in its own
-  tab is isolated; the dev server does not send them.
+- the JavaScript of each build, minified and with gzip (level 9), read from the files;
+- every run opens one page in a new context of a headless Chromium (Playwright), served by a local static server, at
+  CPU 1× and 4× (CDP throttling);
+- startup: from the navigation to the first frame showing the 1,000 rows; memory after a forced garbage collection
+  (`Runtime.getHeapUsage`, `Memory.getDOMCounters`); the time of **Apply** (department `Engineering`, 132 rows) and
+  **Reset**, from the click to the first task after the frame showing the new rows;
+- the elements of the page and the rows the filter leaves, to check that the three pages do the same work;
+- the pages take turns run after run, and every figure is the median of its runs.
 
-The frames of the documentation page share one thread and one heap with each other and with the documentation:
-compare the figures of pages opened in their own tabs.
+```bash
+npm install --no-save playwright && npx playwright install chromium   # once: Playwright is not a dependency
+node comparison/measure.mjs --runs=10 --json=src/pages/reference/framework-comparison/framework-comparison.results.json
+```
+
+Measure again after changing a page or a framework version, on a machine doing nothing else.

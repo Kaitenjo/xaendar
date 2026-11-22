@@ -1,0 +1,86 @@
+{
+  "date": "2026-11-22",
+  "browser": "Chromium 157.0.8103.78",
+  "machine": "Intel(R) Xeon(R) Processor @ 2.10GHz, 4 cores",
+  "runs": 10,
+  "pages": {
+    "angular": {
+      "scripts": {
+        "raw": 129510,
+        "gzip": 43111
+      },
+      "cpu1x": {
+        "startup": 186.2,
+        "elements": 10073,
+        "heap": 3257436,
+        "nodes": 18240,
+        "listeners": 25,
+        "filter": 26.6,
+        "filtered": 132,
+        "reset": 144
+      },
+      "cpu4x": {
+        "startup": 1187.6,
+        "elements": 10073,
+        "heap": 3282764,
+        "nodes": 18240,
+        "listeners": 25,
+        "filter": 146.7,
+        "filtered": 132,
+        "reset": 671.9
+      }
+    },
+    "react": {
+      "scripts": {
+        "raw": 224339,
+        "gzip": 69410
+      },
+      "cpu1x": {
+        "startup": 70.7,
+        "elements": 10061,
+        "heap": 4073048,
+        "nodes": 18224,
+        "listeners": 165,
+        "filter": 33.7,
+        "filtered": 132,
+        "reset": 141.7
+      },
+      "cpu4x": {
+        "startup": 275.4,
+        "elements": 10061,
+        "heap": 4082362,
+        "nodes": 18224,
+        "listeners": 165,
+        "filter": 149.3,
+        "filtered": 132,
+        "reset": 638.7
+      }
+    },
+    "xaendar": {
+      "scripts": {
+        "raw": 83854,
+        "gzip": 27928
+      },
+      "cpu1x": {
+        "startup": 82.7,
+        "elements": 10072,
+        "heap": 2452166,
+        "nodes": 18243,
+        "listeners": 25,
+        "filter": 24.8,
+        "filtered": 132,
+        "reset": 146.8
+      },
+      "cpu4x": {
+        "startup": 322.7,
+        "elements": 10072,
+        "heap": 2318120,
+        "nodes": 18243,
+        "listeners": 25,
+        "filter": 115.9,
+        "filtered": 132,
+        "reset": 664.7
+      }
+    }
+  }
+}

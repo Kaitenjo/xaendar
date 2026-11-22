@@ -1954,32 +1954,70 @@
       "frameworkComparison": {
         "eyebrow": "Reference",
         "title": "Framework comparison",
-        "lead": "The same page written three times, with Angular, React and Xaendar, and shown below in three frames: a table of 1,000 employees and 8 columns, with filters over it. Each page carries a telemetry panel that shows, while you use it, how long the framework takes to start and to update, the long frames that block the page and the memory it holds.",
+        "lead": "The same page written three times, with Angular, React and Xaendar: a table of 1,000 employees and 8 columns, with filters over it. Below, how the three pages were measured, step by step, and the figures measured: they come from a script anyone can run again, not from your browser.",
         "samePage": {
           "title": "The same page",
           "p1": "The three pages share their data, their styles and their layout: only the code that renders them changes. They are split the same way in every framework:",
           "li1": "four small components, a button and three fields (text, date, select), each wrapping a native control with its label;",
-          "li2": "a page holding the filters being edited and the ones applied: <strong>Apply filters</strong> copies the first into the second, <strong>Reset</strong> empties both, and the table shows the rows of the applied filters;",
-          "li3": "the same 1,000 rows, generated from the same seed, and the same filtering function."
+          "li2": "a page holding the filters being edited and the ones applied: <strong>Apply</strong> copies the first into the second, <strong>Reset</strong> empties both, and the table shows the rows of the applied filters;",
+          "li3": "the same 1,000 rows, generated from the same seed, and the same filtering function.",
+          "open": "Each page can be opened on its own, in a new tab:"
         },
-        "telemetry": {
-          "title": "The telemetry panel",
-          "p1": "The panel floats over the page: drag it by its header, collapse it, and choose in its settings (<strong>⚙</strong>) the sections shown, how often memory is sampled and how many entries are listed. The settings are kept by the browser.",
-          "li1": "<strong>Startup</strong>: the time from the start of the navigation to the first rows of the table, the JavaScript downloaded and the number of elements in the page.",
-          "li2": "<strong>Interactions</strong>: every click and every input, with two times. <em>Update</em> runs from the event to the next animation frame, when the framework has applied its changes to the DOM; <em>paint</em> runs to the frame after it, so it includes style, layout and painting.",
-          "li3": "<strong>Long frames</strong>: the animation frames over 50 ms, with the script that took longest in each (Long Animation Frames API, Chromium 123 and later).",
-          "li4": "<strong>Memory</strong>: the JavaScript heap used and allocated, sampled over time (<code>performance.memory</code>, Chromium only). The memory of the whole page, DOM included, is measured on request in a page opened in its own tab, which is the only place where it is cross-origin isolated."
+        "method": {
+          "title": "How they were measured",
+          "p1": "Every figure in the tables below comes from <code>comparison/measure.mjs</code>, a script driving Chromium with Playwright. The figures cannot be seen happening in this page, but they can be measured again (see the last section). Step by step:",
+          "li1": "<strong>Production builds.</strong> Each page is built by its own toolchain with its production settings: <code>ng build</code> for Angular, <code>vite build</code> for React, <code>xd build</code> for Xaendar (<code>npm run build:comparison</code>). The files measured are the pages linked above.",
+          "li2": "<strong>JavaScript.</strong> The size of the <code>.js</code> files of each build, as they are (minified) and compressed with gzip at level 9, read from the files rather than from the network.",
+          "li3": "<strong>A clean browser for every run.</strong> The builds are served by a local static server, and every run opens the page in a new context of a headless Chromium: empty cache, no extensions, nothing else on the page or on its thread.",
+          "li4": "<strong>Two CPU speeds.</strong> Every page is measured on the machine as it is (CPU 1×) and four times slower (CPU 4×, the CPU throttling of the Chrome DevTools Protocol), close to a mid-range phone.",
+          "li5": "<strong>Startup.</strong> A script injected before the code of the page checks the table at every animation frame: the startup is the time from the start of the navigation to the first frame showing all its 1,000 rows. It includes loading, parsing and running the JavaScript, and the first render.",
+          "li6": "<strong>Memory.</strong> Once the table is shown, the script forces a garbage collection, then reads the JavaScript heap in use (<code>Runtime.getHeapUsage</code>) and the DOM nodes and event listeners the browser counts (<code>Memory.getDOMCounters</code>).",
+          "li7": "<strong>Interactions.</strong> The script selects <em>Engineering</em> in the department field and clicks <strong>Apply</strong> (the 1,000 rows become 132), then <strong>Reset</strong> (back to 1,000). Each time runs from the click to the first task after the frame showing the new number of rows: the update of the framework, plus the style, layout and paint of that frame.",
+          "li8": "<strong>Runs and medians.</strong> Each page is measured 10 times at each CPU speed, the three pages taking turns (Angular, React, Xaendar, Angular, …) so that a slower moment of the machine weighs on all of them; every figure is the median of its 10 values. The script also counts the elements of the page, inside the shadow roots too, and the rows the filter leaves: the first table checks that the three pages do the same work."
         },
-        "pages": {
-          "title": "The three pages",
-          "warning": {
-            "title": "Do not compare the figures of these three frames",
-            "p1": "The three pages run inside this one, so they share its thread and its JavaScript heap: the figures their panels show here are not theirs alone, and they <strong>get worse frame after frame, in the order the pages are shown</strong>. Angular comes first, React second and Xaendar last, so Xaendar is the page penalised most:",
-            "li1": "<strong>Startup</strong>: every frame starts while the ones before it are still loading and drawing their 1,000 rows, and waits for the main thread they hold. The later a frame, the slower its startup looks.",
-            "li2": "<strong>Memory</strong>: there is one JavaScript heap for the documentation and the three frames, and every panel reports all of it. It grows frame after frame, so the last page looks the heaviest even when it holds the least.",
-            "li3": "<strong>Interactions</strong>: an update in one frame delays the others while it runs.",
-            "p2": "To compare the three frameworks, open each page with <strong>Open in a tab</strong>, one at a time: there every figure belongs to that page alone."
+        "results": {
+          "title": "Results",
+          "date": "Measured on",
+          "browser": "Browser",
+          "machine": "Processor",
+          "runs": "Runs per page and CPU speed",
+          "measure": "Measure",
+          "work": {
+            "title": "Same work",
+            "elements": "Elements in the page",
+            "filtered": "Rows after the filter"
+          },
+          "footprint": {
+            "title": "Size and memory",
+            "gzip": "JavaScript, gzip",
+            "raw": "JavaScript, minified",
+            "heap": "JavaScript heap after garbage collection",
+            "nodes": "DOM nodes",
+            "listeners": "Event listeners"
+          },
+          "cpu1x": {
+            "title": "Times, CPU 1×"
+          },
+          "cpu4x": {
+            "title": "Times, CPU 4×"
+          },
+          "times": {
+            "startup": "Startup (to 1,000 rows)",
+            "filter": "Apply (1,000 → 132 rows)",
+            "reset": "Reset (132 → 1,000 rows)"
           }
+        },
+        "reading": {
+          "title": "Reading the figures",
+          "li1": "<strong>Compare large gaps.</strong> The times vary from one run to the next: two measurements on the same machine gave startups up to a third apart. The medians smooth that out, but a difference of a few milliseconds, or of a few percent, is not a result.",
+          "li2": "<strong>Compare the pages, not the milliseconds.</strong> Another machine gives other times: what carries over is how the three pages compare with each other, at the same CPU speed.",
+          "li3": "<strong>One page, of one shape.</strong> A large table with filters, rendered all at once: pages of another shape, with many small components or frequent small updates, could rank differently. Rendering on the server and hydration are not measured here.",
+          "li4": "<strong>Event listeners.</strong> React registers on the root of the application a listener for every event it supports, and dispatches them itself; Angular and Xaendar register the listeners of the events their templates bind. The count is the browser's, not the handlers the frameworks keep.",
+          "li5": "<strong>Memory.</strong> The data is the same in the three pages: the heap differs by what each framework, with its code, keeps for the page. The DOM nodes are counted apart."
+        },
+        "reproduce": {
+          "title": "Measuring again",
+          "p1": "The pages and the script are in <code>src/docs/comparison</code> of the repository. From <code>src/docs</code>, these commands build the three pages and write the figures of this page again. On another machine they will differ from the ones above: compare the gaps between the pages."
         }
       },
       "templateSyntax": {
