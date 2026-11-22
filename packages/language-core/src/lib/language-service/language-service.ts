@@ -60,7 +60,7 @@ export class ProjectLanguageService {
   private readonly _directoryExistence = new Map<string, boolean>();
   /**
    * Whether the versions and the existence of the real files and of the directories are read from the disk once, then
-   * kept until a change of the file is reported (see {@link cacheRealFiles}, {@link invalidateRealFile}).
+   * kept until a change of the files is reported (see {@link cacheRealFiles}, {@link invalidateRealFiles}).
    */
   private _cachesRealFiles = false;
   /**
@@ -131,10 +131,10 @@ export class ProjectLanguageService {
 
   /**
    * Reads the versions and the existence of the real files and of the directories from the disk once, keeping them until
-   * a change of a file is reported with {@link invalidateRealFile}: for a caller told of every change of the files it
-   * depends on, as the build tools are by the watcher of Vite (nothing changes during a build). The files no watcher
-   * reports, as the ones of `node_modules`, are read again only once the instance is disposed. The setting outlives
-   * {@link dispose}.
+   * a change of the files is reported with {@link invalidateRealFiles}: for a caller told of every change of the files it
+   * depends on, as the build tools are by the watcher of Vite (nothing changes during a build). After any change
+   * reported, every file is read again, so that the files no watcher reports, as a package installed meanwhile, are
+   * read again too. The setting outlives {@link dispose}.
    *
    * N.B. Deliberate, for speed: the LanguageService asks the version of every file of the Program at every request, once
    * per component in a build, and TypeScript probes the files and the directories of every module it resolves. Read from
@@ -146,19 +146,13 @@ export class ProjectLanguageService {
   }
 
   /**
-   * Forgets what was read of a real file that changed on disk (see {@link cacheRealFiles}): its version and its existence
-   * and, when it was created or deleted, the existence of every directory, which may have changed with it.
-   *
-   * @param fileName - The path of the file.
-   * @param createdOrDeleted - Whether the file was created or deleted, rather than changed.
+   * Forgets what was read of the real files and of the directories (see {@link cacheRealFiles}): a file was created,
+   * changed or deleted.
    */
-  public invalidateRealFile(fileName: string, createdOrDeleted: boolean): void {
-    const key = normalizeFileName(fileName);
-    this._realFileVersions.delete(key);
-    this._realFileExistence.delete(key);
-    if (createdOrDeleted) {
-      this._directoryExistence.clear();
-    }
+  public invalidateRealFiles(): void {
+    this._realFileVersions.clear();
+    this._realFileExistence.clear();
+    this._directoryExistence.clear();
   }
 
   /**
@@ -389,21 +383,18 @@ export function disposeLanguageService(): void {
 
 /**
  * Reads the versions and the existence of the real files once for the default instance, until a change is reported
- * with {@link invalidateRealFile} (see {@link ProjectLanguageService.cacheRealFiles}).
+ * with {@link invalidateRealFiles} (see {@link ProjectLanguageService.cacheRealFiles}).
  */
 export function cacheRealFiles(): void {
   defaultProjectLanguageService.cacheRealFiles();
 }
 
 /**
- * Forgets what the default instance read of a real file that changed on disk (see
- * {@link ProjectLanguageService.invalidateRealFile}).
- *
- * @param fileName - The path of the file.
- * @param createdOrDeleted - Whether the file was created or deleted, rather than changed.
+ * Forgets what the default instance read of the real files, a file having been created, changed or deleted (see
+ * {@link ProjectLanguageService.invalidateRealFiles}).
  */
-export function invalidateRealFile(fileName: string, createdOrDeleted: boolean): void {
-  defaultProjectLanguageService.invalidateRealFile(fileName, createdOrDeleted);
+export function invalidateRealFiles(): void {
+  defaultProjectLanguageService.invalidateRealFiles();
 }
 
 /**

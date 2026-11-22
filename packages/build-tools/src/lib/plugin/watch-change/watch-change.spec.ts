@@ -5,7 +5,7 @@ vi.mock('@xaendar/language-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@xaendar/language-core')>();
   return {
     ...actual,
-    invalidateRealFile: vi.fn(),
+    invalidateRealFiles: vi.fn(),
     removeRealFile: vi.fn(),
     removeVirtualFile: vi.fn()
   };
@@ -35,7 +35,7 @@ vi.mock('../../registry/template-registry/template-registry', () => ({
   removeComponentPath: vi.fn()
 }));
 
-import { invalidateRealFile, removeRealFile, removeVirtualFile } from '@xaendar/language-core';
+import { invalidateRealFiles, removeRealFile, removeVirtualFile } from '@xaendar/language-core';
 import { PluginContext } from 'rolldown';
 import { clearDependenciesForComponent } from '../../registry/dependency-registry/dependency-registry';
 import { clearComponentToImports, clearImportToComponents, findComponentsForImport } from '../../registry/import-registry/import-registry';
@@ -139,18 +139,14 @@ describe('handleStyleDelete()', () => {
 });
 
 describe('createWatchChangeHook()', () => {
-  it.each([
-    ['created', 'create', true],
-    ['changed', 'update', false],
-    ['deleted', 'delete', true]
-  ] as const)('tells the type-check to read again a file %s', (_name, event, createdOrDeleted) => {
+  it.each(['create', 'update', 'delete'] as const)('tells the type-check to read the disk again after a %s', event => {
     const hook = createWatchChangeHook(createState());
     vi.mocked(findComponentsForImport).mockReturnValue(undefined);
     vi.mocked(findComponentPathsForStyleDependency).mockReturnValue(undefined);
 
     hook.call({} as PluginContext, '/src/types.ts', { event });
 
-    expect(invalidateRealFile).toHaveBeenCalledWith('/src/types.ts', createdOrDeleted);
+    expect(invalidateRealFiles).toHaveBeenCalledTimes(1);
   });
 
   it('ignores change events other than "delete"', () => {

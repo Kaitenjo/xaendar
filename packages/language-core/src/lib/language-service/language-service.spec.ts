@@ -380,7 +380,7 @@ describe('LanguageServiceHost', () => {
       expect(host.getScriptVersion('/real.ts')).toBe('1');
       expect(fs.statSync).toHaveBeenCalledTimes(1);
 
-      mod.invalidateRealFile('/real.ts', false);
+      mod.invalidateRealFiles();
       expect(host.getScriptVersion('/real.ts')).toBe('2');
       expect(fs.statSync).toHaveBeenCalledTimes(2);
     });
@@ -406,34 +406,32 @@ describe('LanguageServiceHost', () => {
 
       vi.mocked(ts.sys.fileExists).mockReturnValue(true);
       vi.mocked(ts.sys.readFile).mockReturnValue('created');
-      mod.invalidateRealFile('/new.ts', true);
+      mod.invalidateRealFiles();
       expect(host.fileExists('/new.ts')).toBe(true);
       expect(host.readFile('/new.ts')).toBe('created');
       expect(ts.sys.fileExists).toHaveBeenCalledTimes(2);
     });
 
-    it('reads whether a directory exists once, reading them again once a file is created or deleted, not changed', async () => {
+    it('reads whether a directory exists once, and again once a change of the files is reported', async () => {
       const { mod, ts, host } = await setupCachedHost();
       vi.mocked(ts.sys.directoryExists).mockReturnValue(false);
 
-      expect(host.directoryExists!('/src/new')).toBe(false);
+      expect(host.directoryExists!('/node_modules/installed')).toBe(false);
       vi.mocked(ts.sys.directoryExists).mockReturnValue(true);
-      mod.invalidateRealFile('/src/a.ts', false);
-      expect(host.directoryExists!('/src/new')).toBe(false);
+      expect(host.directoryExists!('/node_modules/installed')).toBe(false);
 
-      mod.invalidateRealFile('/src/new/b.ts', true);
-      expect(host.directoryExists!('/src/new')).toBe(true);
+      mod.invalidateRealFiles();
+      expect(host.directoryExists!('/node_modules/installed')).toBe(true);
       expect(ts.sys.directoryExists).toHaveBeenCalledTimes(2);
     });
 
-    it('invalidates a file whatever the separators and the drive case of its path', async () => {
-      const { mod, fs, host } = await setupCachedHost();
+    it('reads the same file once whatever the separators and the drive case of its path', async () => {
+      const { fs, host } = await setupCachedHost();
       vi.mocked(fs.statSync).mockReturnValue({ mtimeMs: 1 } as never);
-      host.getScriptVersion('c:/project/a.ts');
+      host.getScriptVersion('C:\\project\\a.ts');
 
-      vi.mocked(fs.statSync).mockReturnValue({ mtimeMs: 2 } as never);
-      mod.invalidateRealFile('C:\\project\\a.ts', false);
-      expect(host.getScriptVersion('c:/project/a.ts')).toBe('2');
+      expect(host.getScriptVersion('c:/project/a.ts')).toBe('1');
+      expect(fs.statSync).toHaveBeenCalledTimes(1);
     });
 
     it('reads the disk again once disposed, still caching the real files', async () => {
@@ -472,7 +470,7 @@ describe('LanguageServiceHost', () => {
       hosts[0].fileExists('/project/a.ts');
       expect(ts.sys.fileExists).toHaveBeenCalledTimes(3);
 
-      project.invalidateRealFile('/project/a.ts', false);
+      project.invalidateRealFiles();
       hosts[0].fileExists('/project/a.ts');
       expect(ts.sys.fileExists).toHaveBeenCalledTimes(4);
     });
