@@ -9,6 +9,9 @@ the documentation, which links them. Each folder is its own npm project, with it
 - `angular`, `react` and `xaendar` are split the same way: four small components (a button, a text field, a date
   field, a select) and a page holding the filters being edited, the filters applied and the table, whose rows are
   selected by a click and whose salaries **Raise 5%** raises (`raiseSalaries` of `shared/data.ts`, new rows).
+- Each page uses the optimizations its framework offers, so that an update renders only what changed: Angular is
+  zoneless, with `OnPush` components, signals and `track`; React memoizes its components (`memo`, with the table and
+  its rows as components of their own) and keeps its callbacks stable (`useCallback`, `useMemo`).
 - Every page builds into `../public/comparison/<name>/`, which is **generated and not committed** (`.gitignore`).
   Build them once after a clone, and again whenever you change one: otherwise the links of the page lead nowhere,
   and `npm start` and `npm run build` of the site say so instead of failing.

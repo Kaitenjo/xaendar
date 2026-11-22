@@ -10,58 +10,58 @@
         "gzip": 43274
       },
       "cpu1x": {
-        "startup": 216.5,
+        "startup": 223.8,
         "elements": 10075,
-        "heap": 3666476,
+        "heap": 3669104,
         "nodes": 18243,
         "listeners": 1026,
-        "select": 7.3,
-        "raise": 38,
-        "filter": 35.3,
+        "select": 7.2,
+        "raise": 40.4,
+        "filter": 39,
         "filtered": 132,
-        "reset": 115.2
+        "reset": 136.4
       },
       "cpu4x": {
-        "startup": 1258,
+        "startup": 1294.6,
         "elements": 10075,
-        "heap": 3711224,
+        "heap": 3712084,
         "nodes": 18243,
         "listeners": 1026,
-        "select": 36.4,
-        "raise": 201.7,
-        "filter": 155.8,
+        "select": 38.4,
+        "raise": 198,
+        "filter": 140.8,
         "filtered": 132,
-        "reset": 696.7
+        "reset": 689.1
       }
     },
     "react": {
       "scripts": {
-        "raw": 224586,
-        "gzip": 69493
+        "raw": 225075,
+        "gzip": 69616
       },
       "cpu1x": {
-        "startup": 80.7,
+        "startup": 75.5,
         "elements": 10062,
-        "heap": 4152312,
+        "heap": 4313470,
         "nodes": 18226,
         "listeners": 1166,
-        "select": 20.7,
-        "raise": 47.2,
-        "filter": 33.3,
+        "select": 7.3,
+        "raise": 54.5,
+        "filter": 33,
         "filtered": 132,
-        "reset": 114.8
+        "reset": 141.5
       },
       "cpu4x": {
-        "startup": 282.5,
+        "startup": 303.4,
         "elements": 10062,
-        "heap": 4154194,
+        "heap": 4326530,
         "nodes": 18226,
         "listeners": 1166,
-        "select": 93.1,
-        "raise": 248.2,
-        "filter": 198.3,
+        "select": 35.9,
+        "raise": 265.5,
+        "filter": 160.8,
         "filtered": 132,
-        "reset": 634
+        "reset": 632.4
       }
     },
     "xaendar": {
@@ -70,28 +70,28 @@
         "gzip": 28106
       },
       "cpu1x": {
-        "startup": 87.8,
+        "startup": 105.1,
         "elements": 10075,
-        "heap": 2656624,
+        "heap": 2657882,
         "nodes": 18248,
         "listeners": 1026,
-        "select": 6.3,
-        "raise": 53.7,
-        "filter": 24,
+        "select": 6.1,
+        "raise": 58.9,
+        "filter": 27.4,
         "filtered": 132,
-        "reset": 134.8
+        "reset": 141
       },
       "cpu4x": {
-        "startup": 356.8,
+        "startup": 382.4,
         "elements": 10075,
-        "heap": 2649922,
+        "heap": 2649106,
         "nodes": 18248,
         "listeners": 1026,
-        "select": 27,
-        "raise": 246,
-        "filter": 119.9,
+        "select": 30.1,
+        "raise": 251.4,
+        "filter": 123.2,
         "filtered": 132,
-        "reset": 650.6
+        "reset": 645.4
       }
     }
   }
