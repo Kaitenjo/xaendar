@@ -8768,7 +8768,7 @@ var require_files = __commonJS({
     exports2.resolve = resolve5;
     exports2.resolveGlobalNodePath = resolveGlobalNodePath;
     exports2.resolveGlobalYarnPath = resolveGlobalYarnPath;
-    exports2.resolveModulePath = resolveModulePath2;
+    exports2.resolveModulePath = resolveModulePath3;
     var url = __importStar(require("url"));
     var path = __importStar(require("path"));
     var fs = __importStar(require("fs"));
@@ -8964,7 +8964,7 @@ var require_files = __commonJS({
       }
       FileSystem2.isParent = isParent;
     })(FileSystem || (exports2.FileSystem = FileSystem = {}));
-    function resolveModulePath2(workspaceRoot, moduleName, nodePath, tracer) {
+    function resolveModulePath3(workspaceRoot, moduleName, nodePath, tracer) {
       if (nodePath) {
         if (!path.isAbsolute(nodePath)) {
           nodePath = path.join(workspaceRoot, nodePath);
@@ -26938,6 +26938,13 @@ var CLASS_FINDER = {
   exported: (statement, exportedName) => (0, import_typescript15.isClassDeclaration)(statement) && isExportedAs(statement, exportedName) ? statement : void 0
 };
 var sourceFileCache = /* @__PURE__ */ new Map();
+var cachesFiles = false;
+var checkedFiles = /* @__PURE__ */ new Set();
+var moduleResolutionCaches = /* @__PURE__ */ new WeakMap();
+function resolveModulePath(moduleName, containingFile, compilerOptions) {
+  const cache = cachesFiles ? getModuleResolutionCache(compilerOptions) : void 0;
+  return (0, import_typescript15.resolveModuleName)(moduleName, containingFile, compilerOptions, import_typescript15.sys, cache).resolvedModule?.resolvedFileName;
+}
 function resolveBaseClassOf(klass, compilerOptions = DEFAULT_COMPILER_OPTIONS) {
   return resolveBaseClass(klass, { compilerOptions, dependencies: /* @__PURE__ */ new Set(), visitedClasses: /* @__PURE__ */ new Set() });
 }
@@ -27006,8 +27013,8 @@ function resolveImported(sourceFile, moduleSpecifier, exportedName, finder, cont
   if (!(0, import_typescript15.isStringLiteralLike)(moduleSpecifier)) {
     return;
   }
-  const { resolvedModule } = (0, import_typescript15.resolveModuleName)(moduleSpecifier.text, sourceFile.fileName, context.compilerOptions, import_typescript15.sys);
-  const moduleSourceFile = resolvedModule && getSourceFile(resolvedModule.resolvedFileName, context);
+  const resolvedFileName = resolveModulePath(moduleSpecifier.text, sourceFile.fileName, context.compilerOptions);
+  const moduleSourceFile = resolvedFileName && getSourceFile(resolvedFileName, context);
   return moduleSourceFile ? resolveExported(moduleSourceFile, exportedName, finder, context, visitedExports) : void 0;
 }
 function resolveModuleExport(fileName, exportedName, finder, context) {
@@ -27063,21 +27070,36 @@ function isExportedAs(declaration, exportedName) {
   return declaration.name?.text === exportedName;
 }
 function getSourceFile(fileName, context) {
+  const cached = sourceFileCache.get(fileName);
   let sourceFile;
-  try {
-    const { mtimeMs, size } = (0, import_node_fs.statSync)(fileName);
-    const cached = sourceFileCache.get(fileName);
-    if (cached?.modifiedTime === mtimeMs && cached.size === size) {
-      sourceFile = cached.sourceFile;
-    } else {
-      sourceFile = (0, import_typescript15.createSourceFile)(fileName, (0, import_node_fs.readFileSync)(fileName, "utf-8"), import_typescript15.ScriptTarget.Latest, true);
-      sourceFileCache.set(fileName, { modifiedTime: mtimeMs, size, sourceFile });
+  if (cached && checkedFiles.has(fileName)) {
+    sourceFile = cached.sourceFile;
+  } else {
+    try {
+      const { mtimeMs, size } = (0, import_node_fs.statSync)(fileName);
+      if (cached?.modifiedTime === mtimeMs && cached.size === size) {
+        sourceFile = cached.sourceFile;
+      } else {
+        sourceFile = (0, import_typescript15.createSourceFile)(fileName, (0, import_node_fs.readFileSync)(fileName, "utf-8"), import_typescript15.ScriptTarget.Latest, true);
+        sourceFileCache.set(fileName, { modifiedTime: mtimeMs, size, sourceFile });
+      }
+    } catch {
+      return void 0;
     }
-  } catch {
-    return void 0;
+    if (cachesFiles) {
+      checkedFiles.add(fileName);
+    }
   }
   context.dependencies.add(fileName);
   return sourceFile;
+}
+function getModuleResolutionCache(compilerOptions) {
+  let cache = moduleResolutionCaches.get(compilerOptions);
+  if (!cache) {
+    cache = (0, import_typescript15.createModuleResolutionCache)(process.cwd(), (fileName) => fileName, compilerOptions);
+    moduleResolutionCaches.set(compilerOptions, cache);
+  }
+  return cache;
 }
 
 // ../packages/compiler/src/utils/host-directives/host-directives.utils.ts
@@ -31439,7 +31461,7 @@ var ProjectLanguageService = class {
   _directoryExistence = /* @__PURE__ */ new Map();
   /**
    * Whether the versions and the existence of the real files and of the directories are read from the disk once, then
-   * kept until a change of the file is reported (see {@link cacheRealFiles}, {@link invalidateRealFile}).
+   * kept until a change of the files is reported (see {@link cacheRealFiles}, {@link invalidateRealFiles}).
    */
   _cachesRealFiles = false;
   /**
@@ -31505,10 +31527,10 @@ var ProjectLanguageService = class {
   }
   /**
    * Reads the versions and the existence of the real files and of the directories from the disk once, keeping them until
-   * a change of a file is reported with {@link invalidateRealFile}: for a caller told of every change of the files it
-   * depends on, as the build tools are by the watcher of Vite (nothing changes during a build). The files no watcher
-   * reports, as the ones of `node_modules`, are read again only once the instance is disposed. The setting outlives
-   * {@link dispose}.
+   * a change of the files is reported with {@link invalidateRealFiles}: for a caller told of every change of the files it
+   * depends on, as the build tools are by the watcher of Vite (nothing changes during a build). After any change
+   * reported, every file is read again, so that the files no watcher reports, as a package installed meanwhile, are
+   * read again too. The setting outlives {@link dispose}.
    *
    * N.B. Deliberate, for speed: the LanguageService asks the version of every file of the Program at every request, once
    * per component in a build, and TypeScript probes the files and the directories of every module it resolves. Read from
@@ -31519,19 +31541,13 @@ var ProjectLanguageService = class {
     this._cachesRealFiles = true;
   }
   /**
-   * Forgets what was read of a real file that changed on disk (see {@link cacheRealFiles}): its version and its existence
-   * and, when it was created or deleted, the existence of every directory, which may have changed with it.
-   *
-   * @param fileName - The path of the file.
-   * @param createdOrDeleted - Whether the file was created or deleted, rather than changed.
+   * Forgets what was read of the real files and of the directories (see {@link cacheRealFiles}): a file was created,
+   * changed or deleted.
    */
-  invalidateRealFile(fileName, createdOrDeleted) {
-    const key = normalizeFileName2(fileName);
-    this._realFileVersions.delete(key);
-    this._realFileExistence.delete(key);
-    if (createdOrDeleted) {
-      this._directoryExistence.clear();
-    }
+  invalidateRealFiles() {
+    this._realFileVersions.clear();
+    this._realFileExistence.clear();
+    this._directoryExistence.clear();
   }
   /**
    * Registers a real project file as a root file for the Program, so the
@@ -31742,7 +31758,7 @@ function resolveModule(baseDir, modulePath, compilerOptions = DEFAULT_COMPILER_O
   const { resolvedModule } = (0, import_typescript25.resolveModuleName)(modulePath, resolvePosixPath(baseDir, "__template__.ts"), compilerOptions, import_typescript25.sys);
   return resolvedModule && { fileName: toPosixPath2(resolvedModule.resolvedFileName), external: !!resolvedModule.isExternalLibraryImport };
 }
-function resolveModulePath(baseDir, modulePath, compilerOptions) {
+function resolveModulePath2(baseDir, modulePath, compilerOptions) {
   return resolveModule(baseDir, modulePath, compilerOptions)?.fileName;
 }
 function toModulePath(baseDir, fileName) {
@@ -31793,7 +31809,7 @@ var TemplateMetadataCache = class {
     if (!path && stored) {
       return stored;
     }
-    const fileName = Array.isArray(path) ? resolveModulePath(path[0], path[1], this._compilerOptions) : path && resolvePosixPath(path);
+    const fileName = Array.isArray(path) ? resolveModulePath2(path[0], path[1], this._compilerOptions) : path && resolvePosixPath(path);
     const metadata = fileName && (readLibraryMetadata(fileName, name) ?? (await this._getFileMetadatas(fileName))?.get(name) ?? await this._getReExportedMetadata(fileName, name));
     if (!metadata) {
       throw new Error(`Class "${name}" was not found in the import from ${Array.isArray(path) ? path[1] : path}`);
@@ -31843,7 +31859,7 @@ var TemplateMetadataCache = class {
    * @returns The metadata, keyed by class name; `undefined` if the module cannot be resolved or read.
    */
   async getModuleMetadatas(baseDir, modulePath) {
-    const fileName = resolveModulePath(baseDir, modulePath, this._compilerOptions);
+    const fileName = resolveModulePath2(baseDir, modulePath, this._compilerOptions);
     if (fileName) {
       return this._getFileMetadatas(fileName);
     }
@@ -32149,7 +32165,7 @@ async function resolveImportCandidates(templatePath) {
 }
 function resolveModuleExports(templatePath, modulePath) {
   const context = getProjectContext((0, import_node_path8.dirname)(templatePath));
-  const fileName = resolveModulePath((0, import_node_path8.dirname)(templatePath), modulePath, context.options);
+  const fileName = resolveModulePath2((0, import_node_path8.dirname)(templatePath), modulePath, context.options);
   return fileName ? listExports(getProgram(context), fileName) : void 0;
 }
 function resolveExportCandidates(templatePath) {
@@ -32221,7 +32237,7 @@ async function resolveImports(ast, templateDir, cache, options) {
   const importNodes = ast.filter((node) => node.type === 11 /* Import */);
   for (let i2 = 0; i2 < importNodes.length; i2++) {
     const node = importNodes[i2];
-    if (!resolveModulePath(templateDir, node.path, options)) {
+    if (!resolveModulePath2(templateDir, node.path, options)) {
       const message = `Cannot find module "${node.path}"`;
       errors.push(new TemplateError(message, node.pathSpan, message));
       continue;
@@ -32728,7 +32744,7 @@ function getClassDefinition(metadata) {
   return { fileName: sourceFile.fileName, span: { start: klass.name.getStart(sourceFile), end: klass.name.getEnd() } };
 }
 function getModuleDefinition(templateDir, path, options) {
-  const fileName = resolveModulePath(templateDir, path, options);
+  const fileName = resolveModulePath2(templateDir, path, options);
   return fileName ? { fileName, span: { start: 0, end: 0 } } : void 0;
 }
 function getTypeScriptDefinitions({ typeCheck, languageService, shimPath, bodyLineOffset, templatePath }, offset) {
