@@ -5,6 +5,10 @@ vi.mock('@xaendar/language-core', () => ({
   getLanguageService: vi.fn()
 }));
 
+vi.mock('../../utils/template-type-check/template-type-check.utils', () => ({
+  reportTemplateDiagnostics: vi.fn()
+}));
+
 vi.mock('../../utils/type-check/type-check.utils', () => ({
   collectProjectDiagnostics: vi.fn(),
   formatTypeDiagnostics: vi.fn()
@@ -13,6 +17,8 @@ vi.mock('../../utils/type-check/type-check.utils', () => ({
 import { getLanguageService } from '@xaendar/language-core';
 import type { PluginContext } from 'rolldown';
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
+import type { TemplateTypeCheck } from '../../types/template-type-check.type';
+import { reportTemplateDiagnostics } from '../../utils/template-type-check/template-type-check.utils';
 import { collectProjectDiagnostics, formatTypeDiagnostics } from '../../utils/type-check/type-check.utils';
 import { createBuildEndHook } from './build-end';
 
@@ -90,5 +96,63 @@ describe('createBuildEndHook()', () => {
     createBuildEndHook(createState(true)).call(createPluginContext('server'));
 
     expect(collectProjectDiagnostics).not.toHaveBeenCalled();
+  });
+
+  describe('with the type-checks of the templates left by the transform hook', () => {
+    /**
+     * Builds the type-check of the template of a component.
+     *
+     * @param componentPath - The path of the component.
+     * @returns The type-check.
+     */
+    const check = (componentPath: string) => ({ componentPath }) as TemplateTypeCheck;
+
+    it('runs them all on one program, then type-checks the whole program', () => {
+      const state = createState(true);
+      const checks = [check('/src/a.ts'), check('/src/b.ts')];
+      state.pendingTypeChecks = checks;
+      const context = createPluginContext();
+      vi.mocked(reportTemplateDiagnostics).mockReturnValue(false);
+
+      createBuildEndHook(state).call(context, undefined);
+
+      expect(reportTemplateDiagnostics).toHaveBeenNthCalledWith(1, context, state, LANGUAGE_SERVICE, checks[0]);
+      expect(reportTemplateDiagnostics).toHaveBeenNthCalledWith(2, context, state, LANGUAGE_SERVICE, checks[1]);
+      expect(getLanguageService).toHaveBeenCalledOnce();
+      expect(collectProjectDiagnostics).toHaveBeenCalledWith(LANGUAGE_SERVICE);
+      expect(state.pendingTypeChecks).toBeUndefined();
+    });
+
+    it.each([
+      ['one component', [true, false], 'Failed to compile component - /src/a.ts'],
+      ['several components', [true, true], 'Failed to compile components - /src/a.ts, /src/b.ts']
+    ])('fails the build naming the components whose templates have errors: %s', (_name, failures, message) => {
+      const state = createState(true);
+      state.pendingTypeChecks = [check('/src/a.ts'), check('/src/b.ts')];
+      vi.mocked(reportTemplateDiagnostics).mockReturnValueOnce(failures[0]).mockReturnValueOnce(failures[1]);
+
+      expect(() => createBuildEndHook(state).call(createPluginContext(), undefined)).toThrow(message);
+      expect(collectProjectDiagnostics).not.toHaveBeenCalled();
+    });
+
+    it('drops them when the build failed, checking nothing', () => {
+      const state = createState(true);
+      state.pendingTypeChecks = [check('/src/a.ts')];
+
+      createBuildEndHook(state).call(createPluginContext(), new Error('boom'));
+
+      expect(reportTemplateDiagnostics).not.toHaveBeenCalled();
+      expect(state.pendingTypeChecks).toBeUndefined();
+    });
+
+    it('leaves them to the environment of the browser in the build of the server', () => {
+      const state = createState(true);
+      const checks = [check('/src/a.ts')];
+      state.pendingTypeChecks = checks;
+
+      createBuildEndHook(state).call(createPluginContext('server'), undefined);
+
+      expect(state.pendingTypeChecks).toBe(checks);
+    });
   });
 });

@@ -168,14 +168,16 @@ function createState(overrides: Partial<{ fileExists: (path: string) => boolean;
  * Builds a mocked `transform` hook plugin context (`warn`/`addWatchFile`/`error`, which throws as Vite's does).
  *
  * @param consumer - The consumer of the environment, the browser by default.
+ * @param watchMode - Whether the build runs in the watch mode.
  * @returns The mocked plugin context.
  */
-function createPluginContext(consumer: 'client' | 'server' = 'client'): TransformPluginContext {
+function createPluginContext(consumer: 'client' | 'server' = 'client', watchMode = false): TransformPluginContext {
   return {
     warn: vi.fn(),
     addWatchFile: vi.fn(),
     error: vi.fn((message: string) => { throw new Error(message); }),
-    environment: { config: { consumer } }
+    environment: { config: { consumer } },
+    meta: { watchMode }
   } as unknown as TransformPluginContext;
 }
 
@@ -783,11 +785,7 @@ describe('createTransformHook()', () => {
       ['the selector is already used by another component', () => vi.mocked(claimSelectors).mockResolvedValue('selector conflict')],
       ['the template cannot be found', () => undefined, () => false],
       ['the template compilation throws', () => vi.mocked(compile).mockRejectedValue(new Error('boom'))],
-      ['injecting the template throws', () => vi.mocked(injectTemplate).mockImplementation(() => { throw new Error('inject failed'); })],
-      ['the template has type errors', () => vi.mocked(getLanguageService).mockReturnValue({
-        getSemanticDiagnostics: vi.fn().mockReturnValue(['diag-1']),
-        getProgram: vi.fn().mockReturnValue(PROGRAM)
-      } as unknown as ReturnType<typeof getLanguageService>)]
+      ['injecting the template throws', () => vi.mocked(injectTemplate).mockImplementation(() => { throw new Error('inject failed'); })]
     ])('fails when %s', async (_name, arrange, fileExists = () => true) => {
       vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
       vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
@@ -797,6 +795,45 @@ describe('createTransformHook()', () => {
 
       await expect(hook.call(ctx, 'original code', COMPONENT_PATH, undefined)).rejects.toThrow(`Failed to compile component - ${COMPONENT_PATH}`);
       expect(ctx.error).toHaveBeenCalledOnce();
+    });
+
+    it('leaves the type-check of the template to the buildEnd hook, checking nothing and watching nothing', async () => {
+      vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+      vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
+      mockSuccessfulCompile({ text: 'shim body' });
+      const languageService = { getSemanticDiagnostics: vi.fn().mockReturnValue(['diag-1']), getProgram: vi.fn().mockReturnValue(PROGRAM) };
+      vi.mocked(getLanguageService).mockReturnValue(languageService as unknown as ReturnType<typeof getLanguageService>);
+      const ctx = createPluginContext();
+      const state = { ...createState(), isBuild: true };
+
+      expect(await createTransformHook(state).call(ctx, 'original code', COMPONENT_PATH, undefined)).toEqual({ code: 'original code', map: expect.anything() });
+      expect(state.pendingTypeChecks).toEqual([{
+        componentPath: COMPONENT_PATH,
+        templatePath: expect.stringMatching(/\.xd\.component\.html$/),
+        templateSource: expect.any(String),
+        shimPath: '/virtual/foo.__typecheck__.ts',
+        bodyLineOffset: 0,
+        typeCheck: { mappingTable: new Map(), text: 'shim body' }
+      }]);
+      expect(languageService.getSemanticDiagnostics).not.toHaveBeenCalled();
+      expect(collectProjectDependencies).not.toHaveBeenCalled();
+      expect(ctx.error).not.toHaveBeenCalled();
+    });
+
+    it('type-checks the template at once in the watch mode, which watches the files it reads, failing on its errors', async () => {
+      vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+      vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
+      vi.mocked(getLanguageService).mockReturnValue({
+        getSemanticDiagnostics: vi.fn().mockReturnValue(['diag-1']),
+        getProgram: vi.fn().mockReturnValue(PROGRAM)
+      } as unknown as ReturnType<typeof getLanguageService>);
+      vi.mocked(collectProjectDependencies).mockReturnValue(['/src/foo/value.type.ts']);
+      const ctx = createPluginContext('client', true);
+      const state = { ...createState(), isBuild: true };
+
+      await expect(createTransformHook(state).call(ctx, 'original code', COMPONENT_PATH, undefined)).rejects.toThrow(`Failed to compile component - ${COMPONENT_PATH}`);
+      expect(state.pendingTypeChecks).toBeUndefined();
+      expect(ctx.addWatchFile).toHaveBeenCalledWith('/src/foo/value.type.ts');
     });
 
     it('does not fail when the component compiles', async () => {
