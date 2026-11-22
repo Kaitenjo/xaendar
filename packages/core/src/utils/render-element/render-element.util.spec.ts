@@ -10,6 +10,7 @@ import type { RenderElementStructuralDirective } from '../../types/render-elemen
 import type { RenderElement } from '../../types/render-element.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 import type { TemplateExpression } from '../../types/template-expression.type';
+import { RenderElementAttributeTemplateValue } from './render-element.util';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -102,7 +103,8 @@ function createRoot(): Context {
 /**
  * Describes an attribute the way the module of a template does, for the setters and the unbinds called directly.
  */
-const attributeOf = (name: string, value: RenderElementAttribute['value'] = ''): RenderElementAttribute => ({ name, value, setter: _setProperty });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const attributeOf = (name: string, value: RenderElementAttribute['value'] = ''): typeof value extends string ? RenderElementAttribute : RenderElementAttributeTemplateValue => ({ name, value: value as any, setter: _setProperty });
 
 /**
  * Renders a `div` described by `element`, returning it: the node mounted right before the anchor, or the last one

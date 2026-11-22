@@ -2,10 +2,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
-import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
-import { EMPTY_LAYOUT, _scope } from '../context/context.util';
+import { _scope, EMPTY_LAYOUT } from '../context/context.util';
 import { _bindHost } from '../host-bindings/host-bindings.util';
-import { _setExpressionProperty, _setProperty } from '../render-element/render-element.util';
+import { _setExpressionProperty, _setProperty, RenderElementAttributeTemplateValue } from '../render-element/render-element.util';
 import { _attributeValue, writeAttribute } from './write-attribute.util';
 
 await vi.hoisted(async () => {
@@ -28,7 +27,7 @@ const NAMES: readonly string[] = ['hidden', 'aria-expanded', 'draggable'];
  */
 function throughTemplate(name: string, value: unknown): string | null {
   const element = document.createElement('div');
-  const attribute: RenderElementAttribute = { name, value: () => value, setter: _setProperty };
+  const attribute: RenderElementAttributeTemplateValue = { name, value: () => value, setter: _setProperty };
   _setExpressionProperty(_scope(null, EMPTY_LAYOUT), element, attribute);
   return element.getAttribute(name);
 }

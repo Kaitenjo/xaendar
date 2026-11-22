@@ -12,7 +12,7 @@ import { _hasAttributeState, _mergeAttributes } from '../attribute-state/attribu
 import { _scope, clear, EMPTY_LAYOUT, refresh, update } from '../context/context.util';
 import { _defineDirective } from '../directive-registry/directive-registry.util';
 import { _applyHostAttributes, _bindHost } from '../host-bindings/host-bindings.util';
-import { _removeAttribute, _setExpressionProperty } from '../render-element/render-element.util';
+import { _removeAttribute, _setExpressionProperty, RenderElementAttributeTemplateValue } from '../render-element/render-element.util';
 import { _prepareAttributes, _setAttribute, _setExpressionAttribute, _setReactiveAttribute, removeTemplateAttribute, writeTemplateAttribute } from './attribute-binding.util';
 
 await vi.hoisted(async () => {
@@ -174,7 +174,7 @@ describe('merging the template, the directives and the component', () => {
     const scope = _scope(null, EMPTY_LAYOUT);
     _setExpressionAttribute(scope, element, sharedOf('hidden', () => false));
     _setExpressionAttribute(scope, element, sharedOf('aria-expanded', () => false));
-    _setExpressionProperty(scope, element, sharedOf('spellcheck', () => false));
+    _setExpressionProperty(scope, element, sharedOf('spellcheck', () => false) as RenderElementAttributeTemplateValue);
     expect(element.hasAttribute('hidden')).toBe(false);
     expect(element.getAttribute('aria-expanded')).toBe('false');
     expect(element.getAttribute('spellcheck')).toBe('false');

@@ -27,7 +27,6 @@ import type { RenderElementStructuralDirectiveConditionalBinding } from '../../t
 import type { RenderElementStructuralDirective } from '../../types/render-element-structural-directive.type';
 import type { RenderElement } from '../../types/render-element.type';
 import type { StructuralCollector } from '../../types/structural-collector.type';
-import type { TemplateExpression } from '../../types/template-expression.type';
 import { _addAppliedDirective, _removeAppliedDirective } from '../applied-directives/applied-directives.util';
 import { _prepareAttributes, removeTemplateAttribute, writeTemplateAttribute } from '../attribute-binding/attribute-binding.util';
 import { _setContentTemplates } from '../content-templates/content-templates.util';
@@ -39,6 +38,8 @@ import { _selectBranch } from '../select-branch/select-branch.util';
 import { _prepareStyling } from '../styling-binding/styling-binding.util';
 import { ensureStylingState } from '../styling-state/styling-state.util';
 import { connectChild } from '../try-scope/try-scope.util';
+
+export type RenderElementAttributeTemplateValue = Omit<RenderElementAttribute, 'value'> & { value: Exclude<RenderElementAttribute['value'], string> };
 
 /**
  * Creates a DOM element, applies attributes and event listeners, appends it
@@ -612,7 +613,7 @@ export function _setProperty(_context: _Context, target: Element | BindingHost, 
  * @param attribute - The attribute, whose value is the expression.
  * @throws When the name is the one of an input of the target, or the target is a directive.
  */
-export function _setExpressionProperty(context: _Context, target: Element | BindingHost, attribute: RenderElementAttribute): void {
+export function _setExpressionProperty(context: _Context, target: Element | BindingHost, attribute: RenderElementAttributeTemplateValue): void {
   updateProperty(target, attribute, evaluate(attribute, context));
 }
 
@@ -654,7 +655,7 @@ export function _setInput(_context: _Context, target: Element | BindingHost, att
  * @param attribute - The input, by the name of its property, whose value is the expression.
  * @throws When the target is a directive, or a component already constructed, not declaring the input.
  */
-export function _setExpressionInput(context: _Context, target: Element | BindingHost, attribute: RenderElementAttribute): void {
+export function _setExpressionInput(context: _Context, target: Element | BindingHost, attribute: RenderElementAttributeTemplateValue): void {
   _updateInput(target, attribute.name, evaluate(attribute, context));
 }
 
@@ -729,7 +730,7 @@ export function _setExposedInput(_context: _Context, element: Element, attribute
  * @param element - The element of the component.
  * @param attribute - The input, by the name it is exposed with, whose value is the expression.
  */
-export function _setExpressionExposedInput(context: _Context, element: Element, attribute: RenderElementAttribute): void {
+export function _setExpressionExposedInput(context: _Context, element: Element, attribute: RenderElementAttributeTemplateValue): void {
   updateExposedInput(element, attribute.name, evaluate(attribute, context));
 }
 
@@ -780,8 +781,8 @@ function updateExposedInput(element: Element, name: string, value: unknown): voi
  * @param context - The context the binding lives in.
  * @returns The value.
  */
-function evaluate(attribute: RenderElementAttribute, context: _Context): unknown {
-  return (attribute.value as TemplateExpression<unknown>).call(context[COMPONENT], context);
+function evaluate(attribute: RenderElementAttributeTemplateValue, context: _Context): unknown {
+  return attribute.value.call(context[COMPONENT], context);
 }
 
 /**
@@ -799,7 +800,8 @@ export function _updateInput(target: Element | BindingHost, name: string, newVal
   const input = inputOf(target, name, true);
   input
     ? input.set(newValue, INPUT_SIGNAL_SET_SYMBOL)
-    : (target as unknown as Record<string, unknown>)[name] = newValue;
+    // @ts-ignore
+    : target[name] = newValue;
 }
 
 /**
@@ -843,7 +845,7 @@ function updateProperty(target: Element | BindingHost, attribute: RenderElementA
  * @throws When the target is a directive not declaring the property, or a component already constructed not declaring
  *   the input set.
  */
-function inputOf(target: Element | BindingHost, name: string, input: boolean): SettableInputSignal | null {
+function inputOf(target: Element | BindingHost, name: string, input: boolean): SettableInputSignal | undefined {
   const property = (target as unknown as Record<string, unknown>)[name];
   if (property && isInputSignal(property)) {
     return property;
@@ -852,6 +854,4 @@ function inputOf(target: Element | BindingHost, name: string, input: boolean): S
   if (target instanceof CustomDirective || target instanceof StructuralDirective || (input && target instanceof CustomElement)) {
     throw new Error(`${target.constructor.name} does not declare a property named "${name}"`);
   }
-
-  return null;
 }
