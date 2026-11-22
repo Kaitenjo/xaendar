@@ -73,6 +73,12 @@ describe('ParserCursor', () => {
       expect(cursor.peek(2)).toEqual([tokens[0], tokens[1]]);
     });
 
+    it('peeks multiple tokens after an offset, skipping the ones before it', () => {
+      const cursor = new ParserCursor('abc', tokens);
+      expect(cursor.peek(2, { offset: 1 })).toEqual([tokens[1], tokens[2]]);
+      expect(cursor.peek(2, { offset: 2 })).toEqual([tokens[2], eof]);
+    });
+
     it('returns EOF tokens when peeking past the end', () => {
       const cursor = new ParserCursor('abc', tokens);
       expect(cursor.peek({ offset: 5 })).toEqual(eof);

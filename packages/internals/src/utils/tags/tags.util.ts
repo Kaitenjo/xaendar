@@ -14,6 +14,15 @@ const PCEN_CHAR = String.raw`\-.0-9_a-z\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u
 const CUSTOM_ELEMENT_NAME_RE = new RegExp(`^[a-z][${PCEN_CHAR}]*-[${PCEN_CHAR}]*$`, 'u');
 
 /**
+ * The regular expression of each pattern of custom elements matched so far (see {@link matchesCustomElementPattern}).
+ *
+ * N.B. Deliberate, for speed: a pattern is compiled once, the first time it is matched. Compiling it on every match
+ * created a `RegExp` per pattern for every element the compiler reads. Do not compile it in
+ * {@link matchesCustomElementPattern}.
+ */
+const PATTERN_EXPRESSIONS = new Map<string, RegExp>();
+
+/**
  * Checks whether a given tag name is valid for use as a custom element name, with the rules of the HTML
  * specification. A valid custom element name must:
  * - start with a lowercase ASCII letter;
@@ -58,10 +67,30 @@ Reserved names are:
  * @returns `true` if the tag name matches at least one pattern, `false` otherwise.
  */
 export function matchesCustomElementPattern(tagName: string, patterns: readonly string[]): boolean {
-  return patterns.some(pattern => {
+  for (let i = 0; i < patterns.length; i++) {
+    if (toPatternExpression(patterns[i]).test(tagName)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Returns the regular expression of a pattern of custom elements, compiled the first time it is asked for.
+ *
+ * @param pattern - The pattern, where `*` stands for any sequence of characters.
+ * @returns The regular expression matching the whole tag names the pattern matches.
+ */
+function toPatternExpression(pattern: string): RegExp {
+  let expression = PATTERN_EXPRESSIONS.get(pattern);
+  if (!expression) {
     const source = pattern.split('*').map(part => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*');
-    return new RegExp(`^${source}$`).test(tagName);
-  });
+    expression = new RegExp(`^${source}$`);
+    PATTERN_EXPRESSIONS.set(pattern, expression);
+  }
+
+  return expression;
 }
 
 /**

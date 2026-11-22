@@ -45,6 +45,13 @@ describe('Parser', () => {
     expect(() => parse('hello {a = 1}')).toThrow(/^\[Parser\] \[Ln 1, Col \d+\] - /);
   });
 
+  it.each([
+    ['the part of an error with its own span', '<p>\n  { a b }</p>', '[Ln 2, Col 7]'],
+    ['the start of the node failing without a span of its own', '<p>\n  <i>', '[Ln 2, Col 3]']
+  ])('reports the position of %s, as the editor underlines it', (_name, template, position) => {
+    expect(() => parse(template)).toThrow(`[Parser] ${position} - `);
+  });
+
   it('formats errors raised while the cursor is at the end of the stream', () => {
     const tokens: Token[] = [{ type: TokenType.TAG_OPEN_NAME, parts: ['div'], span: { start: 0, end: 4 } }];
     expect(() => new Parser('<div', tokens).parse()).toThrow('[Parser]');

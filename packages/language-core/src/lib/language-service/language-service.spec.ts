@@ -12,6 +12,9 @@ vi.mock('typescript', async (importOriginal) => {
     createLanguageService: vi.fn(),
     createDocumentRegistry: vi.fn(),
     getDefaultLibFilePath: vi.fn(),
+    createModuleResolutionCache: vi.fn(() => ({})),
+    getModeForUsageLocation: vi.fn(() => 99),
+    resolveModuleName: vi.fn((moduleName: string) => ({ resolvedModule: { resolvedFileName: `/resolved/${moduleName}.ts` } })),
     sys: {
       fileExists: vi.fn(),
       readFile: vi.fn(),
@@ -347,13 +350,174 @@ describe('LanguageServiceHost', () => {
     });
   });
 
-  it('readDirectory / directoryExists / getDirectories / realpath delegate directly to ts.sys', async () => {
+  it('readDirectory / getDirectories / realpath delegate directly to ts.sys', async () => {
     const { ts, host } = await setupHost();
 
     expect(host.readDirectory).toBe(ts.sys.readDirectory);
-    expect(host.directoryExists).toBe(ts.sys.directoryExists);
     expect(host.getDirectories).toBe(ts.sys.getDirectories);
     expect(host.realpath).toBe(ts.sys.realpath);
+  });
+
+  it('directoryExists() asks ts.sys every time while the real files are not cached', async () => {
+    const { ts, host } = await setupHost();
+    vi.mocked(ts.sys.directoryExists).mockReturnValue(true);
+
+    expect(host.directoryExists!('/src')).toBe(true);
+    expect(host.directoryExists!('/src')).toBe(true);
+    expect(ts.sys.directoryExists).toHaveBeenCalledTimes(2);
+  });
+
+  describe('with the real files cached', () => {
+    async function setupCachedHost() {
+      const setup = await setupHost();
+      setup.mod.cacheRealFiles();
+      return setup;
+    }
+
+    it('stats a real file once, giving the version read until a change of the file is reported', async () => {
+      const { mod, fs, host } = await setupCachedHost();
+      vi.mocked(fs.statSync).mockReturnValue({ mtimeMs: 1 } as never);
+
+      expect(host.getScriptVersion('/real.ts')).toBe('1');
+      vi.mocked(fs.statSync).mockReturnValue({ mtimeMs: 2 } as never);
+      expect(host.getScriptVersion('/real.ts')).toBe('1');
+      expect(fs.statSync).toHaveBeenCalledTimes(1);
+
+      mod.invalidateRealFiles();
+      expect(host.getScriptVersion('/real.ts')).toBe('2');
+      expect(fs.statSync).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not keep a version it could not read, falling back to \'0\'', async () => {
+      const { fs, host } = await setupCachedHost();
+      vi.mocked(fs.statSync).mockImplementation(() => {
+        throw new Error('ENOENT');
+      });
+
+      expect(host.getScriptVersion('/missing.ts')).toBe('0');
+      expect(host.getScriptVersion('/missing.ts')).toBe('0');
+      expect(fs.statSync).toHaveBeenCalledTimes(2);
+    });
+
+    it('reads whether a real file exists once, also to read it, until a change of the file is reported', async () => {
+      const { mod, ts, host } = await setupCachedHost();
+      vi.mocked(ts.sys.fileExists).mockReturnValue(false);
+
+      expect(host.fileExists('/new.ts')).toBe(false);
+      expect(host.readFile('/new.ts')).toBeUndefined();
+      expect(ts.sys.fileExists).toHaveBeenCalledTimes(1);
+
+      vi.mocked(ts.sys.fileExists).mockReturnValue(true);
+      vi.mocked(ts.sys.readFile).mockReturnValue('created');
+      mod.invalidateRealFiles();
+      expect(host.fileExists('/new.ts')).toBe(true);
+      expect(host.readFile('/new.ts')).toBe('created');
+      expect(ts.sys.fileExists).toHaveBeenCalledTimes(2);
+    });
+
+    it('reads whether a directory exists once, and again once a change of the files is reported', async () => {
+      const { mod, ts, host } = await setupCachedHost();
+      vi.mocked(ts.sys.directoryExists).mockReturnValue(false);
+
+      expect(host.directoryExists!('/node_modules/installed')).toBe(false);
+      vi.mocked(ts.sys.directoryExists).mockReturnValue(true);
+      expect(host.directoryExists!('/node_modules/installed')).toBe(false);
+
+      mod.invalidateRealFiles();
+      expect(host.directoryExists!('/node_modules/installed')).toBe(true);
+      expect(ts.sys.directoryExists).toHaveBeenCalledTimes(2);
+    });
+
+    it('reads the same file once whatever the separators and the drive case of its path', async () => {
+      const { fs, host } = await setupCachedHost();
+      vi.mocked(fs.statSync).mockReturnValue({ mtimeMs: 1 } as never);
+      host.getScriptVersion('C:\\project\\a.ts');
+
+      expect(host.getScriptVersion('c:/project/a.ts')).toBe('1');
+      expect(fs.statSync).toHaveBeenCalledTimes(1);
+    });
+
+    it('reads the disk again once disposed, still caching the real files', async () => {
+      const { mod, ts, fs, host } = await setupCachedHost();
+      vi.mocked(fs.statSync).mockReturnValue({ mtimeMs: 1 } as never);
+      vi.mocked(ts.sys.fileExists).mockReturnValue(true);
+      vi.mocked(ts.sys.directoryExists).mockReturnValue(true);
+      host.getScriptVersion('/real.ts');
+      host.fileExists('/real.ts');
+      host.directoryExists!('/src');
+
+      mod.disposeLanguageService();
+      vi.mocked(fs.statSync).mockReturnValue({ mtimeMs: 2 } as never);
+      expect(host.getScriptVersion('/real.ts')).toBe('2');
+      expect(host.getScriptVersion('/real.ts')).toBe('2');
+      host.fileExists('/real.ts');
+      host.directoryExists!('/src');
+      expect(fs.statSync).toHaveBeenCalledTimes(2);
+      expect(ts.sys.fileExists).toHaveBeenCalledTimes(2);
+      expect(ts.sys.directoryExists).toHaveBeenCalledTimes(2);
+    });
+
+    it('gives TypeScript a resolver sharing one cache of the resolutions among the Programs, until a change is reported', async () => {
+      const { mod, ts } = await setupHost();
+      const { hosts, instances } = mockLanguageServiceFactory(ts);
+      mod.cacheRealFiles();
+      mod.cacheRealFiles();
+      mod.getLanguageService({ strict: true });
+      const literals = [{ text: './a' }, { text: './b' }] as never[];
+      const sourceFile = {} as never;
+      const resolve = () => hosts[0].resolveModuleNameLiterals!(literals, '/src/main.ts', undefined, { strict: true }, sourceFile, undefined);
+
+      expect(resolve()).toEqual([{ resolvedModule: { resolvedFileName: '/resolved/./a.ts' } }, { resolvedModule: { resolvedFileName: '/resolved/./b.ts' } }]);
+      resolve();
+      expect(ts.createModuleResolutionCache).toHaveBeenCalledOnce();
+      // The paths are kept as written
+      expect(vi.mocked(ts.createModuleResolutionCache).mock.calls[0][1]('/Src/A.ts')).toBe('/Src/A.ts');
+      const cache = vi.mocked(ts.createModuleResolutionCache).mock.results[0].value;
+      expect(ts.resolveModuleName).toHaveBeenCalledWith('./a', '/src/main.ts', { strict: true }, hosts[0], cache, undefined, 99);
+      expect(ts.getModeForUsageLocation).toHaveBeenCalledWith(sourceFile, literals[0], { strict: true });
+
+      mod.invalidateRealFiles();
+      resolve();
+      expect(ts.createModuleResolutionCache).toHaveBeenCalledTimes(2);
+
+      mod.disposeLanguageService();
+      resolve();
+      expect(ts.createModuleResolutionCache).toHaveBeenCalledTimes(3);
+      expect(instances[0].dispose).toHaveBeenCalledOnce();
+    });
+
+    it('creates the LanguageService again once the real files are cached, with the resolver, disposing the one created before', async () => {
+      const { mod, ts } = await load();
+      const { hosts, instances } = mockLanguageServiceFactory(ts);
+      mod.getLanguageService({});
+
+      expect(hosts[0].resolveModuleNameLiterals).toBeUndefined();
+      mod.cacheRealFiles();
+      expect(instances[0].dispose).toHaveBeenCalledOnce();
+      mod.getLanguageService({});
+      expect(hosts[1].resolveModuleNameLiterals).toBeTypeOf('function');
+    });
+
+    it('caches the files of the project instances only once asked to', async () => {
+      const { mod, ts } = await setupHost();
+      const { hosts } = mockLanguageServiceFactory(ts);
+      const project = mod.getProjectLanguageService('/project/tsconfig.json');
+      project.getLanguageService({});
+      vi.mocked(ts.sys.fileExists).mockReturnValue(true);
+
+      hosts[0].fileExists('/project/a.ts');
+      hosts[0].fileExists('/project/a.ts');
+      expect(ts.sys.fileExists).toHaveBeenCalledTimes(2);
+
+      project.cacheRealFiles();
+      hosts[0].fileExists('/project/a.ts');
+      hosts[0].fileExists('/project/a.ts');
+      expect(ts.sys.fileExists).toHaveBeenCalledTimes(3);
+
+      project.invalidateRealFiles();
+      hosts[0].fileExists('/project/a.ts');
+      expect(ts.sys.fileExists).toHaveBeenCalledTimes(4);
+    });
   });
 });
 

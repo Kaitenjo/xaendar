@@ -1,9 +1,10 @@
+import { memo } from 'react';
 import type { Option } from '../../../shared/data';
 
 /**
- * A select with its label.
+ * A select with its label, rendered again only when its props change (`memo`).
  */
-export function SelectInput({ label, options, value, onChange }: { label: string; options: readonly Option[]; value: string; onChange: (value: string) => void }) {
+export const SelectInput = memo(function SelectInput({ label, options, value, onChange }: { label: string; options: readonly Option[]; value: string; onChange: (value: string) => void }) {
   return (
     <label className="ui-field">
       <span className="ui-field__label">{label}</span>
@@ -12,4 +13,4 @@ export function SelectInput({ label, options, value, onChange }: { label: string
       </select>
     </label>
   );
-}
+});

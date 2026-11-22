@@ -1,5 +1,5 @@
 import { readFileSync, statSync } from 'node:fs';
-import { ClassDeclaration, CompilerOptions, Declaration, Expression, FunctionDeclaration, ImportDeclaration, ModuleKind, ModuleResolutionKind, ScriptTarget, SourceFile, SyntaxKind, createSourceFile, isClassDeclaration, isExportAssignment, isExportDeclaration, isIdentifier, isImportDeclaration, isNamedExports, isNamedImports, isNamespaceImport, isPropertyAccessExpression, isStringLiteralLike, resolveModuleName, sys } from 'typescript';
+import { ClassDeclaration, CompilerOptions, Declaration, Expression, FunctionDeclaration, ImportDeclaration, ModuleKind, ModuleResolutionCache, ModuleResolutionKind, ScriptTarget, SourceFile, SyntaxKind, createModuleResolutionCache, createSourceFile, isClassDeclaration, isExportAssignment, isExportDeclaration, isIdentifier, isImportDeclaration, isNamedExports, isNamedImports, isNamespaceImport, isPropertyAccessExpression, isStringLiteralLike, resolveModuleName, sys } from 'typescript';
 import type { CachedSourceFile } from '../../types/cached-source-file.type';
 import type { DeclarationFinder } from '../../types/declaration-finder.type';
 import type { ResolutionContext } from '../../types/resolution-context.type';
@@ -30,6 +30,62 @@ const CLASS_FINDER: DeclarationFinder<ClassDeclaration> = {
  * reparsed only when its modification time or size changes.
  */
 const sourceFileCache = new Map<string, CachedSourceFile>();
+
+/**
+ * Whether the files are checked once and the modules resolved once, until a change of the files is reported (see
+ * {@link cacheDeclarationFiles}).
+ */
+let cachesFiles = false;
+
+/**
+ * The files of {@link sourceFileCache} checked since the last change reported, read without asking the disk whether they
+ * changed while the files are cached (see {@link cacheDeclarationFiles}).
+ */
+const checkedFiles = new Set<string>();
+
+/**
+ * The cache of the module resolutions of each compiler options, while the files are cached (see
+ * {@link cacheDeclarationFiles}), until a change of the files is reported.
+ */
+let moduleResolutionCaches = new WeakMap<CompilerOptions, ModuleResolutionCache>();
+
+/**
+ * Checks the files declaring the resolved declarations once, and resolves each module once, until a change of the files
+ * is reported with {@link invalidateDeclarationFiles}: for a caller told of every change of the files it depends on, as
+ * the build tools are by the watcher of Vite (nothing changes during a build). After a change reported, every file is
+ * checked and every module resolved again, so that a package installed meanwhile is found too.
+ *
+ * N.B. Deliberate, for speed: resolving a module probes the disk for every extension, folder and `package.json` it may
+ * lead to, and every read of a parsed file asked the disk whether it changed. Done again for every import of the bases
+ * and the barrels of every component, they took hundreds of thousands of `stat` calls in the build of the site. Do not
+ * ask the disk again without a change reported.
+ */
+export function cacheDeclarationFiles(): void {
+  cachesFiles = true;
+}
+
+/**
+ * Forgets which files were checked and how the modules were resolved (see {@link cacheDeclarationFiles}): a file was
+ * created, changed or deleted.
+ */
+export function invalidateDeclarationFiles(): void {
+  checkedFiles.clear();
+  moduleResolutionCaches = new WeakMap();
+}
+
+/**
+ * Resolves the file a module specifier leads to from a file, as TypeScript does, with the cache of the resolutions while
+ * the files are cached (see {@link cacheDeclarationFiles}).
+ *
+ * @param moduleName - The module specifier, e.g. `./base` or `@scope/package`.
+ * @param containingFile - The path of the file importing the module.
+ * @param compilerOptions - The compiler options driving the resolution.
+ * @returns The path of the file, or `undefined` if the module cannot be resolved.
+ */
+export function resolveModulePath(moduleName: string, containingFile: string, compilerOptions: CompilerOptions): string | undefined {
+  const cache = cachesFiles ? getModuleResolutionCache(compilerOptions) : undefined;
+  return resolveModuleName(moduleName, containingFile, compilerOptions, sys, cache).resolvedModule?.resolvedFileName;
+}
 
 /**
  * Resolves the class a class directly extends, through imports, namespace imports and re-exports,
@@ -232,8 +288,8 @@ function resolveImported<D extends Declaration>(sourceFile: SourceFile, moduleSp
   }
 
   // import { Base } from './base' / from '@scope/pkg' (unresolvable modules and unreadable files yield undefined)
-  const { resolvedModule } = resolveModuleName(moduleSpecifier.text, sourceFile.fileName, context.compilerOptions, sys);
-  const moduleSourceFile = resolvedModule && getSourceFile(resolvedModule.resolvedFileName, context);
+  const resolvedFileName = resolveModulePath(moduleSpecifier.text, sourceFile.fileName, context.compilerOptions);
+  const moduleSourceFile = resolvedFileName && getSourceFile(resolvedFileName, context);
   return moduleSourceFile ? resolveExported(moduleSourceFile, exportedName, finder, context, visitedExports) : undefined;
 }
 
@@ -349,28 +405,37 @@ export function isExportedAs(declaration: ClassDeclaration | FunctionDeclaration
 
 /**
  * Returns the parsed `fileName`, reusing the cached parse while the file is
- * unchanged, and records it as a dependency of the current extraction.
+ * unchanged, and records it as a dependency of the current extraction. While the files are cached (see
+ * {@link cacheDeclarationFiles}), a file checked since the last change reported is not checked again.
  *
  * @param fileName - Path of the file to parse.
  * @param context - State of the current extraction.
  * @returns The parsed file, or `undefined` if it can't be read.
  */
 function getSourceFile(fileName: string, context: ResolutionContext): SourceFile | undefined {
+  const cached = sourceFileCache.get(fileName);
   let sourceFile: SourceFile;
-  try {
-    const { mtimeMs, size } = statSync(fileName);
-    const cached = sourceFileCache.get(fileName);
-    // Unchanged file: reuse the cached parse
-    if (cached?.modifiedTime === mtimeMs && cached.size === size) {
-      sourceFile = cached.sourceFile;
-    } else {
-      // New or modified file: parse it again
-      sourceFile = createSourceFile(fileName, readFileSync(fileName, 'utf-8'), ScriptTarget.Latest, true);
-      sourceFileCache.set(fileName, { modifiedTime: mtimeMs, size, sourceFile });
+  if (cached && checkedFiles.has(fileName)) {
+    sourceFile = cached.sourceFile;
+  } else {
+    try {
+      const { mtimeMs, size } = statSync(fileName);
+      // Unchanged file: reuse the cached parse
+      if (cached?.modifiedTime === mtimeMs && cached.size === size) {
+        sourceFile = cached.sourceFile;
+      } else {
+        // New or modified file: parse it again
+        sourceFile = createSourceFile(fileName, readFileSync(fileName, 'utf-8'), ScriptTarget.Latest, true);
+        sourceFileCache.set(fileName, { modifiedTime: mtimeMs, size, sourceFile });
+      }
+    } catch {
+      // Missing or unreadable file
+      return undefined;
     }
-  } catch {
-    // Missing or unreadable file
-    return undefined;
+
+    if (cachesFiles) {
+      checkedFiles.add(fileName);
+    }
   }
 
   context.dependencies.add(fileName);
@@ -378,8 +443,26 @@ function getSourceFile(fileName: string, context: ResolutionContext): SourceFile
 }
 
 /**
- * Clears the cache of the parsed files, e.g. on dev server shutdown.
+ * Returns the cache of the module resolutions made with some compiler options, created on first use.
+ *
+ * @param compilerOptions - The compiler options.
+ * @returns The cache.
+ */
+function getModuleResolutionCache(compilerOptions: CompilerOptions): ModuleResolutionCache {
+  let cache = moduleResolutionCaches.get(compilerOptions);
+  if (!cache) {
+    // The paths are kept as written: on a file system ignoring the case, two spellings of a path only share less
+    cache = createModuleResolutionCache(process.cwd(), fileName => fileName, compilerOptions);
+    moduleResolutionCaches.set(compilerOptions, cache);
+  }
+
+  return cache;
+}
+
+/**
+ * Clears the cache of the parsed files, e.g. on dev server shutdown, with the files checked and the modules resolved.
  */
 export function clearSourceFileCache(): void {
   sourceFileCache.clear();
+  invalidateDeclarationFiles();
 }

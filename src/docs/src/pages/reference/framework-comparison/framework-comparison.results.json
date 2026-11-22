@@ -1,0 +1,98 @@
+{
+  "date": "2026-11-22",
+  "browser": "Chromium 159.0.8154.6",
+  "machine": "13th Gen Intel(R) Core(TM) i7-13700KF, 24 cores",
+  "runs": 1000,
+  "pages": {
+    "angular": {
+      "scripts": {
+        "raw": 130018,
+        "gzip": 43274
+      },
+      "cpu1x": {
+        "startup": 96.8,
+        "elements": 10075,
+        "heap": 3561992,
+        "nodes": 18243,
+        "listeners": 1026,
+        "select": 3.5,
+        "raise": 16.2,
+        "filter": 14.5,
+        "filtered": 132,
+        "reset": 59.6
+      },
+      "cpu4x": {
+        "startup": 388.5,
+        "elements": 10075,
+        "heap": 3509922,
+        "nodes": 18243,
+        "listeners": 1026,
+        "select": 14.4,
+        "raise": 66,
+        "filter": 54,
+        "filtered": 132,
+        "reset": 273.6
+      }
+    },
+    "react": {
+      "scripts": {
+        "raw": 225075,
+        "gzip": 69616
+      },
+      "cpu1x": {
+        "startup": 55.3,
+        "elements": 10062,
+        "heap": 4129764,
+        "nodes": 18226,
+        "listeners": 1166,
+        "select": 10.8,
+        "raise": 24.9,
+        "filter": 13,
+        "filtered": 132,
+        "reset": 58.8
+      },
+      "cpu4x": {
+        "startup": 162.4,
+        "elements": 10062,
+        "heap": 4128135,
+        "nodes": 18226,
+        "listeners": 1166,
+        "select": 13.6,
+        "raise": 78.2,
+        "filter": 57.4,
+        "filtered": 132,
+        "reset": 270
+      }
+    },
+    "xaendar": {
+      "scripts": {
+        "raw": 84472,
+        "gzip": 28106
+      },
+      "cpu1x": {
+        "startup": 47.1,
+        "elements": 10075,
+        "heap": 2564083,
+        "nodes": 18248,
+        "listeners": 1026,
+        "select": 2.6,
+        "raise": 20.4,
+        "filter": 11.4,
+        "filtered": 132,
+        "reset": 59.8
+      },
+      "cpu4x": {
+        "startup": 147.6,
+        "elements": 10075,
+        "heap": 2563388,
+        "nodes": 18248,
+        "listeners": 1026,
+        "select": 9.2,
+        "raise": 82.6,
+        "filter": 48.2,
+        "filtered": 132,
+        "reset": 275.7
+      }
+    }
+  }
+}

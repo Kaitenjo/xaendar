@@ -14,6 +14,31 @@ const parse = (template: string) => new Parser(template, new Lexer(template).tok
 const generate = (template: string, signals: string[] = []) => new Generator(template, parse(template), cache).generate(signals);
 
 describe('Generator', () => {
+  it('keeps as written the comment markers of a static attribute value and of the strings of an expression', async () => {
+    const code = await generate('<p title="a<!-- x -->b"><!-- note -->{ "<!-- y -->" + x() }</p>');
+
+    expect(code).toContain('{ name: \'title\', value: \'a<!-- x -->b\', setter: _setProperty }');
+    expect(code).toContain('return "<!-- y -->" + this.x();');
+    expect(code).not.toContain('note');
+  });
+
+  it('reads the comments of an expression as part of it, a brace in them closing nothing', async () => {
+    const code = await generate('<p>{ a() /* } */ }</p><p>{ b() + /* ) */ c() }</p>');
+
+    expect(code).not.toContain('_renderLiteralText');
+    expect(code).toContain('return this.a();');
+    expect(code).toContain('return this.b() + /* ) */ this.c();');
+  });
+
+  it('names the elements with valid identifiers and writes their tag names as string literals, whatever characters the tag names hold', async () => {
+    const code = await generate('<a-b.c><x:y>t</x:y></a-b.c><p\'q>{ v() }</p\'q>');
+
+    expect(code).toContain('const a_b_c0$element = { tagName: \'a-b.c\', children: a_b_c0Children };');
+    expect(code).toContain('function a_b_c0__x_y0Children(a_b_c0__x_y0, context) {');
+    expect(code).toContain('tagName: \'p\\\'q\'');
+    expect(() => new Function(code)).not.toThrow();
+  });
+
   it('wraps the generated nodes in a module-level render function, giving the component to the root context', async () => {
     const code = await generate('hello');
     expect(code).toBe([

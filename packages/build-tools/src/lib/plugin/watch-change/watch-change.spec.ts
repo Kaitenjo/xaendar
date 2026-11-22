@@ -1,10 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 
+vi.mock('@xaendar/compiler', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@xaendar/compiler')>();
+  return {
+    ...actual,
+    invalidateDeclarationFiles: vi.fn()
+  };
+});
+
 vi.mock('@xaendar/language-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@xaendar/language-core')>();
   return {
     ...actual,
+    invalidateRealFiles: vi.fn(),
     removeRealFile: vi.fn(),
     removeVirtualFile: vi.fn()
   };
@@ -34,7 +43,8 @@ vi.mock('../../registry/template-registry/template-registry', () => ({
   removeComponentPath: vi.fn()
 }));
 
-import { removeRealFile, removeVirtualFile } from '@xaendar/language-core';
+import { invalidateDeclarationFiles } from '@xaendar/compiler';
+import { invalidateRealFiles, removeRealFile, removeVirtualFile } from '@xaendar/language-core';
 import { PluginContext } from 'rolldown';
 import { clearDependenciesForComponent } from '../../registry/dependency-registry/dependency-registry';
 import { clearComponentToImports, clearImportToComponents, findComponentsForImport } from '../../registry/import-registry/import-registry';
@@ -138,6 +148,17 @@ describe('handleStyleDelete()', () => {
 });
 
 describe('createWatchChangeHook()', () => {
+  it.each(['create', 'update', 'delete'] as const)('tells the type-check and the metadata to read the disk again after a %s', event => {
+    const hook = createWatchChangeHook(createState());
+    vi.mocked(findComponentsForImport).mockReturnValue(undefined);
+    vi.mocked(findComponentPathsForStyleDependency).mockReturnValue(undefined);
+
+    hook.call({} as PluginContext, '/src/types.ts', { event });
+
+    expect(invalidateRealFiles).toHaveBeenCalledTimes(1);
+    expect(invalidateDeclarationFiles).toHaveBeenCalledTimes(1);
+  });
+
   it('ignores change events other than "delete"', () => {
     const state = createState();
     const hook = createWatchChangeHook(state);

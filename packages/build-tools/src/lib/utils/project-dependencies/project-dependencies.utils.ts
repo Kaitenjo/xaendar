@@ -1,5 +1,6 @@
+import { resolveModulePath } from '@xaendar/compiler';
 import { dirname } from 'node:path';
-import { CompilerOptions, isExportDeclaration, isImportDeclaration, isStringLiteralLike, Program, resolveModuleName, SourceFile, sys } from 'typescript';
+import { CompilerOptions, isExportDeclaration, isImportDeclaration, isStringLiteralLike, Program, SourceFile } from 'typescript';
 import { resolvePosixPath } from '../path/path.utils';
 
 /**
@@ -52,9 +53,10 @@ function getDirectDependencies(sourceFile: SourceFile, compilerOptions: Compiler
   for (let i = 0; i < sourceFile.statements.length; i++) {
     const statement = sourceFile.statements[i];
     if ((isImportDeclaration(statement) || isExportDeclaration(statement)) && statement.moduleSpecifier && isStringLiteralLike(statement.moduleSpecifier)) {
-      const { resolvedModule } = resolveModuleName(statement.moduleSpecifier.text, sourceFile.fileName, compilerOptions, sys);
-      if (resolvedModule) {
-        dependencies.push(resolvedModule.resolvedFileName);
+      // Resolved with the cache of the compiler while the files are cached (see `cacheDeclarationFiles`)
+      const resolvedFileName = resolveModulePath(statement.moduleSpecifier.text, sourceFile.fileName, compilerOptions);
+      if (resolvedFileName) {
+        dependencies.push(resolvedFileName);
       }
     }
   }

@@ -19,4 +19,8 @@ describe('getElementType', () => {
   ] as const)('types an element of the %s namespace through the tag name map of the namespace', (namespace, tagName, type) => {
     expect(getElementType(namespace, tagName)).toBe(type);
   });
+
+  it('writes the tag name as a string literal, escaping its quotes', () => {
+    expect(getElementType('html', 'p\'x')).toBe('(HTMLElementTagNameMap extends { \'p\\\'x\': infer Type } ? Type : HTMLElement)');
+  });
 });

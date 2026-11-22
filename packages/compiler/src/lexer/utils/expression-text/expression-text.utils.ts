@@ -6,7 +6,8 @@ import { LexerCursor } from '../../types/lexer-cursor/lexer-cursor.model';
 /**
  * Consumes an expression, or a type, up to the character ending it, not consumed: one of `terminators` that ends it
  * where the scanner reads it (see `ExpressionScanner.endsAt`), e.g. the `}` closing an interpolation, the `,` or the
- * `)` ending a parameter of an event handler. The literals and the groups of the text never end it.
+ * `)` ending a parameter of an event handler. The literals and the groups of the text never end it, and the text is
+ * read as written: a `<!--` is part of it (e.g. of a string), not an HTML comment to skip.
  *
  * @param cursor - The lexer cursor positioned right before the text.
  * @param terminators - The characters that can end the text.
@@ -20,7 +21,7 @@ export function lexExpressionText(cursor: LexerCursor, terminators: string, opti
   let text = '';
 
   // A cast closes only an expression already written
-  for (let char = cursor.peek(); !scanner.endsAt(char, terminators) && !(cast && text && endsAtCast(cursor, scanner)); char = cursor.peek()) {
+  for (let char = cursor.peekVerbatim(); !scanner.endsAt(char, terminators) && !(cast && text && endsAtCast(cursor, scanner)); char = cursor.peekVerbatim()) {
     cursor.advance();
     text = `${text}${cursor.currentChar.value}`;
     scanner.read(char);

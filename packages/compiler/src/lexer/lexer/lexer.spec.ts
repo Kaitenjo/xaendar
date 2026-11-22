@@ -22,6 +22,16 @@ describe('Lexer', () => {
     expect(tokens.every(t => t.span)).toBe(true);
   });
 
+  it('tokenizes a large template in linear time, the states reading the tokens without copying them', () => {
+    // A copy of the tokens per transition took more than ten seconds for these 360 KB, now a few tens of milliseconds
+    const row = '<tr class="row" (click)="select(item)"><td>{ item.id }</td>@if (item.done) { <b>done</b> } @else { <i>todo</i> }</tr>\n';
+    const start = performance.now();
+    const tokens = new Lexer(`<table>${row.repeat(3000)}</table>`).tokenize();
+
+    expect(tokens).toHaveLength(3000 * 27 + 3);
+    expect(performance.now() - start).toBeLessThan(2000);
+  });
+
   it('tokenizes an element ref, and the declaration of a template with its parameters', () => {
     const tokens: ReadToken[] = new Lexer('<input #name type="text" />\n<template row(item: Item)></template>').tokenize();
     expect(tokens.map(({ type, parts }) => [type, parts])).toEqual([
@@ -423,8 +433,35 @@ describe('Lexer', () => {
     });
   });
 
+  it('skips the comments of the text, keeping as written the ones in an attribute value, an expression and an import path', () => {
+    const template = '@import { A } from \'./<!--a-->\';\n<p title="a<!-- x -->b" alt="<!--c-->"><!-- skipped -->{ "<!-- y -->" + x() }</p>{ \'<!--\' }';
+    const tokens: ReadToken[] = new Lexer(template).tokenize();
+
+    expect(tokens.filter(({ type }) => type !== TokenType.TEXT).map(({ type, parts }) => [type, parts])).toEqual([
+      [TokenType.IMPORT, ['A']],
+      [TokenType.IMPORT_PATH, ['./<!--a-->']],
+      [TokenType.TAG_OPEN_NAME, ['p']],
+      [TokenType.ATTRIBUTE, ['title']],
+      [TokenType.ATTRIBUTE_VALUE, ['a<!-- x -->b']],
+      [TokenType.ATTRIBUTE, ['alt']],
+      [TokenType.ATTRIBUTE_VALUE, ['<!--c-->']],
+      [TokenType.TAG_OPEN_END, []],
+      [TokenType.INTERPOLATION_EXPRESSION, ['"<!-- y -->" + x()']],
+      [TokenType.TAG_CLOSE_NAME, ['p']],
+      [TokenType.INTERPOLATION_EXPRESSION, ['\'<!--\'']]
+    ]);
+  });
+
   it('rejects an unclosed comment instead of dropping the rest of the template', () => {
     expect(() => new Lexer('<p>a</p>\n<!-- note\n<p>b</p>').tokenize()).toThrow('Comment never closed: \'<!--\' without \'-->\'');
+  });
+
+  it.each([
+    ['a character the state peeks', '<input type=text>', '[Ln 1, Col 13]'],
+    ['a character on another line', '<p>\n  <input type=text>', '[Ln 2, Col 15]'],
+    ['the first character a state reads', '<p @foo>x</p>', '[Ln 1, Col 4]']
+  ])('reports the position of %s, where the state stopped', (_name, template, position) => {
+    expect(() => new Lexer(template).tokenize()).toThrow(`[Lexer] ${position} - `);
   });
 
   it('formats a thrown Error with position and source context', () => {

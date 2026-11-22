@@ -103,7 +103,7 @@ export class ParserCursor extends Cursor {
   public peek(charsOrOptions?: number | { offset?: number }, options?: { offset?: number }): Token | Token[] {
     const tokens = typeof charsOrOptions === 'number' ? charsOrOptions : 1;
     const offset = (typeof charsOrOptions === 'object' ? charsOrOptions : options)?.offset ?? 0;
-    return tokens === 1 ? this.peekOneToken(this._currentToken.index + offset + 1) : this.peekMany(tokens + offset);
+    return tokens === 1 ? this.peekOneToken(this._currentToken.index + offset + 1) : this.peekMany(tokens, offset);
   }
 
   /**
@@ -130,10 +130,14 @@ export class ParserCursor extends Cursor {
 
   /**
    * Peeks multiple tokens ahead.
+   *
+   * @param chars - The number of tokens to peek.
+   * @param offset - The number of tokens to skip after the current one before the first one peeked.
+   * @returns The tokens, an EOF token for each one past the end.
    */
-  private peekMany(chars: number): Token[] {
+  private peekMany(chars: number, offset: number): Token[] {
     const peekedTokens = new Array<Token>;
-    const nextTokenIndex = this._currentToken.index + 1;
+    const nextTokenIndex = this._currentToken.index + offset + 1;
 
     for (let i = nextTokenIndex; i < nextTokenIndex + chars; i++) {
       peekedTokens.push(this.peekOneToken(i));

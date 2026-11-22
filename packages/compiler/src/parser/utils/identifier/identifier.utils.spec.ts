@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { assertDeclaredName, isValidIdentifier } from './identifier.utils';
 
 describe('isValidIdentifier', () => {
-  it.each(['name', '$el', '_private', 'item2', 'ünïcode'])('accepts the identifier %s', name => {
+  it.each(['name', '$el', '_private', 'item2', 'ünïcode', 'of', 'as', 'type', 'let', 'static', 'async', 'await', 'undefined', '𝑥1', 'a𝑥'])('accepts the identifier %s, contextual keywords and words reserved in strict mode included', name => {
     expect(isValidIdentifier(name)).toBe(true);
   });
 
-  it.each(['', '2items', 'my-name', 'a b', 'class', 'new', 'this', 'a.b', 'a()'])('rejects %j', name => {
+  it.each(['', '2items', 'my-name', 'a b', 'class', 'new', 'this', 'a.b', 'a()', 'null', 'true', 'enum', 'with', '\\u0061', ' a', 'a😀'])('rejects %j', name => {
     expect(isValidIdentifier(name)).toBe(false);
   });
 });

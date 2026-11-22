@@ -64,14 +64,33 @@ describe('LexerCursor', () => {
       expect(cursor.peekMatch('hel')).toBe(true);
     });
 
-    it('matches a RegExp pattern against the upcoming characters', () => {
+    it('matches a sticky RegExp pattern against the upcoming characters', () => {
       const cursor = new LexerCursor('123abc');
-      expect(cursor.peekMatch(/^\d+/, 3)).toBe(true);
+      expect(cursor.peekMatch(/\d+/y)).toBe(true);
     });
 
     it('returns false when a RegExp pattern does not match', () => {
       const cursor = new LexerCursor('abc123');
-      expect(cursor.peekMatch(/^\d+/, 3)).toBe(false);
+      expect(cursor.peekMatch(/\d+/y)).toBe(false);
+    });
+
+    it('matches a RegExp pattern from the cursor, its lookaheads reading the input up to its end', () => {
+      const cursor = new LexerCursor('1 '.concat(' '.repeat(1000), ';'));
+      expect(cursor.peekMatch(/ *;/y)).toBe(false);
+      cursor.advance();
+      expect(cursor.peekMatch(/ *;/y)).toBe(true);
+      expect(cursor.peekMatch(/ *(?=;)/y)).toBe(true);
+    });
+
+    it('returns false for a RegExp pattern at the end of the input', () => {
+      const cursor = new LexerCursor('a');
+      cursor.advance();
+      expect(cursor.peekMatch(/[a-z]/y)).toBe(false);
+    });
+
+    it('rejects a RegExp pattern that is not sticky, which would match anywhere after the cursor', () => {
+      const cursor = new LexerCursor('abc123');
+      expect(() => cursor.peekMatch(/\d+/)).toThrow('/\\d+/ must be sticky (y flag) to match from the cursor');
     });
   });
 
@@ -106,17 +125,19 @@ describe('LexerCursor', () => {
       expect(cursor.peek(3)).toEqual(['a', 'b', 'c'].map(c => c.charCodeAt(0)));
     });
 
-    it('peeks multiple characters with an offset', () => {
+    it('peeks multiple characters after an offset, skipping the ones before it', () => {
       const cursor = new LexerCursor('abcdef');
-      expect(cursor.peek(2, { offset: 2 })).toEqual(['a', 'b', 'c', 'd'].map(c => c.charCodeAt(0)));
+      expect(cursor.peek(2, { offset: 2 })).toEqual(['c', 'd'].map(c => c.charCodeAt(0)));
+      cursor.advance();
+      expect(cursor.peek(3, { offset: 1 })).toEqual(['c', 'd', 'e'].map(c => c.charCodeAt(0)));
     });
 
-    it('caches repeated peeks at the same position', () => {
+    it('peeks the same character again at the same position', () => {
       const cursor = new LexerCursor('abc');
       expect(cursor.peek()).toBe(cursor.peek());
     });
 
-    it('invalidates cached positions once the cursor advances past them', () => {
+    it('peeks the characters after the ones the cursor advances past', () => {
       const cursor = new LexerCursor('abcdef');
       cursor.peek(3);
       cursor.advance(2);
@@ -137,6 +158,23 @@ describe('LexerCursor', () => {
 
       expect(caught).toBeInstanceOf(Error);
       expect((caught as Error).cause).toBe(endOfFile);
+    });
+
+    it('throws the same end-of-file error for every cursor, its stack trace never read', () => {
+      const errors = ['a', 'b'].map(input => {
+        const cursor = new LexerCursor(input);
+        cursor.advance();
+        try {
+          cursor.peek();
+        } catch (err) {
+          return err;
+        }
+
+        return undefined;
+      });
+
+      expect(errors[0]).toBeInstanceOf(Error);
+      expect(errors[0]).toBe(errors[1]);
     });
   });
 
@@ -204,6 +242,13 @@ describe('LexerCursor', () => {
     it('skips consecutive comments', () => {
       const cursor = new LexerCursor('<!--a--><!--b-->x');
       expect(cursor.peek()).toBe('x'.charCodeAt(0));
+    });
+
+    it('peeks a comment as written when peeking verbatim, then reaches the end of the input', () => {
+      const cursor = new LexerCursor('<!--');
+      expect(cursor.peekVerbatim()).toBe('<'.charCodeAt(0));
+      cursor.advance(4);
+      expect(() => cursor.peekVerbatim()).toThrow(expect.objectContaining({ cause: endOfFile }));
     });
 
     it('skips a comment closing the input, then reaches its end', () => {

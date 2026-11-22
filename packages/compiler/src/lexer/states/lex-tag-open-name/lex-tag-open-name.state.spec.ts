@@ -63,6 +63,19 @@ describe('lexTagOpenName', () => {
   });
 
   it.each([
+    ['a digit', '<1abc>', '1'],
+    ['a symbol, after the spaces following the <', '<  =b>', '=']
+  ])('throws when the tag name starts with %s, as HTML reads it as text', (_name, source, char) => {
+    const cursor = new LexerCursor(source);
+    expect(() => lexTagOpenName(cursor, context)).toThrow(`A tag name starts with a letter, not '${char}': write a '<' in a text as &lt;`);
+  });
+
+  it('reads the characters after the first letter of a tag name as they are', () => {
+    const cursor = new LexerCursor('<a-b.c:d_é1>');
+    expect(lexTagOpenName(cursor, context).tokens).toEqual([{ type: TokenType.TAG_OPEN_NAME, parts: ['a-b.c:d_é1'] }]);
+  });
+
+  it.each([
     ['one type, followed by a space', '<my-list(string) items="x">', 'string', ' '],
     ['several types, followed by >', '<my-list(string, number)>', 'string, number', '>'],
     ['nested generic and function types, followed by a line break', '<my-list(Map<string, number>, (value: string) => void)\n>', 'Map<string, number>, (value: string) => void', '\n'],

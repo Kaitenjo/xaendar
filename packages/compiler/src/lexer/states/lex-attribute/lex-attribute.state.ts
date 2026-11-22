@@ -169,7 +169,7 @@ export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFuncti
         // Consume '"'
         cursor.advance();
         read = false;
-        const isInterpolatedValue = cursor.peek() === LEFT_BRACE;
+        const isInterpolatedValue = cursor.peekVerbatim() === LEFT_BRACE;
 
         retVal = {
           state: isInterpolatedValue ? LexerState.INTERPOLATION : LexerState.ATTRIBUTE_VALUE,

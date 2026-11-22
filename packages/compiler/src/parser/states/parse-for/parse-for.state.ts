@@ -20,6 +20,18 @@ import { isValidIdentifier } from '../../utils/identifier/identifier.utils';
 import { parseBlockChildren } from '../parse-block-children/parse-block-children.state';
 
 /**
+ * The item alias of a `@for` with the `of` following it, between whitespace (spaces, tabs or line breaks): a first word
+ * holding no quote and no group, so that an `of` inside the iterable of a `@for` without alias, as in
+ * `range("a of b")`, is not read as one.
+ */
+const ITEM_ALIAS = /^([^\s'"`([{]+)\s+of\s/;
+
+/**
+ * The `track` keyword starting the second section of a `@for`, followed by whitespace (spaces, tabs or line breaks).
+ */
+const TRACK_KEYWORD = /^track\s/;
+
+/**
  * Parses a `@for` directive, consuming the FOR token, the CONDITION token,
  * the BLOCK_OPEN token, and all child nodes until BLOCK_CLOSE, then the `@empty { … }` following the block, if any,
  * rendered while there are no items.
@@ -107,16 +119,17 @@ export function parseForExpression(source: string, offset = 0): ForExpression {
 
   // ---- Section 1: "item of items" or "items" ----
   const { text: iterSection, offset: iterOffset } = sections[0];
-  const ofIndex = iterSection.indexOf(' of ');
+  const aliasMatch = ITEM_ALIAS.exec(iterSection);
 
   let itemAlias: string | undefined;
   let itemAliasSpan: Span | undefined;
   let iterable: ForSection = { text: iterSection, offset: iterOffset };
 
-  if (ofIndex !== -1) {
-    itemAlias = slice(iterSection, 0, ofIndex).trim();
+  if (aliasMatch) {
+    const [declaration, alias] = aliasMatch;
+    itemAlias = alias;
     itemAliasSpan = { start: iterOffset, end: iterOffset + itemAlias.length };
-    iterable = trimSection({ text: slice(iterSection, ofIndex + 4), offset: iterOffset + ofIndex + 4 });
+    iterable = trimSection({ text: iterSection.slice(declaration.length), offset: iterOffset + declaration.length });
 
     if (!isValidIdentifier(itemAlias)) {
       throw `'${itemAlias}' is not a valid item alias.`;
@@ -143,11 +156,11 @@ export function parseForExpression(source: string, offset = 0): ForExpression {
   let trackOffset: number | undefined;
 
   if (trackSection?.text) {
-    if (!trackSection.text.startsWith('track ')) {
+    if (!TRACK_KEYWORD.test(trackSection.text)) {
       throw 'Second section of @for must start with "track".';
     }
 
-    const track = trimSection({ text: slice(trackSection.text, 6), offset: trackSection.offset + 6 });
+    const track = trimSection({ text: trackSection.text.slice(5), offset: trackSection.offset + 5 });
     trackSource = track.text;
     trackOffset = track.offset;
   }
@@ -187,7 +200,7 @@ function parseImplicitAliases({ text, offset }: ForSection, out: Map<ForImplicit
 
     const eqIndex = trimmed.indexOf('=');
     if (eqIndex === -1) {
-      throw `Invalid alias declaration '${trimmed}'. Expected '$implicit = alias'.`;
+      throw `Invalid alias declaration '${trimmed}'. Expected 'alias = $implicit', e.g. 'i = $index'.`;
     }
 
     const isImplicitVariable = (value: string): value is ForImplicitVariables => IMPLICIT_VARIABLES.has(value);

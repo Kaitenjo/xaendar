@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isNotBlank, isWhitespace } from './chars.utils';
+import { isAsciiLetter, isNotBlank, isWhitespace } from './chars.utils';
 
 describe('isNotBlank', () => {
   it('returns true for a string containing non-whitespace characters', () => {
@@ -20,6 +20,16 @@ describe('isNotBlank', () => {
 
   it('returns false for a string made of mixed whitespace characters', () => {
     expect(isNotBlank('\n\r\t\f\v')).toBe(false);
+  });
+});
+
+describe('isAsciiLetter', () => {
+  it.each(['a', 'z', 'A', 'Z'])('accepts %s', char => {
+    expect(isAsciiLetter(char.charCodeAt(0))).toBe(true);
+  });
+
+  it.each(['0', '_', '-', '$', '@', '[', '`', '{', 'é'])('rejects %s', char => {
+    expect(isAsciiLetter(char.charCodeAt(0))).toBe(false);
   });
 });
 

@@ -4,11 +4,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /*
-  Builds the three pages of the framework comparison, embedded in the "Framework comparison" page of the
+  Builds the three pages of the framework comparison, measured and linked by the "Framework comparison" page of the
   documentation. Each one is a standalone project with its own toolchain: this script only installs and builds
   them, in order.
 
-  Their output is not committed, so a fresh clone has to build them before the documentation shows them. The
+  Their output is not committed, so a fresh clone has to build them before the documentation can link them. The
   `--check` mode exists for that: the `prestart`, `prebuild` and `preprerender` of the site run it, and it only
   reports what is missing, without ever stopping the command the reader actually asked for.
 
@@ -43,7 +43,7 @@ if (checkOnly) {
   const missing = names.filter(name => !existsSync(join(OUTPUT, name, 'index.html')));
   if (missing.length) {
     console.warn(`\nThe pages of the framework comparison are not built: ${missing.join(', ')}.`);
-    console.warn('Their frames will be empty until you run "npm run build:comparison" in src/docs.\n');
+    console.warn('The documentation links them, but they are missing until you run "npm run build:comparison" in src/docs.\n');
   }
 
   process.exit(0);

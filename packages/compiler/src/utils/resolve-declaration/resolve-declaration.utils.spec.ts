@@ -174,3 +174,53 @@ describe('clearSourceFileCache', () => {
     expect(baseReads()).toBe(2);
   });
 });
+
+describe('cacheDeclarationFiles', () => {
+  /**
+   * Loads a module of its own, whose files are not cached until asked.
+   */
+  const freshModule = async () => {
+    vi.resetModules();
+    return import('./resolve-declaration.utils');
+  };
+
+  it('reads a changed file again only once a change of the files is reported', async () => {
+    const mod = await freshModule();
+    mod.cacheDeclarationFiles();
+    const dir = posix(join(root, `case-${counter++}`));
+    write(`${dir}/base.ts`, 'export class Base {}');
+    const sourceFile = createSourceFile(`${dir}/main.ts`, 'import { Base } from \'./base\';\nclass Cmp extends Base {}', ScriptTarget.Latest, true);
+    const declaration = sourceFile.statements.filter(isClassDeclaration)[0];
+
+    expect(mod.resolveBaseClassOf({ sourceFile, declaration })?.declaration.name?.text).toBe('Base');
+    write(`${dir}/base.ts`, 'export class Other {}');
+    expect(mod.resolveBaseClassOf({ sourceFile, declaration })?.declaration.name?.text).toBe('Base');
+
+    mod.invalidateDeclarationFiles();
+    expect(mod.resolveBaseClassOf({ sourceFile, declaration })).toBeUndefined();
+  });
+
+  it('resolves a module created meanwhile, as a package installed, once a change of the files is reported', async () => {
+    const mod = await freshModule();
+    mod.cacheDeclarationFiles();
+    const dir = posix(join(root, `case-${counter++}`));
+    const resolveLater = () => mod.resolveModulePath('./later', `${dir}/main.ts`, mod.DEFAULT_COMPILER_OPTIONS);
+
+    expect(resolveLater()).toBeUndefined();
+    write(`${dir}/later.ts`, 'export const later = 1;');
+    expect(resolveLater()).toBeUndefined();
+
+    mod.invalidateDeclarationFiles();
+    expect(resolveLater()).toBe(`${dir}/later.ts`);
+  });
+
+  it('asks the disk at every resolution while the files are not cached', async () => {
+    const mod = await freshModule();
+    const dir = posix(join(root, `case-${counter++}`));
+    const resolveLater = () => mod.resolveModulePath('./later', `${dir}/main.ts`, mod.DEFAULT_COMPILER_OPTIONS);
+
+    expect(resolveLater()).toBeUndefined();
+    write(`${dir}/later.ts`, 'export const later = 1;');
+    expect(resolveLater()).toBe(`${dir}/later.ts`);
+  });
+});

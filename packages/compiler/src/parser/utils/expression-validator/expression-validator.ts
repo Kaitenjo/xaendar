@@ -1,5 +1,5 @@
 import { slice } from '@xaendar/common';
-import { LanguageVariant, Node, ScriptTarget, SourceFile, SyntaxKind, VariableStatement, createScanner, createSourceFile, isAsExpression, isCallExpression } from 'typescript';
+import { LanguageVariant, Node, ScriptTarget, SourceFile, SyntaxKind, VariableStatement, createScanner, createSourceFile, forEachChild, isAsExpression, isCallExpression } from 'typescript';
 import type { Span } from '../../../types/span.type';
 import { forEachExpressionChild } from '../../../utils/expression-children/expression-children.utils';
 import { ExpressionValidationResult } from '../../types/expression-validation-result.type';
@@ -14,6 +14,14 @@ const EXPRESSION_PREFIX = 'const x = ';
  * for the expressions validated together with their offset (see {@link validateExpression}).
  */
 const templateOffsets = new WeakMap<SourceFile, number>();
+
+/**
+ * The scanner reading what follows an expression (see {@link validateExpression}), given the text of each one in turn.
+ *
+ * N.B. Deliberate, for speed: one scanner for every expression, its text replaced, released once read. Creating one
+ * per expression cost about a tenth of the validation. Do not create it in {@link validateExpression}.
+ */
+const TRAILING_SCANNER = createScanner(ScriptTarget.ESNext, true, LanguageVariant.Standard);
 
 /**
  * Validates that a string contains a single expression belonging to the
@@ -75,7 +83,12 @@ const templateOffsets = new WeakMap<SourceFile, number>();
  * // throws "'await' is not allowed inside template expressions."
  */
 export function validateExpression(source: string, templateOffset?: number): ExpressionValidationResult {
-  const sourceFile = createSourceFile('expression.ts', `${EXPRESSION_PREFIX}${source}`, ScriptTarget.ESNext, true);
+  /*
+    N.B. Deliberate, for speed: the parents are set by setParents, not by the `setParentNodes` option of TypeScript,
+    which cost a third of the parse of an expression. Do not pass `true` for it
+  */
+  const sourceFile = createSourceFile('expression.ts', `${EXPRESSION_PREFIX}${source}`, ScriptTarget.ESNext, false);
+  setParents(sourceFile);
   if (templateOffset !== undefined) {
     templateOffsets.set(sourceFile, templateOffset - EXPRESSION_PREFIX.length);
   }
@@ -88,8 +101,10 @@ export function validateExpression(source: string, templateOffset?: number): Exp
     means the source holds more than one expression (e.g. `a b`, `a; b`, `a, b`, the latter parsed as a second declaration).
     An incomplete expression (e.g. `a.`) is still a single one, recovered by the parser.
   */
-  const scanner = createScanner(ScriptTarget.ESNext, true, LanguageVariant.Standard, sourceFile.text, undefined, expression.end);
-  if (scanner.scan() !== SyntaxKind.EndOfFileToken) {
+  TRAILING_SCANNER.setText(sourceFile.text, expression.end);
+  const trailing = TRAILING_SCANNER.scan();
+  TRAILING_SCANNER.setText(undefined);
+  if (trailing !== SyntaxKind.EndOfFileToken) {
     const rest = slice(sourceFile.text, expression.end);
     throw new Error(`'${source.trim()}' must be a single expression, got '${rest.trim()}' after '${expression.getText()}'.`, {
       cause: toTemplateSpan(sourceFile, expression.end + rest.length - rest.trimStart().length, sourceFile.text.trimEnd().length)
@@ -101,6 +116,19 @@ export function validateExpression(source: string, templateOffset?: number): Exp
   return {
     node: expression,
   };
+}
+
+/**
+ * Sets the parent of every node of a tree, as the `setParentNodes` option of `createSourceFile` does, but walking the
+ * tree with `forEachChild` alone.
+ *
+ * @param node - The root of the tree.
+ */
+function setParents(node: Node): void {
+  forEachChild(node, child => {
+    (child as unknown as { parent: Node }).parent = node;
+    setParents(child);
+  });
 }
 
 /**

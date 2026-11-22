@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { COLUMNS, createEmployees, DEPARTMENT_OPTIONS, EMPTY_FILTERS, filterEmployees, formatDate, formatSalary, STATUS_OPTIONS, statusClass, type Filters } from '../../../shared/data';
+import { COLUMNS, createEmployees, DEPARTMENT_OPTIONS, EMPTY_FILTERS, filterEmployees, formatDate, formatSalary, raiseSalaries, STATUS_OPTIONS, statusClass, type Filters } from '../../../shared/data';
 import { UiButton } from './ui-button';
 import { UiDateInput } from './ui-date-input';
 import { UiSelect } from './ui-select';
 import { UiTextInput } from './ui-text-input';
 
 /**
- * The page: the filters, edited as a draft and applied on demand, and the table of the employees.
+ * The page: the filters, edited as a draft and applied on demand, and the table of the employees, whose rows can be
+ * selected and whose salaries can be raised.
  */
 @Component({
   selector: 'employees-page',
@@ -27,9 +28,10 @@ import { UiTextInput } from './ui-text-input';
         <div class="filters__actions">
           <ui-button variant="primary" (click)="apply()">Apply</ui-button>
           <ui-button (click)="clearFilters()">Reset</ui-button>
+          <ui-button (click)="raise()">Raise 5%</ui-button>
         </div>
       </div>
-      <p class="summary">Showing {{ rows().length }} of {{ employees.length }} employees</p>
+      <p class="summary">Showing {{ rows().length }} of {{ employees().length }} employees</p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -41,7 +43,7 @@ import { UiTextInput } from './ui-text-input';
           </thead>
           <tbody>
             @for (employee of rows(); track employee.id) {
-              <tr>
+              <tr [class.row--selected]="employee.id === selected()" (click)="selected.set(employee.id)">
                 <td class="cell--muted">{{ employee.id }}</td>
                 <td>{{ employee.name }}</td>
                 <td class="cell--muted">{{ employee.email }}</td>
@@ -65,14 +67,15 @@ export class EmployeesPage {
   protected readonly columns = COLUMNS;
   protected readonly departments = DEPARTMENT_OPTIONS;
   protected readonly statuses = STATUS_OPTIONS;
-  protected readonly employees = createEmployees();
+  protected readonly employees = signal(createEmployees());
+  protected readonly selected = signal<number | null>(null);
   protected readonly search = signal('');
   protected readonly department = signal('');
   protected readonly status = signal('');
   protected readonly from = signal('');
   protected readonly to = signal('');
   protected readonly applied = signal<Filters>(EMPTY_FILTERS);
-  protected readonly rows = computed(() => filterEmployees(this.employees, this.applied()));
+  protected readonly rows = computed(() => filterEmployees(this.employees(), this.applied()));
 
   /**
    * Filters the table by the draft.
@@ -91,6 +94,13 @@ export class EmployeesPage {
     this.from.set('');
     this.to.set('');
     this.applied.set(EMPTY_FILTERS);
+  }
+
+  /**
+   * Raises every salary by 5%.
+   */
+  protected raise(): void {
+    this.employees.update(raiseSalaries);
   }
 
   protected badge(status: string): string {

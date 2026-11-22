@@ -5,6 +5,11 @@ import { LexerTransitionFunctionContext } from '../../types/transition-function/
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type.js';
 
 /**
+ * The `never` of `@default never;`, a whole word: matched from the cursor (see `peekMatch`).
+ */
+const NEVER_KEYWORD = /never(?![\w$])/y;
+
+/**
  * Dispatches on a `@keyword` to determine which flow-control directive begins here.
  * Recognises `@if`, `@for`, `@empty`, `@else`, `@switch`, `@case`, `@default`, `@hydrate`, `@client`, `@placeholder`, `@try`,
  * `@catch`, `@defer`, `@loading`, `@error`, `@render`, `@let` and `@import`. The parentheses following `@catch`, `@error`,
@@ -161,7 +166,7 @@ function lexDefault(cursor: LexerCursor, context: LexerTransitionFunctionContext
   }
 
   cursor.skipSpaces();
-  if (!cursor.peekMatch(/^never(?![\w$])/, 6)) {
+  if (!cursor.peekMatch(NEVER_KEYWORD)) {
     return { state: LexerState.FLOW_CONTROL_BLOCK, tokens: [{ type: TokenType.DEFAULT }] };
   }
 

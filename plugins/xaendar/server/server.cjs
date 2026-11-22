@@ -8768,7 +8768,7 @@ var require_files = __commonJS({
     exports2.resolve = resolve5;
     exports2.resolveGlobalNodePath = resolveGlobalNodePath;
     exports2.resolveGlobalYarnPath = resolveGlobalYarnPath;
-    exports2.resolveModulePath = resolveModulePath2;
+    exports2.resolveModulePath = resolveModulePath3;
     var url = __importStar(require("url"));
     var path = __importStar(require("path"));
     var fs = __importStar(require("fs"));
@@ -8964,7 +8964,7 @@ var require_files = __commonJS({
       }
       FileSystem2.isParent = isParent;
     })(FileSystem || (exports2.FileSystem = FileSystem = {}));
-    function resolveModulePath2(workspaceRoot, moduleName, nodePath, tracer) {
+    function resolveModulePath3(workspaceRoot, moduleName, nodePath, tracer) {
       if (nodePath) {
         if (!path.isAbsolute(nodePath)) {
           nodePath = path.join(workspaceRoot, nodePath);
@@ -20136,49 +20136,8 @@ function getWellformedEdit(textEdit) {
 // ../packages/language-server/src/lib/server/server.ts
 var import_node43 = __toESM(require_main3(), 1);
 
-// ../packages/common/src/models/stack/stack.ts
-var Stack = class {
-  /**
-   * Internal array holding the stack elements, ordered from bottom to top.
-   */
-  _elements = new Array();
-  constructor() {
-    return new Proxy(this, {
-      get(target, prop) {
-        return typeof prop === "symbol" || isNaN(Number(prop)) ? Reflect.get(target, prop) : target._elements[Number(prop)];
-      }
-    });
-  }
-  /**
-   * The number of elements currently in the stack.
-   */
-  get length() {
-    return this._elements.length;
-  }
-  /**
-   * A shallow copy of the elements in the stack, ordered from bottom to top.
-   */
-  get values() {
-    return [...this._elements];
-  }
-  /**
-   * Removes and returns the top element of the stack.
-   *
-   * @returns The top element, or `undefined` if the stack is empty.
-   */
-  pop() {
-    return this._elements.pop();
-  }
-  /**
-   * Pushes an element onto the top of the stack.
-   *
-   * @param element - The element to push.
-   * @returns The new length of the stack.
-   */
-  push(element) {
-    return this._elements.push(element);
-  }
-};
+// ../packages/common/src/utils/small-set/small-set.util.ts
+var EMPTY = Object.freeze([]);
 
 // ../packages/common/src/utils/string/string.util.ts
 function slice(value, start, end) {
@@ -20270,6 +20229,73 @@ function isStructuralElement({ structuralDirectives, conditionalBindings }) {
 }
 function appliesStructuralDirectives({ branches }) {
   return branches.some(isStructuralElement);
+}
+
+// ../packages/compiler/src/models/template-error/template-error.model.ts
+var TemplateError = class extends Error {
+  /**
+   * Creates a template error.
+   *
+   * @param message - The formatted message: the stage prefix, the position and the excerpt of the template.
+   * @param span - The span of the template the error refers to.
+   * @param detail - The description of the error alone, without prefix, position and excerpt.
+   */
+  constructor(message, span, detail) {
+    super(message);
+    this.span = span;
+    this.detail = detail;
+    this.name = "TemplateError";
+    this.stack = "";
+  }
+  span;
+  detail;
+  /**
+   * Returns the formatted message, so that interpolating the error prints exactly what a thrown string would.
+   *
+   * @returns The formatted message.
+   */
+  toString() {
+    return this.message;
+  }
+};
+
+// ../packages/compiler/src/utils/span/span.utils.ts
+function isSpan(value) {
+  return !!value && typeof value === "object" && "start" in value && "end" in value;
+}
+function findSpan(input, text, from) {
+  const start = input.indexOf(text, from);
+  return start === -1 ? { start: from, end: from } : { start, end: start + text.length };
+}
+
+// ../packages/compiler/src/utils/catch-error-generation/catch-error-generation.utils.ts
+function formatErrorWithPrefix(prefix, input, err) {
+  if (err instanceof Error) {
+    const { message, cause, stack } = err;
+    if (isSpan(cause)) {
+      return new TemplateError(`[${prefix}] ${message}
+----> ${slice(input, cause.start, cause.end)}`, { start: cause.start, end: cause.end }, message);
+    }
+    const error = new Error(`[${prefix}] ${message}`);
+    error.stack = stack;
+    return error;
+  } else {
+    return new Error(`[${prefix}] ${err}`);
+  }
+}
+function catchErrorWithPrefix(prefix, input, err) {
+  throw formatErrorWithPrefix(prefix, input, err);
+}
+
+// ../packages/compiler/src/utils/symbol-imports/symbol-imports.utils.ts
+var RESERVED_NAMES = /* @__PURE__ */ new Set(["root", "$event"]);
+function assertImportableSymbol({ local, localSpan }) {
+  if (RESERVED_NAMES.has(local) || local.startsWith("__")) {
+    throw new Error(`"${local}" is reserved in templates: import it under another name (\u2026 as name).`, { cause: localSpan });
+  }
+}
+function toTypeCheckModuleSpecifier({ modulePath, importPath }) {
+  return importPath ?? modulePath.replace(/(?:\.d)?\.[cm]?tsx?$/, "");
 }
 
 // ../packages/compiler/src/costants/scope-header.costant.ts
@@ -20431,9 +20457,6 @@ function toModelChangeEvent(name) {
   return `${name}${MODEL_CHANGE_SUFFIX}`;
 }
 
-// ../packages/internals/src/utils/small-set/small-set.util.ts
-var EMPTY = Object.freeze([]);
-
 // ../packages/internals/src/costants/not-alllowed-tags.constants.ts
 var NOT_ALLOWED_TAGS = [
   "annotation-xml",
@@ -20449,6 +20472,7 @@ var NOT_ALLOWED_TAGS = [
 // ../packages/internals/src/utils/tags/tags.util.ts
 var PCEN_CHAR = String.raw`\-.0-9_a-z\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u{10000}-\u{EFFFF}`;
 var CUSTOM_ELEMENT_NAME_RE = new RegExp(`^[a-z][${PCEN_CHAR}]*-[${PCEN_CHAR}]*$`, "u");
+var PATTERN_EXPRESSIONS = /* @__PURE__ */ new Map();
 function isValidCustomElementName(tagName, logErrors = true) {
   if (!CUSTOM_ELEMENT_NAME_RE.test(tagName)) {
     logErrors && console.error(`Tag <${tagName}> is not a valid custom element name. Custom element names must:
@@ -20467,10 +20491,21 @@ Reserved names are:
   return true;
 }
 function matchesCustomElementPattern(tagName, patterns) {
-  return patterns.some((pattern) => {
+  for (let i2 = 0; i2 < patterns.length; i2++) {
+    if (toPatternExpression(patterns[i2]).test(tagName)) {
+      return true;
+    }
+  }
+  return false;
+}
+function toPatternExpression(pattern) {
+  let expression = PATTERN_EXPRESSIONS.get(pattern);
+  if (!expression) {
     const source = pattern.split("*").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*");
-    return new RegExp(`^${source}$`).test(tagName);
-  });
+    expression = new RegExp(`^${source}$`);
+    PATTERN_EXPRESSIONS.set(pattern, expression);
+  }
+  return expression;
 }
 function isReservedTagName(tagName) {
   return NOT_ALLOWED_TAGS.includes(tagName);
@@ -20868,75 +20903,9 @@ var CompilerContext = class {
   }
 };
 
-// ../packages/compiler/src/models/template-error/template-error.model.ts
-var TemplateError = class extends Error {
-  /**
-   * Creates a template error.
-   *
-   * @param message - The formatted message: the stage prefix, the position and the excerpt of the template.
-   * @param span - The span of the template the error refers to.
-   * @param detail - The description of the error alone, without prefix, position and excerpt.
-   */
-  constructor(message, span, detail) {
-    super(message);
-    this.span = span;
-    this.detail = detail;
-    this.name = "TemplateError";
-    this.stack = "";
-  }
-  span;
-  detail;
-  /**
-   * Returns the formatted message, so that interpolating the error prints exactly what a thrown string would.
-   *
-   * @returns The formatted message.
-   */
-  toString() {
-    return this.message;
-  }
-};
-
-// ../packages/compiler/src/utils/span/span.utils.ts
-function isSpan(value) {
-  return !!value && typeof value === "object" && "start" in value && "end" in value;
-}
-function findSpan(input, text, from) {
-  const start = input.indexOf(text, from);
-  return start === -1 ? { start: from, end: from } : { start, end: start + text.length };
-}
-
-// ../packages/compiler/src/utils/catch-error-generation/catch-error-generation.utils.ts
-function formatErrorWithPrefix(prefix, input, err) {
-  if (err instanceof Error) {
-    const { message, cause, stack } = err;
-    if (isSpan(cause)) {
-      return new TemplateError(`[${prefix}] ${message}
-----> ${slice(input, cause.start, cause.end)}`, { start: cause.start, end: cause.end }, message);
-    }
-    const error = new Error(`[${prefix}] ${message}`);
-    error.stack = stack;
-    return error;
-  } else {
-    return new Error(`[${prefix}] ${err}`);
-  }
-}
-function catchErrorWithPrefix(prefix, input, err) {
-  throw formatErrorWithPrefix(prefix, input, err);
-}
-
-// ../packages/compiler/src/utils/symbol-imports/symbol-imports.utils.ts
-var RESERVED_NAMES = /* @__PURE__ */ new Set(["root", "$event"]);
-function assertImportableSymbol({ local, localSpan }) {
-  if (RESERVED_NAMES.has(local) || local.startsWith("__")) {
-    throw new Error(`"${local}" is reserved in templates: import it under another name (\u2026 as name).`, { cause: localSpan });
-  }
-}
-function toTypeCheckModuleSpecifier({ modulePath, importPath }) {
-  return importPath ?? modulePath.replace(/(?:\.d)?\.[cm]?tsx?$/, "");
-}
-
-// ../packages/compiler/src/generator/states/generate-element/generate-element.state.ts
-var import_typescript6 = require("typescript");
+// ../packages/compiler/src/generator/utils/generator/generator.utils.ts
+var import_globals = __toESM(require_globals2(), 1);
+var import_typescript4 = require("typescript");
 
 // ../packages/compiler/src/parser/utils/expression-validator/expression-validator.ts
 var import_typescript2 = require("typescript");
@@ -20950,15 +20919,19 @@ function forEachExpressionChild(node, callback) {
 // ../packages/compiler/src/parser/utils/expression-validator/expression-validator.ts
 var EXPRESSION_PREFIX = "const x = ";
 var templateOffsets = /* @__PURE__ */ new WeakMap();
+var TRAILING_SCANNER = (0, import_typescript2.createScanner)(import_typescript2.ScriptTarget.ESNext, true, import_typescript2.LanguageVariant.Standard);
 function validateExpression(source, templateOffset) {
-  const sourceFile = (0, import_typescript2.createSourceFile)("expression.ts", `${EXPRESSION_PREFIX}${source}`, import_typescript2.ScriptTarget.ESNext, true);
+  const sourceFile = (0, import_typescript2.createSourceFile)("expression.ts", `${EXPRESSION_PREFIX}${source}`, import_typescript2.ScriptTarget.ESNext, false);
+  setParents(sourceFile);
   if (templateOffset !== void 0) {
     templateOffsets.set(sourceFile, templateOffset - EXPRESSION_PREFIX.length);
   }
   const statement = sourceFile.statements[0];
   const expression = statement.declarationList.declarations[0].initializer;
-  const scanner = (0, import_typescript2.createScanner)(import_typescript2.ScriptTarget.ESNext, true, import_typescript2.LanguageVariant.Standard, sourceFile.text, void 0, expression.end);
-  if (scanner.scan() !== import_typescript2.SyntaxKind.EndOfFileToken) {
+  TRAILING_SCANNER.setText(sourceFile.text, expression.end);
+  const trailing = TRAILING_SCANNER.scan();
+  TRAILING_SCANNER.setText(void 0);
+  if (trailing !== import_typescript2.SyntaxKind.EndOfFileToken) {
     const rest = slice(sourceFile.text, expression.end);
     throw new Error(`'${source.trim()}' must be a single expression, got '${rest.trim()}' after '${expression.getText()}'.`, {
       cause: toTemplateSpan(sourceFile, expression.end + rest.length - rest.trimStart().length, sourceFile.text.trimEnd().length)
@@ -20968,6 +20941,12 @@ function validateExpression(source, templateOffset) {
   return {
     node: expression
   };
+}
+function setParents(node) {
+  (0, import_typescript2.forEachChild)(node, (child) => {
+    child.parent = node;
+    setParents(child);
+  });
 }
 function getTemplateSpan(node) {
   const sourceFile = node.getSourceFile();
@@ -21136,35 +21115,16 @@ function buildDisallowedMessage(node) {
   }
 }
 
-// ../packages/compiler/src/utils/event-reads/event-reads.utils.ts
-var import_typescript3 = require("typescript");
-function readsEvent(node) {
-  if ((0, import_typescript3.isIdentifier)(node)) {
-    return node.text === "$event";
-  }
-  if ((0, import_typescript3.isPropertyAccessExpression)(node)) {
-    return readsEvent(node.expression);
-  }
-  if ((0, import_typescript3.isPropertyAssignment)(node)) {
-    return readsEvent(node.initializer);
-  }
-  return (0, import_typescript3.forEachChild)(node, readsEvent) ?? false;
-}
-
-// ../packages/compiler/src/generator/utils/generator/generator.utils.ts
-var import_globals = __toESM(require_globals2(), 1);
-var import_typescript5 = require("typescript");
-
 // ../packages/compiler/src/utils/expression-reads/expression-reads.utils.ts
-var import_typescript4 = require("typescript");
+var import_typescript3 = require("typescript");
 function collectReads(expression) {
   const reads = new Array();
   collectReadsOf(expression, expression, reads);
   return reads;
 }
 function collectReadsOf(node, parent, reads) {
-  const isMemberName2 = ((0, import_typescript4.isPropertyAccessExpression)(parent) || (0, import_typescript4.isPropertyAssignment)(parent)) && parent.name === node;
-  if ((0, import_typescript4.isIdentifier)(node) && !isMemberName2) {
+  const isMemberName2 = ((0, import_typescript3.isPropertyAccessExpression)(parent) || (0, import_typescript3.isPropertyAssignment)(parent)) && parent.name === node;
+  if ((0, import_typescript3.isIdentifier)(node) && !isMemberName2) {
     reads.push(node);
   }
   forEachExpressionChild(node, (child) => collectReadsOf(child, node, reads));
@@ -21214,24 +21174,24 @@ function emitNode(node, parent, generatorContext, options) {
   return { ...emitted, expression, segments };
 }
 function getSignalCallee(node) {
-  return (0, import_typescript5.isCallExpression)(node) && (0, import_typescript5.isIdentifier)(node.expression) && !node.arguments.length && !node.questionDotToken ? node.expression : void 0;
+  return (0, import_typescript4.isCallExpression)(node) && (0, import_typescript4.isIdentifier)(node.expression) && !node.arguments.length && !node.questionDotToken ? node.expression : void 0;
 }
 function getCalledIdentifier(node) {
-  return (0, import_typescript5.isCallExpression)(node) && (0, import_typescript5.isIdentifier)(node.expression) ? node.expression : void 0;
+  return (0, import_typescript4.isCallExpression)(node) && (0, import_typescript4.isIdentifier)(node.expression) ? node.expression : void 0;
 }
 function getKind(name, generatorContext) {
   return generatorContext.hasUnresolvableIdentifier(name) ? generatorContext.getUnresolvableIdentifierKind(name) : generatorContext.getIdentifierKind(name);
 }
 function emitResolvedNode(node, parent, generatorContext, options) {
   const span = getTemplateSpan(node);
-  if ((0, import_typescript5.isIdentifier)(node) && needsResolution(node, parent, generatorContext, options)) {
+  if ((0, import_typescript4.isIdentifier)(node) && needsResolution(node, parent, generatorContext, options)) {
     const text = node.text;
     const resolved = resolveIdentifier(text, generatorContext, options);
-    const expression = (0, import_typescript5.isShorthandPropertyAssignment)(parent) && resolved.expression !== text ? `${text}: ${resolved.expression}` : resolved.expression;
+    const expression = (0, import_typescript4.isShorthandPropertyAssignment)(parent) && resolved.expression !== text ? `${text}: ${resolved.expression}` : resolved.expression;
     const segments = segmentOf(expression, span, expression.endsWith(text) ? expression.length - text.length : 0);
     return { ...resolved, expression, segments };
   }
-  if (!options.preserveTypeScript && ((0, import_typescript5.isNonNullExpression)(node) || (0, import_typescript5.isAsExpression)(node))) {
+  if (!options.preserveTypeScript && ((0, import_typescript4.isNonNullExpression)(node) || (0, import_typescript4.isAsExpression)(node))) {
     return emitNode(node.expression, node, generatorContext, options);
   }
   if (!containsResolvableIdentifier(node, parent, generatorContext, options) && (options.preserveTypeScript || !containsTypeScriptSyntax(node))) {
@@ -21242,8 +21202,8 @@ function emitResolvedNode(node, parent, generatorContext, options) {
   const templateDelta = span && span.start - node.getStart();
   const result = { expression: "", segments: [] };
   let lastEnd = node.getStart();
-  (0, import_typescript5.forEachChild)(node, (child) => {
-    appendEmitted(result, sourceText, templateDelta, lastEnd, child.getStart(), (0, import_typescript5.isTypeNode)(child) ? emitVerbatim(child) : emitNode(child, node, generatorContext, options));
+  (0, import_typescript4.forEachChild)(node, (child) => {
+    appendEmitted(result, sourceText, templateDelta, lastEnd, child.getStart(), (0, import_typescript4.isTypeNode)(child) ? emitVerbatim(child) : emitNode(child, node, generatorContext, options));
     lastEnd = child.getEnd();
   });
   appendEmitted(result, sourceText, templateDelta, lastEnd, node.getEnd());
@@ -21309,19 +21269,28 @@ function resolveDeclared(expression, id, kind) {
   return resolved;
 }
 function containsResolvableIdentifier(node, parent, generatorContext, options) {
-  if ((0, import_typescript5.isIdentifier)(node) && needsResolution(node, parent, generatorContext, options)) {
+  if ((0, import_typescript4.isIdentifier)(node) && needsResolution(node, parent, generatorContext, options)) {
     return true;
   }
   return forEachExpressionChild(node, (child) => containsResolvableIdentifier(child, node, generatorContext, options)) ?? false;
 }
 function containsTypeScriptSyntax(node) {
-  return (0, import_typescript5.isNonNullExpression)(node) || (0, import_typescript5.isAsExpression)(node) || ((0, import_typescript5.forEachChild)(node, containsTypeScriptSyntax) ?? false);
+  return (0, import_typescript4.isNonNullExpression)(node) || (0, import_typescript4.isAsExpression)(node) || ((0, import_typescript4.forEachChild)(node, containsTypeScriptSyntax) ?? false);
 }
 function needsResolution(node, parent, generatorContext, options) {
   const { text } = node;
   const isLocal = generatorContext.hasSignalField(text) || generatorContext.hasShadowingMember(text) || generatorContext.hasUnresolvableIdentifier(text) || generatorContext.hasIdentifier(text) || !!generatorContext.getImportedIdentifier(text);
   const isBrowserGlobal = !!options.browserGlobals && BROWSER_GLOBAL_IDENTIFIERS.has(text);
-  return !((0, import_typescript5.isPropertyAccessExpression)(parent) && parent.name === node || (0, import_typescript5.isPropertyAssignment)(parent) && parent.name === node || GLOBAL_IDENTIFIERS.has(text) && !isLocal && !isBrowserGlobal || !text);
+  return !((0, import_typescript4.isPropertyAccessExpression)(parent) && parent.name === node || (0, import_typescript4.isPropertyAssignment)(parent) && parent.name === node || GLOBAL_IDENTIFIERS.has(text) && !isLocal && !isBrowserGlobal || !text);
+}
+function toStringLiteral(value) {
+  const STRING_LITERAL_ESCAPES = {
+    "\\": "\\\\",
+    "'": "\\'",
+    "\n": "\\n",
+    "\r": "\\r"
+  };
+  return `'${value.replace(/[\\'\n\r\p{Zl}\p{Zp}]/gu, (char) => STRING_LITERAL_ESCAPES[char] ?? `\\u${char.charCodeAt(0).toString(16)}`)}'`;
 }
 function mapDefaultOptions(options) {
   return {
@@ -21331,6 +21300,24 @@ function mapDefaultOptions(options) {
     browserGlobals: options?.browserGlobals ?? "",
     variableCall: options?.variableCall ?? (() => void 0)
   };
+}
+
+// ../packages/compiler/src/generator/states/generate-element/generate-element.state.ts
+var import_typescript6 = require("typescript");
+
+// ../packages/compiler/src/utils/event-reads/event-reads.utils.ts
+var import_typescript5 = require("typescript");
+function readsEvent(node) {
+  if ((0, import_typescript5.isIdentifier)(node)) {
+    return node.text === "$event";
+  }
+  if ((0, import_typescript5.isPropertyAccessExpression)(node)) {
+    return readsEvent(node.expression);
+  }
+  if ((0, import_typescript5.isPropertyAssignment)(node)) {
+    return readsEvent(node.initializer);
+  }
+  return (0, import_typescript5.forEachChild)(node, readsEvent) ?? false;
 }
 
 // ../packages/compiler/src/parser/utils/for-variables/for-variables.utils.ts
@@ -21852,7 +21839,7 @@ function lexAttributeValue(cursor, context) {
   let value = "";
   let retVal;
   while (read) {
-    switch (cursor.peek()) {
+    switch (cursor.peekVerbatim()) {
       case DOUBLE_QUOTE:
         cursor.advance();
         read = false;
@@ -22000,7 +21987,7 @@ function lexAttribute(cursor, context) {
         }
         cursor.advance();
         read = false;
-        const isInterpolatedValue = cursor.peek() === LEFT_BRACE;
+        const isInterpolatedValue = cursor.peekVerbatim() === LEFT_BRACE;
         retVal = {
           state: isInterpolatedValue ? "interpolation" /* INTERPOLATION */ : "attribute-value" /* ATTRIBUTE_VALUE */,
           /*
@@ -22043,16 +22030,6 @@ function isOpenTwoWayBinding(attribute) {
   return attribute.startsWith("[(") && !attribute.includes(")");
 }
 
-// ../packages/compiler/src/lexer/utils/event-parameters/event-parameters.utils.ts
-function closeEventParameters(cursor, context) {
-  cursor.advance();
-  if (cursor.peek() !== DOUBLE_QUOTE) {
-    throw "Event must be included in Double Quotes";
-  }
-  cursor.advance();
-  return resolveTagBodyState(context.history.at(-1));
-}
-
 // ../packages/compiler/src/costants/closers.costant.ts
 var CLOSERS = /* @__PURE__ */ new Map([
   [LPAREN, RPAREN],
@@ -22089,6 +22066,11 @@ var ExpressionScanner = class {
    */
   _quote = null;
   /**
+   * The comment the scan is in, by the character following its `/`: `*` in a block comment (`/* … *\/`), `/` in a line
+   * comment (`// …`), `null` outside of a comment.
+   */
+  _comment = null;
+  /**
    * Whether the last character read, in a literal, escapes the next one.
    */
   _escaped = false;
@@ -22098,20 +22080,20 @@ var ExpressionScanner = class {
    */
   _previous = 0;
   /**
-   * Whether the scan is in code: outside of the strings and of the text of the template literals.
+   * Whether the scan is in code: outside of the strings, of the text of the template literals and of the comments.
    *
    * @returns `true` in code.
    */
   get isCode() {
-    return this._quote === null && this._nesting.at(-1) !== GRAVE_ACCENT;
+    return this._quote === null && this._comment === null && this._nesting.at(-1) !== GRAVE_ACCENT;
   }
   /**
    * Whether the scan is in code outside of any group, e.g. where a comma separates two arguments.
    *
-   * @returns `true` outside of any literal and group.
+   * @returns `true` outside of any literal, comment and group.
    */
   get isTopLevel() {
-    return this._quote === null && !this._nesting.length;
+    return this._quote === null && this._comment === null && !this._nesting.length;
   }
   /**
    * The characters closing the groups and the template literals open, the innermost first: what closes the text read
@@ -22151,6 +22133,8 @@ var ExpressionScanner = class {
     this._previous = this._escaped ? 0 : char;
     if (this._escaped) {
       this._escaped = false;
+    } else if (this._comment !== null) {
+      this._readComment(char, previous);
     } else if (this._quote !== null) {
       this._escaped = char === BACKSLASH;
       this._quote = char === this._quote ? null : this._quote;
@@ -22168,6 +22152,20 @@ var ExpressionScanner = class {
   readText(text) {
     for (let i2 = 0; i2 < text.length; i2++) {
       this.read(text.charCodeAt(i2));
+    }
+  }
+  /**
+   * Reads a character of a comment: the line break ending a line comment, the `/` of the `*\/` ending a block comment.
+   * The character following the end reads no `/` before it: `*\//` does not open a line comment.
+   *
+   * @param char - The code of the character.
+   * @param previous - The code of the character read before it.
+   */
+  _readComment(char, previous) {
+    const ends = this._comment === SLASH ? char === LF || char === CR : char === SLASH && previous === STAR;
+    if (ends) {
+      this._comment = null;
+      this._previous = 0;
     }
   }
   /**
@@ -22193,7 +22191,7 @@ var ExpressionScanner = class {
     }
   }
   /**
-   * Reads a character of code: the start of a literal, a character opening or closing a group.
+   * Reads a character of code: the start of a literal or of a comment, a character opening or closing a group.
    *
    * @param char - The code of the character.
    * @param previous - The code of the character read before it.
@@ -22213,6 +22211,14 @@ var ExpressionScanner = class {
       case LESS_THAN:
         if (this._types) {
           this._nesting.push(char);
+        }
+        break;
+      // A `/` or a `*` following a `/` opens a comment: the first `/`, read as code, opened nothing
+      case SLASH:
+      case STAR:
+        if (previous === SLASH) {
+          this._comment = char;
+          this._previous = 0;
         }
         break;
       default: {
@@ -22241,7 +22247,7 @@ function lexExpressionText(cursor, terminators, options) {
   const scanner = new ExpressionScanner(options?.types);
   const cast = !!options?.cast;
   let text = "";
-  for (let char = cursor.peek(); !scanner.endsAt(char, terminators) && !(cast && text && endsAtCast(cursor, scanner)); char = cursor.peek()) {
+  for (let char = cursor.peekVerbatim(); !scanner.endsAt(char, terminators) && !(cast && text && endsAtCast(cursor, scanner)); char = cursor.peekVerbatim()) {
     cursor.advance();
     text = `${text}${cursor.currentChar.value}`;
     scanner.read(char);
@@ -22256,6 +22262,40 @@ function lexGroup(cursor, open) {
   const text = lexExpressionText(cursor, types ? ">" : ")", { types });
   cursor.advance();
   return text;
+}
+
+// ../packages/compiler/src/lexer/utils/lex-flow-control-condition/lex-flow-control-condition.utils.ts
+function lexFlowControlCondition(cursor, _context) {
+  cursor.skipSpaces();
+  if (cursor.peek() !== LPAREN) {
+    throw `Expected '(' but got '${String.fromCharCode(cursor.peek())}'`;
+  }
+  cursor.advance();
+  return lexGroup(cursor, LPAREN);
+}
+
+// ../packages/compiler/src/lexer/states/lex-case-flow-control-condition/lex-case-flow-control-condition.state.ts
+function lexCaseFlowControlCondition(cursor, context) {
+  const condition = lexFlowControlCondition(cursor, context);
+  cursor.skipSpaces();
+  return {
+    state: cursor.peekMatch("@case") ? "flow-control" /* FLOW_CONTROL */ : "flow-control-block" /* FLOW_CONTROL_BLOCK */,
+    tokens: [{
+      type: 18 /* CONDITION */,
+      parts: [condition]
+    }],
+    popState: true
+  };
+}
+
+// ../packages/compiler/src/lexer/utils/event-parameters/event-parameters.utils.ts
+function closeEventParameters(cursor, context) {
+  cursor.advance();
+  if (cursor.peek() !== DOUBLE_QUOTE) {
+    throw "Event must be included in Double Quotes";
+  }
+  cursor.advance();
+  return resolveTagBodyState(context.history.at(-1));
 }
 
 // ../packages/compiler/src/lexer/utils/interpolation/interpolation.utils.ts
@@ -22298,35 +22338,100 @@ function lexCast(cursor, context) {
   return { state: closeEventParameters(cursor, context), tokens };
 }
 
-// ../packages/compiler/src/lexer/utils/lex-flow-control-condition/lex-flow-control-condition.utils.ts
-function lexFlowControlCondition(cursor, _context) {
-  cursor.skipSpaces();
-  if (cursor.peek() !== LPAREN) {
-    throw `Expected '(' but got '${String.fromCharCode(cursor.peek())}'`;
-  }
-  cursor.advance();
-  return lexGroup(cursor, LPAREN);
+// ../packages/compiler/src/lexer/utils/conditional-binding/conditional-binding.utils.ts
+var KEYWORD = /@(?:if|else|switch|case|default) /y;
+function isConditionalBindingKeyword(cursor) {
+  return cursor.peekMatch(KEYWORD);
 }
 
-// ../packages/compiler/src/lexer/states/lex-case-flow-control-condition/lex-case-flow-control-condition.state.ts
-function lexCaseFlowControlCondition(cursor, context) {
-  const condition = lexFlowControlCondition(cursor, context);
-  cursor.skipSpaces();
+// ../packages/compiler/src/lexer/states/lex-conditional-binding-body/lex-conditional-binding-body.state.ts
+function lexConditionalBindingBody(cursor, context) {
+  let read = true;
+  let retVal;
+  while (read) {
+    switch (cursor.peek()) {
+      case AT_SIGN:
+        let state;
+        if (isConditionalBindingKeyword(cursor)) {
+          state = "flow-control" /* FLOW_CONTROL */;
+        } else if (cursor.peekMatch("@@")) {
+          if (context.history.includes("directive" /* DIRECTIVE */)) {
+            throw "Directives cannot be declared inside another directive";
+          }
+          state = "directive" /* DIRECTIVE */;
+          cursor.advance(2);
+        } else {
+          throw `'@' must start a conditional binding (@if, @else, @switch, @case, @default) or a directive (@@selector): events are bound with (eventName)="handler()"`;
+        }
+        retVal = {
+          state
+        };
+        read = false;
+        break;
+      case STAR:
+        if (context.history.includes("directive" /* DIRECTIVE */)) {
+          throw "Directives cannot be declared inside another directive";
+        }
+        cursor.advance();
+        retVal = {
+          state: "structural-directive" /* STRUCTURAL_DIRECTIVE */
+        };
+        read = false;
+        break;
+      case HASHTAG:
+        throw "An element ref names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings";
+      // A tag can span multiple lines: tabs and line breaks separate the bindings exactly like spaces
+      case SPACE:
+      case TAB:
+      case LF:
+      case CR:
+        cursor.skipSpaces();
+        break;
+      case RIGHT_BRACE:
+        cursor.advance();
+        retVal = {
+          /*
+            The last state of the history is the FLOW_CONTROL_BLOCK one opening this block, the one before
+            tells where the conditional binding was declared: in the tag body, inside a directive
+            or in a block of another conditional binding.
+          */
+          state: resolveTagBodyState(context.history.at(-2)),
+          tokens: [{
+            type: 20 /* BLOCK_CLOSE */
+          }],
+          popState: true
+        };
+        read = false;
+        break;
+      case LPAREN:
+        retVal = {
+          state: "event" /* EVENT */
+        };
+        read = false;
+        break;
+      case GREATER_THEN:
+      case SLASH:
+        throw "Conditional binding blocks must be closed by '}'";
+      default:
+        retVal = {
+          state: "attribute" /* ATTRIBUTE */
+        };
+        read = false;
+    }
+  }
+  return retVal;
+}
+
+// ../packages/compiler/src/lexer/states/lex-default-flow-control-condition/lex-default-flow-control-condition.state.ts
+function lexDefaultFlowControlCondition(cursor, context) {
   return {
-    state: cursor.peekMatch("@case") ? "flow-control" /* FLOW_CONTROL */ : "flow-control-block" /* FLOW_CONTROL_BLOCK */,
+    state: "flow-control-block" /* FLOW_CONTROL_BLOCK */,
     tokens: [{
       type: 18 /* CONDITION */,
-      parts: [condition]
+      parts: [lexFlowControlCondition(cursor, context)]
     }],
     popState: true
   };
-}
-
-// ../packages/compiler/src/lexer/utils/conditional-binding/conditional-binding.utils.ts
-var KEYWORD = /^@(?:if|else|switch|case|default) /;
-var LONGEST_KEYWORD_LENGTH = "@default ".length;
-function isConditionalBindingKeyword(cursor) {
-  return cursor.peekMatch(KEYWORD, LONGEST_KEYWORD_LENGTH);
 }
 
 // ../packages/compiler/src/lexer/states/lex-directive-body/lex-directive-body.state.ts
@@ -22491,94 +22596,42 @@ function assertSelector(selector) {
   }
 }
 
-// ../packages/compiler/src/lexer/states/lex-default-flow-control-condition/lex-default-flow-control-condition.state.ts
-function lexDefaultFlowControlCondition(cursor, context) {
-  return {
-    state: "flow-control-block" /* FLOW_CONTROL_BLOCK */,
-    tokens: [{
-      type: 18 /* CONDITION */,
-      parts: [lexFlowControlCondition(cursor, context)]
-    }],
-    popState: true
-  };
-}
-
-// ../packages/compiler/src/lexer/states/lex-conditional-binding-body/lex-conditional-binding-body.state.ts
-function lexConditionalBindingBody(cursor, context) {
+// ../packages/compiler/src/lexer/states/lex-element-ref/lex-element-ref.state.ts
+function lexElementRef(cursor, _context) {
   let read = true;
+  let name = "";
   let retVal;
   while (read) {
     switch (cursor.peek()) {
-      case AT_SIGN:
-        let state;
-        if (isConditionalBindingKeyword(cursor)) {
-          state = "flow-control" /* FLOW_CONTROL */;
-        } else if (cursor.peekMatch("@@")) {
-          if (context.history.includes("directive" /* DIRECTIVE */)) {
-            throw "Directives cannot be declared inside another directive";
-          }
-          state = "directive" /* DIRECTIVE */;
-          cursor.advance(2);
-        } else {
-          throw `'@' must start a conditional binding (@if, @else, @switch, @case, @default) or a directive (@@selector): events are bound with (eventName)="handler()"`;
-        }
-        retVal = {
-          state
-        };
-        read = false;
-        break;
-      case STAR:
-        if (context.history.includes("directive" /* DIRECTIVE */)) {
-          throw "Directives cannot be declared inside another directive";
-        }
-        cursor.advance();
-        retVal = {
-          state: "structural-directive" /* STRUCTURAL_DIRECTIVE */
-        };
-        read = false;
-        break;
-      case HASHTAG:
-        throw "An element ref names the element whatever branch is selected: declare #name among the bindings of the tag, outside of its conditional bindings";
-      // A tag can span multiple lines: tabs and line breaks separate the bindings exactly like spaces
+      // A tag can span multiple lines: the name can also be followed by a tab or a line break
       case SPACE:
       case TAB:
       case LF:
       case CR:
-        cursor.skipSpaces();
-        break;
-      case RIGHT_BRACE:
-        cursor.advance();
+      case GREATER_THEN:
+      case SLASH:
+        assertName(name);
         retVal = {
-          /*
-            The last state of the history is the FLOW_CONTROL_BLOCK one opening this block, the one before
-            tells where the conditional binding was declared: in the tag body, inside a directive
-            or in a block of another conditional binding.
-          */
-          state: resolveTagBodyState(context.history.at(-2)),
-          tokens: [{
-            type: 20 /* BLOCK_CLOSE */
-          }],
-          popState: true
+          state: "tag-body" /* TAG_BODY */,
+          tokens: [{ type: 26 /* ELEMENT_REF */, parts: [name] }]
         };
         read = false;
         break;
       case LPAREN:
-        retVal = {
-          state: "event" /* EVENT */
-        };
-        read = false;
-        break;
-      case GREATER_THEN:
-      case SLASH:
-        throw "Conditional binding blocks must be closed by '}'";
+        throw "An element ref is just #name, without parentheses";
+      case EQUAL_THEN:
+        throw "An element ref takes no value: write #name, which names the element it is declared on";
       default:
-        retVal = {
-          state: "attribute" /* ATTRIBUTE */
-        };
-        read = false;
+        cursor.advance();
+        name = `${name}${cursor.currentChar.value}`;
     }
   }
   return retVal;
+}
+function assertName(name) {
+  if (!name) {
+    throw "An element ref needs a name, e.g. #name";
+  }
 }
 
 // ../packages/compiler/src/lexer/states/lex-event-handler/lex-event-handler.state.ts
@@ -22704,7 +22757,23 @@ function lexEvent(cursor, context) {
   return retVal;
 }
 
+// ../packages/compiler/src/lexer/states/lex-flow-control-block/lex-flow-control-block.state.ts
+function lexFlowControlBlock(cursor, context) {
+  cursor.skipSpaces();
+  if (cursor.peek() !== LEFT_BRACE) {
+    throw `Expected '{' but got '${String.fromCharCode(cursor.peek())}'`;
+  }
+  cursor.advance();
+  return {
+    // The state opening a tag stays on the state stack until the tag is closed.
+    state: context.history.includes("tag-open-name" /* TAG_OPEN_NAME */) ? "conditional-binding-body" /* CONDITIONAL_BINDING_BODY */ : "text" /* TEXT */,
+    tokens: [{ type: 19 /* BLOCK_OPEN */ }],
+    pushState: true
+  };
+}
+
 // ../packages/compiler/src/lexer/states/lex-flow-control/lex-flow-control.ts
+var NEVER_KEYWORD = /never(?![\w$])/y;
 function lexFlowControl(cursor, context) {
   let retVal;
   cursor.advance();
@@ -22832,7 +22901,7 @@ function lexDefault(cursor, context) {
     return { state: "flow-control-block" /* FLOW_CONTROL_BLOCK */, tokens: [{ type: 17 /* DEFAULT */ }] };
   }
   cursor.skipSpaces();
-  if (!cursor.peekMatch(/^never(?![\w$])/, 6)) {
+  if (!cursor.peekMatch(NEVER_KEYWORD)) {
     return { state: "flow-control-block" /* FLOW_CONTROL_BLOCK */, tokens: [{ type: 17 /* DEFAULT */ }] };
   }
   cursor.advance(5);
@@ -22855,23 +22924,8 @@ function lexBlockWithParameters(cursor, type) {
   return { state: "flow-control-condition" /* FLOW_CONTROL_CONDITION */, tokens: [{ type }], pushState: true };
 }
 
-// ../packages/compiler/src/lexer/states/lex-flow-control-block/lex-flow-control-block.state.ts
-function lexFlowControlBlock(cursor, context) {
-  cursor.skipSpaces();
-  if (cursor.peek() !== LEFT_BRACE) {
-    throw `Expected '{' but got '${String.fromCharCode(cursor.peek())}'`;
-  }
-  cursor.advance();
-  return {
-    // The state opening a tag stays on the state stack until the tag is closed.
-    state: context.history.includes("tag-open-name" /* TAG_OPEN_NAME */) ? "conditional-binding-body" /* CONDITIONAL_BINDING_BODY */ : "text" /* TEXT */,
-    tokens: [{ type: 19 /* BLOCK_OPEN */ }],
-    pushState: true
-  };
-}
-
 // ../packages/compiler/src/lexer/states/lex-import-path/lex-import-path.state.ts
-var STATEMENT_END = /^[ \t]*;/;
+var STATEMENT_END = /[ \t]*;/y;
 function lexImportPath(cursor, _context) {
   let read = true;
   let path = "";
@@ -22896,10 +22950,10 @@ Found character ${cursor.currentChar.value}`;
   }
   const delimiter = singleQuote ? SINGLE_QUOTE : DOUBLE_QUOTE;
   while (read) {
-    switch (cursor.peek()) {
+    switch (cursor.peekVerbatim()) {
       case delimiter:
         cursor.advance();
-        if (cursor.peekMatch(STATEMENT_END, Infinity)) {
+        if (cursor.peekMatch(STATEMENT_END)) {
           cursor.skipSpaces();
           cursor.advance();
         }
@@ -22921,7 +22975,7 @@ Found character ${cursor.currentChar.value}`;
 }
 
 // ../packages/compiler/src/lexer/states/lex-import/lex-import.state.ts
-var LAZY_KEYWORD = /^lazy(?=[\s{])/;
+var LAZY_KEYWORD = /lazy(?=[\s{])/y;
 function lexImport(cursor, _context) {
   let read = true;
   let importValue = "";
@@ -22931,7 +22985,7 @@ function lexImport(cursor, _context) {
     tokens: []
   };
   cursor.skipSpaces();
-  const lazy = cursor.peekMatch(LAZY_KEYWORD, 5);
+  const lazy = cursor.peekMatch(LAZY_KEYWORD);
   if (lazy) {
     cursor.advance(4);
     cursor.skipSpaces();
@@ -23017,6 +23071,9 @@ function isNotBlank(str) {
 function isIdentifierChar(code) {
   return code >= a && code <= z || code >= A && code <= Z || code >= ZERO && code <= NINE || code === UNDERSCORE || code === DOLLAR;
 }
+function isAsciiLetter(code) {
+  return code >= a && code <= z || code >= A && code <= Z;
+}
 function isWhitespace(code) {
   return code === SPACE || code === TAB || code === LF || code === CR;
 }
@@ -23055,9 +23112,57 @@ function lexValue(cursor) {
   return value;
 }
 
+// ../packages/compiler/src/lexer/states/lex-render/lex-render.state.ts
+var IDENTIFIER_CHAR = /[\w$]/y;
+var MEMBER_ACCESS = /\??\.[\w$]/y;
+function lexRender(cursor, _context) {
+  cursor.skipSpaces();
+  const start = cursor.currentChar.index + 1;
+  let callee = "";
+  let args;
+  for (let read = true; read; ) {
+    if (args === void 0 && cursor.peekMatch(IDENTIFIER_CHAR)) {
+      cursor.advance();
+      callee = `${callee}${cursor.currentChar.value}`;
+    } else if (callee && cursor.peekMatch(MEMBER_ACCESS)) {
+      const access = cursor.peekMatch("?.") ? "?." : ".";
+      callee = `${appendCall(callee, args)}${access}`;
+      args = void 0;
+      cursor.advance(access.length);
+    } else if (callee && cursor.peekMatch("(")) {
+      callee = appendCall(callee, args);
+      cursor.advance();
+      args = lexGroup(cursor, LPAREN);
+    } else if (callee && cursor.peekMatch("[")) {
+      callee = appendCall(callee, args);
+      args = void 0;
+      cursor.advance();
+      const key = lexExpressionText(cursor, "]");
+      cursor.advance();
+      callee = `${callee}[${key}]`;
+    } else {
+      read = false;
+    }
+  }
+  if (!callee || args === void 0) {
+    cursor.peek();
+    throw "@render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item), or an expression whose value is a template, e.g. @render row()(item)";
+  }
+  return {
+    state: "text" /* TEXT */,
+    tokens: [{
+      type: 29 /* RENDER_CALL */,
+      parts: [callee, args],
+      span: { start, end: cursor.currentChar.index + 1 }
+    }]
+  };
+}
+function appendCall(callee, args) {
+  return args === void 0 ? callee : `${callee}(${args})`;
+}
+
 // ../packages/compiler/src/lexer/utils/template-declaration/template-declaration.utils.ts
-var DECLARATION_START = /^[A-Za-z_$][\w$]*\(/;
-var DECLARATION_LOOKAHEAD = 256;
+var DECLARATION_START = /[A-Za-z_$][\w$]*\(/y;
 function expectsTemplateDeclaration(tokens, cursor) {
   for (let i2 = tokens.length - 1; i2 >= 0; i2--) {
     const token = tokens[i2];
@@ -23065,7 +23170,7 @@ function expectsTemplateDeclaration(tokens, cursor) {
       case 27 /* TEMPLATE_DECLARATION */:
         return false;
       case 1 /* TAG_OPEN_NAME */:
-        return token.parts[0] === "template" && cursor.peekMatch(DECLARATION_START, DECLARATION_LOOKAHEAD);
+        return token.parts[0] === "template" && cursor.peekMatch(DECLARATION_START);
     }
   }
   return false;
@@ -23242,6 +23347,9 @@ function lexTagOpenName(cursor, _context) {
           throw 'The type arguments of an element must be followed by a whitespace, / or >, e.g. <my-list(string) items="{rows()}">';
         }
         cursor.advance();
+        if (!tagName && !isAsciiLetter(cursor.currentChar.code)) {
+          throw `A tag name starts with a letter, not '${cursor.currentChar.value}': write a '<' in a text as &lt;`;
+        }
         tagName = `${tagName}${cursor.currentChar.value}`;
     }
   }
@@ -23300,93 +23408,6 @@ function toTemplateDeclarationToken(name, parameters) {
   return parameters === void 0 ? { type: 27 /* TEMPLATE_DECLARATION */, parts: [name] } : { type: 27 /* TEMPLATE_DECLARATION */, parts: [name, parameters] };
 }
 
-// ../packages/compiler/src/lexer/states/lex-render/lex-render.state.ts
-var IDENTIFIER_CHAR = /^[\w$]/;
-var MEMBER_ACCESS = /^\??\.[\w$]/;
-function lexRender(cursor, _context) {
-  cursor.skipSpaces();
-  const start = cursor.currentChar.index + 1;
-  let callee = "";
-  let args;
-  for (let read = true; read; ) {
-    if (args === void 0 && cursor.peekMatch(IDENTIFIER_CHAR, 1)) {
-      cursor.advance();
-      callee = `${callee}${cursor.currentChar.value}`;
-    } else if (callee && cursor.peekMatch(MEMBER_ACCESS, 3)) {
-      const access = cursor.peekMatch("?.") ? "?." : ".";
-      callee = `${appendCall(callee, args)}${access}`;
-      args = void 0;
-      cursor.advance(access.length);
-    } else if (callee && cursor.peekMatch("(")) {
-      callee = appendCall(callee, args);
-      cursor.advance();
-      args = lexGroup(cursor, LPAREN);
-    } else if (callee && cursor.peekMatch("[")) {
-      callee = appendCall(callee, args);
-      args = void 0;
-      cursor.advance();
-      const key = lexExpressionText(cursor, "]");
-      cursor.advance();
-      callee = `${callee}[${key}]`;
-    } else {
-      read = false;
-    }
-  }
-  if (!callee || args === void 0) {
-    cursor.peek();
-    throw "@render calls a template by its name, followed by its arguments in parentheses, e.g. @render row(item), or an expression whose value is a template, e.g. @render row()(item)";
-  }
-  return {
-    state: "text" /* TEXT */,
-    tokens: [{
-      type: 29 /* RENDER_CALL */,
-      parts: [callee, args],
-      span: { start, end: cursor.currentChar.index + 1 }
-    }]
-  };
-}
-function appendCall(callee, args) {
-  return args === void 0 ? callee : `${callee}(${args})`;
-}
-
-// ../packages/compiler/src/lexer/states/lex-element-ref/lex-element-ref.state.ts
-function lexElementRef(cursor, _context) {
-  let read = true;
-  let name = "";
-  let retVal;
-  while (read) {
-    switch (cursor.peek()) {
-      // A tag can span multiple lines: the name can also be followed by a tab or a line break
-      case SPACE:
-      case TAB:
-      case LF:
-      case CR:
-      case GREATER_THEN:
-      case SLASH:
-        assertName(name);
-        retVal = {
-          state: "tag-body" /* TAG_BODY */,
-          tokens: [{ type: 26 /* ELEMENT_REF */, parts: [name] }]
-        };
-        read = false;
-        break;
-      case LPAREN:
-        throw "An element ref is just #name, without parentheses";
-      case EQUAL_THEN:
-        throw "An element ref takes no value: write #name, which names the element it is declared on";
-      default:
-        cursor.advance();
-        name = `${name}${cursor.currentChar.value}`;
-    }
-  }
-  return retVal;
-}
-function assertName(name) {
-  if (!name) {
-    throw "An element ref needs a name, e.g. #name";
-  }
-}
-
 // ../packages/compiler/src/costants/comment.costant.ts
 var COMMENT_START = "<!--";
 var COMMENT_END = "-->";
@@ -23410,7 +23431,7 @@ var Cursor = class {
    *
    * @param pos - Absolute (0-based) character offset in the original text.
    * @returns A formatted string in the form `[Ln <line>, Col <column>]`
-   *          (line and column are 0-based).
+   *          (line and column are 1-based, as editors show them).
    *
    * @example
    * ```typescript
@@ -23456,6 +23477,7 @@ var Cursor = class {
 
 // ../packages/compiler/src/lexer/types/lexer-cursor/lexer-cursor.model.ts
 var endOfFile = /* @__PURE__ */ Symbol("endOfFile");
+var END_OF_FILE_ERROR = new Error("", { cause: endOfFile });
 var LexerCursor = class extends Cursor {
   /**
    * Representation of the current character.
@@ -23472,14 +23494,6 @@ var LexerCursor = class extends Cursor {
     index: -1,
     value: ""
   };
-  /**
-   * Cache used by peek operations to avoid re-reading
-   * the same character positions multiple times.
-   *
-   * Key: absolute character index
-   * Value: Unicode code point
-   */
-  _peekCache = /* @__PURE__ */ new Map();
   /**
    * Returns a read-only snapshot of the current character.
    */
@@ -23517,30 +23531,52 @@ var LexerCursor = class extends Cursor {
       this._currentChar.value = "";
       this._throwEOFError();
     } else {
-      for (let i2 = this._currentChar.index + 1; i2 <= newIndex; i2++) {
-        this._peekCache.delete(i2);
-      }
       this._currentChar.index = newIndex;
       this._currentChar.value = this.input[newIndex];
       this._currentChar.code = this.input.charCodeAt(newIndex);
     }
   }
-  peekMatch(pattern, length) {
+  /**
+   * Checks whether the upcoming characters in the input match the given pattern,
+   * without advancing the cursor.
+   *
+   * - `string`: compares the input from the next character, a pattern longer than what is left does not match
+   * - `RegExp`: a sticky pattern (`y` flag, no `^`), matched against the input from the next character: its lookaheads
+   *   read the input that follows, up to its end.
+   *
+   * N.B. Deliberate, for speed: a sticky pattern is matched in the input itself. Matching a slice of it copied the rest
+   * of the template for a lookahead of unknown length (the `;` after an `@import`). Do not slice the input.
+   *
+   * @param pattern - String or sticky RegExp to match against.
+   * @returns `true` if the upcoming characters match, `false` otherwise.
+   * @throws When the RegExp is not sticky, which would match anywhere after the cursor.
+   */
+  peekMatch(pattern) {
     if (typeof pattern === "string") {
       this._consumeComment();
       return this.input.startsWith(pattern, this._currentChar.index + 1);
     }
-    const start = this._currentChar.index + 1;
-    const slicedInput = slice(this.input, start, start + length);
-    return pattern.test(slicedInput);
+    if (!pattern.sticky) {
+      throw new Error(`${pattern} must be sticky (y flag) to match from the cursor`);
+    }
+    pattern.lastIndex = this._currentChar.index + 1;
+    return pattern.test(this.input);
   }
   peek(charsOrOptions, options) {
     this._consumeComment();
-    const cache = this._peekCache;
     const chars = typeof charsOrOptions === "number" ? charsOrOptions : 1;
     const offset = (typeof charsOrOptions === "object" ? charsOrOptions : options)?.offset ?? 0;
-    const result = chars === 1 ? this._peekOneChar(this._currentChar.index + offset + 1, cache) : this._peekMany(chars + offset, cache);
-    return result;
+    return chars === 1 ? this._peekOneChar(this._currentChar.index + offset + 1) : this._peekMany(chars, offset);
+  }
+  /**
+   * Peeks the next character as it is written, without skipping the HTML comments as {@link peek} does: for the content
+   * read verbatim, where `<!--` is text (a static attribute value, an expression and its strings, an import path).
+   *
+   * @returns The code of the next character.
+   * @throws Error with cause `EOF` if the input is over.
+   */
+  peekVerbatim() {
+    return this._peekOneChar(this._currentChar.index + 1);
   }
   /**
    * Checks whether the characters following the whitespace (spaces, tabs and line breaks) after the current position
@@ -23592,36 +23628,33 @@ var LexerCursor = class extends Cursor {
    * Peeks multiple characters ahead.
    *
    * @param chars - The number of characters to peek.
-   * @param cache - The cache of the characters already peeked.
+   * @param offset - The number of characters to skip after the current one before the first one peeked.
    * @returns The codes of the characters.
    * @throws Error with cause `EOF` if the peek exceeds input length.
    */
-  _peekMany(chars, cache) {
+  _peekMany(chars, offset) {
     const peekedChars = new Array();
-    const nextCharIndex = this._currentChar.index + 1;
+    const nextCharIndex = this._currentChar.index + offset + 1;
     for (let i2 = nextCharIndex; i2 < nextCharIndex + chars; i2++) {
-      peekedChars.push(this._peekOneChar(i2, cache));
+      peekedChars.push(this._peekOneChar(i2));
     }
     return peekedChars;
   }
   /**
    * Peeks a single character at the given absolute index.
    *
+   * N.B. Deliberate, for speed: the code is read from the input each time. A cache of the codes peeked, a `Map` written
+   * on every peek and cleared on every advance, cost far more than `charCodeAt`. Do not cache them.
+   *
    * @param index - The index of the character.
-   * @param cache - The cache of the characters already peeked.
    * @returns The code of the character.
    * @throws Error with cause `EOF` if the index exceeds input length.
    */
-  _peekOneChar(index, cache) {
-    if (cache.has(index)) {
-      return cache.get(index);
-    }
+  _peekOneChar(index) {
     if (index >= this.input.length) {
       this._throwEOFError();
     }
-    const charCode = this.input.charCodeAt(index);
-    cache.set(index, charCode);
-    return charCode;
+    return this.input.charCodeAt(index);
   }
   /**
    * Consumes the HTML comments starting right after the current character, up to their closing `-->`,
@@ -23647,7 +23680,7 @@ var LexerCursor = class extends Cursor {
    * @throws Always, an error with cause `EOF`.
    */
   _throwEOFError() {
-    throw new Error("", { cause: endOfFile });
+    throw END_OF_FILE_ERROR;
   }
 };
 
@@ -23778,9 +23811,12 @@ var Lexer = class {
    */
   _state = "text" /* TEXT */;
   /**
-   * State stack used to support nested states (e.g. interpolations).
+   * State stack used to support nested states (e.g. interpolations), from the outermost.
+   *
+   * N.B. Deliberate, for speed: a plain array, handed to the transition functions as it is. A `Stack` would copy it
+   * on every read of its values, once per transition. Do not hand out copies.
    */
-  _stack = new Stack();
+  _stack = new Array();
   /**
    * Accumulated list of tokens emitted during tokenization.
    */
@@ -23831,7 +23867,7 @@ var Lexer = class {
    * @returns The opening states.
    */
   get history() {
-    return this._stack.values;
+    return this._stack;
   }
   /**
    * Runs the lexer over the input string and returns the full token array.
@@ -23875,17 +23911,15 @@ var Lexer = class {
     let eof = false;
     const cursor = this._cursor;
     let stateStartIndex = -1;
+    const context = { history: this._stack, tokens: this._tokens };
     while (!eof) {
       try {
         stateStartIndex = cursor.currentChar.index + 1;
         const transitionFunction = this._states[this._state];
-        const { state, tokens, popState, pushState } = transitionFunction(cursor, {
-          history: this._stack.values,
-          tokens: [...this._tokens]
-        });
+        const { state, tokens, popState, pushState } = transitionFunction(cursor, context);
         if (tokens?.length) {
           const stateEndIndex = cursor.currentChar.index + 1;
-          this._tokens.push(...this._withTokenSpans(tokens, { start: stateStartIndex, end: stateEndIndex }));
+          this._appendTokens(tokens, { start: stateStartIndex, end: stateEndIndex });
         }
         if (pushState) {
           this._stack.push(this._state);
@@ -23934,7 +23968,8 @@ var Lexer = class {
           const nextNeighbourhood = slice(this._input, stateEndIndex, endInterval).replace(/\s+$/, "");
           const message = isError ? err.message : `${err}`;
           return new TemplateError(
-            `[Lexer] ${cursor.getPositionFromCharacterIndex(stateEndIndex + 1)} - ${message}
+            // The position of the character the state stopped at, the one it could not read
+            `[Lexer] ${cursor.getPositionFromCharacterIndex(currentIndex + 1)} - ${message}
  ---> ${previousNeighbourhood}${underlinedError}${nextNeighbourhood}`,
             { start: stateStartIndex, end: stateEndIndex },
             message
@@ -23945,20 +23980,23 @@ var Lexer = class {
     return void 0;
   }
   /**
-   * Ensures every emitted token has a source span.
+   * Appends the tokens a state emitted, ensuring every one has a source span.
    *
    * States can provide a more accurate `token.span` (e.g. Event Parameter and Import States)
    * otherwise the lexer falls back to the full state-consumption range.
    *
+   * N.B. Deliberate, for speed: the span is set on the token the state created, which nothing else holds, and the
+   * token is appended in a loop. A copy of every token, appended by a spread, cost an object per token. Do not copy them.
+   *
    * @param tokens - The tokens emitted by a state.
    * @param fallbackSpan - The range of the input the state consumed, for the tokens without a span of their own.
-   * @returns The tokens, each one with its span.
    */
-  _withTokenSpans(tokens, fallbackSpan) {
-    return tokens.map((token) => ({
-      ...token,
-      span: token.span ?? fallbackSpan
-    }));
+  _appendTokens(tokens, fallbackSpan) {
+    for (let i2 = 0; i2 < tokens.length; i2++) {
+      const token = tokens[i2];
+      token.span ??= fallbackSpan;
+      this._tokens.push(token);
+    }
   }
 };
 
@@ -24042,7 +24080,7 @@ var ParserCursor = class extends Cursor {
   peek(charsOrOptions, options) {
     const tokens = typeof charsOrOptions === "number" ? charsOrOptions : 1;
     const offset = (typeof charsOrOptions === "object" ? charsOrOptions : options)?.offset ?? 0;
-    return tokens === 1 ? this.peekOneToken(this._currentToken.index + offset + 1) : this.peekMany(tokens + offset);
+    return tokens === 1 ? this.peekOneToken(this._currentToken.index + offset + 1) : this.peekMany(tokens, offset);
   }
   /**
    * Finds the span of a text written verbatim in the template, e.g. the name of an attribute inside the span of
@@ -24066,10 +24104,14 @@ var ParserCursor = class extends Cursor {
   }
   /**
    * Peeks multiple tokens ahead.
+   *
+   * @param chars - The number of tokens to peek.
+   * @param offset - The number of tokens to skip after the current one before the first one peeked.
+   * @returns The tokens, an EOF token for each one past the end.
    */
-  peekMany(chars) {
+  peekMany(chars, offset) {
     const peekedTokens = new Array();
-    const nextTokenIndex = this._currentToken.index + 1;
+    const nextTokenIndex = this._currentToken.index + offset + 1;
     for (let i2 = nextTokenIndex; i2 < nextTokenIndex + chars; i2++) {
       peekedTokens.push(this.peekOneToken(i2));
     }
@@ -24082,6 +24124,601 @@ var ParserCursor = class extends Cursor {
     return index < this._tokens.length ? this._tokens[index] : { type: 42 /* EOF */ };
   }
 };
+
+// ../packages/compiler/src/parser/utils/find-event/find-event.utils.ts
+function findEvent(nodes) {
+  for (let i2 = 0; i2 < nodes.length; i2++) {
+    const event = findNodeEvent(nodes[i2]);
+    if (event) {
+      return event;
+    }
+  }
+  return void 0;
+}
+function findNodeEvent(node) {
+  switch (node.type) {
+    case 0 /* Element */:
+      return findBindingEvent(node) ?? findEvent(node.children);
+    case 5 /* If */:
+    case 7 /* ElseIf */:
+      return findEvent(node.children) ?? (node.alternate ? findNodeEvent(node.alternate) : void 0);
+    case 8 /* For */:
+      return findEvent(node.children) ?? (node.empty ? findEvent(node.empty.children) : void 0);
+    case 6 /* Else */:
+    case 9 /* Switch */:
+    case 10 /* Case */:
+    case 17 /* Template */:
+    case 21 /* Hydrate */:
+    case 22 /* Client */:
+      return findEvent(node.children);
+    case 24 /* Try */:
+      return findEvent(node.children) ?? findEvent(node.catch.children);
+    case 26 /* Defer */:
+      return findEvent(node.children) ?? (node.placeholder ? findEvent(node.placeholder.children) : void 0) ?? (node.loading ? findEvent(node.loading.children) : void 0) ?? (node.error ? findEvent(node.error.children) : void 0);
+    default:
+      return void 0;
+  }
+}
+function findBindingEvent(bindings) {
+  const { events, conditionalBindings, directives } = bindings;
+  if (events.length) {
+    return events[0];
+  }
+  for (let i2 = 0; i2 < conditionalBindings.length; i2++) {
+    const { branches } = conditionalBindings[i2];
+    for (let j = 0; j < branches.length; j++) {
+      const event = findBindingEvent(branches[j]);
+      if (event) {
+        return event;
+      }
+    }
+  }
+  if (directives?.length) {
+    for (let i2 = 0; i2 < directives.length; i2++) {
+      const event = findBindingEvent(directives[i2]);
+      if (event) {
+        return event;
+      }
+    }
+  }
+  return void 0;
+}
+
+// ../packages/compiler/src/parser/states/parse-block-children/parse-block-children.state.ts
+function parseBlockChildren(cursor, parseNode) {
+  const children = new Array();
+  while (cursor.peek().type !== 20 /* BLOCK_CLOSE */) {
+    if (cursor.peek().type === 42 /* EOF */) {
+      throw "Unexpected end of template: expected BLOCK_CLOSE";
+    }
+    const child = parseNode();
+    if (child) {
+      children.push(child);
+    }
+  }
+  cursor.advance();
+  return children;
+}
+
+// ../packages/compiler/src/parser/states/parse-client/parse-client.state.ts
+function parseClient(cursor, parseNode, token) {
+  cursor.advance(2);
+  const children = parseBlockChildren(cursor, parseNode);
+  let end = cursor.getCurrentToken().value.span.end;
+  let placeholder = null;
+  const next = cursor.peek();
+  if (next.type === 34 /* PLACEHOLDER */) {
+    cursor.advance();
+    const parameters = cursor.peek();
+    if (parameters.type === 18 /* CONDITION */) {
+      throw new Error("The @placeholder of a @client takes no parameters: the server renders it, and the browser replaces it at once", { cause: cursor.findConditionSpan(parameters) });
+    }
+    cursor.advance();
+    const placeholderChildren = parseBlockChildren(cursor, parseNode);
+    const event = findEvent(placeholderChildren);
+    if (event) {
+      throw new Error(`(${event.name}) never runs: the server renders a @placeholder, and the browser replaces it without running its code`, { cause: event.span });
+    }
+    end = cursor.getCurrentToken().value.span.end;
+    placeholder = {
+      type: 23 /* Placeholder */,
+      children: placeholderChildren,
+      span: { start: next.span.start, end }
+    };
+  }
+  return {
+    type: 22 /* Client */,
+    children,
+    placeholder,
+    span: { start: token.span.start, end }
+  };
+}
+function parseOrphanPlaceholder(_cursor, _parseNode, token) {
+  throw new Error("@placeholder must follow the block of a @client or a @defer", { cause: token.span });
+}
+
+// ../packages/compiler/src/lexer/utils/balanced-text/balanced-text.utils.ts
+function findEnd(text, start, terminators, scanner = new ExpressionScanner(), end = text.length) {
+  for (let i2 = start; i2 < end; i2++) {
+    const char = text.charCodeAt(i2);
+    if (scanner.endsAt(char, terminators)) {
+      return i2;
+    }
+    scanner.read(char);
+  }
+  return void 0;
+}
+function findClosing(text, openIndex) {
+  const open = text.charCodeAt(openIndex);
+  return findEnd(text, openIndex + 1, String.fromCharCode(CLOSERS.get(open)), new ExpressionScanner(open === LESS_THAN));
+}
+function splitTopLevel(source, separator = ",", types = false) {
+  const parts = new Array();
+  const scanner = new ExpressionScanner(types);
+  let start = 0;
+  let end;
+  do {
+    end = findEnd(source, start, separator, scanner);
+    const raw = source.slice(start, end);
+    const trimmed = raw.trimStart();
+    parts.push({ text: trimmed.trimEnd(), start: start + raw.length - trimmed.length });
+    start = (end ?? source.length) + 1;
+  } while (end !== void 0);
+  return parts;
+}
+
+// ../packages/compiler/src/parser/utils/durations/durations.utils.ts
+var DURATION = /^(\d+(?:\.\d+)?)(ms|s)?$/;
+function parseDuration(text, span) {
+  const match = DURATION.exec(text);
+  if (!match) {
+    throw new Error(`Expected a duration, such as 500ms or 1s, got "${text}"`, { cause: span });
+  }
+  const value = Number(match[1]);
+  return match[2] === "s" ? value * 1e3 : value;
+}
+
+// ../packages/compiler/src/parser/utils/block-parameters/block-parameters.utils.ts
+var PLACEHOLDER_PARAMETERS = ["minimum"];
+var LOADING_PARAMETERS = ["after", "minimum"];
+var PARAMETER = /^([a-z]+)\s+/;
+function readBlockParameters(cursor, block, names) {
+  const token = cursor.peek();
+  if (token.type !== 18 /* CONDITION */) {
+    return void 0;
+  }
+  const parameters = parseBlockParameters(token.parts[0], cursor.findConditionSpan(token).start, block, names);
+  cursor.advance();
+  return parameters;
+}
+function parseBlockParameters(source, offset, block, names) {
+  const parameters = {};
+  const parts = splitTopLevel(source);
+  for (let i2 = 0; i2 < parts.length; i2++) {
+    const { text, start } = parts[i2];
+    const span = { start: offset + start, end: offset + start + text.length };
+    const match = PARAMETER.exec(text);
+    const name = match?.[1];
+    if (!name || !names.includes(name)) {
+      throw new Error(`Unknown parameter "${text}" of ${block}: use ${names.join(" or ")} followed by a duration, such as ${names[0]} 500ms`, { cause: span });
+    }
+    if (parameters[name] !== void 0) {
+      throw new Error(`The parameter "${name}" of ${block} is declared twice`, { cause: span });
+    }
+    const valueStart = match[0].length;
+    parameters[name] = parseDuration(text.slice(valueStart), { start: span.start + valueStart, end: span.end });
+  }
+  return parameters;
+}
+
+// ../packages/compiler/src/parser/utils/identifier/identifier.utils.ts
+var import_typescript9 = require("typescript");
+var RESERVED_NAMES2 = /* @__PURE__ */ new Set(["root", "$event"]);
+var RESERVED_WORDS = new Set(Array.from({ length: import_typescript9.SyntaxKind.LastReservedWord - import_typescript9.SyntaxKind.FirstReservedWord + 1 }, (_value, index) => (0, import_typescript9.tokenToString)(import_typescript9.SyntaxKind.FirstReservedWord + index)));
+function isValidIdentifier(name) {
+  if (!name.length || RESERVED_WORDS.has(name)) {
+    return false;
+  }
+  for (let i2 = 0; i2 < name.length; i2++) {
+    const codePoint = name.codePointAt(i2);
+    if (!(i2 ? (0, import_typescript9.isIdentifierPart)(codePoint, import_typescript9.ScriptTarget.ESNext) : (0, import_typescript9.isIdentifierStart)(codePoint, import_typescript9.ScriptTarget.ESNext))) {
+      return false;
+    }
+    if (codePoint > 65535) {
+      i2++;
+    }
+  }
+  return true;
+}
+function assertDeclaredName(name, span, kind) {
+  if (!isValidIdentifier(name)) {
+    const article = /^[aeiou]/i.test(kind) ? "an" : "a";
+    throw new Error(`'${name}' is not a valid name for ${article} ${kind}: it must be an identifier.`, { cause: span });
+  }
+  if (RESERVED_NAMES2.has(name) || name.startsWith("__") || name.startsWith("$$")) {
+    throw new Error(`'${name}' is reserved in templates: give the ${kind} another name.`, { cause: span });
+  }
+}
+
+// ../packages/compiler/src/parser/utils/error-name/error-name.utils.ts
+function readErrorName(cursor, node, kind) {
+  const nameToken = cursor.peek();
+  if (nameToken.type !== 18 /* CONDITION */) {
+    return;
+  }
+  const raw = nameToken.parts[0];
+  const name = raw.trim();
+  const start = cursor.findConditionSpan(nameToken).start + raw.length - raw.trimStart().length;
+  const nameSpan = { start, end: start + name.length };
+  assertDeclaredName(name, nameSpan, kind);
+  node.name = name;
+  node.nameSpan = nameSpan;
+  cursor.advance();
+}
+
+// ../packages/compiler/src/parser/utils/triggers/triggers.utils.ts
+var import_typescript10 = require("typescript");
+var DEFER_TRIGGER_KEYWORDS = ["load", "idle", "timer", "visible", "interaction", "hover"];
+var HYDRATE_TRIGGER_KEYWORDS = ["load", "idle", "timer", "visible", "interaction", "hover", "never"];
+var PREFETCH = /^prefetch\b\s*/;
+var WHEN = /^when\s+/;
+var KEYWORD_TRIGGER = /^([a-z]+)\s*(?:\(([\s\S]*)\))?$/;
+var IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
+function parseHydrateTriggers(source, offset) {
+  const parsed = parseTriggers(source, offset, "@hydrate");
+  const never = parsed.triggers.find(({ kind }) => kind === "never");
+  if (never && (parsed.triggers.length > 1 || parsed.prefetch.length)) {
+    throw new Error('The trigger "never" stands alone: any other trigger would hydrate the content', { cause: never.span });
+  }
+  return parsed;
+}
+function parseDeferTriggers(source, offset) {
+  return parseTriggers(source, offset, "@defer");
+}
+function parseTriggers(source, offset, block) {
+  const keywords = block === "@defer" ? DEFER_TRIGGER_KEYWORDS : HYDRATE_TRIGGER_KEYWORDS;
+  const accepted = `${keywords.join(", ")}, or when followed by an expression, each one after prefetch to load the modules only`;
+  const triggers = new Array();
+  const prefetch = new Array();
+  const parts = splitTopLevel(source);
+  for (let i2 = 0; i2 < parts.length; i2++) {
+    const { text, start } = parts[i2];
+    const prefetching = PREFETCH.exec(text);
+    const skipped = prefetching ? prefetching[0].length : 0;
+    const triggerText = text.slice(skipped);
+    const span = { start: offset + start + skipped, end: offset + start + text.length };
+    if (!triggerText) {
+      throw new Error(`${block} needs a trigger${prefetching ? " after prefetch" : ""}: use ${accepted}`, { cause: { start: offset + start, end: span.end } });
+    }
+    const trigger = parseTrigger(triggerText, span, block, keywords, accepted);
+    if (prefetching && trigger.kind === "never") {
+      throw new Error('The trigger "never" loads nothing: it cannot follow prefetch', { cause: span });
+    }
+    const list = prefetching ? prefetch : triggers;
+    if (list.some(({ kind }) => kind === trigger.kind)) {
+      throw new Error(`The trigger "${prefetching ? "prefetch " : ""}${trigger.kind}" is declared twice`, { cause: span });
+    }
+    list.push(trigger);
+  }
+  return { triggers, prefetch };
+}
+function parseTrigger(text, span, block, keywords, accepted) {
+  const when = WHEN.exec(text);
+  if (when) {
+    const expression = text.slice(when[0].length);
+    return { kind: "when", expression, expressionNode: validateExpression(expression, span.start + when[0].length).node, span };
+  }
+  const match = KEYWORD_TRIGGER.exec(text);
+  const kind = match?.[1];
+  if (!kind || !keywords.includes(kind)) {
+    throw new Error(`Unknown ${block} trigger "${text}": use ${accepted}`, { cause: span });
+  }
+  const args = match[2] === void 0 ? void 0 : toArguments(match[2], span.start + text.indexOf("(") + 1);
+  switch (kind) {
+    case "idle":
+      assertArguments(kind, args, 1, span);
+      return args ? { kind, timeout: parseDuration(args[0].text, args[0].span), span } : { kind, span };
+    case "timer":
+      if (!args) {
+        throw new Error('The trigger "timer" needs a duration, such as timer(500ms)', { cause: span });
+      }
+      assertArguments(kind, args, 1, span);
+      return { kind, delay: parseDuration(args[0].text, args[0].span), span };
+    case "visible": {
+      assertArguments(kind, args, 2, span);
+      const trigger = { kind, span };
+      const optionsIndex = args && (args.length > 1 || args[0].text.startsWith("{")) ? args.length - 1 : -1;
+      if (args && optionsIndex !== 0) {
+        trigger.target = parseTarget(args[0], block);
+      }
+      if (optionsIndex !== -1) {
+        trigger.options = parseOptions(args[optionsIndex]);
+      }
+      return trigger;
+    }
+    case "interaction":
+    case "hover": {
+      assertArguments(kind, args, 1, span);
+      const trigger = { kind, span };
+      if (args) {
+        trigger.target = parseTarget(args[0], block);
+      }
+      return trigger;
+    }
+    default:
+      assertArguments(kind, args, 0, span);
+      return { kind, span };
+  }
+}
+function toArguments(source, offset) {
+  return splitTopLevel(source).map(({ text, start }) => ({ text, span: { start: offset + start, end: offset + start + text.length } }));
+}
+function assertArguments(kind, args, max, span) {
+  if (args && args.length > max) {
+    throw new Error(`The trigger "${kind}" takes ${max ? `at most ${max === 1 ? "one argument" : `${max} arguments`}` : "no arguments"}`, { cause: span });
+  }
+}
+function parseTarget({ text, span }, block) {
+  if (block === "@hydrate") {
+    throw new Error("A trigger of @hydrate watches the elements of its content: it takes no element ref", { cause: span });
+  }
+  const node = IDENTIFIER.test(text) ? validateExpression(text, span.start).node : void 0;
+  if (!node || !(0, import_typescript10.isIdentifier)(node)) {
+    throw new Error(`Expected the element ref naming the element to watch, got "${text}"`, { cause: span });
+  }
+  return { name: text, expressionNode: node, span };
+}
+function parseOptions({ text, span }) {
+  const { node } = validateExpression(text, span.start);
+  if (!(0, import_typescript10.isObjectLiteralExpression)(node)) {
+    throw new Error(`Expected the options of the observer as an object literal, such as { rootMargin: '200px' }, got "${text}"`, { cause: span });
+  }
+  return { expression: text, expressionNode: node, span };
+}
+
+// ../packages/compiler/src/parser/states/parse-defer/parse-defer.state.ts
+function parseDefer(cursor, parseNode, token) {
+  cursor.advance();
+  const conditionToken = cursor.peek();
+  const { triggers, prefetch } = conditionToken.type === 18 /* CONDITION */ ? parseDeferTriggers(conditionToken.parts[0], cursor.findConditionSpan(conditionToken).start) : { triggers: [], prefetch: [] };
+  cursor.advance(conditionToken.type === 18 /* CONDITION */ ? 2 : 1);
+  const node = {
+    type: 26 /* Defer */,
+    triggers,
+    prefetch,
+    children: parseBlockChildren(cursor, parseNode),
+    placeholder: null,
+    loading: null,
+    error: null,
+    span: { start: token.span.start, end: cursor.getCurrentToken().value.span.end }
+  };
+  for (let next = cursor.peek(); next.type === 34 /* PLACEHOLDER */ || next.type === 38 /* LOADING */ || next.type === 39 /* ERROR */; next = cursor.peek()) {
+    const start = next.span.start;
+    cursor.advance();
+    switch (next.type) {
+      case 34 /* PLACEHOLDER */: {
+        assertNotDeclared(node.placeholder, "@placeholder", next.span);
+        const parameters = readBlockParameters(cursor, "@placeholder", PLACEHOLDER_PARAMETERS);
+        const children = parseFollowingChildren(cursor, parseNode);
+        node.placeholder = Object.assign({ type: 23 /* Placeholder */, children, span: { start, end: cursor.getCurrentToken().value.span.end } }, parameters);
+        break;
+      }
+      case 38 /* LOADING */: {
+        assertNotDeclared(node.loading, "@loading", next.span);
+        const parameters = readBlockParameters(cursor, "@loading", LOADING_PARAMETERS);
+        const children = parseFollowingChildren(cursor, parseNode);
+        node.loading = Object.assign({ type: 27 /* Loading */, children, span: { start, end: cursor.getCurrentToken().value.span.end } }, parameters);
+        break;
+      }
+      default: {
+        assertNotDeclared(node.error, "@error", next.span);
+        const error = { type: 28 /* Error */, children: [], span: next.span };
+        readErrorName(cursor, error, "error of @error");
+        error.children = parseFollowingChildren(cursor, parseNode);
+        error.span = { start, end: cursor.getCurrentToken().value.span.end };
+        node.error = error;
+      }
+    }
+    node.span.end = cursor.getCurrentToken().value.span.end;
+  }
+  return node;
+}
+function parseOrphanLoading(_cursor, _parseNode, token) {
+  throw new Error("@loading must follow the block of a @defer", { cause: token.span });
+}
+function parseOrphanError(_cursor, _parseNode, token) {
+  throw new Error("@error must follow the block of a @defer", { cause: token.span });
+}
+function parseFollowingChildren(cursor, parseNode) {
+  cursor.advance();
+  return parseBlockChildren(cursor, parseNode);
+}
+function assertNotDeclared(declared, keyword, span) {
+  if (declared) {
+    throw new Error(`${keyword} is declared twice for this @defer`, { cause: span });
+  }
+}
+
+// ../packages/compiler/src/parser/utils/template-content/template-content.utils.ts
+var SHADOW_ROOT_ATTRIBUTES = /* @__PURE__ */ new Set(["shadowrootmode", "shadowrootclonable", "shadowrootdelegatesfocus", "shadowrootserializable"]);
+function assertStandardTemplate(element) {
+  const { attributes } = element;
+  for (let i2 = 0; i2 < attributes.length; i2++) {
+    const { name, span } = attributes[i2];
+    if (SHADOW_ROOT_ATTRIBUTES.has(name)) {
+      throw new Error(`A <template> cannot declare a shadow root with "${name}": the server writes the shadow root of each component`, { cause: span });
+    }
+  }
+}
+function serializeTemplateContent(children) {
+  return serializeNodes(children, void 0);
+}
+function serializeNodes(nodes, parentTag) {
+  let html = "";
+  for (let i2 = 0; i2 < nodes.length; i2++) {
+    const node = nodes[i2];
+    switch (node.type) {
+      case 3 /* Text */:
+        html += parentTag && isRawTextElement(parentTag) ? escapeRawText(node.value, parentTag) : escapeText(node.value);
+        break;
+      case 0 /* Element */:
+        html += serializeElement(node);
+        break;
+      default:
+        throw new Error("The content of a <template> is static HTML, which the code using the template clones: it cannot interpolate values, render blocks or declare templates. Declare a template with <template name(\u2026)> and render it with @render to bind values", { cause: node.span });
+    }
+  }
+  return html;
+}
+function serializeElement(element) {
+  const { tagName, attributes } = element;
+  const binding = element.ref ?? element.typeArguments?.[0] ?? element.classBindings[0] ?? element.styleBindings[0] ?? element.events[0] ?? element.conditionalBindings[0] ?? element.directives[0] ?? element.structuralDirectives[0] ?? attributes.find(({ value }) => typeof value !== "string");
+  if (binding) {
+    throw new Error(`<${tagName}> is in the content of a <template>, static HTML which the code using the template clones: it takes only static attributes`, { cause: binding.span });
+  }
+  let html = `<${tagName}`;
+  for (let i2 = 0; i2 < attributes.length; i2++) {
+    const { name, value } = attributes[i2];
+    html += ` ${name}="${escapeAttribute(value)}"`;
+  }
+  html += ">";
+  if (isVoidElement(tagName)) {
+    return html;
+  }
+  if (dropsLeadingNewline(tagName)) {
+    html += "\n";
+  }
+  return `${html}${serializeNodes(element.children, tagName)}</${tagName}>`;
+}
+
+// ../packages/compiler/src/parser/utils/template-parameters/template-parameters.utils.ts
+var import_typescript11 = require("typescript");
+var FUNCTION_PREFIX = "function __template(";
+function parseTemplateParameters(text, offset, template) {
+  const sourceFile = (0, import_typescript11.createSourceFile)("__template.ts", `${FUNCTION_PREFIX}${text}) {}`, import_typescript11.ScriptTarget.ESNext, true);
+  const declaration = sourceFile.statements[0];
+  if (sourceFile.statements.length !== 1 || !(0, import_typescript11.isFunctionDeclaration)(declaration) || !isParameterList(sourceFile, declaration.parameters, FUNCTION_PREFIX.length + text.length)) {
+    throw new Error(`The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template ${template}(item: Item, index: number)>`, { cause: toTemplateSpan2(offset, FUNCTION_PREFIX.length, FUNCTION_PREFIX.length + text.length) });
+  }
+  const parameters = new Array();
+  const names = /* @__PURE__ */ new Set();
+  let omittable;
+  for (let i2 = 0; i2 < declaration.parameters.length; i2++) {
+    const parameter = declaration.parameters[i2];
+    const { name, type, dotDotDotToken, questionToken, initializer, modifiers } = parameter;
+    if (!(0, import_typescript11.isIdentifier)(name)) {
+      throw invalidParameter(parameter, sourceFile, template, offset, "cannot destructure its value: name it, and read its properties in the content of the template");
+    }
+    if (dotDotDotToken) {
+      throw invalidParameter(parameter, sourceFile, template, offset, "cannot be a rest parameter: a template takes a fixed number of arguments");
+    }
+    if (questionToken && initializer) {
+      throw invalidParameter(parameter, sourceFile, template, offset, "cannot be both optional and with a default value: the default value already makes it optional");
+    }
+    if (modifiers?.length) {
+      throw invalidParameter(parameter, sourceFile, template, offset, "cannot have modifiers or decorators");
+    }
+    const typed = type?.getWidth(sourceFile) ? type : void 0;
+    if (!typed && (type || !initializer)) {
+      throw invalidParameter(parameter, sourceFile, template, offset, questionToken ? `needs a type, e.g. ${name.text}?: string` : `needs a type or a default value, e.g. ${name.text}: string or ${name.text} = ''`);
+    }
+    if (questionToken || initializer) {
+      omittable ??= parameter;
+    } else if (omittable) {
+      throw invalidParameter(parameter, sourceFile, template, offset, `must be optional or have a default value, as '${omittable.getText(sourceFile)}' before it: a @render leaves out only the last arguments`);
+    }
+    const nameSpan = toTemplateSpan2(offset, name.getStart(sourceFile), name.getEnd());
+    assertDeclaredName(name.text, nameSpan, "parameter");
+    if (names.has(name.text)) {
+      throw new Error(`Template "${template}" declares the parameter "${name.text}" more than once`, { cause: nameSpan });
+    }
+    names.add(name.text);
+    const node = { name: name.text, nameSpan };
+    if (typed) {
+      node.type = typed.getText(sourceFile);
+      node.typeSpan = toTemplateSpan2(offset, typed.getStart(sourceFile), typed.getEnd());
+    }
+    if (questionToken) {
+      node.optional = true;
+    }
+    if (initializer) {
+      const { start } = toTemplateSpan2(offset, initializer.getStart(sourceFile), initializer.getEnd());
+      node.initializer = validateExpression(initializer.getText(sourceFile), start).node;
+    }
+    parameters.push(node);
+  }
+  return parameters;
+}
+function isParameterList(sourceFile, parameters, end) {
+  let start = FUNCTION_PREFIX.length;
+  for (let i2 = 0; i2 < parameters.length; i2++) {
+    if (countCommas(sourceFile.text, start, parameters[i2].getStart(sourceFile)) !== (i2 ? 1 : 0)) {
+      return false;
+    }
+    start = parameters[i2].getEnd();
+  }
+  const trailing = countCommas(sourceFile.text, start, end);
+  return trailing === 0 || trailing === 1 && !!parameters.length;
+}
+function countCommas(text, start, end) {
+  const scanner = (0, import_typescript11.createScanner)(import_typescript11.ScriptTarget.ESNext, true, import_typescript11.LanguageVariant.Standard, text.slice(start, end));
+  let commas = 0;
+  for (let token = scanner.scan(); token !== import_typescript11.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
+    if (token !== import_typescript11.SyntaxKind.CommaToken) {
+      return void 0;
+    }
+    commas++;
+  }
+  return commas;
+}
+function toTemplateSpan2(offset, start, end) {
+  return { start: offset + start - FUNCTION_PREFIX.length, end: offset + end - FUNCTION_PREFIX.length };
+}
+function invalidParameter(parameter, sourceFile, template, offset, reason) {
+  return new Error(`The parameter '${parameter.getText(sourceFile)}' of template "${template}" ${reason}`, { cause: toTemplateSpan2(offset, parameter.getStart(sourceFile), parameter.getEnd()) });
+}
+
+// ../packages/compiler/src/parser/utils/type-arguments/type-arguments.utils.ts
+function parseTypeArguments(text, offset) {
+  const parts = splitTopLevel(text, ",", true);
+  if (!parts[parts.length - 1].text) {
+    parts.pop();
+  }
+  return parts.map(({ text: type, start }) => {
+    if (!type) {
+      throw "A type argument cannot be empty";
+    }
+    return { text: type, span: { start: offset + start, end: offset + start + type.length } };
+  });
+}
+
+// ../packages/compiler/src/parser/utils/unique-attributes/unique-attributes.utils.ts
+function assertUniqueAttributes(attributes, conditionalBindings, keyOf, describeDuplicate, bound = /* @__PURE__ */ new Set()) {
+  for (let i2 = 0; i2 < attributes.length; i2++) {
+    const key = keyOf(attributes[i2]);
+    if (bound.has(key)) {
+      throw new Error(describeDuplicate(key), { cause: attributes[i2].span });
+    }
+    bound.add(key);
+  }
+  assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniqueAttributes(branch.attributes, branch.conditionalBindings, keyOf, describeDuplicate, boundInBranch));
+}
+function assertUniqueInBranches(conditionalBindings, declared, assertUnique) {
+  for (let i2 = 0; i2 < conditionalBindings.length; i2++) {
+    const { branches } = conditionalBindings[i2];
+    const declaredInBranches = /* @__PURE__ */ new Set();
+    for (let j = 0; j < branches.length; j++) {
+      const declaredInBranch = new Set(declared);
+      assertUnique(branches[j], declaredInBranch);
+      for (const name of declaredInBranch) {
+        declaredInBranches.add(name);
+      }
+    }
+    for (const name of declaredInBranches) {
+      declared.add(name);
+    }
+  }
+}
 
 // ../node_modules/entities/dist/decode-codepoint.js
 var c1 = [
@@ -24723,102 +25360,6 @@ function parseDefaultNever(cursor, span, declaresDefault2) {
   return span;
 }
 
-// ../packages/compiler/src/parser/states/parse-two-way-binding/parse-two-way-binding.state.ts
-var import_typescript9 = require("typescript");
-var TWO_WAY_BINDING_RE = /^\[\(([^\s()[\]]+)\)\]$/;
-function isTwoWayBinding(token) {
-  return token.parts[0].startsWith("[(");
-}
-function parseTwoWayBinding(cursor, parseNode, token) {
-  const { name: bracketed, nameSpan: bracketedSpan, value, span, bare } = parseAttribute(cursor, parseNode, token);
-  const name = TWO_WAY_BINDING_RE.exec(bracketed)?.[1];
-  if (!name) {
-    throw new Error(`"${bracketed}" is not a two-way binding: write [(name)]="signal"`, { cause: bracketedSpan });
-  }
-  if (name.startsWith("attr.")) {
-    throw new Error(`[(${name})] binds a model of a component or of a directive, while attr. writes an attribute of the element, which has no event of change: write ${name}="{ expression }"`, { cause: bracketedSpan });
-  }
-  if (bare || typeof value !== "string" || !value.trim()) {
-    throw new Error(`[(${name})] binds a writable signal, named without braces nor call: [(${name})]="signal"`, { cause: span });
-  }
-  const nameSpan = { start: bracketedSpan.start + 2, end: bracketedSpan.end - 2 };
-  const target = value.trim();
-  const targetSpan = cursor.findSpan(target, bracketedSpan.end);
-  assertSignalReference(validateExpression(target, targetSpan.start).node, name, targetSpan);
-  const attribute = {
-    type: 1 /* Attribute */,
-    name,
-    nameSpan,
-    value: { type: 4 /* Interpolation */, expression: validateExpression(`${target}()`, targetSpan.start).node, span: targetSpan },
-    span,
-    twoWay: true
-  };
-  const event = {
-    type: 2 /* Event */,
-    name: toModelChangeEvent(name),
-    nameSpan,
-    handler: `${target}.set`,
-    handlerSpan: targetSpan,
-    parameters: [validateExpression("$event.detail").node],
-    span,
-    twoWay: true
-  };
-  return { attribute, event };
-}
-function assertSignalReference(expression, name, span) {
-  let node = expression;
-  while (((0, import_typescript9.isPropertyAccessExpression)(node) || (0, import_typescript9.isElementAccessExpression)(node)) && !node.questionDotToken) {
-    node = node.expression;
-  }
-  if (!(0, import_typescript9.isIdentifier)(node)) {
-    throw new Error(`[(${name})] binds a writable signal, named without braces nor call: a member, a variable of the template or one of their properties, e.g. [(${name})]="count"`, { cause: span });
-  }
-}
-
-// ../packages/compiler/src/lexer/utils/balanced-text/balanced-text.utils.ts
-function findEnd(text, start, terminators, scanner = new ExpressionScanner(), end = text.length) {
-  for (let i2 = start; i2 < end; i2++) {
-    const char = text.charCodeAt(i2);
-    if (scanner.endsAt(char, terminators)) {
-      return i2;
-    }
-    scanner.read(char);
-  }
-  return void 0;
-}
-function findClosing(text, openIndex) {
-  const open = text.charCodeAt(openIndex);
-  return findEnd(text, openIndex + 1, String.fromCharCode(CLOSERS.get(open)), new ExpressionScanner(open === LESS_THAN));
-}
-function splitTopLevel(source, separator = ",", types = false) {
-  const parts = new Array();
-  const scanner = new ExpressionScanner(types);
-  let start = 0;
-  let end;
-  do {
-    end = findEnd(source, start, separator, scanner);
-    const raw = source.slice(start, end);
-    const trimmed = raw.trimStart();
-    parts.push({ text: trimmed.trimEnd(), start: start + raw.length - trimmed.length });
-    start = (end ?? source.length) + 1;
-  } while (end !== void 0);
-  return parts;
-}
-
-// ../packages/compiler/src/parser/utils/type-arguments/type-arguments.utils.ts
-function parseTypeArguments(text, offset) {
-  const parts = splitTopLevel(text, ",", true);
-  if (!parts[parts.length - 1].text) {
-    parts.pop();
-  }
-  return parts.map(({ text: type, start }) => {
-    if (!type) {
-      throw "A type argument cannot be empty";
-    }
-    return { text: type, span: { start: offset + start, end: offset + start + type.length } };
-  });
-}
-
 // ../packages/compiler/src/parser/states/parse-event/parse-event.state.ts
 function parseEvent(cursor, _parseNode, token) {
   const startOffset = token.span.start;
@@ -24869,6 +25410,58 @@ function parseEvent(cursor, _parseNode, token) {
     node.key = key;
   }
   return node;
+}
+
+// ../packages/compiler/src/parser/states/parse-two-way-binding/parse-two-way-binding.state.ts
+var import_typescript12 = require("typescript");
+var TWO_WAY_BINDING_RE = /^\[\(([^\s()[\]]+)\)\]$/;
+function isTwoWayBinding(token) {
+  return token.parts[0].startsWith("[(");
+}
+function parseTwoWayBinding(cursor, parseNode, token) {
+  const { name: bracketed, nameSpan: bracketedSpan, value, span, bare } = parseAttribute(cursor, parseNode, token);
+  const name = TWO_WAY_BINDING_RE.exec(bracketed)?.[1];
+  if (!name) {
+    throw new Error(`"${bracketed}" is not a two-way binding: write [(name)]="signal"`, { cause: bracketedSpan });
+  }
+  if (name.startsWith("attr.")) {
+    throw new Error(`[(${name})] binds a model of a component or of a directive, while attr. writes an attribute of the element, which has no event of change: write ${name}="{ expression }"`, { cause: bracketedSpan });
+  }
+  if (bare || typeof value !== "string" || !value.trim()) {
+    throw new Error(`[(${name})] binds a writable signal, named without braces nor call: [(${name})]="signal"`, { cause: span });
+  }
+  const nameSpan = { start: bracketedSpan.start + 2, end: bracketedSpan.end - 2 };
+  const target = value.trim();
+  const targetSpan = cursor.findSpan(target, bracketedSpan.end);
+  assertSignalReference(validateExpression(target, targetSpan.start).node, name, targetSpan);
+  const attribute = {
+    type: 1 /* Attribute */,
+    name,
+    nameSpan,
+    value: { type: 4 /* Interpolation */, expression: validateExpression(`${target}()`, targetSpan.start).node, span: targetSpan },
+    span,
+    twoWay: true
+  };
+  const event = {
+    type: 2 /* Event */,
+    name: toModelChangeEvent(name),
+    nameSpan,
+    handler: `${target}.set`,
+    handlerSpan: targetSpan,
+    parameters: [validateExpression("$event.detail").node],
+    span,
+    twoWay: true
+  };
+  return { attribute, event };
+}
+function assertSignalReference(expression, name, span) {
+  let node = expression;
+  while (((0, import_typescript12.isPropertyAccessExpression)(node) || (0, import_typescript12.isElementAccessExpression)(node)) && !node.questionDotToken) {
+    node = node.expression;
+  }
+  if (!(0, import_typescript12.isIdentifier)(node)) {
+    throw new Error(`[(${name})] binds a writable signal, named without braces nor call: a member, a variable of the template or one of their properties, e.g. [(${name})]="count"`, { cause: span });
+  }
 }
 
 // ../packages/compiler/src/parser/states/parse-directive/parse-directive.state.ts
@@ -25131,27 +25724,6 @@ function consumeBlockOpen(cursor) {
   cursor.advance();
 }
 
-// ../packages/compiler/src/parser/utils/identifier/identifier.utils.ts
-var import_typescript10 = require("typescript");
-var RESERVED_NAMES2 = /* @__PURE__ */ new Set(["root", "$event"]);
-function isValidIdentifier(name) {
-  if (!name.length) {
-    return false;
-  }
-  const sourceFile = (0, import_typescript10.createSourceFile)("__id.ts", name, import_typescript10.ScriptTarget.ESNext, false);
-  const statement = sourceFile.statements[0];
-  return !!statement && (0, import_typescript10.isExpressionStatement)(statement) && (0, import_typescript10.isIdentifier)(statement.expression) && statement.expression.text === name;
-}
-function assertDeclaredName(name, span, kind) {
-  if (!isValidIdentifier(name)) {
-    const article = /^[aeiou]/i.test(kind) ? "an" : "a";
-    throw new Error(`'${name}' is not a valid name for ${article} ${kind}: it must be an identifier.`, { cause: span });
-  }
-  if (RESERVED_NAMES2.has(name) || name.startsWith("__") || name.startsWith("$$")) {
-    throw new Error(`'${name}' is reserved in templates: give the ${kind} another name.`, { cause: span });
-  }
-}
-
 // ../packages/compiler/src/parser/states/parse-element-ref/parse-element-ref.state.ts
 function parseElementRef(cursor, token) {
   cursor.advance();
@@ -25168,173 +25740,6 @@ function parseTemplateDeclaration(cursor, token) {
   const nameSpan = cursor.findSpan(name, token.span.start);
   assertDeclaredName(name, nameSpan, "template");
   return { name, nameSpan };
-}
-
-// ../packages/compiler/src/parser/utils/template-content/template-content.utils.ts
-var SHADOW_ROOT_ATTRIBUTES = /* @__PURE__ */ new Set(["shadowrootmode", "shadowrootclonable", "shadowrootdelegatesfocus", "shadowrootserializable"]);
-function assertStandardTemplate(element) {
-  const { attributes } = element;
-  for (let i2 = 0; i2 < attributes.length; i2++) {
-    const { name, span } = attributes[i2];
-    if (SHADOW_ROOT_ATTRIBUTES.has(name)) {
-      throw new Error(`A <template> cannot declare a shadow root with "${name}": the server writes the shadow root of each component`, { cause: span });
-    }
-  }
-}
-function serializeTemplateContent(children) {
-  return serializeNodes(children, void 0);
-}
-function serializeNodes(nodes, parentTag) {
-  let html = "";
-  for (let i2 = 0; i2 < nodes.length; i2++) {
-    const node = nodes[i2];
-    switch (node.type) {
-      case 3 /* Text */:
-        html += parentTag && isRawTextElement(parentTag) ? escapeRawText(node.value, parentTag) : escapeText(node.value);
-        break;
-      case 0 /* Element */:
-        html += serializeElement(node);
-        break;
-      default:
-        throw new Error("The content of a <template> is static HTML, which the code using the template clones: it cannot interpolate values, render blocks or declare templates. Declare a template with <template name(\u2026)> and render it with @render to bind values", { cause: node.span });
-    }
-  }
-  return html;
-}
-function serializeElement(element) {
-  const { tagName, attributes } = element;
-  const binding = element.ref ?? element.typeArguments?.[0] ?? element.classBindings[0] ?? element.styleBindings[0] ?? element.events[0] ?? element.conditionalBindings[0] ?? element.directives[0] ?? element.structuralDirectives[0] ?? attributes.find(({ value }) => typeof value !== "string");
-  if (binding) {
-    throw new Error(`<${tagName}> is in the content of a <template>, static HTML which the code using the template clones: it takes only static attributes`, { cause: binding.span });
-  }
-  let html = `<${tagName}`;
-  for (let i2 = 0; i2 < attributes.length; i2++) {
-    const { name, value } = attributes[i2];
-    html += ` ${name}="${escapeAttribute(value)}"`;
-  }
-  html += ">";
-  if (isVoidElement(tagName)) {
-    return html;
-  }
-  if (dropsLeadingNewline(tagName)) {
-    html += "\n";
-  }
-  return `${html}${serializeNodes(element.children, tagName)}</${tagName}>`;
-}
-
-// ../packages/compiler/src/parser/utils/unique-attributes/unique-attributes.utils.ts
-function assertUniqueAttributes(attributes, conditionalBindings, keyOf, describeDuplicate, bound = /* @__PURE__ */ new Set()) {
-  for (let i2 = 0; i2 < attributes.length; i2++) {
-    const key = keyOf(attributes[i2]);
-    if (bound.has(key)) {
-      throw new Error(describeDuplicate(key), { cause: attributes[i2].span });
-    }
-    bound.add(key);
-  }
-  assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniqueAttributes(branch.attributes, branch.conditionalBindings, keyOf, describeDuplicate, boundInBranch));
-}
-function assertUniqueInBranches(conditionalBindings, declared, assertUnique) {
-  for (let i2 = 0; i2 < conditionalBindings.length; i2++) {
-    const { branches } = conditionalBindings[i2];
-    const declaredInBranches = /* @__PURE__ */ new Set();
-    for (let j = 0; j < branches.length; j++) {
-      const declaredInBranch = new Set(declared);
-      assertUnique(branches[j], declaredInBranch);
-      for (const name of declaredInBranch) {
-        declaredInBranches.add(name);
-      }
-    }
-    for (const name of declaredInBranches) {
-      declared.add(name);
-    }
-  }
-}
-
-// ../packages/compiler/src/parser/utils/template-parameters/template-parameters.utils.ts
-var import_typescript11 = require("typescript");
-var FUNCTION_PREFIX = "function __template(";
-function parseTemplateParameters(text, offset, template) {
-  const sourceFile = (0, import_typescript11.createSourceFile)("__template.ts", `${FUNCTION_PREFIX}${text}) {}`, import_typescript11.ScriptTarget.ESNext, true);
-  const declaration = sourceFile.statements[0];
-  if (sourceFile.statements.length !== 1 || !(0, import_typescript11.isFunctionDeclaration)(declaration) || !isParameterList(sourceFile, declaration.parameters, FUNCTION_PREFIX.length + text.length)) {
-    throw new Error(`The parameters of a template are declared like the ones of a function, each one with its type, e.g. <template ${template}(item: Item, index: number)>`, { cause: toTemplateSpan2(offset, FUNCTION_PREFIX.length, FUNCTION_PREFIX.length + text.length) });
-  }
-  const parameters = new Array();
-  const names = /* @__PURE__ */ new Set();
-  let omittable;
-  for (let i2 = 0; i2 < declaration.parameters.length; i2++) {
-    const parameter = declaration.parameters[i2];
-    const { name, type, dotDotDotToken, questionToken, initializer, modifiers } = parameter;
-    if (!(0, import_typescript11.isIdentifier)(name)) {
-      throw invalidParameter(parameter, sourceFile, template, offset, "cannot destructure its value: name it, and read its properties in the content of the template");
-    }
-    if (dotDotDotToken) {
-      throw invalidParameter(parameter, sourceFile, template, offset, "cannot be a rest parameter: a template takes a fixed number of arguments");
-    }
-    if (questionToken && initializer) {
-      throw invalidParameter(parameter, sourceFile, template, offset, "cannot be both optional and with a default value: the default value already makes it optional");
-    }
-    if (modifiers?.length) {
-      throw invalidParameter(parameter, sourceFile, template, offset, "cannot have modifiers or decorators");
-    }
-    const typed = type?.getWidth(sourceFile) ? type : void 0;
-    if (!typed && (type || !initializer)) {
-      throw invalidParameter(parameter, sourceFile, template, offset, questionToken ? `needs a type, e.g. ${name.text}?: string` : `needs a type or a default value, e.g. ${name.text}: string or ${name.text} = ''`);
-    }
-    if (questionToken || initializer) {
-      omittable ??= parameter;
-    } else if (omittable) {
-      throw invalidParameter(parameter, sourceFile, template, offset, `must be optional or have a default value, as '${omittable.getText(sourceFile)}' before it: a @render leaves out only the last arguments`);
-    }
-    const nameSpan = toTemplateSpan2(offset, name.getStart(sourceFile), name.getEnd());
-    assertDeclaredName(name.text, nameSpan, "parameter");
-    if (names.has(name.text)) {
-      throw new Error(`Template "${template}" declares the parameter "${name.text}" more than once`, { cause: nameSpan });
-    }
-    names.add(name.text);
-    const node = { name: name.text, nameSpan };
-    if (typed) {
-      node.type = typed.getText(sourceFile);
-      node.typeSpan = toTemplateSpan2(offset, typed.getStart(sourceFile), typed.getEnd());
-    }
-    if (questionToken) {
-      node.optional = true;
-    }
-    if (initializer) {
-      const { start } = toTemplateSpan2(offset, initializer.getStart(sourceFile), initializer.getEnd());
-      node.initializer = validateExpression(initializer.getText(sourceFile), start).node;
-    }
-    parameters.push(node);
-  }
-  return parameters;
-}
-function isParameterList(sourceFile, parameters, end) {
-  let start = FUNCTION_PREFIX.length;
-  for (let i2 = 0; i2 < parameters.length; i2++) {
-    if (countCommas(sourceFile.text, start, parameters[i2].getStart(sourceFile)) !== (i2 ? 1 : 0)) {
-      return false;
-    }
-    start = parameters[i2].getEnd();
-  }
-  const trailing = countCommas(sourceFile.text, start, end);
-  return trailing === 0 || trailing === 1 && !!parameters.length;
-}
-function countCommas(text, start, end) {
-  const scanner = (0, import_typescript11.createScanner)(import_typescript11.ScriptTarget.ESNext, true, import_typescript11.LanguageVariant.Standard, text.slice(start, end));
-  let commas = 0;
-  for (let token = scanner.scan(); token !== import_typescript11.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
-    if (token !== import_typescript11.SyntaxKind.CommaToken) {
-      return void 0;
-    }
-    commas++;
-  }
-  return commas;
-}
-function toTemplateSpan2(offset, start, end) {
-  return { start: offset + start - FUNCTION_PREFIX.length, end: offset + end - FUNCTION_PREFIX.length };
-}
-function invalidParameter(parameter, sourceFile, template, offset, reason) {
-  return new Error(`The parameter '${parameter.getText(sourceFile)}' of template "${template}" ${reason}`, { cause: toTemplateSpan2(offset, parameter.getStart(sourceFile), parameter.getEnd()) });
 }
 
 // ../packages/compiler/src/parser/states/parse-element/parse-element.state.ts
@@ -25541,23 +25946,9 @@ function isTagClose(cursor, tagName) {
   }
 }
 
-// ../packages/compiler/src/parser/states/parse-block-children/parse-block-children.state.ts
-function parseBlockChildren(cursor, parseNode) {
-  const children = new Array();
-  while (cursor.peek().type !== 20 /* BLOCK_CLOSE */) {
-    if (cursor.peek().type === 42 /* EOF */) {
-      throw "Unexpected end of template: expected BLOCK_CLOSE";
-    }
-    const child = parseNode();
-    if (child) {
-      children.push(child);
-    }
-  }
-  cursor.advance();
-  return children;
-}
-
 // ../packages/compiler/src/parser/states/parse-for/parse-for.state.ts
+var ITEM_ALIAS = /^([^\s'"`([{]+)\s+of\s/;
+var TRACK_KEYWORD = /^track\s/;
 function parseForControlFlow(cursor, parseNode, _token) {
   cursor.advance();
   const conditionToken = cursor.peek();
@@ -25593,14 +25984,15 @@ function parseForExpression(source, offset = 0) {
     throw '@for requires at least one of these forms: "item of items()" or "numberItems()".';
   }
   const { text: iterSection, offset: iterOffset } = sections[0];
-  const ofIndex = iterSection.indexOf(" of ");
+  const aliasMatch = ITEM_ALIAS.exec(iterSection);
   let itemAlias;
   let itemAliasSpan;
   let iterable = { text: iterSection, offset: iterOffset };
-  if (ofIndex !== -1) {
-    itemAlias = slice(iterSection, 0, ofIndex).trim();
+  if (aliasMatch) {
+    const [declaration, alias] = aliasMatch;
+    itemAlias = alias;
     itemAliasSpan = { start: iterOffset, end: iterOffset + itemAlias.length };
-    iterable = trimSection({ text: slice(iterSection, ofIndex + 4), offset: iterOffset + ofIndex + 4 });
+    iterable = trimSection({ text: iterSection.slice(declaration.length), offset: iterOffset + declaration.length });
     if (!isValidIdentifier(itemAlias)) {
       throw `'${itemAlias}' is not a valid item alias.`;
     }
@@ -25615,10 +26007,10 @@ function parseForExpression(source, offset = 0) {
   let trackSource = itemAlias ?? implicitAliases.get("$index") ?? "$index";
   let trackOffset;
   if (trackSection?.text) {
-    if (!trackSection.text.startsWith("track ")) {
+    if (!TRACK_KEYWORD.test(trackSection.text)) {
       throw 'Second section of @for must start with "track".';
     }
-    const track = trimSection({ text: slice(trackSection.text, 6), offset: trackSection.offset + 6 });
+    const track = trimSection({ text: trackSection.text.slice(5), offset: trackSection.offset + 5 });
     trackSource = track.text;
     trackOffset = track.offset;
   }
@@ -25642,7 +26034,7 @@ function parseImplicitAliases({ text, offset }, out, spans) {
     const trimmedOffset = offset + start;
     const eqIndex = trimmed.indexOf("=");
     if (eqIndex === -1) {
-      throw `Invalid alias declaration '${trimmed}'. Expected '$implicit = alias'.`;
+      throw `Invalid alias declaration '${trimmed}'. Expected 'alias = $implicit', e.g. 'i = $index'.`;
     }
     const isImplicitVariable = (value) => IMPLICIT_VARIABLES.has(value);
     const implicit = slice(trimmed, eqIndex + 1).trim();
@@ -25664,345 +26056,6 @@ function parseImplicitAliases({ text, offset }, out, spans) {
 function trimSection({ text, offset }) {
   const trimmedStart = text.trimStart();
   return { text: trimmedStart.trimEnd(), offset: offset + text.length - trimmedStart.length };
-}
-
-// ../packages/compiler/src/parser/utils/find-event/find-event.utils.ts
-function findEvent(nodes) {
-  for (let i2 = 0; i2 < nodes.length; i2++) {
-    const event = findNodeEvent(nodes[i2]);
-    if (event) {
-      return event;
-    }
-  }
-  return void 0;
-}
-function findNodeEvent(node) {
-  switch (node.type) {
-    case 0 /* Element */:
-      return findBindingEvent(node) ?? findEvent(node.children);
-    case 5 /* If */:
-    case 7 /* ElseIf */:
-      return findEvent(node.children) ?? (node.alternate ? findNodeEvent(node.alternate) : void 0);
-    case 8 /* For */:
-      return findEvent(node.children) ?? (node.empty ? findEvent(node.empty.children) : void 0);
-    case 6 /* Else */:
-    case 9 /* Switch */:
-    case 10 /* Case */:
-    case 17 /* Template */:
-    case 21 /* Hydrate */:
-    case 22 /* Client */:
-      return findEvent(node.children);
-    case 24 /* Try */:
-      return findEvent(node.children) ?? findEvent(node.catch.children);
-    case 26 /* Defer */:
-      return findEvent(node.children) ?? (node.placeholder ? findEvent(node.placeholder.children) : void 0) ?? (node.loading ? findEvent(node.loading.children) : void 0) ?? (node.error ? findEvent(node.error.children) : void 0);
-    default:
-      return void 0;
-  }
-}
-function findBindingEvent(bindings) {
-  const { events, conditionalBindings, directives } = bindings;
-  if (events.length) {
-    return events[0];
-  }
-  for (let i2 = 0; i2 < conditionalBindings.length; i2++) {
-    const { branches } = conditionalBindings[i2];
-    for (let j = 0; j < branches.length; j++) {
-      const event = findBindingEvent(branches[j]);
-      if (event) {
-        return event;
-      }
-    }
-  }
-  if (directives?.length) {
-    for (let i2 = 0; i2 < directives.length; i2++) {
-      const event = findBindingEvent(directives[i2]);
-      if (event) {
-        return event;
-      }
-    }
-  }
-  return void 0;
-}
-
-// ../packages/compiler/src/parser/states/parse-client/parse-client.state.ts
-function parseClient(cursor, parseNode, token) {
-  cursor.advance(2);
-  const children = parseBlockChildren(cursor, parseNode);
-  let end = cursor.getCurrentToken().value.span.end;
-  let placeholder = null;
-  const next = cursor.peek();
-  if (next.type === 34 /* PLACEHOLDER */) {
-    cursor.advance();
-    const parameters = cursor.peek();
-    if (parameters.type === 18 /* CONDITION */) {
-      throw new Error("The @placeholder of a @client takes no parameters: the server renders it, and the browser replaces it at once", { cause: cursor.findConditionSpan(parameters) });
-    }
-    cursor.advance();
-    const placeholderChildren = parseBlockChildren(cursor, parseNode);
-    const event = findEvent(placeholderChildren);
-    if (event) {
-      throw new Error(`(${event.name}) never runs: the server renders a @placeholder, and the browser replaces it without running its code`, { cause: event.span });
-    }
-    end = cursor.getCurrentToken().value.span.end;
-    placeholder = {
-      type: 23 /* Placeholder */,
-      children: placeholderChildren,
-      span: { start: next.span.start, end }
-    };
-  }
-  return {
-    type: 22 /* Client */,
-    children,
-    placeholder,
-    span: { start: token.span.start, end }
-  };
-}
-function parseOrphanPlaceholder(_cursor, _parseNode, token) {
-  throw new Error("@placeholder must follow the block of a @client or a @defer", { cause: token.span });
-}
-
-// ../packages/compiler/src/parser/utils/durations/durations.utils.ts
-var DURATION = /^(\d+(?:\.\d+)?)(ms|s)?$/;
-function parseDuration(text, span) {
-  const match = DURATION.exec(text);
-  if (!match) {
-    throw new Error(`Expected a duration, such as 500ms or 1s, got "${text}"`, { cause: span });
-  }
-  const value = Number(match[1]);
-  return match[2] === "s" ? value * 1e3 : value;
-}
-
-// ../packages/compiler/src/parser/utils/block-parameters/block-parameters.utils.ts
-var PLACEHOLDER_PARAMETERS = ["minimum"];
-var LOADING_PARAMETERS = ["after", "minimum"];
-var PARAMETER = /^([a-z]+)\s+/;
-function readBlockParameters(cursor, block, names) {
-  const token = cursor.peek();
-  if (token.type !== 18 /* CONDITION */) {
-    return void 0;
-  }
-  const parameters = parseBlockParameters(token.parts[0], cursor.findConditionSpan(token).start, block, names);
-  cursor.advance();
-  return parameters;
-}
-function parseBlockParameters(source, offset, block, names) {
-  const parameters = {};
-  const parts = splitTopLevel(source);
-  for (let i2 = 0; i2 < parts.length; i2++) {
-    const { text, start } = parts[i2];
-    const span = { start: offset + start, end: offset + start + text.length };
-    const match = PARAMETER.exec(text);
-    const name = match?.[1];
-    if (!name || !names.includes(name)) {
-      throw new Error(`Unknown parameter "${text}" of ${block}: use ${names.join(" or ")} followed by a duration, such as ${names[0]} 500ms`, { cause: span });
-    }
-    if (parameters[name] !== void 0) {
-      throw new Error(`The parameter "${name}" of ${block} is declared twice`, { cause: span });
-    }
-    const valueStart = match[0].length;
-    parameters[name] = parseDuration(text.slice(valueStart), { start: span.start + valueStart, end: span.end });
-  }
-  return parameters;
-}
-
-// ../packages/compiler/src/parser/utils/error-name/error-name.utils.ts
-function readErrorName(cursor, node, kind) {
-  const nameToken = cursor.peek();
-  if (nameToken.type !== 18 /* CONDITION */) {
-    return;
-  }
-  const raw = nameToken.parts[0];
-  const name = raw.trim();
-  const start = cursor.findConditionSpan(nameToken).start + raw.length - raw.trimStart().length;
-  const nameSpan = { start, end: start + name.length };
-  assertDeclaredName(name, nameSpan, kind);
-  node.name = name;
-  node.nameSpan = nameSpan;
-  cursor.advance();
-}
-
-// ../packages/compiler/src/parser/utils/triggers/triggers.utils.ts
-var import_typescript12 = require("typescript");
-var DEFER_TRIGGER_KEYWORDS = ["load", "idle", "timer", "visible", "interaction", "hover"];
-var HYDRATE_TRIGGER_KEYWORDS = ["load", "idle", "timer", "visible", "interaction", "hover", "never"];
-var PREFETCH = /^prefetch\b\s*/;
-var WHEN = /^when\s+/;
-var KEYWORD_TRIGGER = /^([a-z]+)\s*(?:\(([\s\S]*)\))?$/;
-var IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
-function parseHydrateTriggers(source, offset) {
-  const parsed = parseTriggers(source, offset, "@hydrate");
-  const never = parsed.triggers.find(({ kind }) => kind === "never");
-  if (never && (parsed.triggers.length > 1 || parsed.prefetch.length)) {
-    throw new Error('The trigger "never" stands alone: any other trigger would hydrate the content', { cause: never.span });
-  }
-  return parsed;
-}
-function parseDeferTriggers(source, offset) {
-  return parseTriggers(source, offset, "@defer");
-}
-function parseTriggers(source, offset, block) {
-  const keywords = block === "@defer" ? DEFER_TRIGGER_KEYWORDS : HYDRATE_TRIGGER_KEYWORDS;
-  const accepted = `${keywords.join(", ")}, or when followed by an expression, each one after prefetch to load the modules only`;
-  const triggers = new Array();
-  const prefetch = new Array();
-  const parts = splitTopLevel(source);
-  for (let i2 = 0; i2 < parts.length; i2++) {
-    const { text, start } = parts[i2];
-    const prefetching = PREFETCH.exec(text);
-    const skipped = prefetching ? prefetching[0].length : 0;
-    const triggerText = text.slice(skipped);
-    const span = { start: offset + start + skipped, end: offset + start + text.length };
-    if (!triggerText) {
-      throw new Error(`${block} needs a trigger${prefetching ? " after prefetch" : ""}: use ${accepted}`, { cause: { start: offset + start, end: span.end } });
-    }
-    const trigger = parseTrigger(triggerText, span, block, keywords, accepted);
-    if (prefetching && trigger.kind === "never") {
-      throw new Error('The trigger "never" loads nothing: it cannot follow prefetch', { cause: span });
-    }
-    const list = prefetching ? prefetch : triggers;
-    if (list.some(({ kind }) => kind === trigger.kind)) {
-      throw new Error(`The trigger "${prefetching ? "prefetch " : ""}${trigger.kind}" is declared twice`, { cause: span });
-    }
-    list.push(trigger);
-  }
-  return { triggers, prefetch };
-}
-function parseTrigger(text, span, block, keywords, accepted) {
-  const when = WHEN.exec(text);
-  if (when) {
-    const expression = text.slice(when[0].length);
-    return { kind: "when", expression, expressionNode: validateExpression(expression, span.start + when[0].length).node, span };
-  }
-  const match = KEYWORD_TRIGGER.exec(text);
-  const kind = match?.[1];
-  if (!kind || !keywords.includes(kind)) {
-    throw new Error(`Unknown ${block} trigger "${text}": use ${accepted}`, { cause: span });
-  }
-  const args = match[2] === void 0 ? void 0 : toArguments(match[2], span.start + text.indexOf("(") + 1);
-  switch (kind) {
-    case "idle":
-      assertArguments(kind, args, 1, span);
-      return args ? { kind, timeout: parseDuration(args[0].text, args[0].span), span } : { kind, span };
-    case "timer":
-      if (!args) {
-        throw new Error('The trigger "timer" needs a duration, such as timer(500ms)', { cause: span });
-      }
-      assertArguments(kind, args, 1, span);
-      return { kind, delay: parseDuration(args[0].text, args[0].span), span };
-    case "visible": {
-      assertArguments(kind, args, 2, span);
-      const trigger = { kind, span };
-      const optionsIndex = args && (args.length > 1 || args[0].text.startsWith("{")) ? args.length - 1 : -1;
-      if (args && optionsIndex !== 0) {
-        trigger.target = parseTarget(args[0], block);
-      }
-      if (optionsIndex !== -1) {
-        trigger.options = parseOptions(args[optionsIndex]);
-      }
-      return trigger;
-    }
-    case "interaction":
-    case "hover": {
-      assertArguments(kind, args, 1, span);
-      const trigger = { kind, span };
-      if (args) {
-        trigger.target = parseTarget(args[0], block);
-      }
-      return trigger;
-    }
-    default:
-      assertArguments(kind, args, 0, span);
-      return { kind, span };
-  }
-}
-function toArguments(source, offset) {
-  return splitTopLevel(source).map(({ text, start }) => ({ text, span: { start: offset + start, end: offset + start + text.length } }));
-}
-function assertArguments(kind, args, max, span) {
-  if (args && args.length > max) {
-    throw new Error(`The trigger "${kind}" takes ${max ? `at most ${max === 1 ? "one argument" : `${max} arguments`}` : "no arguments"}`, { cause: span });
-  }
-}
-function parseTarget({ text, span }, block) {
-  if (block === "@hydrate") {
-    throw new Error("A trigger of @hydrate watches the elements of its content: it takes no element ref", { cause: span });
-  }
-  const node = IDENTIFIER.test(text) ? validateExpression(text, span.start).node : void 0;
-  if (!node || !(0, import_typescript12.isIdentifier)(node)) {
-    throw new Error(`Expected the element ref naming the element to watch, got "${text}"`, { cause: span });
-  }
-  return { name: text, expressionNode: node, span };
-}
-function parseOptions({ text, span }) {
-  const { node } = validateExpression(text, span.start);
-  if (!(0, import_typescript12.isObjectLiteralExpression)(node)) {
-    throw new Error(`Expected the options of the observer as an object literal, such as { rootMargin: '200px' }, got "${text}"`, { cause: span });
-  }
-  return { expression: text, expressionNode: node, span };
-}
-
-// ../packages/compiler/src/parser/states/parse-defer/parse-defer.state.ts
-function parseDefer(cursor, parseNode, token) {
-  cursor.advance();
-  const conditionToken = cursor.peek();
-  const { triggers, prefetch } = conditionToken.type === 18 /* CONDITION */ ? parseDeferTriggers(conditionToken.parts[0], cursor.findConditionSpan(conditionToken).start) : { triggers: [], prefetch: [] };
-  cursor.advance(conditionToken.type === 18 /* CONDITION */ ? 2 : 1);
-  const node = {
-    type: 26 /* Defer */,
-    triggers,
-    prefetch,
-    children: parseBlockChildren(cursor, parseNode),
-    placeholder: null,
-    loading: null,
-    error: null,
-    span: { start: token.span.start, end: cursor.getCurrentToken().value.span.end }
-  };
-  for (let next = cursor.peek(); next.type === 34 /* PLACEHOLDER */ || next.type === 38 /* LOADING */ || next.type === 39 /* ERROR */; next = cursor.peek()) {
-    const start = next.span.start;
-    cursor.advance();
-    switch (next.type) {
-      case 34 /* PLACEHOLDER */: {
-        assertNotDeclared(node.placeholder, "@placeholder", next.span);
-        const parameters = readBlockParameters(cursor, "@placeholder", PLACEHOLDER_PARAMETERS);
-        const children = parseFollowingChildren(cursor, parseNode);
-        node.placeholder = Object.assign({ type: 23 /* Placeholder */, children, span: { start, end: cursor.getCurrentToken().value.span.end } }, parameters);
-        break;
-      }
-      case 38 /* LOADING */: {
-        assertNotDeclared(node.loading, "@loading", next.span);
-        const parameters = readBlockParameters(cursor, "@loading", LOADING_PARAMETERS);
-        const children = parseFollowingChildren(cursor, parseNode);
-        node.loading = Object.assign({ type: 27 /* Loading */, children, span: { start, end: cursor.getCurrentToken().value.span.end } }, parameters);
-        break;
-      }
-      default: {
-        assertNotDeclared(node.error, "@error", next.span);
-        const error = { type: 28 /* Error */, children: [], span: next.span };
-        readErrorName(cursor, error, "error of @error");
-        error.children = parseFollowingChildren(cursor, parseNode);
-        error.span = { start, end: cursor.getCurrentToken().value.span.end };
-        node.error = error;
-      }
-    }
-    node.span.end = cursor.getCurrentToken().value.span.end;
-  }
-  return node;
-}
-function parseOrphanLoading(_cursor, _parseNode, token) {
-  throw new Error("@loading must follow the block of a @defer", { cause: token.span });
-}
-function parseOrphanError(_cursor, _parseNode, token) {
-  throw new Error("@error must follow the block of a @defer", { cause: token.span });
-}
-function parseFollowingChildren(cursor, parseNode) {
-  cursor.advance();
-  return parseBlockChildren(cursor, parseNode);
-}
-function assertNotDeclared(declared, keyword, span) {
-  if (declared) {
-    throw new Error(`${keyword} is declared twice for this @defer`, { cause: span });
-  }
 }
 
 // ../packages/compiler/src/parser/states/parse-hydrate/parse-hydrate.state.ts
@@ -26353,6 +26406,15 @@ var Parser = class {
    */
   _depth = 0;
   /**
+   * Parses the next node, given to the states to parse the nodes they hold.
+   *
+   * N.B. Deliberate, for speed: one function per parser. Binding `parseNode` for every node parsed created a function
+   * per node. Do not bind it in `parseNode`.
+   *
+   * @returns The node, or `undefined` at the end of the tokens.
+   */
+  _parseChild = () => this.parseNode();
+  /**
    * Entry point for parsing the token stream into AST nodes.
    *
    * @returns Array of top-level AST nodes.
@@ -26389,17 +26451,12 @@ var Parser = class {
         throw "An @import statement must be at the beginning of the template, before any other content";
       }
       this._depth++;
-      const node = state(this._cursor, this.parseNode.bind(this), token);
+      const node = state(this._cursor, this._parseChild, token);
       this._depth--;
       const currentToken = this._cursor.getCurrentToken().value;
       const endOffset = "span" in currentToken ? currentToken.span.end : token.span.end;
-      return {
-        ...node,
-        span: node.span ?? {
-          start: startOffset,
-          end: endOffset
-        }
-      };
+      node.span ??= { start: startOffset, end: endOffset };
+      return node;
     } catch (err) {
       if (this.thrown) {
         throw err;
@@ -26409,7 +26466,7 @@ var Parser = class {
       const currentToken = this._cursor.peek();
       const stateEndIndex = currentToken.type !== 42 /* EOF */ ? currentToken.span.end : this._input.length;
       const span = err instanceof Error && isSpan(err.cause) ? err.cause : { start: startOffset, end: stateEndIndex };
-      throw new TemplateError(`[Parser] ${this._cursor.getPositionFromCharacterIndex(startOffset + 1)} - ${message}
+      throw new TemplateError(`[Parser] ${this._cursor.getPositionFromCharacterIndex(span.start)} - ${message}
  ---> ${slice(this._input, startOffset, stateEndIndex)}`, span, message);
     }
   }
@@ -26428,7 +26485,7 @@ function getEventMap(namespace) {
 }
 function getElementType(namespace, tagName) {
   const [tagNameMap, element] = getTagNameMap(namespace);
-  return `(${tagNameMap} extends { '${tagName}': infer Type } ? Type : ${element})`;
+  return `(${tagNameMap} extends { ${toStringLiteral(tagName)}: infer Type } ? Type : ${element})`;
 }
 function getTagNameMap(namespace) {
   switch (namespace) {
@@ -26707,8 +26764,48 @@ var TypeCheckContext = class extends CompilerContext {
   }
 };
 
-// ../packages/compiler/src/type-checker/states/type-check-element/type-check-element.state.ts
-var import_typescript18 = require("typescript");
+// ../packages/compiler/src/type-checker/utils/line-builder/line-builder.utils.ts
+function mapped(text, span) {
+  return { text, span };
+}
+function mappedSegments(text, span, segments) {
+  return { text, span, segments };
+}
+function line(...parts) {
+  let text = "";
+  const mappings = new Array();
+  for (let i2 = 0; i2 < parts.length; i2++) {
+    const part = parts[i2];
+    if (typeof part === "string") {
+      text = `${text}${part}`;
+    } else {
+      const columnStart = text.length;
+      text = `${text}${part.text}`;
+      mappings.push({ columnStart, columnEnd: text.length, original: part.span });
+      const { segments } = part;
+      if (segments?.length) {
+        for (let j = 0; j < segments.length; j++) {
+          const { columnStart: segmentStart, columnEnd: segmentEnd, original } = segments[j];
+          mappings.push({ columnStart: columnStart + segmentStart, columnEnd: columnStart + segmentEnd, original });
+        }
+      }
+    }
+  }
+  return mappings.length ? { text, mappings } : { text };
+}
+function plain(text) {
+  return { text };
+}
+function indentLines(lines) {
+  return lines.map((line2) => ({
+    text: " ".repeat(2) + line2.text,
+    mappings: line2.mappings?.map((mapping) => ({
+      ...mapping,
+      columnStart: mapping.columnStart + 2,
+      columnEnd: mapping.columnEnd + 2
+    }))
+  }));
+}
 
 // ../packages/compiler/src/utils/metadata/metadata.utils.ts
 var import_typescript17 = require("typescript");
@@ -26841,6 +26938,13 @@ var CLASS_FINDER = {
   exported: (statement, exportedName) => (0, import_typescript15.isClassDeclaration)(statement) && isExportedAs(statement, exportedName) ? statement : void 0
 };
 var sourceFileCache = /* @__PURE__ */ new Map();
+var cachesFiles = false;
+var checkedFiles = /* @__PURE__ */ new Set();
+var moduleResolutionCaches = /* @__PURE__ */ new WeakMap();
+function resolveModulePath(moduleName, containingFile, compilerOptions) {
+  const cache = cachesFiles ? getModuleResolutionCache(compilerOptions) : void 0;
+  return (0, import_typescript15.resolveModuleName)(moduleName, containingFile, compilerOptions, import_typescript15.sys, cache).resolvedModule?.resolvedFileName;
+}
 function resolveBaseClassOf(klass, compilerOptions = DEFAULT_COMPILER_OPTIONS) {
   return resolveBaseClass(klass, { compilerOptions, dependencies: /* @__PURE__ */ new Set(), visitedClasses: /* @__PURE__ */ new Set() });
 }
@@ -26909,8 +27013,8 @@ function resolveImported(sourceFile, moduleSpecifier, exportedName, finder, cont
   if (!(0, import_typescript15.isStringLiteralLike)(moduleSpecifier)) {
     return;
   }
-  const { resolvedModule } = (0, import_typescript15.resolveModuleName)(moduleSpecifier.text, sourceFile.fileName, context.compilerOptions, import_typescript15.sys);
-  const moduleSourceFile = resolvedModule && getSourceFile(resolvedModule.resolvedFileName, context);
+  const resolvedFileName = resolveModulePath(moduleSpecifier.text, sourceFile.fileName, context.compilerOptions);
+  const moduleSourceFile = resolvedFileName && getSourceFile(resolvedFileName, context);
   return moduleSourceFile ? resolveExported(moduleSourceFile, exportedName, finder, context, visitedExports) : void 0;
 }
 function resolveModuleExport(fileName, exportedName, finder, context) {
@@ -26966,21 +27070,36 @@ function isExportedAs(declaration, exportedName) {
   return declaration.name?.text === exportedName;
 }
 function getSourceFile(fileName, context) {
+  const cached = sourceFileCache.get(fileName);
   let sourceFile;
-  try {
-    const { mtimeMs, size } = (0, import_node_fs.statSync)(fileName);
-    const cached = sourceFileCache.get(fileName);
-    if (cached?.modifiedTime === mtimeMs && cached.size === size) {
-      sourceFile = cached.sourceFile;
-    } else {
-      sourceFile = (0, import_typescript15.createSourceFile)(fileName, (0, import_node_fs.readFileSync)(fileName, "utf-8"), import_typescript15.ScriptTarget.Latest, true);
-      sourceFileCache.set(fileName, { modifiedTime: mtimeMs, size, sourceFile });
+  if (cached && checkedFiles.has(fileName)) {
+    sourceFile = cached.sourceFile;
+  } else {
+    try {
+      const { mtimeMs, size } = (0, import_node_fs.statSync)(fileName);
+      if (cached?.modifiedTime === mtimeMs && cached.size === size) {
+        sourceFile = cached.sourceFile;
+      } else {
+        sourceFile = (0, import_typescript15.createSourceFile)(fileName, (0, import_node_fs.readFileSync)(fileName, "utf-8"), import_typescript15.ScriptTarget.Latest, true);
+        sourceFileCache.set(fileName, { modifiedTime: mtimeMs, size, sourceFile });
+      }
+    } catch {
+      return void 0;
     }
-  } catch {
-    return void 0;
+    if (cachesFiles) {
+      checkedFiles.add(fileName);
+    }
   }
   context.dependencies.add(fileName);
   return sourceFile;
+}
+function getModuleResolutionCache(compilerOptions) {
+  let cache = moduleResolutionCaches.get(compilerOptions);
+  if (!cache) {
+    cache = (0, import_typescript15.createModuleResolutionCache)(process.cwd(), (fileName) => fileName, compilerOptions);
+    moduleResolutionCaches.set(compilerOptions, cache);
+  }
+  return cache;
 }
 
 // ../packages/compiler/src/utils/host-directives/host-directives.utils.ts
@@ -27931,120 +28050,6 @@ function extractBindingType(member, name, accessorOwner, event) {
   return typeNode.typeArguments[0].kind === import_typescript17.SyntaxKind.VoidKeyword ? defaultValue : `(${accessor} extends import('@xaendar/core').Output<infer Value> ? Value : never)`;
 }
 
-// ../packages/compiler/src/type-checker/utils/cast/cast.utils.ts
-var CAST_OPENING = "((";
-function castExpression(expression, resolved, segments, { text, span }) {
-  for (let i2 = 0; i2 < segments.length; i2++) {
-    const { columnStart, columnEnd, original } = segments[i2];
-    segments[i2] = { columnStart: columnStart + CAST_OPENING.length, columnEnd: columnEnd + CAST_OPENING.length, original };
-  }
-  const head = `${CAST_OPENING}${resolved}) as `;
-  const end = head.length + text.length;
-  const expressionSpan = getTemplateSpan(expression);
-  if (expressionSpan) {
-    segments.push({ columnStart: 1, columnEnd: end, original: { start: expressionSpan.start, end: span.end } });
-  }
-  segments.push({ columnStart: head.length, columnEnd: end, original: span });
-  return `${head}${text})`;
-}
-
-// ../packages/compiler/src/type-checker/utils/line-builder/line-builder.utils.ts
-function mapped(text, span) {
-  return { text, span };
-}
-function mappedSegments(text, span, segments) {
-  return { text, span, segments };
-}
-function line(...parts) {
-  let text = "";
-  const mappings = new Array();
-  for (let i2 = 0; i2 < parts.length; i2++) {
-    const part = parts[i2];
-    if (typeof part === "string") {
-      text = `${text}${part}`;
-    } else {
-      const columnStart = text.length;
-      text = `${text}${part.text}`;
-      mappings.push({ columnStart, columnEnd: text.length, original: part.span });
-      const { segments } = part;
-      if (segments?.length) {
-        for (let j = 0; j < segments.length; j++) {
-          const { columnStart: segmentStart, columnEnd: segmentEnd, original } = segments[j];
-          mappings.push({ columnStart: columnStart + segmentStart, columnEnd: columnStart + segmentEnd, original });
-        }
-      }
-    }
-  }
-  return mappings.length ? { text, mappings } : { text };
-}
-function plain(text) {
-  return { text };
-}
-function indentLines(lines) {
-  return lines.map((line2) => ({
-    text: " ".repeat(2) + line2.text,
-    mappings: line2.mappings?.map((mapping) => ({
-      ...mapping,
-      columnStart: mapping.columnStart + 2,
-      columnEnd: mapping.columnEnd + 2
-    }))
-  }));
-}
-
-// ../packages/compiler/src/type-checker/utils/mapped-expression/mapped-expression.utils.ts
-var ROOT_OPTIONS = { resolver: "root", preserveTypeScript: true };
-function mappedExpression(expression, context, span, suffix = "", options = ROOT_OPTIONS) {
-  const segments = new Array();
-  const resolved = resolveMappedExpression(expression, context, options, segments);
-  return mappedSegments(`${resolved}${suffix}`, span, segments);
-}
-function mappedInterpolation({ expression, cast, span }, context, suffix = "") {
-  const segments = new Array();
-  const resolved = resolveMappedExpression(expression, context, ROOT_OPTIONS, segments);
-  return mappedSegments(`${cast ? castExpression(expression, resolved, segments, cast) : resolved}${suffix}`, span, segments);
-}
-function resolveMappedExpression(expression, context, options, segments) {
-  return resolveExpression(expression, context, Object.assign({ narrowedSignal: (name) => context.getNarrowedSignal(name), variableCall: (callee) => recordCall(context, callee) }, options), segments).expression;
-}
-function recordCall(context, callee) {
-  const span = getTemplateSpan(callee);
-  if (span) {
-    context.recordVariableCall({ name: callee.text, span });
-  }
-}
-
-// ../packages/compiler/src/type-checker/utils/exhaustive-switch/exhaustive-switch.utils.ts
-var NOT_SATISFIED = 1360;
-var UNCOVERED = /^Type '(.+)' does not satisfy the expected type 'never'\.$/;
-function typeCheckSwitchHeader(expression, span, exhaustive, context) {
-  if (!exhaustive) {
-    return [line("switch (", mappedExpression(expression, context, span), ") {")];
-  }
-  const name = getSwitchConstant(span);
-  return [line(`const ${name} = `, mappedExpression(expression, context, span, ";")), plain(`switch (${name}) {`)];
-}
-function typeCheckExhaustiveDefault(span, exhaustive, context) {
-  context.recordExhaustiveSwitch(exhaustive);
-  return [plain("default:"), ...indentLines([line(mapped(`${getSwitchConstant(span)} satisfies never;`, exhaustive))])];
-}
-function describeExhaustiveSwitch(typeCheck, span, code, message) {
-  const switches = code === NOT_SATISFIED ? typeCheck.exhaustiveSwitches : void 0;
-  if (!switches?.length) {
-    return void 0;
-  }
-  for (let i2 = 0; i2 < switches.length; i2++) {
-    const { start, end } = switches[i2];
-    if (span.start >= start && span.end <= end) {
-      const uncovered = UNCOVERED.exec(message.split("\n")[0])?.[1];
-      return `@switch is not exhaustive: no @case covers ${uncovered ?? "every value of its expression"}. Add the missing @case, or replace @default never; with a @default branch.`;
-    }
-  }
-  return void 0;
-}
-function getSwitchConstant(span) {
-  return `__switch${span.start}`;
-}
-
 // ../packages/compiler/src/type-checker/utils/template-types/template-types.utils.ts
 var TEMPLATE = "__Template";
 var RENDER = "__render";
@@ -28115,6 +28120,152 @@ function register(context, name, kind) {
   if (!context.declaresIdentifier(name)) {
     context.addUnresolvableIdentifier(name, kind);
   }
+}
+
+// ../packages/compiler/src/type-checker/states/type-check-client/type-check-client.state.ts
+function typeCheckClient(node, processNode, context) {
+  const lines = typeCheckBlock(node.children, processNode, context);
+  return node.placeholder ? lines.concat(typeCheckBlock(node.placeholder.children, processNode, context)) : lines;
+}
+function typeCheckBlock(children, processNode, context) {
+  const { declarations, lines } = typeCheckScope(children, new TypeCheckContext(context), processNode);
+  return [plain("{"), ...indentLines(declarations.concat(lines)), plain("}")];
+}
+
+// ../packages/compiler/src/type-checker/utils/cast/cast.utils.ts
+var CAST_OPENING = "((";
+function castExpression(expression, resolved, segments, { text, span }) {
+  for (let i2 = 0; i2 < segments.length; i2++) {
+    const { columnStart, columnEnd, original } = segments[i2];
+    segments[i2] = { columnStart: columnStart + CAST_OPENING.length, columnEnd: columnEnd + CAST_OPENING.length, original };
+  }
+  const head = `${CAST_OPENING}${resolved}) as `;
+  const end = head.length + text.length;
+  const expressionSpan = getTemplateSpan(expression);
+  if (expressionSpan) {
+    segments.push({ columnStart: 1, columnEnd: end, original: { start: expressionSpan.start, end: span.end } });
+  }
+  segments.push({ columnStart: head.length, columnEnd: end, original: span });
+  return `${head}${text})`;
+}
+
+// ../packages/compiler/src/type-checker/utils/mapped-expression/mapped-expression.utils.ts
+var ROOT_OPTIONS = { resolver: "root", preserveTypeScript: true };
+function mappedExpression(expression, context, span, suffix = "", options = ROOT_OPTIONS) {
+  const segments = new Array();
+  const resolved = resolveMappedExpression(expression, context, options, segments);
+  return mappedSegments(`${resolved}${suffix}`, span, segments);
+}
+function mappedInterpolation({ expression, cast, span }, context, suffix = "") {
+  const segments = new Array();
+  const resolved = resolveMappedExpression(expression, context, ROOT_OPTIONS, segments);
+  return mappedSegments(`${cast ? castExpression(expression, resolved, segments, cast) : resolved}${suffix}`, span, segments);
+}
+function resolveMappedExpression(expression, context, options, segments) {
+  return resolveExpression(expression, context, Object.assign({ narrowedSignal: (name) => context.getNarrowedSignal(name), variableCall: (callee) => recordCall(context, callee) }, options), segments).expression;
+}
+function recordCall(context, callee) {
+  const span = getTemplateSpan(callee);
+  if (span) {
+    context.recordVariableCall({ name: callee.text, span });
+  }
+}
+
+// ../packages/compiler/src/type-checker/utils/triggers/triggers.utils.ts
+function typeCheckTriggers({ triggers, prefetch }, context) {
+  const lines = new Array();
+  typeCheckTriggerList(triggers, context, lines);
+  typeCheckTriggerList(prefetch, context, lines);
+  return lines;
+}
+function typeCheckTriggerList(list, context, lines) {
+  for (let i2 = 0; i2 < list.length; i2++) {
+    const trigger = list[i2];
+    switch (trigger.kind) {
+      case "when":
+        lines.push(line("if (", mappedExpression(trigger.expressionNode, context, trigger.span), ") { }"));
+        break;
+      case "visible":
+      case "interaction":
+      case "hover":
+        if (trigger.target) {
+          const { expressionNode, span } = trigger.target;
+          lines.push(line(mappedExpression(expressionNode, context, span), " ", mapped("satisfies", span), " Element;"));
+        }
+        if (trigger.kind === "visible" && trigger.options) {
+          lines.push(line(mappedExpression(trigger.options.expressionNode, context, trigger.options.span), " satisfies Omit<IntersectionObserverInit, 'root'>;"));
+        }
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+// ../packages/compiler/src/type-checker/states/type-check-defer/type-check-defer.state.ts
+function typeCheckDefer(node, processNode, context) {
+  const lines = typeCheckTriggers(node, context);
+  const { placeholder, loading, error } = node;
+  lines.push(plain("{"), ...typeCheckBlock2(node.children, new TypeCheckContext(context), processNode), plain("}"));
+  if (placeholder) {
+    lines.push(plain("{"), ...typeCheckBlock2(placeholder.children, new TypeCheckContext(context), processNode), plain("}"));
+  }
+  if (loading) {
+    lines.push(plain("{"), ...typeCheckBlock2(loading.children, new TypeCheckContext(context), processNode), plain("}"));
+  }
+  if (error) {
+    const { name, nameSpan, children } = error;
+    const errorContext = new TypeCheckContext(context);
+    if (name) {
+      errorContext.addUnresolvableIdentifier(name, "value");
+    }
+    lines.push(
+      plain("try { }"),
+      name ? line("catch (", mapped(name, nameSpan), ") {") : plain("catch {"),
+      ...typeCheckBlock2(children, errorContext, processNode),
+      plain("}")
+    );
+  }
+  return lines;
+}
+function typeCheckBlock2(children, context, processNode) {
+  const scope = typeCheckScope(children, context, processNode);
+  return indentLines(scope.declarations.concat(scope.lines));
+}
+
+// ../packages/compiler/src/type-checker/states/type-check-element/type-check-element.state.ts
+var import_typescript18 = require("typescript");
+
+// ../packages/compiler/src/type-checker/utils/exhaustive-switch/exhaustive-switch.utils.ts
+var NOT_SATISFIED = 1360;
+var UNCOVERED = /^Type '(.+)' does not satisfy the expected type 'never'\.$/;
+function typeCheckSwitchHeader(expression, span, exhaustive, context) {
+  if (!exhaustive) {
+    return [line("switch (", mappedExpression(expression, context, span), ") {")];
+  }
+  const name = getSwitchConstant(span);
+  return [line(`const ${name} = `, mappedExpression(expression, context, span, ";")), plain(`switch (${name}) {`)];
+}
+function typeCheckExhaustiveDefault(span, exhaustive, context) {
+  context.recordExhaustiveSwitch(exhaustive);
+  return [plain("default:"), ...indentLines([line(mapped(`${getSwitchConstant(span)} satisfies never;`, exhaustive))])];
+}
+function describeExhaustiveSwitch(typeCheck, span, code, message) {
+  const switches = code === NOT_SATISFIED ? typeCheck.exhaustiveSwitches : void 0;
+  if (!switches?.length) {
+    return void 0;
+  }
+  for (let i2 = 0; i2 < switches.length; i2++) {
+    const { start, end } = switches[i2];
+    if (span.start >= start && span.end <= end) {
+      const uncovered = UNCOVERED.exec(message.split("\n")[0])?.[1];
+      return `@switch is not exhaustive: no @case covers ${uncovered ?? "every value of its expression"}. Add the missing @case, or replace @default never; with a @default branch.`;
+    }
+  }
+  return void 0;
+}
+function getSwitchConstant(span) {
+  return `__switch${span.start}`;
 }
 
 // ../packages/compiler/src/type-checker/states/type-check-element/type-check-element.state.ts
@@ -28663,6 +28814,14 @@ function resolveImplicit(node, implicit) {
   return node.implicitAliases.get(implicit) ?? implicit;
 }
 
+// ../packages/compiler/src/type-checker/states/type-check-hydrate/type-check-hydrate.state.ts
+function typeCheckHydrate(node, processNode, context) {
+  const lines = typeCheckTriggers(node, context);
+  const { declarations, lines: content } = typeCheckScope(node.children, new TypeCheckContext(context), processNode);
+  lines.push(plain("{"), ...indentLines(declarations.concat(content)), plain("}"));
+  return lines;
+}
+
 // ../packages/compiler/src/type-checker/utils/signal-narrowing/signal-narrowing.utils.ts
 var import_typescript19 = require("typescript");
 function narrowSignals(conditions, prefix, context, chainContext) {
@@ -28755,104 +28914,6 @@ function typeCheckRender(node, _processNode, context) {
   return [line(mapped(RENDER, node.span), "(", rendered, `, ${node.arguments.length})(`, ...args, ");")];
 }
 
-// ../packages/compiler/src/type-checker/states/type-check-client/type-check-client.state.ts
-function typeCheckClient(node, processNode, context) {
-  const lines = typeCheckBlock(node.children, processNode, context);
-  return node.placeholder ? lines.concat(typeCheckBlock(node.placeholder.children, processNode, context)) : lines;
-}
-function typeCheckBlock(children, processNode, context) {
-  const { declarations, lines } = typeCheckScope(children, new TypeCheckContext(context), processNode);
-  return [plain("{"), ...indentLines(declarations.concat(lines)), plain("}")];
-}
-
-// ../packages/compiler/src/type-checker/states/type-check-try/type-check-try.state.ts
-function typeCheckTry(node, processNode, context) {
-  const content = typeCheckScope(node.children, new TypeCheckContext(context), processNode);
-  const { name, nameSpan, children } = node.catch;
-  const catchContext = new TypeCheckContext(context);
-  if (name) {
-    catchContext.addUnresolvableIdentifier(name, "value");
-  }
-  const fallback = typeCheckScope(children, catchContext, processNode);
-  return [
-    plain("try {"),
-    ...indentLines(content.declarations.concat(content.lines)),
-    name ? line("} catch (", mapped(name, nameSpan), ") {") : plain("} catch {"),
-    ...indentLines(fallback.declarations.concat(fallback.lines)),
-    plain("}")
-  ];
-}
-
-// ../packages/compiler/src/type-checker/utils/triggers/triggers.utils.ts
-function typeCheckTriggers({ triggers, prefetch }, context) {
-  const lines = new Array();
-  typeCheckTriggerList(triggers, context, lines);
-  typeCheckTriggerList(prefetch, context, lines);
-  return lines;
-}
-function typeCheckTriggerList(list, context, lines) {
-  for (let i2 = 0; i2 < list.length; i2++) {
-    const trigger = list[i2];
-    switch (trigger.kind) {
-      case "when":
-        lines.push(line("if (", mappedExpression(trigger.expressionNode, context, trigger.span), ") { }"));
-        break;
-      case "visible":
-      case "interaction":
-      case "hover":
-        if (trigger.target) {
-          const { expressionNode, span } = trigger.target;
-          lines.push(line(mappedExpression(expressionNode, context, span), " ", mapped("satisfies", span), " Element;"));
-        }
-        if (trigger.kind === "visible" && trigger.options) {
-          lines.push(line(mappedExpression(trigger.options.expressionNode, context, trigger.options.span), " satisfies Omit<IntersectionObserverInit, 'root'>;"));
-        }
-        break;
-      default:
-        break;
-    }
-  }
-}
-
-// ../packages/compiler/src/type-checker/states/type-check-defer/type-check-defer.state.ts
-function typeCheckDefer(node, processNode, context) {
-  const lines = typeCheckTriggers(node, context);
-  const { placeholder, loading, error } = node;
-  lines.push(plain("{"), ...typeCheckBlock2(node.children, new TypeCheckContext(context), processNode), plain("}"));
-  if (placeholder) {
-    lines.push(plain("{"), ...typeCheckBlock2(placeholder.children, new TypeCheckContext(context), processNode), plain("}"));
-  }
-  if (loading) {
-    lines.push(plain("{"), ...typeCheckBlock2(loading.children, new TypeCheckContext(context), processNode), plain("}"));
-  }
-  if (error) {
-    const { name, nameSpan, children } = error;
-    const errorContext = new TypeCheckContext(context);
-    if (name) {
-      errorContext.addUnresolvableIdentifier(name, "value");
-    }
-    lines.push(
-      plain("try { }"),
-      name ? line("catch (", mapped(name, nameSpan), ") {") : plain("catch {"),
-      ...typeCheckBlock2(children, errorContext, processNode),
-      plain("}")
-    );
-  }
-  return lines;
-}
-function typeCheckBlock2(children, context, processNode) {
-  const scope = typeCheckScope(children, context, processNode);
-  return indentLines(scope.declarations.concat(scope.lines));
-}
-
-// ../packages/compiler/src/type-checker/states/type-check-hydrate/type-check-hydrate.state.ts
-function typeCheckHydrate(node, processNode, context) {
-  const lines = typeCheckTriggers(node, context);
-  const { declarations, lines: content } = typeCheckScope(node.children, new TypeCheckContext(context), processNode);
-  lines.push(plain("{"), ...indentLines(declarations.concat(content)), plain("}"));
-  return lines;
-}
-
 // ../packages/compiler/src/type-checker/states/type-check-switch/type-check-switch.state.ts
 function typeCheckSwitch(node, processNode, context) {
   const { children, exhaustive, span } = node;
@@ -28918,6 +28979,24 @@ function typeCheckParameter({ name, nameSpan, type, typeSpan, optional, initiali
 // ../packages/compiler/src/type-checker/states/type-check-text-and-interpolation/type-check-text-and-interpolation.state.ts
 function typeCheckTextAndInterpolation(node, _processNode, context) {
   return node.type === 4 /* Interpolation */ ? [line(mappedInterpolation(node, context, ";"))] : [];
+}
+
+// ../packages/compiler/src/type-checker/states/type-check-try/type-check-try.state.ts
+function typeCheckTry(node, processNode, context) {
+  const content = typeCheckScope(node.children, new TypeCheckContext(context), processNode);
+  const { name, nameSpan, children } = node.catch;
+  const catchContext = new TypeCheckContext(context);
+  if (name) {
+    catchContext.addUnresolvableIdentifier(name, "value");
+  }
+  const fallback = typeCheckScope(children, catchContext, processNode);
+  return [
+    plain("try {"),
+    ...indentLines(content.declarations.concat(content.lines)),
+    name ? line("} catch (", mapped(name, nameSpan), ") {") : plain("} catch {"),
+    ...indentLines(fallback.declarations.concat(fallback.lines)),
+    plain("}")
+  ];
 }
 
 // ../packages/compiler/src/type-checker/utils/import-hoisting/import-hoisting.utils.ts
@@ -29006,6 +29085,19 @@ function getNestedNodes(node) {
   }
 }
 
+// ../packages/compiler/src/type-checker/utils/server-blocks/server-blocks.utils.ts
+function checkServerBlocks(nodes) {
+  const errors = new Array();
+  visitNodes(nodes, (node) => {
+    if (node.type === 21 /* Hydrate */ || node.type === 22 /* Client */) {
+      const keyword = node.type === 21 /* Hydrate */ ? "@hydrate" : "@client";
+      const { start } = node.span;
+      errors.push(new Error(`${keyword} is only for a project rendering on the server: declare "ssr" in its xaendar.json, or remove the block`, { cause: { start, end: start + keyword.length } }));
+    }
+  });
+  return errors;
+}
+
 // ../packages/compiler/src/type-checker/utils/trigger-targets/trigger-targets.utils.ts
 function checkTriggerTargets(nodes) {
   const errors = new Array();
@@ -29060,19 +29152,6 @@ function mayRenderElement(nodes) {
         return true;
     }
   });
-}
-
-// ../packages/compiler/src/type-checker/utils/server-blocks/server-blocks.utils.ts
-function checkServerBlocks(nodes) {
-  const errors = new Array();
-  visitNodes(nodes, (node) => {
-    if (node.type === 21 /* Hydrate */ || node.type === 22 /* Client */) {
-      const keyword = node.type === 21 /* Hydrate */ ? "@hydrate" : "@client";
-      const { start } = node.span;
-      errors.push(new Error(`${keyword} is only for a project rendering on the server: declare "ssr" in its xaendar.json, or remove the block`, { cause: { start, end: start + keyword.length } }));
-    }
-  });
-  return errors;
 }
 
 // ../packages/compiler/src/type-checker/utils/variable-order/variable-order.utils.ts
@@ -29579,8 +29658,20 @@ var TypeChecker = class {
 };
 
 // ../packages/compiler/src/compile/compile.ts
+var PARSED_TEMPLATES_SIZE = 16;
+var PARSED_TEMPLATES = /* @__PURE__ */ new Map();
 function parseTemplate(input) {
-  return new Parser(input, new Lexer(input).tokenize()).parse();
+  let nodes = PARSED_TEMPLATES.get(input);
+  if (nodes) {
+    PARSED_TEMPLATES.delete(input);
+  } else {
+    nodes = new Parser(input, new Lexer(input).tokenize()).parse();
+    if (PARSED_TEMPLATES.size === PARSED_TEMPLATES_SIZE) {
+      PARSED_TEMPLATES.delete(PARSED_TEMPLATES.keys().next().value);
+    }
+  }
+  PARSED_TEMPLATES.set(input, nodes);
+  return nodes;
 }
 async function typeCheckTemplateTolerant(input, nodes, metadatas, shadowingMembers = [], customElements = [], symbols = [], reactiveMembers = [], ssr, strictEvents = true) {
   return await new TypeChecker(input, nodes).generateTolerant(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents);
@@ -31359,6 +31450,26 @@ var ProjectLanguageService = class {
    */
   _realFileVersions = /* @__PURE__ */ new Map();
   /**
+   * Whether each real file exists, by its normalized path, as read while the real files are cached (see
+   * {@link cacheRealFiles}).
+   */
+  _realFileExistence = /* @__PURE__ */ new Map();
+  /**
+   * Whether each directory exists, by its normalized path, as read while the real files are cached (see
+   * {@link cacheRealFiles}).
+   */
+  _directoryExistence = /* @__PURE__ */ new Map();
+  /**
+   * Whether the versions and the existence of the real files and of the directories are read from the disk once, then
+   * kept until a change of the files is reported (see {@link cacheRealFiles}, {@link invalidateRealFiles}).
+   */
+  _cachesRealFiles = false;
+  /**
+   * The cache of the module resolutions every Program of the LanguageService shares while the real files are cached
+   * (see {@link cacheRealFiles}), until a change of the files is reported: `undefined` until a module is resolved.
+   */
+  _moduleResolutionCache;
+  /**
    * Real project files known to the Program, populated as the components are
    * processed (see `registerRealFile`).
    */
@@ -31415,7 +31526,41 @@ var ProjectLanguageService = class {
     this._projectFileNames = [];
     this._virtualFiles.clear();
     this._realFileVersions.clear();
+    this._realFileExistence.clear();
+    this._directoryExistence.clear();
+    this._moduleResolutionCache = void 0;
     this._realFiles.clear();
+  }
+  /**
+   * Reads the versions and the existence of the real files and of the directories from the disk once, keeping them until
+   * a change of the files is reported with {@link invalidateRealFiles}: for a caller told of every change of the files it
+   * depends on, as the build tools are by the watcher of Vite (nothing changes during a build). After any change
+   * reported, every file is read again, so that the files no watcher reports, as a package installed meanwhile, are
+   * read again too. The modules are resolved once too, the Programs sharing the cache of the resolutions, which TypeScript
+   * otherwise creates for every Program. The setting outlives {@link dispose}; a LanguageService created before is
+   * created again, with the resolutions cached.
+   *
+   * N.B. Deliberate, for speed: the LanguageService asks the version of every file of the Program at every request, once
+   * per component served by the dev server, TypeScript probes the files and the directories of every module it resolves,
+   * and every new Program resolved every module again. Read from the disk each time, they took millions of `stat` calls
+   * in the build of the site, a fifth of its time. Do not read them again without a change reported.
+   */
+  cacheRealFiles() {
+    if (!this._cachesRealFiles) {
+      this._cachesRealFiles = true;
+      this._languageService?.dispose();
+      this._languageService = void 0;
+    }
+  }
+  /**
+   * Forgets what was read of the real files and of the directories (see {@link cacheRealFiles}): a file was created,
+   * changed or deleted.
+   */
+  invalidateRealFiles() {
+    this._moduleResolutionCache = void 0;
+    this._realFileVersions.clear();
+    this._realFileExistence.clear();
+    this._directoryExistence.clear();
   }
   /**
    * Registers a real project file as a root file for the Program, so the
@@ -31468,7 +31613,7 @@ var ProjectLanguageService = class {
    * @returns The host.
    */
   _createHost() {
-    return {
+    const host = {
       getScriptFileNames: () => [
         .../* @__PURE__ */ new Set([...this._projectFileNames, ...this._realFiles]),
         ...this._virtualFiles.keys()
@@ -31485,13 +31630,33 @@ var ProjectLanguageService = class {
       getCurrentDirectory: () => process.cwd(),
       getCompilationSettings: () => this._compilerOptions ?? {},
       getDefaultLibFileName: (options) => (0, import_typescript24.getDefaultLibFilePath)(options),
-      fileExists: (fileName) => this._virtualFiles.has(fileName) || documentOverlays.has(normalizeFileName2(fileName)) || import_typescript24.sys.fileExists(fileName),
+      fileExists: (fileName) => this._virtualFiles.has(fileName) || documentOverlays.has(normalizeFileName2(fileName)) || this._realFileExists(fileName),
       readFile: (fileName) => this._readFile(fileName),
       readDirectory: import_typescript24.sys.readDirectory,
-      directoryExists: import_typescript24.sys.directoryExists,
+      directoryExists: (directoryName) => this._directoryExists(directoryName),
       getDirectories: import_typescript24.sys.getDirectories,
       realpath: import_typescript24.sys.realpath
     };
+    if (this._cachesRealFiles) {
+      host.resolveModuleNameLiterals = (moduleLiterals, containingFile, redirectedReference, options, containingSourceFile) => this._resolveModuleNameLiterals(host, moduleLiterals, containingFile, redirectedReference, options, containingSourceFile);
+    }
+    return host;
+  }
+  /**
+   * Resolves the modules a file imports, with the cache of the resolutions every Program shares while the real files are
+   * cached (see {@link cacheRealFiles}), as TypeScript resolves them with a cache of its own for each Program.
+   *
+   * @param host - The host of the LanguageService, which tells the files and the directories that exist.
+   * @param moduleLiterals - The module specifiers.
+   * @param containingFile - The path of the file importing the modules.
+   * @param redirectedReference - The project reference the file is redirected to, if any.
+   * @param options - The compiler options of the Program.
+   * @param containingSourceFile - The file importing the modules, which tells the resolution mode of each import.
+   * @returns The resolution of each module, in the order of the specifiers.
+   */
+  _resolveModuleNameLiterals(host, moduleLiterals, containingFile, redirectedReference, options, containingSourceFile) {
+    const cache = this._moduleResolutionCache ??= (0, import_typescript24.createModuleResolutionCache)(process.cwd(), (fileName) => fileName, options);
+    return moduleLiterals.map((literal) => (0, import_typescript24.resolveModuleName)(literal.text, containingFile, options, host, cache, redirectedReference, (0, import_typescript24.getModeForUsageLocation)(containingSourceFile, literal, options)));
   }
   /**
    * Reads a file: a virtual shim, the unsaved text of an open document, or the file on disk.
@@ -31500,24 +31665,53 @@ var ProjectLanguageService = class {
    * @returns Its text, or `undefined` if it doesn't exist or cannot be read.
    */
   _readFile(fileName) {
-    return this._virtualFiles.get(fileName)?.content ?? readDocument(fileName);
+    const virtual = this._virtualFiles.get(fileName);
+    if (virtual) {
+      return virtual.content;
+    }
+    const overlay = documentOverlays.get(normalizeFileName2(fileName));
+    return overlay ? overlay.content : this._realFileExists(fileName) ? import_typescript24.sys.readFile(fileName) : void 0;
+  }
+  /**
+   * Tells whether a real file exists on disk, as read once while the real files are cached (see {@link cacheRealFiles}).
+   *
+   * @param fileName - The path of the file.
+   * @returns `true` if the file exists.
+   */
+  _realFileExists(fileName) {
+    return this._cachesRealFiles ? readOnce(this._realFileExistence, fileName, import_typescript24.sys.fileExists) : import_typescript24.sys.fileExists(fileName);
+  }
+  /**
+   * Tells whether a directory exists on disk, as read once while the real files are cached (see {@link cacheRealFiles}).
+   *
+   * @param directoryName - The path of the directory.
+   * @returns `true` if the directory exists.
+   */
+  _directoryExists(directoryName) {
+    return this._cachesRealFiles ? readOnce(this._directoryExistence, directoryName, import_typescript24.sys.directoryExists) : import_typescript24.sys.directoryExists(directoryName);
   }
   /**
    * Synthetic version string for a real file, based on its mtime, so the
    * LanguageService can detect when a source file has changed on disk.
    * Falls back to the last known version (or '0') if the file can no longer
-   * be stat'd, to avoid spurious invalidation churn.
+   * be stat'd, to avoid spurious invalidation churn. While the real files are cached (see {@link cacheRealFiles}), the
+   * version read last is given until a change of the file is reported.
    *
    * @param fileName - The path of the file.
    * @returns The version of the file.
    */
   _getRealFileVersion(fileName) {
+    const key = normalizeFileName2(fileName);
+    const known = this._realFileVersions.get(key);
+    if (known !== void 0 && this._cachesRealFiles) {
+      return known;
+    }
     try {
       const version = String((0, import_node_fs4.statSync)(fileName).mtimeMs);
-      this._realFileVersions.set(fileName, version);
+      this._realFileVersions.set(key, version);
       return version;
     } catch {
-      return this._realFileVersions.get(fileName) ?? "0";
+      return known ?? "0";
     }
   }
 };
@@ -31555,6 +31749,15 @@ function upsertEntry(entries, key, content) {
     });
   }
 }
+function readOnce(facts, path, read) {
+  const key = normalizeFileName2(path);
+  let fact = facts.get(key);
+  if (fact === void 0) {
+    fact = read(path);
+    facts.set(key, fact);
+  }
+  return fact;
+}
 
 // ../packages/language-core/src/lib/template-metadata-cache/template-metadata-cache.ts
 var import_typescript26 = require("typescript");
@@ -31588,7 +31791,7 @@ function resolveModule(baseDir, modulePath, compilerOptions = DEFAULT_COMPILER_O
   const { resolvedModule } = (0, import_typescript25.resolveModuleName)(modulePath, resolvePosixPath(baseDir, "__template__.ts"), compilerOptions, import_typescript25.sys);
   return resolvedModule && { fileName: toPosixPath2(resolvedModule.resolvedFileName), external: !!resolvedModule.isExternalLibraryImport };
 }
-function resolveModulePath(baseDir, modulePath, compilerOptions) {
+function resolveModulePath2(baseDir, modulePath, compilerOptions) {
   return resolveModule(baseDir, modulePath, compilerOptions)?.fileName;
 }
 function toModulePath(baseDir, fileName) {
@@ -31639,7 +31842,7 @@ var TemplateMetadataCache = class {
     if (!path && stored) {
       return stored;
     }
-    const fileName = Array.isArray(path) ? resolveModulePath(path[0], path[1], this._compilerOptions) : path && resolvePosixPath(path);
+    const fileName = Array.isArray(path) ? resolveModulePath2(path[0], path[1], this._compilerOptions) : path && resolvePosixPath(path);
     const metadata = fileName && (readLibraryMetadata(fileName, name) ?? (await this._getFileMetadatas(fileName))?.get(name) ?? await this._getReExportedMetadata(fileName, name));
     if (!metadata) {
       throw new Error(`Class "${name}" was not found in the import from ${Array.isArray(path) ? path[1] : path}`);
@@ -31689,7 +31892,7 @@ var TemplateMetadataCache = class {
    * @returns The metadata, keyed by class name; `undefined` if the module cannot be resolved or read.
    */
   async getModuleMetadatas(baseDir, modulePath) {
-    const fileName = resolveModulePath(baseDir, modulePath, this._compilerOptions);
+    const fileName = resolveModulePath2(baseDir, modulePath, this._compilerOptions);
     if (fileName) {
       return this._getFileMetadatas(fileName);
     }
@@ -31995,7 +32198,7 @@ async function resolveImportCandidates(templatePath) {
 }
 function resolveModuleExports(templatePath, modulePath) {
   const context = getProjectContext((0, import_node_path8.dirname)(templatePath));
-  const fileName = resolveModulePath((0, import_node_path8.dirname)(templatePath), modulePath, context.options);
+  const fileName = resolveModulePath2((0, import_node_path8.dirname)(templatePath), modulePath, context.options);
   return fileName ? listExports(getProgram(context), fileName) : void 0;
 }
 function resolveExportCandidates(templatePath) {
@@ -32067,7 +32270,7 @@ async function resolveImports(ast, templateDir, cache, options) {
   const importNodes = ast.filter((node) => node.type === 11 /* Import */);
   for (let i2 = 0; i2 < importNodes.length; i2++) {
     const node = importNodes[i2];
-    if (!resolveModulePath(templateDir, node.path, options)) {
+    if (!resolveModulePath2(templateDir, node.path, options)) {
       const message = `Cannot find module "${node.path}"`;
       errors.push(new TemplateError(message, node.pathSpan, message));
       continue;
@@ -32574,7 +32777,7 @@ function getClassDefinition(metadata) {
   return { fileName: sourceFile.fileName, span: { start: klass.name.getStart(sourceFile), end: klass.name.getEnd() } };
 }
 function getModuleDefinition(templateDir, path, options) {
-  const fileName = resolveModulePath(templateDir, path, options);
+  const fileName = resolveModulePath2(templateDir, path, options);
   return fileName ? { fileName, span: { start: 0, end: 0 } } : void 0;
 }
 function getTypeScriptDefinitions({ typeCheck, languageService, shimPath, bodyLineOffset, templatePath }, offset) {

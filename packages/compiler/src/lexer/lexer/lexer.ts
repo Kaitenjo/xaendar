@@ -1,4 +1,4 @@
-import { slice, Stack } from '@xaendar/common';
+import { slice } from '@xaendar/common';
 import { Dictionary } from '@xaendar/types';
 import { CR, LF, SPACE } from '../../costants/chars.constant';
 import { TemplateError } from '../../models/template-error/template-error.model';
@@ -33,6 +33,7 @@ import { LexerState } from '../types/lexer-state.enum';
 import type { LexerTolerantResult } from '../types/lexer-tolerant-result.type';
 import type { TokenWithOptionalSpan } from '../types/token-with-optional-span.type';
 import { Token } from '../types/token.type';
+import type { LexerTransitionFunctionContext } from '../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunction } from '../types/transition-function/transition-function.type';
 
 /**
@@ -52,9 +53,12 @@ export class Lexer {
    */
   private _state = LexerState.TEXT;
   /**
-   * State stack used to support nested states (e.g. interpolations).
+   * State stack used to support nested states (e.g. interpolations), from the outermost.
+   *
+   * N.B. Deliberate, for speed: a plain array, handed to the transition functions as it is. A `Stack` would copy it
+   * on every read of its values, once per transition. Do not hand out copies.
    */
-  private _stack = new Stack<LexerState>;
+  private readonly _stack = new Array<LexerState>();
   /**
    * Accumulated list of tokens emitted during tokenization.
    */
@@ -107,7 +111,7 @@ export class Lexer {
    * @returns The opening states.
    */
   public get history(): readonly LexerState[] {
-    return this._stack.values;
+    return this._stack;
   }
 
   /**
@@ -165,19 +169,21 @@ export class Lexer {
     let eof = false;
     const cursor = this._cursor;
     let stateStartIndex = -1;
+    /*
+      N.B. Deliberate, for speed: the states read the history and the tokens as they grow, never copies of them. A copy
+      of the tokens per transition made the tokenization quadratic (seconds for a large template). Do not copy them
+    */
+    const context: LexerTransitionFunctionContext = { history: this._stack, tokens: this._tokens };
 
     while (!eof) {
       try {
         stateStartIndex = cursor.currentChar.index + 1;
         const transitionFunction = this._states[this._state];
-        const { state, tokens, popState, pushState } = transitionFunction!(cursor, {
-          history: this._stack.values,
-          tokens: [...this._tokens],
-        });
+        const { state, tokens, popState, pushState } = transitionFunction!(cursor, context);
 
         if (tokens?.length) {
           const stateEndIndex = cursor.currentChar.index + 1;
-          this._tokens.push(...this._withTokenSpans(tokens, { start: stateStartIndex, end: stateEndIndex }));
+          this._appendTokens(tokens, { start: stateStartIndex, end: stateEndIndex });
         }
 
         if (pushState) {
@@ -253,7 +259,8 @@ export class Lexer {
           const nextNeighbourhood = slice(this._input, stateEndIndex, endInterval).replace(/\s+$/, '');
           const message = isError ? err.message : `${err}`;
           return new TemplateError(
-            `[Lexer] ${cursor.getPositionFromCharacterIndex(stateEndIndex + 1)} - ${message}\n ---> ${previousNeighbourhood}${underlinedError}${nextNeighbourhood}`,
+            // The position of the character the state stopped at, the one it could not read
+            `[Lexer] ${cursor.getPositionFromCharacterIndex(currentIndex + 1)} - ${message}\n ---> ${previousNeighbourhood}${underlinedError}${nextNeighbourhood}`,
             { start: stateStartIndex, end: stateEndIndex },
             message
           );
@@ -265,19 +272,22 @@ export class Lexer {
   }
 
   /**
-   * Ensures every emitted token has a source span.
+   * Appends the tokens a state emitted, ensuring every one has a source span.
    *
    * States can provide a more accurate `token.span` (e.g. Event Parameter and Import States)
    * otherwise the lexer falls back to the full state-consumption range.
    *
+   * N.B. Deliberate, for speed: the span is set on the token the state created, which nothing else holds, and the
+   * token is appended in a loop. A copy of every token, appended by a spread, cost an object per token. Do not copy them.
+   *
    * @param tokens - The tokens emitted by a state.
    * @param fallbackSpan - The range of the input the state consumed, for the tokens without a span of their own.
-   * @returns The tokens, each one with its span.
    */
-  private _withTokenSpans(tokens: TokenWithOptionalSpan[], fallbackSpan: Span): Token[] {
-    return tokens.map<Token>(token => ({
-      ...token,
-      span: token.span ?? fallbackSpan
-    }));
+  private _appendTokens(tokens: TokenWithOptionalSpan[], fallbackSpan: Span): void {
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      token.span ??= fallbackSpan;
+      this._tokens.push(token as unknown as Token);
+    }
   }
 }

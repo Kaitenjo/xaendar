@@ -53,6 +53,28 @@ describe('ExpressionScanner', () => {
     expect(scan('Map<string, () => void>', true).closers).toBe('');
   });
 
+  it.each([
+    ['a block comment', 'f(a) /* x', false, ''],
+    ['a line comment', 'f(a, // x', false, ')'],
+    ['the code after a block comment', 'f(a /* ) */', true, ')'],
+    ['the code after a line comment', 'f(a // )\n', true, ')'],
+    ['the code after a line comment ended by a carriage return', 'a // x\r(', true, ')'],
+    ['a block comment closed by the * that opens it, as in /*/', '/*/ x', false, ''],
+    ['an empty block comment', '/**/ (', true, ')'],
+    ['the / following the end of a block comment, opening no comment', '/* a *//(', true, ')'],
+    ['a / starting no comment', 'a / (b', true, ')'],
+    ['a comment in a substitution of a template literal', '`${ a /* }', false, '}`']
+  ])('follows %s', (_name, text, isCode, closers) => {
+    const scanner = scan(text);
+
+    expect([scanner.isCode, scanner.closers]).toEqual([isCode, closers]);
+  });
+
+  it('reads the characters of a comment as part of it, the quotes and the groups included', () => {
+    expect(scan('a /* \' ( ` */ + b').isTopLevel).toBe(true);
+    expect(scan('a /* x').isTopLevel).toBe(false);
+  });
+
   it('tells whether the scan is outside of any group and literal', () => {
     expect(scan('f(a) + b').isTopLevel).toBe(true);
     expect(scan('f(a').isTopLevel).toBe(false);
@@ -68,7 +90,10 @@ describe('ExpressionScanner', () => {
       ['a character that is not a terminator', 'a)', '}', false],
       ['a terminator in a string', '\'a,', ',', false],
       ['a terminator in the text of a template literal', '`a}', '}', false],
-      ['a terminator in a substitution of a template literal', '`${ a,', ',', false]
+      ['a terminator in a substitution of a template literal', '`${ a,', ',', false],
+      ['a terminator in a block comment', 'a /* }', '}', false],
+      ['a terminator in a line comment', 'a // }', '}', false],
+      ['a terminator after a block comment', 'a /* } */ }', '}', true]
     ])('ends at %s: %s', (_name, text, terminators, expected) => {
       expect(endsAt(text, terminators)).toBe(expected);
     });

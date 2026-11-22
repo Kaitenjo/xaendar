@@ -147,4 +147,10 @@ describe('matchesCustomElementPattern()', () => {
   it('matches nothing without patterns', () => {
     expect(matchesCustomElementPattern('sl-button', [])).toBe(false);
   });
+
+  it('matches other tag names with the expression a pattern was compiled to the first time', () => {
+    expect(matchesCustomElementPattern('ui-card', ['ui-*'])).toBe(true);
+    expect(matchesCustomElementPattern('ux-card', ['ui-*'])).toBe(false);
+    expect(matchesCustomElementPattern('ui-card-header', ['ui-*'])).toBe(true);
+  });
 });

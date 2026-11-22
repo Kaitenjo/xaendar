@@ -1,4 +1,3 @@
-import { Stack } from '@xaendar/common';
 import { Computed } from '../../models/computed/computed';
 import { GlobalState } from '../../types/global-state.type';
 
@@ -18,8 +17,11 @@ export const GLOBAL_STATE: GlobalState = {
 /**
  * The value `GLOBAL_STATE.computing` had when each running `Computed` started computing, innermost last:
  * `null` included, as for a `Computed` evaluated inside `untrack`.
+ *
+ * N.B. Deliberate, for speed: a plain array, pushed and popped on every computation. The `Stack` of `@xaendar/common`
+ * goes through a `Proxy` on every access, about 25 times slower. Do not replace it with a `Stack`.
  */
-const computingStack = new Stack<Computed | null>;
+const computingStack = new Array<Computed | null>();
 
 /**
  * Saves the currently active computation onto the computing stack and sets the

@@ -1,5 +1,5 @@
 import { statSync } from 'node:fs';
-import { CompilerOptions, createDocumentRegistry, createLanguageService, getDefaultLibFilePath, LanguageService, LanguageServiceHost, ScriptSnapshot, sys } from 'typescript';
+import { CompilerOptions, createDocumentRegistry, createLanguageService, createModuleResolutionCache, getDefaultLibFilePath, getModeForUsageLocation, LanguageService, LanguageServiceHost, ModuleResolutionCache, ModuleResolutionHost, resolveModuleName, ResolvedModuleWithFailedLookupLocations, ResolvedProjectReference, ScriptSnapshot, SourceFile, StringLiteralLike, sys } from 'typescript';
 import type { VirtualFileEntry } from '../types/virtual-file-entry.type';
 import { normalizeFileName } from '../utils/path/path.utils';
 
@@ -48,6 +48,26 @@ export class ProjectLanguageService {
    * internal snapshot cache when a source file changes on disk (mtime-based).
    */
   private readonly _realFileVersions = new Map<string, string>();
+  /**
+   * Whether each real file exists, by its normalized path, as read while the real files are cached (see
+   * {@link cacheRealFiles}).
+   */
+  private readonly _realFileExistence = new Map<string, boolean>();
+  /**
+   * Whether each directory exists, by its normalized path, as read while the real files are cached (see
+   * {@link cacheRealFiles}).
+   */
+  private readonly _directoryExistence = new Map<string, boolean>();
+  /**
+   * Whether the versions and the existence of the real files and of the directories are read from the disk once, then
+   * kept until a change of the files is reported (see {@link cacheRealFiles}, {@link invalidateRealFiles}).
+   */
+  private _cachesRealFiles = false;
+  /**
+   * The cache of the module resolutions every Program of the LanguageService shares while the real files are cached
+   * (see {@link cacheRealFiles}), until a change of the files is reported: `undefined` until a module is resolved.
+   */
+  private _moduleResolutionCache: ModuleResolutionCache | undefined;
   /**
    * Real project files known to the Program, populated as the components are
    * processed (see `registerRealFile`).
@@ -109,7 +129,43 @@ export class ProjectLanguageService {
     this._projectFileNames = [];
     this._virtualFiles.clear();
     this._realFileVersions.clear();
+    this._realFileExistence.clear();
+    this._directoryExistence.clear();
+    this._moduleResolutionCache = undefined;
     this._realFiles.clear();
+  }
+
+  /**
+   * Reads the versions and the existence of the real files and of the directories from the disk once, keeping them until
+   * a change of the files is reported with {@link invalidateRealFiles}: for a caller told of every change of the files it
+   * depends on, as the build tools are by the watcher of Vite (nothing changes during a build). After any change
+   * reported, every file is read again, so that the files no watcher reports, as a package installed meanwhile, are
+   * read again too. The modules are resolved once too, the Programs sharing the cache of the resolutions, which TypeScript
+   * otherwise creates for every Program. The setting outlives {@link dispose}; a LanguageService created before is
+   * created again, with the resolutions cached.
+   *
+   * N.B. Deliberate, for speed: the LanguageService asks the version of every file of the Program at every request, once
+   * per component served by the dev server, TypeScript probes the files and the directories of every module it resolves,
+   * and every new Program resolved every module again. Read from the disk each time, they took millions of `stat` calls
+   * in the build of the site, a fifth of its time. Do not read them again without a change reported.
+   */
+  public cacheRealFiles(): void {
+    if (!this._cachesRealFiles) {
+      this._cachesRealFiles = true;
+      this._languageService?.dispose();
+      this._languageService = undefined;
+    }
+  }
+
+  /**
+   * Forgets what was read of the real files and of the directories (see {@link cacheRealFiles}): a file was created,
+   * changed or deleted.
+   */
+  public invalidateRealFiles(): void {
+    this._moduleResolutionCache = undefined;
+    this._realFileVersions.clear();
+    this._realFileExistence.clear();
+    this._directoryExistence.clear();
   }
 
   /**
@@ -167,7 +223,7 @@ export class ProjectLanguageService {
    * @returns The host.
    */
   private _createHost(): LanguageServiceHost {
-    return {
+    const host: LanguageServiceHost = {
       getScriptFileNames: () => [
         ...new Set([...this._projectFileNames, ...this._realFiles]),
         ...this._virtualFiles.keys(),
@@ -184,13 +240,37 @@ export class ProjectLanguageService {
       getCurrentDirectory: () => process.cwd(),
       getCompilationSettings: () => this._compilerOptions ?? {},
       getDefaultLibFileName: options => getDefaultLibFilePath(options),
-      fileExists: fileName => this._virtualFiles.has(fileName) || documentOverlays.has(normalizeFileName(fileName)) || sys.fileExists(fileName),
+      fileExists: fileName => this._virtualFiles.has(fileName) || documentOverlays.has(normalizeFileName(fileName)) || this._realFileExists(fileName),
       readFile: fileName => this._readFile(fileName),
       readDirectory: sys.readDirectory,
-      directoryExists: sys.directoryExists,
+      directoryExists: directoryName => this._directoryExists(directoryName),
       getDirectories: sys.getDirectories,
       realpath: sys.realpath,
     };
+
+    if (this._cachesRealFiles) {
+      host.resolveModuleNameLiterals = (moduleLiterals, containingFile, redirectedReference, options, containingSourceFile) => this._resolveModuleNameLiterals(host, moduleLiterals, containingFile, redirectedReference, options, containingSourceFile);
+    }
+
+    return host;
+  }
+
+  /**
+   * Resolves the modules a file imports, with the cache of the resolutions every Program shares while the real files are
+   * cached (see {@link cacheRealFiles}), as TypeScript resolves them with a cache of its own for each Program.
+   *
+   * @param host - The host of the LanguageService, which tells the files and the directories that exist.
+   * @param moduleLiterals - The module specifiers.
+   * @param containingFile - The path of the file importing the modules.
+   * @param redirectedReference - The project reference the file is redirected to, if any.
+   * @param options - The compiler options of the Program.
+   * @param containingSourceFile - The file importing the modules, which tells the resolution mode of each import.
+   * @returns The resolution of each module, in the order of the specifiers.
+   */
+  private _resolveModuleNameLiterals(host: ModuleResolutionHost, moduleLiterals: readonly StringLiteralLike[], containingFile: string, redirectedReference: ResolvedProjectReference | undefined, options: CompilerOptions, containingSourceFile: SourceFile): ResolvedModuleWithFailedLookupLocations[] {
+    // The paths are kept as written: on a file system ignoring the case, two spellings of a path only share less
+    const cache = this._moduleResolutionCache ??= createModuleResolutionCache(process.cwd(), fileName => fileName, options);
+    return moduleLiterals.map(literal => resolveModuleName(literal.text, containingFile, options, host, cache, redirectedReference, getModeForUsageLocation(containingSourceFile, literal, options)));
   }
 
   /**
@@ -200,25 +280,58 @@ export class ProjectLanguageService {
    * @returns Its text, or `undefined` if it doesn't exist or cannot be read.
    */
   private _readFile(fileName: string): string | undefined {
-    return this._virtualFiles.get(fileName)?.content ?? readDocument(fileName);
+    const virtual = this._virtualFiles.get(fileName);
+    if (virtual) {
+      return virtual.content;
+    }
+
+    const overlay = documentOverlays.get(normalizeFileName(fileName));
+    return overlay ? overlay.content : this._realFileExists(fileName) ? sys.readFile(fileName) : undefined;
+  }
+
+  /**
+   * Tells whether a real file exists on disk, as read once while the real files are cached (see {@link cacheRealFiles}).
+   *
+   * @param fileName - The path of the file.
+   * @returns `true` if the file exists.
+   */
+  private _realFileExists(fileName: string): boolean {
+    return this._cachesRealFiles ? readOnce(this._realFileExistence, fileName, sys.fileExists) : sys.fileExists(fileName);
+  }
+
+  /**
+   * Tells whether a directory exists on disk, as read once while the real files are cached (see {@link cacheRealFiles}).
+   *
+   * @param directoryName - The path of the directory.
+   * @returns `true` if the directory exists.
+   */
+  private _directoryExists(directoryName: string): boolean {
+    return this._cachesRealFiles ? readOnce(this._directoryExistence, directoryName, sys.directoryExists) : sys.directoryExists(directoryName);
   }
 
   /**
    * Synthetic version string for a real file, based on its mtime, so the
    * LanguageService can detect when a source file has changed on disk.
    * Falls back to the last known version (or '0') if the file can no longer
-   * be stat'd, to avoid spurious invalidation churn.
+   * be stat'd, to avoid spurious invalidation churn. While the real files are cached (see {@link cacheRealFiles}), the
+   * version read last is given until a change of the file is reported.
    *
    * @param fileName - The path of the file.
    * @returns The version of the file.
    */
   private _getRealFileVersion(fileName: string): string {
+    const key = normalizeFileName(fileName);
+    const known = this._realFileVersions.get(key);
+    if (known !== undefined && this._cachesRealFiles) {
+      return known;
+    }
+
     try {
       const version = String(statSync(fileName).mtimeMs);
-      this._realFileVersions.set(fileName, version);
+      this._realFileVersions.set(key, version);
       return version;
     } catch {
-      return this._realFileVersions.get(fileName) ?? '0';
+      return known ?? '0';
     }
   }
 }
@@ -306,6 +419,22 @@ export function disposeLanguageService(): void {
 }
 
 /**
+ * Reads the versions and the existence of the real files once for the default instance, until a change is reported
+ * with {@link invalidateRealFiles} (see {@link ProjectLanguageService.cacheRealFiles}).
+ */
+export function cacheRealFiles(): void {
+  defaultProjectLanguageService.cacheRealFiles();
+}
+
+/**
+ * Forgets what the default instance read of the real files, a file having been created, changed or deleted (see
+ * {@link ProjectLanguageService.invalidateRealFiles}).
+ */
+export function invalidateRealFiles(): void {
+  defaultProjectLanguageService.invalidateRealFiles();
+}
+
+/**
  * Registers a real project file as a root file for the Program of the default instance.
  *
  * @param fileName - The path of the file.
@@ -357,4 +486,23 @@ function upsertEntry(entries: Map<string, VirtualFileEntry>, key: string, conten
       version: (existing?.version ?? 0) + 1,
     });
   }
+}
+
+/**
+ * Reads a fact about a path from the disk the first time it is asked, then from the facts read.
+ *
+ * @param facts - The facts read, by the normalized path.
+ * @param path - The path.
+ * @param read - Reads the fact from the disk.
+ * @returns The fact.
+ */
+function readOnce(facts: Map<string, boolean>, path: string, read: (path: string) => boolean): boolean {
+  const key = normalizeFileName(path);
+  let fact = facts.get(key);
+  if (fact === undefined) {
+    fact = read(path);
+    facts.set(key, fact);
+  }
+
+  return fact;
 }

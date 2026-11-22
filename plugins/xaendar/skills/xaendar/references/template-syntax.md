@@ -24,6 +24,7 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 - Self-close every element without content, native ones included: `<div class="spacer" />`, not `<div class="spacer"></div>`. Void elements require it.
 - A literal `@`, `<`, `{` or `}` in text must be written as a character reference (`&commat;`, `&lt;`, `&lbrace;`, `&rbrace;`) or an interpolation (`{ '@' }`, `{ '<' }`, `{ '{' }`, `{ '}' }`). This includes package names in prose (`&commat;xaendar/core`) and e-mail addresses.
 - Character references (`&lt;`, `&amp;`, `&#64;`, …) are decoded in text and static attribute values, as in HTML. Line breaks inside a text are kept, as in HTML.
+- HTML comments `<!-- … -->` in the content are dropped from the output; inside a static attribute value or an expression (`title="a<!--b-->"`, `{ '<!--' + x() }`) they are text, as in HTML.
 - Whitespace-only text holding a line break is dropped: elements or interpolations on separate lines render joined (write `{ ' ' }` between them). A space between them on the same line stays: `{ first } { second }`.
 
 ## Bindings and events

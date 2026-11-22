@@ -35,6 +35,8 @@ export function createConfigureServerHook(state: XaendarPluginState): NonNullabl
       clearMetadataRegistry();
       clearDependencyRegistry();
       clearComponentMembersCache();
+      state.typeCheckQueue?.cancel();
+      state.typeCheckQueue = undefined;
       disposeLanguageService();
       state.setLogger(undefined);
       state.server = undefined;

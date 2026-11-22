@@ -144,6 +144,16 @@ export function filterEmployees(employees: readonly Employee[], filters: Filters
     && (!filters.to || employee.hireDate <= filters.to));
 }
 
+/**
+ * Raises every salary by 5%, as the "Raise 5%" button does: new rows, the others' fields unchanged.
+ *
+ * @param employees - The rows.
+ * @returns The rows with the new salaries.
+ */
+export function raiseSalaries(employees: readonly Employee[]): Employee[] {
+  return employees.map(employee => ({ ...employee, salary: Math.round(employee.salary * 1.05) }));
+}
+
 const SALARY = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 const DATE = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: '2-digit', timeZone: 'UTC' });
 

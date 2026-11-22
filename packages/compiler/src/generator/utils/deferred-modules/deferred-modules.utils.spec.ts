@@ -116,6 +116,16 @@ describe('getDeferredModules', () => {
     expect(await getDeferredModules(nodes, contextWithModules())).toEqual(new Map([[defer, ['/src/directives/glow.ts', '/src/directives/shown.ts', '/src/b.ts']]]));
   });
 
+  it('leaves to the template the directives a conditional binding applies outside of the blocks, at any depth, and finds the ones only the content applies that way', async () => {
+    const nodes = parse([
+      '<p @if (a) { @@tip } @else { @switch (b) { @case (1) { *shown } } }></p>',
+      '@defer { <p @@tip *shown></p><i @if (c) { @@glow }></i> }'
+    ].join(''));
+    const [defer] = nodes.filter(({ type }) => type === ASTNodeType.Defer);
+
+    expect(await getDeferredModules(nodes, contextWithModules())).toEqual(new Map([[defer, ['/src/directives/glow.ts']]]));
+  });
+
   it('leaves the custom elements of other libraries to the template', async () => {
     const context = contextWithModules();
     context.addCustomElementPatterns('sl-*');

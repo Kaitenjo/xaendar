@@ -97,9 +97,19 @@ function toLiteral(open: string, close: string, parts: readonly string[], spaced
     return `${open}${close}`;
   }
 
-  const inline = spaced ? `${open} ${parts.join(', ')} ${close}` : `${open}${parts.join(', ')}${close}`;
-  if (inline.length <= INLINE_WIDTH && !inline.includes('\n')) {
-    return inline;
+  /*
+    N.B. Deliberate, for speed: the length the literal would have on one line is counted before it is written. Writing
+    it to measure it built a string thrown away for every literal written on several lines. Do not join to measure
+  */
+  let width = open.length + close.length + (spaced ? 2 : 0) + 2 * (parts.length - 1);
+  let multiline = false;
+  for (let i = 0; i < parts.length && !multiline && width <= INLINE_WIDTH; i++) {
+    width += parts[i].length;
+    multiline = parts[i].includes('\n');
+  }
+
+  if (width <= INLINE_WIDTH && !multiline) {
+    return spaced ? `${open} ${parts.join(', ')} ${close}` : `${open}${parts.join(', ')}${close}`;
   }
 
   const lines = new Array<string>(parts.length + 2);

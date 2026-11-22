@@ -21,7 +21,7 @@ export class Cursor {
    *
    * @param pos - Absolute (0-based) character offset in the original text.
    * @returns A formatted string in the form `[Ln <line>, Col <column>]`
-   *          (line and column are 0-based).
+   *          (line and column are 1-based, as editors show them).
    *
    * @example
    * ```typescript
