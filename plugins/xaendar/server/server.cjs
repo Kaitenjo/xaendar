@@ -31428,6 +31428,21 @@ var ProjectLanguageService = class {
    */
   _realFileVersions = /* @__PURE__ */ new Map();
   /**
+   * Whether each real file exists, by its normalized path, as read while the real files are cached (see
+   * {@link cacheRealFiles}).
+   */
+  _realFileExistence = /* @__PURE__ */ new Map();
+  /**
+   * Whether each directory exists, by its normalized path, as read while the real files are cached (see
+   * {@link cacheRealFiles}).
+   */
+  _directoryExistence = /* @__PURE__ */ new Map();
+  /**
+   * Whether the versions and the existence of the real files and of the directories are read from the disk once, then
+   * kept until a change of the file is reported (see {@link cacheRealFiles}, {@link invalidateRealFile}).
+   */
+  _cachesRealFiles = false;
+  /**
    * Real project files known to the Program, populated as the components are
    * processed (see `registerRealFile`).
    */
@@ -31484,7 +31499,39 @@ var ProjectLanguageService = class {
     this._projectFileNames = [];
     this._virtualFiles.clear();
     this._realFileVersions.clear();
+    this._realFileExistence.clear();
+    this._directoryExistence.clear();
     this._realFiles.clear();
+  }
+  /**
+   * Reads the versions and the existence of the real files and of the directories from the disk once, keeping them until
+   * a change of a file is reported with {@link invalidateRealFile}: for a caller told of every change of the files it
+   * depends on, as the build tools are by the watcher of Vite (nothing changes during a build). The files no watcher
+   * reports, as the ones of `node_modules`, are read again only once the instance is disposed. The setting outlives
+   * {@link dispose}.
+   *
+   * N.B. Deliberate, for speed: the LanguageService asks the version of every file of the Program at every request, once
+   * per component in a build, and TypeScript probes the files and the directories of every module it resolves. Read from
+   * the disk each time, they took millions of `stat` calls in the build of the site, a fifth of its time. Do not read
+   * them again without a change reported.
+   */
+  cacheRealFiles() {
+    this._cachesRealFiles = true;
+  }
+  /**
+   * Forgets what was read of a real file that changed on disk (see {@link cacheRealFiles}): its version and its existence
+   * and, when it was created or deleted, the existence of every directory, which may have changed with it.
+   *
+   * @param fileName - The path of the file.
+   * @param createdOrDeleted - Whether the file was created or deleted, rather than changed.
+   */
+  invalidateRealFile(fileName, createdOrDeleted) {
+    const key = normalizeFileName2(fileName);
+    this._realFileVersions.delete(key);
+    this._realFileExistence.delete(key);
+    if (createdOrDeleted) {
+      this._directoryExistence.clear();
+    }
   }
   /**
    * Registers a real project file as a root file for the Program, so the
@@ -31554,10 +31601,10 @@ var ProjectLanguageService = class {
       getCurrentDirectory: () => process.cwd(),
       getCompilationSettings: () => this._compilerOptions ?? {},
       getDefaultLibFileName: (options) => (0, import_typescript24.getDefaultLibFilePath)(options),
-      fileExists: (fileName) => this._virtualFiles.has(fileName) || documentOverlays.has(normalizeFileName2(fileName)) || import_typescript24.sys.fileExists(fileName),
+      fileExists: (fileName) => this._virtualFiles.has(fileName) || documentOverlays.has(normalizeFileName2(fileName)) || this._realFileExists(fileName),
       readFile: (fileName) => this._readFile(fileName),
       readDirectory: import_typescript24.sys.readDirectory,
-      directoryExists: import_typescript24.sys.directoryExists,
+      directoryExists: (directoryName) => this._directoryExists(directoryName),
       getDirectories: import_typescript24.sys.getDirectories,
       realpath: import_typescript24.sys.realpath
     };
@@ -31569,24 +31616,53 @@ var ProjectLanguageService = class {
    * @returns Its text, or `undefined` if it doesn't exist or cannot be read.
    */
   _readFile(fileName) {
-    return this._virtualFiles.get(fileName)?.content ?? readDocument(fileName);
+    const virtual = this._virtualFiles.get(fileName);
+    if (virtual) {
+      return virtual.content;
+    }
+    const overlay = documentOverlays.get(normalizeFileName2(fileName));
+    return overlay ? overlay.content : this._realFileExists(fileName) ? import_typescript24.sys.readFile(fileName) : void 0;
+  }
+  /**
+   * Tells whether a real file exists on disk, as read once while the real files are cached (see {@link cacheRealFiles}).
+   *
+   * @param fileName - The path of the file.
+   * @returns `true` if the file exists.
+   */
+  _realFileExists(fileName) {
+    return this._cachesRealFiles ? readOnce(this._realFileExistence, fileName, import_typescript24.sys.fileExists) : import_typescript24.sys.fileExists(fileName);
+  }
+  /**
+   * Tells whether a directory exists on disk, as read once while the real files are cached (see {@link cacheRealFiles}).
+   *
+   * @param directoryName - The path of the directory.
+   * @returns `true` if the directory exists.
+   */
+  _directoryExists(directoryName) {
+    return this._cachesRealFiles ? readOnce(this._directoryExistence, directoryName, import_typescript24.sys.directoryExists) : import_typescript24.sys.directoryExists(directoryName);
   }
   /**
    * Synthetic version string for a real file, based on its mtime, so the
    * LanguageService can detect when a source file has changed on disk.
    * Falls back to the last known version (or '0') if the file can no longer
-   * be stat'd, to avoid spurious invalidation churn.
+   * be stat'd, to avoid spurious invalidation churn. While the real files are cached (see {@link cacheRealFiles}), the
+   * version read last is given until a change of the file is reported.
    *
    * @param fileName - The path of the file.
    * @returns The version of the file.
    */
   _getRealFileVersion(fileName) {
+    const key = normalizeFileName2(fileName);
+    const known = this._realFileVersions.get(key);
+    if (known !== void 0 && this._cachesRealFiles) {
+      return known;
+    }
     try {
       const version = String((0, import_node_fs4.statSync)(fileName).mtimeMs);
-      this._realFileVersions.set(fileName, version);
+      this._realFileVersions.set(key, version);
       return version;
     } catch {
-      return this._realFileVersions.get(fileName) ?? "0";
+      return known ?? "0";
     }
   }
 };
@@ -31623,6 +31699,15 @@ function upsertEntry(entries, key, content) {
       version: (existing?.version ?? 0) + 1
     });
   }
+}
+function readOnce(facts, path, read) {
+  const key = normalizeFileName2(path);
+  let fact = facts.get(key);
+  if (fact === void 0) {
+    fact = read(path);
+    facts.set(key, fact);
+  }
+  return fact;
 }
 
 // ../packages/language-core/src/lib/template-metadata-cache/template-metadata-cache.ts
