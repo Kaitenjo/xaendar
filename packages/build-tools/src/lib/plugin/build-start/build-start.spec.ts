@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 
+vi.mock('@xaendar/compiler', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@xaendar/compiler')>();
+  return {
+    ...actual,
+    cacheDeclarationFiles: vi.fn()
+  };
+});
+
 vi.mock('@xaendar/language-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@xaendar/language-core')>();
   return {
@@ -14,6 +22,7 @@ vi.mock('../../utils/static-components/static-components.utils', () => ({
   findStaticComponents: vi.fn()
 }));
 
+import { cacheDeclarationFiles } from '@xaendar/compiler';
 import { cacheRealFiles } from '@xaendar/language-core';
 import type { PluginContext } from 'rolldown';
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
@@ -80,11 +89,12 @@ describe('createBuildStartHook()', () => {
     expect(state.logInfo).not.toHaveBeenCalled();
   });
 
-  it('caches the files the type-check reads, in the build and in the dev server, whose watcher reports the changes', async () => {
+  it('caches the files the type-check and the metadata read, in the build and in the dev server, whose watcher reports the changes', async () => {
     await run(createState({}));
     await run(createState({ isBuild: false }));
 
     expect(cacheRealFiles).toHaveBeenCalledTimes(2);
+    expect(cacheDeclarationFiles).toHaveBeenCalledTimes(2);
   });
 
   it('searches nothing without ssr.staticComponents, telling from the browser that a report asked for is empty', async () => {

@@ -127,7 +127,7 @@ export * from './utils/library-manifest/library-manifest.utils';
 export * from './utils/metadata/metadata.utils';
 export * from './utils/package-libraries/package-libraries.utils';
 export * from './utils/render-target/render-target.utils';
-export { resolveExportedClass } from './utils/resolve-declaration/resolve-declaration.utils';
+export { cacheDeclarationFiles, invalidateDeclarationFiles, resolveExportedClass, resolveModulePath } from './utils/resolve-declaration/resolve-declaration.utils';
 export * from './utils/symbol-imports/symbol-imports.utils';
 export * from './utils/template-walker/template-walker.utils';
 

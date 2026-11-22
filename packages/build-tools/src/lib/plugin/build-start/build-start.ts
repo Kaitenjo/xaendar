@@ -1,3 +1,4 @@
+import { cacheDeclarationFiles } from '@xaendar/compiler';
 import { cacheRealFiles } from '@xaendar/language-core';
 import type { HookHandler, Plugin } from 'vite';
 import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
@@ -11,7 +12,8 @@ import { describeStaticComponents, findStaticComponents } from '../../utils/stat
  * reports them once, from the environment of the browser. Without the option, a report asked for tells that there is
  * none. The dev server keeps every component in the browser, so that a change reaches only the modules it touches.
  *
- * The type-check reads the version and the existence of each file of the project once (`cacheRealFiles`): nothing
+ * The type-check reads the version and the existence of each file of the project once (`cacheRealFiles`), and the
+ * metadata of the components check the files they read and resolve the modules once (`cacheDeclarationFiles`): nothing
  * changes during a build, and in the dev server and the watch mode the `watchChange` hook reports every change.
  *
  * @param state - The shared plugin state, whose `staticComponents` are set.
@@ -21,6 +23,7 @@ import { describeStaticComponents, findStaticComponents } from '../../utils/stat
 export function createBuildStartHook(state: XaendarPluginState): NonNullable<HookHandler<Plugin['buildStart']>> {
   return async function buildStart(this) {
     cacheRealFiles();
+    cacheDeclarationFiles();
     if (state.packageLibraries) {
       registerPackageLibraries(state.packageLibraries);
     }
