@@ -7,7 +7,8 @@ the documentation, which links them. Each folder is its own npm project, with it
 - `shared` holds what the three pages have in common, so that only the rendering code changes: the data (1,000
   employees from a fixed seed) and the filtering function, the CSS of the page, of the button and of the fields.
 - `angular`, `react` and `xaendar` are split the same way: four small components (a button, a text field, a date
-  field, a select) and a page holding the filters being edited, the filters applied and the table.
+  field, a select) and a page holding the filters being edited, the filters applied and the table, whose rows are
+  selected by a click and whose salaries **Raise 5%** raises (`raiseSalaries` of `shared/data.ts`, new rows).
 - Every page builds into `../public/comparison/<name>/`, which is **generated and not committed** (`.gitignore`).
   Build them once after a clone, and again whenever you change one: otherwise the links of the page lead nowhere,
   and `npm start` and `npm run build` of the site say so instead of failing.
@@ -31,8 +32,9 @@ node comparison/build.mjs --check         # report which ones are missing (what 
 - every run opens one page in a new context of a headless Chromium (Playwright), served by a local static server, at
   CPU 1× and 4× (CDP throttling);
 - startup: from the navigation to the first frame showing the 1,000 rows; memory after a forced garbage collection
-  (`Runtime.getHeapUsage`, `Memory.getDOMCounters`); the time of **Apply** (department `Engineering`, 132 rows) and
-  **Reset**, from the click to the first task after the frame showing the new rows;
+  (`Runtime.getHeapUsage`, `Memory.getDOMCounters`); then, in this order, the time of selecting row 500 (one class
+  changes), **Raise 5%** (a text changes in every row), **Apply** (department `Engineering`, 132 rows) and **Reset**,
+  each from the click to the first task after the frame showing the change;
 - the elements of the page and the rows the filter leaves, to check that the three pages do the same work;
 - the pages take turns run after run, and every figure is the median of its runs.
 

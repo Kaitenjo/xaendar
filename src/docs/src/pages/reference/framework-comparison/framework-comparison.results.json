@@ -6,80 +6,92 @@
   "pages": {
     "angular": {
       "scripts": {
-        "raw": 129510,
-        "gzip": 43111
+        "raw": 130018,
+        "gzip": 43274
       },
       "cpu1x": {
-        "startup": 186.2,
-        "elements": 10073,
-        "heap": 3257436,
-        "nodes": 18240,
-        "listeners": 25,
-        "filter": 26.6,
+        "startup": 216.5,
+        "elements": 10075,
+        "heap": 3666476,
+        "nodes": 18243,
+        "listeners": 1026,
+        "select": 7.3,
+        "raise": 38,
+        "filter": 35.3,
         "filtered": 132,
-        "reset": 144
+        "reset": 115.2
       },
       "cpu4x": {
-        "startup": 1187.6,
-        "elements": 10073,
-        "heap": 3282764,
-        "nodes": 18240,
-        "listeners": 25,
-        "filter": 146.7,
+        "startup": 1258,
+        "elements": 10075,
+        "heap": 3711224,
+        "nodes": 18243,
+        "listeners": 1026,
+        "select": 36.4,
+        "raise": 201.7,
+        "filter": 155.8,
         "filtered": 132,
-        "reset": 671.9
+        "reset": 696.7
       }
     },
     "react": {
       "scripts": {
-        "raw": 224339,
-        "gzip": 69410
+        "raw": 224586,
+        "gzip": 69493
       },
       "cpu1x": {
-        "startup": 70.7,
-        "elements": 10061,
-        "heap": 4073048,
-        "nodes": 18224,
-        "listeners": 165,
-        "filter": 33.7,
+        "startup": 80.7,
+        "elements": 10062,
+        "heap": 4152312,
+        "nodes": 18226,
+        "listeners": 1166,
+        "select": 20.7,
+        "raise": 47.2,
+        "filter": 33.3,
         "filtered": 132,
-        "reset": 141.7
+        "reset": 114.8
       },
       "cpu4x": {
-        "startup": 275.4,
-        "elements": 10061,
-        "heap": 4082362,
-        "nodes": 18224,
-        "listeners": 165,
-        "filter": 149.3,
+        "startup": 282.5,
+        "elements": 10062,
+        "heap": 4154194,
+        "nodes": 18226,
+        "listeners": 1166,
+        "select": 93.1,
+        "raise": 248.2,
+        "filter": 198.3,
         "filtered": 132,
-        "reset": 638.7
+        "reset": 634
       }
     },
     "xaendar": {
       "scripts": {
-        "raw": 83854,
-        "gzip": 27928
+        "raw": 84472,
+        "gzip": 28106
       },
       "cpu1x": {
-        "startup": 82.7,
-        "elements": 10072,
-        "heap": 2452166,
-        "nodes": 18243,
-        "listeners": 25,
-        "filter": 24.8,
+        "startup": 87.8,
+        "elements": 10075,
+        "heap": 2656624,
+        "nodes": 18248,
+        "listeners": 1026,
+        "select": 6.3,
+        "raise": 53.7,
+        "filter": 24,
         "filtered": 132,
-        "reset": 146.8
+        "reset": 134.8
       },
       "cpu4x": {
-        "startup": 322.7,
-        "elements": 10072,
-        "heap": 2318120,
-        "nodes": 18243,
-        "listeners": 25,
-        "filter": 115.9,
+        "startup": 356.8,
+        "elements": 10075,
+        "heap": 2649922,
+        "nodes": 18248,
+        "listeners": 1026,
+        "select": 27,
+        "raise": 246,
+        "filter": 119.9,
         "filtered": 132,
-        "reset": 664.7
+        "reset": 650.6
       }
     }
   }

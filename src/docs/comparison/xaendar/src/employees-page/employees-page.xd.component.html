@@ -17,9 +17,10 @@
     <div class="filters__actions">
       <ui-button variant="primary" (click)="apply()">Apply</ui-button>
       <ui-button (click)="clearFilters()">Reset</ui-button>
+      <ui-button (click)="raise()">Raise 5%</ui-button>
     </div>
   </div>
-  <p class="summary">Showing { rows().length } of { employees.length } employees</p>
+  <p class="summary">Showing { rows().length } of { employees().length } employees</p>
   <div class="table-wrap">
     <table>
       <thead>
@@ -31,7 +32,7 @@
       </thead>
       <tbody>
         @for (employee of rows(); track employee.id) {
-          <tr>
+          <tr class.row--selected="{employee.id === selected()}" (click)="selected.set(employee.id)">
             <td class="cell--muted">{ employee.id }</td>
             <td>{ employee.name }</td>
             <td class="cell--muted">{ employee.email }</td>

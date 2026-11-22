@@ -43,7 +43,9 @@ th {
 }
 td { padding: 9px 12px; border-top: 1px solid #edf0f5; white-space: nowrap; }
 tbody tr:nth-child(even) { background: #fafbfd; }
+tbody tr { cursor: pointer; }
 tbody tr:hover { background: #eef3ff; }
+tbody tr.row--selected { background: #dbe6ff; }
 .cell--number { text-align: right; }
 .cell--muted { color: #5b6275; }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 550; }

@@ -105,13 +105,16 @@ export class ReferenceFrameworkComparisonPage extends CustomElement {
    *
    * @param rate - The CPU throttling rate.
    * @param integer - The formatter of whole numbers in the current language.
-   * @returns The table: the startup, applying the filter and resetting it, in milliseconds.
+   * @returns The table: the startup, selecting a row, raising the salaries, applying the filter and resetting it, in
+   *   milliseconds.
    */
   private _timesAt(rate: ComparisonRate, integer: Intl.NumberFormat): ComparisonTable {
     return {
       title: `${this._resultsKey}.${rate}.title`,
       rows: [
         this._row('times.startup', figures => `${integer.format(figures[rate].startup)} ms`),
+        this._row('times.select', figures => `${integer.format(figures[rate].select)} ms`),
+        this._row('times.raise', figures => `${integer.format(figures[rate].raise)} ms`),
         this._row('times.filter', figures => `${integer.format(figures[rate].filter)} ms`),
         this._row('times.reset', figures => `${integer.format(figures[rate].reset)} ms`)
       ]

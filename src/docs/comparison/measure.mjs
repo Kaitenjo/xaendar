@@ -48,6 +48,11 @@ const runs = Number(args.runs ?? 10);
 const { chromium } = createRequire(import.meta.url)('playwright');
 
 /**
+ * The row selected by the measure of the selection: one in the middle of the 1,000 rows.
+ */
+const SELECTED_ROW = 500;
+
+/**
  * Code run in every page before its own: records the time of the first frame showing the 1,000 rows of the table,
  * and defines the helpers the measures call. The elements are searched through the shadow roots too, where the
  * Xaendar components render.
@@ -64,29 +69,50 @@ const PAGE_HELPERS = () => {
     return found;
   };
   const rows = () => all(document, 'tbody tr').length;
+  /*
+    What each measure waits to see change, found once before the click so that checking it at every frame costs
+    nothing: the rows of the table body, the class of the row clicked, the text of the salary of the first row
+  */
+  const probes = {
+    rows: () => {
+      const body = all(document, 'tbody')[0];
+      return () => body.rows.length;
+    },
+    selected: row => () => row.className,
+    salary: () => {
+      const cell = all(document, 'tbody td.cell--number')[0];
+      return () => cell.textContent;
+    }
+  };
   const nextPaint = () => new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+  // Time from the click to the first painted frame where the state differs
+  const timeClick = async (element, state) => {
+    const probe = probes[state](element);
+    const before = probe();
+    const start = performance.now();
+    element.click();
+    do {
+      await nextPaint();
+    } while (probe() === before);
+    return performance.now() - start;
+  };
   window.__measure = {
     rows,
     elements: () => all(document, '*').length,
-    // Time from the click to the first painted frame showing a table of another number of rows
-    click: async label => {
-      const before = rows();
-      // The button of the page, or the component wrapping it, which the page listens to
-      const button = all(document, 'button, ui-button').find(element => element.textContent.trim() === label);
-      const start = performance.now();
-      button.click();
-      do {
-        await nextPaint();
-      } while (rows() === before);
-      return performance.now() - start;
-    },
+    // The button of the page, or the component wrapping it, which the page listens to
+    clickButton: (label, state) => timeClick(all(document, 'button, ui-button').find(element => element.textContent.trim() === label), state),
+    clickRow: (index, state) => timeClick(all(document, 'tbody tr')[index - 1], state),
     select: (option, value) => {
       const select = all(document, 'select').find(element => [...element.options].some(item => item.value === option));
       select.value = value;
       select.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
     }
   };
-  const poll = () => rows() >= 1000 ? window.__startup = performance.now() : requestAnimationFrame(poll);
+  // The time is read before counting the rows, which walks the whole page
+  const poll = () => {
+    const now = performance.now();
+    rows() >= 1000 ? window.__startup = now : requestAnimationFrame(poll);
+  };
   requestAnimationFrame(poll);
 };
 
@@ -153,12 +179,14 @@ async function measureRun(browser, url, rate) {
   await cdp.send('HeapProfiler.collectGarbage');
   const { usedSize } = await cdp.send('Runtime.getHeapUsage');
   const { nodes, jsEventListeners } = await cdp.send('Memory.getDOMCounters');
+  const select = await page.evaluate(row => window.__measure.clickRow(row, 'selected'), SELECTED_ROW);
+  const raise = await page.evaluate(() => window.__measure.clickButton('Raise 5%', 'salary'));
   await page.evaluate(department => window.__measure.select(department, department), DEPARTMENT);
-  const filter = await page.evaluate(() => window.__measure.click('Apply'));
+  const filter = await page.evaluate(() => window.__measure.clickButton('Apply', 'rows'));
   const filtered = await page.evaluate(() => window.__measure.rows());
-  const reset = await page.evaluate(() => window.__measure.click('Reset'));
+  const reset = await page.evaluate(() => window.__measure.clickButton('Reset', 'rows'));
   await context.close();
-  return { startup, elements, heap: usedSize, nodes, listeners: jsEventListeners, filter, filtered, reset };
+  return { startup, elements, heap: usedSize, nodes, listeners: jsEventListeners, select, raise, filter, filtered, reset };
 }
 
 /**

@@ -1960,7 +1960,8 @@
           "p1": "Le tre pagine condividono i dati, gli stili e il layout: cambia solo il codice che le disegna. Sono suddivise nello stesso modo in ogni framework:",
           "li1": "quattro piccoli componenti, un pulsante e tre campi (testo, data, select), ognuno attorno a un controllo nativo con la sua etichetta;",
           "li2": "una pagina che tiene i filtri in modifica e quelli applicati: <strong>Apply</strong> copia i primi nei secondi, <strong>Reset</strong> li svuota entrambi, e la tabella mostra le righe dei filtri applicati;",
-          "li3": "le stesse 1.000 righe, generate dallo stesso seed, e la stessa funzione di filtro.",
+          "li3": "le stesse 1.000 righe, generate dallo stesso seed, e la stessa funzione di filtro;",
+          "li4": "due aggiornamenti della tabella: un clic su una riga la seleziona, e <strong>Raise 5%</strong> aumenta ogni stipendio, sostituendo le righe con righe nuove, come si modificano i dati tenuti immutabili.",
           "open": "Ogni pagina si può aprire da sola, in una nuova scheda:"
         },
         "method": {
@@ -1972,7 +1973,7 @@
           "li4": "<strong>Due velocità di CPU.</strong> Ogni pagina è misurata sulla macchina così com’è (CPU 1×) e quattro volte più lenta (CPU 4×, il CPU throttling del Chrome DevTools Protocol), vicina a un telefono di fascia media.",
           "li5": "<strong>Avvio.</strong> Uno script iniettato prima del codice della pagina controlla la tabella a ogni frame di animazione: l’avvio è il tempo dall’inizio della navigazione al primo frame che ne mostra tutte le 1.000 righe. Comprende caricamento, parsing ed esecuzione del JavaScript, e il primo render.",
           "li6": "<strong>Memoria.</strong> Quando la tabella è visibile, lo script forza una garbage collection, poi legge l’heap JavaScript in uso (<code>Runtime.getHeapUsage</code>) e i nodi DOM e gli event listener contati dal browser (<code>Memory.getDOMCounters</code>).",
-          "li7": "<strong>Interazioni.</strong> Lo script seleziona <em>Engineering</em> nel campo del reparto e clicca <strong>Apply</strong> (le 1.000 righe diventano 132), poi <strong>Reset</strong> (si torna a 1.000). Ogni tempo va dal clic al primo task dopo il frame che mostra il nuovo numero di righe: l’aggiornamento del framework, più stili, layout e disegno di quel frame.",
+          "li7": "<strong>Interazioni.</strong> In quest’ordine, sulla pagina appena avviata: un clic sulla riga 500 la seleziona (cambia una classe, in una riga su 1.000); <strong>Raise 5%</strong> aumenta ogni stipendio (cambia un testo in ognuna delle 1.000 righe); poi si seleziona <em>Engineering</em> nel campo del reparto e si clicca <strong>Apply</strong> (le 1.000 righe diventano 132), poi <strong>Reset</strong> (si torna a 1.000). Ogni tempo va dal clic al primo task dopo il frame che mostra il cambiamento: l’aggiornamento del framework, più stili, layout e disegno di quel frame. Ogni interazione è la prima del suo tipo sulla pagina, come per chi la usa: il suo tempo comprende il codice dell’aggiornamento eseguito per la prima volta.",
           "li8": "<strong>Run e mediane.</strong> Ogni pagina è misurata 10 volte a ogni velocità di CPU, a turno con le altre (Angular, React, Xaendar, Angular, …) perché un momento più lento della macchina pesi su tutte; ogni numero è la mediana dei suoi 10 valori. Lo script conta anche gli elementi della pagina, dentro le shadow root comprese, e le righe che il filtro lascia: la prima tabella verifica che le tre pagine facciano lo stesso lavoro."
         },
         "results": {
@@ -2003,6 +2004,8 @@
           },
           "times": {
             "startup": "Avvio (fino a 1.000 righe)",
+            "select": "Selezione di una riga (1 su 1.000)",
+            "raise": "Raise 5% (1.000 stipendi)",
             "filter": "Apply (1.000 → 132 righe)",
             "reset": "Reset (132 → 1.000 righe)"
           }
@@ -2012,8 +2015,9 @@
           "li1": "<strong>Confronta le differenze grandi.</strong> I tempi variano da un run all’altro: due misurazioni sulla stessa macchina hanno dato avvii distanti fino a un terzo. Le mediane lo attenuano, ma una differenza di pochi millisecondi, o di pochi punti percentuali, non è un risultato.",
           "li2": "<strong>Confronta le pagine, non i millisecondi.</strong> Un’altra macchina dà altri tempi: quello che resta è come le tre pagine si confrontano tra loro, alla stessa velocità di CPU.",
           "li3": "<strong>Una pagina, di una forma.</strong> Una grande tabella con dei filtri, disegnata tutta insieme: pagine di un’altra forma, con molti piccoli componenti o piccoli aggiornamenti frequenti, potrebbero dare un ordine diverso. Il rendering sul server e l’idratazione qui non sono misurati.",
-          "li4": "<strong>Event listener.</strong> React registra sulla radice dell’applicazione un listener per ogni evento che supporta, e li smista da sé; Angular e Xaendar registrano i listener degli eventi che i loro template collegano. Il conteggio è quello del browser, non degli handler che i framework tengono.",
-          "li5": "<strong>Memoria.</strong> I dati sono gli stessi nelle tre pagine: l’heap differisce per quello che ogni framework, con il suo codice, tiene per la pagina. I nodi DOM sono contati a parte."
+          "li4": "<strong>Aggiornamenti.</strong> Selezionare una riga cambia una classe in una riga. React disegna di nuovo l’intera tabella e la confronta con la precedente (il virtual DOM) per trovare quell’unico cambiamento; Angular controlla i binding del template, confrontando ognuno con il valore precedente; Xaendar riesegue solo i binding che leggono la selezione, uno per riga. Aumentare gli stipendi cambia un testo in ogni riga: tutti e tre passano da ogni riga, e la distanza si chiude; Xaendar confronta ogni testo con quello nella pagina invece di tenerne una copia in memoria, e la prima lettura di un testo dal DOM costa più di quelle successive. La pagina React è scritta come la maggior parte del codice React, senza <code>memo</code>: memoizzare le righe risparmierebbe parte del confronto, con codice scritto apposta.",
+          "li5": "<strong>Memoria.</strong> I dati sono gli stessi nelle tre pagine: l’heap differisce per quello che ogni framework, con il suo codice, tiene per la pagina. I nodi DOM sono contati a parte.",
+          "li6": "<strong>Event listener.</strong> Angular e Xaendar aggiungono un listener del clic a ogni riga. React gestisce gli eventi con listener sulla radice dell’applicazione, uno per ogni evento che supporta, ma dà anche a ogni elemento con un handler del clic un <code>onclick</code> vuoto (per Safari), che il browser conta a sua volta."
         },
         "reproduce": {
           "title": "Misurare di nuovo",

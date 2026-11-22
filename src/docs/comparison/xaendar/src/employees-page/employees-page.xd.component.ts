@@ -1,9 +1,10 @@
 import { CustomElement, WebComponent } from '@xaendar/core';
 import { computed, signal } from '@xaendar/core/signals';
-import { COLUMNS, createEmployees, DEPARTMENT_OPTIONS, type Employee, EMPTY_FILTERS, filterEmployees, type Filters, formatDate, formatSalary, STATUS_OPTIONS, statusClass } from '../../../shared/data';
+import { COLUMNS, createEmployees, DEPARTMENT_OPTIONS, type Employee, EMPTY_FILTERS, filterEmployees, type Filters, formatDate, formatSalary, raiseSalaries, STATUS_OPTIONS, statusClass } from '../../../shared/data';
 
 /**
- * The page: the filters, edited as a draft and applied on demand, and the table of the employees.
+ * The page: the filters, edited as a draft and applied on demand, and the table of the employees, whose rows can be
+ * selected and whose salaries can be raised.
  */
 @WebComponent({
   selector: 'employees-page',
@@ -14,7 +15,8 @@ export class EmployeesPageComponent extends CustomElement {
   public readonly columns = COLUMNS;
   public readonly departments = DEPARTMENT_OPTIONS;
   public readonly statuses = STATUS_OPTIONS;
-  public readonly employees = createEmployees();
+  public readonly employees = signal(createEmployees());
+  public readonly selected = signal<number | null>(null);
   public readonly search = signal('');
   public readonly department = signal('');
   public readonly status = signal('');
@@ -43,6 +45,13 @@ export class EmployeesPageComponent extends CustomElement {
   }
 
   /**
+   * Raises every salary by 5%.
+   */
+  public raise(): void {
+    this.employees.update(raiseSalaries);
+  }
+
+  /**
    * The class of the badge of a status.
    */
   public badge(status: string): string {
@@ -67,6 +76,6 @@ export class EmployeesPageComponent extends CustomElement {
    * Computes the value of `rows`.
    */
   private _computeRows(): Employee[] {
-    return filterEmployees(this.employees, this.applied());
+    return filterEmployees(this.employees(), this.applied());
   }
 }

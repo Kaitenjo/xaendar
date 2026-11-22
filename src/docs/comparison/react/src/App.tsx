@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { COLUMNS, createEmployees, DEPARTMENT_OPTIONS, EMPTY_FILTERS, type Filters, filterEmployees, formatDate, formatSalary, STATUS_OPTIONS, statusClass } from '../../shared/data';
+import { COLUMNS, createEmployees, DEPARTMENT_OPTIONS, EMPTY_FILTERS, type Filters, filterEmployees, formatDate, formatSalary, raiseSalaries, STATUS_OPTIONS, statusClass } from '../../shared/data';
 import { Button } from './components/Button';
 import { DateInput } from './components/DateInput';
 import { SelectInput } from './components/SelectInput';
@@ -8,12 +8,15 @@ import { TextInput } from './components/TextInput';
 const EMPLOYEES = createEmployees();
 
 /**
- * The page: the filters, edited as a draft and applied on demand, and the table of the employees.
+ * The page: the filters, edited as a draft and applied on demand, and the table of the employees, whose rows can be
+ * selected and whose salaries can be raised.
  */
 export function App() {
   const [draft, setDraft] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
-  const rows = useMemo(() => filterEmployees(EMPLOYEES, applied), [applied]);
+  const [employees, setEmployees] = useState(EMPLOYEES);
+  const [selected, setSelected] = useState<number | null>(null);
+  const rows = useMemo(() => filterEmployees(employees, applied), [employees, applied]);
   const edit = (key: keyof Filters) => (value: string) => setDraft(current => ({ ...current, [key]: value }));
   const reset = () => {
     setDraft(EMPTY_FILTERS);
@@ -35,9 +38,10 @@ export function App() {
         <div className="filters__actions">
           <Button variant="primary" onClick={() => setApplied(draft)}>Apply</Button>
           <Button onClick={reset}>Reset</Button>
+          <Button onClick={() => setEmployees(current => raiseSalaries(current))}>Raise 5%</Button>
         </div>
       </div>
-      <p className="summary">Showing {rows.length} of {EMPLOYEES.length} employees</p>
+      <p className="summary">Showing {rows.length} of {employees.length} employees</p>
       <div className="table-wrap">
         <table>
           <thead>
@@ -45,7 +49,7 @@ export function App() {
           </thead>
           <tbody>
             {rows.map(employee => (
-              <tr key={employee.id}>
+              <tr key={employee.id} className={employee.id === selected ? 'row--selected' : undefined} onClick={() => setSelected(employee.id)}>
                 <td className="cell--muted">{employee.id}</td>
                 <td>{employee.name}</td>
                 <td className="cell--muted">{employee.email}</td>
