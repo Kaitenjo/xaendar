@@ -2,6 +2,7 @@ import type { PackageLibrary } from '@xaendar/compiler';
 import type { CompilerOptions } from 'typescript';
 import type { Environment, Logger, ViteDevServer } from 'vite';
 import type { NodeCompilerHost } from '../models/node-compiler-host/node-compiler-host.model';
+import type { TypeCheckQueue } from '../models/type-check-queue/type-check-queue.model';
 import type { XaendarPluginStrategy } from './plugin-strategy.type';
 import type { StaticComponents } from './static-components.type';
 import type { TemplateTypeCheck } from './template-type-check.type';
@@ -46,6 +47,10 @@ export type XaendarPluginState = {
    * Set once the Vite config is resolved.
    */
   isBuild: boolean;
+  /**
+   * The type-checks the dev server runs in the background, created by the first file it serves.
+   */
+  typeCheckQueue?: TypeCheckQueue;
   /**
    * The type-checks of the templates a build left to its end, `undefined` when there is none (see the `buildEnd` hook).
    */

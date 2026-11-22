@@ -3331,7 +3331,7 @@
         "errors": {
           "title": "Errori",
           "p1": "Gli errori di un template vengono stampati dal dev server e dalla build, con la posizione nel template e l’estratto coinvolto. Fanno fallire la build. Nel dev server, il componente a cui appartengono resta senza funzione di render, e lancia un errore quando viene connesso. L’<a href=\"#/it/reference/errors\">Enciclopedia degli errori</a> elenca i messaggi.",
-          "p2": "Vite toglie i tipi dal TypeScript senza controllarli. Li controlla il plugin: alla fine della build verifica i tipi di tutto il progetto come <code>tsc --noEmit</code>, e la fa fallire se trova errori. Il dev server controlla ogni file quando lo serve: un file con errori di tipo non viene servito, e i suoi errori compaiono nel terminale e nell’overlay di Vite."
+          "p2": "Vite toglie i tipi dal TypeScript senza controllarli. Li controlla il plugin: alla fine della build verifica i tipi di tutto il progetto come <code>tsc --noEmit</code>, e la fa fallire se trova errori. Il dev server serve subito ogni file e lo controlla in background, insieme ai template, quando il browser ha i file della pagina: i suoi errori di tipo compaiono nel terminale e nell’overlay di Vite un momento dopo."
         },
         "devServer": {
           "title": "Dev server",

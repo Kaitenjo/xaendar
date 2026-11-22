@@ -7,6 +7,7 @@ import { createSourceFile, ScriptKind, ScriptTarget } from 'typescript';
 import type { HookHandler, Plugin } from 'vite';
 import { COMPONENT_TS_FILE_RE } from '../../costants/component-filename-regex';
 import { TS_FILE_RE } from '../../costants/ts-file-regex';
+import { TypeCheckQueue } from '../../models/type-check-queue/type-check-queue.model';
 import { clearDependenciesForComponent, registerDependency } from '../../registry/dependency-registry/dependency-registry';
 import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
@@ -17,7 +18,6 @@ import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import { resolvePosixPath } from '../../utils/path/path.utils';
 import { collectProjectDependencies } from '../../utils/project-dependencies/project-dependencies.utils';
 import { reportTemplateDiagnostics } from '../../utils/template-type-check/template-type-check.utils';
-import { collectFileDiagnostics, formatTypeDiagnostics } from '../../utils/type-check/type-check.utils';
 import { findWorkspaceLibrary } from '../../utils/workspace-libraries/workspace-libraries.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, extractImportedComponentPaths, generateStaticModule, getImportOrExtract, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 
@@ -31,9 +31,10 @@ import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifi
  * in a build, the build fails. So is a component declared in a TypeScript file not following the convention,
  * or whose `@WebComponent` options are not string literals, as they are read from the source code.
  *
- * In the dev server, every TypeScript file of the program is also type-checked as it is served: a file with
- * type errors is not served, and its errors reach the terminal and the overlay of Vite. In a build, the
- * whole program is checked by the `buildEnd` hook, and so are the templates, all together, outside of the watch mode.
+ * In the dev server, every TypeScript file of the program is also type-checked once it is served, together with the
+ * templates (see `TypeCheckQueue`): a file with type errors is served too, and its errors reach the terminal and the
+ * overlay of Vite a moment later. In a build, the whole program is checked by the `buildEnd` hook, and so are the
+ * templates, all together, outside of the watch mode, which checks each template as it is served.
  *
  * The strategy of the environment (see `XaendarPluginState['strategies']`) gives the registration and whether anything
  * is type-checked: for the rendering on the server, a component registers its modules compiled for the server via
@@ -49,11 +50,9 @@ import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifi
 export function createTransformHook(state: XaendarPluginState): NonNullable<HookHandler<Plugin['transform']>> {
   return async function transform(this, code, componentPath) {
     const strategy = state.strategies[this.environment.config.consumer];
+    // The dev server serves the file at once, its type-check reporting the errors a moment later (see TypeCheckQueue)
     if (!state.isBuild && strategy.typeCheck && TS_FILE_RE.test(componentPath)) {
-      const diagnostics = collectFileDiagnostics(getLanguageService(state.compilerOptions, state.projectFileNames), componentPath);
-      if (diagnostics.length) {
-        this.error(`[TypeChecker] Type check failed\n${formatTypeDiagnostics(diagnostics)}`);
-      }
+      (state.typeCheckQueue ??= new TypeCheckQueue(state)).queueFile(componentPath);
     }
 
     /**
@@ -252,13 +251,18 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         here gave every component a shim the program did not have, which TypeScript rebuilt then from scratch, at every
         component: two fifths of the time of a build. Do not check the templates of a build here
       */
-      if (state.isBuild && !this.meta.watchMode) {
+      if (!state.isBuild) {
+        (state.typeCheckQueue ??= new TypeCheckQueue(state)).queueTemplate(check);
+        continue;
+      }
+
+      if (!this.meta.watchMode) {
         (state.pendingTypeChecks ??= []).push(check);
         continue;
       }
 
       const languageService = getLanguageService(state.compilerOptions, state.projectFileNames);
-      const failed = reportTemplateDiagnostics(this, state, languageService, check);
+      const errors = reportTemplateDiagnostics(message => this.warn(message), state, languageService, check);
 
       /*
         The type-check reads files the dev server does not relate to the component, as the ones holding only
@@ -273,7 +277,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
         }
       }
 
-      if (failed) {
+      if (errors?.length) {
         return fail();
       }
     }

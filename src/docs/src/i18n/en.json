@@ -3331,7 +3331,7 @@
         "errors": {
           "title": "Errors",
           "p1": "Errors in a template are printed by the dev server and by the build, with the position in the template and the excerpt involved. They fail the build. In the dev server, the component they belong to is left without its render function, and throws when it is connected. The <a href=\"#/en/reference/errors\">Error encyclopedia</a> lists the messages.",
-          "p2": "Vite only strips the types of TypeScript. The plugin checks them: once the build ends, it type-checks the whole project as <code>tsc --noEmit</code> does, and fails if it finds errors. The dev server checks each file as it serves it: a file with type errors is not served, and its errors show in the terminal and in the Vite overlay."
+          "p2": "Vite only strips the types of TypeScript. The plugin checks them: once the build ends, it type-checks the whole project as <code>tsc --noEmit</code> does, and fails if it finds errors. The dev server serves each file at once and checks it in the background, with the templates, once the browser has the files of the page: its type errors show in the terminal and in the Vite overlay a moment later."
         },
         "devServer": {
           "title": "Dev server",

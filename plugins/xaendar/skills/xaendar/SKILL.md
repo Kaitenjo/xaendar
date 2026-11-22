@@ -206,7 +206,7 @@ In every template you write or edit:
 ## Verifying work
 
 - `xd build` (or `/xaendar:check`) prints template errors in red prefixed `Xaendar:`, then type-checks the project as `tsc --noEmit` (`[TypeChecker] Type check failed`); a stylesheet that does not compile ends with `Build failed` and `[plugin xaendar] RolldownError: Failed to compile style - <path>`. Any of them fails it. In a workspace it builds and checks the libraries, not the project testing them (`xd start` checks that).
-- `xd start` checks each file as it serves it and refuses one with type errors (terminal and Vite overlay).
+- `xd start` serves each file at once and type-checks it in the background with the templates: the errors reach the terminal and the Vite overlay a moment later, the file being served anyway. `xd build` fails on them.
 - `xd test` (or `/xaendar:test`) runs the specs in happy-dom, printing the template errors of the components they import as `Xaendar:` blocks above the results.
 - This plugin's language server reports template errors while editing; `xd build` stays the final check.
 

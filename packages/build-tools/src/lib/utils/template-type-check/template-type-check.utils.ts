@@ -1,6 +1,6 @@
 import { getImportConflictDiagnostics } from '@xaendar/language-core';
+import type { VoidFunction } from '@xaendar/types';
 import type { LanguageService } from 'typescript';
-import type { Rollup } from 'vite';
 import { describeDiagnostic, describeEventCheckDiagnostic } from '../../plugin/plugin-utils/plugin.utils';
 import type { TemplateTypeCheck } from '../../types/template-type-check.type';
 import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
@@ -10,13 +10,13 @@ import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
  * the binding hears when they bubble up to the element; every other diagnostic is an error, logged, and so is a symbol
  * the template imports under the name of a member of the component, which makes the expressions reading it ambiguous.
  *
- * @param context - The plugin context the warnings are given to.
+ * @param warn - Gives a warning, e.g. to the plugin context.
  * @param state - The plugin state, whose logger reports the errors.
  * @param languageService - The language service holding the shim of the type-check.
  * @param check - The type-check of the template.
- * @returns `true` if the template has errors.
+ * @returns The messages of the errors logged, `undefined` when the template has none.
  */
-export function reportTemplateDiagnostics(context: Pick<Rollup.PluginContext, 'warn'>, state: Pick<XaendarPluginState, 'logError'>, languageService: LanguageService, check: TemplateTypeCheck): boolean {
+export function reportTemplateDiagnostics(warn: VoidFunction<[message: string]>, state: Pick<XaendarPluginState, 'logError'>, languageService: LanguageService, check: TemplateTypeCheck): string[] | undefined {
   const { templatePath, templateSource, shimPath, bodyLineOffset, typeCheck } = check;
   const diagnostics = languageService.getSemanticDiagnostics(shimPath).slice();
   const conflicts = getImportConflictDiagnostics(languageService, shimPath, bodyLineOffset);
@@ -24,17 +24,18 @@ export function reportTemplateDiagnostics(context: Pick<Rollup.PluginContext, 'w
     diagnostics.push(...conflicts);
   }
 
-  let failed = false;
+  let errors: string[] | undefined;
   for (let i = 0; i < diagnostics.length; i++) {
     const diagnostic = diagnostics[i];
     const warning = describeEventCheckDiagnostic(templateSource, diagnostic, bodyLineOffset, typeCheck);
     if (warning) {
-      context.warn(`${templatePath}\n${warning}`);
+      warn(`${templatePath}\n${warning}`);
     } else {
-      failed = true;
-      state.logError('', `[TypeChecker] Failed to compile template - ${templatePath}\n${describeDiagnostic(templateSource, diagnostic, bodyLineOffset, typeCheck)}`);
+      const error = `[TypeChecker] Failed to compile template - ${templatePath}\n${describeDiagnostic(templateSource, diagnostic, bodyLineOffset, typeCheck)}`;
+      state.logError('', error);
+      errors ? errors.push(error) : errors = [error];
     }
   }
 
-  return failed;
+  return errors;
 }

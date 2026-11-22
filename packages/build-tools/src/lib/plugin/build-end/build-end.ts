@@ -31,7 +31,7 @@ export function createBuildEndHook(state: XaendarPluginState): NonNullable<HookH
     if (pending?.length) {
       const failed = new Array<string>();
       for (let i = 0; i < pending.length; i++) {
-        if (reportTemplateDiagnostics(this, state, languageService, pending[i])) {
+        if (reportTemplateDiagnostics(message => this.warn(message), state, languageService, pending[i])?.length) {
           failed.push(pending[i].componentPath);
         }
       }

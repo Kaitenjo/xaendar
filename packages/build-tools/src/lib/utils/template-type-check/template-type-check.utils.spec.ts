@@ -41,33 +41,35 @@ beforeEach(() => {
 
 describe('reportTemplateDiagnostics', () => {
   it('reports nothing for a template without diagnostics', () => {
-    const context = { warn: vi.fn() };
+    const warn = vi.fn();
     const state = { logError: vi.fn() };
     const languageService = languageServiceWith();
 
-    expect(reportTemplateDiagnostics(context, state, languageService, CHECK)).toBe(false);
+    expect(reportTemplateDiagnostics(warn, state, languageService, CHECK)).toBeUndefined();
     expect(languageService.getSemanticDiagnostics).toHaveBeenCalledWith(CHECK.shimPath);
     expect(getImportConflictDiagnostics).toHaveBeenCalledWith(languageService, CHECK.shimPath, 3);
-    expect(context.warn).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
     expect(state.logError).not.toHaveBeenCalled();
   });
 
   it('warns about the events the elements do not declare, without failing', () => {
-    const context = { warn: vi.fn() };
+    const warn = vi.fn();
     const state = { logError: vi.fn() };
 
-    expect(reportTemplateDiagnostics(context, state, languageServiceWith('event-1'), CHECK)).toBe(false);
-    expect(context.warn).toHaveBeenCalledWith('/src/foo.xd.component.html\nwarning event-1');
+    expect(reportTemplateDiagnostics(warn, state, languageServiceWith('event-1'), CHECK)).toBeUndefined();
+    expect(warn).toHaveBeenCalledWith('/src/foo.xd.component.html\nwarning event-1');
   });
 
   it('logs every other diagnostic, and the import conflicts, as errors', () => {
-    const context = { warn: vi.fn() };
+    const warn = vi.fn();
     const state = { logError: vi.fn() };
     vi.mocked(getImportConflictDiagnostics).mockReturnValue(['conflict' as never]);
 
-    expect(reportTemplateDiagnostics(context, state, languageServiceWith('error-1', 'event-1'), CHECK)).toBe(true);
-    expect(state.logError).toHaveBeenCalledWith('', '[TypeChecker] Failed to compile template - /src/foo.xd.component.html\ndescribed error-1');
-    expect(state.logError).toHaveBeenCalledWith('', '[TypeChecker] Failed to compile template - /src/foo.xd.component.html\ndescribed conflict');
-    expect(context.warn).toHaveBeenCalledOnce();
+    const errors = ['[TypeChecker] Failed to compile template - /src/foo.xd.component.html\ndescribed error-1', '[TypeChecker] Failed to compile template - /src/foo.xd.component.html\ndescribed conflict'];
+
+    expect(reportTemplateDiagnostics(warn, state, languageServiceWith('error-1', 'event-1'), CHECK)).toEqual(errors);
+    expect(state.logError).toHaveBeenCalledWith('', errors[0]);
+    expect(state.logError).toHaveBeenCalledWith('', errors[1]);
+    expect(warn).toHaveBeenCalledOnce();
   });
 });

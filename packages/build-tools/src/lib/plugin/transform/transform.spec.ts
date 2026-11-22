@@ -66,6 +66,13 @@ vi.mock('../../registry/template-registry/template-registry', () => ({
   removeComponentPath: vi.fn()
 }));
 
+vi.mock('../../models/type-check-queue/type-check-queue.model', () => ({
+  TypeCheckQueue: vi.fn(function (this: Record<string, unknown>) {
+    this.queueFile = vi.fn();
+    this.queueTemplate = vi.fn();
+  })
+}));
+
 vi.mock('../plugin-utils/plugin.utils', () => ({
   claimSelectors: vi.fn(),
   createStyleModuleSpecifier: vi.fn(),
@@ -87,6 +94,7 @@ import { compile, extractComponentMembers, extractComponentsMetadataFromSourceFi
 import { createShim, getImportConflictDiagnostics, getLanguageService, registerRealFile } from '@xaendar/language-core';
 import { TransformPluginContext } from 'rolldown';
 import { CLIENT_STRATEGY, SERVER_STRATEGY } from '../../costants/plugin-strategies';
+import { TypeCheckQueue } from '../../models/type-check-queue/type-check-queue.model';
 import { clearDependenciesForComponent, registerDependency } from '../../registry/dependency-registry/dependency-registry';
 import { clearComponentToImports, registerImport } from '../../registry/import-registry/import-registry';
 import { clearMetadataForFile, registerMetadata } from '../../registry/metadata-registry/metadata-registry';
@@ -94,7 +102,7 @@ import { clearStyleDependenciesForComponent, registerStyleDependency } from '../
 import { registerTemplatePath, removeComponentPath } from '../../registry/template-registry/template-registry';
 import { resolvePosixPath } from '../../utils/path/path.utils';
 import { collectProjectDependencies } from '../../utils/project-dependencies/project-dependencies.utils';
-import { collectFileDiagnostics, formatTypeDiagnostics } from '../../utils/type-check/type-check.utils';
+import { collectFileDiagnostics } from '../../utils/type-check/type-check.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, describeDiagnostic, describeEventCheckDiagnostic, extractImportedComponentPaths, generateStaticModule, getImportOrExtract, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 import { createTransformHook } from './transform';
 
@@ -179,6 +187,15 @@ function createPluginContext(consumer: 'client' | 'server' = 'client', watchMode
     environment: { config: { consumer } },
     meta: { watchMode }
   } as unknown as TransformPluginContext;
+}
+
+/**
+ * Builds the plugin state of a build in the watch mode, which type-checks each template as it is served.
+ *
+ * @returns The mocked plugin state.
+ */
+function watchState(): XaendarPluginState {
+  return { ...createState(), isBuild: true };
 }
 
 /**
@@ -292,26 +309,18 @@ describe('createTransformHook()', () => {
     expect(findHostDirectiveErrors).not.toHaveBeenCalled();
   });
 
-  it('does not serve a TypeScript file with type errors in the dev server, raising them', async () => {
-    vi.mocked(collectFileDiagnostics).mockReturnValue(['diag'] as unknown as ReturnType<typeof collectFileDiagnostics>);
-    vi.mocked(formatTypeDiagnostics).mockReturnValue('util.ts(1,7): error TS2322');
+  it('serves every TypeScript file at once in the dev server, queueing its type-check in the queue of the plugin', async () => {
     const state = createState();
     const hook = createTransformHook(state);
 
-    await expect(hook.call(createPluginContext(), 'const x = 1;', '/src/foo/util.ts', undefined)).rejects.toThrow('[TypeChecker] Type check failed\nutil.ts(1,7): error TS2322');
-    expect(getLanguageService).toHaveBeenCalledWith(state.compilerOptions, state.projectFileNames);
-    expect(collectFileDiagnostics).toHaveBeenCalledWith(expect.anything(), '/src/foo/util.ts');
-    expect(formatTypeDiagnostics).toHaveBeenCalledWith(['diag']);
-  });
+    expect(await hook.call(createPluginContext(), 'const x = 1;', '/src/foo/util.ts', undefined)).toBe('const x = 1;');
+    await hook.call(createPluginContext(), 'const y = 1;', '/src/foo/other.ts', undefined);
 
-  it('serves a TypeScript file without type errors', async () => {
-    const state = createState();
-    const hook = createTransformHook(state);
-
-    await hook.call(createPluginContext(), 'const x = 1;', '/src/foo/util.ts', undefined);
-
-    expect(collectFileDiagnostics).toHaveBeenCalledWith(expect.anything(), '/src/foo/util.ts');
-    expect(state.logError).not.toHaveBeenCalled();
+    expect(TypeCheckQueue).toHaveBeenCalledOnce();
+    expect(TypeCheckQueue).toHaveBeenCalledWith(state);
+    expect(state.typeCheckQueue!.queueFile).toHaveBeenNthCalledWith(1, '/src/foo/util.ts');
+    expect(state.typeCheckQueue!.queueFile).toHaveBeenNthCalledWith(2, '/src/foo/other.ts');
+    expect(getLanguageService).not.toHaveBeenCalled();
   });
 
   it('does not type-check the files that are not TypeScript, nor any file in a build', async () => {
@@ -324,7 +333,7 @@ describe('createTransformHook()', () => {
     await devHook.call(createPluginContext(), '.a {}', '/src/foo/foo.css', undefined);
     await buildHook.call(createPluginContext(), 'const x = 1;', '/src/foo/util.ts', undefined);
 
-    expect(collectFileDiagnostics).not.toHaveBeenCalled();
+    expect(TypeCheckQueue).not.toHaveBeenCalled();
   });
 
   it('returns the code unchanged when no component metadata could be extracted (undefined map)', async () => {
@@ -661,27 +670,39 @@ describe('createTransformHook()', () => {
     expect(state.logError).toHaveBeenCalledWith(expect.any(Error), expect.stringContaining('Failed to inject template into component'));
   });
 
-  it('registers the real file and requests semantic diagnostics for the generated shim', async () => {
+  it('registers the real file and the shim, serving the component at once in the dev server, its template checked by the queue', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     const metadata = createMetadata();
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
     const state = createState();
     const hook = createTransformHook(state);
 
-    await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
+    expect(await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined)).toEqual({ code: 'original code', map: expect.anything() });
 
     expect(registerRealFile).toHaveBeenCalledWith(COMPONENT_PATH);
     expect(createShim).toHaveBeenCalledWith(new Map([[COMPONENT_PATH, ['FooComponent']]]), expect.any(Object));
+    expect(state.typeCheckQueue!.queueTemplate).toHaveBeenCalledWith(expect.objectContaining({ componentPath: COMPONENT_PATH, shimPath: '/virtual/foo.__typecheck__.ts' }));
+    expect(getLanguageService).not.toHaveBeenCalled();
+  });
+
+  it('checks the template at once in the watch mode of a build, with the language service of the project', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
+    const state = watchState();
+
+    await createTransformHook(state).call(createPluginContext('client', true), 'original code', COMPONENT_PATH, undefined);
+
     expect(getLanguageService).toHaveBeenCalledWith(state.compilerOptions, state.projectFileNames);
+    expect(state.typeCheckQueue).toBeUndefined();
   });
 
   it('watches and registers the files the type-check of the template depends on, the component file excluded', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
     vi.mocked(collectProjectDependencies).mockReturnValue([COMPONENT_PATH, '/src/foo/value.type.ts']);
-    const state = createState();
+    const state = watchState();
     const hook = createTransformHook(state);
-    const ctx = createPluginContext();
+    const ctx = createPluginContext('client', true);
 
     await hook.call(ctx, 'original code', COMPONENT_PATH, undefined);
 
@@ -692,7 +713,7 @@ describe('createTransformHook()', () => {
     expect(registerDependency).not.toHaveBeenCalledWith(COMPONENT_PATH, COMPONENT_PATH);
   });
 
-  it('logs every semantic diagnostic and returns null when the shim reports errors', async () => {
+  it('logs every semantic diagnostic and fails when the shim reports errors in the watch mode', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     const metadata = createMetadata();
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
@@ -702,12 +723,10 @@ describe('createTransformHook()', () => {
       getProgram: vi.fn().mockReturnValue(PROGRAM)
     } as unknown as ReturnType<typeof getLanguageService>);
     vi.mocked(describeDiagnostic).mockReturnValueOnce('first problem').mockReturnValueOnce('second problem');
-    const state = createState();
+    const state = watchState();
     const hook = createTransformHook(state);
 
-    const result = await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
-
-    expect(result).toBeNull();
+    await expect(hook.call(createPluginContext('client', true), 'original code', COMPONENT_PATH, undefined)).rejects.toThrow(`Failed to compile component - ${COMPONENT_PATH}`);
     expect(state.logError).toHaveBeenCalledWith('', expect.stringContaining('first problem'));
     expect(state.logError).toHaveBeenCalledWith('', expect.stringContaining('second problem'));
   });
@@ -720,8 +739,8 @@ describe('createTransformHook()', () => {
       getProgram: vi.fn().mockReturnValue(PROGRAM)
     } as unknown as ReturnType<typeof getLanguageService>);
     vi.mocked(describeEventCheckDiagnostic).mockReturnValueOnce('1:6 - \'bubbling\' is not an event of <div>');
-    const state = createState();
-    const context = createPluginContext();
+    const state = watchState();
+    const context = createPluginContext('client', true);
 
     const result = await createTransformHook(state).call(context, 'original code', COMPONENT_PATH, undefined);
 
@@ -738,12 +757,10 @@ describe('createTransformHook()', () => {
     vi.mocked(getLanguageService).mockReturnValue(languageService as unknown as ReturnType<typeof getLanguageService>);
     vi.mocked(getImportConflictDiagnostics).mockReturnValueOnce(['conflict' as never]);
     vi.mocked(describeDiagnostic).mockReturnValueOnce('conflict problem');
-    const state = createState();
+    const state = watchState();
 
-    const result = await createTransformHook(state).call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
-
+    await expect(createTransformHook(state).call(createPluginContext('client', true), 'original code', COMPONENT_PATH, undefined)).rejects.toThrow(`Failed to compile component - ${COMPONENT_PATH}`);
     expect(getImportConflictDiagnostics).toHaveBeenCalledWith(languageService, '/virtual/foo.__typecheck__.ts', 2);
-    expect(result).toBeNull();
     expect(state.logError).toHaveBeenCalledWith('', expect.stringContaining('conflict problem'));
   });
 

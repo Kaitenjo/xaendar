@@ -52,6 +52,7 @@ function createState(isBuild: boolean): XaendarPluginState {
 function createPluginContext(consumer: 'client' | 'server' = 'client'): PluginContext {
   return {
     error: vi.fn((message: string) => { throw new Error(message); }),
+    warn: vi.fn(),
     environment: { config: { consumer } }
   } as unknown as PluginContext;
 }
@@ -112,20 +113,22 @@ describe('createBuildEndHook()', () => {
       const checks = [check('/src/a.ts'), check('/src/b.ts')];
       state.pendingTypeChecks = checks;
       const context = createPluginContext();
-      vi.mocked(reportTemplateDiagnostics).mockReturnValue(false);
+      vi.mocked(reportTemplateDiagnostics).mockReturnValue(undefined);
 
       createBuildEndHook(state).call(context, undefined);
 
-      expect(reportTemplateDiagnostics).toHaveBeenNthCalledWith(1, context, state, LANGUAGE_SERVICE, checks[0]);
-      expect(reportTemplateDiagnostics).toHaveBeenNthCalledWith(2, context, state, LANGUAGE_SERVICE, checks[1]);
+      expect(reportTemplateDiagnostics).toHaveBeenNthCalledWith(1, expect.any(Function), state, LANGUAGE_SERVICE, checks[0]);
+      expect(reportTemplateDiagnostics).toHaveBeenNthCalledWith(2, expect.any(Function), state, LANGUAGE_SERVICE, checks[1]);
+      vi.mocked(reportTemplateDiagnostics).mock.calls[0][0]('a warning');
+      expect(context.warn).toHaveBeenCalledWith('a warning');
       expect(getLanguageService).toHaveBeenCalledOnce();
       expect(collectProjectDiagnostics).toHaveBeenCalledWith(LANGUAGE_SERVICE);
       expect(state.pendingTypeChecks).toBeUndefined();
     });
 
     it.each([
-      ['one component', [true, false], 'Failed to compile component - /src/a.ts'],
-      ['several components', [true, true], 'Failed to compile components - /src/a.ts, /src/b.ts']
+      ['one component', [['error'], undefined], 'Failed to compile component - /src/a.ts'],
+      ['several components', [['error'], ['error']], 'Failed to compile components - /src/a.ts, /src/b.ts']
     ])('fails the build naming the components whose templates have errors: %s', (_name, failures, message) => {
       const state = createState(true);
       state.pendingTypeChecks = [check('/src/a.ts'), check('/src/b.ts')];
