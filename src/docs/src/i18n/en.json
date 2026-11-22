@@ -1954,7 +1954,7 @@
       "frameworkComparison": {
         "eyebrow": "Reference",
         "title": "Framework comparison",
-        "lead": "The same page written three times, with Angular, React and Xaendar: a table of 1,000 employees and 8 columns, with filters over it. Below, how the three pages were measured, step by step, and the figures measured: they come from a script anyone can run again, not from your browser.",
+        "lead": "Here is the comparison between Xaendar, Angular, and React. They were compared on the same page built with all three technologies. The page features a table with external filters. Below is a step-by-step explanation of how the benchmarks were measured, which anyone can run on their own machine.",
         "samePage": {
           "title": "The same page",
           "p1": "The three pages share their data, their styles and their layout: only the code that renders them changes. They are split the same way in every framework:",
@@ -1962,7 +1962,7 @@
           "li2": "a page holding the filters being edited and the ones applied: <strong>Apply</strong> copies the first into the second, <strong>Reset</strong> empties both, and the table shows the rows of the applied filters;",
           "li3": "the same 1,000 rows, generated from the same seed, and the same filtering function;",
           "li4": "two updates of the table: a click on a row selects it, and <strong>Raise 5%</strong> raises every salary, replacing the rows with new ones, as data kept immutable is changed;",
-          "li5": "each framework with the optimizations it offers, so that an update renders only what changed: Angular without zone.js, with <code>OnPush</code> components, signals and <code>track</code>; React with its components memoized (<code>memo</code>, the table and its rows included, which are components of their own for that) and callbacks keeping their identity (<code>useCallback</code>, <code>useMemo</code>); Xaendar as it is, with signals and <code>track</code>.",
+          "li5": "each framework with the optimizations it offers, so that an update renders only what changed:<pre><ul><li>Angular without zone.js, with <code>OnPush</code> components, signals and <code>track</code></li><li>React with its components memoized (<code>memo</code>, the table and its rows included,\nwhich are components of their own for that) and callbacks keeping their identity (<code>useCallback</code>, <code>useMemo</code>)</li><li>Xaendar as it is, with signals and <code>track</code></li></ul></pre>",
           "open": "Each page can be opened on its own, in a new tab:"
         },
         "method": {
@@ -1975,7 +1975,7 @@
           "li5": "<strong>Startup.</strong> A script injected before the code of the page checks the table at every animation frame: the startup is the time from the start of the navigation to the first frame showing all its 1,000 rows. It includes loading, parsing and running the JavaScript, and the first render.",
           "li6": "<strong>Memory.</strong> Once the table is shown, the script forces a garbage collection, then reads the JavaScript heap in use (<code>Runtime.getHeapUsage</code>) and the DOM nodes and event listeners the browser counts (<code>Memory.getDOMCounters</code>).",
           "li7": "<strong>Interactions.</strong> In this order, on the page just started: a click on row 500 selects it (one class changes, in one row of 1,000); <strong>Raise 5%</strong> raises every salary (one text changes in each of the 1,000 rows); then <em>Engineering</em> is selected in the department field and <strong>Apply</strong> is clicked (the 1,000 rows become 132), then <strong>Reset</strong> (back to 1,000). Each time runs from the click to the first task after the frame showing the change: the update of the framework, plus the style, layout and paint of that frame. Each interaction is the first of its kind on the page, as for a reader: its time includes the code of the update running for the first time.",
-          "li8": "<strong>Runs and medians.</strong> Each page is measured 10 times at each CPU speed, the three pages taking turns (Angular, React, Xaendar, Angular, …) so that a slower moment of the machine weighs on all of them; every figure is the median of its 10 values. The script also counts the elements of the page, inside the shadow roots too, and the rows the filter leaves: the first table checks that the three pages do the same work."
+          "li8": "<strong>Runs and medians.</strong> Each page is measured 1000 times at each CPU speed, the three pages taking turns (Angular, React, Xaendar, Angular, …) so that a slower moment of the machine weighs on all of them; every figure is the median of its 1000 values. The script also counts the elements of the page, inside the shadow roots too, and the rows the filter leaves: the first table checks that the three pages do the same work."
         },
         "results": {
           "title": "Results",

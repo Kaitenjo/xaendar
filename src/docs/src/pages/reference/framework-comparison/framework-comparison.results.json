@@ -1,8 +1,8 @@
 {
   "date": "2026-11-22",
-  "browser": "Chromium 157.0.8103.78",
-  "machine": "Intel(R) Xeon(R) Processor @ 2.10GHz, 4 cores",
-  "runs": 10,
+  "browser": "Chromium 159.0.8154.6",
+  "machine": "13th Gen Intel(R) Core(TM) i7-13700KF, 24 cores",
+  "runs": 1000,
   "pages": {
     "angular": {
       "scripts": {
@@ -10,28 +10,28 @@
         "gzip": 43274
       },
       "cpu1x": {
-        "startup": 223.8,
+        "startup": 96.8,
         "elements": 10075,
-        "heap": 3669104,
+        "heap": 3561992,
         "nodes": 18243,
         "listeners": 1026,
-        "select": 7.2,
-        "raise": 40.4,
-        "filter": 39,
+        "select": 3.5,
+        "raise": 16.2,
+        "filter": 14.5,
         "filtered": 132,
-        "reset": 136.4
+        "reset": 59.6
       },
       "cpu4x": {
-        "startup": 1294.6,
+        "startup": 388.5,
         "elements": 10075,
-        "heap": 3712084,
+        "heap": 3509922,
         "nodes": 18243,
         "listeners": 1026,
-        "select": 38.4,
-        "raise": 198,
-        "filter": 140.8,
+        "select": 14.4,
+        "raise": 66,
+        "filter": 54,
         "filtered": 132,
-        "reset": 689.1
+        "reset": 273.6
       }
     },
     "react": {
@@ -40,28 +40,28 @@
         "gzip": 69616
       },
       "cpu1x": {
-        "startup": 75.5,
+        "startup": 55.3,
         "elements": 10062,
-        "heap": 4313470,
+        "heap": 4129764,
         "nodes": 18226,
         "listeners": 1166,
-        "select": 7.3,
-        "raise": 54.5,
-        "filter": 33,
+        "select": 10.8,
+        "raise": 24.9,
+        "filter": 13,
         "filtered": 132,
-        "reset": 141.5
+        "reset": 58.8
       },
       "cpu4x": {
-        "startup": 303.4,
+        "startup": 162.4,
         "elements": 10062,
-        "heap": 4326530,
+        "heap": 4128135,
         "nodes": 18226,
         "listeners": 1166,
-        "select": 35.9,
-        "raise": 265.5,
-        "filter": 160.8,
+        "select": 13.6,
+        "raise": 78.2,
+        "filter": 57.4,
         "filtered": 132,
-        "reset": 632.4
+        "reset": 270
       }
     },
     "xaendar": {
@@ -70,28 +70,28 @@
         "gzip": 28106
       },
       "cpu1x": {
-        "startup": 105.1,
+        "startup": 47.1,
         "elements": 10075,
-        "heap": 2657882,
+        "heap": 2564083,
         "nodes": 18248,
         "listeners": 1026,
-        "select": 6.1,
-        "raise": 58.9,
-        "filter": 27.4,
+        "select": 2.6,
+        "raise": 20.4,
+        "filter": 11.4,
         "filtered": 132,
-        "reset": 141
+        "reset": 59.8
       },
       "cpu4x": {
-        "startup": 382.4,
+        "startup": 147.6,
         "elements": 10075,
-        "heap": 2649106,
+        "heap": 2563388,
         "nodes": 18248,
         "listeners": 1026,
-        "select": 30.1,
-        "raise": 251.4,
-        "filter": 123.2,
+        "select": 9.2,
+        "raise": 82.6,
+        "filter": 48.2,
         "filtered": 132,
-        "reset": 645.4
+        "reset": 275.7
       }
     }
   }

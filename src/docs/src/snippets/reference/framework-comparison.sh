@@ -5,5 +5,5 @@ npm run build:comparison
 npm install --no-save playwright
 npx playwright install chromium
 
-# Measure them (10 runs per page and CPU rate) and write the figures this page shows
-node comparison/measure.mjs --runs=10 --json=src/pages/reference/framework-comparison/framework-comparison.results.json
+# Measure them (1000 runs per page and CPU rate) and write the figures this page shows
+node comparison/measure.mjs --runs=1000 --json=src/pages/reference/framework-comparison/framework-comparison.results.json

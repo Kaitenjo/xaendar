@@ -696,7 +696,7 @@
           "title": "Legarlo nel padre",
           "p1": "Il padre lega entrambi con la sintassi di Angular, <code>[(value)]=\"quantity\"</code>, indicando un signal scrivibile senza graffe e senza chiamata: l’input riceve il valore del signal, e ogni <code>valueChange</code> scrive il suo detail nel signal.",
           "example1": "Due stepper, un signal",
-          "p2": "Entrambi gli stepper sono legati a <code>quantity</code>: un clic su uno dei due scrive il signal tramite <code>valueChange</code>, e l’altro mostra il nuovo valore. <em>Reset</em> scrive il signal dal padre: gli stepper lo ricevono come input e non inviano nulla, perché solo le scritture della classe che dichiara il model inviano l’evento. A zero, il pulsante meno riscrive lo stesso valore: <code>equals</code> non trova alcun cambiamento, e nessun evento viene inviato.",
+          "p2": "Entrambi gli stepper sono legati a <code>quantity</code>: un click su uno dei due scrive il signal tramite <code>valueChange</code>, e l’altro mostra il nuovo valore. <em>Reset</em> scrive il signal dal padre: gli stepper lo ricevono come input e non inviano nulla, perché solo le scritture della classe che dichiara il model inviano l’evento. A zero, il pulsante meno riscrive lo stesso valore: <code>equals</code> non trova alcun cambiamento, e nessun evento viene inviato.",
           "p3": "<code>[(value)]=\"quantity\"</code> equivale a <code>value=\"{quantity()}\"</code> insieme a <code>(valueChange)=\"quantity.set($event.detail)\"</code>. Il signal può essere un membro creato con <code>signal()</code>, un model del padre, che passa allora il cambiamento al proprio padre, o un signal raggiunto attraverso una proprietà di un membro o di una variabile del template, come <code>form.quantity</code> o l’elemento di un <code>@for</code>. Il binding funziona sul tag di un componente, in un binding condizionale e tra le parentesi di una direttiva custom, che può dichiarare anch’essa dei model. L’evento si può anche ascoltare da solo, e l’editor propone sia <code>[(value)]</code> sia <code>(valueChange)</code>."
         },
         "otherWays": {
@@ -728,20 +728,20 @@
       "hostBindings": {
         "eyebrow": "Componenti",
         "title": "Binding dell’host con @HostAttribute e @HostListener",
-        "lead": "Un componente è un elemento della pagina: il template che lo usa può impostarne gli attributi e ascoltarne gli eventi. Alcuni di questi, però, appartengono al componente, chiunque lo usi: il ruolo di un interruttore e il suo stato per le tecnologie assistive, una classe che il suo foglio di stile legge con <code>:host(.on)</code>, i clic e i tasti che lo azionano. <code>@HostAttribute</code> e <code>@HostListener</code> li dichiarano sui membri della classe, e li mantengono sull’elemento host.",
+        "lead": "Un componente è un elemento della pagina: il template che lo usa può impostarne gli attributi e ascoltarne gli eventi. Alcuni di questi, però, appartengono al componente, chiunque lo usi: il ruolo di un interruttore e il suo stato per le tecnologie assistive, una classe che il suo foglio di stile legge con <code>:host(.on)</code>, i click e i tasti che lo azionano. <code>@HostAttribute</code> e <code>@HostListener</code> li dichiarano sui membri della classe, e li mantengono sull’elemento host.",
         "attributesAndClasses": {
           "title": "Attributi e classi",
           "p1": "<code>@HostAttribute('name')</code> su un campo, un getter o un accessor scrive il suo valore nell’attributo <code>name</code> dell’elemento host; <code>@HostAttribute('class.name')</code> attiva e disattiva la classe <code>name</code>, che l’elemento ha finché il valore è truthy. Il membro viene letto dentro un effetto: un valore che non legge signal viene scritto una volta sola, mentre un signal, o un getter che legge signal, viene riscritto ogni volta che cambiano.",
           "example1": "Un interruttore disegnato dal proprio elemento",
-          "p2": "Fai clic sugli interruttori, oppure raggiungili con Tab e premi Spazio. <code>role</code> non legge signal e viene scritto una volta sola. <code>on</code> contiene un signal, e l’host ha la classe <code>on</code> finché è <code>true</code>: il foglio di stile disegna l’interruttore a partire da <code>:host(.on)</code>. I getter di <code>aria-checked</code>, <code>aria-disabled</code> e <code>tabindex</code> vengono riscritti quando cambiano <code>on</code> o <code>locked</code>. <code>locked</code> è un input riflesso sull’host: il padre lo lega, e il foglio di stile legge <code>:host([locked])</code>. Ispeziona l’interruttore del Wi-Fi con gli strumenti per sviluppatori per vederne cambiare gli attributi mentre attivi la modalità aereo.",
+          "p2": "Fai click sugli interruttori, oppure raggiungili con Tab e premi Spazio. <code>role</code> non legge signal e viene scritto una volta sola. <code>on</code> contiene un signal, e l’host ha la classe <code>on</code> finché è <code>true</code>: il foglio di stile disegna l’interruttore a partire da <code>:host(.on)</code>. I getter di <code>aria-checked</code>, <code>aria-disabled</code> e <code>tabindex</code> vengono riscritti quando cambiano <code>on</code> o <code>locked</code>. <code>locked</code> è un input riflesso sull’host: il padre lo lega, e il foglio di stile legge <code>:host([locked])</code>. Ispeziona l’interruttore del Wi-Fi con gli strumenti per sviluppatori per vederne cambiare gli attributi mentre attivi la modalità aereo.",
           "p3": "<code>@HostAttribute('class')</code> e <code>@HostAttribute('style')</code> scrivono una stringa di classi, o di dichiarazioni, e <code>@HostAttribute('style.name')</code> una proprietà, seguita dalla sua unità se c’è (<code>'style.width.px'</code>). Vengono fusi chiave per chiave con il template che renderizza l’elemento e con le sue direttive, che vincono sul componente: il template può sovrascrivere una classe o una proprietà che il componente scrive, e restituirla legando <code>null</code>. TypeScript controlla il membro in base al nome: una stringa per <code>class</code> e <code>style</code>, un numero per una proprietà con unità. Vedi <a href=\"#/it/templates/binding\">Binding</a>.",
           "p4": "Anche gli attributi vengono fusi, per intero: il template che renderizza l’elemento, che li scrive con <code>attr.nome</code> (o <code>nome</code>, quando il componente non ha un input con quel nome), vince sulle direttive, che vincono sul componente, e una sorgente con <code>null</code> lascia l’attributo a quelle sotto. Vedi <a href=\"#/it/templates/binding\">Binding</a>."
         },
         "events": {
           "title": "Gli eventi dell’host",
-          "p1": "<code>@HostListener('name')</code> su un metodo ascolta l’evento sull’elemento host, dalla connessione alla disconnessione. Il metodo riceve l’evento, il cui tipo TypeScript ricava dal nome (<code>KeyboardEvent</code> per <code>keydown</code>, <code>Event</code> per un output, che il parametro può restringere a <code>CustomEvent&lt;boolean&gt;</code>), oppure non prende parametri. Nell’interruttore i clic chiamano <code>toggle</code>, compresi quelli sull’etichetta proiettata, e <code>onKey</code>, che ascolta gli eventi di tasto <code>keydown.space</code> e <code>keydown.enter</code>, trasforma Spazio e Invio in un cambio di stato. Le opzioni sono quelle di <code>addEventListener</code>: <code>capture</code>, <code>once</code> e <code>passive</code>.",
+          "p1": "<code>@HostListener('name')</code> su un metodo ascolta l’evento sull’elemento host, dalla connessione alla disconnessione. Il metodo riceve l’evento, il cui tipo TypeScript ricava dal nome (<code>KeyboardEvent</code> per <code>keydown</code>, <code>Event</code> per un output, che il parametro può restringere a <code>CustomEvent&lt;boolean&gt;</code>), oppure non prende parametri. Nell’interruttore i click chiamano <code>toggle</code>, compresi quelli sull’etichetta proiettata, e <code>onKey</code>, che ascolta gli eventi di tasto <code>keydown.space</code> e <code>keydown.enter</code>, trasforma Spazio e Invio in un cambio di stato. Le opzioni sono quelle di <code>addEventListener</code>: <code>capture</code>, <code>once</code> e <code>passive</code>.",
           "p2": "Il listener sente gli eventi nativi dell’host, gli eventi inviati su di esso, compresi gli output del componente, e gli eventi che risalgono dal suo contenuto. Dal suo shadow root escono solo gli eventi composed, come <code>click</code> e <code>keydown</code>: <code>change</code> e gli output dei figli restano dentro, e si ascoltano nel template. Vedi <a href=\"#/it/reference/api/core/HostListener\"><code>HostListener</code></a>.",
-          "p3": "Con il prefisso <code>window:</code> o <code>document:</code> il metodo ascolta la finestra o il documento, dalla connessione alla disconnessione dell’host: un menu che si chiude a un clic altrove nella pagina, un layout che segue la dimensione della finestra. L’evento è tipizzato attraverso <code>WindowEventMap</code> e <code>DocumentEventMap</code>, e un parametro senza relazione con esso è un errore di tipo. Sul server non vengono ascoltati, come ogni listener, e l’event contract non li registra prima dell’hydration. Un evento di tasto indica il suo tasto come nei template: <code>document:keydown.escape</code> chiama il metodo solo per Esc (vedi <a href=\"#/it/templates/events\">Gestione degli eventi</a>)."
+          "p3": "Con il prefisso <code>window:</code> o <code>document:</code> il metodo ascolta la finestra o il documento, dalla connessione alla disconnessione dell’host: un menu che si chiude a un click altrove nella pagina, un layout che segue la dimensione della finestra. L’evento è tipizzato attraverso <code>WindowEventMap</code> e <code>DocumentEventMap</code>, e un parametro senza relazione con esso è un errore di tipo. Sul server non vengono ascoltati, come ogni listener, e l’event contract non li registra prima dell’hydration. Un evento di tasto indica il suo tasto come nei template: <code>document:keydown.escape</code> chiama il metodo solo per Esc (vedi <a href=\"#/it/templates/events\">Gestione degli eventi</a>)."
         },
         "values": {
           "title": "Dai valori agli attributi",
@@ -754,7 +754,7 @@
         },
         "directives": {
           "title": "Nelle direttive custom",
-          "p1": "Una direttiva custom li dichiara allo stesso modo, e lega l’elemento a cui è applicata: i binding partono subito dopo il suo <code>onInit</code> e si fermano quando viene distrutta. La direttiva qui sotto copia un testo quando si fa clic sul suo elemento, senza <code>onInit</code> né <code>onDestroy</code>. Una direttiva strutturale non ha un elemento: lì TypeScript rifiuta entrambi i decoratori. Vedi <a href=\"#/it/directives/custom\">Direttive custom</a>."
+          "p1": "Una direttiva custom li dichiara allo stesso modo, e lega l’elemento a cui è applicata: i binding partono subito dopo il suo <code>onInit</code> e si fermano quando viene distrutta. La direttiva qui sotto copia un testo quando si fa click sul suo elemento, senza <code>onInit</code> né <code>onDestroy</code>. Una direttiva strutturale non ha un elemento: lì TypeScript rifiuta entrambi i decoratori. Vedi <a href=\"#/it/directives/custom\">Direttive custom</a>."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -871,7 +871,7 @@
           "title": "Caricare un componente su richiesta",
           "p1": "Un template carica i moduli che importa con <code>@import</code>. Quando un componente deve arrivare dopo, <code>@import lazy</code> dà al compilatore la classe per il controllo dei tipi, senza caricare il modulo: lo carica qualcos’altro su richiesta, con un <code>import()</code> dinamico, e il componente viene definito solo quando arriva il suo modulo. Gli elementi con il suo tag già presenti nella pagina vengono allora <em>aggiornati</em> (upgrade): il browser esegue il costruttore su di essi e li collega. I binding applicati nel frattempo non hanno ancora trovato nessun input, quindi sono stati assegnati alle proprietà dell’elemento: ogni input legge la sua proprietà quando la classe viene definita, come se il binding l’avesse appena impostata.",
           "example1": "Binding applicati prima e dopo la definizione",
-          "p2": "Fai clic su <em>count + 1</em>, poi carica il pannello. Fino ad allora il primo pannello non mostra nulla, e il suo elemento tiene i valori dei suoi binding; una volta definito, li mostra, come fa il secondo pannello, che un <code>@if</code> renderizza solo dopo il caricamento del modulo."
+          "p2": "Fai click su <em>count + 1</em>, poi carica il pannello. Fino ad allora il primo pannello non mostra nulla, e il suo elemento tiene i valori dei suoi binding; una volta definito, li mostra, come fa il secondo pannello, che un <code>@if</code> renderizza solo dopo il caricamento del modulo."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -1239,7 +1239,7 @@
         "outputs": {
           "title": "Output",
           "p1": "Una direttiva dichiara gli output con <code>@Event</code>, come un componente. Non ha un elemento proprio: i suoi eventi vengono emessi sull’elemento a cui è applicata, e il template li ascolta tra le parentesi della direttiva.",
-          "example1": "Chiudere un menu con un clic fuori",
+          "example1": "Chiudere un menu con un click fuori",
           "p2": "La direttiva ascolta l’intero documento ed emette <code>outside</code> quando il puntatore viene premuto fuori dal suo elemento. Il controllo usa <code>composedPath()</code> invece di <code>target</code>: la pagina è fatta di shadow root, e il target di un evento visto dal documento è l’host più esterno, mai l’elemento al suo interno.",
           "example2": "Misurare un elemento",
           "p3": "Qui l’output porta un detail, e <code>$event</code> è il <code>CustomEvent</code> con la dimensione.",
@@ -1247,7 +1247,7 @@
         },
         "hostBindings": {
           "title": "Legare l’elemento",
-          "p1": "<code>@HostAttribute</code> e <code>@HostListener</code> funzionano in una direttiva come in un componente, sull’elemento a cui è applicata: gli attributi vengono scritti e i listener aggiunti subito dopo <code>onInit</code>, e tutto viene annullato quando la direttiva viene distrutta. Questa direttiva copia un testo quando si fa clic sul suo elemento, senza <code>onInit</code> né <code>onDestroy</code>:",
+          "p1": "<code>@HostAttribute</code> e <code>@HostListener</code> funzionano in una direttiva come in un componente, sull’elemento a cui è applicata: gli attributi vengono scritti e i listener aggiunti subito dopo <code>onInit</code>, e tutto viene annullato quando la direttiva viene distrutta. Questa direttiva copia un testo quando si fa click sul suo elemento, senza <code>onInit</code> né <code>onDestroy</code>:",
           "p2": "I valori, i tempi e i casi limite sono descritti in <a href=\"#/it/components/host-bindings\">Binding dell’host</a>."
         },
         "svgElements": {
@@ -1805,7 +1805,7 @@
           "title": "Un router in un modulo",
           "example1": "Pagine, parametri e un pulsante indietro",
           "p1": "<code>router.ts</code> contiene lo stato dell’intera applicazione: <code>path</code>, la cronologia dei percorsi visitati, e <code>route</code>, un computed che confronta il percorso con pattern come <code>/users/:id</code>. Ogni componente che importa il modulo condivide quello stato, senza injection: vedi <a href=\"#/it/signals/shared-state\">Stato condiviso</a>. La shell importa <code>path</code>, <code>route</code> e <code>canGoBack</code> nel suo template, e i suoi attributi che li leggono sono reattivi.",
-          "p2": "I link mantengono il loro <code>href</code>, quindi restano link per il browser e per le tecnologie assistive; un listener del clic chiama <code>preventDefault()</code> e naviga al loro posto. Il link attivo riceve <code>aria-current</code> con un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a>, e il foglio di stile lo usa.",
+          "p2": "I link mantengono il loro <code>href</code>, quindi restano link per il browser e per le tecnologie assistive; un listener del click chiama <code>preventDefault()</code> e naviga al loro posto. Il link attivo riceve <code>aria-current</code> con un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a>, e il foglio di stile lo usa.",
           "p3": "Il parametro della pagina utente arriva a un componente come input. Passare dall’utente 1 all’utente 2 mantiene lo stesso componente e cambia l’input; andare a un’altra route lo distrugge, insieme al suo stato."
         },
         "readingTheUrl": {
@@ -1954,15 +1954,15 @@
       "frameworkComparison": {
         "eyebrow": "Riferimento",
         "title": "Confronto tra framework",
-        "lead": "La stessa pagina scritta tre volte, con Angular, React e Xaendar: una tabella di 1.000 dipendenti e 8 colonne, con dei filtri sopra. Qui sotto, come sono state misurate le tre pagine, passo per passo, e i numeri misurati: vengono da uno script che chiunque può rieseguire, non dal tuo browser.",
+        "lead": "Qui troverai un confronto tra Xaendar, Angular e React. Sono stati comparati sulla medesima pagina realizzata con le 3 tecnologie. La pagina presenta una tabella con filtri esterni. Qui sotto è spiegato come sono state misurate le stime, passo dopo passo, eseguibile da chiunque sulla propria macchina.",
         "samePage": {
           "title": "La stessa pagina",
           "p1": "Le tre pagine condividono i dati, gli stili e il layout: cambia solo il codice che le disegna. Sono suddivise nello stesso modo in ogni framework:",
           "li1": "quattro piccoli componenti, un pulsante e tre campi (testo, data, select), ognuno attorno a un controllo nativo con la sua etichetta;",
           "li2": "una pagina che tiene i filtri in modifica e quelli applicati: <strong>Apply</strong> copia i primi nei secondi, <strong>Reset</strong> li svuota entrambi, e la tabella mostra le righe dei filtri applicati;",
           "li3": "le stesse 1.000 righe, generate dallo stesso seed, e la stessa funzione di filtro;",
-          "li4": "due aggiornamenti della tabella: un clic su una riga la seleziona, e <strong>Raise 5%</strong> aumenta ogni stipendio, sostituendo le righe con righe nuove, come si modificano i dati tenuti immutabili;",
-          "li5": "ogni framework con le ottimizzazioni che offre, perché un aggiornamento disegni solo ciò che è cambiato: Angular senza zone.js, con componenti <code>OnPush</code>, signal e <code>track</code>; React con i componenti memoizzati (<code>memo</code>, compresi la tabella e le sue righe, che per questo sono componenti a sé) e callback che mantengono la loro identità (<code>useCallback</code>, <code>useMemo</code>); Xaendar così com’è, con signal e <code>track</code>.",
+          "li4": "due aggiornamenti della tabella: un click su una riga la seleziona, e <strong>Raise 5%</strong> aumenta ogni stipendio, sostituendo le righe con righe nuove, come si modificano i dati tenuti immutabili;",
+          "li5": "ogni framework con le ottimizzazioni che offre, perché un aggiornamento disegni solo ciò che è cambiato: <pre><ul><li>Angular senza zone.js, con componenti <code>OnPush</code>, signal e <code>track</code></li><li>React con i componenti memoizzati (<code>memo</code>, compresi la tabella e le sue righe,\nche per questo sono componenti a sé) e callback che mantengono la loro identità (<code>useCallback</code>, <code>useMemo</code>)</li><li>Xaendar così com’è, con signal e <code>track</code></li></ul></pre>",
           "open": "Ogni pagina si può aprire da sola, in una nuova scheda:"
         },
         "method": {
@@ -1974,8 +1974,8 @@
           "li4": "<strong>Due velocità di CPU.</strong> Ogni pagina è misurata sulla macchina così com’è (CPU 1×) e quattro volte più lenta (CPU 4×, il CPU throttling del Chrome DevTools Protocol), vicina a un telefono di fascia media.",
           "li5": "<strong>Avvio.</strong> Uno script iniettato prima del codice della pagina controlla la tabella a ogni frame di animazione: l’avvio è il tempo dall’inizio della navigazione al primo frame che ne mostra tutte le 1.000 righe. Comprende caricamento, parsing ed esecuzione del JavaScript, e il primo render.",
           "li6": "<strong>Memoria.</strong> Quando la tabella è visibile, lo script forza una garbage collection, poi legge l’heap JavaScript in uso (<code>Runtime.getHeapUsage</code>) e i nodi DOM e gli event listener contati dal browser (<code>Memory.getDOMCounters</code>).",
-          "li7": "<strong>Interazioni.</strong> In quest’ordine, sulla pagina appena avviata: un clic sulla riga 500 la seleziona (cambia una classe, in una riga su 1.000); <strong>Raise 5%</strong> aumenta ogni stipendio (cambia un testo in ognuna delle 1.000 righe); poi si seleziona <em>Engineering</em> nel campo del reparto e si clicca <strong>Apply</strong> (le 1.000 righe diventano 132), poi <strong>Reset</strong> (si torna a 1.000). Ogni tempo va dal clic al primo task dopo il frame che mostra il cambiamento: l’aggiornamento del framework, più stili, layout e disegno di quel frame. Ogni interazione è la prima del suo tipo sulla pagina, come per chi la usa: il suo tempo comprende il codice dell’aggiornamento eseguito per la prima volta.",
-          "li8": "<strong>Run e mediane.</strong> Ogni pagina è misurata 10 volte a ogni velocità di CPU, a turno con le altre (Angular, React, Xaendar, Angular, …) perché un momento più lento della macchina pesi su tutte; ogni numero è la mediana dei suoi 10 valori. Lo script conta anche gli elementi della pagina, dentro le shadow root comprese, e le righe che il filtro lascia: la prima tabella verifica che le tre pagine facciano lo stesso lavoro."
+          "li7": "<strong>Interazioni.</strong> In quest’ordine, sulla pagina appena avviata: un click sulla riga 500 la seleziona (cambia una classe, in una riga su 1.000); <strong>Raise 5%</strong> aumenta ogni stipendio (cambia un testo in ognuna delle 1.000 righe); poi si seleziona <em>Engineering</em> nel campo del reparto e si clicca <strong>Apply</strong> (le 1.000 righe diventano 132), poi <strong>Reset</strong> (si torna a 1.000). Ogni tempo va dal click al primo task dopo il frame che mostra il cambiamento: l’aggiornamento del framework, più stili, layout e disegno di quel frame. Ogni interazione è la prima del suo tipo sulla pagina, come per chi la usa: il suo tempo comprende il codice dell’aggiornamento eseguito per la prima volta.",
+          "li8": "<strong>Run e mediane.</strong> Ogni pagina è misurata 1000 volte a ogni velocità di CPU, a turno con le altre (Angular, React, Xaendar, Angular, …) perché un momento più lento della macchina pesi su tutte; ogni numero è la mediana dei suoi 1000 valori. Lo script conta anche gli elementi della pagina, dentro le shadow root comprese, e le righe che il filtro lascia: la prima tabella verifica che le tre pagine facciano lo stesso lavoro."
         },
         "results": {
           "title": "Risultati",
@@ -2018,7 +2018,7 @@
           "li3": "<strong>Una pagina, di una forma.</strong> Una grande tabella con dei filtri, disegnata tutta insieme: pagine di un’altra forma, con molti piccoli componenti o piccoli aggiornamenti frequenti, potrebbero dare un ordine diverso. Il rendering sul server e l’idratazione qui non sono misurati.",
           "li4": "<strong>Aggiornamenti.</strong> Selezionare una riga cambia una classe in una riga. React, con le righe memoizzate, crea comunque un elemento per ognuna delle 1.000 righe e ne confronta le props, poi disegna solo le due righe la cui selezione è cambiata: senza <code>memo</code> le disegnerebbe e confronterebbe tutte, da due a tre volte più lentamente nelle nostre misure. Angular controlla i binding del template, confrontando ognuno con il valore precedente; Xaendar riesegue solo i binding che leggono la selezione, uno per riga. Aumentare gli stipendi cambia un testo in ogni riga: tutti e tre passano da ogni riga, e la distanza si chiude. Lì <code>memo</code> costa a React più di quanto risparmi, perché ogni riga cambia e le sue props vengono confrontate prima di disegnarla; Xaendar confronta ogni testo con quello nella pagina invece di tenerne una copia in memoria, e la prima lettura di un testo dal DOM costa più di quelle successive.",
           "li5": "<strong>Memoria.</strong> I dati sono gli stessi nelle tre pagine: l’heap differisce per quello che ogni framework, con il suo codice, tiene per la pagina. I nodi DOM sono contati a parte.",
-          "li6": "<strong>Event listener.</strong> Angular e Xaendar aggiungono un listener del clic a ogni riga. React gestisce gli eventi con listener sulla radice dell’applicazione, uno per ogni evento che supporta, ma dà anche a ogni elemento con un handler del clic un <code>onclick</code> vuoto (per Safari), che il browser conta a sua volta."
+          "li6": "<strong>Event listener.</strong> Angular e Xaendar aggiungono un listener del click a ogni riga. React gestisce gli eventi con listener sulla radice dell’applicazione, uno per ogni evento che supporta, ma dà anche a ogni elemento con un handler del click un <code>onclick</code> vuoto (per Safari), che il browser conta a sua volta."
         },
         "reproduce": {
           "title": "Misurare di nuovo",
@@ -2499,7 +2499,7 @@
         "attributesAndListeners": {
           "title": "Attributi e listener",
           "example1": "Un pulsante, tre condizioni",
-          "p1": "Blocca il task: il pulsante riceve <code>disabled</code> e un nuovo <code>title</code>; sbloccalo ed entrambi vengono sostituiti dagli attributi del ramo <code>@else</code>. Disattiva la modifica: il listener viene rimosso, e i clic non vengono più contati. Scegli una priorità: <code>data-priority</code> viene impostato, cambiato o rimosso, e il foglio di stile fa il resto. Una condizione è adatta ad attributi e listener che compaiono e spariscono insieme: un singolo attributo booleano come <code>disabled</code> si può anche legare a un booleano, come spiegato in <a href=\"#/it/templates/binding\">Binding</a>.",
+          "p1": "Blocca il task: il pulsante riceve <code>disabled</code> e un nuovo <code>title</code>; sbloccalo ed entrambi vengono sostituiti dagli attributi del ramo <code>@else</code>. Disattiva la modifica: il listener viene rimosso, e i click non vengono più contati. Scegli una priorità: <code>data-priority</code> viene impostato, cambiato o rimosso, e il foglio di stile fa il resto. Una condizione è adatta ad attributi e listener che compaiono e spariscono insieme: un singolo attributo booleano come <code>disabled</code> si può anche legare a un booleano, come spiegato in <a href=\"#/it/templates/binding\">Binding</a>.",
           "p2": "Le condizioni sono reattive, come quelle dei blocchi, e i binding condizionali si possono annidare. Un ramo può contenere le stesse cose di un tag: attributi statici e legati, listener e direttive. Le direttive applicate in modo condizionale hanno una pagina dedicata: <a href=\"#/it/directives/conditional\">Direttive condizionali</a>."
         },
         "inputsOfComponents": {
@@ -2713,7 +2713,7 @@
           "title": "Quando un ramo viene renderizzato di nuovo",
           "p1": "Il blocco tiene traccia del ramo che mostra, non del valore della condizione. Finché vince lo stesso ramo, i suoi elementi non vengono toccati; quando vince un altro ramo, gli elementi del vecchio vengono rimossi, con i componenti che contengono, e vengono creati quelli nuovi.",
           "example1": "Un campo dentro un ramo",
-          "p2": "Scrivi delle note, poi aggiungi ospiti: la condizione viene rieseguita a ogni clic, ma resta vera, e il campo conserva il suo testo. Scendi a zero e torna su: il campo viene creato di nuovo, vuoto. Lo stato che deve sopravvivere va nei signal, non negli elementi di un ramo."
+          "p2": "Scrivi delle note, poi aggiungi ospiti: la condizione viene rieseguita a ogni click, ma resta vera, e il campo conserva il suo testo. Scendi a zero e torna su: il campo viene creato di nuovo, vuoto. Lo stato che deve sopravvivere va nei signal, non negli elementi di un ramo."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -3535,7 +3535,7 @@
           "eventReplay": {
             "title": "Eventi prima dell’hydration",
             "p1": "La pagina si può cliccare prima che giri il suo codice. Perché nulla di ciò che fa l’utente vada perso, <code>renderToString()</code> scrive un piccolo script dopo la radice della pagina, l’event contract: registra gli eventi finché non arriva il runtime, e quando i componenti che contengono i loro target sono idratati li invia di nuovo, in ordine, con l’azione predefinita impedita, perché il browser l’ha già eseguita. Un evento su un nodo che non esiste più viene scartato. Non serve scrivere codice.",
-            "p2": "Registra gli eventi che i template e gli <code>@HostListener</code> della pagina ascoltano, sul documento e su ogni shadow root, perché <code>change</code> e <code>submit</code> non escono da uno shadow root. Un clic registrato su un contenuto che aspetta <code>interaction</code> conta: idrata il contenuto senza un secondo clic.",
+            "p2": "Registra gli eventi che i template e gli <code>@HostListener</code> della pagina ascoltano, sul documento e su ogni shadow root, perché <code>change</code> e <code>submit</code> non escono da uno shadow root. Un click registrato su un contenuto che aspetta <code>interaction</code> conta: idrata il contenuto senza un secondo click.",
             "submit": {
               "title": "Form",
               "p1": "Un invio non può aspettare, perché il browser lascerebbe la pagina. Il server segna con <code>data-xd-submit</code> un form che è, o sta dentro, un elemento con <code>(submit)</code>: il contract ne trattiene l’invio e lo ripete. Ogni altro form viene inviato normalmente."
@@ -3562,7 +3562,7 @@
           "eyebrow": "Rendering lato server",
           "title": "Idratare più tardi",
           "lead": "Per default ogni componente si idrata appena arriva il suo script: tutti insieme, con tutto il loro codice. Un template rimanda una parte di sé con un blocco <code>@hydrate</code>; un componente rimanda tutti i suoi elementi con l’opzione <code>ssr.hydrate</code> di <a href=\"#/it/reference/api/core/WebComponent\"><code>@WebComponent</code></a>. Finché un trigger non scatta, il contenuto mostra l’HTML del server, e il suo codice non viene né caricato né eseguito.",
-          "when": "<strong>Quando serve</strong>: quando una pagina contiene molto di cui l’utente non ha bisogno subito, come ciò che sta sotto la piega, un menu che si apre con un clic o un form nel footer. Rimandandolo, la pagina carica meno codice e risponde prima. Quando il contenuto non deve stare nell’HTML del server, <a href=\"#/it/templates/defer\">@defer</a> rimanda il contenuto stesso.",
+          "when": "<strong>Quando serve</strong>: quando una pagina contiene molto di cui l’utente non ha bisogno subito, come ciò che sta sotto la piega, un menu che si apre con un click o un form nel footer. Rimandandolo, la pagina carica meno codice e risponde prima. Quando il contenuto non deve stare nell’HTML del server, <a href=\"#/it/templates/defer\">@defer</a> rimanda il contenuto stesso.",
           "triggers": {
             "title": "I trigger",
             "p1": "I trigger si scrivono tra parentesi, separati da virgole: il primo che scatta idrata il contenuto. Senza parentesi, <code>@hydrate { … }</code> idrata il contenuto quando il browser è inattivo.",
@@ -3592,12 +3592,12 @@
             "interaction": {
               "fires": "Al primo evento dell’utente sui suoi elementi",
               "use": "Ciò che non fa nulla finché non lo si tocca: un menu, un selettore, un accordion",
-              "p1": "Il contenuto si idrata al primo <code>click</code>, <code>input</code>, <code>keydown</code>, <code>focusin</code> o altro evento dell’utente sui suoi elementi. L’evento non va perso: idratato il contenuto, raggiunge il suo listener, quindi un solo clic apre il menu. Per un componente: <code>ssr: { hydrate: 'interaction' }</code>."
+              "p1": "Il contenuto si idrata al primo <code>click</code>, <code>input</code>, <code>keydown</code>, <code>focusin</code> o altro evento dell’utente sui suoi elementi. L’evento non va perso: idratato il contenuto, raggiunge il suo listener, quindi un solo click apre il menu. Per un componente: <code>ssr: { hydrate: 'interaction' }</code>."
             },
             "hover": {
               "fires": "Quando il puntatore passa su uno dei suoi elementi, o il focus vi entra",
               "use": "Ciò che l’utente sta per usare: un menu, un pulsante che apre una finestra",
-              "p1": "Il contenuto si idrata quando il puntatore passa su uno dei suoi elementi, o il focus vi entra: il suo codice arriva mentre l’utente ci va sopra, prima del clic. Uno schermo touch non ha un puntatore che passa sopra gli elementi: abbinalo a <code>interaction</code>. Per un componente: <code>ssr: { hydrate: 'hover' }</code>."
+              "p1": "Il contenuto si idrata quando il puntatore passa su uno dei suoi elementi, o il focus vi entra: il suo codice arriva mentre l’utente ci va sopra, prima del click. Uno schermo touch non ha un puntatore che passa sopra gli elementi: abbinalo a <code>interaction</code>. Per un componente: <code>ssr: { hydrate: 'hover' }</code>."
             },
             "when": {
               "fires": "Quando un’espressione diventa vera",
@@ -3611,7 +3611,7 @@
             },
             "combined": {
               "title": "Più trigger",
-              "p1": "Il primo trigger che scatta idrata il contenuto: qui un clic sulle recensioni, o un pulsante altrove che le apre."
+              "p1": "Il primo trigger che scatta idrata il contenuto: qui un click sulle recensioni, o un pulsante altrove che le apre."
             },
             "prefetch": {
               "title": "Caricare prima il codice",
@@ -3676,7 +3676,7 @@
           "when": "<strong>Quando conviene</strong>: in un’applicazione multi-pagina o in un sito di contenuti, prerenderizzato o servito pagina per pagina, dove gran parte della pagina è testo e un link carica un’altra pagina. In una single-page application non trova quasi nulla: il router crea le pagine nel browser, quindi lì serve il loro codice. Per questo è disattivato per default.",
           "example": {
             "title": "Un esempio",
-            "p1": "La pagina di un articolo mostra solo i suoi input: è statica. Il pulsante “mi piace” ascolta i clic: è interattivo, e mantiene il suo codice:",
+            "p1": "La pagina di un articolo mostra solo i suoi input: è statica. Il pulsante “mi piace” ascolta i click: è interattivo, e mantiene il suo codice:",
             "p2": "Nel browser nulla adotta il pulsante, perché lì la pagina non ha una classe. Così il server scrive in <code>data-xd-inputs</code> gli input che la pagina gli passa, e il pulsante si idrata da solo, quando scatta il suo trigger:",
             "p3": "Questi valori finiscono nell’HTML, come gli input di <code>renderToString()</code>: non passare ciò che la pagina non deve mostrare. Un componente statico che passa a uno interattivo un input il cui tipo non si può scrivere, come una funzione, un’istanza di una classe, <code>any</code> o <code>unknown</code>, diventa interattivo. Fra due componenti statici si può passare qualsiasi valore, perché resta sul server."
           },
@@ -3825,7 +3825,7 @@
         },
         "component": {
           "title": "Un componente pensato per chi lo ospita",
-          "p1": "Un componente usato da un altro framework riceve i dati dai suoi input, che chi lo ospita assegna come proprietà, e li restituisce con un output. Quello qui sotto è controllato: mostra il <code>value</code> che gli viene assegnato, e un clic non lo cambia ma emette la nuova quantità, che chi lo ospita tiene nel proprio stato e gli riassegna. Il resto non cambia: template, foglio di stile e signal sono i soliti. È il componente che le applicazioni di questa pagina incorporano.",
+          "p1": "Un componente usato da un altro framework riceve i dati dai suoi input, che chi lo ospita assegna come proprietà, e li restituisce con un output. Quello qui sotto è controllato: mostra il <code>value</code> che gli viene assegnato, e un click non lo cambia ma emette la nuova quantità, che chi lo ospita tiene nel proprio stato e gli riassegna. Il resto non cambia: template, foglio di stile e signal sono i soliti. È il componente che le applicazioni di questa pagina incorporano.",
           "p2": "Lo <code>&lt;slot&gt;</code> è ciò che permette di passare del contenuto da fuori. Le altre vie d’ingresso sono due. Un modulo di signal condiviso: chi ospita il componente lo importa e ci scrive, e ogni componente che lo legge si aggiorna, come in <a href=\"#/it/signals/shared-state\">Condividere lo stato</a>. Oppure un genitore Xaendar: viene montato un solo tag radice, e al suo interno i template legano gli input come al solito."
         },
         "starting": {
