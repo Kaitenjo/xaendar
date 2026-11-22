@@ -90,13 +90,17 @@ npm start
 | --- | --- |
 | [`@xaendar/core`](packages/core) | Runtime: `CustomElement`, the decorators, directives, queries and the template runtime. The signals live in `@xaendar/core/signals` |
 | [`@xaendar/signals`](packages/signals) | Signal polyfill based on the TC39 proposal, installed with `loadSignals()` |
+| [`@xaendar/directives`](packages/directives) | Built-in directives: `@@animation`, `@@class`, `@@style`, `@@innerHtml`, `@@componentOutlet` |
 | [`@xaendar/compiler`](packages/compiler) | Template lexer, parser, type-checker and code generator |
+| [`@xaendar/ssr`](packages/ssr) | Server rendering runtime: `renderToString` renders components to HTML with Declarative Shadow DOM, `loadServerDom()` (`@xaendar/ssr/dom`) provides the DOM on the server |
+| [`@xaendar/ssr-compiler`](packages/ssr-compiler) | Compiles templates into functions writing HTML on the server |
 | [`@xaendar/build-tools`](packages/build-tools) | Vite plugin that compiles templates and stylesheets and type-checks the project |
 | [`@xaendar/cli`](packages/cli) | The `xd` command line interface |
 | [`@xaendar/language-core`](packages/language-core) | Language service features: diagnostics, completions, hover, go to definition, semantic tokens |
 | [`@xaendar/language-server`](packages/language-server) | LSP server for `.xd.component.html` templates |
 | [`@xaendar/vscode-client`](packages/vscode-client) | VS Code extension that runs the language server |
 | [`@xaendar/common`](packages/common), [`@xaendar/types`](packages/types) | Shared models, utilities and TypeScript types |
+| [`@xaendar/internals`](packages/internals) | Logic shared by the packages (styling and HTML rules, key events, models, custom element names): not a public API |
 
 A [Claude Code plugin](plugins/xaendar) with a Xaendar skill, commands and a reviewer agent is also available.
 
@@ -112,21 +116,6 @@ npm install --prefix src/docs   # the dependencies of the site
 (cd packages/cli && npm link)   # makes the xd command run the CLI from the sources
 npm start                       # http://localhost:4200
 ```
-
-## Development
-
-This is a monorepo: each package is published separately as `@xaendar/<name>`, and builds and releases are driven from [`schematics/`](schematics).
-
-```bash
-npm install
-npm test                    # all the specs, with Vitest
-npm run test:coverage       # 100% coverage is enforced
-npm run lint
-npm run build:projects      # builds every package into dist/@xaendar/<name>
-npm run typecheck:projects
-```
-
-Read [`CLAUDE.md`](CLAUDE.md) for the architecture, and the files in [`.claude/rules`](.claude/rules) for the code style.
 
 ## License
 
