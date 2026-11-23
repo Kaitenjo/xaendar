@@ -18,7 +18,7 @@
     "dts": true
   },
   "dependencies": {
-    "@xaendar/compiler": "1.4.2",
+    "@xaendar/compiler": "1.4.3",
     "typescript": "^6.0.3"
   },
   "peerDependencies": {

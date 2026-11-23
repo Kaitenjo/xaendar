@@ -14,8 +14,8 @@
     "target": "node"
   },
   "dependencies": {
-    "@xaendar/common": "1.4.2",
-    "@xaendar/types": "1.4.2",
+    "@xaendar/common": "1.4.3",
+    "@xaendar/types": "1.4.3",
     "entities": "^9.0.0",
     "typescript": "^6.0.3",
     "globals": "^17.14.0"

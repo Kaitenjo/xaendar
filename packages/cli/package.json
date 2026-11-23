@@ -16,8 +16,8 @@
   "dependencies": {
     "@babel/core": "^8.1.3",
     "@rolldown/plugin-babel": "^0.3.1",
-    "@xaendar/build-tools": "1.4.2",
-    "@xaendar/common": "1.4.2",
+    "@xaendar/build-tools": "1.4.3",
+    "@xaendar/common": "1.4.3",
     "commander": "^15.1.0",
     "vite": "^8.3.8",
     "tsx": "^4.23.15",
