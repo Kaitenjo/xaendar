@@ -112,13 +112,11 @@ function updateVersion(bump: 'major' | 'minor' | 'patch'): void {
     const packageJson: PackageJson = JSON.parse(readFileSync(packageJsonPath, { encoding: 'utf-8' }));
 
     const prevSub = packageJson.version ?? 'unknown';
+    // Every bump, a patch one too: a dependency left behind would install the previous version of the other package
     if (packageJson.dependencies) {
       for (const depName in packageJson.dependencies) {
         if (depName.startsWith('@xaendar')) {
-          const currentVersion = new Version(packageJson.dependencies[depName]!);
-          if (currentVersion.minor < version.minor) {
-            packageJson.dependencies[depName] = nextVersion;
-          }
+          packageJson.dependencies[depName] = nextVersion;
         }
       }
     }
