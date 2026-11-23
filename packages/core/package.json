@@ -1,6 +1,6 @@
 {
   "name": "@xaendar/core",
-  "version": "1.4.3",
+  "version": "1.5.0",
   "type": "module",
   "author": "Kaitenjo",
   "license": "MIT",
@@ -14,12 +14,12 @@
     "target": "browser"
   },
   "dependencies": {
-    "@xaendar/common": "1.4.3",
-    "@xaendar/signals": "1.4.3",
-    "@xaendar/types": "1.4.3",
+    "@xaendar/common": "1.5.0",
+    "@xaendar/signals": "1.5.0",
+    "@xaendar/types": "1.5.0",
     "type-fest": "^6.0.3"
   },
   "peerDependencies": {
-    "@xaendar/internals": "1.4.3"
+    "@xaendar/internals": "1.5.0"
   }
 }
