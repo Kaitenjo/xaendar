@@ -22742,6 +22742,9 @@ function lexElementRef(cursor, _context) {
       case EQUAL_THEN:
         throw "An element ref takes no value: write #name, which names the element it is declared on";
       default:
+        if (!isIdentifierChar(cursor.peek())) {
+          throw `${describeNameChar(cursor.peek())} cannot be part of an element ref: write #name with letters, digits, _ and $`;
+        }
         cursor.advance();
         name = `${name}${cursor.currentChar.value}`;
     }

@@ -109,6 +109,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** An attribute name, or a directive selector (`… cannot be part of a directive selector`), holding a character no HTML name holds: a quote, <, \ or a control character (shown as U+0007): often a missing space or = (title'x'), or a quote typed twice.
 - **Fix:** Remove the character from the name, and write the value after = between double quotes.
 
+### `[Lexer] '-' cannot be part of an element ref: write #name with letters, digits, _ and $`
+
+- **Cause:** An element ref whose name is not a name of JavaScript (#my-input): the expressions of the template read it as a variable.
+- **Fix:** Name it in camelCase: #myInput.
+
 ## Parser
 
 ### `[Parser] '\' cannot be part of an event name`
