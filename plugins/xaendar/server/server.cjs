@@ -23937,12 +23937,12 @@ var Lexer = class {
           eof = true;
         } else {
           const neighbourhood = 15;
-          let startInterval = stateStartIndex;
+          let startInterval = 0;
           let i2 = stateStartIndex;
           let stop = false;
-          while (!stop && i2 > 0) {
+          while (!stop && i2 >= 0) {
             const charCode = this._input.charCodeAt(i2);
-            if (charCode === LF || charCode === CR || startInterval - i2 > neighbourhood && charCode === SPACE) {
+            if (charCode === LF || charCode === CR || stateStartIndex - i2 > neighbourhood && charCode === SPACE) {
               startInterval = i2 + 1;
               stop = true;
             } else {
@@ -23951,13 +23951,13 @@ var Lexer = class {
           }
           const currentIndex = cursor.currentChar.index;
           const stateEndIndex = currentIndex <= stateStartIndex ? currentIndex + 2 : currentIndex + 1;
-          let endInterval = stateEndIndex;
-          i2 = endInterval;
+          let endInterval = this._input.length;
+          i2 = stateEndIndex;
           stop = false;
           while (!stop && i2 < this._input.length) {
             const charCode = this._input.charCodeAt(i2);
-            if (charCode === LF || charCode === CR || i2 - endInterval > neighbourhood && charCode === SPACE) {
-              endInterval = i2 - 1;
+            if (charCode === LF || charCode === CR || i2 - stateEndIndex > neighbourhood && charCode === SPACE) {
+              endInterval = i2;
               stop = true;
             } else {
               i2++;
