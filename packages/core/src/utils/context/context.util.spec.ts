@@ -262,6 +262,28 @@ describe('cleanups', () => {
     expect(seen).toEqual(['first', 'second', 'third']);
   });
 
+  it('runs the other cleanups when one throws, reporting its error in a microtask', () => {
+    const scope = _scope(null, EMPTY_LAYOUT);
+    const seen = new Array<string>();
+    const error = new Error('cleanup');
+    addCleanup(scope, () => {
+      throw error;
+    });
+    addCleanup(scope, () => seen.push('second'));
+    const queued = new Array<() => void>();
+    const queue = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(callback => queued.push(callback));
+
+    try {
+      expect(() => clear(scope)).not.toThrow();
+    } finally {
+      queue.mockRestore();
+    }
+
+    expect(seen).toEqual(['second']);
+    expect(queued).toHaveLength(1);
+    expect(() => queued[0]()).toThrow(error);
+  });
+
   it('removes a cleanup, keeping the last one left as it is', () => {
     const scope = _scope(null, EMPTY_LAYOUT);
     const [first, second, third] = [vi.fn<() => void>(), vi.fn<() => void>(), vi.fn<() => void>()];

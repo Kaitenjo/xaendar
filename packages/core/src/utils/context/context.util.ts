@@ -15,6 +15,7 @@ import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { DEV_MODE } from '../dev-mode/dev-mode.util';
+import { reportError } from '../report-error/report-error.util';
 import { captureContext } from '../try-scope/try-scope.util';
 
 /**
@@ -970,15 +971,31 @@ function disposeSites(scope: _Context, sites: readonly BindingSite[], base: numb
 /**
  * Runs the cleanups of a slot holding them (see {@link addCleanup}).
  *
+ * A cleanup throwing, as the `onDestroy` of a directive, is reported in a microtask: the other cleanups, and the rest of
+ * the clearing, still run, or the listeners, the effects and the scopes after it would stay alive.
+ *
  * @param cleanup - What the slot holds: a single cleanup, an array of them from the second, nothing.
  */
 function runCleanups(cleanup: Cleanup | Cleanup[] | null | undefined): void {
   if (Array.isArray(cleanup)) {
     for (let i = 0; i < cleanup.length; i++) {
-      runCleanup(cleanup[i]);
+      runCleanupReporting(cleanup[i]);
     }
   } else if (cleanup) {
+    runCleanupReporting(cleanup);
+  }
+}
+
+/**
+ * Runs a cleanup of a scope being cleared, reporting its error (see {@link runCleanups}).
+ *
+ * @param cleanup - The cleanup.
+ */
+function runCleanupReporting(cleanup: Cleanup): void {
+  try {
     runCleanup(cleanup);
+  } catch (error) {
+    reportError(error);
   }
 }
 

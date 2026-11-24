@@ -1550,6 +1550,34 @@ describe('_renderElement', () => {
       expect(_getAppliedDirectives(element, LabelDirective)).toBeUndefined();
     });
 
+    it('unregisters the directive also when its onDestroy throws, its error reported in a microtask', () => {
+      const context = createRoot();
+      const element = render(document.createElement('div'), context, { directives: [directive()] });
+      const instance = lastInstance();
+      const error = new Error('destroy');
+      instance.destroyed.mockImplementation(() => {
+        throw error;
+      });
+      const queued = new Array<() => void>();
+      const queue = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(callback => queued.push(callback));
+
+      try {
+        clear(context);
+      } finally {
+        queue.mockRestore();
+      }
+
+      expect(_getAppliedDirectives(element, LabelDirective)).toBeUndefined();
+      expect(queued.some(callback => {
+        try {
+          callback();
+          return false;
+        } catch (thrown) {
+          return thrown === error;
+        }
+      })).toBe(true);
+    });
+
     it('binds the properties of a conditional binding only while its condition is true, then resets them', async () => {
       const enabled = signal(false);
       render(document.createElement('div'), createRoot(), {

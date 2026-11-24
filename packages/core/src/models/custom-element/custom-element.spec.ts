@@ -42,6 +42,7 @@ const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 type TestElement = HTMLElement & {
   _context: _Context,
   connectedCallback(): void,
+  disconnectedCallback(): void,
   effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction,
   createComponent: CustomElement['createComponent']
 };
@@ -378,6 +379,25 @@ describe('CustomElement', () => {
 
       expect(calls).toEqual(['onDestroy', 'clear', 'dispose']);
     });
+
+    it('does not keep the component from being disposed when it throws, its error thrown afterwards', () => {
+      const calls = new Array<string>();
+      const { element } = createWithHooks({
+        onInit: element => {
+          element.effect(() => undefined, { onCleanup: () => calls.push('dispose') });
+        },
+        onDestroy: () => {
+          throw new Error('destroy');
+        },
+        onClear: () => calls.push('clear')
+      });
+      document.body.appendChild(element);
+
+      expect(() => element.disconnectedCallback()).toThrow('destroy');
+      expect(calls).toEqual(['clear', 'dispose']);
+      element.remove();
+      expect(calls).toEqual(['clear', 'dispose']);
+    });
   });
 
   describe('disconnection', () => {
@@ -624,7 +644,7 @@ describe('CustomElement', () => {
     /**
      * Builds a component declaring the given host directives, recording its own lifecycle in the same list.
      */
-    function createHost(calls: string[], Directive: Constructor<CustomDirective>) {
+    function createHost(calls: string[], ...directives: Constructor<CustomDirective>[]) {
       const context = createContext(() => calls.push('clear'));
       const klass = class extends CustomElement {
         public onInit(): void {
@@ -635,7 +655,7 @@ describe('CustomElement', () => {
           calls.push('onDestroy');
         }
       };
-      Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { hostDirectives: [Directive] } });
+      Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { hostDirectives: directives } });
       _defineRender(klass, () => {
         calls.push('render');
         return context;
@@ -719,6 +739,38 @@ describe('CustomElement', () => {
       element.remove();
       expect(onCleanup).toHaveBeenCalledTimes(2);
       expect(calls.filter(call => call === 'directive onInit')).toHaveLength(2);
+    });
+
+    it('are all stopped, and their effects disposed, when the onDestroy of one throws, its error reported in a microtask', () => {
+      const calls = new Array<string>();
+      const onCleanup = vi.fn();
+      const error = new Error('directive destroy');
+      const Throwing = class extends CustomDirective {
+        public onDestroy(): void {
+          throw error;
+        }
+      };
+      const element = createHost(calls, Throwing, createDirective(calls, onCleanup));
+      document.body.appendChild(element);
+      const queued = new Array<() => void>();
+      const queue = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(callback => queued.push(callback));
+
+      try {
+        element.remove();
+      } finally {
+        queue.mockRestore();
+      }
+
+      expect(calls).toContain('directive onDestroy');
+      expect(onCleanup).toHaveBeenCalledOnce();
+      expect(queued.some(callback => {
+        try {
+          callback();
+          return false;
+        } catch (thrown) {
+          return thrown === error;
+        }
+      })).toBe(true);
     });
 
     it('are not started when the component cannot render', () => {

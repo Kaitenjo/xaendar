@@ -428,8 +428,11 @@ function bindDirectives(element: Element, context: _Context, directives: readonl
 
     // Registered before connecting, so that `onDestroy` runs before the effects created in `onInit` are disposed
     addCleanup(context, () => {
-      directive[DIRECTIVE_DISCONNECT]();
-      _removeAppliedDirective(element, directive);
+      try {
+        directive[DIRECTIVE_DISCONNECT]();
+      } finally {
+        _removeAppliedDirective(element, directive);
+      }
     });
     _addAppliedDirective(element, directive);
     directive[DIRECTIVE_CONNECT](context);

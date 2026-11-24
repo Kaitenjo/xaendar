@@ -15,6 +15,7 @@ import { _checkExposedFields, _createHostDirectives } from '../../utils/host-dir
 import { HYDRATION } from '../../utils/hydration-flag/hydration-flag.util';
 import { deferElementHydration, replayContractEvents, replayElementEvents } from '../../utils/hydration-triggers/hydration-triggers.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
+import { reportError } from '../../utils/report-error/report-error.util';
 import { _parseState } from '../../utils/state-serialization/state-serialization.util';
 import { runConnection } from '../../utils/try-scope/try-scope.util';
 import type { CustomDirective } from '../custom-directive/custom-directive';
@@ -252,12 +253,29 @@ export class CustomElement extends HTMLElement {
     }
 
     this._state = 'destroyed';
-    this.onDestroy?.();
+    // The component is disposed also when `onDestroy` throws, whose error the browser then reports
+    try {
+      this.onDestroy?.();
+    } finally {
+      this._dispose();
+    }
+  }
+
+  /**
+   * Disposes the component being destroyed, after its `onDestroy` (see {@link disconnectedCallback}): clears its context,
+   * stops its host directives, a throwing one reported in a microtask so that the others stop too, clears their
+   * context, and invokes the internal disconnected hooks.
+   */
+  private _dispose(): void {
     clear(this._context, false);
 
     // The host directives are stopped after the component, then their effects are disposed
     for (const directive of this.hostDirectives.values()) {
-      directive[DIRECTIVE_DISCONNECT]();
+      try {
+        directive[DIRECTIVE_DISCONNECT]();
+      } catch (error) {
+        reportError(error);
+      }
     }
 
     this._clearHostDirectivesContext();
