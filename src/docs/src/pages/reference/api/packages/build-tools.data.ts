@@ -28,6 +28,12 @@ export const BUILD_TOOLS_API: ApiPackage = {
           snippets: ['components/native-element-event-warning.txt', 'components/strict-events-config.json']
         },
         {
+          name: 'security',
+          group: 'options',
+          signature: 'security?: { readonly urls?: \'off\' | \'warn\' | \'remove\'; readonly rejectUnsafeBindings?: boolean }',
+          snippets: ['templates/security-config.json', 'templates/unsafe-binding-error.txt', 'templates/unsafe-url-warning.txt']
+        },
+        {
           name: 'ssr',
           group: 'options',
           signature: 'ssr?: { readonly entry: string; readonly staticComponents?: boolean }',
@@ -55,6 +61,10 @@ export const BUILD_TOOLS_API: ApiPackage = {
         'type XaendarPluginOptions = {',
         '  readonly customElements?: readonly string[];',
         '  readonly strictEvents?: boolean;',
+        '  readonly security?: {',
+        '    readonly urls?: \'off\' | \'warn\' | \'remove\';',
+        '    readonly rejectUnsafeBindings?: boolean;',
+        '  };',
         '  readonly ssr?: {',
         '    readonly entry: string;',
         '    readonly staticComponents?: boolean;',
@@ -72,6 +82,11 @@ export const BUILD_TOOLS_API: ApiPackage = {
           name: 'strictEvents',
           group: 'options',
           signature: 'readonly strictEvents?: boolean'
+        },
+        {
+          name: 'security',
+          group: 'options',
+          signature: 'readonly security?: { readonly urls?: \'off\' | \'warn\' | \'remove\'; readonly rejectUnsafeBindings?: boolean }'
         },
         {
           name: 'ssr',
@@ -98,6 +113,10 @@ export const BUILD_TOOLS_API: ApiPackage = {
         '  readonly ssr?: boolean;',
         '  readonly customElements?: readonly string[];',
         '  readonly strictEvents?: boolean;',
+        '  readonly security?: {',
+        '    readonly urls?: \'off\' | \'warn\' | \'remove\';',
+        '    readonly rejectUnsafeBindings?: boolean;',
+        '  };',
         '  readonly plugins?: readonly PluginOption[];',
         '  readonly xaendarVersion: string;',
         '  readonly dependencies?: Readonly<Record<string, string>>;',
@@ -138,6 +157,11 @@ export const BUILD_TOOLS_API: ApiPackage = {
           name: 'strictEvents',
           group: 'options',
           signature: 'readonly strictEvents?: boolean'
+        },
+        {
+          name: 'security',
+          group: 'options',
+          signature: 'readonly security?: { readonly urls?: \'off\' | \'warn\' | \'remove\'; readonly rejectUnsafeBindings?: boolean }'
         },
         {
           name: 'plugins',

@@ -1,0 +1,7 @@
+{
+  "name": "my-app",
+  "security": {
+    "urls": "remove",
+    "rejectUnsafeBindings": true
+  }
+}

@@ -1,0 +1,1 @@
+Xaendar: the URL bound to href runs code (javascript:alert(1)): it is written as it is. Bind a URL of the application, or set "security": { "urls": "remove" } in xaendar.json to leave it out.

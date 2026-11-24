@@ -1,0 +1,4 @@
+<style>p { color: red }</style>
+
+Xaendar: Failed to compile template - /src/page/page.xd.component.html
+[Parser] [Ln 1, Col 2] - <style> cannot be written in a template: the styles of a component go in its stylesheet (styleUrl)

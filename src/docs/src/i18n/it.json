@@ -2466,6 +2466,13 @@
           "p2": "<code>null</code> e <code>undefined</code> non esprimono un’opinione: l’attributo passa alla sorgente sotto, e viene rimosso quando nessuna sorgente ne ha una, solo se l’aveva scritto il runtime. <code>false</code> è un valore: rimuove l’attributo anche quando lo scrive il componente, tranne sugli attributi <code>aria-*</code> ed enumerati, che ricevono <code>\"false\"</code>. Quando una sorgente sparisce (un ramo non più selezionato, una direttiva distrutta, il componente disconnesso) l’attributo riprende il valore delle sorgenti sotto.",
           "p3": "Un attributo scritto da una sola sorgente, quasi tutti, costa quanto prima: viene scritto direttamente, e lo stato della fusione viene tenuto solo per gli attributi che scrive un secondo livello. Il server applica la stessa precedenza e scrive il valore finale, che il browser adotta senza riscriverlo. Gli attributi che altro codice scrive sull’elemento non vengono tracciati."
         },
+        "security": {
+          "title": "Valori che potrebbero eseguire codice",
+          "p1": "Un template non contiene <code>&lt;script&gt;</code> né <code>&lt;style&gt;</code>, ovunque siano, anche in un <code>&lt;svg&gt;</code> e nel contenuto di un <code>&lt;template&gt;</code> standard: il codice di un componente va nella sua classe, i suoi stili nel suo stylesheet (<code>styleUrl</code>), e un binding al loro interno scriverebbe codice o stili dai valori dell’applicazione. Il compiler li rifiuta.",
+          "p2": "Un valore collegato a un attributo che il browser esegue viene rifiutato dal type check, nella build e nell’editor: un attributo di gestione degli eventi (qualunque nome che inizia con <code>on</code>, anche con <code>attr.</code>) e lo <code>srcdoc</code> di un <code>&lt;iframe&gt;</code>. Ascolta l’evento con <code>(evento)</code>. Un valore scritto nel template è dell’autore, ed è ammesso, così come un input di un componente che si chiama allo stesso modo.",
+          "p3": "Entrambi si impostano con la voce <code>security</code> di <code>xaendar.json</code>, e una libreria del workspace sovrascrive ogni opzione nei suoi <code>libs</code>: <code>rejectUnsafeBindings</code>, <code>true</code> di default, rende errori questi binding, e <code>urls</code>, <code>\"off\"</code> di default, controlla gli URL collegati agli attributi che li caricano o li aprono (<code>href</code>, <code>src</code>, <code>action</code>, <code>formaction</code>, <code>xlink:href</code>…), allo stesso modo sul client e sul server. Un URL <code>javascript:</code> o <code>vbscript:</code>, o un URL <code>data:</code> che non è un’immagine, un audio o un video, viene scritto con un warning con <code>\"warn\"</code>, e omesso con <code>\"remove\"</code>, con il warning solo in sviluppo. Gli altri schemi e gli URL relativi passano, così come i valori scritti nel template e gli input dei componenti.",
+          "p4": "Questi controlli avvengono dove il compiler vede il binding. Un HTML scritto in un elemento viene sanitizzato da <a href=\"#/it/directives/inner-html\"><code>@@innerHtml</code></a>, a run time, con le sue opzioni."
+        },
         "edgeCases": {
           "title": "Casi limite",
           "example1": "Un booleano legato a un attributo",
@@ -4149,6 +4156,18 @@
     "'valuechange' is not an event of <ex-quantity-picker>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set \"strictEvents\": false in xaendar.json to turn this warning off.": {
       "cause": "Un listener per un evento che non è né un output del componente né un evento del suo elemento: maiuscole diverse, un nome sbagliato, o un evento che risale dal contenuto dell’elemento. È un warning: la build non fallisce.",
       "fix": "Usa il nome dell’accessor, lettera per lettera. Per un evento che risale di proposito, tieni il binding, o imposta \"strictEvents\": false in xaendar.json."
+    },
+    "[Parser] <style> cannot be written in a template: the styles of a component go in its stylesheet (styleUrl)": {
+      "cause": "Uno <style> o uno <script> in un template, ovunque, anche in un <svg> o in un <template> standard.",
+      "fix": "Sposta gli stili nello stylesheet del componente (styleUrl), il codice nella sua classe."
+    },
+    "[TypeChecker] Binding onclick writes code the browser runs from a value of the application: listen with (click)=\"…\" instead, or set \"security\": { \"rejectUnsafeBindings\": false } in xaendar.json to allow it.": {
+      "cause": "Un valore collegato a un attributo che il browser esegue: un attributo di gestione degli eventi (on…) o srcdoc.",
+      "fix": "Ascolta con (evento)=\"…\", o carica una pagina con src; imposta \"security\": { \"rejectUnsafeBindings\": false } in xaendar.json solo per un valore che l’applicazione controlla."
+    },
+    "Xaendar: the URL bound to href runs code (javascript:alert(1)): it is written as it is. Bind a URL of the application, or set \"security\": { \"urls\": \"remove\" } in xaendar.json to leave it out.": {
+      "cause": "Con \"security\": { \"urls\": \"warn\" }, un URL javascript:, vbscript: o data: non multimediale collegato a un attributo che contiene un URL. È un warning: l’URL viene scritto.",
+      "fix": "Collega un URL dell’applicazione, o imposta \"urls\": \"remove\" per omettere questi URL."
     },
     "[TypeChecker] Unknown property \"shade\" on @@exTint (TintDirective has no @Property with this name).": {
       "cause": "Un input che la direttiva non dichiara.",

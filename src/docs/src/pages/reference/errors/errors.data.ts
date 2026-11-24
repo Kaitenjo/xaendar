@@ -479,6 +479,21 @@ export const ERRORS: readonly ErrorEntry[] = [
     page: 'components/outputs'
   },
   {
+    phase: 'Parser',
+    message: '[Parser] <style> cannot be written in a template: the styles of a component go in its stylesheet (styleUrl)',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] Binding onclick writes code the browser runs from a value of the application: listen with (click)="…" instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Runtime',
+    message: 'Xaendar: the URL bound to href runs code (javascript:alert(1)): it is written as it is. Bind a URL of the application, or set "security": { "urls": "remove" } in xaendar.json to leave it out.',
+    page: 'templates/binding'
+  },
+  {
     phase: 'TypeChecker',
     message: '[TypeChecker] Unknown property "shade" on @@exTint (TintDirective has no @Property with this name).',
     page: 'directives/custom'
