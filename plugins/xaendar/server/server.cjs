@@ -24682,7 +24682,7 @@ function serializeElement(element) {
   if (binding) {
     throw new Error(`<${tagName}> is in the content of a <template>, static HTML which the code using the template clones: it takes only static attributes`, { cause: binding.span });
   }
-  let html = `<${tagName}`;
+  let html = element.is === void 0 ? `<${tagName}` : `<${tagName} is="${escapeAttribute(element.is)}"`;
   for (let i2 = 0; i2 < attributes.length; i2++) {
     const { name, value } = attributes[i2];
     html += ` ${name}="${escapeAttribute(value)}"`;
