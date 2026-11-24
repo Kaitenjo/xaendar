@@ -18,6 +18,7 @@ import type { ElementBinding } from '../../types/element-binding.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { RenderChildren } from '../../types/render-children.type';
 import type { RenderConditionalBinding } from '../../types/render-conditional-binding.type';
+import type { RenderElementAttributeTemplateValue } from '../../types/render-element-attribute-template-value.type';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
 import type { _RenderElementBinding } from '../../types/render-element-binding.type';
 import type { RenderElementConditionalBinding } from '../../types/render-element-conditional-binding.type';
@@ -38,8 +39,6 @@ import { _selectBranch } from '../select-branch/select-branch.util';
 import { _prepareStyling } from '../styling-binding/styling-binding.util';
 import { ensureStylingState } from '../styling-state/styling-state.util';
 import { connectChild } from '../try-scope/try-scope.util';
-
-export type RenderElementAttributeTemplateValue = Omit<RenderElementAttribute, 'value'> & { value: Exclude<RenderElementAttribute['value'], string> };
 
 /**
  * Creates a DOM element, applies attributes and event listeners, appends it

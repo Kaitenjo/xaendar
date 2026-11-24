@@ -4,7 +4,8 @@ import { HostAttribute } from '../../decorators/host-attribute/host-attribute.de
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { _scope, EMPTY_LAYOUT } from '../context/context.util';
 import { _bindHost } from '../host-bindings/host-bindings.util';
-import { _setExpressionProperty, _setProperty, RenderElementAttributeTemplateValue } from '../render-element/render-element.util';
+import type { RenderElementAttributeTemplateValue } from '../../types/render-element-attribute-template-value.type';
+import { _setExpressionProperty, _setProperty } from '../render-element/render-element.util';
 import { _attributeValue, writeAttribute } from './write-attribute.util';
 
 await vi.hoisted(async () => {

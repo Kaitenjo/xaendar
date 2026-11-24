@@ -10,7 +10,7 @@ import type { RenderElementStructuralDirective } from '../../types/render-elemen
 import type { RenderElement } from '../../types/render-element.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 import type { TemplateExpression } from '../../types/template-expression.type';
-import { RenderElementAttributeTemplateValue } from './render-element.util';
+import type { RenderElementAttributeTemplateValue } from '../../types/render-element-attribute-template-value.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');

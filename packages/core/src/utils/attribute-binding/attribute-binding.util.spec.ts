@@ -12,7 +12,8 @@ import { _hasAttributeState, _mergeAttributes } from '../attribute-state/attribu
 import { _scope, clear, EMPTY_LAYOUT, refresh, update } from '../context/context.util';
 import { _defineDirective } from '../directive-registry/directive-registry.util';
 import { _applyHostAttributes, _bindHost } from '../host-bindings/host-bindings.util';
-import { _removeAttribute, _setExpressionProperty, RenderElementAttributeTemplateValue } from '../render-element/render-element.util';
+import type { RenderElementAttributeTemplateValue } from '../../types/render-element-attribute-template-value.type';
+import { _removeAttribute, _setExpressionProperty } from '../render-element/render-element.util';
 import { _prepareAttributes, _setAttribute, _setExpressionAttribute, _setReactiveAttribute, removeTemplateAttribute, writeTemplateAttribute } from './attribute-binding.util';
 
 await vi.hoisted(async () => {
