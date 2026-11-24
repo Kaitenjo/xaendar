@@ -149,7 +149,7 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
       const name = attribute ?? attributes[i].name;
       typeof value === 'string'
         ? pieces.push({ html: ` ${name}="${escapeAttribute(value)}"` })
-        : pieces.push({ value: `_ssrAttribute('${name}', ${resolve(value.expression, generatorContext)})` });
+        : pieces.push({ value: `_ssrAttribute(${toStringLiteral(name)}, ${resolve(value.expression, generatorContext)})` });
     }
 
     if (listensToSubmit(node)) {

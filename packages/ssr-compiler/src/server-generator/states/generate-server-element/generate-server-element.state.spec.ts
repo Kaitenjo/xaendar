@@ -138,6 +138,10 @@ describe('generateServerElement', () => {
     expect(generate('<p attr.title="a" attr.lang="{ on() }">t</p>').code).toEqual(['out.push(\'<p title="a"\' + _ssrAttribute(\'lang\', this.on()) + \'>{children of p0}</p>\');']);
   });
 
+  it('writes the name of an attribute bound to an expression as a string literal, escaped', () => {
+    expect(generate('<p a\\b="{ on() }">t</p>').code).toEqual(['out.push(\'<p\' + _ssrAttribute(\'a\\\\b\', this.on()) + \'>{children of p0}</p>\');']);
+  });
+
   it('sets the input a two-way binding binds from the signal, writing nothing of its listener, and throws for one binding no input', () => {
     const withInput = () => {
       const context = new GeneratorContext(cache);

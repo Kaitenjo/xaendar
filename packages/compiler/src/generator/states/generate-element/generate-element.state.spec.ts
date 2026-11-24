@@ -35,6 +35,17 @@ const expectValidJavascript = ({ code, constants, functions, reads }: Awaited<Re
 };
 
 describe('generateElement', () => {
+  it('writes the names of the events, of the attributes and the selectors of the directives as string literals, escaped', async () => {
+    const result = await run(`<div a'b="{x()}" (c\\d)="x()" @@e'f *g\\h></div>`);
+    const module = result.constants.join('\n');
+
+    expect(module).toContain(`name: 'a\\'b'`);
+    expect(module).toContain(`name: 'c\\\\d'`);
+    expect(module).toContain(`selector: 'e\\'f'`);
+    expect(module).toContain(`selector: 'g\\\\h'`);
+    expectValidJavascript(result);
+  });
+
   it('generates a bare element as a constant of the module holding only its tag, without a function rendering its children', async () => {
     const { code, constants, functions, functionsToProcess } = await run('<div></div>');
 
