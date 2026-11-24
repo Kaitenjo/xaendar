@@ -49,6 +49,11 @@ export class ServerStyleDeclaration {
   /**
    * Sets a property, keeping its place when the attribute declares it already, or removes it for an empty value.
    *
+   * N.B. A value that would not stay a single declaration of the attribute (`red; position: fixed`, `red;`) is ignored,
+   * as a browser's `setProperty` rejects it: a value bound to a single key may come from a user, and joined into the
+   * text of the attribute it would end its declaration and add others, which the browser then adopts as they are, since
+   * hydration does not write a value already present. Do not write such a value into the attribute.
+   *
    * @param property - The name of the property.
    * @param value - The value.
    * @param priority - `'important'` to declare it with `!important`.
@@ -56,6 +61,10 @@ export class ServerStyleDeclaration {
   public setProperty(property: string, value: string, priority = ''): void {
     if (!value) {
       this.removeProperty(property);
+      return;
+    }
+
+    if (!this._isSingleDeclaration(property, value)) {
       return;
     }
 
@@ -80,6 +89,19 @@ export class ServerStyleDeclaration {
     declarations.delete(property);
     this._write(declarations);
     return styleValue(value);
+  }
+
+  /**
+   * Tells whether a value of a property, written into the attribute, is read back as that one declaration: no `;`
+   * outside parentheses and quotes ends it.
+   *
+   * @param property - The name of the property.
+   * @param value - The value.
+   * @returns `true` when the attribute would hold the property alone, with the value.
+   */
+  private _isSingleDeclaration(property: string, value: string): boolean {
+    const parsed = parseStyleDeclarations(`${property}: ${value}`);
+    return parsed?.length === 2 && parsed[1] === value.trim();
   }
 
   /**

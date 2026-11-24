@@ -70,6 +70,18 @@ describe('ServerStyleDeclaration', () => {
     expect(style.removeProperty('top')).toBe('1px');
   });
 
+  it('ignores a value a ; would end, adding no declaration, as a browser rejects it', () => {
+    const owner = ownerWith('color: blue;');
+    const style = new ServerStyleDeclaration(owner);
+
+    style.setProperty('color', 'red; position: fixed');
+    style.setProperty('width', '1px;');
+    style.setProperty('height', ' ');
+    style.setProperty('background', 'url("a;b")');
+
+    expect(owner.attributes.get('style')).toBe('color: blue; background: url("a;b");');
+  });
+
   it('keeps a ; inside parentheses or quotes in its value', () => {
     const owner = ownerWith('background: url(a;b.png); content: "x;y";');
     const style = new ServerStyleDeclaration(owner);

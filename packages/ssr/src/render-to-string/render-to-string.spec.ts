@@ -373,6 +373,19 @@ describe('renderToString', () => {
     expect(await renderToString(MergedElement)).toBe('<merged-card><template shadowrootmode="open"><p class="a wide on" style="color: red; width: 5px; gap: 2px;"></p></template></merged-card>');
   });
 
+  it('writes no declaration a style value bound to a key adds with a ;, as a browser rejects it', async () => {
+    /**
+     * A component binding a value holding a declaration to a style key.
+     */
+    class InjectedElement extends CustomElement {
+      public color = 'red; position: fixed';
+    }
+    customElements.define('injected-card', InjectedElement);
+    _defineServerRender(InjectedElement, await compile('<p style.color="{ color }" style.width="{ \'1px\' }" style.background="{ \'url(a;b)\' }"></p>', [], [], []));
+
+    expect(await renderToString(InjectedElement)).toBe('<injected-card><template shadowrootmode="open"><p style="width: 1px; background: url(a;b);"></p></template></injected-card>');
+  });
+
   describe('the interactive components a static template renders', () => {
     const metadata: DecoratorMetadataObject = {};
 
