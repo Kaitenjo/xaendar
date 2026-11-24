@@ -110,6 +110,24 @@ describe('attributes written with attr.', () => {
     expect(title()).toBe('input');
   });
 
+  it('check the URL bound to an attribute the compiler flags, writing it or leaving it out as it asks', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const element = document.createElement('a');
+    const url = signal('javascript:alert(1)');
+    _setReactiveAttribute(_scope(null, EMPTY_LAYOUT), element, { name: 'href', value: () => url(), setter: _setReactiveAttribute, url: 'remove' });
+    expect(element.hasAttribute('href')).toBe(false);
+
+    _setExpressionAttribute(_scope(null, EMPTY_LAYOUT), element, { name: 'ping', value: () => 'javascript:a', setter: _setExpressionAttribute });
+    _setExpressionProperty(_scope(null, EMPTY_LAYOUT), element, { name: 'href', value: () => '/safe', setter: _setExpressionProperty, url: 'remove' });
+    _setExpressionProperty(_scope(null, EMPTY_LAYOUT), element, { name: 'formaction', value: () => 'vbscript:x', setter: _setExpressionProperty, url: 'warn' });
+
+    expect(element.getAttribute('ping')).toBe('javascript:a');
+    expect(element.getAttribute('href')).toBe('/safe');
+    expect(element.getAttribute('formaction')).toBe('vbscript:x');
+    expect(warn).toHaveBeenCalledTimes(2);
+    warn.mockRestore();
+  });
+
   it('run again when a variable of the template they read changes', () => {
     const layout: _ScopeLayout = { size: HEADER + 1, nodes: HEADER + 1, variables: ['kind'] };
     const scope = _scope(null, layout);

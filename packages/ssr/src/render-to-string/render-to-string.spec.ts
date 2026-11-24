@@ -34,7 +34,7 @@ const imported = (type: 'component' | 'directive', selector: string, inputs: Rec
  * Compiles a template for the server, importing the components and the directives given, and evaluates its code, the
  * imports of the runtime helpers given as parameters.
  */
-async function compileWith(source: string, options: Pick<ServerCompileOptions, 'signals' | 'shadowingMembers' | 'islands'>, imports: ComponentOrDirectiveMetadata[] = []): Promise<ServerRenderFunction> {
+async function compileWith(source: string, options: Pick<ServerCompileOptions, 'signals' | 'shadowingMembers' | 'islands' | 'security'>, imports: ComponentOrDirectiveMetadata[] = []): Promise<ServerRenderFunction> {
   const declarations = imports.length ? `@import { ${imports.map((_, index) => `Imported${index}`).join(', ')} } from './imported'` : '';
   const cache = { getImport: async (name: string) => imports[Number(name.slice('Imported'.length))] } as unknown as ContextCache;
   const code = await compileServer(`${declarations}${source}`, { ...options, templateDir: '/', cache });
@@ -371,6 +371,23 @@ describe('renderToString', () => {
     _defineServerRender(MergedElement, await compile('<p class="a" style="color: red" class.on="{ off }" @@wide @@narrow></p>', [], [], []));
 
     expect(await renderToString(MergedElement)).toBe('<merged-card><template shadowrootmode="open"><p class="a wide on" style="color: red; width: 5px; gap: 2px;"></p></template></merged-card>');
+  });
+
+  it('leaves out a URL running code as security asks, on the elements written inline and by the runtime alike', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    /**
+     * A component binding a URL running code to the links it renders.
+     */
+    class LinkElement extends CustomElement {
+      public link = 'javascript:alert(1)';
+      public on = true;
+    }
+    customElements.define('unsafe-links', LinkElement);
+    _defineServerRender(LinkElement, await compileWith('<a href="{ link }">a</a><a class.on="{ on }" href="{ link }" title="{ link }">b</a><a href="{ \'/safe\' }">c</a>', { signals: [], security: { urls: 'remove' } }));
+
+    expect(await renderToString(LinkElement)).toBe('<unsafe-links><template shadowrootmode="open"><a>a</a><a class="on" title="javascript:alert(1)">b</a><a href="/safe">c</a></template></unsafe-links>');
+    vi.restoreAllMocks();
   });
 
   it('writes no declaration a style value bound to a key adds with a ;, as a browser rejects it', async () => {

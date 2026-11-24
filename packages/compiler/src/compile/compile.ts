@@ -11,6 +11,7 @@ import type { CompileOptions } from '../types/compile-options.type';
 import type { ComponentOrDirectiveMetadata } from '../types/component-or-directive-metadata.type';
 import type { ContextCache } from '../types/context-cache.type';
 import type { SymbolImport } from '../types/symbol-import.type';
+import type { UrlSanitization } from '../types/url-sanitization.type';
 
 /**
  * How many templates {@link parseTemplate} keeps the nodes of, the ones parsed last.
@@ -51,7 +52,7 @@ export async function compile(input: string, options: CompileOptions): Promise<s
   if (baseDir && signals) {
     const { metadatas, symbols } = await resolveTemplateImports(importNodes, baseDir, cache);
     const [javascript, typescript] = await Promise.all([
-      generateJavascriptCode(input, nodes, signals, shadowingMembers, customElements, cache, symbols),
+      generateJavascriptCode(input, nodes, signals, shadowingMembers, customElements, cache, symbols, security?.urls),
       typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents, security?.rejectUnsafeBindings)
     ]);
 
@@ -65,7 +66,7 @@ export async function compile(input: string, options: CompileOptions): Promise<s
   } else {
     const symbols = templateDir ? (await resolveTemplateImports(importNodes, templateDir, cache)).symbols : undefined;
     // Safe assertion! Overloads permit baseDir and signals not to be nullable simultaneously
-    return await generateJavascriptCode(input, nodes, signals!, shadowingMembers, customElements, cache, symbols);
+    return await generateJavascriptCode(input, nodes, signals!, shadowingMembers, customElements, cache, symbols, security?.urls);
   }
 }
 /**
@@ -101,10 +102,11 @@ export function parseTemplate(input: string): ASTNode[] {
  * @param customElements - Patterns of the tag names of the custom elements of other libraries.
  * @param cache - The cache of the metadata of the components and directives.
  * @param symbols - The symbols the template imports from modules, if they are resolved.
+ * @param urls - How the URLs bound to the attributes holding one are checked by the runtime (see `SecurityOptions`).
  * @returns A string containing the compiled Javascript render functions.
  */
-async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: string[], shadowingMembers: readonly string[], customElements: readonly string[], cache: ContextCache, symbols?: readonly SymbolImport[]): Promise<string> {
-  return await new Generator(input, nodes, cache).generate(signals, shadowingMembers, customElements, symbols);
+async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: string[], shadowingMembers: readonly string[], customElements: readonly string[], cache: ContextCache, symbols?: readonly SymbolImport[], urls?: UrlSanitization): Promise<string> {
+  return await new Generator(input, nodes, cache).generate(signals, shadowingMembers, customElements, symbols, urls);
 }
 
 /**

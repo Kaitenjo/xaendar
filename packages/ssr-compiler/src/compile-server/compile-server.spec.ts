@@ -16,6 +16,17 @@ describe('compileServer', () => {
     expect(code).toContain('out.push(\'<p><!---->\' + _escapeText(this.title()) + \'</p>\');');
   });
 
+  it('checks the URLs bound to the attributes holding one as security asks, on the elements written inline and by the runtime', async () => {
+    const template = '<a href="{ link }" title="{ hint }" attr.formaction="{ link }"></a><a class.on="{ on }" href="{ link }"></a>';
+    const code = await compileServer(template, { signals: [], security: { urls: 'warn' }, cache: createCache() });
+
+    expect(code).toContain('_ssrAttribute(\'href\', _checkUrl(\'href\', this.link, \'warn\'))');
+    expect(code).toContain('_ssrAttribute(\'formaction\', _checkUrl(\'formaction\', this.link, \'warn\'))');
+    expect(code).toContain('_ssrAttribute(\'title\', this.hint)');
+    expect(code).toContain('{ name: \'href\', value: a1$href, setter: _setExpressionProperty, url: \'warn\' }');
+    await expect(compileServer(template, { signals: [], cache: createCache() })).resolves.not.toContain('_checkUrl(\'');
+  });
+
   it('writes nothing of the casts, which only the type-check reads', async () => {
     const code = await compileServer('<p title="{ title() as string }" (click)="pick($event as MouseEvent)">{ count() as number }</p>', { signals: ['title', 'count'], cache: createCache() });
 

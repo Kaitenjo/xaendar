@@ -154,9 +154,14 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
       // An attribute written with `attr.` is the attribute it names
       const { attribute, value } = attributes[i];
       const name = attribute ?? attributes[i].name;
-      typeof value === 'string'
-        ? pieces.push({ html: ` ${name}="${escapeAttribute(value)}"` })
-        : pieces.push({ value: `_ssrAttribute('${name}', ${resolve(value.expression, generatorContext)})` });
+      if (typeof value === 'string') {
+        pieces.push({ html: ` ${name}="${escapeAttribute(value)}"` });
+      } else {
+        // A URL is checked as on the client, which adopts the attribute as it is
+        const url = generatorContext.getUrlCheck(name);
+        const expression = resolve(value.expression, generatorContext);
+        pieces.push({ value: `_ssrAttribute('${name}', ${url ? `_checkUrl('${name}', ${expression}, '${url}')` : expression})` });
+      }
     }
 
     if (listensToSubmit(node)) {
@@ -294,7 +299,14 @@ function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, targ
     }
 
     const role = metadata?.type === 'directive' ? `${toRoleName(target!.slice(2))}_${toRoleName(property)}` : toRoleName(attribute === undefined ? property : name);
-    return toObjectLiteral([`name: '${property}'`, `value: ${declareElementExpression(owner, role, value.expression)}`, `setter: _setExpression${kind}`]);
+    const members = [`name: '${property}'`, `value: ${declareElementExpression(owner, role, value.expression)}`, `setter: _setExpression${kind}`];
+    // A URL written into the attribute is checked by the runtime, as on the client
+    const url = input ? undefined : generatorContext.getUrlCheck(property);
+    if (url) {
+      members.push(`url: '${url}'`);
+    }
+
+    return toObjectLiteral(members);
   });
 }
 

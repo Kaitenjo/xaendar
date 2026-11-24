@@ -6,6 +6,7 @@ import { isStructuralElement } from '../../parser/utils/scope-declarations/scope
 import { ContextCache } from '../../types/context-cache.type.js';
 import type { ElementNamespace } from '../../types/element-namespace.type.js';
 import type { SymbolImport } from '../../types/symbol-import.type.js';
+import type { UrlSanitization } from '../../types/url-sanitization.type';
 import { catchErrorWithPrefix } from '../../utils/catch-error-generation/catch-error-generation.utils.js';
 import { assertImportableSymbol, getRuntimeAlias, toRuntimeImport } from '../../utils/symbol-imports/symbol-imports.utils.js';
 import { GeneratorContext } from '../context/context.js';
@@ -88,6 +89,7 @@ export class Generator {
    * @param customElements Patterns of the tag names of the custom elements of other libraries, generated like native elements.
    * @param symbols The symbols the template imports from modules: the expressions read them through the declarations
    *   importing them, written first, only for the ones an expression reads (a type is never imported at runtime).
+   * @param urls How the URLs bound to the attributes holding one are checked by the runtime (see `SecurityOptions`).
    * @returns The generated code as a string: the declarations importing the symbols, the constants listing the
    *   variables of the template the bindings read (see `GeneratorContext.getReads`), the constants describing the
    *   elements and the blocks (see `GeneratorContext.declareConstant`), then module-level functions: the entry point,
@@ -98,7 +100,7 @@ export class Generator {
    *   takes the one of its scope, which its context gets. Each runtime scope is created from the layout of its block
    *   (see `GeneratorContext.declareLayout`), declared once the body of its function is generated.
    */
-  public async generate(signals: string[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = []): Promise<string> {
+  public async generate(signals: string[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], urls: UrlSanitization = 'off'): Promise<string> {
     /*
       The tag name of the element each function renders its nodes into, which tells where the server separates texts:
       the children of an element are rendered into it, a block into the element of the function it is in, the content
@@ -109,6 +111,7 @@ export class Generator {
     try {
       this._nodeToProcess.clear();
       const generatorContext = new GeneratorContext(this._cache);
+      generatorContext.urls = urls;
       for (let i = 0; i < signals.length; i++) {
         generatorContext.addSignalClassField(signals[i]);
       }

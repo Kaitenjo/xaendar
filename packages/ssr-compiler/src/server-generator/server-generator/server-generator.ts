@@ -1,5 +1,5 @@
 import { indent } from '@xaendar/common';
-import { assertImportableSymbol, ASTNodeType, createScope, declareScope, declareTemplateParameters, formatErrorWithPrefix, GeneratorContext, getRuntimeAlias, getTextSeparators, isLastRenderedChild, ROOT_NODE, toRuntimeImport, type ASTNode, type ComponentOrDirectiveMetadata, type ContextCache, type ElementNamespace, type GeneratorFunctionToProcess, type SymbolImport, type TemplateNode } from '@xaendar/compiler';
+import { assertImportableSymbol, ASTNodeType, createScope, declareScope, declareTemplateParameters, formatErrorWithPrefix, GeneratorContext, getRuntimeAlias, getTextSeparators, isLastRenderedChild, ROOT_NODE, toRuntimeImport, type ASTNode, type ComponentOrDirectiveMetadata, type ContextCache, type ElementNamespace, type GeneratorFunctionToProcess, type SymbolImport, type TemplateNode, type UrlSanitization } from '@xaendar/compiler';
 import { SSR_MARKERS } from '../../costants/ssr-markers.constants';
 import { generateServerClient } from '../states/generate-server-client/generate-server-client.state';
 import { generateServerDefer } from '../states/generate-server-defer/generate-server-defer.state';
@@ -25,7 +25,7 @@ import { SERVER_RESOLVE_OPTIONS, toStatements } from '../utils/server-code/serve
  * The runtime helpers the code rendering on the server calls, imported by the module of every template.
  */
 const RUNTIME_IMPORTS: readonly string[] = [
-  'import { _declare, _forItems, _iterationVariables, _read, _scope, _set, _setAttribute, _setExpressionAttribute, _setExpressionExposedInput, _setExpressionInput, _setExpressionProperty, _setExpressionStyling, _setExposedInput, _setInput, _setProperty, _setStyling, _templateRef } from \'@xaendar/core\';',
+  'import { _checkUrl, _declare, _forItems, _iterationVariables, _read, _scope, _set, _setAttribute, _setExpressionAttribute, _setExpressionExposedInput, _setExpressionInput, _setExpressionProperty, _setExpressionStyling, _setExposedInput, _setInput, _setProperty, _setStyling, _templateRef } from \'@xaendar/core\';',
   'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrRenderTemplate, _ssrRenderTemplateRef, _ssrStartTag, _ssrStructural, _ssrTry } from \'@xaendar/ssr\';'
 ];
 
@@ -106,13 +106,15 @@ export class ServerGenerator {
    * @param islands - The tag names of the interactive components a static template renders, if any.
    * @param imports - The components and the directives the template imports, if any: their inputs are set by the name of
    *   their property, and the components among them rendering only in the browser are written from their metadata.
+   * @param urls - How the URLs bound to the attributes holding one are checked, as on the client (see `SecurityOptions`).
    * @returns The code: the import declarations, then the functions, `render` first.
    * @throws A `TemplateError` pointing to the part of the template the code cannot be generated for.
    */
-  public generate(signals: readonly string[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], islands?: ReadonlySet<string>, imports?: readonly ComponentOrDirectiveMetadata[]): string {
+  public generate(signals: readonly string[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], islands?: ReadonlySet<string>, imports?: readonly ComponentOrDirectiveMetadata[], urls: UrlSanitization = 'off'): string {
     try {
       this._functions.clear();
       const generatorContext = new GeneratorContext(this._cache);
+      generatorContext.urls = urls;
       for (let i = 0; i < signals.length; i++) {
         generatorContext.addSignalClassField(signals[i]);
       }

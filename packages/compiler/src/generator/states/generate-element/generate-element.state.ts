@@ -299,6 +299,12 @@ async function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner
       const once = `_setExpression${kind}`;
       role = isDirective ? `${toRoleName(target.slice(2))}_${toRoleName(property)}` : toRoleName(attribute === undefined ? property : name);
       members.push(`value: ${declareElementExpression(owner, role, expression)}`);
+      // A URL written into the attribute is checked by the runtime, as the security of the project asks
+      const url = input ? undefined : generatorContext.getUrlCheck(property);
+      if (url) {
+        members.push(`url: '${url}'`);
+      }
+
       if (isConstantExpression(value.expression)) {
         members.push(`setter: ${once}`);
       } else {

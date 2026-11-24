@@ -1,23 +1,5 @@
+import { cleanUrl, isMediaDataUrl, isUrlAttribute, readUrlScheme } from '@xaendar/internals';
 import { isWhitespace } from '../html-syntax/html-syntax.utils';
-
-/**
- * The attributes holding a single URL, of HTML and of SVG.
- */
-const URL_ATTRIBUTES: ReadonlySet<string> = new Set([
-  'action', 'background', 'cite', 'codebase', 'data', 'dynsrc', 'formaction', 'href', 'icon', 'itemtype', 'longdesc',
-  'lowsrc', 'manifest', 'poster', 'src', 'xlink:href'
-]);
-
-/**
- * The URLs `data:` kept whatever the schemes allowed: an image, an audio or a video in base64, which runs no code
- * (an SVG image, which can, is not among them).
- */
-const DATA_MEDIA_URL = /^data:(?:image[/](?:avif|bmp|gif|jpeg|jpg|png|tiff|webp)|video[/](?:mpeg|mp4|ogg|webm)|audio[/](?:mp3|mpeg|oga|ogg|opus|wav));base64,[a-z0-9+/]+=*$/i;
-
-/**
- * The scheme of a URL: letters, digits, `+`, `-` and `.` after a letter, up to a `:`.
- */
-const SCHEME = /^([a-z][a-z0-9+.-]*):/i;
 
 /**
  * The character references of an attribute value the URLs are decoded with: the numeric ones, with or without `;` as
@@ -58,7 +40,7 @@ export function isSafeUrlAttribute(name: string, value: string, schemes: Readonl
     case 'ping':
       return decodeCharacterReferences(value).split(/[ \t\n\f\r]+/).every(url => isSafeUrl(url, schemes));
     default:
-      return !URL_ATTRIBUTES.has(name) || isSafeUrl(decodeCharacterReferences(value), schemes);
+      return !isUrlAttribute(name) || isSafeUrl(decodeCharacterReferences(value), schemes);
   }
 }
 
@@ -80,8 +62,8 @@ export function isSafeUrl(url: string, schemes: ReadonlySet<string>): boolean {
     return false;
   }
 
-  const scheme = SCHEME.exec(head)?.[1].toLowerCase();
-  return scheme === undefined || schemes.has(scheme) || (scheme === 'data' && DATA_MEDIA_URL.test(cleaned));
+  const scheme = readUrlScheme(head);
+  return scheme === undefined || schemes.has(scheme) || (scheme === 'data' && isMediaDataUrl(cleaned));
 }
 
 /**
@@ -150,35 +132,6 @@ function decodeReference(reference: string, hexadecimal: string | undefined, dec
 
   const code = hexadecimal !== undefined ? parseInt(hexadecimal, 16) : parseInt(decimal!, 10);
   return code === 0 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff) ? REPLACEMENT_CHARACTER : String.fromCodePoint(code);
-}
-
-/**
- * Removes from a URL what the browser ignores: the control characters and the spaces at its ends, and the tabs and the
- * line breaks anywhere (`java\tscript:` is `javascript:`).
- *
- * @param url - The URL.
- * @returns The URL as the browser reads it.
- */
-function cleanUrl(url: string): string {
-  let start = 0;
-  let end = url.length;
-  while (start < end && url.charCodeAt(start) <= 32) {
-    start++;
-  }
-
-  while (end > start && url.charCodeAt(end - 1) <= 32) {
-    end--;
-  }
-
-  let cleaned = '';
-  for (let i = start; i < end; i++) {
-    const code = url.charCodeAt(i);
-    if (code !== 9 && code !== 10 && code !== 13) {
-      cleaned = `${cleaned}${url[i]}`;
-    }
-  }
-
-  return cleaned;
 }
 
 /**

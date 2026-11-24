@@ -18,9 +18,9 @@ import type { ServerCompileOptions } from '../types/server-compile-options.type'
  */
 export async function compileServer(input: string, options: ServerCompileOptions): Promise<string> {
   const nodes = parseTemplate(input);
-  const { templateDir, signals, shadowingMembers, customElements, cache, islands } = options;
+  const { templateDir, signals, shadowingMembers, customElements, security, cache, islands } = options;
   const importNodes = nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
   const imports = templateDir ? await resolveTemplateImports(importNodes, templateDir, cache) : undefined;
 
-  return new ServerGenerator(input, nodes, cache).generate(signals, shadowingMembers, customElements, imports?.symbols, islands, imports?.metadatas);
+  return new ServerGenerator(input, nodes, cache).generate(signals, shadowingMembers, customElements, imports?.symbols, islands, imports?.metadatas, security?.urls);
 }

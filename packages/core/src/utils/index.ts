@@ -43,4 +43,5 @@ export * from './template/template.util';
 export * from './track-key/track-key.util';
 export * from './transfer-state/transfer-state.util';
 export { _try } from './try/try.util';
+export { _checkUrl } from './url-check/url-check.util';
 export { _attributeValue } from './write-attribute/write-attribute.util';

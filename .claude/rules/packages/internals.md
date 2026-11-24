@@ -8,6 +8,7 @@ paths:
 The logic several packages of Xaendar must apply alike, written once: a peerDependency of every package using it (pinned to the release, like the other peers), so that an application has one copy and never declares it. Not a public API: no page on the site, no stability across versions; applications import `@xaendar/common`, never this package. No `@xaendar/*` dependency.
 
 - Styling (`CSS_UNITS`, `toCssPropertyName`, `splitClasses`, `parseStyleDeclarations`, `stylePriority`, `styleValue`): the compiler, core, `@xaendar/directives`, ssr and language-core.
+- URLs (`isUrlAttribute`, `cleanUrl`, `readUrlScheme`, `isMediaDataUrl`, `isUnsafeUrl`): the compiler, core (`_checkUrl`) and `@xaendar/directives` (`sanitizeHtml`).
 - HTML serialization (`escapeText`, `escapeAttribute`, `escapeRawText`, `isVoidElement`, `isRawTextElement`, `dropsLeadingNewline`): the compiler, ssr and ssr-compiler.
 - Custom element names (`isValidCustomElementName`, `matchesCustomElementPattern`, `NOT_ALLOWED_TAGS`): the cli, the compiler, ssr and ssr-compiler. `acceptsShadowRoot` (the native tags a customized built-in element may render a template into): the compiler, mirrored by the type `ShadowHostTagName` of core.
 - Key events (`parseKeyEvent`, `KEY_MODIFIERS`, `KeyEventFilter`): the compiler, `@HostListener` and language-core.
