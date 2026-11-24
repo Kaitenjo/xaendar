@@ -204,8 +204,9 @@ export class Lexer {
           eof = true;
         } else {
           const neighbourhood = 15;
-          let startInterval = stateStartIndex;
-          let i = stateStartIndex;  
+          // The start of the input when no line break or space comes first
+          let startInterval = 0;
+          let i = stateStartIndex;
           let stop = false;
 
           /*
@@ -214,9 +215,9 @@ export class Lexer {
 
             When we find a space we are sure the word is ended
           */
-          while (!stop && i > 0) {
-            const charCode = this._input.charCodeAt(i); 
-            if (charCode === LF || charCode === CR || (startInterval - i > neighbourhood && charCode === SPACE)) {
+          while (!stop && i >= 0) {
+            const charCode = this._input.charCodeAt(i);
+            if (charCode === LF || charCode === CR || (stateStartIndex - i > neighbourhood && charCode === SPACE)) {
               // + 1 to ignore the LF, CR or SPACE in the interval to be printed
               startInterval = i + 1;
               stop = true;
@@ -233,8 +234,9 @@ export class Lexer {
             Just in this case we need to add an extra 1 (and we obtain + 2)
           */
           const stateEndIndex = currentIndex <= stateStartIndex ? currentIndex + 2 : currentIndex + 1;
-          let endInterval = stateEndIndex
-          i = endInterval;
+          // The end of the input when no line break or space comes first
+          let endInterval = this._input.length;
+          i = stateEndIndex;
           stop = false;
 
           /*
@@ -244,10 +246,10 @@ export class Lexer {
             When we find a space or the row is finished we are sure the word is ended
           */
           while (!stop && i < this._input.length) {
-            const charCode = this._input.charCodeAt(i); 
-            if (charCode === LF || charCode === CR || (i - endInterval > neighbourhood && charCode === SPACE)) {
-              // - 1 to ignore the LF, CR or SPACE in the interval to be printed
-              endInterval = i - 1;
+            const charCode = this._input.charCodeAt(i);
+            if (charCode === LF || charCode === CR || (i - stateEndIndex > neighbourhood && charCode === SPACE)) {
+              // The end of the slice is excluded: the LF, CR or SPACE is not printed, the character before it is
+              endInterval = i;
               stop = true;
             } else {
               i++;
