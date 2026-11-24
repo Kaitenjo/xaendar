@@ -121,6 +121,11 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** An event name holding a quote, <, \ or a control character. A key event takes any key ((keydown.\)): only the name of another event is checked.
 - **Fix:** Rename the event, or write the key event as keydown.<key>.
 
+### `[Parser] <style> cannot be written in a template: the styles of a component go in its stylesheet (styleUrl)`
+
+- **Cause:** A <style>, or a <script> (`… the code of a component goes in its class, the scripts of the page in its HTML`), anywhere in a template, in an <svg> or a standard <template> too.
+- **Fix:** Move the styles into the stylesheet of the component (styleUrl), the code into its class.
+
 ### `[Parser] The template nests more than 512 elements, blocks and bindings into one another: move part of it into a component or a template`
 
 - **Cause:** A template nesting more than 512 levels, as the HTML parser stops nesting elements at 512.
@@ -537,6 +542,16 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** A required input bound only in some branches.
 - **Fix:** Add an @else or @default branch binding it, or bind it outside the condition.
+
+### `[TypeChecker] Binding onclick writes code the browser runs from a value of the application: listen with (click)="…" instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.`
+
+- **Cause:** An expression bound to an event handler attribute (any name starting with on, attr. included), or to srcdoc (`… writes a document the browser runs …`), outside the inputs of a component.
+- **Fix:** Listen with (event)="…", or load a page with src; allow it in xaendar.json only for a value the application controls.
+
+### `Xaendar: the URL bound to href runs code (javascript:alert(1)): it is written as it is. Bind a URL of the application, or set "security": { "urls": "remove" } in xaendar.json to leave it out.`
+
+- **Cause:** With `"security": { "urls": "warn" }`, a javascript:, vbscript: or non-media data: URL bound to an attribute holding a URL, in the browser or on the server. With "remove" the attribute is left out (`… is left out, as "security": { "urls": "remove" } …`, in development only).
+- **Fix:** Bind a URL of the application, or set "urls": "remove".
 
 ### `'valuechange' is not an event of <ex-quantity-picker>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set "strictEvents": false in xaendar.json to turn this warning off.`
 

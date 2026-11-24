@@ -20772,9 +20772,6 @@ function toTypeCheckModuleSpecifier({ modulePath, importPath }) {
   return importPath ?? modulePath.replace(/(?:\.d)?\.[cm]?tsx?$/, "");
 }
 
-// ../packages/compiler/src/costants/scope-header.costant.ts
-var SCOPE_HEADER = 5;
-
 // ../packages/internals/src/utils/css/css.util.ts
 var CSS_UNITS = /* @__PURE__ */ new Set([
   "%",
@@ -20988,6 +20985,9 @@ function toPatternExpression(pattern) {
 function isReservedTagName(tagName) {
   return NOT_ALLOWED_TAGS.includes(tagName);
 }
+
+// ../packages/compiler/src/costants/scope-header.costant.ts
+var SCOPE_HEADER = 5;
 
 // ../packages/compiler/src/models/compiler-context/compiler-context.model.ts
 var CompilerContext = class {
@@ -25866,6 +25866,7 @@ function parseElement(cursor, parseNode, token) {
   cursor.advance();
   const tagName = token.parts[0];
   const nameSpan = cursor.findSpan(tagName, token.span.start);
+  assertAllowedTag(tagName, nameSpan);
   const attributes = new Array();
   const classBindings = new Array();
   const styleBindings = new Array();
@@ -25989,6 +25990,14 @@ function parseElement(cursor, parseNode, token) {
   node.closeNameSpan = cursor.findSpan(tagName, cursor.getCurrentToken().value.span.start);
   setTemplateContent(node);
   return node;
+}
+function assertAllowedTag(tagName, nameSpan) {
+  switch (tagName.toLowerCase()) {
+    case "script":
+      throw new Error(`<${tagName}> cannot be written in a template: the code of a component goes in its class, the scripts of the page in its HTML`, { cause: nameSpan });
+    case "style":
+      throw new Error(`<${tagName}> cannot be written in a template: the styles of a component go in its stylesheet (styleUrl)`, { cause: nameSpan });
+  }
 }
 function setTemplateContent(node) {
   if (node.type === 0 /* Element */ && node.tagName === "template") {
@@ -26701,6 +26710,11 @@ var TypeCheckContext = class extends CompilerContext {
    */
   _strictEvents = true;
   /**
+   * Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error: kept by the outermost scope,
+   * for the whole template.
+   */
+  _rejectUnsafeBindings = true;
+  /**
    * Whether the type-check code reads the declarations of the template helpers, as the one of a template does: kept by
    * the outermost scope, for the whole template.
    */
@@ -26758,6 +26772,24 @@ var TypeCheckContext = class extends CompilerContext {
    */
   set strictEvents(value) {
     this._strictEvents = value;
+  }
+  /**
+   * Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error, read from the outermost
+   * scope.
+   *
+   * @returns `true` unless the `rejectUnsafeBindings` option of `security` is `false`.
+   */
+  get rejectUnsafeBindings() {
+    return this.parent ? this.parent.rejectUnsafeBindings : this._rejectUnsafeBindings;
+  }
+  /**
+   * Sets whether binding a value to an attribute the browser runs is an error: set on the outermost scope, which the
+   * others read.
+   *
+   * @param value - `false` to allow these bindings.
+   */
+  set rejectUnsafeBindings(value) {
+    this._rejectUnsafeBindings = value;
   }
   /**
    * Returns the event map of the elements declared in this scope: the one of their namespace (see `namespace`).
@@ -28953,6 +28985,7 @@ function typeCheckComponentAttributes(attributes, metadata, context) {
   for (let i2 = 0; i2 < attributes.length; i2++) {
     const { name, value, span, bare, attribute } = attributes[i2];
     if (attribute !== void 0) {
+      assertSafeBinding(attributes[i2], context);
       if (typeof value !== "string") {
         lines.push(line(mappedInterpolation(value, context, ";")));
       }
@@ -28962,6 +28995,7 @@ function typeCheckComponentAttributes(attributes, metadata, context) {
     const property = metadata.properties.get(name);
     if (!property) {
       assertNotAliasedProperty(attributes[i2], metadata);
+      assertSafeBinding(attributes[i2], context);
     } else {
       if (bare) {
         throw new Error(`Property "${name}" needs a value: write ${name}="\u2026" or ${name}="{ expression }". An attribute without a value is only valid on a native element.`, { cause: span });
@@ -29004,6 +29038,19 @@ function typeCheckNativeBindings(node, nativeEvents, context) {
     ])
   ];
 }
+function assertSafeBinding({ name, attribute, value, span }, context) {
+  if (typeof value === "string" || !context.rejectUnsafeBindings) {
+    return;
+  }
+  const written = (attribute ?? name).toLowerCase();
+  const allow = 'or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it';
+  if (written.startsWith("on")) {
+    throw new Error(`Binding ${name} writes code the browser runs from a value of the application: listen with (${written.slice(2)})="\u2026" instead, ${allow}.`, { cause: span });
+  }
+  if (written === "srcdoc") {
+    throw new Error(`Binding ${name} writes a document the browser runs from a value of the application: bind the src of a page instead, ${allow}.`, { cause: span });
+  }
+}
 function typeCheckNativeAttributes(attributes, tagName, context) {
   const lines = new Array();
   for (let i2 = 0; i2 < attributes.length; i2++) {
@@ -29011,6 +29058,7 @@ function typeCheckNativeAttributes(attributes, tagName, context) {
     if (twoWay) {
       throw new Error(`[(${name})] binds a model of a component or of a directive: <${tagName}> is not a component imported in the template.`, { cause: span });
     }
+    assertSafeBinding(attributes[i2], context);
     if (typeof value !== "string") {
       lines.push(line(mappedInterpolation(value, context, ";")));
     }
@@ -29902,12 +29950,13 @@ var TypeChecker = class {
    * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
    * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
    * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
+   * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error (see `SecurityOptions`).
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws If the template fails type-checking, e.g. it uses a selector not imported in it, with the error message prefixed by `[TypeChecker]` and, when the error carries its span, the slice of the template it refers to.
    */
-  async generate(metadatas, shadowingMembers = [], customElements = [], symbols = [], reactiveMembers = [], ssr, strictEvents = true) {
+  async generate(metadatas, shadowingMembers = [], customElements = [], symbols = [], reactiveMembers = [], ssr, strictEvents = true, rejectUnsafeBindings = true) {
     try {
-      return this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents);
+      return this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents, rejectUnsafeBindings);
     } catch (err) {
       throw catchErrorWithPrefix("TypeChecker", this._input, err);
     }
@@ -29924,14 +29973,15 @@ var TypeChecker = class {
    * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
    * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
    * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
+   * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error (see `SecurityOptions`).
    * @returns The text of the shim and its mapping table, together with the errors of the nodes that failed, formatted like the ones thrown by {@link generate}.
    * @throws If a node has no transition function, with the error message prefixed by `[TypeChecker]`.
    */
-  async generateTolerant(metadatas, shadowingMembers = [], customElements = [], symbols = [], reactiveMembers = [], ssr, strictEvents = true) {
+  async generateTolerant(metadatas, shadowingMembers = [], customElements = [], symbols = [], reactiveMembers = [], ssr, strictEvents = true, rejectUnsafeBindings = true) {
     const errors = new Array();
     this._errors = errors;
     try {
-      return { ...this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents), errors };
+      return { ...this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents, rejectUnsafeBindings), errors };
     } catch (err) {
       throw catchErrorWithPrefix("TypeChecker", this._input, err);
     } finally {
@@ -29948,10 +29998,11 @@ var TypeChecker = class {
    * @param reactiveMembers - Class members that can read a signal.
    * @param ssr - Whether the project renders on the server, `undefined` when it is not known.
    * @param strictEvents - Whether the names of the events the elements do not declare are checked.
+   * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs is an error.
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws The error of the first node failing, when the errors are not being collected.
    */
-  _generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents) {
+  _generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents, rejectUnsafeBindings) {
     this._context.addImport(...metadatas);
     this._context.addSymbolImport(...symbols);
     for (let i2 = 0; i2 < shadowingMembers.length; i2++) {
@@ -29959,6 +30010,7 @@ var TypeChecker = class {
     }
     this._context.addCustomElementPatterns(...customElements);
     this._context.strictEvents = strictEvents;
+    this._context.rejectUnsafeBindings = rejectUnsafeBindings;
     for (let i2 = 0; i2 < reactiveMembers.length; i2++) {
       this._context.addSignalClassField(reactiveMembers[i2]);
     }
@@ -30060,8 +30112,8 @@ function parseTemplate(input) {
   PARSED_TEMPLATES.set(input, nodes);
   return nodes;
 }
-async function typeCheckTemplateTolerant(input, nodes, metadatas, shadowingMembers = [], customElements = [], symbols = [], reactiveMembers = [], ssr, strictEvents = true) {
-  return await new TypeChecker(input, nodes).generateTolerant(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents);
+async function typeCheckTemplateTolerant(input, nodes, metadatas, shadowingMembers = [], customElements = [], symbols = [], reactiveMembers = [], ssr, strictEvents = true, rejectUnsafeBindings = true) {
+  return await new TypeChecker(input, nodes).generateTolerant(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents, rejectUnsafeBindings);
 }
 
 // ../packages/compiler/src/lexer/utils/binding-context/binding-context.utils.ts
@@ -32487,6 +32539,11 @@ function readStrictEvents(fromDir) {
   const library = config && findLibrary2(config, fromDir);
   return (library?.strictEvents ?? config?.config.strictEvents) !== false;
 }
+function readSecurity(fromDir) {
+  const config = readConfig(fromDir);
+  const library = config && findLibrary2(config, fromDir);
+  return library?.security ? Object.assign({}, config.config.security, library.security) : config?.config.security;
+}
 function readConfig(fromDir) {
   const configPath = (0, import_typescript29.findConfigFile)(fromDir, import_typescript29.sys.fileExists, "xaendar.json");
   if (configPath) {
@@ -32529,7 +32586,7 @@ async function analyze(templatePath, source, components, shimName) {
     const { imports, symbols, errors: importErrors } = await resolveImports(ast, templateDir, cache, options);
     const metadatas = imports.map(({ metadata }) => metadata);
     const ssr = readSsr(templateDir);
-    const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers, readCustomElements(templateDir), symbols, reactiveMembers, ssr, readStrictEvents(templateDir));
+    const { errors: typeCheckErrors, ...typeCheck } = await typeCheckTemplateTolerant(source, ast, metadatas, shadowingMembers, readCustomElements(templateDir), symbols, reactiveMembers, ssr, readStrictEvents(templateDir), readSecurity(templateDir)?.rejectUnsafeBindings);
     const shim = createShim(componentFiles, typeCheck, project, shimName);
     const analysis = {
       templatePath,
