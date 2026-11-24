@@ -675,7 +675,8 @@ function getAlwaysBoundAttributes(conditionalBindings: ConditionalBindingNode[])
  * @param context - Current type-check scope.
  * @returns The generated type-check lines, one block per bound property.
  * @throws If a property is bound without a value, an attribute is the name of the property of an input declaring an alias,
- *   or a two-way binding binds no model.
+ *   a two-way binding binds no model, or an attribute that is not an input is one the browser runs (see
+ *   {@link assertSafeBinding}).
  */
 function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: ComponentOrDirectiveMetadata, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
@@ -684,6 +685,7 @@ function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: Com
     const { name, value, span, bare, attribute } = attributes[i];
     // Written with `attr.`, the attribute of the element takes any value, as on a native element
     if (attribute !== undefined) {
+      assertSafeBinding(attributes[i], context);
       if (typeof value !== 'string') {
         lines.push(line(mappedInterpolation(value, context, ';')));
       }
@@ -695,6 +697,8 @@ function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: Com
     const property = metadata.properties.get(name);
     if (!property) {
       assertNotAliasedProperty(attributes[i], metadata);
+      // Not an input: the value is written into the attribute of the element
+      assertSafeBinding(attributes[i], context);
     } else {
       if (bare) {
         throw new Error(`Property "${name}" needs a value: write ${name}="…" or ${name}="{ expression }". An attribute without a value is only valid on a native element.`, { cause: span });
@@ -778,6 +782,32 @@ function typeCheckNativeBindings(node: ElementNode, nativeEvents: NativeEvents, 
 }
 
 /**
+ * Ensures a binding writing an attribute of an element does not write one the browser runs, unless the
+ * `rejectUnsafeBindings` option of `security` is `false`: an event handler attribute (any name starting with `on`, as
+ * Angular checks it) or the `srcdoc` of an `<iframe>`, whose value would be code or a document coming from the
+ * application. A value written in the template is the author's own, and is allowed.
+ *
+ * @param attribute - The attribute node, written with `attr.` or not.
+ * @param context - Current type-check scope.
+ * @throws If the attribute is bound to an expression and the browser runs its value.
+ */
+function assertSafeBinding({ name, attribute, value, span }: AttributeNode, context: TypeCheckContext): void {
+  if (typeof value === 'string' || !context.rejectUnsafeBindings) {
+    return;
+  }
+
+  const written = (attribute ?? name).toLowerCase();
+  const allow = 'or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it';
+  if (written.startsWith('on')) {
+    throw new Error(`Binding ${name} writes code the browser runs from a value of the application: listen with (${written.slice(2)})="…" instead, ${allow}.`, { cause: span });
+  }
+
+  if (written === 'srcdoc') {
+    throw new Error(`Binding ${name} writes a document the browser runs from a value of the application: bind the src of a page instead, ${allow}.`, { cause: span });
+  }
+}
+
+/**
  * Type-checks the expression attributes of a native element by emitting each
  * resolved expression as a statement. Literal attributes are skipped.
  *
@@ -786,7 +816,7 @@ function typeCheckNativeBindings(node: ElementNode, nativeEvents: NativeEvents, 
  * @param context - Current type-check scope.
  * @returns The generated type-check lines, one per expression attribute.
  * @throws If an attribute is bound by a two-way binding: a native element, or a custom element of another library, has no
- *   model.
+ *   model, or binds an attribute the browser runs (see {@link assertSafeBinding}).
  */
 function typeCheckNativeAttributes(attributes: AttributeNode[], tagName: string, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
@@ -797,6 +827,7 @@ function typeCheckNativeAttributes(attributes: AttributeNode[], tagName: string,
       throw new Error(`[(${name})] binds a model of a component or of a directive: <${tagName}> is not a component imported in the template.`, { cause: span });
     }
 
+    assertSafeBinding(attributes[i], context);
     if (typeof value !== 'string') {
       lines.push(line(mappedInterpolation(value, context, ';')));
     }

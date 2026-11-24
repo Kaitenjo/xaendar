@@ -1,3 +1,4 @@
+import type { SecurityOptions } from '@xaendar/compiler';
 import type { XaendarLibraryConfig } from './xaendar-library-config.type';
 
 /**
@@ -17,6 +18,10 @@ export type XaendarConfig = {
    * turns the warning off. Defaults to `true`.
    */
   readonly strictEvents?: boolean;
+  /**
+   * What the compiler checks in the bindings that could run code: the language service reads `rejectUnsafeBindings`.
+   */
+  readonly security?: SecurityOptions;
   /**
    * The libraries of the workspace, keyed by the name of their package: the files of a library are compiled with its
    * own options.

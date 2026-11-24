@@ -67,8 +67,8 @@ describe('buildLibraries()', () => {
     await buildLibraries(project);
 
     expect(vi.mocked(buildLibrary).mock.calls).toEqual([
-      [{ name: '@acme/ui', root: resolve(dir, 'libraries/ui'), entry: undefined, outDir: resolve(dir, 'dist/ui'), ssr: true, customElements: ['sl-*'], plugins: [{ name: 'babel' }, { name: 'xaendar:cache', fromDir: dir }], xaendarVersion: '1.2.0' }],
-      [{ name: 'charts', root: resolve(dir, 'libraries/charts'), entry: 'lib/index.ts', outDir: resolve(dir, 'out/charts'), ssr: false, customElements: undefined, plugins: [{ name: 'babel' }, { name: 'xaendar:cache', fromDir: dir }], xaendarVersion: '1.2.0' }]
+      [{ name: '@acme/ui', root: resolve(dir, 'libraries/ui'), entry: undefined, outDir: resolve(dir, 'dist/ui'), ssr: true, customElements: ['sl-*'], security: {}, plugins: [{ name: 'babel' }, { name: 'xaendar:cache', fromDir: dir }], xaendarVersion: '1.2.0' }],
+      [{ name: 'charts', root: resolve(dir, 'libraries/charts'), entry: 'lib/index.ts', outDir: resolve(dir, 'out/charts'), ssr: false, customElements: undefined, security: {}, plugins: [{ name: 'babel' }, { name: 'xaendar:cache', fromDir: dir }], xaendarVersion: '1.2.0' }]
     ]);
     expect(console.log).toHaveBeenCalledWith(`✔  @acme/ui → ${resolve(dir, 'dist/ui')}`);
     expect(console.log).toHaveBeenCalledWith(`✔  charts → ${resolve(dir, 'out/charts')}`);
@@ -83,6 +83,17 @@ describe('buildLibraries()', () => {
     await buildLibraries({ ...project, config: { ...project.config, strictEvents: false } });
 
     expect(vi.mocked(buildLibrary).mock.calls.map(([options]) => options.strictEvents)).toEqual([false, true]);
+  });
+
+  it('builds a library with each option of security it declares, the one of the workspace for the others', async () => {
+    const project = writeWorkspace({
+      '@acme/ui': [{ root: 'libraries/ui' }, {}],
+      charts: [{ root: 'libraries/charts', security: { urls: 'remove' } }, {}]
+    });
+
+    await buildLibraries({ ...project, config: { ...project.config, security: { urls: 'warn', rejectUnsafeBindings: false } } });
+
+    expect(vi.mocked(buildLibrary).mock.calls.map(([options]) => options.security)).toEqual([{ urls: 'warn', rejectUnsafeBindings: false }, { urls: 'remove', rejectUnsafeBindings: false }]);
   });
 
   it('builds only the library named, by the name of its folder', async () => {

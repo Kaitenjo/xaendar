@@ -161,6 +161,7 @@ function createState(overrides: Partial<{ fileExists: (path: string) => boolean;
     projectFileNames: ['/project/src/globals.d.ts'],
     customElements: [],
     strictEvents: true,
+    security: { urls: 'warn' },
     minifyStyles: false,
     isBuild: false,
     root: '/project',
@@ -548,9 +549,9 @@ describe('createTransformHook()', () => {
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     const templatePath = resolvePosixPath(dirname(COMPONENT_PATH), './foo.xd.component.html');
-    expect(compile).toHaveBeenCalledWith('template source', { baseDir: dirname(templatePath), shadowingMembers: ['name'], reactiveMembers: ['count'], customElements: [], ssr: false, strictEvents: true, cache: expect.any(Object) });
+    expect(compile).toHaveBeenCalledWith('template source', { baseDir: dirname(templatePath), shadowingMembers: ['name'], reactiveMembers: ['count'], customElements: [], ssr: false, strictEvents: true, security: { urls: 'warn' }, cache: expect.any(Object) });
     // The baseDir resolves the @import paths used as metadata owner file keys, which are posix
-    expect(compile).toHaveBeenCalledWith('template source', { baseDir: expect.not.stringContaining('\\'), shadowingMembers: ['name'], reactiveMembers: ['count'], customElements: [], ssr: false, strictEvents: true, cache: expect.any(Object) });
+    expect(compile).toHaveBeenCalledWith('template source', { baseDir: expect.not.stringContaining('\\'), shadowingMembers: ['name'], reactiveMembers: ['count'], customElements: [], ssr: false, strictEvents: true, security: { urls: 'warn' }, cache: expect.any(Object) });
     expect(createTemplateModuleSpecifier).toHaveBeenCalledWith(templatePath, ['count'], ['name']);
   });
 
@@ -568,12 +569,13 @@ describe('createTransformHook()', () => {
   it('compiles a component of a library of the workspace with the options of the library', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
-    const library = { name: '@acme/ui', root: dirname(dirname(COMPONENT_PATH)), entry: '/src/public-api.ts', ssr: true, customElements: ['sl-*'], strictEvents: false };
+    const library = { name: '@acme/ui', root: dirname(dirname(COMPONENT_PATH)), entry: '/src/public-api.ts', ssr: true, customElements: ['sl-*'], strictEvents: false, security: { rejectUnsafeBindings: false } };
     const hook = createTransformHook({ ...createState(), libraries: [library] });
 
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
-    expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: ['sl-*'], ssr: true, strictEvents: false }));
+    // Each option of security the library declares in place of the one of the project
+    expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: ['sl-*'], ssr: true, strictEvents: false, security: { urls: 'warn', rejectUnsafeBindings: false } }));
     expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, true, expect.anything());
   });
 

@@ -18,7 +18,7 @@ import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import { resolvePosixPath } from '../../utils/path/path.utils';
 import { collectProjectDependencies } from '../../utils/project-dependencies/project-dependencies.utils';
 import { reportTemplateDiagnostics } from '../../utils/template-type-check/template-type-check.utils';
-import { findWorkspaceLibrary } from '../../utils/workspace-libraries/workspace-libraries.utils';
+import { findWorkspaceLibrary, resolveSecurity } from '../../utils/workspace-libraries/workspace-libraries.utils';
 import { claimSelectors, createStyleModuleSpecifier, createTemplateModuleSpecifier, extractImportedComponentPaths, generateStaticModule, getImportOrExtract, getMetadataOrExtract, injectTemplate } from '../plugin-utils/plugin.utils';
 
 /**
@@ -210,6 +210,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
             customElements: library ? library.customElements : state.customElements,
             ssr,
             strictEvents: library?.strictEvents ?? state.strictEvents,
+            security: resolveSecurity(library, state.security),
             cache: {
               getOrInsert: (classNameOrSelector, path) => getMetadataOrExtract(classNameOrSelector, path, state.compilerOptions),
               getImport: (imported, local, baseDir, path) => getImportOrExtract(imported, local, baseDir, path, state.compilerOptions),

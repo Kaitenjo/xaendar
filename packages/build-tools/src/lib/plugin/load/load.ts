@@ -7,7 +7,7 @@ import type { XaendarPluginStrategy } from '../../types/plugin-strategy.type';
 import type { StyleCompileResult } from '../../types/style-compile-result.type';
 import { TemplateModuleRequest } from '../../types/template-module-request.type';
 import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
-import { findWorkspaceLibrary, markClientOnly } from '../../utils/workspace-libraries/workspace-libraries.utils';
+import { findWorkspaceLibrary, markClientOnly, resolveSecurity } from '../../utils/workspace-libraries/workspace-libraries.utils';
 import { describeTemplateWarning, extractImportedComponentPaths, getImportOrExtract, getMetadataOrExtract, parseStyleModuleId, parseTemplateModuleId, resolveTemplateModules } from '../plugin-utils/plugin.utils';
 import { compileStyle } from '../style/compile-style';
 import { minifyCss } from '../style/minify-css/minify-css.utils';
@@ -123,7 +123,9 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
       set: registerMetadata
     };
     // A template of a library of the workspace is compiled with the options of the library
-    const customElements = findWorkspaceLibrary(state.libraries, templatePath)?.customElements ?? state.customElements;
+    const library = findWorkspaceLibrary(state.libraries, templatePath);
+    const customElements = library?.customElements ?? state.customElements;
+    const security = resolveSecurity(library, state.security);
 
     let nodes: ASTNode[];
     let compiledFunctions: string;
@@ -142,7 +144,7 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
       }
 
       dependencies = modules.imported;
-      compiledFunctions = await strategy.compile(templateSource, { signals, templateDir, shadowingMembers, customElements, cache, islands: state.staticComponents?.islands.get(templatePath) });
+      compiledFunctions = await strategy.compile(templateSource, { signals, templateDir, shadowingMembers, customElements, security, cache, islands: state.staticComponents?.islands.get(templatePath) });
       if (strategy.filterDependencies) {
         dependencies = await strategy.filterDependencies(templateSource, dependencies, { templateDir, cache });
       }

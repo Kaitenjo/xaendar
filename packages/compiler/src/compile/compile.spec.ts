@@ -87,6 +87,17 @@ describe('compile', () => {
     await expect(compile(template, { signals: [], ssr: false, cache: createCache() })).resolves.toContain('_client');
   });
 
+  it('rejects the bindings of the attributes the browser runs in the type-check, unless security allows them', async () => {
+    const template = '<div onclick="{ code }"></div>';
+    const message = 'Binding onclick writes code the browser runs';
+
+    await expect(compile(template, { baseDir: '/base', cache: createCache() })).rejects.toThrow(message);
+    await expect(compile(template, { baseDir: '/base', signals: [], security: { urls: 'warn' }, cache: createCache() })).rejects.toThrow(message);
+    await expect(compile(template, { baseDir: '/base', security: { rejectUnsafeBindings: false }, cache: createCache() })).resolves.toMatchObject({ text: expect.stringContaining('root.code;') });
+    await expect(typeCheckTemplateTolerant(template, parseTemplate(template), [], [], [], [], [], undefined, true, false)).resolves.toMatchObject({ errors: [] });
+    await expect(typeCheckTemplateTolerant(template, parseTemplate(template), [])).resolves.toMatchObject({ errors: [expect.objectContaining({ message: expect.stringContaining(message) })] });
+  });
+
   it('compiles a @hydrate loading the modules of the components only its content renders, and type-checks the expression of when', async () => {
     const declaring = (selector: string) => ({ ...component, selector, className: selector, modulePath: `/base/${selector}.ts` });
     const cache: ContextCache = {

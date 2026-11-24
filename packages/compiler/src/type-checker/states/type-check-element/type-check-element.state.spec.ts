@@ -225,6 +225,29 @@ describe('typeCheckElement', () => {
       expect(text(run('<div @switch (mode()) { }></div>'))).toEqual(['switch (root.mode()) {', '}']);
     });
 
+    describe('rejectUnsafeBindings', () => {
+      it.each([
+        ['an event handler attribute', '<div onclick="{ code }"></div>', 'Binding onclick writes code the browser runs from a value of the application: listen with (click)="…" instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.'],
+        ['an event handler attribute in any case, written with attr.', '<div attr.onMouseOver="{ code }"></div>', 'Binding attr.onMouseOver writes code the browser runs from a value of the application: listen with (mouseover)="…" instead'],
+        ['an event handler attribute in a conditional binding', '<div @if (on) { onload="{ code }" }></div>', 'Binding onload writes code'],
+        ['the srcdoc of an iframe', '<iframe srcdoc="{ html }"></iframe>', 'Binding srcdoc writes a document the browser runs from a value of the application: bind the src of a page instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.'],
+        ['an attribute of a component that is not an input', '<my-el onclick="{ code }"></my-el>', 'Binding onclick writes code'],
+        ['an attribute of a component written with attr.', '<my-el attr.srcdoc="{ html }"></my-el>', 'Binding attr.srcdoc writes a document']
+      ])('rejects a value bound to %s', (_description, template, message) => {
+        expect(() => run(template, metadata({ label: new ComponentPropertyMetadata('label', 'string') }))).toThrow(message);
+      });
+
+      it('allows the values written in the template, the inputs of a component named like them, and every binding when the option is off', () => {
+        expect(text(run('<iframe onload="init()" srcdoc="<p>a</p>"></iframe>'))).toEqual([]);
+        expect(() => run('<my-el onToggle="{ handler }"></my-el>', metadata({ onToggle: new ComponentPropertyMetadata('onToggle', 'string') }))).not.toThrow();
+
+        const context = new TypeCheckContext();
+        context.strictEvents = false;
+        context.rejectUnsafeBindings = false;
+        expect(text(typeCheckElement(parse('<iframe onload="{ code }" srcdoc="{ html }"></iframe>'), processNode, context))).toEqual(['root.code;', 'root.html;']);
+      });
+    });
+
     describe('strictEvents', () => {
       it('checks the name of a native event against the event map of the element, recording the check of the binding', () => {
         const template = '<div (bubbling)="f($event)" (click)="g()"></div>';

@@ -115,12 +115,13 @@ export class TypeChecker {
    * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
    * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
    * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
+   * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error (see `SecurityOptions`).
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws If the template fails type-checking, e.g. it uses a selector not imported in it, with the error message prefixed by `[TypeChecker]` and, when the error carries its span, the slice of the template it refers to.
    */
-  public async generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean, strictEvents = true): Promise<TypeCheckResult> {
+  public async generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean, strictEvents = true, rejectUnsafeBindings = true): Promise<TypeCheckResult> {
     try {
-      return this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents);
+      return this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents, rejectUnsafeBindings);
     } catch (err) {
       throw catchErrorWithPrefix('TypeChecker', this._input, err);
     }
@@ -138,14 +139,15 @@ export class TypeChecker {
    * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
    * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
    * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
+   * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error (see `SecurityOptions`).
    * @returns The text of the shim and its mapping table, together with the errors of the nodes that failed, formatted like the ones thrown by {@link generate}.
    * @throws If a node has no transition function, with the error message prefixed by `[TypeChecker]`.
    */
-  public async generateTolerant(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean, strictEvents = true): Promise<TypeCheckTolerantResult> {
+  public async generateTolerant(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean, strictEvents = true, rejectUnsafeBindings = true): Promise<TypeCheckTolerantResult> {
     const errors = new Array<Error>();
     this._errors = errors;
     try {
-      return { ...this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents), errors };
+      return { ...this._generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents, rejectUnsafeBindings), errors };
     } catch (err) {
       throw catchErrorWithPrefix('TypeChecker', this._input, err);
     } finally {
@@ -163,10 +165,11 @@ export class TypeChecker {
    * @param reactiveMembers - Class members that can read a signal.
    * @param ssr - Whether the project renders on the server, `undefined` when it is not known.
    * @param strictEvents - Whether the names of the events the elements do not declare are checked.
+   * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs is an error.
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws The error of the first node failing, when the errors are not being collected.
    */
-  private _generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[], customElements: readonly string[], symbols: readonly SymbolImport[], reactiveMembers: readonly string[], ssr: boolean | undefined, strictEvents: boolean): TypeCheckResult {
+  private _generate(metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[], customElements: readonly string[], symbols: readonly SymbolImport[], reactiveMembers: readonly string[], ssr: boolean | undefined, strictEvents: boolean, rejectUnsafeBindings: boolean): TypeCheckResult {
     this._context.addImport(...metadatas);
     this._context.addSymbolImport(...symbols);
     for (let i = 0; i < shadowingMembers.length; i++) {
@@ -174,6 +177,7 @@ export class TypeChecker {
     }
     this._context.addCustomElementPatterns(...customElements);
     this._context.strictEvents = strictEvents;
+    this._context.rejectUnsafeBindings = rejectUnsafeBindings;
     for (let i = 0; i < reactiveMembers.length; i++) {
       this._context.addSignalClassField(reactiveMembers[i]);
     }

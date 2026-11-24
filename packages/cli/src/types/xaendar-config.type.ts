@@ -1,3 +1,4 @@
+import type { XaendarPluginOptions } from '@xaendar/build-tools';
 import type { XaendarLibraryConfig } from './xaendar-library-config.type';
 import type { XaendarSsrConfig } from './xaendar-ssr-config.type';
 
@@ -15,6 +16,12 @@ export type XaendarConfig = {
    * the build and in the editor. Defaults to `true`.
    */
   strictEvents?: boolean;
+  /**
+   * What the compiler checks in the bindings that could run code from the values of the application: `urls` (`'off'`,
+   * `'warn'` or `'remove'`, `'off'` by default) for the URLs bound to the attributes loading or opening them,
+   * `rejectUnsafeBindings` (`true` by default) for the bindings of the event handler attributes and of `srcdoc`.
+   */
+  security?: XaendarPluginOptions['security'];
   /**
    * The rendering on the server, when the project renders its pages there.
    */

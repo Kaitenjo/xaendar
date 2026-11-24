@@ -1,3 +1,4 @@
+import type { SecurityOptions } from '@xaendar/compiler';
 import { dirname } from 'node:path';
 import { findConfigFile, readConfigFile, sys } from 'typescript';
 import type { XaendarConfigFile } from '../../types/xaendar-config-file.type';
@@ -48,6 +49,20 @@ export function readStrictEvents(fromDir: string): boolean {
   const config = readConfig(fromDir);
   const library = config && findLibrary(config, fromDir);
   return (library?.strictEvents ?? config?.config.strictEvents) !== false;
+}
+
+/**
+ * Reads what the compiler checks in the bindings that could run code (`"security": { "rejectUnsafeBindings": false }`)
+ * from the nearest `xaendar.json`, walking up from a directory. A directory of a library of the workspace (`libs`) reads
+ * each option of the library in place of the one of the project.
+ *
+ * @param fromDir - Directory to start searching for `xaendar.json` from, typically the directory of the template.
+ * @returns The options, `undefined` when the file cannot be found or read, or declares none.
+ */
+export function readSecurity(fromDir: string): SecurityOptions | undefined {
+  const config = readConfig(fromDir);
+  const library = config && findLibrary(config, fromDir);
+  return library?.security ? Object.assign({}, config!.config.security, library.security) : config?.config.security;
 }
 
 /**

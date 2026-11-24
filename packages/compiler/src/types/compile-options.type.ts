@@ -1,4 +1,5 @@
 import { ContextCache } from './context-cache.type';
+import type { SecurityOptions } from './security-options.type';
 
 /**
  * Configuration options for the compile function.
@@ -85,6 +86,12 @@ export type CompileOptions = {
    * name is a warning (see `findEventCheck`). `false` leaves them unchecked. Defaults to `true`.
    */
   strictEvents?: boolean;
+  /**
+   * What the compiler checks in the bindings that could run code from the values of the application (see
+   * `SecurityOptions`): the type-check reads `rejectUnsafeBindings`, the generated code `urls`. Defaults to none of them
+   * set.
+   */
+  security?: SecurityOptions;
   /**
    * Optional caching layer for component and directive metadata.
    *

@@ -1,3 +1,5 @@
+import type { SecurityOptions } from '@xaendar/compiler';
+
 /**
  * A library of the workspace the project belongs to, which the project imports from its sources: its components are
  * compiled with the ones of the project, with the options of the library.
@@ -34,4 +36,9 @@ export type XaendarLibraryOptions = {
    * (see `XaendarPluginOptions['strictEvents']`). Defaults to the option of the project.
    */
   readonly strictEvents?: boolean;
+  /**
+   * What the compiler checks in the bindings that could run code, each option in place of the one of the project (see
+   * `XaendarPluginOptions['security']`). Defaults to the options of the project.
+   */
+  readonly security?: SecurityOptions;
 };

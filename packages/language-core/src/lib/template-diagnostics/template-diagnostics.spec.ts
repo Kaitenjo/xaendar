@@ -83,6 +83,15 @@ describe('getTemplateDiagnostics', () => {
       ]);
       expect(await diagnoseIn('loose-events', source, { strictEvents: false })).toEqual([]);
     }, TIMEOUT);
+
+    it('rejects the binding of an event handler attribute, unless security allows it', async () => {
+      const source = '<div onclick="{ select }"></div>';
+
+      expect(await diagnoseIn('unsafe-bindings', source)).toEqual([
+        ['onclick', 'Binding onclick writes code the browser runs from a value of the application: listen with (click)="…" instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.', DiagnosticCategory.Error]
+      ]);
+      expect(await diagnoseIn('allowed-bindings', source, { security: { rejectUnsafeBindings: false } })).toEqual([]);
+    }, TIMEOUT);
   });
 
   it('types the error of a @catch as TypeScript types the one of a catch, unknown until it is narrowed', async () => {

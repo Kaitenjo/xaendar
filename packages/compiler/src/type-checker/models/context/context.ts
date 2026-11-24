@@ -61,6 +61,11 @@ export class TypeCheckContext extends CompilerContext {
    */
   private _strictEvents = true;
   /**
+   * Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error: kept by the outermost scope,
+   * for the whole template.
+   */
+  private _rejectUnsafeBindings = true;
+  /**
    * Whether the type-check code reads the declarations of the template helpers, as the one of a template does: kept by
    * the outermost scope, for the whole template.
    */
@@ -124,6 +129,26 @@ export class TypeCheckContext extends CompilerContext {
    */
   public set strictEvents(value: boolean) {
     this._strictEvents = value;
+  }
+
+  /**
+   * Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error, read from the outermost
+   * scope.
+   *
+   * @returns `true` unless the `rejectUnsafeBindings` option of `security` is `false`.
+   */
+  public get rejectUnsafeBindings(): boolean {
+    return this.parent ? this.parent.rejectUnsafeBindings : this._rejectUnsafeBindings;
+  }
+
+  /**
+   * Sets whether binding a value to an attribute the browser runs is an error: set on the outermost scope, which the
+   * others read.
+   *
+   * @param value - `false` to allow these bindings.
+   */
+  public set rejectUnsafeBindings(value: boolean) {
+    this._rejectUnsafeBindings = value;
   }
 
   /**
