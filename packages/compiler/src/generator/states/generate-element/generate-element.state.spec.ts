@@ -35,15 +35,11 @@ const expectValidJavascript = ({ code, constants, functions, reads }: Awaited<Re
 };
 
 describe('generateElement', () => {
-  it('writes the names of the events, of the attributes and the selectors of the directives as string literals, escaped', async () => {
-    const result = await run(`<div a'b="{x()}" (c\\d)="x()" @@e'f *g\\h></div>`);
-    const module = result.constants.join('\n');
-
-    expect(module).toContain(`name: 'a\\'b'`);
-    expect(module).toContain(`name: 'c\\\\d'`);
-    expect(module).toContain(`selector: 'e\\'f'`);
-    expect(module).toContain(`selector: 'g\\\\h'`);
-    expectValidJavascript(result);
+  it('writes the names of the events, of the attributes and the selectors of the directives as they are, which the lexer and the parser validate', async () => {
+    await expect(run('<div a\'b="{x()}"></div>')).rejects.toThrow('\'\'\' cannot be part of an attribute name');
+    await expect(run('<div (c\\d)="x()"></div>')).rejects.toThrow('\'\\\' cannot be part of an event name');
+    await expect(run('<div @@e\'f></div>')).rejects.toThrow('\'\'\' cannot be part of a directive selector');
+    await expect(run('<div #g-h></div>')).rejects.toThrow('\'-\' cannot be part of an element ref');
   });
 
   it('generates a bare element as a constant of the module holding only its tag, without a function rendering its children', async () => {

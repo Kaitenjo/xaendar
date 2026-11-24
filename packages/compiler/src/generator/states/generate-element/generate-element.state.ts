@@ -140,7 +140,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
     to declares none), is initialized in its slot once the element is created
   */
   if (node.ref) {
-    members.push(`ref: ${toStringLiteral(node.ref.name)}`, `refSlot: ${generatorContext.addressOf(node.ref.name)!.slot}`);
+    members.push(`ref: '${node.ref.name}'`, `refSlot: ${generatorContext.addressOf(node.ref.name)!.slot}`);
   }
 
   // Only an element applying structural directives is a block: its slot is the one of its anchor, if it has one
@@ -278,7 +278,7 @@ async function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner
     }
 
     const property = attribute ?? (input && !input.exposed ? input.name : name);
-    const members = [`name: ${toStringLiteral(property)}`];
+    const members = [`name: '${property}'`];
     if (shared && !input) {
       members.push('shared: true');
       if (!shared.includes(property)) {
@@ -611,7 +611,7 @@ function mapEvents(events: EventNode[], owner: DescriptorOwner, prefix = ''): st
   const mappedEvents = listeners.map(({ event, call, role, readsEvent: passesEvent, keys }) => {
     const body = keys ? `if (${keys.join(' || ')}) ${call};` : `${call};`;
     const declared = generatorContext.declareFunction(`${owner.name}$${prefix}on_${role}`, keys || passesEvent ? 'context, $event' : 'context', [body]);
-    return toObjectLiteral([`name: ${toStringLiteral(event)}`, `handler: ${declared}`]);
+    return toObjectLiteral([`name: '${event}'`, `handler: ${declared}`]);
   });
 
   generatorContext.removeUnresolvabledIdentifier('$event');
@@ -845,7 +845,7 @@ async function mapDirectives(directives: DirectiveNode[], owner: DescriptorOwner
   for (let i = 0; i < directives.length; i++) {
     const directive = directives[i];
     const { selector, attributes, events, conditionalBindings } = directive;
-    const members = [`selector: ${toStringLiteral(selector)}`];
+    const members = [`selector: '${selector}'`];
     const order = getDirectiveOrder(directive);
     if (order) {
       members.push(`order: ${order}`);
@@ -892,7 +892,7 @@ async function mapStructuralDirectives(structuralDirectives: StructuralDirective
 
   for (let i = 0; i < structuralDirectives.length; i++) {
     const { selector, attributes } = structuralDirectives[i];
-    const members = [`selector: ${toStringLiteral(selector)}`];
+    const members = [`selector: '${selector}'`];
     appendList(members, 'attributes', await mapAttributes(attributes, owner, `@@${selector}`, false, true, false));
     mappedStructuralDirectives.push(toObjectLiteral(members));
   }

@@ -21,6 +21,14 @@ function afterHash(input: string): LexerCursor {
 
 describe('lexElementRef', () => {
   it.each([
+    ['#a\'b ', '\'\'\''],
+    ['#a-b ', '\'-\''],
+    ['#a\\b ', '\'\\\'']
+  ])('throws on a character a name of JavaScript cannot hold, %j', (input, char) => {
+    expect(() => lexElementRef(afterHash(input), context)).toThrow(`${char} cannot be part of an element ref: write #name with letters, digits, _ and $`);
+  });
+
+  it.each([
     ['a space', ' '],
     ['a tab', '\t'],
     ['a line feed', '\n'],

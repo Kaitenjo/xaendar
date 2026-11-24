@@ -138,8 +138,9 @@ describe('generateServerElement', () => {
     expect(generate('<p attr.title="a" attr.lang="{ on() }">t</p>').code).toEqual(['out.push(\'<p title="a"\' + _ssrAttribute(\'lang\', this.on()) + \'>{children of p0}</p>\');']);
   });
 
-  it('writes the name of an attribute bound to an expression as a string literal, escaped', () => {
-    expect(generate('<p a\\b="{ on() }">t</p>').code).toEqual(['out.push(\'<p\' + _ssrAttribute(\'a\\\\b\', this.on()) + \'>{children of p0}</p>\');']);
+  it('writes the name of an attribute bound to an expression as it is, which the lexer validates', () => {
+    expect(generate('<p data-on:x="{ on() }">t</p>').code).toEqual(['out.push(\'<p\' + _ssrAttribute(\'data-on:x\', this.on()) + \'>{children of p0}</p>\');']);
+    expect(() => generate('<p a\\b="{ on() }">t</p>')).toThrow('\'\\\' cannot be part of an attribute name');
   });
 
   it('sets the input a two-way binding binds from the signal, writing nothing of its listener, and throws for one binding no input', () => {

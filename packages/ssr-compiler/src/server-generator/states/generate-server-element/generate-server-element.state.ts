@@ -156,7 +156,7 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
       const name = attribute ?? attributes[i].name;
       typeof value === 'string'
         ? pieces.push({ html: ` ${name}="${escapeAttribute(value)}"` })
-        : pieces.push({ value: `_ssrAttribute(${toStringLiteral(name)}, ${resolve(value.expression, generatorContext)})` });
+        : pieces.push({ value: `_ssrAttribute('${name}', ${resolve(value.expression, generatorContext)})` });
     }
 
     if (listensToSubmit(node)) {
@@ -290,11 +290,11 @@ function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, targ
     // The family of the setters: an input, one a host directive exposes, an attribute written with `attr.`, or any other attribute
     const kind = input ? input.exposed ? 'ExposedInput' : 'Input' : attribute === undefined ? 'Property' : 'Attribute';
     if (typeof value === 'string') {
-      return toObjectLiteral([`name: ${toStringLiteral(property)}`, `value: ${toStringLiteral(value)}`, `setter: _set${kind}`]);
+      return toObjectLiteral([`name: '${property}'`, `value: ${toStringLiteral(value)}`, `setter: _set${kind}`]);
     }
 
     const role = metadata?.type === 'directive' ? `${toRoleName(target!.slice(2))}_${toRoleName(property)}` : toRoleName(attribute === undefined ? property : name);
-    return toObjectLiteral([`name: ${toStringLiteral(property)}`, `value: ${declareElementExpression(owner, role, value.expression)}`, `setter: _setExpression${kind}`]);
+    return toObjectLiteral([`name: '${property}'`, `value: ${declareElementExpression(owner, role, value.expression)}`, `setter: _setExpression${kind}`]);
   });
 }
 
@@ -471,7 +471,7 @@ function mapStructuralDirectives(structuralDirectives: StructuralDirectiveNode[]
  * @returns The code of the descriptor.
  */
 function toDirectiveDescriptor(selector: string, attributes: AttributeNode[], owner: DescriptorOwner, order?: number): string {
-  const members = [`selector: ${toStringLiteral(selector)}`];
+  const members = [`selector: '${selector}'`];
   if (order) {
     members.push(`order: ${order}`);
   }
