@@ -20347,6 +20347,420 @@ function catchErrorWithPrefix(prefix, input, err) {
   throw formatErrorWithPrefix(prefix, input, err);
 }
 
+// ../packages/compiler/src/generator/utils/generator/generator.utils.ts
+var import_globals = __toESM(require_globals2(), 1);
+var import_typescript4 = require("typescript");
+
+// ../packages/compiler/src/parser/utils/expression-validator/expression-validator.ts
+var import_typescript2 = require("typescript");
+
+// ../packages/compiler/src/utils/expression-children/expression-children.utils.ts
+var import_typescript = require("typescript");
+function forEachExpressionChild(node, callback) {
+  return (0, import_typescript.isAsExpression)(node) ? callback(node.expression) : (0, import_typescript.forEachChild)(node, callback);
+}
+
+// ../packages/compiler/src/parser/utils/expression-validator/expression-validator.ts
+var EXPRESSION_PREFIX = "const x = ";
+var templateOffsets = /* @__PURE__ */ new WeakMap();
+var TRAILING_SCANNER = (0, import_typescript2.createScanner)(import_typescript2.ScriptTarget.ESNext, true, import_typescript2.LanguageVariant.Standard);
+function validateExpression(source, templateOffset) {
+  const sourceFile = (0, import_typescript2.createSourceFile)("expression.ts", `${EXPRESSION_PREFIX}${source}`, import_typescript2.ScriptTarget.ESNext, false);
+  setParents(sourceFile);
+  if (templateOffset !== void 0) {
+    templateOffsets.set(sourceFile, templateOffset - EXPRESSION_PREFIX.length);
+  }
+  const statement = sourceFile.statements[0];
+  const expression = statement.declarationList.declarations[0].initializer;
+  TRAILING_SCANNER.setText(sourceFile.text, expression.end);
+  const trailing = TRAILING_SCANNER.scan();
+  TRAILING_SCANNER.setText(void 0);
+  if (trailing !== import_typescript2.SyntaxKind.EndOfFileToken) {
+    const rest = slice(sourceFile.text, expression.end);
+    throw new Error(`'${source.trim()}' must be a single expression, got '${rest.trim()}' after '${expression.getText()}'.`, {
+      cause: toTemplateSpan(sourceFile, expression.end + rest.length - rest.trimStart().length, sourceFile.text.trimEnd().length)
+    });
+  }
+  visitNode(expression);
+  return {
+    node: expression
+  };
+}
+function setParents(node) {
+  (0, import_typescript2.forEachChild)(node, (child) => {
+    child.parent = node;
+    setParents(child);
+  });
+}
+function getTemplateSpan(node) {
+  const sourceFile = node.getSourceFile();
+  return toTemplateSpan(sourceFile, node.getStart(sourceFile), node.getEnd());
+}
+function toTemplateSpan(sourceFile, start, end) {
+  const offset = templateOffsets.get(sourceFile);
+  return offset === void 0 ? void 0 : { start: offset + start, end: offset + end };
+}
+function visitNode(node) {
+  if (!isAllowedNode(node)) {
+    throw new Error(buildDisallowedMessage(node), { cause: getTemplateSpan(node) });
+  }
+  forEachExpressionChild(node, visitNode);
+}
+function isAllowedNode(node) {
+  switch (node.kind) {
+    // ---- Literals ----
+    case import_typescript2.SyntaxKind.StringLiteral:
+    case import_typescript2.SyntaxKind.NumericLiteral:
+    case import_typescript2.SyntaxKind.BigIntLiteral:
+    case import_typescript2.SyntaxKind.TrueKeyword:
+    case import_typescript2.SyntaxKind.FalseKeyword:
+    case import_typescript2.SyntaxKind.NullKeyword:
+    case import_typescript2.SyntaxKind.UndefinedKeyword:
+    // ---- Identifiers ----
+    case import_typescript2.SyntaxKind.Identifier:
+    // ---- Member access ----
+    // user.name
+    case import_typescript2.SyntaxKind.PropertyAccessExpression:
+    // user['name'], items[0]
+    case import_typescript2.SyntaxKind.ElementAccessExpression:
+    // ---- Call expressions ----
+    // user.getFullName(), user.hasRole('admin')
+    case import_typescript2.SyntaxKind.CallExpression:
+    // ---- Binary expressions ----
+    // Covers arithmetic, comparison, logical, bitwise, nullish coalescing,
+    // and instanceof. Assignment operators are rejected in visitNode via
+    // buildDisallowedMessage before recursing into children.
+    case import_typescript2.SyntaxKind.BinaryExpression:
+    // ---- Operator tokens — visited as children of BinaryExpression ----
+    // Comparison
+    case import_typescript2.SyntaxKind.EqualsEqualsToken:
+    // ==
+    case import_typescript2.SyntaxKind.EqualsEqualsEqualsToken:
+    // ===
+    case import_typescript2.SyntaxKind.ExclamationEqualsToken:
+    // !=
+    case import_typescript2.SyntaxKind.ExclamationEqualsEqualsToken:
+    // !==
+    case import_typescript2.SyntaxKind.LessThanToken:
+    // 
+    case import_typescript2.SyntaxKind.LessThanEqualsToken:
+    // <=
+    case import_typescript2.SyntaxKind.GreaterThanToken:
+    // >
+    case import_typescript2.SyntaxKind.GreaterThanEqualsToken:
+    // >=
+    // Arithmetic
+    case import_typescript2.SyntaxKind.PlusToken:
+    // +
+    case import_typescript2.SyntaxKind.MinusToken:
+    // -
+    case import_typescript2.SyntaxKind.AsteriskToken:
+    // *
+    case import_typescript2.SyntaxKind.SlashToken:
+    // /
+    case import_typescript2.SyntaxKind.PercentToken:
+    // %
+    case import_typescript2.SyntaxKind.AsteriskAsteriskToken:
+    // **
+    // Logical
+    case import_typescript2.SyntaxKind.AmpersandAmpersandToken:
+    // &&
+    case import_typescript2.SyntaxKind.BarBarToken:
+    // ||
+    case import_typescript2.SyntaxKind.QuestionQuestionToken:
+    // ??
+    case import_typescript2.SyntaxKind.QuestionDotToken:
+    // ?.
+    case import_typescript2.SyntaxKind.QuestionToken:
+    // ?
+    case import_typescript2.SyntaxKind.ColonToken:
+    // :
+    // Bitwise
+    case import_typescript2.SyntaxKind.AmpersandToken:
+    // &
+    case import_typescript2.SyntaxKind.BarToken:
+    // |
+    case import_typescript2.SyntaxKind.CaretToken:
+    // ^
+    case import_typescript2.SyntaxKind.LessThanLessThanToken:
+    // 
+    case import_typescript2.SyntaxKind.GreaterThanGreaterThanToken:
+    // >>
+    case import_typescript2.SyntaxKind.GreaterThanGreaterThanGreaterThanToken:
+    // >>>
+    // instanceof / in
+    case import_typescript2.SyntaxKind.InstanceOfKeyword:
+    // instanceof
+    case import_typescript2.SyntaxKind.InKeyword:
+    // in
+    // ---- Unary expressions ----
+    // !isAdmin, ~flags, +n, -n, typeof x, void 0
+    case import_typescript2.SyntaxKind.PrefixUnaryExpression:
+    case import_typescript2.SyntaxKind.PostfixUnaryExpression:
+    // typeof is represented as a dedicated node kind in some TS versions
+    case import_typescript2.SyntaxKind.TypeOfExpression:
+    case import_typescript2.SyntaxKind.VoidExpression:
+    // ---- Conditional (ternary) ----
+    // isAdmin ? 'yes' : 'no'
+    case import_typescript2.SyntaxKind.ConditionalExpression:
+    // ---- Parenthesised expressions ----
+    case import_typescript2.SyntaxKind.ParenthesizedExpression:
+    // ---- Template literals ----
+    // `Hello ${user.name}`
+    case import_typescript2.SyntaxKind.TemplateExpression:
+    case import_typescript2.SyntaxKind.NoSubstitutionTemplateLiteral:
+    case import_typescript2.SyntaxKind.TemplateHead:
+    case import_typescript2.SyntaxKind.TemplateMiddle:
+    case import_typescript2.SyntaxKind.TemplateTail:
+    case import_typescript2.SyntaxKind.TemplateSpan:
+    // ---- Arrays ----
+    // [1, 2, 3], [...items]
+    case import_typescript2.SyntaxKind.ArrayLiteralExpression:
+    // ---- Objects ----
+    // { key: value }, { ...defaults, name }
+    case import_typescript2.SyntaxKind.ObjectLiteralExpression:
+    case import_typescript2.SyntaxKind.PropertyAssignment:
+    case import_typescript2.SyntaxKind.ShorthandPropertyAssignment:
+    // { ...obj } inside an object literal
+    case import_typescript2.SyntaxKind.SpreadAssignment:
+    // ---- Spread ----
+    // foo(...args), [...items]
+    case import_typescript2.SyntaxKind.SpreadElement:
+    case import_typescript2.SyntaxKind.TaggedTemplateExpression:
+    // ---- Internal structural nodes ----
+    // Visited during recursion but carry no semantic meaning of their own.
+    case import_typescript2.SyntaxKind.SyntaxList:
+    case import_typescript2.SyntaxKind.NonNullExpression:
+      return true;
+    // ---- Casts of the arguments of a call ----
+    // format(value as Date), format(value as unknown as Date): the cast a cast applies to is checked with it
+    case import_typescript2.SyntaxKind.AsExpression:
+      return (0, import_typescript2.isAsExpression)(node.parent) || (0, import_typescript2.isCallExpression)(node.parent) && node.parent.arguments.some((argument) => argument === node);
+    // ---- Disallowed by default ----
+    default:
+      return false;
+  }
+}
+function buildDisallowedMessage(node) {
+  switch (node.kind) {
+    case import_typescript2.SyntaxKind.AwaitExpression:
+      return "'await' is not allowed inside template expressions.";
+    case import_typescript2.SyntaxKind.YieldExpression:
+      return "'yield' is not allowed inside template expressions.";
+    case import_typescript2.SyntaxKind.NewExpression:
+      return "'new' is not allowed inside template expressions.";
+    case import_typescript2.SyntaxKind.ArrowFunction:
+    case import_typescript2.SyntaxKind.FunctionExpression:
+      return "Function expressions are not allowed inside template expressions.";
+    case import_typescript2.SyntaxKind.AsExpression:
+      return `A cast with 'as' only closes a whole interpolation or an argument of a call, e.g. { value() as string }, { format(value() as Date) } or (click)="select($event as MouseEvent)".`;
+    default:
+      return `'${import_typescript2.SyntaxKind[node.kind]}' is not allowed inside template expressions.`;
+  }
+}
+
+// ../packages/compiler/src/utils/expression-reads/expression-reads.utils.ts
+var import_typescript3 = require("typescript");
+function collectReads(expression) {
+  const reads = new Array();
+  collectReadsOf(expression, expression, reads);
+  return reads;
+}
+function collectReadsOf(node, parent, reads) {
+  const isMemberName2 = ((0, import_typescript3.isPropertyAccessExpression)(parent) || (0, import_typescript3.isPropertyAssignment)(parent)) && parent.name === node;
+  if ((0, import_typescript3.isIdentifier)(node) && !isMemberName2) {
+    reads.push(node);
+  }
+  forEachExpressionChild(node, (child) => collectReadsOf(child, node, reads));
+}
+
+// ../packages/compiler/src/generator/utils/generator/generator.utils.ts
+var GLOBAL_IDENTIFIERS = /* @__PURE__ */ new Set([
+  ...Object.keys(import_globals.default.browser),
+  ...Object.keys(import_globals.default.builtin),
+  ...Object.getOwnPropertyNames(Object.prototype)
+]);
+var BROWSER_GLOBAL_IDENTIFIERS = new Set(Object.keys(import_globals.default.browser).filter((name) => !Object.hasOwn(import_globals.default.builtin, name)));
+var USER_AGENT_GLOBALS = /* @__PURE__ */ new Set(["localStorage", "sessionStorage", "navigator"]);
+var ROOT_NODE = "root";
+function isBrowserOnlyGlobal(name) {
+  return BROWSER_GLOBAL_IDENTIFIERS.has(name) && (!Object.hasOwn(import_globals.default.node, name) || USER_AGENT_GLOBALS.has(name));
+}
+function resolveExpression(expression, generatorContext, options, segments) {
+  const { segments: emittedSegments, ...resolved } = emitNode(expression, expression, generatorContext, mapDefaultOptions(options));
+  const wrapped = resolved.expression.startsWith("{");
+  segments?.push(...shiftSegments(emittedSegments, wrapped ? 1 : 0));
+  return wrapped ? { ...resolved, expression: `(${resolved.expression})` } : resolved;
+}
+function shiftSegments(segments, columns) {
+  return segments.map(({ columnStart, columnEnd, original }) => ({ columnStart: columnStart + columns, columnEnd: columnEnd + columns, original }));
+}
+function segmentOf(text, span, columnStart = 0) {
+  return span && text.length ? [{ columnStart, columnEnd: text.length, original: span }] : [];
+}
+function emitNode(node, parent, generatorContext, options) {
+  const called = getCalledIdentifier(node);
+  if (called && getKind(called.text, generatorContext) === "variable") {
+    options.variableCall(called);
+  }
+  const callee = getSignalCallee(node);
+  const narrowed = callee && needsResolution(callee, node, generatorContext, options) ? options.narrowedSignal(callee.text) : void 0;
+  const emitted = emitResolvedNode(node, parent, generatorContext, options);
+  if (!narrowed) {
+    return emitted;
+  }
+  const expression = `(${emitted.expression}, ${narrowed})`;
+  const segments = shiftSegments(emitted.segments, 1);
+  const span = getTemplateSpan(node);
+  if (span) {
+    segments.push({ columnStart: 0, columnEnd: expression.length, original: span });
+  }
+  return { ...emitted, expression, segments };
+}
+function getSignalCallee(node) {
+  return (0, import_typescript4.isCallExpression)(node) && (0, import_typescript4.isIdentifier)(node.expression) && !node.arguments.length && !node.questionDotToken ? node.expression : void 0;
+}
+function getCalledIdentifier(node) {
+  return (0, import_typescript4.isCallExpression)(node) && (0, import_typescript4.isIdentifier)(node.expression) ? node.expression : void 0;
+}
+function getKind(name, generatorContext) {
+  return generatorContext.hasUnresolvableIdentifier(name) ? generatorContext.getUnresolvableIdentifierKind(name) : generatorContext.getIdentifierKind(name);
+}
+function emitResolvedNode(node, parent, generatorContext, options) {
+  const span = getTemplateSpan(node);
+  if ((0, import_typescript4.isIdentifier)(node) && needsResolution(node, parent, generatorContext, options)) {
+    const text = node.text;
+    const resolved = resolveIdentifier(text, generatorContext, options);
+    const expression = (0, import_typescript4.isShorthandPropertyAssignment)(parent) && resolved.expression !== text ? `${text}: ${resolved.expression}` : resolved.expression;
+    const segments = segmentOf(expression, span, expression.endsWith(text) ? expression.length - text.length : 0);
+    return { ...resolved, expression, segments };
+  }
+  if (!options.preserveTypeScript && ((0, import_typescript4.isNonNullExpression)(node) || (0, import_typescript4.isAsExpression)(node))) {
+    return emitNode(node.expression, node, generatorContext, options);
+  }
+  if (!containsResolvableIdentifier(node, parent, generatorContext, options) && (options.preserveTypeScript || !containsTypeScriptSyntax(node))) {
+    const expression = node.getText();
+    return { expression, segments: segmentOf(expression, span) };
+  }
+  const sourceText = node.getSourceFile().text;
+  const templateDelta = span && span.start - node.getStart();
+  const result = { expression: "", segments: [] };
+  let lastEnd = node.getStart();
+  (0, import_typescript4.forEachChild)(node, (child) => {
+    appendEmitted(result, sourceText, templateDelta, lastEnd, child.getStart(), (0, import_typescript4.isTypeNode)(child) ? emitVerbatim(child) : emitNode(child, node, generatorContext, options));
+    lastEnd = child.getEnd();
+  });
+  appendEmitted(result, sourceText, templateDelta, lastEnd, node.getEnd());
+  return result;
+}
+function appendEmitted(result, sourceText, templateDelta, start, end, child) {
+  const verbatim = slice(sourceText, start, end);
+  const verbatimSpan = templateDelta === void 0 ? void 0 : { start: templateDelta + start, end: templateDelta + end };
+  const column = result.expression.length;
+  result.segments.push(...shiftSegments(segmentOf(verbatim, verbatimSpan), column));
+  if (child) {
+    result.segments.push(...shiftSegments(child.segments, column + verbatim.length));
+  }
+  result.expression = `${result.expression}${verbatim}${child?.expression ?? ""}`;
+  result.reactive = result.reactive || child?.reactive;
+  const variables = child?.variables;
+  if (variables?.length) {
+    result.variables = mergeVariables(result.variables, variables);
+  }
+}
+function mergeVariables(read, variables) {
+  if (!read?.length) {
+    return variables.slice();
+  }
+  for (let i2 = 0; i2 < variables.length; i2++) {
+    if (!read.includes(variables[i2])) {
+      read.push(variables[i2]);
+    }
+  }
+  return read;
+}
+function emitVerbatim(node) {
+  const expression = node.getText();
+  return { expression, segments: segmentOf(expression, getTemplateSpan(node)) };
+}
+function resolveIdentifier(text, generatorContext, options) {
+  if (generatorContext.hasUnresolvableIdentifier(text)) {
+    return resolveDeclared(text, void 0, generatorContext.getUnresolvableIdentifierKind(text));
+  }
+  if (generatorContext.hasIdentifier(text)) {
+    const kind = generatorContext.getIdentifierKind(text);
+    return kind === "template" ? { expression: `_templateRef(context, ${generatorContext.depthOf(text)}, ${generatorContext.readIdentifier(text)})` } : resolveDeclared(generatorContext.readIdentifier(text), generatorContext.idOf(text), kind);
+  }
+  const member = options.resolver ? `${options.resolver}.${text}` : text;
+  if (generatorContext.hasSignalField(text)) {
+    return { expression: member, reactive: true };
+  }
+  const imported = generatorContext.getImportedIdentifier(text);
+  if (imported) {
+    imported.used = true;
+    return { expression: imported.expression, reactive: imported.kind === "signal" };
+  }
+  if (BROWSER_GLOBAL_IDENTIFIERS.has(text) && !generatorContext.hasShadowingMember(text)) {
+    return { expression: `${options.browserGlobals}.${text}` };
+  }
+  return { expression: member };
+}
+function resolveDeclared(expression, id, kind) {
+  const resolved = { expression, reactive: kind === "signal" };
+  if (kind === "variable" && id !== void 0) {
+    resolved.variables = [id];
+  }
+  return resolved;
+}
+function containsResolvableIdentifier(node, parent, generatorContext, options) {
+  if ((0, import_typescript4.isIdentifier)(node) && needsResolution(node, parent, generatorContext, options)) {
+    return true;
+  }
+  return forEachExpressionChild(node, (child) => containsResolvableIdentifier(child, node, generatorContext, options)) ?? false;
+}
+function containsTypeScriptSyntax(node) {
+  return (0, import_typescript4.isNonNullExpression)(node) || (0, import_typescript4.isAsExpression)(node) || ((0, import_typescript4.forEachChild)(node, containsTypeScriptSyntax) ?? false);
+}
+function needsResolution(node, parent, generatorContext, options) {
+  const { text } = node;
+  const isLocal = generatorContext.hasSignalField(text) || generatorContext.hasShadowingMember(text) || generatorContext.hasUnresolvableIdentifier(text) || generatorContext.hasIdentifier(text) || !!generatorContext.getImportedIdentifier(text);
+  const isBrowserGlobal = !!options.browserGlobals && BROWSER_GLOBAL_IDENTIFIERS.has(text);
+  return !((0, import_typescript4.isPropertyAccessExpression)(parent) && parent.name === node || (0, import_typescript4.isPropertyAssignment)(parent) && parent.name === node || GLOBAL_IDENTIFIERS.has(text) && !isLocal && !isBrowserGlobal || !text);
+}
+function toStringLiteral(value) {
+  const STRING_LITERAL_ESCAPES = {
+    "\\": "\\\\",
+    "'": "\\'",
+    "\n": "\\n",
+    "\r": "\\r"
+  };
+  return `'${value.replace(/[\\'\n\r\p{Zl}\p{Zp}]/gu, (char) => STRING_LITERAL_ESCAPES[char] ?? `\\u${char.charCodeAt(0).toString(16)}`)}'`;
+}
+function fromStringLiteral(content) {
+  return content.replace(/\\(?:u([0-9a-f]{4})|(.))/g, (_match, code, char) => {
+    if (code !== void 0) {
+      return String.fromCharCode(parseInt(code, 16));
+    }
+    switch (char) {
+      case "n":
+        return "\n";
+      case "r":
+        return "\r";
+      default:
+        return char;
+    }
+  });
+}
+function mapDefaultOptions(options) {
+  return {
+    resolver: options?.resolver ?? "this",
+    preserveTypeScript: options?.preserveTypeScript ?? false,
+    narrowedSignal: options?.narrowedSignal ?? (() => void 0),
+    browserGlobals: options?.browserGlobals ?? "",
+    variableCall: options?.variableCall ?? (() => void 0)
+  };
+}
+
 // ../packages/compiler/src/utils/symbol-imports/symbol-imports.utils.ts
 var RESERVED_NAMES = /* @__PURE__ */ new Set(["root", "$event"]);
 function assertImportableSymbol({ local, localSpan }) {
@@ -20967,405 +21381,6 @@ var CompilerContext = class {
   }
 };
 
-// ../packages/compiler/src/generator/utils/generator/generator.utils.ts
-var import_globals = __toESM(require_globals2(), 1);
-var import_typescript4 = require("typescript");
-
-// ../packages/compiler/src/parser/utils/expression-validator/expression-validator.ts
-var import_typescript2 = require("typescript");
-
-// ../packages/compiler/src/utils/expression-children/expression-children.utils.ts
-var import_typescript = require("typescript");
-function forEachExpressionChild(node, callback) {
-  return (0, import_typescript.isAsExpression)(node) ? callback(node.expression) : (0, import_typescript.forEachChild)(node, callback);
-}
-
-// ../packages/compiler/src/parser/utils/expression-validator/expression-validator.ts
-var EXPRESSION_PREFIX = "const x = ";
-var templateOffsets = /* @__PURE__ */ new WeakMap();
-var TRAILING_SCANNER = (0, import_typescript2.createScanner)(import_typescript2.ScriptTarget.ESNext, true, import_typescript2.LanguageVariant.Standard);
-function validateExpression(source, templateOffset) {
-  const sourceFile = (0, import_typescript2.createSourceFile)("expression.ts", `${EXPRESSION_PREFIX}${source}`, import_typescript2.ScriptTarget.ESNext, false);
-  setParents(sourceFile);
-  if (templateOffset !== void 0) {
-    templateOffsets.set(sourceFile, templateOffset - EXPRESSION_PREFIX.length);
-  }
-  const statement = sourceFile.statements[0];
-  const expression = statement.declarationList.declarations[0].initializer;
-  TRAILING_SCANNER.setText(sourceFile.text, expression.end);
-  const trailing = TRAILING_SCANNER.scan();
-  TRAILING_SCANNER.setText(void 0);
-  if (trailing !== import_typescript2.SyntaxKind.EndOfFileToken) {
-    const rest = slice(sourceFile.text, expression.end);
-    throw new Error(`'${source.trim()}' must be a single expression, got '${rest.trim()}' after '${expression.getText()}'.`, {
-      cause: toTemplateSpan(sourceFile, expression.end + rest.length - rest.trimStart().length, sourceFile.text.trimEnd().length)
-    });
-  }
-  visitNode(expression);
-  return {
-    node: expression
-  };
-}
-function setParents(node) {
-  (0, import_typescript2.forEachChild)(node, (child) => {
-    child.parent = node;
-    setParents(child);
-  });
-}
-function getTemplateSpan(node) {
-  const sourceFile = node.getSourceFile();
-  return toTemplateSpan(sourceFile, node.getStart(sourceFile), node.getEnd());
-}
-function toTemplateSpan(sourceFile, start, end) {
-  const offset = templateOffsets.get(sourceFile);
-  return offset === void 0 ? void 0 : { start: offset + start, end: offset + end };
-}
-function visitNode(node) {
-  if (!isAllowedNode(node)) {
-    throw new Error(buildDisallowedMessage(node), { cause: getTemplateSpan(node) });
-  }
-  forEachExpressionChild(node, visitNode);
-}
-function isAllowedNode(node) {
-  switch (node.kind) {
-    // ---- Literals ----
-    case import_typescript2.SyntaxKind.StringLiteral:
-    case import_typescript2.SyntaxKind.NumericLiteral:
-    case import_typescript2.SyntaxKind.BigIntLiteral:
-    case import_typescript2.SyntaxKind.TrueKeyword:
-    case import_typescript2.SyntaxKind.FalseKeyword:
-    case import_typescript2.SyntaxKind.NullKeyword:
-    case import_typescript2.SyntaxKind.UndefinedKeyword:
-    // ---- Identifiers ----
-    case import_typescript2.SyntaxKind.Identifier:
-    // ---- Member access ----
-    // user.name
-    case import_typescript2.SyntaxKind.PropertyAccessExpression:
-    // user['name'], items[0]
-    case import_typescript2.SyntaxKind.ElementAccessExpression:
-    // ---- Call expressions ----
-    // user.getFullName(), user.hasRole('admin')
-    case import_typescript2.SyntaxKind.CallExpression:
-    // ---- Binary expressions ----
-    // Covers arithmetic, comparison, logical, bitwise, nullish coalescing,
-    // and instanceof. Assignment operators are rejected in visitNode via
-    // buildDisallowedMessage before recursing into children.
-    case import_typescript2.SyntaxKind.BinaryExpression:
-    // ---- Operator tokens — visited as children of BinaryExpression ----
-    // Comparison
-    case import_typescript2.SyntaxKind.EqualsEqualsToken:
-    // ==
-    case import_typescript2.SyntaxKind.EqualsEqualsEqualsToken:
-    // ===
-    case import_typescript2.SyntaxKind.ExclamationEqualsToken:
-    // !=
-    case import_typescript2.SyntaxKind.ExclamationEqualsEqualsToken:
-    // !==
-    case import_typescript2.SyntaxKind.LessThanToken:
-    // 
-    case import_typescript2.SyntaxKind.LessThanEqualsToken:
-    // <=
-    case import_typescript2.SyntaxKind.GreaterThanToken:
-    // >
-    case import_typescript2.SyntaxKind.GreaterThanEqualsToken:
-    // >=
-    // Arithmetic
-    case import_typescript2.SyntaxKind.PlusToken:
-    // +
-    case import_typescript2.SyntaxKind.MinusToken:
-    // -
-    case import_typescript2.SyntaxKind.AsteriskToken:
-    // *
-    case import_typescript2.SyntaxKind.SlashToken:
-    // /
-    case import_typescript2.SyntaxKind.PercentToken:
-    // %
-    case import_typescript2.SyntaxKind.AsteriskAsteriskToken:
-    // **
-    // Logical
-    case import_typescript2.SyntaxKind.AmpersandAmpersandToken:
-    // &&
-    case import_typescript2.SyntaxKind.BarBarToken:
-    // ||
-    case import_typescript2.SyntaxKind.QuestionQuestionToken:
-    // ??
-    case import_typescript2.SyntaxKind.QuestionDotToken:
-    // ?.
-    case import_typescript2.SyntaxKind.QuestionToken:
-    // ?
-    case import_typescript2.SyntaxKind.ColonToken:
-    // :
-    // Bitwise
-    case import_typescript2.SyntaxKind.AmpersandToken:
-    // &
-    case import_typescript2.SyntaxKind.BarToken:
-    // |
-    case import_typescript2.SyntaxKind.CaretToken:
-    // ^
-    case import_typescript2.SyntaxKind.LessThanLessThanToken:
-    // 
-    case import_typescript2.SyntaxKind.GreaterThanGreaterThanToken:
-    // >>
-    case import_typescript2.SyntaxKind.GreaterThanGreaterThanGreaterThanToken:
-    // >>>
-    // instanceof / in
-    case import_typescript2.SyntaxKind.InstanceOfKeyword:
-    // instanceof
-    case import_typescript2.SyntaxKind.InKeyword:
-    // in
-    // ---- Unary expressions ----
-    // !isAdmin, ~flags, +n, -n, typeof x, void 0
-    case import_typescript2.SyntaxKind.PrefixUnaryExpression:
-    case import_typescript2.SyntaxKind.PostfixUnaryExpression:
-    // typeof is represented as a dedicated node kind in some TS versions
-    case import_typescript2.SyntaxKind.TypeOfExpression:
-    case import_typescript2.SyntaxKind.VoidExpression:
-    // ---- Conditional (ternary) ----
-    // isAdmin ? 'yes' : 'no'
-    case import_typescript2.SyntaxKind.ConditionalExpression:
-    // ---- Parenthesised expressions ----
-    case import_typescript2.SyntaxKind.ParenthesizedExpression:
-    // ---- Template literals ----
-    // `Hello ${user.name}`
-    case import_typescript2.SyntaxKind.TemplateExpression:
-    case import_typescript2.SyntaxKind.NoSubstitutionTemplateLiteral:
-    case import_typescript2.SyntaxKind.TemplateHead:
-    case import_typescript2.SyntaxKind.TemplateMiddle:
-    case import_typescript2.SyntaxKind.TemplateTail:
-    case import_typescript2.SyntaxKind.TemplateSpan:
-    // ---- Arrays ----
-    // [1, 2, 3], [...items]
-    case import_typescript2.SyntaxKind.ArrayLiteralExpression:
-    // ---- Objects ----
-    // { key: value }, { ...defaults, name }
-    case import_typescript2.SyntaxKind.ObjectLiteralExpression:
-    case import_typescript2.SyntaxKind.PropertyAssignment:
-    case import_typescript2.SyntaxKind.ShorthandPropertyAssignment:
-    // { ...obj } inside an object literal
-    case import_typescript2.SyntaxKind.SpreadAssignment:
-    // ---- Spread ----
-    // foo(...args), [...items]
-    case import_typescript2.SyntaxKind.SpreadElement:
-    case import_typescript2.SyntaxKind.TaggedTemplateExpression:
-    // ---- Internal structural nodes ----
-    // Visited during recursion but carry no semantic meaning of their own.
-    case import_typescript2.SyntaxKind.SyntaxList:
-    case import_typescript2.SyntaxKind.NonNullExpression:
-      return true;
-    // ---- Casts of the arguments of a call ----
-    // format(value as Date), format(value as unknown as Date): the cast a cast applies to is checked with it
-    case import_typescript2.SyntaxKind.AsExpression:
-      return (0, import_typescript2.isAsExpression)(node.parent) || (0, import_typescript2.isCallExpression)(node.parent) && node.parent.arguments.some((argument) => argument === node);
-    // ---- Disallowed by default ----
-    default:
-      return false;
-  }
-}
-function buildDisallowedMessage(node) {
-  switch (node.kind) {
-    case import_typescript2.SyntaxKind.AwaitExpression:
-      return "'await' is not allowed inside template expressions.";
-    case import_typescript2.SyntaxKind.YieldExpression:
-      return "'yield' is not allowed inside template expressions.";
-    case import_typescript2.SyntaxKind.NewExpression:
-      return "'new' is not allowed inside template expressions.";
-    case import_typescript2.SyntaxKind.ArrowFunction:
-    case import_typescript2.SyntaxKind.FunctionExpression:
-      return "Function expressions are not allowed inside template expressions.";
-    case import_typescript2.SyntaxKind.AsExpression:
-      return `A cast with 'as' only closes a whole interpolation or an argument of a call, e.g. { value() as string }, { format(value() as Date) } or (click)="select($event as MouseEvent)".`;
-    default:
-      return `'${import_typescript2.SyntaxKind[node.kind]}' is not allowed inside template expressions.`;
-  }
-}
-
-// ../packages/compiler/src/utils/expression-reads/expression-reads.utils.ts
-var import_typescript3 = require("typescript");
-function collectReads(expression) {
-  const reads = new Array();
-  collectReadsOf(expression, expression, reads);
-  return reads;
-}
-function collectReadsOf(node, parent, reads) {
-  const isMemberName2 = ((0, import_typescript3.isPropertyAccessExpression)(parent) || (0, import_typescript3.isPropertyAssignment)(parent)) && parent.name === node;
-  if ((0, import_typescript3.isIdentifier)(node) && !isMemberName2) {
-    reads.push(node);
-  }
-  forEachExpressionChild(node, (child) => collectReadsOf(child, node, reads));
-}
-
-// ../packages/compiler/src/generator/utils/generator/generator.utils.ts
-var GLOBAL_IDENTIFIERS = /* @__PURE__ */ new Set([
-  ...Object.keys(import_globals.default.browser),
-  ...Object.keys(import_globals.default.builtin),
-  ...Object.getOwnPropertyNames(Object.prototype)
-]);
-var BROWSER_GLOBAL_IDENTIFIERS = new Set(Object.keys(import_globals.default.browser).filter((name) => !Object.hasOwn(import_globals.default.builtin, name)));
-var USER_AGENT_GLOBALS = /* @__PURE__ */ new Set(["localStorage", "sessionStorage", "navigator"]);
-var ROOT_NODE = "root";
-function isBrowserOnlyGlobal(name) {
-  return BROWSER_GLOBAL_IDENTIFIERS.has(name) && (!Object.hasOwn(import_globals.default.node, name) || USER_AGENT_GLOBALS.has(name));
-}
-function resolveExpression(expression, generatorContext, options, segments) {
-  const { segments: emittedSegments, ...resolved } = emitNode(expression, expression, generatorContext, mapDefaultOptions(options));
-  const wrapped = resolved.expression.startsWith("{");
-  segments?.push(...shiftSegments(emittedSegments, wrapped ? 1 : 0));
-  return wrapped ? { ...resolved, expression: `(${resolved.expression})` } : resolved;
-}
-function shiftSegments(segments, columns) {
-  return segments.map(({ columnStart, columnEnd, original }) => ({ columnStart: columnStart + columns, columnEnd: columnEnd + columns, original }));
-}
-function segmentOf(text, span, columnStart = 0) {
-  return span && text.length ? [{ columnStart, columnEnd: text.length, original: span }] : [];
-}
-function emitNode(node, parent, generatorContext, options) {
-  const called = getCalledIdentifier(node);
-  if (called && getKind(called.text, generatorContext) === "variable") {
-    options.variableCall(called);
-  }
-  const callee = getSignalCallee(node);
-  const narrowed = callee && needsResolution(callee, node, generatorContext, options) ? options.narrowedSignal(callee.text) : void 0;
-  const emitted = emitResolvedNode(node, parent, generatorContext, options);
-  if (!narrowed) {
-    return emitted;
-  }
-  const expression = `(${emitted.expression}, ${narrowed})`;
-  const segments = shiftSegments(emitted.segments, 1);
-  const span = getTemplateSpan(node);
-  if (span) {
-    segments.push({ columnStart: 0, columnEnd: expression.length, original: span });
-  }
-  return { ...emitted, expression, segments };
-}
-function getSignalCallee(node) {
-  return (0, import_typescript4.isCallExpression)(node) && (0, import_typescript4.isIdentifier)(node.expression) && !node.arguments.length && !node.questionDotToken ? node.expression : void 0;
-}
-function getCalledIdentifier(node) {
-  return (0, import_typescript4.isCallExpression)(node) && (0, import_typescript4.isIdentifier)(node.expression) ? node.expression : void 0;
-}
-function getKind(name, generatorContext) {
-  return generatorContext.hasUnresolvableIdentifier(name) ? generatorContext.getUnresolvableIdentifierKind(name) : generatorContext.getIdentifierKind(name);
-}
-function emitResolvedNode(node, parent, generatorContext, options) {
-  const span = getTemplateSpan(node);
-  if ((0, import_typescript4.isIdentifier)(node) && needsResolution(node, parent, generatorContext, options)) {
-    const text = node.text;
-    const resolved = resolveIdentifier(text, generatorContext, options);
-    const expression = (0, import_typescript4.isShorthandPropertyAssignment)(parent) && resolved.expression !== text ? `${text}: ${resolved.expression}` : resolved.expression;
-    const segments = segmentOf(expression, span, expression.endsWith(text) ? expression.length - text.length : 0);
-    return { ...resolved, expression, segments };
-  }
-  if (!options.preserveTypeScript && ((0, import_typescript4.isNonNullExpression)(node) || (0, import_typescript4.isAsExpression)(node))) {
-    return emitNode(node.expression, node, generatorContext, options);
-  }
-  if (!containsResolvableIdentifier(node, parent, generatorContext, options) && (options.preserveTypeScript || !containsTypeScriptSyntax(node))) {
-    const expression = node.getText();
-    return { expression, segments: segmentOf(expression, span) };
-  }
-  const sourceText = node.getSourceFile().text;
-  const templateDelta = span && span.start - node.getStart();
-  const result = { expression: "", segments: [] };
-  let lastEnd = node.getStart();
-  (0, import_typescript4.forEachChild)(node, (child) => {
-    appendEmitted(result, sourceText, templateDelta, lastEnd, child.getStart(), (0, import_typescript4.isTypeNode)(child) ? emitVerbatim(child) : emitNode(child, node, generatorContext, options));
-    lastEnd = child.getEnd();
-  });
-  appendEmitted(result, sourceText, templateDelta, lastEnd, node.getEnd());
-  return result;
-}
-function appendEmitted(result, sourceText, templateDelta, start, end, child) {
-  const verbatim = slice(sourceText, start, end);
-  const verbatimSpan = templateDelta === void 0 ? void 0 : { start: templateDelta + start, end: templateDelta + end };
-  const column = result.expression.length;
-  result.segments.push(...shiftSegments(segmentOf(verbatim, verbatimSpan), column));
-  if (child) {
-    result.segments.push(...shiftSegments(child.segments, column + verbatim.length));
-  }
-  result.expression = `${result.expression}${verbatim}${child?.expression ?? ""}`;
-  result.reactive = result.reactive || child?.reactive;
-  const variables = child?.variables;
-  if (variables?.length) {
-    result.variables = mergeVariables(result.variables, variables);
-  }
-}
-function mergeVariables(read, variables) {
-  if (!read?.length) {
-    return variables.slice();
-  }
-  for (let i2 = 0; i2 < variables.length; i2++) {
-    if (!read.includes(variables[i2])) {
-      read.push(variables[i2]);
-    }
-  }
-  return read;
-}
-function emitVerbatim(node) {
-  const expression = node.getText();
-  return { expression, segments: segmentOf(expression, getTemplateSpan(node)) };
-}
-function resolveIdentifier(text, generatorContext, options) {
-  if (generatorContext.hasUnresolvableIdentifier(text)) {
-    return resolveDeclared(text, void 0, generatorContext.getUnresolvableIdentifierKind(text));
-  }
-  if (generatorContext.hasIdentifier(text)) {
-    const kind = generatorContext.getIdentifierKind(text);
-    return kind === "template" ? { expression: `_templateRef(context, ${generatorContext.depthOf(text)}, ${generatorContext.readIdentifier(text)})` } : resolveDeclared(generatorContext.readIdentifier(text), generatorContext.idOf(text), kind);
-  }
-  const member = options.resolver ? `${options.resolver}.${text}` : text;
-  if (generatorContext.hasSignalField(text)) {
-    return { expression: member, reactive: true };
-  }
-  const imported = generatorContext.getImportedIdentifier(text);
-  if (imported) {
-    imported.used = true;
-    return { expression: imported.expression, reactive: imported.kind === "signal" };
-  }
-  if (BROWSER_GLOBAL_IDENTIFIERS.has(text) && !generatorContext.hasShadowingMember(text)) {
-    return { expression: `${options.browserGlobals}.${text}` };
-  }
-  return { expression: member };
-}
-function resolveDeclared(expression, id, kind) {
-  const resolved = { expression, reactive: kind === "signal" };
-  if (kind === "variable" && id !== void 0) {
-    resolved.variables = [id];
-  }
-  return resolved;
-}
-function containsResolvableIdentifier(node, parent, generatorContext, options) {
-  if ((0, import_typescript4.isIdentifier)(node) && needsResolution(node, parent, generatorContext, options)) {
-    return true;
-  }
-  return forEachExpressionChild(node, (child) => containsResolvableIdentifier(child, node, generatorContext, options)) ?? false;
-}
-function containsTypeScriptSyntax(node) {
-  return (0, import_typescript4.isNonNullExpression)(node) || (0, import_typescript4.isAsExpression)(node) || ((0, import_typescript4.forEachChild)(node, containsTypeScriptSyntax) ?? false);
-}
-function needsResolution(node, parent, generatorContext, options) {
-  const { text } = node;
-  const isLocal = generatorContext.hasSignalField(text) || generatorContext.hasShadowingMember(text) || generatorContext.hasUnresolvableIdentifier(text) || generatorContext.hasIdentifier(text) || !!generatorContext.getImportedIdentifier(text);
-  const isBrowserGlobal = !!options.browserGlobals && BROWSER_GLOBAL_IDENTIFIERS.has(text);
-  return !((0, import_typescript4.isPropertyAccessExpression)(parent) && parent.name === node || (0, import_typescript4.isPropertyAssignment)(parent) && parent.name === node || GLOBAL_IDENTIFIERS.has(text) && !isLocal && !isBrowserGlobal || !text);
-}
-function toStringLiteral(value) {
-  const STRING_LITERAL_ESCAPES = {
-    "\\": "\\\\",
-    "'": "\\'",
-    "\n": "\\n",
-    "\r": "\\r"
-  };
-  return `'${value.replace(/[\\'\n\r\p{Zl}\p{Zp}]/gu, (char) => STRING_LITERAL_ESCAPES[char] ?? `\\u${char.charCodeAt(0).toString(16)}`)}'`;
-}
-function mapDefaultOptions(options) {
-  return {
-    resolver: options?.resolver ?? "this",
-    preserveTypeScript: options?.preserveTypeScript ?? false,
-    narrowedSignal: options?.narrowedSignal ?? (() => void 0),
-    browserGlobals: options?.browserGlobals ?? "",
-    variableCall: options?.variableCall ?? (() => void 0)
-  };
-}
-
 // ../packages/compiler/src/generator/states/generate-element/generate-element.state.ts
 var import_typescript6 = require("typescript");
 
@@ -21840,6 +21855,7 @@ var a = 97;
 var z = 122;
 var LEFT_BRACE = 123;
 var RIGHT_BRACE = 125;
+var DELETE = 127;
 
 // ../packages/compiler/src/lexer/types/token-type.enum.ts
 var TokenType = /* @__PURE__ */ ((TokenType2) => {
@@ -21928,6 +21944,34 @@ function lexAttributeValue(cursor, context) {
     }
   }
   return retVal;
+}
+
+// ../packages/compiler/src/lexer/utils/chars/chars.utils.ts
+function isNotBlank(str) {
+  return /\S/.test(str);
+}
+function isIdentifierChar(code) {
+  return code >= a && code <= z || code >= A && code <= Z || code >= ZERO && code <= NINE || code === UNDERSCORE || code === DOLLAR;
+}
+function isForbiddenNameChar(code) {
+  return code === DOUBLE_QUOTE || code === SINGLE_QUOTE || code === LESS_THAN || code === BACKSLASH || code < SPACE || code === DELETE;
+}
+function findForbiddenNameChar(name) {
+  for (let i2 = 0; i2 < name.length; i2++) {
+    if (isForbiddenNameChar(name.charCodeAt(i2))) {
+      return i2;
+    }
+  }
+  return -1;
+}
+function describeNameChar(code) {
+  return code < SPACE || code === DELETE ? `U+${code.toString(16).toUpperCase().padStart(4, "0")}` : `'${String.fromCharCode(code)}'`;
+}
+function isAsciiLetter(code) {
+  return code >= a && code <= z || code >= A && code <= Z;
+}
+function isWhitespace(code) {
+  return code === SPACE || code === TAB || code === LF || code === CR;
 }
 
 // ../packages/compiler/src/lexer/states/lex-attribute/lex-attribute.state.ts
@@ -22088,7 +22132,11 @@ function lexAttribute(cursor, context) {
         if (!attribute) {
           throw new Error(`Attribute cannot start with ' or "`);
         }
+      // Break is missing on purpose: a quote after the start of the name is rejected by the default case
       default:
+        if (isForbiddenNameChar(cursor.peek())) {
+          throw new Error(`${describeNameChar(cursor.peek())} cannot be part of an attribute name`);
+        }
         cursor.advance();
         attribute = `${attribute}${cursor.currentChar.value}`;
     }
@@ -22650,6 +22698,9 @@ function lexSelector(cursor, context, type) {
         if (typeArguments !== void 0) {
           throw 'The type arguments of a directive must be followed by its bindings between parentheses, e.g. @@selector<string>(name="value")';
         }
+        if (isForbiddenNameChar(cursor.peek())) {
+          throw `${describeNameChar(cursor.peek())} cannot be part of a directive selector`;
+        }
         cursor.advance();
         selector = `${selector}${cursor.currentChar.value}`;
     }
@@ -23131,20 +23182,6 @@ function lexInterpolation(cursor, context) {
     tokens,
     popState: true
   };
-}
-
-// ../packages/compiler/src/lexer/utils/chars/chars.utils.ts
-function isNotBlank(str) {
-  return /\S/.test(str);
-}
-function isIdentifierChar(code) {
-  return code >= a && code <= z || code >= A && code <= Z || code >= ZERO && code <= NINE || code === UNDERSCORE || code === DOLLAR;
-}
-function isAsciiLetter(code) {
-  return code >= a && code <= z || code >= A && code <= Z;
-}
-function isWhitespace(code) {
-  return code === SPACE || code === TAB || code === LF || code === CR;
 }
 
 // ../packages/compiler/src/lexer/states/lex-let/lex-let.state.ts
@@ -25443,6 +25480,11 @@ function parseEvent(cursor, _parseNode, token) {
   } catch (error) {
     throw Object.assign(error, { cause: nameSpan });
   }
+  const forbidden = key ? -1 : findForbiddenNameChar(name);
+  if (forbidden !== -1) {
+    const start = nameSpan.start + forbidden;
+    throw new Error(`${describeNameChar(name.charCodeAt(forbidden))} cannot be part of an event name`, { cause: { start, end: start + 1 } });
+  }
   const handlerToken = cursor.peek();
   if (handlerToken.type !== 8 /* EVENT_HANDLER */) {
     throw `Invalid event format for ${name}`;
@@ -26461,6 +26503,7 @@ function parseOrphanCatch(_cursor, _parseNode, token) {
 }
 
 // ../packages/compiler/src/parser/parser/parser.ts
+var MAX_DEPTH = 512;
 var Parser = class {
   /**
    * Creates a new Parser instance.
@@ -26558,6 +26601,9 @@ var Parser = class {
       }
       if (token.type === 21 /* IMPORT */ && (!this._isHeader || this._depth > 0)) {
         throw "An @import statement must be at the beginning of the template, before any other content";
+      }
+      if (this._depth === MAX_DEPTH) {
+        throw `The template nests more than ${MAX_DEPTH} elements, blocks and bindings into one another: move part of it into a component or a template`;
       }
       this._depth++;
       const node = state(this._cursor, this._parseChild, token);
@@ -27402,9 +27448,9 @@ var import_node_fs2 = require("fs");
 var import_node_path = require("path");
 
 // ../packages/compiler/src/utils/library-manifest/library-manifest.utils.ts
-var IMPORT_TYPE = /import\('([^']*)'\)(?:\.([A-Za-z_$][\w$]*))?/g;
+var IMPORT_TYPE = /import\('((?:[^'\\]|\\.)*)'\)(?:\.([A-Za-z_$][\w$]*))?/g;
 function mapTypeModules(type, map) {
-  return type.replace(IMPORT_TYPE, (_match, module2, name) => `import('${map(module2)}')${name === void 0 ? "" : `.${name}`}`);
+  return type.replace(IMPORT_TYPE, (_match, module2, name) => `import(${toStringLiteral(map(fromStringLiteral(module2)))})${name === void 0 ? "" : `.${name}`}`);
 }
 function toLibraryMetadata(declaration, manifest, root) {
   const { type, className, selector, module: module2, types, typeParameters, inputs, events, ssr } = declaration;
@@ -27457,6 +27503,7 @@ function toPackagePath(path, root) {
 
 // ../packages/compiler/src/utils/package-libraries/package-libraries.utils.ts
 var SCHEMA_VERSION = 1;
+var IDENTIFIER2 = /^[A-Za-z_$][\w$]*$/;
 var DECLARATION_FILE = /\.d\.[cm]?ts$/;
 var packages = /* @__PURE__ */ new Map();
 function readLibraryMetadata(declarationFile, exportedName) {
@@ -27465,8 +27512,8 @@ function readLibraryMetadata(declarationFile, exportedName) {
   }
   const library = findLibrary(declarationFile);
   const subpath = library?.subpaths.get(normalizeFileName(declarationFile));
-  const key = library && subpath !== void 0 ? library.manifest.exports[subpath]?.[exportedName] : void 0;
-  return library && key !== void 0 ? getLibraryMetadata(library, key) : void 0;
+  const exported = library && subpath !== void 0 && Object.hasOwn(library.manifest.exports, subpath) ? library.manifest.exports[subpath] : void 0;
+  return exported && Object.hasOwn(exported, exportedName) ? getLibraryMetadata(library, exported[exportedName]) : void 0;
 }
 function readLibraryClass(declarationFile, className) {
   const library = DECLARATION_FILE.test(declarationFile) ? findLibrary(declarationFile) : void 0;
@@ -27497,14 +27544,77 @@ function loadLibrary(root, packageJson) {
   if (manifestPath === void 0) {
     return void 0;
   }
+  if (!isPackagePath(manifestPath)) {
+    throw new Error(`The manifest of ${packageJson.name}, ${manifestPath}, is not a file of the package: write xaendar.manifest of its package.json as a path inside it, e.g. ./xaendar-manifest.json`);
+  }
+  const path = import_node_path.posix.join(root, manifestPath);
   let manifest;
   try {
-    manifest = JSON.parse((0, import_node_fs2.readFileSync)(import_node_path.posix.join(root, manifestPath), "utf-8"));
+    manifest = JSON.parse((0, import_node_fs2.readFileSync)(path, "utf-8"));
   } catch (error) {
-    throw new Error(`Cannot read the manifest of ${packageJson.name}, ${import_node_path.posix.join(root, manifestPath)}: ${error}`, { cause: error });
+    throw new Error(`Cannot read the manifest of ${packageJson.name}, ${path}: ${error}`, { cause: error });
   }
   checkManifest(manifest, root);
+  const invalid = findInvalidDeclaration(manifest, packageJson);
+  if (invalid !== void 0) {
+    throw new Error(`The manifest of ${packageJson.name}, ${path}, is not one Xaendar writes: ${invalid}. Build the library again with xd build.`);
+  }
   return { root, packageJson, manifest, subpaths: readSubpaths(packageJson, root), metadatas: /* @__PURE__ */ new Map() };
+}
+function findInvalidDeclaration({ name, exports: exports2, declarations }, packageJson) {
+  if (name !== packageJson.name) {
+    return `it names the package ${name}`;
+  }
+  const keys = Object.keys(declarations);
+  for (let i2 = 0; i2 < keys.length; i2++) {
+    const invalid = findInvalidMembers(declarations[keys[i2]]);
+    if (invalid !== void 0) {
+      return `${keys[i2]} ${invalid}`;
+    }
+  }
+  const subpaths = Object.keys(exports2);
+  for (let i2 = 0; i2 < subpaths.length; i2++) {
+    const exported = exports2[subpaths[i2]];
+    const names = Object.keys(exported);
+    for (let j = 0; j < names.length; j++) {
+      if (!Object.hasOwn(declarations, exported[names[j]])) {
+        return `the export ${names[j]} of ${subpaths[i2]} has no declaration`;
+      }
+    }
+  }
+  return void 0;
+}
+function findInvalidMembers({ className, selector, module: module2, types, inputs, events }) {
+  if (!IDENTIFIER2.test(className)) {
+    return `has the class name ${className}`;
+  }
+  if (!isName(selector)) {
+    return `has the selector ${selector}`;
+  }
+  if (module2 !== "." && !isPackagePath(module2)) {
+    return `has the module ${module2}, not a path of the exports of the package`;
+  }
+  if (!isPackagePath(types)) {
+    return `has the declarations ${types}, not a file of the package`;
+  }
+  for (let i2 = 0; i2 < inputs.length; i2++) {
+    const { name, property } = inputs[i2];
+    if (!isName(name) || property !== void 0 && !IDENTIFIER2.test(property)) {
+      return `has the input ${property ?? name}`;
+    }
+  }
+  for (let i2 = 0; i2 < events.length; i2++) {
+    if (!isName(events[i2].name)) {
+      return `has the event ${events[i2].name}`;
+    }
+  }
+  return void 0;
+}
+function isName(name) {
+  return name !== "" && findForbiddenNameChar(name) === -1;
+}
+function isPackagePath(path) {
+  return typeof path === "string" && path.startsWith("./") && !path.split(/[/\\]/).includes("..");
 }
 function checkManifest({ schemaVersion, name, version, xaendar }, root) {
   if (schemaVersion !== SCHEMA_VERSION) {
@@ -28214,7 +28324,7 @@ function collectTypeReplacements(node, sourceFile, start, replacements) {
     const qualifier = findTypeQualifier(name.text, sourceFile);
     if (qualifier) {
       const isNamespace = name !== node.typeName;
-      replacements.push({ start: name.getStart(sourceFile) - start, end: name.getEnd() - start, text: isNamespace && qualifier.namespace ? `import('${qualifier.module}')` : `import('${qualifier.module}').${qualifier.name}` });
+      replacements.push({ start: name.getStart(sourceFile) - start, end: name.getEnd() - start, text: isNamespace && qualifier.namespace ? `import(${toStringLiteral(qualifier.module)})` : `import(${toStringLiteral(qualifier.module)}).${qualifier.name}` });
     }
   }
   (0, import_typescript17.forEachChild)(node, (child) => collectTypeReplacements(child, sourceFile, start, replacements));
@@ -28285,7 +28395,7 @@ function getOwnerType({ modulePath, className, typeParameters }, withTypeParamet
   return toOwnerType(modulePath, className, withTypeParameters ? typeParameters?.map(({ name }) => name) : void 0);
 }
 function toOwnerType(modulePath, className, typeParameters) {
-  const owner = `import('${toTypeCheckModuleSpecifier({ modulePath: modulePath.replaceAll("\\", "/") })}').${className}`;
+  const owner = `import(${toStringLiteral(toTypeCheckModuleSpecifier({ modulePath: modulePath.replaceAll("\\", "/") }))}).${className}`;
   return typeParameters?.length ? `${owner}<${typeParameters.join(", ")}>` : owner;
 }
 function extractBindingType(member, name, accessorOwner, event) {
@@ -29153,7 +29263,7 @@ function typeCheckImport(node, _processNode, context) {
     if (symbol) {
       assertImportableSymbol(symbol);
       const { imported, local, importedSpan, localSpan } = symbol;
-      const from = ` from '${toTypeCheckModuleSpecifier(symbol)}';`;
+      const from = ` from ${toStringLiteral(toTypeCheckModuleSpecifier(symbol))};`;
       if (imported === "*") {
         lines.push(line("import * as ", mapped(local, localSpan), from));
       } else if (imported === local) {
@@ -29271,7 +29381,7 @@ function typeCheckTry(node, processNode, context) {
 }
 
 // ../packages/compiler/src/type-checker/utils/import-hoisting/import-hoisting.utils.ts
-var IMPORT_TYPE2 = /import\('([^']+)'\)/g;
+var IMPORT_TYPE2 = /import\(('(?:[^'\\]|\\.)+')\)/g;
 var MODULE_ALIAS = "__module";
 function hoistImportTypes(lines) {
   const aliases = /* @__PURE__ */ new Map();
@@ -29280,18 +29390,18 @@ function hoistImportTypes(lines) {
     return lines;
   }
   const imports = new Array();
-  for (const [modulePath, alias] of aliases) {
-    imports.push(plain(`import type * as ${alias} from '${modulePath}';`));
+  for (const [specifier, alias] of aliases) {
+    imports.push(plain(`import type * as ${alias} from ${specifier};`));
   }
   return imports.concat(hoisted);
 }
 function hoistLine(currentLine, aliases) {
   const shifts = new Array();
-  const text = currentLine.text.replace(IMPORT_TYPE2, (match, modulePath, offset) => {
-    let alias = aliases.get(modulePath);
+  const text = currentLine.text.replace(IMPORT_TYPE2, (match, specifier, offset) => {
+    let alias = aliases.get(specifier);
     if (!alias) {
       alias = `${MODULE_ALIAS}${aliases.size}`;
-      aliases.set(modulePath, alias);
+      aliases.set(specifier, alias);
     }
     shifts.push({ end: offset + match.length, delta: alias.length - match.length });
     return alias;
@@ -29949,10 +30059,10 @@ async function typeCheckTemplateTolerant(input, nodes, metadatas, shadowingMembe
 }
 
 // ../packages/compiler/src/lexer/utils/binding-context/binding-context.utils.ts
-var PARTIAL_NAME = /[^\s(){}"'=<>/@*]*$/;
+var NAME_END = /[\s(){}"'=<>/@*]/;
 function getBindingContext(source, offset) {
   const before = source.slice(0, offset);
-  const start = offset - PARTIAL_NAME.exec(before)[0].length;
+  const start = findNameStart(before);
   if (!/[\s({]/.test(before[start - 1])) {
     return void 0;
   }
@@ -29976,6 +30086,13 @@ function getBindingContext(source, offset) {
   const inDirective = lexer.history.some((state2) => state2 === "directive" /* DIRECTIVE */ || state2 === "structural-directive" /* STRUCTURAL_DIRECTIVE */);
   const directive = inDirective ? tokens.findLast((token) => token.type === 23 /* DIRECTIVE */ || token.type === 25 /* STRUCTURAL_DIRECTIVE */).parts[0] : void 0;
   return { kind, tagName, is: readIs(tokens, tokens.lastIndexOf(tag)), directive, span: { start, end: offset } };
+}
+function findNameStart(text) {
+  let start = text.length;
+  while (start > 0 && !NAME_END.test(text[start - 1])) {
+    start--;
+  }
+  return start;
 }
 function getBindingKind(state) {
   switch (state) {

@@ -104,7 +104,22 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** Something other than ( after the type arguments of a directive (@@exList<Row>x).
 - **Fix:** Open the bindings right after the type arguments: @@exList<Row>(items="{rows()}").
 
+### `[Lexer] ''' cannot be part of an attribute name`
+
+- **Cause:** An attribute name, or a directive selector (`… cannot be part of a directive selector`), holding a character no HTML name holds: a quote, <, \ or a control character (shown as U+0007): often a missing space or = (title'x'), or a quote typed twice.
+- **Fix:** Remove the character from the name, and write the value after = between double quotes.
+
 ## Parser
+
+### `[Parser] '\' cannot be part of an event name`
+
+- **Cause:** An event name holding a quote, <, \ or a control character. A key event takes any key ((keydown.\)): only the name of another event is checked.
+- **Fix:** Rename the event, or write the key event as keydown.<key>.
+
+### `[Parser] The template nests more than 512 elements, blocks and bindings into one another: move part of it into a component or a template`
+
+- **Cause:** A template nesting more than 512 levels, as the HTML parser stops nesting elements at 512.
+- **Fix:** Move part of the content into a child component or a <template> rendered with @render.
 
 ### `[Parser] Expected closing tag input while file is over`
 
@@ -854,6 +869,16 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** The xaendar-manifest.json of a library is missing or damaged.
 - **Fix:** Install the package again.
+
+### `Error: The manifest of @acme/ui, <path>/xaendar-manifest.json, is not one Xaendar writes: card/card.xd.component#Card has the input x'+y+'. Build the library again with xd build.`
+
+- **Cause:** A xaendar-manifest.json edited by hand or written by another tool: a class name or an input property that is not a JavaScript name, a selector, input or event holding a character no template name holds, a module or declaration file outside the package, a manifest naming another package, or an export without declaration. The compiled code writes these names as they are, so a manifest holding them could write code into the application.
+- **Fix:** Build the library again with xd build; if it comes from a package of someone else, do not use that version.
+
+### `Error: The manifest of @acme/ui, ../ui/xaendar-manifest.json, is not a file of the package: write xaendar.manifest of its package.json as a path inside it, e.g. ./xaendar-manifest.json`
+
+- **Cause:** The xaendar.manifest of the package.json of a library points outside the package, or is not a ./ path.
+- **Fix:** Point it at ./xaendar-manifest.json, as xd build writes it.
 
 ### `Selector "ui-card" of component "CardComponent" - <path> is already used by a component of @acme/ui. Custom element names must be unique.`
 
