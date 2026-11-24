@@ -343,6 +343,11 @@ describe('parseElement', () => {
         expect(node).toMatchObject({ tagName: 'template', content: '', children: [] });
       });
 
+      it('keeps the is of a customized built-in element in the content, so that its clones are that element', () => {
+        const [node] = parse('<template><button title="Copy" is="copy-button">x</button></template>') as ElementNode[];
+        expect(node.content).toBe('<button is="copy-button" title="Copy">x</button>');
+      });
+
       it('serializes a nested standard <template>', () => {
         const [node] = parse('<template><template id="inner"><b>x</b></template></template>') as ElementNode[];
         expect(node.content).toBe('<template id="inner"><b>x</b></template>');
