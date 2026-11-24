@@ -1,6 +1,8 @@
 import { keys } from '@xaendar/common';
 import type { Constructor, NoArgsVoidFunction } from '@xaendar/types';
 import { _CLIENT_ATTRIBUTE, _HYDRATE_ATTRIBUTE, _SERVER_INPUTS_ATTRIBUTE, CONNECTED_HOOKS, DIRECTIVE_AFTER_RENDER, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DISCONNECTED_HOOKS, HYDRATE, INITIALIZE, INTERNAL_EXTENDS, IS_RENDERED, WAITS_FOR_HYDRATION } from '../../costants';
+import { isInputSignal } from '../../signals/input/input-instance.symbol';
+import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
 import { EffectOptions } from '../../signals/types/effect-options.type';
 import type { _Context } from '../../types/context.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
@@ -366,7 +368,10 @@ export class CustomElement extends HTMLElement {
       _checkExposedFields(this);
     }
 
-    this._restoreServerInputs();
+    if (hydrating) {
+      this._restoreServerInputs();
+    }
+
     /*
       Waiting for its first render, it has a declarative shadow root unless it renders only in the browser, or it is a
       customized built-in element without a template: the server writes no shadow root with `data-xd-client`. Read here,
@@ -482,21 +487,34 @@ export class CustomElement extends HTMLElement {
 
   /**
    * Sets the inputs the server rendered the element with, when it is the root of a page rendered on the server, or a
-   * component a static one renders: no template sets them in the browser, so `renderToString` writes them into the `data-xd-inputs` attribute of the
-   * element. They are set by assigning their properties, as code outside Xaendar sets them, and the attribute is removed,
-   * so that the element is the one the browser would render. Any other element has no such attribute.
+   * component a static one renders: no template sets them in the browser, so `renderToString` writes them into the
+   * `data-xd-inputs` attribute of the element, by the names of their properties. Read only while the element hydrates,
+   * they are set into the input signals, the ones its host directives expose included, as `renderToString` set them, and
+   * the attribute is removed, so that the element is the one the browser would render.
+   *
+   * N.B. The attribute is part of the HTML, which may not come from the server: a name that is not an input throws,
+   * never assigned to the element, or HTML injected with it (`data-xd-inputs='{"innerHTML": …}'`) would write any property
+   * of the element, its `innerHTML` or its prototype (`__proto__`) included. Do not assign the values to the properties.
+   *
+   * @throws When a name written into the attribute is not an input of the component.
    */
   private _restoreServerInputs(): void {
-    if (!HYDRATION || !this.hasAttribute(_SERVER_INPUTS_ATTRIBUTE)) {
+    if (!this.hasAttribute(_SERVER_INPUTS_ATTRIBUTE)) {
       return;
     }
 
     const serialized = this.getAttribute(_SERVER_INPUTS_ATTRIBUTE)!;
     this.removeAttribute(_SERVER_INPUTS_ATTRIBUTE);
-    const inputs = _parseState<object>(serialized);
+    const inputs = _parseState<Record<string, unknown>>(serialized);
     const names = keys(inputs);
     for (let i = 0; i < names.length; i++) {
-      this[names[i]] = inputs[names[i]];
+      const name = names[i];
+      const input: unknown = this[name as keyof this];
+      if (!isInputSignal(input)) {
+        throw new Error(`${this.constructor.name} does not declare an input named "${name}", written into its ${_SERVER_INPUTS_ATTRIBUTE} attribute`);
+      }
+
+      input.set(inputs[name], INPUT_SIGNAL_SET_SYMBOL);
     }
   }
 

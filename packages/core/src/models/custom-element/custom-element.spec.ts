@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { CLEANUP, CONNECTED_HOOKS, DISCONNECTED_HOOKS, HEADER, HYDRATE, IS_RENDERED } from '../../costants';
 import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
 import { _bindEffect, effect } from '../../signals/effect/effect';
+import { input } from '../../signals/input/input';
 import type { _Context } from '../../types/context.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { ClaimNodes } from '../../utils/claim-nodes/claim-nodes.util';
@@ -330,14 +331,50 @@ describe('CustomElement', () => {
   });
 
   describe('inputs of the server', () => {
-    it('sets the inputs the server wrote into the element before onInit, and removes their attribute', () => {
-      const seen = new Array<unknown>();
-      const { element } = createWithHooks({ onInit: target => seen.push((target as unknown as { since: Date }).since, target.hasAttribute('data-xd-inputs')) });
-      element.setAttribute('data-xd-inputs', _stringifyState({ since: new Date(0) }, 'inputs'));
+    /**
+     * Upgrades an element the server rendered without a shadow root, holding the inputs written into `data-xd-inputs`,
+     * as a component declaring the input `since`, recording what its `onInit` sees.
+     */
+    function upgradeWithInputs(inputs: Record<string, unknown>, client = true) {
+      const name = `x-base-${counter++}`;
+      const element = document.createElement(name);
+      if (client) {
+        element.setAttribute('data-xd-client', '');
+      }
 
+      element.setAttribute('data-xd-inputs', _stringifyState(inputs, 'inputs'));
+      const seen = new Array<unknown>();
+      const klass = class extends CustomElement {
+        public readonly since = input<Date>();
+
+        public onInit(): void {
+          seen.push(this.since(), this.hasAttribute('data-xd-inputs'));
+        }
+      };
+      _defineRender(klass, () => _scope(null, EMPTY_LAYOUT));
       document.body.appendChild(element);
+      customElements.define(name, klass);
+
+      return { element, seen };
+    }
+
+    it('sets the inputs the server wrote into the element before onInit, and removes their attribute', () => {
+      const { element, seen } = upgradeWithInputs({ since: new Date(0) });
 
       expect(seen).toEqual([new Date(0), false]);
+      element.remove();
+    });
+
+    it('rejects a name that is not an input, never assigning it to the element', () => {
+      expect(() => upgradeWithInputs({ innerHTML: '<img src="x">' })).toThrow(`does not declare an input named "innerHTML", written into its data-xd-inputs attribute`);
+      expect(document.body.lastElementChild!.innerHTML).toBe('');
+      document.body.lastElementChild!.remove();
+    });
+
+    it('reads them only while the element hydrates', () => {
+      const { element, seen } = upgradeWithInputs({ since: new Date(0) }, false);
+
+      expect(seen).toEqual([undefined, true]);
       element.remove();
     });
   });

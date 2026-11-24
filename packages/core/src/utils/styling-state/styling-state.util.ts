@@ -267,6 +267,11 @@ export function applyDirectStyling(element: Element, attribute: StylingAttribute
  * Writes the whole attribute of an element not holding it yet, written by a single source: the classes present, or the
  * declarations, by the opinions of the source, the keys bound one by one winning over the string.
  *
+ * N.B. A value holding a `;` is set alone with `setProperty`, after the attribute, as every later change sets it: a
+ * value bound to a single key (`[style.color]="{ color }"`) may come from a user, and joined into the text of the
+ * attribute it would end its declaration and add others (`red; position: fixed; inset: 0`), which `setProperty` rejects
+ * along with the value. Do not write such a value into the text of the attribute.
+ *
  * @param element - The element, without the attribute.
  * @param attribute - The attribute.
  * @param keys - The opinions of the source on the keys bound one by one.
@@ -274,17 +279,29 @@ export function applyDirectStyling(element: Element, attribute: StylingAttribute
  */
 export function writeStylingAttribute(element: Element, attribute: StylingAttribute, keys: StylingOpinions | null, string: StylingOpinions | null): void {
   let text = '';
+  // Keys and values set alone, rarely any
+  let separate = null as string[] | null;
   forEachKey(null, null, keys, string, key => {
     const value = resolveOpinion(keys, string, key);
     if (value === true) {
       text = text ? `${text} ${key}` : key;
     } else if (typeof value === 'string') {
-      text = text ? `${text} ${key}: ${value};` : `${key}: ${value};`;
+      if (value.includes(';')) {
+        separate ? separate.push(key, value) : separate = [key, value];
+      } else {
+        text = text ? `${text} ${key}: ${value};` : `${key}: ${value};`;
+      }
     }
   });
 
   if (text) {
     element.setAttribute(attribute, text);
+  }
+
+  if (separate) {
+    for (let i = 0; i < separate.length; i += 2) {
+      writeKey(element, attribute, separate[i], separate[i + 1], false);
+    }
   }
 }
 
