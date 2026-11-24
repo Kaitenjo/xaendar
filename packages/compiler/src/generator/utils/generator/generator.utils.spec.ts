@@ -4,7 +4,7 @@ import { validateExpression } from '../../../parser/utils/expression-validator/e
 import type { LineMapping } from '../../../type-checker/types/line-mapping.type';
 import type { ContextCache } from '../../../types/context-cache.type';
 import { GeneratorContext } from '../../context/context';
-import { getBlockIdentifier, getElementIdentifier, getSignalCallee, getTextIdentifier, GLOBAL_IDENTIFIERS, isBrowserOnlyGlobal, resolveExpression, ROOT_NODE, toStringLiteral } from './generator.utils';
+import { fromStringLiteral, getBlockIdentifier, getElementIdentifier, getSignalCallee, getTextIdentifier, GLOBAL_IDENTIFIERS, isBrowserOnlyGlobal, resolveExpression, ROOT_NODE, toStringLiteral } from './generator.utils';
 
 const cache = {} as ContextCache;
 
@@ -354,5 +354,13 @@ describe('toStringLiteral', () => {
   it('produces a literal evaluating back to the text', () => {
     const value = `it's a \\ "quoted"\r\n${LINE_SEPARATOR}text`;
     expect(new Function(`return ${toStringLiteral(value)};`)()).toBe(value);
+  });
+});
+
+describe('fromStringLiteral', () => {
+  it('reads back the text of the content of a literal written by toStringLiteral', () => {
+    const value = `/home/o'brien\\a\r\n${String.fromCharCode(0x2028)}b`;
+    expect(fromStringLiteral(toStringLiteral(value).slice(1, -1))).toBe(value);
+    expect(fromStringLiteral('/src/card')).toBe('/src/card');
   });
 });

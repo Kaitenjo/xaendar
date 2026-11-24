@@ -171,11 +171,13 @@ describe('lexAttribute', () => {
     expect(() => lexAttribute(cursor, context)).toThrow('Attribute cannot start with \' or \"');
   });
 
-  it('treats a quote as a literal character once the attribute name has started', () => {
-    const cursor = new LexerCursor('a"b>');
-    expect(lexAttribute(cursor, context)).toEqual({
-      state: LexerState.TAG_BODY,
-      tokens: [{ type: TokenType.ATTRIBUTE, parts: ['a"b'] }]
-    });
+  it.each([
+    ['a"b>', '\'"\''],
+    ['a\'+x`1`+\'="x">', '\'\'\''],
+    ['a<b>', '\'<\''],
+    ['a\\b>', '\'\\\''],
+    ['a\u0007b>', 'U+0007']
+  ])('throws on a character no attribute name can hold once the name has started, %j', (input, char) => {
+    expect(() => lexAttribute(new LexerCursor(input), context)).toThrow(`${char} cannot be part of an attribute name`);
   });
 });

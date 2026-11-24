@@ -1,6 +1,7 @@
 import { slice } from '@xaendar/common';
 import { acceptsShadowRoot, isValidCustomElementName, toModelChangeEvent } from '@xaendar/internals';
 import { CallExpression, ClassDeclaration, CompilerOptions, Decorator, EntityName, Expression, forEachChild, getCombinedModifierFlags, getDecorators, getNameOfDeclaration, Identifier, isArrowFunction, isCallExpression, isClassDeclaration, isDecorator, isEnumDeclaration, isFunctionExpression, isIdentifier, isImportDeclaration, isInterfaceDeclaration, isMethodDeclaration, isNamedImports, isNamespaceImport, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isQualifiedName, isShorthandPropertyAssignment, isStringLiteral, isTypeAliasDeclaration, isTypeReferenceNode, ModifierFlags, ModifierLike, Node, ObjectLiteralElementLike, ObjectLiteralExpression, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
+import { toStringLiteral } from '../../generator/utils/generator/generator.utils';
 import { ComponentPropertyMetadataWithSpan } from '../../models/component-property-metadata-with-span/component-property-metadata-with-span.model';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
 import type { ClassDecoratorNode } from '../../types/class-decorator-node.type';
@@ -1176,7 +1177,7 @@ function collectTypeReplacements(node: Node, sourceFile: SourceFile, start: numb
     if (qualifier) {
       // A reference through a namespace import (`ns.Tag`) only needs the namespace replaced
       const isNamespace = name !== node.typeName;
-      replacements.push({ start: name.getStart(sourceFile) - start, end: name.getEnd() - start, text: isNamespace && qualifier.namespace ? `import('${qualifier.module}')` : `import('${qualifier.module}').${qualifier.name}` });
+      replacements.push({ start: name.getStart(sourceFile) - start, end: name.getEnd() - start, text: isNamespace && qualifier.namespace ? `import(${toStringLiteral(qualifier.module)})` : `import(${toStringLiteral(qualifier.module)}).${qualifier.name}` });
     }
   }
 
@@ -1322,7 +1323,7 @@ export function getOwnerType({ modulePath, className, typeParameters }: Pick<Com
  * @returns The type, e.g. `import('/src/list.directive').List<Item>`.
  */
 function toOwnerType(modulePath: string, className: string, typeParameters: readonly string[] | undefined): string {
-  const owner = `import('${toTypeCheckModuleSpecifier({ modulePath: modulePath.replaceAll('\\', '/') })}').${className}`;
+  const owner = `import(${toStringLiteral(toTypeCheckModuleSpecifier({ modulePath: modulePath.replaceAll('\\', '/') }))}).${className}`;
   return typeParameters?.length ? `${owner}<${typeParameters.join(', ')}>` : owner;
 }
 

@@ -693,6 +693,10 @@ describe('getOwnerType', () => {
     expect(getOwnerType({ className: 'Card', modulePath: '/lib/card.d.ts' }, true)).toBe('import(\'/lib/card\').Card');
   });
 
+  it('escapes a module whose path holds a quote', () => {
+    expect(getOwnerType({ className: 'Card', modulePath: '/home/o\'brien/card.ts' }, false)).toBe('import(\'/home/o\\\'brien/card\').Card');
+  });
+
   it('writes the type the extraction gives the accessors of the class', async () => {
     const sourceFile = createSourceFile('/src/list.directive.ts', '@Directive({ selector: \'list\' })\nexport class List<Item> {\n  @Property() accessor items!: InputSignal<Item[]>;\n}', ScriptTarget.Latest, true);
     const metadata = (await extractDirectivesMetadataFromSourceFile(sourceFile))!.get('List')!;

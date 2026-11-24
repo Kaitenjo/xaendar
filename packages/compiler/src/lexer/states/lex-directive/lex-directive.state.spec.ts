@@ -94,6 +94,20 @@ describe('lexDirective', () => {
     expect(() => lexDirective(afterAtSigns('@@myDirective)'), outerContext)).toThrow('Unexpected \')\': there is no directive to close');
   });
 
+  it.each([
+    ['@@a\'+x`1`+\'(b="c")', '\'\'\''],
+    ['@@a"b', '\'"\''],
+    ['@@a\\b', '\'\\\'']
+  ])('throws on a character no selector can hold, %j', (input, char) => {
+    expect(() => lexDirective(afterAtSigns(input), context)).toThrow(`${char} cannot be part of a directive selector`);
+  });
+
+  it('throws on a character no selector can hold in a structural directive', () => {
+    const cursor = new LexerCursor('*a\'b');
+    cursor.advance();
+    expect(() => lexStructuralDirective(cursor, context)).toThrow('\'\'\' cannot be part of a directive selector');
+  });
+
   it('throws when the selector is empty', () => {
     expect(() => lexDirective(afterAtSigns('@@(display="block")'), context)).toThrow('Directive selector cannot be empty');
   });

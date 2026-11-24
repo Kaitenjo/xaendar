@@ -3,9 +3,10 @@ import type { Line } from '../../types/line.type';
 import { plain } from '../line-builder/line-builder.utils';
 
 /**
- * An `import()` type, e.g. `import('/src/list.xd.component')`, whose module is the first group.
+ * An `import()` type, e.g. `import('/src/list.xd.component')`, whose module is the first group: the string literal
+ * `toStringLiteral` writes, quotes included, its escapes included (`'/home/o\'brien/card'`).
  */
-const IMPORT_TYPE = /import\('([^']+)'\)/g;
+const IMPORT_TYPE = /import\(('(?:[^'\\]|\\.)+')\)/g;
 
 /**
  * The prefix of the namespaces the modules referenced by the `import()` types are imported as.
@@ -33,8 +34,8 @@ export function hoistImportTypes(lines: Line[]): Line[] {
   }
 
   const imports = new Array<Line>();
-  for (const [modulePath, alias] of aliases) {
-    imports.push(plain(`import type * as ${alias} from '${modulePath}';`));
+  for (const [specifier, alias] of aliases) {
+    imports.push(plain(`import type * as ${alias} from ${specifier};`));
   }
 
   return imports.concat(hoisted);
@@ -49,11 +50,11 @@ export function hoistImportTypes(lines: Line[]): Line[] {
  */
 function hoistLine(currentLine: Line, aliases: Map<string, string>): Line {
   const shifts = new Array<{ end: number, delta: number }>();
-  const text = currentLine.text.replace(IMPORT_TYPE, (match: string, modulePath: string, offset: number) => {
-    let alias = aliases.get(modulePath);
+  const text = currentLine.text.replace(IMPORT_TYPE, (match: string, specifier: string, offset: number) => {
+    let alias = aliases.get(specifier);
     if (!alias) {
       alias = `${MODULE_ALIAS}${aliases.size}`;
-      aliases.set(modulePath, alias);
+      aliases.set(specifier, alias);
     }
 
     shifts.push({ end: offset + match.length, delta: alias.length - match.length });

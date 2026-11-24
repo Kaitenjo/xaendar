@@ -9,9 +9,9 @@ import type { TagOpenNameToken } from '../../types/tokens/tag-open-name-token.ty
 import type { TemplateDeclarationToken } from '../../types/tokens/template-declaration-token.type';
 
 /**
- * The part of a name written right before an offset: the characters an attribute or event name cannot hold end it.
+ * The characters an attribute or event name cannot hold, which end the part of a name written right before an offset.
  */
-const PARTIAL_NAME = /[^\s(){}"'=<>/@*]*$/;
+const NAME_END = /[\s(){}"'=<>/@*]/;
 
 /**
  * Tells where a binding is being written at an offset of a template, by lexing the template up to it: the template
@@ -30,7 +30,7 @@ const PARTIAL_NAME = /[^\s(){}"'=<>/@*]*$/;
  */
 export function getBindingContext(source: string, offset: number): BindingContext | undefined {
   const before = source.slice(0, offset);
-  const start = offset - PARTIAL_NAME.exec(before)![0].length;
+  const start = findNameStart(before);
   /*
     A name starts after a space, a `(` or a `{`: checked first, as it is cheaper than lexing. The attribute state is
     also left open by its `=` or by the quote opening its value, the event state by its `)`
@@ -69,6 +69,25 @@ export function getBindingContext(source: string, offset: number): BindingContex
     : undefined;
 
   return { kind, tagName, is: readIs(tokens, tokens.lastIndexOf(tag)), directive, span: { start, end: offset } };
+}
+
+/**
+ * Finds where the part of a name written at the end of a text starts: after the last character a name cannot hold.
+ *
+ * N.B. It scans the text backwards, in linear time: the regular expression `/[^\s(){}"'=<>/@*]*$/` it replaces tried
+ * every offset, quadratic in a long run of name characters (80,000 took 11 s), and the editor runs it on every
+ * completion. Do not match it with an unanchored regular expression.
+ *
+ * @param text - The text, up to the offset.
+ * @returns The offset of the first character of the name, the length of the text when it ends with no name.
+ */
+function findNameStart(text: string): number {
+  let start = text.length;
+  while (start > 0 && !NAME_END.test(text[start - 1])) {
+    start--;
+  }
+
+  return start;
 }
 
 /**

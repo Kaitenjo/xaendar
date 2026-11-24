@@ -13,6 +13,12 @@ Turns a Xaendar template into a JS render-function body plus a type-check result
 
 `compile()` (`src/compile/compile.ts`) is overloaded on `CompileOptions`: `baseDir` → only `TypeCheckResult` (editor); `signals` → only JS (`render` called with the component as `this`); both → `{ javascript, typescript }`.
 
+## Names and strings in the generated code
+
+- Names the template writes (attribute names, directive selectors in the lexer; event names in `parseEvent`, the key of a key event excepted) reject what HTML rejects: quotes, `<`, plus `\` and control characters (`isForbiddenNameChar` of `lexer/utils/chars`). The generators then write them as they are, `'${name}'`: never escape a name in a generator, reject it at the source.
+- Values (texts, static attribute values, keys of key events, paths of modules in `import`/`import()` of the generated and type-check code) go through `toStringLiteral`; the `import()` types are read back with an escape-aware regex and `fromStringLiteral` (`mapTypeModules`, `hoistImportTypes`).
+- The parser nests at most `MAX_DEPTH` (512) nodes, as HTML does: every stage walks the AST recursively.
+
 ## Shared with ssr-compiler
 
 - `public-api.ts` exports the generator internals `ssr-compiler` builds on (`resolveTemplateImports`, `generator.utils`, `scope-generation`, `catch-error-generation`, `element-namespace`, `render-target`, `symbol-imports`…): change them with both generators in mind and run the `ssr-compiler` specs.
@@ -78,4 +84,4 @@ Turns a Xaendar template into a JS render-function body plus a type-check result
 ## Libraries and static components
 
 - `findComponentLogic`/`findModuleLogic` prove a component static for build-tools: what they cannot read counts as logic, each case with a reason for the build report.
-- `xaendar-manifest.json`: types in `types/library-manifest/`, one declaration per exported component/directive keyed `<module>#<ClassName>`. `toLibraryDeclaration`/`toLibraryMetadata` convert both ways (a component of a package without `ssr` gets `clientOnly`). `utils/package-libraries` reads packages (`readLibraryMetadata`, `readLibrary`, cached by `package.json` mtime, rejecting another `schemaVersion` or an incompatible `@xaendar/core`; `findPackageLibraries`).
+- `xaendar-manifest.json`: types in `types/library-manifest/`, one declaration per exported component/directive keyed `<module>#<ClassName>`. `toLibraryDeclaration`/`toLibraryMetadata` convert both ways (a component of a package without `ssr` gets `clientOnly`). `utils/package-libraries` reads packages (`readLibraryMetadata`, `readLibrary`, cached by `package.json` mtime, rejecting another `schemaVersion` or an incompatible `@xaendar/core`; `findPackageLibraries`). A manifest is untrusted input (`findInvalidDeclaration`): class names and input properties must be identifiers, selectors and input/event names hold no `isForbiddenNameChar`, `module`/`types`/`xaendar.manifest` are `./` paths inside the package, `name` is the package's, every export has its declaration; lookups by name go through `Object.hasOwn`.

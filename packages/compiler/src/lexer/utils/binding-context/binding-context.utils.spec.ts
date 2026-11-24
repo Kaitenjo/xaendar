@@ -10,6 +10,13 @@ const contextOf = (template: string) => {
 };
 
 describe('getBindingContext', () => {
+  it('finds the start of the name in linear time, after a long run of name characters', () => {
+    const start = performance.now();
+
+    expect(contextOf(`<div ${'a'.repeat(200_000)}=`)).toBeUndefined();
+    expect(performance.now() - start).toBeLessThan(500);
+  });
+
   it('reads the static is written before the binding, the selector of a customized built-in element', () => {
     expect(contextOf('<a title="x" is="x-link" la')).toEqual({ kind: 'attribute', tagName: 'a', is: 'x-link', directive: undefined, span: { start: 25, end: 27 } });
     expect(contextOf('<a is="{ link }" la')?.is).toBeUndefined();

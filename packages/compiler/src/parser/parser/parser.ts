@@ -23,6 +23,15 @@ import { ASTNodeType } from '../types/node.enum.js';
 import { ParserStates } from '../types/parser-states.type.js';
 
 /**
+ * How many nodes a node of a template can be nested into: the parser of HTML stops nesting elements at 512 too.
+ *
+ * N.B. Every stage of the compiler, and the editor, walks the nodes recursively: a template nesting thousands of them
+ * (5,000 `<div>`) exhausted the stack with a `RangeError` pointing nowhere. Do not remove the limit, nor raise it past
+ * what the stages read without exhausting the stack.
+ */
+const MAX_DEPTH = 512;
+
+/**
  * Parser class that transforms a stream of tokens (from the Lexer)
  * into an Abstract Syntax Tree (AST) representing the template structure.
  *
@@ -141,6 +150,10 @@ export class Parser {
 
       if (token.type === TokenType.IMPORT && (!this._isHeader || this._depth > 0)) {
         throw 'An @import statement must be at the beginning of the template, before any other content';
+      }
+
+      if (this._depth === MAX_DEPTH) {
+        throw `The template nests more than ${MAX_DEPTH} elements, blocks and bindings into one another: move part of it into a component or a template`;
       }
 
       this._depth++;

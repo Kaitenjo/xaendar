@@ -29,6 +29,12 @@ describe('hoistImportTypes', () => {
     ]);
   });
 
+  it('imports a module whose path holds an escaped quote', () => {
+    const lines: Line[] = [{ text: '  x satisfies import(\'/home/o\\\'brien/a\').A;' }];
+
+    expect(hoistImportTypes(lines).map(({ text }) => text)).toEqual(['import type * as __module0 from \'/home/o\\\'brien/a\';', '  x satisfies __module0.A;']);
+  });
+
   it('moves the mappings with the text they map, shortening the ones spanning a replaced import() type', () => {
     const text = 'f(a) satisfies import(\'/src/a\').A; g(b)';
     const lines: Line[] = [{

@@ -39,6 +39,12 @@ describe('toRuntimeImport', () => {
 
     expect(toRuntimeImport(fromPackage)).toBe('import { LIMIT as __import_LIMIT } from \'@scope/pkg\';');
   });
+
+  it('escapes the path of the module, which may hold a quote or a backslash', () => {
+    const fromFolder = Object.assign(symbol('LIMIT'), { modulePath: '/home/o\'brien/a\\b.ts' });
+
+    expect(toRuntimeImport(fromFolder)).toBe('import { LIMIT as __import_LIMIT } from \'/home/o\\\'brien/a\\\\b.ts\';');
+  });
 });
 
 describe('toTypeCheckModuleSpecifier', () => {

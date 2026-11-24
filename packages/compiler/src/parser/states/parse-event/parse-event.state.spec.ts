@@ -69,6 +69,24 @@ describe('parseEvent', () => {
     expect(() => run('<input (keydown.)="save()" />')).toThrow('The key event "keydown." names no key: write it after the last dot, e.g. keydown.enter');
   });
 
+  it('throws for an event name holding a character no name can hold, on the character', () => {
+    const template = '<x-a (a\\b)="press()" />';
+    let error: Error | undefined;
+    try {
+      run(template);
+    } catch (thrown) {
+      error = thrown as Error;
+    }
+
+    expect(error?.message).toBe('\'\\\' cannot be part of an event name');
+    expect(error?.cause).toEqual({ start: template.indexOf('\\'), end: template.indexOf('\\') + 1 });
+  });
+
+  it('reads any key of a key event, the ones no name can hold included', () => {
+    expect(run('<input (keydown.\\)="press()" />').key).toEqual({ event: 'keydown', key: '\\', modifiers: 0 });
+    expect(run('<input (keydown.<)="press()" />').key).toEqual({ event: 'keydown', key: '<', modifiers: 0 });
+  });
+
   it('throws when the event is not followed by a handler', () => {
     expect(() => runTokens([{ type: TokenType.EVENT, parts: ['click'], span: { start: 0, end: 5 } }])).toThrow('Invalid event format for click');
   });

@@ -17,6 +17,11 @@ describe('mapTypeModules()', () => {
     expect(mapTypeModules('import(\'/lib/src/types\')[\'Tag\']', toPackage)).toBe('import(\'./types\')[\'Tag\']');
     expect(mapTypeModules('string', toPackage)).toBe('string');
   });
+
+  it('rewrites a module whose path holds an escaped quote, by its path', () => {
+    expect(mapTypeModules('import(\'/lib/src/o\\\'brien\').Card', toPackage)).toBe('import(\'./o\\\'brien\').Card');
+    expect(mapTypeModules('import(\'./o\\\'brien\').Card', module => `/home/o'brien/ui${module.slice(1)}`)).toBe('import(\'/home/o\\\'brien/ui/o\\\'brien\').Card');
+  });
 });
 
 describe('listTypeReferences()', () => {
@@ -26,6 +31,10 @@ describe('listTypeReferences()', () => {
       { module: '@xaendar/core', name: 'Output' },
       { module: '/lib/src/size', name: 'Size' }
     ]);
+  });
+
+  it('lists a module whose path holds an escaped quote by its path', () => {
+    expect(listTypeReferences('import(\'/lib/src/o\\\'brien\').Card')).toEqual([{ module: '/lib/src/o\'brien', name: 'Card' }]);
   });
 
   it('lists nothing for a type referencing no name of a module', () => {

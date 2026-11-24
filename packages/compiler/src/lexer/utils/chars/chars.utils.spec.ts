@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isAsciiLetter, isNotBlank, isWhitespace } from './chars.utils';
+import { describeNameChar, findForbiddenNameChar, isAsciiLetter, isForbiddenNameChar, isNotBlank, isWhitespace } from './chars.utils';
 
 describe('isNotBlank', () => {
   it('returns true for a string containing non-whitespace characters', () => {
@@ -37,5 +37,30 @@ describe('isWhitespace', () => {
   it('tells the spaces, the tabs and the line breaks', () => {
     expect([...' \t\n\r'].map(char => isWhitespace(char.charCodeAt(0)))).toEqual([true, true, true, true]);
     expect([...'a\f;'].map(char => isWhitespace(char.charCodeAt(0)))).toEqual([false, false, false]);
+  });
+});
+
+describe('isForbiddenNameChar', () => {
+  it.each(['"', '\'', '<', '\\', '\0', '\u0007', '\f', '\u007F'])('rejects %j', char => {
+    expect(isForbiddenNameChar(char.charCodeAt(0))).toBe(true);
+  });
+
+  it.each(['a', '-', ':', '.', '_', '$', '>', '`', 'é', '\u00A0'])('accepts %j', char => {
+    expect(isForbiddenNameChar(char.charCodeAt(0))).toBe(false);
+  });
+});
+
+describe('findForbiddenNameChar', () => {
+  it('finds the first character no name can hold', () => {
+    expect(findForbiddenNameChar('a-b\\c\'')).toBe(3);
+    expect(findForbiddenNameChar('my-event:done.x')).toBe(-1);
+  });
+});
+
+describe('describeNameChar', () => {
+  it('quotes a printable character, and gives the code point of a control character', () => {
+    expect(describeNameChar('\\'.charCodeAt(0))).toBe('\'\\\'');
+    expect(describeNameChar(7)).toBe('U+0007');
+    expect(describeNameChar(127)).toBe('U+007F');
   });
 });
