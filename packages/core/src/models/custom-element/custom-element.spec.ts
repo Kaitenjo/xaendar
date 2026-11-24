@@ -242,6 +242,22 @@ describe('CustomElement', () => {
       element.remove();
     });
 
+    it('does not hydrate when its trigger fires once it is removed, but as soon as it is inserted again', () => {
+      const element = document.createElement(`x-base-${counter++}`);
+      element.setAttribute('data-xd-hydrate', 'interaction');
+      element.attachShadow({ mode: 'open' }).innerHTML = '<p></p>';
+      document.body.appendChild(element);
+      const render = defineAfterParse(element);
+
+      element.remove();
+      element.click();
+      expect(render).not.toHaveBeenCalled();
+
+      document.body.appendChild(element);
+      expect(render).toHaveBeenCalledExactlyOnceWith(expect.any(ClaimNodes));
+      element.remove();
+    });
+
     it('waits, inside the shadow root of another component, for its trigger once that component adopts it', () => {
       const host = document.body.appendChild(document.createElement('div'));
       const element = host.attachShadow({ mode: 'open' }).appendChild(document.createElement(`x-base-${counter++}`));

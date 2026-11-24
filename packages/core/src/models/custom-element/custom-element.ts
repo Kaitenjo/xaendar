@@ -164,7 +164,8 @@ export class CustomElement extends HTMLElement {
   /**
    * Starts the hydration of an element rendered on the server inside the shadow root of another component, once that
    * component has adopted the element and set its inputs, as inserting the element connects a component rendered in
-   * the browser. Does nothing once the element is rendered.
+   * the browser, or of an element whose trigger fires (see `deferElementHydration`). Does nothing once the element is
+   * rendered, nor while it is out of the page: removed before its trigger fires, it hydrates when it is inserted again.
    */
   public [HYDRATE](): void {
     if (this._state === 'hydrating' && this.isConnected) {
@@ -400,7 +401,7 @@ export class CustomElement extends HTMLElement {
   private _waitsForHydration(): boolean {
     return HYDRATION && (this.getRootNode() instanceof ShadowRoot && !this.hasAttribute(_SERVER_INPUTS_ATTRIBUTE)
       ? !isClaimed(this) || this.hasAttribute(_HYDRATE_ATTRIBUTE)
-      : deferElementHydration(this, () => this.connectedCallback()));
+      : deferElementHydration(this, () => this[HYDRATE]()));
   }
 
   /**
