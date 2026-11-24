@@ -18,6 +18,7 @@ import { StructuralDirectiveNode } from '../../types/nodes/structural-directive-
 import type { StyleBindingNode } from '../../types/nodes/style-binding-node.type';
 import type { TemplateDeclarationNode } from '../../types/nodes/template-declaration-node.type';
 import type { TemplateNode } from '../../types/nodes/template-node.type';
+import type { Span } from '../../../types/span.type';
 import { isStructuralElement } from '../../utils/scope-declarations/scope-declarations.utils';
 import { assertStandardTemplate, serializeTemplateContent } from '../../utils/template-content/template-content.utils';
 import { parseTemplateParameters } from '../../utils/template-parameters/template-parameters.utils';
@@ -48,7 +49,8 @@ import { isTwoWayBinding, parseTwoWayBinding } from '../parse-two-way-binding/pa
  * The `is` attribute of a customized built-in element (`<button is="copy-button">`) is taken out of the attributes into
  * `ElementNode.is` (see {@link takeIs}).
  *
- * @throws If an attribute, a class or a directive is bound more than once, the element declares more than one element ref
+ * @throws If the element is a `<script>` or a `<style>` (see {@link assertAllowedTag}), an attribute, a class or a
+ *   directive is bound more than once, the element declares more than one element ref
  *   or one it may not render, a `<template>` declaring a template declares anything but its name and its parameters, a
  *   standard `<template>` declares a shadow root or its content binds anything, the `is` attribute is not a static
  *   custom element name on a native element, or the element is not closed correctly.
@@ -57,6 +59,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   cursor.advance();
   const tagName = token.parts[0];
   const nameSpan = cursor.findSpan(tagName, token.span.start);
+  assertAllowedTag(tagName, nameSpan);
 
   const attributes = new Array<AttributeNode>();
   const classBindings = new Array<ClassBindingNode>();
@@ -207,6 +210,28 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   setTemplateContent(node);
 
   return node;
+}
+
+/**
+ * Ensures an element can be written in a template: a `<script>` or a `<style>` cannot, wherever it is (in an `<svg>`, in
+ * the content of a standard `<template>`), with any case, since HTML and SVG run and apply them alike.
+ *
+ * N.B. The code of a component goes in its class and its styles in its stylesheet: a `<script>` in a template runs code
+ * the compiler does not check, and its bindings, or the ones of a `<style>`, would write code or styles from the values
+ * of the application. Do not accept them.
+ *
+ * @param tagName - The tag name of the element.
+ * @param nameSpan - The span of the tag name.
+ * @throws If the element is a `<script>` or a `<style>`.
+ */
+function assertAllowedTag(tagName: string, nameSpan: Span): void {
+  switch (tagName.toLowerCase()) {
+    case 'script':
+      throw new Error(`<${tagName}> cannot be written in a template: the code of a component goes in its class, the scripts of the page in its HTML`, { cause: nameSpan });
+
+    case 'style':
+      throw new Error(`<${tagName}> cannot be written in a template: the styles of a component go in its stylesheet (styleUrl)`, { cause: nameSpan });
+  }
 }
 
 /**

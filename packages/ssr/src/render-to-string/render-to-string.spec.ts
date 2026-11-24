@@ -146,7 +146,7 @@ _defineServerRender(TeamElement, await compile([
   '<p @if (total > 1) { title="many" } @else { title="few" }>{ typeof window } { innerWidth }</p>',
   '<input #field value="{ field }" />',
   '<b *delay(allow="{ true }")>late</b><b *delay(allow="{ false }")>never</b>',
-  '<style>a > b {}</style>',
+  '<xmp>a > b {}</xmp>',
   '<lazy-element></lazy-element>'
 ].join(''), ['heading', 'users'], ['name'], [imported('component', 'user-badge', { label: 'label', admin: 'admin' }), imported('directive', 'delay', { allow: 'allow' })]));
 
@@ -174,7 +174,7 @@ describe('renderToString', () => {
       '<p title="many"><!---->undefined<!----> <!----></p>',
       '<input>',
       '<!--xd-s:1--><b>late</b><!--/xd-s--><!--xd-s:0--><!--/xd-s-->',
-      '<style>a > b </style>',
+      '<xmp>a > b </xmp>',
       '<lazy-element></lazy-element>',
       '</template></team-list>'
     ].join(''));

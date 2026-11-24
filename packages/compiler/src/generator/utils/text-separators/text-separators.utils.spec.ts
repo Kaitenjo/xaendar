@@ -25,11 +25,11 @@ describe('getTextSeparators()', () => {
   it('separates nothing where the parser reads the content of the element as text', () => {
     const [textarea] = parseTemplate('<textarea>a{ b }c</textarea>') as ElementNode[];
     const [title] = parseTemplate('<title>{ b }</title>') as ElementNode[];
-    const [style] = parseTemplate('<style>{ b }</style>') as ElementNode[];
+    const [xmp] = parseTemplate('<xmp>{ b }</xmp>') as ElementNode[];
 
     expect(getTextSeparators(textarea.children, 'textarea', 'html')).toEqual([false, false, false]);
     expect(getTextSeparators(title.children, 'title', 'html')).toEqual([false]);
-    expect(getTextSeparators(style.children, 'style', 'html')).toEqual([false]);
+    expect(getTextSeparators(xmp.children, 'xmp', 'html')).toEqual([false]);
   });
 
   it('separates the texts of an element of another namespace named like one reading its content as text', () => {

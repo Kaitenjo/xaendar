@@ -17,6 +17,16 @@ describe('parseElement', () => {
     expect(node.children.map(c => c.type)).toEqual([ASTNodeType.Text, ASTNodeType.Element]);
   });
 
+  it.each([
+    ['a <script>', '<script>run()</script>', '<script> cannot be written in a template: the code of a component goes in its class, the scripts of the page in its HTML'],
+    ['a <style>', '<style>p { color: red }</style>', '<style> cannot be written in a template: the styles of a component go in its stylesheet (styleUrl)'],
+    ['a <SCRIPT> in upper case', '<SCRIPT src="a.js"></SCRIPT>', '<SCRIPT> cannot be written in a template'],
+    ['a <style> in an <svg>', '<svg><style>{ css }</style></svg>', '<style> cannot be written in a template'],
+    ['a <script> in a standard <template>', '<template><script>run()</script></template>', '<script> cannot be written in a template']
+  ])('throws for %s, wherever it is', (_description, template, message) => {
+    expect(() => parse(template)).toThrow(message);
+  });
+
   it('parses a self-closing element', () => {
     const [node] = parse('<input />') as ElementNode[];
     expect(node).toMatchObject({ tagName: 'input', children: [] });
@@ -326,9 +336,9 @@ describe('parseElement', () => {
 
     describe('standard <template> elements', () => {
       it('parses a <template> without a declaration into an element, its static content serialized as HTML', () => {
-        const [node] = parse('<template id="row" #row><li class="item &amp; more">A &lt; b</li><br /><pre>x</pre><style>a > b</style></template>') as ElementNode[];
+        const [node] = parse('<template id="row" #row><li class="item &amp; more">A &lt; b</li><br /><pre>x</pre><xmp>a > b</xmp></template>') as ElementNode[];
         expect(node).toMatchObject({ type: ASTNodeType.Element, tagName: 'template', attributes: [{ name: 'id', value: 'row' }], ref: { name: 'row' } });
-        expect(node.content).toBe('<li class="item &amp; more">A &lt; b</li><br><pre>\nx</pre><style>a > b</style>');
+        expect(node.content).toBe('<li class="item &amp; more">A &lt; b</li><br><pre>\nx</pre><xmp>a > b</xmp>');
         expect(node.children.map(({ type }) => type)).toEqual([ASTNodeType.Element, ASTNodeType.Element, ASTNodeType.Element, ASTNodeType.Element]);
       });
 
