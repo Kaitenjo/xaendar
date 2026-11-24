@@ -583,4 +583,62 @@ describe('renderToString', () => {
 
     await expect(renderToString(ClientOnlyElement)).rejects.toThrow('ClientOnlyElement has no template compiled for the server');
   });
+
+  describe('customized built-in elements', () => {
+    const copyMetadata: DecoratorMetadataObject = { selector: 'copy-button', extends: 'button', hostListeners: [{ name: 'click' }] };
+    (HostAttribute('aria-label') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'label', static: false, metadata: copyMetadata, access: { get: (owner: { label: () => string }) => owner.label } });
+
+    /**
+     * A customized built-in element without a template, on a tag accepting no shadow root.
+     */
+    class CopyButtonElement extends core.customElementOf(HTMLButtonElement) {
+      public declare label: () => string;
+    }
+    declareInput(CopyButtonElement, 'label', 'Copy', copyMetadata);
+    Object.defineProperty(CopyButtonElement, Symbol.for('Symbol.metadata'), { value: copyMetadata });
+    customElements.define('copy-button', CopyButtonElement, { extends: 'button' });
+
+    /**
+     * A customized built-in element with a template, on a tag accepting a shadow root.
+     */
+    class PanelElement extends core.customElementOf(HTMLDivElement) { }
+    Object.defineProperty(PanelElement, Symbol.for('Symbol.metadata'), { value: { selector: 'x-panel', extends: 'div' } });
+    customElements.define('x-panel', PanelElement, { extends: 'div' });
+
+    beforeAll(async () => {
+      _defineServerRender(PanelElement, await compile('<h2>Panel</h2><slot></slot>'));
+    });
+
+    it('writes the ones a template renders with their tag and their is first, the shadow root of the one with a template, the attribute waiting for the hydration of the other', async () => {
+      class ToolbarElement extends CustomElement { }
+      customElements.define('built-in-toolbar', ToolbarElement);
+      _defineServerRender(ToolbarElement, await compile('<div is="x-panel" class="wide"><button is="copy-button" label="Copy the code" type="button">Copy</button></div>', [], [], [imported('component', 'x-panel', {}), imported('component', 'copy-button', { label: 'label' })]));
+
+      const html = await renderToString(ToolbarElement);
+
+      expect(html).toContain('<div is="x-panel" class="wide"><template shadowrootmode="open"><h2>Panel</h2><slot></slot></template>');
+      expect(html).toContain('<button is="copy-button" type="button" data-xd-client="" aria-label="Copy the code">Copy</button></div>');
+    });
+
+    it('renders the root of a page with the tag it extends and its is, without a shadow root when it has no template', async () => {
+      expect(await renderToString(CopyButtonElement, { label: 'Paste' })).toBe('<button is="copy-button" data-xd-client="" aria-label="Paste" data-xd-inputs="{&quot;label&quot;:&quot;Paste&quot;}"></button>');
+      expect(await renderToString(PanelElement)).toBe('<div is="x-panel"><template shadowrootmode="open"><h2>Panel</h2><slot></slot></template></div>');
+    });
+
+    it('writes no end tag for the root extending a void element, and its is on the root rendering only in the browser', async () => {
+      class MaskedInputElement extends core.customElementOf(HTMLInputElement) { }
+      Object.defineProperty(MaskedInputElement, Symbol.for('Symbol.metadata'), { value: { selector: 'masked-input', extends: 'input' } });
+      customElements.define('masked-input', MaskedInputElement, { extends: 'input' });
+      class BrowserButtonElement extends core.customElementOf(HTMLButtonElement) { }
+      Object.defineProperty(BrowserButtonElement, Symbol.for('Symbol.metadata'), { value: { selector: 'browser-button', extends: 'button', render: false } });
+      customElements.define('browser-button', BrowserButtonElement, { extends: 'button' });
+
+      expect(await renderToString(MaskedInputElement)).toBe('<input is="masked-input" data-xd-client="">');
+      expect(await renderToString(BrowserButtonElement)).toBe('<button is="browser-button" data-xd-client=""></button>');
+    });
+
+    it('records the events a customized built-in element without a template listens to on its element', async () => {
+      expect(await ssr.renderToString(CopyButtonElement)).toMatch(/<\/button><script>\(.*"click".*<\/script>$/s);
+    });
+  });
 });

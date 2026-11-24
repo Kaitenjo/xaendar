@@ -26,13 +26,15 @@ export async function getComponentDiagnostics(fileName: string, text: string): P
   const sourceFile = createSourceFile(fileName, text, ScriptTarget.Latest, true);
   const diagnostics: ComponentDiagnostic[] = findMissingFiles(sourceFile);
 
-  const errors = findWebComponentErrors(sourceFile, true, readSsr(dirname(fileName)));
+  // The options of the project resolve the base classes and the host directives
+  const { options } = loadTsConfig(dirname(fileName));
+  const errors = findWebComponentErrors(sourceFile, true, readSsr(dirname(fileName)), options);
   if (errors.length) {
     diagnostics.push(...errors);
   }
 
-  // The host directives are checked, the inherited ones included, with the options of the project resolving them
-  const hostDirectiveErrors = getWebComponentDeclarations(sourceFile).length ? findHostDirectiveErrors(sourceFile, loadTsConfig(dirname(fileName)).options) : undefined;
+  // The host directives are checked, the inherited ones included
+  const hostDirectiveErrors = getWebComponentDeclarations(sourceFile).length ? findHostDirectiveErrors(sourceFile, options) : undefined;
   if (hostDirectiveErrors?.length) {
     for (let i = 0; i < hostDirectiveErrors.length; i++) {
       diagnostics.push(hostDirectiveErrors[i]);

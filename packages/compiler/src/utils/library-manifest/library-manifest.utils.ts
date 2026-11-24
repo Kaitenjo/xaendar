@@ -71,6 +71,10 @@ export function toLibraryDeclaration(metadata: ComponentOrDirectiveMetadata, mod
     declaration.typeParameters = typeParameters;
   }
 
+  if (metadata.type === 'component' && metadata.extends) {
+    declaration.extends = metadata.extends;
+  }
+
   if (metadata.type === 'component' && metadata.clientOnly) {
     declaration.ssr = { render: false };
     if (metadata.clientOnly.hydrate !== undefined) {
@@ -151,6 +155,10 @@ export function toLibraryMetadata(declaration: LibraryManifestDeclaration, manif
   };
   if (typeParameters?.length) {
     metadata.typeParameters = typeParameters;
+  }
+
+  if (declaration.extends) {
+    (metadata as LibraryComponentMetadata).extends = declaration.extends;
   }
 
   if (type === 'component' && (ssr || !manifest.ssr)) {

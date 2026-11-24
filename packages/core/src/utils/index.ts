@@ -17,6 +17,7 @@ export * from './component-runtime/component-runtime.util';
 export { _setContentTemplates } from './content-templates/content-templates.util';
 export { _declare, _read, _scope, _set } from './context/context.util';
 export { _createElement, _createMATHMLElement, _createSVGElement } from './create-element/create-element.util';
+export { customElementOf } from './custom-element-of/custom-element-of.util';
 export { _defer } from './defer/defer.util';
 export * from './directive-registry/directive-registry.util';
 export { _forItems } from './for-items/for-items.util';

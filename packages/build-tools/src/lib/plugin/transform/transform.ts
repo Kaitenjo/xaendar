@@ -78,7 +78,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
     // A component of a library of the workspace is compiled with the options of the library
     const library = findWorkspaceLibrary(state.libraries, componentPath);
     const ssr = library ? library.ssr : !!state.ssr;
-    const errors = findWebComponentErrors(tsSource, componentFile, ssr);
+    const errors = findWebComponentErrors(tsSource, componentFile, ssr, state.compilerOptions);
     // The host directives are checked only once the options can be read
     const hostDirectiveErrors = componentFile && !errors.length ? findHostDirectiveErrors(tsSource, state.compilerOptions) : undefined;
     if (hostDirectiveErrors?.length) {
@@ -142,6 +142,10 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
 
       // TODO className is not unique, we can't use it as a key for the metadata cache
       registerMetadata(className, metadata);
+      // A customized built-in element without a template renders nothing: there is nothing to compile
+      if (!templateUrl) {
+        continue;
+      }
 
       /*
         componentPath is a posix path (Vite module id), but resolve() emits backslashes on Windows:

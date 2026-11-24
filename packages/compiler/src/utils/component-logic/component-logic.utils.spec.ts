@@ -167,6 +167,12 @@ describe('findComponentLogic', () => {
       expect(findComponentLogic(declarationOf('@WebComponent({ }) class A { }'))).toBeUndefined();
     });
 
+    it('ends at customElementOf of @xaendar/core, whose class shares the code of CustomElement, and at no other call', () => {
+      expect(findComponentLogic(declarationOf('import { customElementOf } from \'@xaendar/core\';\n@WebComponent({ }) class A extends customElementOf(HTMLButtonElement) { }'))).toBeUndefined();
+      expect(findComponentLogic(declarationOf('@WebComponent({ }) class A extends mixin(HTMLButtonElement) { }'))).toBe('extends mixin(HTMLButtonElement), whose code cannot be read');
+      expect(findComponentLogic(declarationOf('@WebComponent({ }) class A extends mixins.of(HTMLButtonElement) { }'))).toBe('extends mixins.of(HTMLButtonElement), whose code cannot be read');
+    });
+
     it('tells CustomElement of @xaendar/core from the names of other imports of the package', () => {
       const header = 'import * as core from \'@xaendar/core\';\nimport Default from \'@xaendar/core/signals\';\nimport \'@xaendar/core/types\';';
 

@@ -157,6 +157,30 @@ describe('generateServerElement', () => {
     expect(() => generate('<input @if (on()) { [(value)]="text" } />')).toThrow('[(value)] binds a model of a component or of a directive: a native element has no input "value"');
   });
 
+  it('writes a customized built-in element through _ssrComponent, with its is, its void tag left without end tag', () => {
+    const { code, constants } = generate('<input is="masked-input" mask="99" />');
+
+    expect(code).toEqual(['_ssrComponent(out, context, input0$element);']);
+    expect(constants).toEqual([[
+      'const input0$element = {',
+      '  tagName: \'input\',',
+      '  is: \'masked-input\',',
+      '  attributes: [{ name: \'mask\', value: \'99\', setter: _setProperty }]',
+      '};'
+    ].join('\n')]);
+  });
+
+  it('writes a customized built-in element of another library like a native element, with its is first', () => {
+    const foreign = () => {
+      const context = new GeneratorContext(cache);
+      context.addCustomElementPatterns('sl-*');
+      return context;
+    };
+
+    expect(generate('<button is="sl-copy" type="button"></button>', foreign()).code).toEqual(['out.push(\'<button is="sl-copy" type="button"></button>\');']);
+    expect(generate('<button is="sl-copy" class.on="{ on() }"></button>', foreign()).constants.at(-1)).toContain('tagName: \'button\',\n  is: \'sl-copy\',');
+  });
+
   it('writes a custom element of another library like a native element', () => {
     const context = new GeneratorContext(cache);
     context.addCustomElementPatterns('sl-*');

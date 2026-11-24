@@ -53,6 +53,18 @@ describe('ClaimNodes', () => {
       expect(console.warn).not.toHaveBeenCalled();
     });
 
+    it('adopts a customized built-in element with the same is attribute, and creates it where the attribute differs', () => {
+      const parent = parse('<button is="x-copy"></button><button is="x-other"></button>');
+      const [copy, other] = Array.from(parent.children);
+
+      expect(nodeStrategy.element(context, parent, 'button', undefined, 'x-copy')).toBe(copy);
+      const created = nodeStrategy.element(context, parent, 'button', undefined, 'x-paste');
+
+      expect(created).not.toBe(other);
+      expect(created.getAttribute('is')).toBe('x-paste');
+      expect(console.warn).toHaveBeenCalledWith('Xaendar: the server rendered in <x-host> <button> where the browser renders <button is="x-paste">, which it creates');
+    });
+
     it('creates an element where the node does not match, inserting it there, its children created, with a warning', () => {
       const parent = parse('<div></div><b></b>');
       const [div] = Array.from(parent.children);

@@ -7,7 +7,8 @@ import type { ServerOutput } from '../types/server-output.type';
 import { _writeEventContract } from '../utils/event-contract/event-contract.util';
 import { _getServerRender } from '../utils/server-render-registry/server-render-registry.util';
 import { _createServerRuntime, _runOnServer } from '../utils/server-runtime/server-runtime.util';
-import { _isClientComponent, _renderComponent, _writeClientRoot } from '../utils/ssr-element/ssr-element.util';
+import { isVoidElement } from '@xaendar/internals';
+import { _getExtendedTagName, _isClientComponent, _renderComponent, _writeClientRoot } from '../utils/ssr-element/ssr-element.util';
 
 /**
  * The escape of `<` in a string of JSON: a backslash, `u` and the code of the character, `003c`.
@@ -40,7 +41,8 @@ const LESS_THAN_ESCAPE = `${String.fromCharCode(92)}u003c`;
  * there, which replays them once the components they happened on are hydrated (see `eventContract`).
  *
  * A component declaring `ssr: { render: false }` runs no code: only its empty element is written, with its inputs, and
- * the browser renders it.
+ * the browser renders it. A customized built-in element is written with the tag it extends and its selector as `is`
+ * (`<button is="copy-button">`), without a shadow root when it has no template.
  *
  * The server DOM must be installed, with `loadServerDom()` of `@xaendar/ssr/dom`, before the modules of `@xaendar/core`
  * and of the components are evaluated.
@@ -66,14 +68,18 @@ export async function renderToString<Component extends CustomElement>(component:
   const runtime = _createServerRuntime(state);
   let stateScript = '';
   _runOnServer(runtime, () => {
-    const tagName = customElements.getName(component);
-    if (!tagName) {
+    const selector = customElements.getName(component);
+    if (!selector) {
       throw new Error(`${component.name} is not defined: decorate it with @WebComponent, and install the server DOM with loadServerDom() before importing its module`);
     }
 
+    // A customized built-in element has the tag it extends, and its selector as `is`: only it may have no template
+    const extended = _getExtendedTagName(component);
+    const tagName = extended ?? selector;
+    const is = extended === undefined ? undefined : selector;
     const definition = _getServerRender(component);
     const clientOnly = _isClientComponent(component);
-    if (!definition && !clientOnly) {
+    if (!definition && !clientOnly && is === undefined) {
       throw new Error(`${component.name} has no template compiled for the server: build its module with the Vite plugin of @xaendar/build-tools in the server environment`);
     }
 
@@ -84,9 +90,9 @@ export async function renderToString<Component extends CustomElement>(component:
     const serializedInputs = properties && isNonEmpty(properties) ? _stringifyState(properties, 'inputs') : undefined;
     const serializedState = state && isNonEmpty(state) ? _stringifyState(state, 'state') : undefined;
     if (clientOnly) {
-      _writeClientRoot(out, tagName, component, serializedInputs);
+      _writeClientRoot(out, tagName, is, component, serializedInputs);
     } else {
-      _renderComponent<Component>(out, tagName, component, definition!, element => {
+      _renderComponent<Component>(out, tagName, is, component, definition, element => {
         if (properties) {
           const _entries = entries(properties);
           for (let i = 0; i < _entries.length; i++) {
@@ -100,7 +106,10 @@ export async function renderToString<Component extends CustomElement>(component:
       });
     }
 
-    out.push(`</${tagName}>`);
+    // A void element, such as the `input` a customized built-in element extends, has no end tag
+    if (!isVoidElement(tagName)) {
+      out.push(`</${tagName}>`);
+    }
 
     if (serializedState) {
       // `<` written as an escape of JSON, so that the state cannot end the script early

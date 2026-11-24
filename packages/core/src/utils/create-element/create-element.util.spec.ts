@@ -13,6 +13,10 @@ describe('createNamespacedElement', () => {
     expect(createNamespacedElement('mi', 2).namespaceURI).toBe(MATHML_NS);
   });
 
+  it('creates an HTML element with the selector of the customized built-in element it is', () => {
+    expect(createNamespacedElement('button', undefined, 'x-namespaced-button').getAttribute('is')).toBe('x-namespaced-button');
+  });
+
   it('constructs an HTML custom element through _createElement, so that a @try catches the error of its constructor', () => {
     const failure = new Error('constructor');
     customElements.define('x-namespaced-failing', class extends HTMLElement {
@@ -61,6 +65,37 @@ describe('element factories', () => {
     }
 
     expect(create.mock.calls).toEqual([['x-factory-undefined']]);
+    create.mockRestore();
+  });
+
+  it('creates a customized built-in element with its selector as is, and writes the is attribute', () => {
+    class Copy extends HTMLButtonElement { }
+    customElements.define('x-factory-copy', Copy, { extends: 'button' });
+
+    const element = _createElement('button', 'x-factory-copy');
+
+    expect(element).toBeInstanceOf(Copy);
+    expect(element.localName).toBe('button');
+    expect(element.getAttribute('is')).toBe('x-factory-copy');
+  });
+
+  it('constructs a customized built-in element by its class in the content of a @try, writing the is attribute', () => {
+    class Constructed extends HTMLInputElement { }
+    customElements.define('x-factory-constructed', Constructed, { extends: 'input' });
+    const create = vi.spyOn(document, 'createElement');
+    const scope = openTryScope();
+
+    try {
+      const element = _createElement('input', 'x-factory-constructed');
+
+      expect(element).toBeInstanceOf(Constructed);
+      expect(element.getAttribute('is')).toBe('x-factory-constructed');
+      expect(_createElement('li', 'x-factory-not-defined').getAttribute('is')).toBe('x-factory-not-defined');
+    } finally {
+      closeTryScope(scope);
+    }
+
+    expect(create.mock.calls).toEqual([['li', { is: 'x-factory-not-defined' }]]);
     create.mockRestore();
   });
 

@@ -70,4 +70,13 @@ describe('TemplateRegistry', () => {
     expect(registry.resolve(path('src/broken.html'))).toBeUndefined();
     expect(registry.resolve(path('src/missing.xd.component.html'))).toBeUndefined();
   });
+
+  it('indexes no template for a customized built-in element without one, and the template of the others of its file', async () => {
+    const registry = new TemplateRegistry();
+    write('src/copy.xd.component.ts', `@WebComponent({ selector: 'copy-button', extends: 'button' })\nexport class Copy {}\n${component('Paste', './paste.xd.component.html')}`);
+
+    await registry.index(path('src/copy.xd.component.ts'));
+
+    expect(classesOf(registry, path('src/paste.xd.component.html'))).toEqual({ '/src/copy.xd.component.ts': ['Paste'] });
+  });
 });

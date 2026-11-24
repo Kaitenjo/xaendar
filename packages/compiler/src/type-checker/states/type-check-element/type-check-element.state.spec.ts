@@ -634,6 +634,40 @@ describe('typeCheckElement', () => {
     });
   });
 
+  describe('customized built-in elements', () => {
+    const builtIn = (extended = 'button') => Object.assign(metadata({ label: new ComponentPropertyMetadata('label', 'string') }, { copied: 'string' }), { className: 'CopyButton', selector: 'copy-button', extends: extended });
+
+    it('type-checks the bindings of the component its is names, the native events of its tag too', () => {
+      const lines = runStrict('<button is="copy-button" label="{text}" (copied)="f($event)" (click)="g()"></button>', builtIn());
+
+      expect(text(lines)).toEqual([
+        '{',
+        '  (root.text) satisfies string;',
+        '}',
+        '{',
+        '  let $event!: CustomEvent<string>;',
+        '  root.f($event);',
+        '}',
+        '\'click\' satisfies keyof HTMLElementEventMap;',
+        'root.g();'
+      ]);
+    });
+
+    it.each([
+      ['an element whose is names no imported component', '<button is="copy-button"></button>', [], 'copy-button selector is not associated to any WebComponent imported in the template, nor declared in customElements'],
+      ['a customized built-in element written with its selector', '<copy-button></copy-button>', [builtIn()], 'CopyButton is a customized built-in element extending <button>: write it <button is="copy-button">, not <copy-button>'],
+      ['a customized built-in element written with another tag', '<a is="copy-button"></a>', [builtIn()], 'CopyButton extends <button>: write it <button is="copy-button">, not <a is="copy-button">'],
+      ['an autonomous custom element written with is', '<div is="my-el"></div>', [metadata({})], 'MyEl is an autonomous custom element: write it <my-el>, not <div is="my-el">'],
+      ['an element of SVG with is', '<svg><circle is="copy-button"></circle></svg>', [builtIn()], '<circle> is not an HTML element: is="copy-button" names a customized built-in element, which extends an HTML element']
+    ])('throws for %s', (_description, template, imports, message) => {
+      const process: ProcessNode = (node, context) => typeCheckElement(node as ElementNode, process, context);
+      const context = new TypeCheckContext();
+      context.addImport(...imports);
+
+      expect(() => typeCheckElement(parse(template), process, context)).toThrow(message);
+    });
+  });
+
   describe('custom elements of other libraries', () => {
     const runForeign = (template: string, ...imports: Array<ComponentMetadata | DirectiveMetadata>): Line[] => {
       const context = new TypeCheckContext();
@@ -1328,6 +1362,15 @@ describe('typeCheckElement generic components', () => {
   });
 
   describe('named by an element ref', () => {
+    it('records the instantiation of a generic customized built-in element its is names', () => {
+      const context = new TypeCheckContext();
+      context.addImport(Object.assign(genericComponent([['T', true]]), { selector: 'copy-button', extends: 'button' }));
+
+      typeCheckElement(parse('<button is="copy-button" #copy></button>'), processNode, context);
+
+      expect(context.hasInstantiation(0)).toBe(true);
+    });
+
     it('declares the instantiation in the scope of the variable, under names ending with the position of the element, and records it', () => {
       const context = new TypeCheckContext();
       context.addImport(genericComponent());

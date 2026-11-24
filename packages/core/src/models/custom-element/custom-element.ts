@@ -1,15 +1,17 @@
 import { keys } from '@xaendar/common';
 import type { Constructor, NoArgsVoidFunction } from '@xaendar/types';
-import { _CLIENT_ATTRIBUTE, _HYDRATE_ATTRIBUTE, _SERVER_INPUTS_ATTRIBUTE, CONNECTED_HOOKS, DIRECTIVE_AFTER_RENDER, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DISCONNECTED_HOOKS, HYDRATE, IS_RENDERED, WAITS_FOR_HYDRATION } from '../../costants';
+import { _CLIENT_ATTRIBUTE, _HYDRATE_ATTRIBUTE, _SERVER_INPUTS_ATTRIBUTE, CONNECTED_HOOKS, DIRECTIVE_AFTER_RENDER, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DISCONNECTED_HOOKS, HYDRATE, INITIALIZE, INTERNAL_EXTENDS, IS_RENDERED, WAITS_FOR_HYDRATION } from '../../costants';
 import { EffectOptions } from '../../signals/types/effect-options.type';
 import type { _Context } from '../../types/context.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
 import type { CreateComponentOptionsWithOptionalTarget } from '../../types/create-component/create-component-options-with-optional-target.type';
+import type { RenderDefinition } from '../../types/render-definition.type';
 import type { HostDirectives } from '../../types/web-component/host-directives.type';
 import { claimShadowRoot, isClaimed, releaseClaim } from '../../utils/claim-nodes/claim-nodes.util';
 import { _getComponentRuntime } from '../../utils/component-runtime/component-runtime.util';
 import { _scope, addCleanup, clear, EMPTY_LAYOUT, moveTo, removeCleanup } from '../../utils/context/context.util';
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
+import { getWebComponentMetadata } from '../../utils/get-metadata/get-metadata.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import { _checkExposedFields, _createHostDirectives } from '../../utils/host-directives/host-directives.util';
 import { HYDRATION } from '../../utils/hydration-flag/hydration-flag.util';
@@ -25,35 +27,41 @@ import type { CustomDirective } from '../custom-directive/custom-directive';
  *
  * Extends `HTMLElement` with Shadow DOM support and the lifecycle hooks
  * required for signal-based rendering. Concrete component classes should
- * extend this class and be decorated with `@WebComponent`.
+ * extend this class and be decorated with `@WebComponent`; a customized built-in element extends instead the class
+ * `customElementOf` creates on the class of the native element it extends, which shares this prototype.
+ *
+ * N.B. Deliberate, so that the code of a component is written once for every class it may extend: the state of the
+ * element is initialized by {@link INITIALIZE}, which the constructor of the classes of `customElementOf` calls too, and
+ * the fields are only declared, instead of field initializers, which only the constructor of this class would run. Do not
+ * initialize a field where it is declared.
  */
 export class CustomElement extends HTMLElement {
   /**
    * Internal callbacks invoked by the runtime each time the element is inserted into the DOM,
    * right after the render. They are never cleared, so they survive the reconnections.
    */
-  public [CONNECTED_HOOKS]: Array<NoArgsVoidFunction> | null = null;
+  public declare [CONNECTED_HOOKS]: Array<NoArgsVoidFunction> | null;
   /**
    * Internal callbacks invoked by the runtime each time the element is removed from the DOM,
    * after the context is cleared. They are never cleared, so they survive the reconnections.
    */
-  public [DISCONNECTED_HOOKS]: Array<NoArgsVoidFunction> | null = null;
+  public declare [DISCONNECTED_HOOKS]: Array<NoArgsVoidFunction> | null;
   /**
    * The custom directives declared by `hostDirectives` of `@WebComponent`, applied to this element, keyed by the class
    * of the directive: their properties and methods can be used by the component and by its template.
    * Empty when the component declares none.
    */
-  public readonly hostDirectives: HostDirectives;
+  public declare hostDirectives: HostDirectives;
   /**
    * The active template execution context for this component instance,
    * holding all identifier bindings and registered cleanup functions.
    */
-  private _context = _scope(null, EMPTY_LAYOUT);
+  private declare _context: _Context;
   /**
    * The context the host directives are connected to: it lives from the connection to the disconnection of the element,
    * disposing the effects of the directives.
    */
-  private _hostDirectivesContext: _Context | null = null;
+  private declare _hostDirectivesContext: _Context | null;
   /**
    * Where the element is in its life:
    * - `hydrating`: written by the server and not rendered in the browser yet, so it waits for its first render: its
@@ -69,12 +77,14 @@ export class CustomElement extends HTMLElement {
    *
    * Never `hydrating` in an application not rendered on the server (see `HYDRATION`), whose bundle has no hydration.
    */
-  private _state: 'hydrating' | 'idle' | 'rendering' | 'rendered' | 'destroyed' = HYDRATION && (this.shadowRoot !== null || this.hasAttribute(_CLIENT_ATTRIBUTE)) ? 'hydrating' : 'idle';
+  private declare _state: 'hydrating' | 'idle' | 'rendering' | 'rendered' | 'destroyed';
   /**
    * The root of the Web Component, where the content is rendered: the declarative shadow root of an element rendered on
-   * the server, which `attachShadow` would empty, or a new one.
+   * the server, which `attachShadow` would empty, or a new one. `null` for a customized built-in element without a
+   * template, which renders nothing: its content is the one its tag holds, which a shadow root would hide, and most of
+   * the native elements accept no shadow root.
    */
-  private readonly _root = this.shadowRoot ?? this.attachShadow({ mode: 'open' });
+  private declare _root: ShadowRoot | null;
 
   /**
    * Creates the element and the host directives declared by its `@WebComponent`, applied to it.
@@ -83,10 +93,7 @@ export class CustomElement extends HTMLElement {
    */
   constructor() {
     super();
-    this.hostDirectives = _createHostDirectives(this);
-    if (this.hostDirectives.size) {
-      this._hostDirectivesContext = _scope(null, EMPTY_LAYOUT);
-    }
+    this[INITIALIZE]();
   }
 
   /**
@@ -162,6 +169,40 @@ export class CustomElement extends HTMLElement {
   }
 
   /**
+   * Tells whether a value is an element of this class. For `CustomElement` itself, the element of any component, the
+   * customized built-in ones included: their classes extend the class `customElementOf` creates on the class of their
+   * tag, which shares the prototype of `CustomElement` without inheriting from it.
+   *
+   * @param value - The value.
+   * @returns `true` when the value is an element of this class.
+   */
+  public static [Symbol.hasInstance](value: unknown): boolean {
+    return this === CustomElement ? typeof value === 'object' && value !== null && INITIALIZE in value : Function.prototype[Symbol.hasInstance].call(this, value);
+  }
+
+  /**
+   * Initializes the state of the element and creates the host directives declared by its `@WebComponent`, applied to it:
+   * called by the constructor of this class and by the one of the classes `customElementOf` creates, which share its
+   * prototype.
+   *
+   * @throws When a host directive is declared twice or exposes an input or an event it does not declare.
+   */
+  public [INITIALIZE](): void {
+    this[CONNECTED_HOOKS] = null;
+    this[DISCONNECTED_HOOKS] = null;
+    this._context = _scope(null, EMPTY_LAYOUT);
+    this._hostDirectivesContext = null;
+    this._state = HYDRATION && (this.shadowRoot || this.hasAttribute(_CLIENT_ATTRIBUTE)) ? 'hydrating' : 'idle';
+    // A customized built-in element attaches a shadow root only to render its template (see `_root`)
+    this._root = this.shadowRoot ?? (!getWebComponentMetadata(this.constructor)?.[INTERNAL_EXTENDS] || _getRender(this.constructor) ? this.attachShadow({ mode: 'open' }) : null);
+    const hostDirectives = _createHostDirectives(this);
+    this.hostDirectives = hostDirectives;
+    if (hostDirectives.size) {
+      this._hostDirectivesContext = _scope(null, EMPTY_LAYOUT);
+    }
+  }
+
+  /**
    * Starts the hydration of an element rendered on the server inside the shadow root of another component, once that
    * component has adopted the element and set its inputs, as inserting the element connects a component rendered in
    * the browser, or of an element whose trigger fires (see `deferElementHydration`). Does nothing once the element is
@@ -206,7 +247,8 @@ export class CustomElement extends HTMLElement {
    * {@link _restoreServerInputs}), adopts the stylesheet registered for this component class (see `_defineRender`), if any,
    * and invokes `onInit`, if declared. Then triggers the render by invoking the compiler-generated render
    * function registered for it, which builds the Shadow DOM tree, or adopts the one the server rendered, and sets up
-   * reactive signal subscriptions, then invokes the internal connected hooks
+   * reactive signal subscriptions (a customized built-in element without a template renders nothing), then invokes the
+   * internal connected hooks
    * (e.g. the ones of the query signals), binds the attributes, the classes and the events declared by `@HostAttribute`
    * and `@HostListener`, and finally invokes `afterRender`, if declared.
    *
@@ -312,8 +354,10 @@ export class CustomElement extends HTMLElement {
       return;
     }
 
+    // Only a customized built-in element without a template has no shadow root, and no render function (see `_root`)
+    const root = this._root;
     const definition = _getRender(this.constructor);
-    if (!definition) {
+    if (root && !definition) {
       throw new Error(`${this.constructor.name} does not seem to have a Render Function`);
     }
 
@@ -324,47 +368,16 @@ export class CustomElement extends HTMLElement {
 
     this._restoreServerInputs();
     /*
-      Waiting for its first render, it has a declarative shadow root unless it renders only in the browser: the server
-      writes no shadow root with `data-xd-client`. Read here, the element keeps no field for it once hydrated
+      Waiting for its first render, it has a declarative shadow root unless it renders only in the browser, or it is a
+      customized built-in element without a template: the server writes no shadow root with `data-xd-client`. Read here,
+      the element keeps no field for it once hydrated
     */
     const serverRoot = hydrating && !this.hasAttribute(_CLIENT_ATTRIBUTE);
     if (hydrating) {
       this.removeAttribute(_CLIENT_ATTRIBUTE);
     }
 
-    const { render, styleSheet } = definition;
-    if (styleSheet) {
-      this._root.adoptedStyleSheets = [styleSheet];
-    }
-
-    // Destroyed, its shadow root holds what it rendered before its removal, moved along with it by code outside Xaendar
-    if (state === 'destroyed' && this._root.firstChild) {
-      this._root.replaceChildren();
-    }
-
-    // The first render of an element rendered on the server adopts its nodes, any other one creates them
-    const nodeStrategy = serverRoot ? claimShadowRoot(this._root, !!styleSheet) : CREATE_NODES;
-    this._state = 'rendering';
-
-    /*
-      The host directives are started before the component, so its `onInit` finds them ready
-      ! is a safe assertion because if hostDirective has at least 1 value the context has been initialized
-    */
-    for (const directive of this.hostDirectives.values()) {
-      directive[DIRECTIVE_CONNECT](this._hostDirectivesContext!);
-    }
-
-    /*
-      The context of the render exists only once the render has ended: the effects and the components
-      created in the constructor, in a field initializer or in onInit wait in a staging context,
-      moved to the real one when the render has ended
-    */
-    this.onInit?.();
-    const staging = this._context;
-    this._context = render.call(this, nodeStrategy);
-    nodeStrategy.end(this._root, this._context);
-    moveTo(staging, this._context);
-
+    root && definition ? this._render(root, definition, state, serverRoot) : this._start();
     const connectedHooks = this[CONNECTED_HOOKS];
     if (connectedHooks) {
       for (let i = 0; i < connectedHooks.length; i++) {
@@ -388,6 +401,60 @@ export class CustomElement extends HTMLElement {
       replayElementEvents(this);
       replayContractEvents();
     }
+  }
+
+  /**
+   * Renders the template of the component into its shadow root, starting the host directives and the component once
+   * the root is ready (see {@link _start}).
+   *
+   * @param root - The shadow root of the element.
+   * @param definition - The render function and the stylesheet registered for the class of the component.
+   * @param state - The state of the element before the connection: one destroyed empties its shadow root first.
+   * @param serverRoot - Whether the shadow root holds the HTML of the server, which the render adopts.
+   * @throws The error of the code of the component.
+   */
+  private _render(root: ShadowRoot, definition: RenderDefinition, state: CustomElement['_state'], serverRoot: boolean): void {
+    const { render, styleSheet } = definition;
+    if (styleSheet) {
+      root.adoptedStyleSheets = [styleSheet];
+    }
+
+    // Destroyed, its shadow root holds what it rendered before its removal, moved along with it by code outside Xaendar
+    if (state === 'destroyed' && root.firstChild) {
+      root.replaceChildren();
+    }
+
+    // The first render of an element rendered on the server adopts its nodes, any other one creates them
+    const nodeStrategy = serverRoot ? claimShadowRoot(root, !!styleSheet) : CREATE_NODES;
+    this._start();
+    /*
+      The context of the render exists only once the render has ended: the effects and the components
+      created in the constructor, in a field initializer or in onInit wait in a staging context,
+      moved to the real one when the render has ended
+    */
+    const staging = this._context;
+    this._context = render.call(this, nodeStrategy);
+    nodeStrategy.end(root, this._context);
+    moveTo(staging, this._context);
+  }
+
+  /**
+   * Starts the host directives, then the component, invoking its `onInit`: right before its render, or alone for a
+   * customized built-in element without a template, whose effects and components stay in the context they are created in.
+   *
+   * @throws The error of the code of the component.
+   */
+  private _start(): void {
+    this._state = 'rendering';
+    /*
+      The host directives are started before the component, so its `onInit` finds them ready
+      ! is a safe assertion because if hostDirective has at least 1 value the context has been initialized
+    */
+    for (const directive of this.hostDirectives.values()) {
+      directive[DIRECTIVE_CONNECT](this._hostDirectivesContext!);
+    }
+
+    this.onInit?.();
   }
 
   /**

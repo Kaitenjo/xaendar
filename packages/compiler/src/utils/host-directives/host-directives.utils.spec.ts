@@ -248,6 +248,29 @@ class MyEl extends Base { }`)).toEqual([['MyEl declares the host directive Toolt
     }
   });
 
+  it('reports a name of a member of the native class customElementOf extends, and of CustomElement, whose code it shares', () => {
+    const root = mkdtempSync(join(tmpdir(), 'xaendar-built-in-base-')).replaceAll('\\', '/');
+    const core = `${root}/node_modules/@xaendar/core`;
+    mkdirSync(core, { recursive: true });
+    writeFileSync(`${core}/package.json`, JSON.stringify({ name: '@xaendar/core', exports: { '.': { types: './index.d.ts' } } }));
+    writeFileSync(`${core}/index.d.ts`, 'export declare class CustomElement extends HTMLElement { effect(): void; }\nexport declare function customElementOf<T>(base: T): T;');
+    const exposures = decorator('[{ directive: Tooltip, properties: [{ name: \'text\', alias: \'disabled\' }, { name: \'pos\', alias: \'effect\' }] }]');
+    const code = `${directives}\nimport { customElementOf } from '@xaendar/core';\n${exposures}\nclass MyEl extends customElementOf(HTMLButtonElement) { }`;
+
+    try {
+      expect(findHostDirectiveErrors(createSourceFile(`${root}/my-el.ts`, code, ScriptTarget.Latest, true)).map(({ message }) => message)).toEqual([
+        'MyEl already has a member named "disabled", which Tooltip cannot expose as an input',
+        'MyEl already has a member named "effect", which Tooltip cannot expose as an input'
+      ]);
+      // Without the module of CustomElement, only the members of the native class are known
+      expect(errorsOf(`import { customElementOf } from '@xaendar/core';\n${exposures}\nclass MyEl extends customElementOf(HTMLButtonElement) { }`).map(([message]) => message)).toEqual([
+        'MyEl already has a member named "disabled", which Tooltip cannot expose as an input'
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('ignores the static members of the component', () => {
     expect(errorsOf(component('static label = 1;', decorator('[{ directive: Tooltip, properties: [{ name: \'text\', alias: \'label\' }] }]')))).toEqual([]);
   });

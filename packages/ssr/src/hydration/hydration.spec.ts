@@ -105,6 +105,7 @@ const tag = (side: 'server' | 'client', name: string) => `${side}-${name}-${run}
  */
 const testInputs: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   badge: { label: 'label' },
+  copy: { label: 'label' },
   counter: { start: 'start' },
   crossed: { value: 'internalValue', initialValue: 'value' },
   picker: { template: 'template' },
@@ -2471,5 +2472,37 @@ describe('attribute precedence', () => {
     await flush();
     expect(element.getAttribute('id')).toBe('component');
     expect(span.getAttribute('title')).toBe('template');
+  });
+});
+
+describe('customized built-in elements', () => {
+  it('adopts a customized built-in element by its tag and its is, written without shadow root when it has no template, and sets its inputs', async () => {
+    /**
+     * A customized built-in element without a template, defined only for the server: happy-dom upgrades no element
+     * its parser creates with an is attribute.
+     */
+    class CopyButton extends core.customElementOf(HTMLButtonElement) {
+      public declare label: () => string;
+    }
+    declareInput(CopyButton, 'label', '');
+    customElements.define(tag('server', 'copy'), CopyButton, { extends: 'button' });
+
+    /**
+     * A toolbar rendering the button.
+     */
+    class Toolbar extends CustomElement {
+      public text = signal('Copy the code');
+    }
+
+    const toolbar = await register('toolbar', Toolbar, child => `<button is="${child('copy')}" label="{ text() }" type="button">Copy</button>`, ['text']);
+    const host = load(await renderToString(toolbar.Server));
+    const button = host.shadowRoot!.querySelector('button')!;
+    expect(button.outerHTML).toBe(`<button is="${tag('client', 'copy')}" type="button" data-xd-client="">Copy</button>`);
+
+    toolbar.define();
+
+    expect(host.shadowRoot!.querySelector('button')).toBe(button);
+    expect((button as unknown as { label: string }).label).toBe('Copy the code');
+    expect(console.warn).not.toHaveBeenCalled();
   });
 });

@@ -186,7 +186,7 @@ export async function resolveImportCandidates(templatePath: string): Promise<Imp
   const candidates = new Array<ImportCandidate>();
   for (const [fileName, metadatas] of declarations) {
     for (const metadata of metadatas.values()) {
-      const isOwner = metadata.type === 'component' && normalizeFileName(resolve(dirname(fileName), metadata.templateUrl)) === templateKey;
+      const isOwner = metadata.type === 'component' && !!metadata.templateUrl && normalizeFileName(resolve(dirname(fileName), metadata.templateUrl)) === templateKey;
       if (!isOwner) {
         candidates.push({ fileName, metadata });
       }

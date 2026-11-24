@@ -28,6 +28,16 @@ export type ElementNode = ASTNodeWithSpan<{
    */
   nameSpan: Span;
   /**
+   * The selector of the customized built-in element the element is, e.g. `copy-button` in
+   * `<button is="copy-button">`: its component, the tag extending, is looked up by it instead of the tag name. The `is`
+   * attribute is not among {@link attributes}: it decides the class of the element when it is created.
+   */
+  is?: string;
+  /**
+   * Span of the `is` attribute, when the element declares one.
+   */
+  isSpan?: Span;
+  /**
    * The type arguments the element declares for the generic class of its web component, e.g. `string` and `number` in `<my-list(string, number)>`.
    */
   typeArguments?: DirectiveNode['typeArguments'];

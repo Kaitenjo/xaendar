@@ -376,6 +376,13 @@ describe('getTemplateBindingCompletions', () => {
     expect(completionsOf('<my-child [(')).toEqual([]);
   });
 
+  it('proposes the inputs of the customized built-in element the is written before the binding names', () => {
+    const copy = { type: 'component', selector: 'copy-button', extends: 'button', properties: new Map([['label', {}]]), events: new Map() } as unknown as TemplateAnalysis['metadatas'][number];
+
+    expect(getTemplateBindingCompletions([copy], '<button is="copy-button" ', 25)?.map(({ name }) => name)).toEqual(['label']);
+    expect(getTemplateBindingCompletions([copy], '<button ', 8)).toEqual([]);
+  });
+
   it('proposes the events of a component, inherited ones included, after the ( of an event', () => {
     expect(completionsOf('<my-child (')).toEqual(['closed:event:1@11-11', 'picked:event:1@11-11']);
   });
@@ -444,6 +451,17 @@ describe('getTemplateSelectorCompletions', () => {
     const [completion] = (await getTemplateSelectorCompletions(project.path('src/app.html'), `${header}\n<`, header.length + 2))!;
 
     expect(completion.additionalEdits).toEqual([{ span: { start: header.length, end: header.length }, newText: '\n@import { Child } from \'./child\';' }]);
+  }, TIMEOUT);
+
+  it('proposes a customized built-in element as the tag it extends with its is, imported or not', async () => {
+    const other = createFixtureProject();
+    other.write('src/copy-button.ts', 'import { WebComponent } from \'@xaendar/core\';\n@WebComponent({ selector: \'copy-button\', extends: \'button\' })\nexport class CopyButton { }\n');
+    const header = '@import { CopyButton } from \'./copy-button\';\n';
+    const namesOf = async (source: string) => (await getTemplateSelectorCompletions(other.path('src/app.html'), source, source.length))?.map(({ name }) => name);
+
+    expect(await namesOf(`${header}<`)).toContain('button is="copy-button"');
+    expect(await namesOf('<')).toContain('button is="copy-button"');
+    other.dispose();
   }, TIMEOUT);
 
   it('proposes only the imported ones when the project declares nothing else', async () => {

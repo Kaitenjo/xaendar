@@ -110,6 +110,18 @@ describe('CustomElement', () => {
     expect(create().shadowRoot?.mode).toBe('open');
   });
 
+  it('tells its elements by instanceof, through the subclasses too, and nothing else', () => {
+    const element = create(createContext());
+    const Subclass = element.constructor as typeof CustomElement;
+
+    expect(element).toBeInstanceOf(CustomElement);
+    expect(element).toBeInstanceOf(Subclass);
+    expect(document.createElement('div')).not.toBeInstanceOf(Subclass);
+    expect(document.createElement('div')).not.toBeInstanceOf(CustomElement);
+    expect(null).not.toBeInstanceOf(CustomElement);
+    expect('x-base').not.toBeInstanceOf(CustomElement);
+  });
+
   it('throws when no render function is registered', () => {
     const element = create();
 

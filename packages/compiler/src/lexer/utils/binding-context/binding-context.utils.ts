@@ -2,6 +2,7 @@ import { Lexer } from '../../lexer/lexer';
 import type { BindingContext } from '../../types/binding-context.type';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
+import type { AttributeValueToken } from '../../types/tokens/attribute-value-token.type';
 import type { DirectiveToken } from '../../types/tokens/directive-token.type';
 import type { StructuralDirectiveToken } from '../../types/tokens/structural-directive-token.type';
 import type { TagOpenNameToken } from '../../types/tokens/tag-open-name-token.type';
@@ -20,6 +21,7 @@ const PARTIAL_NAME = /[^\s(){}"'=<>/@*]*$/;
  * getBindingContext('<my-child la', 12);              // { kind: 'attribute', tagName: 'my-child', directive: undefined, span: { start: 10, end: 12 } }
  * getBindingContext('<my-child @@tooltip((sh', 23);  // { kind: 'event', tagName: 'my-child', directive: 'tooltip', span: { start: 21, end: 23 } }
  * getBindingContext('<my-child [(va', 14);           // { kind: 'twoWay', tagName: 'my-child', directive: undefined, span: { start: 12, end: 14 } }
+ * getBindingContext('<a is="x-link" la', 17);         // { kind: 'attribute', tagName: 'a', is: 'x-link', directive: undefined, span: { start: 15, end: 17 } }
  *
  * @param source - The source of the template.
  * @param offset - The offset in the template.
@@ -66,7 +68,7 @@ export function getBindingContext(source: string, offset: number): BindingContex
     ? tokens.findLast((token): token is DirectiveToken | StructuralDirectiveToken => token.type === TokenType.DIRECTIVE || token.type === TokenType.STRUCTURAL_DIRECTIVE)!.parts[0]
     : undefined;
 
-  return { kind, tagName, directive, span: { start, end: offset } };
+  return { kind, tagName, is: readIs(tokens, tokens.lastIndexOf(tag)), directive, span: { start, end: offset } };
 }
 
 /**
@@ -89,4 +91,23 @@ function getBindingKind(state: LexerState): Exclude<BindingContext['kind'], 'two
     default:
       return undefined;
   }
+}
+
+/**
+ * Reads the static `is` attribute written after the tag name of an opening tag, the selector of a customized built-in
+ * element.
+ *
+ * @param tokens - The tokens of the template up to the binding.
+ * @param tag - The index of the token of the tag name.
+ * @returns The selector, `undefined` when the tag has no static `is` up to the binding.
+ */
+function readIs(tokens: ReturnType<Lexer['tokenize']>, tag: number): string | undefined {
+  for (let i = tag + 1; i < tokens.length - 1; i++) {
+    const token = tokens[i];
+    if (token.type === TokenType.ATTRIBUTE && token.parts[0] === 'is' && tokens[i + 1].type === TokenType.ATTRIBUTE_VALUE) {
+      return (tokens[i + 1] as AttributeValueToken).parts[0];
+    }
+  }
+
+  return undefined;
 }

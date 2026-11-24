@@ -2,7 +2,7 @@
 import { loadSignals } from '@xaendar/signals';
 import type { Constructor } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { INTERNAL_SELECTOR } from '../../costants';
+import { INTERNAL_EXTENDS, INTERNAL_SELECTOR } from '../../costants';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import { _addAppliedDirective } from '../../utils/applied-directives/applied-directives.util';
@@ -77,6 +77,10 @@ describe('toMatcher', () => {
 
   it('matches the elements with the selector the class is registered with when the target is a component', () => {
     expect(toMatcher(withMetadata({ [INTERNAL_SELECTOR]: 'x-button' }))).toEqual({ selector: 'x-button', description: 'x-button' });
+  });
+
+  it('matches the elements of the tag a customized built-in element extends, with its selector as is', () => {
+    expect(toMatcher(withMetadata({ [INTERNAL_SELECTOR]: 'x-copy', [INTERNAL_EXTENDS]: 'button' }))).toEqual({ selector: 'button[is="x-copy"]', description: 'button[is="x-copy"]' });
   });
 
   it('throws when the target is a class not decorated with @WebComponent', () => {

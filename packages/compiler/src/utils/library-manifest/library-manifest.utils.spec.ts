@@ -104,6 +104,15 @@ const CARD: LibraryManifestDeclaration = {
 const MANIFEST: LibraryManifest = { schemaVersion: 1, name: '@acme/ui', version: '1.0.0', xaendar: '1.2.0', ssr: true, exports: {}, declarations: {}, selectors: [] };
 
 describe('toLibraryMetadata()', () => {
+  it('describes and reads the tag a customized built-in element extends', () => {
+    const metadata = { type: 'component', className: 'Copy', selector: 'ui-copy', extends: 'button', modulePath: '/lib/src/copy.ts', properties: new Map(), events: new Map(), typescriptNodes: {} } as unknown as ComponentOrDirectiveMetadata;
+    const declaration = toLibraryDeclaration(metadata, './copy', './copy.d.ts', toPackage);
+
+    expect(declaration).toEqual({ type: 'component', className: 'Copy', selector: 'ui-copy', extends: 'button', module: './copy', types: './copy.d.ts', inputs: [], events: [] });
+    expect(toLibraryMetadata(declaration, MANIFEST, '/app/node_modules/@acme/ui')).toMatchObject({ selector: 'ui-copy', extends: 'button' });
+    expect(toLibraryMetadata(CARD, MANIFEST, '/app/node_modules/@acme/ui')).not.toHaveProperty('extends');
+  });
+
   it('reads a component, its types and its module by the absolute paths of the package, imported by its path of the package', () => {
     const metadata = toLibraryMetadata(CARD, MANIFEST, '/app/node_modules/@acme/ui');
 

@@ -15,6 +15,11 @@ export type ServerElementConfig = ServerBindings & {
    */
   readonly tagName: string;
   /**
+   * The selector of the customized built-in element the element is (`<button is="copy-button">`), written as its first
+   * attribute: left out for any other element.
+   */
+  readonly is?: string;
+  /**
    * The templates written among the children of the element of a component, the functions writing them, passed to the
    * component before it renders (see `_setContentTemplates` of core). Left out when there are none.
    */

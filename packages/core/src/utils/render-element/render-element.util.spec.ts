@@ -544,8 +544,9 @@ describe('_renderElement', () => {
 
     _renderElement(parent, context, anchor, { tagName: 'article' });
     _renderElement(parent, context, anchor, { tagName: 'circle', namespace: 1 });
+    _renderElement(parent, context, anchor, { tagName: 'button', is: 'copy-button' });
 
-    expect(element.mock.calls).toEqual([[context, parent, 'article', undefined], [context, parent, 'circle', 1]]);
+    expect(element.mock.calls).toEqual([[context, parent, 'article', undefined, undefined], [context, parent, 'circle', 1, undefined], [context, parent, 'button', undefined, 'copy-button']]);
     expect(mount).toHaveBeenCalledWith(created, parent, anchor);
     expect(parent.firstChild).toBe(created);
   });

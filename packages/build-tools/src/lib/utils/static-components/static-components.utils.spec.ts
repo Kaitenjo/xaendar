@@ -91,6 +91,26 @@ describe('findStaticComponents', () => {
     expect(result.islands.size).toBe(0);
   });
 
+  it('reads a customized built-in element without a template as a component rendering nothing, static or not by its code', async () => {
+    const builtIn = (name: string, body = ''): string => [
+      'import { customElementOf, WebComponent } from \'@xaendar/core\';',
+      `@WebComponent({ selector: 'x-${name}', extends: 'button' })`,
+      `export class ${name} extends customElementOf(HTMLButtonElement) {`,
+      body,
+      '}'
+    ].join('\n');
+    const { dir, result } = await analyze({
+      'root.xd.component.ts': component('root'),
+      'root.html': `${importing('copy', 'paste')}\n<button is="x-copy"></button><button is="x-paste"></button>`,
+      'copy.xd.component.ts': builtIn('copy'),
+      'paste.xd.component.ts': builtIn('paste', 'public onInit(): void { }')
+    });
+
+    expect(result.statics).toEqual(['x-root', 'x-copy']);
+    expect(result.interactive).toEqual(new Map([['x-paste', 'declares onInit']]));
+    expect(result.islands).toEqual(new Map([[`${dir}/root.html`, new Set(['x-paste'])]]));
+  });
+
   it('imports a module once, whatever the components rendering it', async () => {
     const { dir, result } = await analyze({
       'root.xd.component.ts': component('root'),

@@ -91,7 +91,7 @@ export function _renderElement(parentNode: Element, context: _Context, anchor: C
 function renderElement(parentNode: Element, context: _Context, anchor: Comment | null, config: RenderElement, slot = config.slot): void {
   const { attributes, events, conditionalBindings, directives, children, ref } = config;
   const nodeStrategy = getNodeStrategy(context);
-  const element = nodeStrategy.element(context, parentNode, config.tagName, config.namespace);
+  const element = nodeStrategy.element(context, parentNode, config.tagName, config.namespace, config.is);
   if (ref) {
     context[config.refSlot!] = element;
     _setElementRef(element, ref);

@@ -45,9 +45,13 @@ import { isTwoWayBinding, parseTwoWayBinding } from '../parse-two-way-binding/pa
  * @param parseNode - Parser function for recursive child parsing.
  * @param token - The TAG_OPEN_NAME token containing the tag name, and the text of the type arguments if the element declares them.
  * @returns The parsed `ElementNode`, or `TemplateNode` for a `<template>` declaring a template.
+ * The `is` attribute of a customized built-in element (`<button is="copy-button">`) is taken out of the attributes into
+ * `ElementNode.is` (see {@link takeIs}).
+ *
  * @throws If an attribute, a class or a directive is bound more than once, the element declares more than one element ref
  *   or one it may not render, a `<template>` declaring a template declares anything but its name and its parameters, a
- *   standard `<template>` declares a shadow root or its content binds anything, or the element is not closed correctly.
+ *   standard `<template>` declares a shadow root or its content binds anything, the `is` attribute is not a static
+ *   custom element name on a native element, or the element is not closed correctly.
  */
 export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: TagOpenNameToken): MaybeASTNodeWithSpan<ElementNode> | MaybeASTNodeWithSpan<TemplateNode> {
   cursor.advance();
@@ -120,7 +124,8 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
     }
   }
 
-  assertUniqueAttributes(attributes, conditionalBindings, isValidCustomElementName(tagName, false) ? writtenAttributeKey : nativeAttributeKey, name => `Attribute "${name}" is bound more than once on <${tagName}>`);
+  const is = takeIs(tagName, attributes, conditionalBindings);
+  assertUniqueAttributes(attributes, conditionalBindings, isValidCustomElementName(is?.value ?? tagName, false) ? writtenAttributeKey : nativeAttributeKey, name => `Attribute "${name}" is bound more than once on <${tagName}>`);
   assertUniqueClassBindings(classBindings, conditionalBindings, tagName);
   assertUniqueStyleBindings(styleBindings, conditionalBindings, tagName);
   assertUniqueDirectives(tagName, directives, conditionalBindings, branch => branch.directives);
@@ -130,7 +135,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   const typeArguments = token.parts[1] === undefined ? undefined : parseTypeArguments(token.parts[1], nameSpan.end + 1);
   let node: MaybeASTNodeWithSpan<ElementNode> | MaybeASTNodeWithSpan<TemplateNode>;
   if (tagName === 'template' && declaration) {
-    const binding = typeArguments?.[0] ?? ref ?? attributes[0] ?? classBindings[0] ?? styleBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
+    const binding = typeArguments?.[0] ?? ref ?? is ?? attributes[0] ?? classBindings[0] ?? styleBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
     if (binding) {
       throw new Error('A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it', { cause: binding.span });
     }
@@ -153,6 +158,11 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
 
     if (typeArguments) {
       node.typeArguments = typeArguments;
+    }
+
+    if (is) {
+      node.is = is.value;
+      node.isSpan = is.span;
     }
 
     if (ref) {
@@ -209,6 +219,66 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
 function setTemplateContent(node: MaybeASTNodeWithSpan<ElementNode> | MaybeASTNodeWithSpan<TemplateNode>): void {
   if (node.type === ASTNodeType.Element && node.tagName === 'template') {
     node.content = serializeTemplateContent(node.children);
+  }
+}
+
+/**
+ * Takes the `is` attribute of a customized built-in element out of the attributes of an element (see `ElementNode.is`):
+ * it names the component the element is, and decides its class when it is created, so it is written as a static custom
+ * element name, on a native element, never bound nor written by a branch.
+ *
+ * @param tagName - The tag name of the element.
+ * @param attributes - The attributes of the element, the `is` attribute removed.
+ * @param conditionalBindings - The conditional bindings of the element, whose branches cannot write `is`.
+ * @returns The `is` attribute, `undefined` when the element has none.
+ * @throws If the attribute is bound, has no value or a value that is not a valid custom element name, is written on a
+ *   custom element or by a branch of a conditional binding.
+ */
+function takeIs(tagName: string, attributes: AttributeNode[], conditionalBindings: ConditionalBindingNode[]): (AttributeNode & { value: string }) | undefined {
+  assertNoBranchIs(tagName, conditionalBindings);
+  const index = attributes.findIndex(({ name }) => name === 'is');
+  if (index === -1) {
+    return undefined;
+  }
+
+  const attribute = attributes[index];
+  const { value, span } = attribute;
+  if (typeof value !== 'string' || attribute.bare) {
+    throw new Error(`The is attribute of <${tagName}> must be a static selector, e.g. is="copy-button": it decides the class of the element when it is created`, { cause: span });
+  }
+
+  if (isValidCustomElementName(tagName, false)) {
+    throw new Error(`<${tagName}> is a custom element: is="…" names the customized built-in element a native element is, e.g. <button is="copy-button">`, { cause: span });
+  }
+
+  if (!isValidCustomElementName(value, false)) {
+    throw new Error(`"${value}" is not a valid custom element name: is="…" names the selector of a customized built-in element, e.g. <button is="copy-button">`, { cause: span });
+  }
+
+  attributes.splice(index, 1);
+  return attribute as AttributeNode & { value: string };
+}
+
+/**
+ * Ensures no branch of the conditional bindings of an element writes its `is` attribute, nested branches included: it
+ * decides the class of the element when it is created.
+ *
+ * @param tagName - The tag name of the element.
+ * @param conditionalBindings - The conditional bindings of the element, or of a branch.
+ * @throws If a branch writes `is`.
+ */
+function assertNoBranchIs(tagName: string, conditionalBindings: ConditionalBindingNode[]): void {
+  for (let i = 0; i < conditionalBindings.length; i++) {
+    const { branches } = conditionalBindings[i];
+    for (let j = 0; j < branches.length; j++) {
+      const branch = branches[j];
+      const is = branch.attributes.find(({ name }) => name === 'is');
+      if (is) {
+        throw new Error(`The is attribute of <${tagName}> cannot be written by a branch: it decides the class of the element when it is created, written as a static attribute, e.g. <button is="copy-button">`, { cause: is.span });
+      }
+
+      assertNoBranchIs(tagName, branch.conditionalBindings);
+    }
   }
 }
 

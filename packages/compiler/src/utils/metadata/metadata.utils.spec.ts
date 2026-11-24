@@ -28,6 +28,21 @@ describe('extractComponentsMetadataFromSourceFile', () => {
       expect(metadata?.events.size).toBe(0);
     });
 
+    it('extracts the tag a customized built-in element extends, which may declare no template', async () => {
+      const metadata = (await extract(component('', '@WebComponent({ selector: \'copy-button\', extends: \'button\' })')))?.get('MyEl');
+
+      expect(metadata).toMatchObject({ selector: 'copy-button', extends: 'button' });
+      expect(metadata?.templateUrl).toBeUndefined();
+      expect((await extract(component('', '@WebComponent({ selector: \'x-panel\', extends: \'div\', templateUrl: \'./t\' })')))?.get('MyEl')).toMatchObject({ extends: 'div', templateUrl: './t' });
+    });
+
+    it.each([
+      ['an autonomous custom element', '@WebComponent({ selector: \'my-el\' })'],
+      ['an extends option that is not a literal', '@WebComponent({ selector: \'my-el\', extends: TAG })']
+    ])('extracts nothing from %s without a template', async (_description, decorator) => {
+      expect(await extract(component('', decorator))).toBeUndefined();
+    });
+
     it.each([
       ['render: false', 'ssr: { render: false }', {}],
       ['render: false with its trigger', 'ssr: { hydrate: \'idle\', render: false }', { hydrate: 'idle' }],
@@ -590,6 +605,73 @@ describe('findWebComponentErrors', () => {
       'The selector option of MyEl must be a string literal',
       'The templateUrl option of MyEl must be a string literal'
     ]);
+  });
+
+  describe('customized built-in elements', () => {
+    const CORE = 'import { CustomElement, customElementOf } from \'@xaendar/core\';';
+
+    /**
+     * Finds the errors of a component extending a class, each with the text it is reported on.
+     */
+    const builtInErrorsOf = (decorator: string, heritage = 'customElementOf(HTMLButtonElement)', before = '') => {
+      const sourceFile = sourceFileOf(`${CORE}\n${before}\n${decorator}\nclass MyEl extends ${heritage} { }`);
+      return findWebComponentErrors(sourceFile, true).map(({ message, span }) => [message, sourceFile.text.slice(span.start, span.end)]);
+    };
+
+    it.each([
+      ['a tag accepting no shadow root, without a template', '@WebComponent({ selector: \'copy-button\', extends: \'button\' })', 'customElementOf(HTMLButtonElement)'],
+      ['a tag accepting a shadow root, with a template and a stylesheet', '@WebComponent({ selector: \'x-panel\', extends: \'div\', styleUrl: \'./s.css\', templateUrl: \'./t\' })', 'customElementOf(HTMLDivElement)'],
+      ['a tag whose class is HTMLElement, through customElementOf(HTMLElement)', '@WebComponent({ selector: \'x-section\', extends: \'section\' })', 'customElementOf(HTMLElement)'],
+      ['a class whose chain cannot be followed', '@WebComponent({ selector: \'copy-button\', extends: \'button\' })', 'Unknown'],
+      ['a class extending what is not the customElementOf of @xaendar/core', '@WebComponent({ selector: \'copy-button\', extends: \'button\' })', 'customElementOf(window.HTMLInputElement)'],
+      ['an autonomous custom element extending CustomElement', '@WebComponent({ selector: \'my-el\', templateUrl: \'./t\' })', 'CustomElement'],
+      ['an autonomous custom element extending HTMLElement', '@WebComponent({ selector: \'my-el\', templateUrl: \'./t\' })', 'HTMLElement']
+    ])('accepts %s', (_description, decorator, heritage) => {
+      expect(builtInErrorsOf(decorator, heritage)).toEqual([]);
+    });
+
+    it.each([
+      ['that is not a string literal', 'extends: TAG', 'The extends option of MyEl must be a string literal', 'TAG'],
+      ['naming a custom element', 'extends: \'my-tag\'', 'The extends option of MyEl names <my-tag>, a custom element: it names the tag of the native element MyEl extends, e.g. extends: \'button\'', '\'my-tag\''],
+      ['naming no native element', 'extends: \'buton\'', 'The extends option of MyEl names <buton>, which is not a native HTML element: it names the tag of the native element MyEl extends, e.g. extends: \'button\'', '\'buton\'']
+    ])('reports an extends option %s, and nothing else', (_description, option, message, text) => {
+      expect(builtInErrorsOf(`@WebComponent({ selector: 'copy-button', ${option} })`, 'customElementOf(HTMLInputElement)')).toEqual([[message, text]]);
+    });
+
+    it('reports the template and the stylesheet of a tag accepting no shadow root, on each option', () => {
+      expect(builtInErrorsOf('@WebComponent({ selector: \'copy-button\', extends: \'button\', styleUrl: \'./s.css\', templateUrl: \'./t\' })')).toEqual([
+        ['<button> accepts no shadow root: MyEl, extending it, renders no template and has no stylesheet, its content being the one its tag holds. Remove templateUrl', 'templateUrl: \'./t\''],
+        ['<button> accepts no shadow root: MyEl, extending it, renders no template and has no stylesheet, its content being the one its tag holds. Remove styleUrl', 'styleUrl: \'./s.css\'']
+      ]);
+    });
+
+    it('reports a stylesheet without a template, which it styles', () => {
+      expect(builtInErrorsOf('@WebComponent({ selector: \'x-panel\', extends: \'div\', styleUrl: \'./s.css\' })', 'customElementOf(HTMLDivElement)')).toEqual([
+        ['The styleUrl option of MyEl styles its template, which it does not declare: add templateUrl, or remove styleUrl', 'styleUrl: \'./s.css\'']
+      ]);
+    });
+
+    it.each([
+      ['the class of another tag', 'button', 'customElementOf(HTMLInputElement)', 'MyEl extends <button>, whose class is HTMLButtonElement, but its class extends customElementOf(HTMLInputElement): extend customElementOf(HTMLButtonElement)'],
+      ['a native class for a tag whose class is HTMLElement', 'section', 'customElementOf(HTMLDivElement)', 'MyEl extends <section>, whose class is HTMLElement, but its class extends customElementOf(HTMLDivElement): extend CustomElement'],
+      ['HTMLElement for a tag with a class of its own', 'button', 'customElementOf(HTMLElement)', 'MyEl extends <button>, whose class is HTMLButtonElement, but its class extends CustomElement: extend customElementOf(HTMLButtonElement)']
+    ])('reports a class extending %s, on its extends clause', (_description, tag, heritage, message) => {
+      expect(builtInErrorsOf(`@WebComponent({ selector: 'copy-button', extends: '${tag}' })`, heritage)).toEqual([[message, heritage]]);
+    });
+
+    it('reports a class extending customElementOf without the extends option', () => {
+      expect(builtInErrorsOf('@WebComponent({ selector: \'copy-button\', templateUrl: \'./t\' })')).toEqual([
+        ['MyEl extends customElementOf(HTMLButtonElement): declare the tag of the native element it extends with the extends option of @WebComponent, e.g. extends: \'button\'', 'customElementOf(HTMLButtonElement)']
+      ]);
+    });
+
+    it('follows the chain of the classes up to customElementOf or HTMLElement, through a class declared without arguments too', () => {
+      const decorator = '@WebComponent({ selector: \'copy-button\', extends: \'button\' })';
+
+      expect(builtInErrorsOf(decorator, 'Base', 'class Base extends customElementOf(HTMLInputElement) { }')).toEqual([['MyEl extends <button>, whose class is HTMLButtonElement, but its class extends customElementOf(HTMLInputElement): extend customElementOf(HTMLButtonElement)', 'Base']]);
+      expect(builtInErrorsOf('@WebComponent({ selector: \'x-nav\', extends: \'nav\' })', 'Base', 'class Base extends HTMLElement { }')).toEqual([]);
+      expect(builtInErrorsOf(decorator, 'Base', 'class Base extends customElementOf() { }')).toEqual([]);
+    });
   });
 });
 

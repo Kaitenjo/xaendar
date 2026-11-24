@@ -15,9 +15,10 @@ export type NodeStrategy = {
    * @param parentNode - The node the element is rendered into.
    * @param tagName - The tag name of the element.
    * @param namespace - The namespace an element created is created in, `undefined` for HTML (see `RenderElement`).
+   * @param is - The selector of the customized built-in element the element is, `undefined` for any other element.
    * @returns The element.
    */
-  element(context: _Context, parentNode: Node, tagName: string, namespace?: RenderElementNamespace): Element;
+  element(context: _Context, parentNode: Node, tagName: string, namespace?: RenderElementNamespace, is?: string): Element;
   /**
    * Puts an element got by {@link element} in its place, once its bindings are applied: an element created is inserted,
    * which connects a component, while one adopted already is in its place, and a component starts its hydration.

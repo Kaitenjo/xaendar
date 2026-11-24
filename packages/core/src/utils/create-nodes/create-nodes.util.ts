@@ -17,7 +17,7 @@ const LAST_BLOCK: NodeBlock = Object.freeze({ anchor: null, marker: undefined })
  * every component without a declarative shadow root, and of every render of a block after the first one.
  */
 export const CREATE_NODES: NodeStrategy = {
-  element: (_context, _parentNode, tagName, namespace) => createNamespacedElement(tagName, namespace),
+  element: (_context, _parentNode, tagName, namespace, is) => createNamespacedElement(tagName, namespace, is),
   mount: (element, parentNode, referenceNode) => {
     parentNode.insertBefore(element, referenceNode);
   },

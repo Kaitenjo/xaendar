@@ -64,24 +64,26 @@ export class ClaimNodes implements NodeStrategy {
   ) { }
 
   /**
-   * Adopts the element at the position, or creates it when the node there is not one with the same tag name.
+   * Adopts the element at the position, or creates it when the node there is not one with the same tag name, and the
+   * same `is` attribute for a customized built-in element.
    *
    * @param _context - Unused: the element is adopted, or created in its namespace.
    * @param parentNode - The node the element is rendered into.
    * @param tagName - The tag name of the element.
    * @param namespace - The namespace an element created is created in, `undefined` for HTML.
+   * @param is - The selector of the customized built-in element the element is, `undefined` for any other element.
    * @returns The element.
    * @throws The error of the constructor of a custom element created, in the content of a `@try`.
    */
-  public element(_context: _Context, parentNode: Node, tagName: string, namespace?: RenderElementNamespace): Element {
+  public element(_context: _Context, parentNode: Node, tagName: string, namespace?: RenderElementNamespace, is?: string): Element {
     const node = this._next(parentNode);
-    if (node?.nodeType === Node.ELEMENT_NODE && (node as Element).localName === tagName) {
+    if (node?.nodeType === Node.ELEMENT_NODE && (node as Element).localName === tagName && (is === undefined || (node as Element).getAttribute('is') === is)) {
       this._positions.set(parentNode, node.nextSibling);
       return node as Element;
     }
 
-    this._warn(`${describe(node)} where the browser renders <${tagName}>, which it creates`);
-    const element = createNamespacedElement(tagName, namespace);
+    this._warn(`${describe(node)} where the browser renders <${is === undefined ? tagName : `${tagName} is="${is}"`}>, which it creates`);
+    const element = createNamespacedElement(tagName, namespace, is);
     this._created.add(element);
     return element;
   }

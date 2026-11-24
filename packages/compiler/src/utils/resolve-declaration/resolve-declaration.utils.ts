@@ -1,5 +1,5 @@
 import { readFileSync, statSync } from 'node:fs';
-import { ClassDeclaration, CompilerOptions, Declaration, Expression, FunctionDeclaration, ImportDeclaration, ModuleKind, ModuleResolutionCache, ModuleResolutionKind, ScriptTarget, SourceFile, SyntaxKind, createModuleResolutionCache, createSourceFile, isClassDeclaration, isExportAssignment, isExportDeclaration, isIdentifier, isImportDeclaration, isNamedExports, isNamedImports, isNamespaceImport, isPropertyAccessExpression, isStringLiteralLike, resolveModuleName, sys } from 'typescript';
+import { ClassDeclaration, CompilerOptions, Declaration, Expression, FunctionDeclaration, Identifier, ImportDeclaration, isStringLiteral, ModuleKind, ModuleResolutionCache, ModuleResolutionKind, ScriptTarget, SourceFile, SyntaxKind, createModuleResolutionCache, createSourceFile, isClassDeclaration, isExportAssignment, isExportDeclaration, isIdentifier, isImportDeclaration, isNamedExports, isNamedImports, isNamespaceImport, isPropertyAccessExpression, isStringLiteralLike, resolveModuleName, sys } from 'typescript';
 import type { CachedSourceFile } from '../../types/cached-source-file.type';
 import type { DeclarationFinder } from '../../types/declaration-finder.type';
 import type { ResolutionContext } from '../../types/resolution-context.type';
@@ -157,6 +157,29 @@ export function resolveBaseClass({ sourceFile, declaration }: ResolvedClass, con
 export function getBaseClassExpression(declaration: ClassDeclaration): Expression | undefined {
   const extendsClause = declaration.heritageClauses?.find(clause => clause.token === SyntaxKind.ExtendsKeyword);
   return extendsClause?.types[0].expression;
+}
+
+/**
+ * Finds the export of `@xaendar/core` an identifier reads, through the named imports of its file (`CustomElement`,
+ * `customElementOf`, also when imported under another name).
+ *
+ * @param identifier - The identifier.
+ * @param sourceFile - The file of the identifier.
+ * @returns The name of the export, `undefined` when the identifier does not read one.
+ */
+export function getCoreImport({ text }: Identifier, sourceFile: SourceFile): string | undefined {
+  for (let i = 0; i < sourceFile.statements.length; i++) {
+    const statement = sourceFile.statements[i];
+    if (isImportDeclaration(statement) && isStringLiteral(statement.moduleSpecifier) && statement.moduleSpecifier.text.startsWith('@xaendar/core')) {
+      const bindings = statement.importClause?.namedBindings;
+      const element = bindings && isNamedImports(bindings) ? bindings.elements.find(({ name }) => name.text === text) : undefined;
+      if (element) {
+        return (element.propertyName ?? element.name).text;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 /**

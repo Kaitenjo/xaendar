@@ -150,6 +150,34 @@ describe('parseElement', () => {
     });
   });
 
+  describe('customized built-in elements', () => {
+    it('takes the static is attribute out of the attributes, as the selector of the component the element is', () => {
+      const [node] = parse('<button is="copy-button" title="Copy" type="button">Copy</button>') as ElementNode[];
+
+      expect(node.is).toBe('copy-button');
+      expect(node.isSpan).toEqual({ start: 8, end: 24 });
+      expect(node.attributes.map(({ name }) => name)).toEqual(['title', 'type']);
+    });
+
+    it('tells x and attr.x apart on a customized built-in element, whose x may be an input', () => {
+      expect(() => parse('<button is="copy-button" title="a" attr.title="b"></button>')).not.toThrow();
+      expect(() => parse('<button title="a" attr.title="b"></button>')).toThrow('Attribute "title" is bound more than once on <button>');
+    });
+
+    it.each([
+      ['bound', '<button is="{ name() }"></button>', 'The is attribute of <button> must be a static selector, e.g. is="copy-button": it decides the class of the element when it is created'],
+      ['without a value', '<button is></button>', 'The is attribute of <button> must be a static selector'],
+      ['on a custom element', '<my-el is="copy-button"></my-el>', '<my-el> is a custom element: is="…" names the customized built-in element a native element is, e.g. <button is="copy-button">'],
+      ['that is not a custom element name', '<button is="copy"></button>', '"copy" is not a valid custom element name: is="…" names the selector of a customized built-in element'],
+      ['in a branch', '<button @if (cond()) { is="copy-button" }></button>', 'The is attribute of <button> cannot be written by a branch: it decides the class of the element when it is created'],
+      ['in a nested branch', '<button @if (cond()) { @if (other()) { is="copy-button" } }></button>', 'The is attribute of <button> cannot be written by a branch'],
+      ['written with attr.', '<button attr.is="copy-button"></button>', 'attr.is cannot be written: is decides the class of a customized built-in element when it is created'],
+      ['on a <template> declaring a template', '<template row() is="copy-button"></template>', 'A <template> declares only its name and its parameters']
+    ])('rejects an is attribute %s', (_description, template, message) => {
+      expect(() => parse(template)).toThrow(message);
+    });
+  });
+
   it.each([
     ['an @if chain', '<div @if (a()) { title="x" } @else if (b()) { title="y" } @else { title="z" }></div>'],
     ['a @switch', '<div @switch (mode()) { @case (1) { title="x" } @case (2) { title="y" } @default { title="z" } }></div>'],

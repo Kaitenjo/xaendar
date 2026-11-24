@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { isValidCustomElementName, matchesCustomElementPattern } from './tags.util';
+import { acceptsShadowRoot, isValidCustomElementName, matchesCustomElementPattern } from './tags.util';
 
 
 describe('isValidCustomElementName()', () => {
@@ -152,5 +152,19 @@ describe('matchesCustomElementPattern()', () => {
     expect(matchesCustomElementPattern('ui-card', ['ui-*'])).toBe(true);
     expect(matchesCustomElementPattern('ux-card', ['ui-*'])).toBe(false);
     expect(matchesCustomElementPattern('ui-card-header', ['ui-*'])).toBe(true);
+  });
+});
+
+describe('acceptsShadowRoot()', () => {
+  it('accepts the native elements a shadow root can be attached to', () => {
+    expect(acceptsShadowRoot('div')).toBe(true);
+    expect(acceptsShadowRoot('section')).toBe(true);
+    expect(acceptsShadowRoot('h3')).toBe(true);
+  });
+
+  it('rejects the other native elements', () => {
+    expect(acceptsShadowRoot('button')).toBe(false);
+    expect(acceptsShadowRoot('input')).toBe(false);
+    expect(acceptsShadowRoot('li')).toBe(false);
   });
 });

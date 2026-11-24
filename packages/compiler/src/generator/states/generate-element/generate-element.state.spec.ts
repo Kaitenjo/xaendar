@@ -86,6 +86,31 @@ describe('generateElement', () => {
     expect((await run('<div><template row()></template></div>', native)).constants).toEqual(['const div0$element = { tagName: \'div\', children: div0Children };']);
   });
 
+  it('creates a customized built-in element with its is, binding the inputs of the component its is names', async () => {
+    const result = await run('<button is="copy-button" label="Copy" type="button" class.on="{ on() }"></button>', new GeneratorContext(cacheWith({ label: new ComponentPropertyMetadata('label', 'string') })));
+
+    const element = result.constants.find(constant => constant.startsWith('const button0$element'));
+
+    expect(element).toContain('tagName: \'button\',\n  is: \'copy-button\',');
+    expect(element).toContain('{ name: \'label\', value: \'Copy\', setter: _setInput }');
+    expect(element).toContain('shared: [\'type\']');
+    expect(element).toContain('styling: 4');
+    expectValidJavascript(result);
+  });
+
+  it('creates a customized built-in element of another library with its is, as a native element', async () => {
+    const context = new GeneratorContext(cache);
+    context.addCustomElementPatterns('sl-*');
+
+    expect((await run('<button is="sl-copy" type="button"></button>', context)).constants).toEqual([[
+      'const button0$element = {',
+      '  tagName: \'button\',',
+      '  is: \'sl-copy\',',
+      '  attributes: [{ name: \'type\', value: \'button\', setter: _setProperty }]',
+      '};'
+    ].join('\n')]);
+  });
+
   it('generates a standard <template> without content as a bare element', async () => {
     const { constants } = await run('<template></template>');
     expect(constants).toEqual(['const template0$element = { tagName: \'template\' };']);

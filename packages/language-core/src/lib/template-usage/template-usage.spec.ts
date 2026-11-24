@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { getTemplateUsage } from './template-usage';
 
 const child = { type: 'component', selector: 'x-child', properties: new Map([['label', {}], ['size', {}]]) } as unknown as ComponentMetadata;
+const copy = { type: 'component', selector: 'x-copy', extends: 'button', properties: new Map([['label', {}]]) } as unknown as ComponentMetadata;
 const directive = { type: 'directive', selector: 'tip' } as ComponentOrDirectiveMetadata;
 
 /**
@@ -13,7 +14,7 @@ const symbol = (local: string, reactive: boolean) => ({ local, reactive }) as Sy
 /**
  * Reads the usage of a template rendering the child.
  */
-const usageOf = (source: string, reactiveMembers: readonly string[] = [], symbols: readonly SymbolImport[] = [], shadowingMembers: readonly string[] = []) => getTemplateUsage(parseTemplate(source), [child, directive], symbols, { reactiveMembers, shadowingMembers });
+const usageOf = (source: string, reactiveMembers: readonly string[] = [], symbols: readonly SymbolImport[] = [], shadowingMembers: readonly string[] = []) => getTemplateUsage(parseTemplate(source), [child, copy, directive], symbols, { reactiveMembers, shadowingMembers });
 
 /**
  * Reads the first component a template renders, without the metadata.
@@ -47,6 +48,7 @@ describe('getTemplateUsage', () => {
       ['a @defer', '@defer (idle) { }', 'declares a @defer'],
       ['a lazy import', '@import lazy { Panel } from \'./panel\';\n<p></p>', 'imports ./panel lazily'],
       ['a custom element outside of the project', '<sl-button></sl-button>', 'renders <sl-button>, which is not a component of the project'],
+      ['a customized built-in element outside of the project', '<button is="sl-copy"></button>', 'renders <button is="sl-copy">, which is not a component of the project'],
       ['a signal of a module', '{ count() }', 'reads the signal count of a module'],
       ['a global only the browser has', '{ document.title }', 'reads the global document'],
       ['a global guarded by typeof', '{ typeof document }', 'reads the global document']
@@ -69,6 +71,7 @@ describe('getTemplateUsage', () => {
 
     it('reads the inputs bound to values', () => {
       expect(firstUsage('<x-child label="a" other="{ b() }"></x-child>')).toEqual({ dynamic: false, placeholder: false, reactiveInputs: false, expressionInputs: [] });
+      expect(firstUsage('<button is="x-copy" label="{ text }"></button>')).toEqual({ dynamic: false, placeholder: false, reactiveInputs: false, expressionInputs: ['label'] });
     });
 
     it('lists the inputs bound to expressions', () => {

@@ -1,4 +1,4 @@
-import { appendBlockPosition, ASTNodeType, declareExpression, describeStyling, GeneratorContext, getChildrenNamespace, getDirectiveOrder, getElementIdentifier, getElementNamespace, isStructuralElement, mapContentTemplates, orderDirectives, resolveExpression, splitStylingAttributes, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
+import { appendBlockPosition, ASTNodeType, declareExpression, describeStyling, GeneratorContext, getChildrenNamespace, getDirectiveOrder, getElementIdentifier, getElementNamespace, getElementSelector, isStructuralElement, mapContentTemplates, orderDirectives, resolveExpression, splitStylingAttributes, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
 import { dropsLeadingNewline, escapeAttribute, isValidCustomElementName, isVoidElement } from '@xaendar/internals';
 import type { Function } from '@xaendar/types';
 import { SUBMIT_ATTRIBUTE } from '../../../costants/ssr-markers.constants';
@@ -110,11 +110,13 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
   const { tagName, attributes, classBindings, styleBindings, ref } = node;
   const owner: DescriptorOwner = { name: id, generatorContext };
   const isHtml = getElementNamespace(tagName, generatorContext.namespace) === 'html';
-  const isComponent = isValidCustomElementName(tagName, false) && !generatorContext.isForeignElement(tagName);
+  // The name its component is looked up by: the `is` of a customized built-in element, the tag name of any other element
+  const selector = getElementSelector(node);
+  const isComponent = isValidCustomElementName(selector, false) && !generatorContext.isForeignElement(selector);
   // Only a native element applies its custom directives on the server
   const withDirectives = !isComponent;
   orderDirectives(node);
-  const conditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, owner, branch => isEmptyBranch(branch, withDirectives), (branch, condition) => mapBranch(branch, condition, isComponent ? tagName : undefined, owner));
+  const conditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, owner, branch => isEmptyBranch(branch, withDirectives), (branch, condition) => mapBranch(branch, condition, isComponent ? selector : undefined, owner));
   const directives = withDirectives ? mapDirectives(node.directives, owner) : undefined;
   const pieces = new Array<ServerCodePiece>();
   if (ref) {
@@ -125,24 +127,29 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
   registerEvents(node, generatorContext);
 
   if (isComponent || classBindings.length || styleBindings.length || conditionalBindings.length || directives?.length) {
-    const descriptors = mapBindings(node, owner, isComponent ? tagName : undefined);
+    const descriptors = mapBindings(node, owner, isComponent ? selector : undefined);
     appendSubmitMark(descriptors, node);
     const members = [`tagName: ${toStringLiteral(tagName)}`];
+    // Written as the first attribute of a customized built-in element, which the runtime finds its component by
+    if (node.is) {
+      members.push(`is: ${toStringLiteral(node.is)}`);
+    }
+
     appendList(members, 'attributes', descriptors);
     appendList(members, 'conditionalBindings', conditionalBindings);
     if (isComponent) {
       appendList(members, 'templates', mapContentTemplates(node, generatorContext));
     }
-    const clientComponent = isComponent ? generatorContext.getClientComponent(tagName) : undefined;
+    const clientComponent = isComponent ? generatorContext.getClientComponent(selector) : undefined;
     if (!clientComponent && directives?.length) {
       appendList(members, 'directives', directives);
     }
 
     const element = generatorContext.declareConstant(`${id}$element`, toObjectLiteral(members));
     const options = clientComponent ? `, ${generatorContext.declareConstant(`${id}$client`, toClientOptions(clientComponent, generatorContext))}` : '';
-    pieces.push({ statement: `${getStartTagWriter(tagName, isComponent, generatorContext)}(out, context, ${element}${options});` });
+    pieces.push({ statement: `${getStartTagWriter(selector, isComponent, generatorContext)}(out, context, ${element}${options});` });
   } else {
-    pieces.push({ html: `<${tagName}` });
+    pieces.push({ html: node.is ? `<${tagName} is="${escapeAttribute(node.is)}"` : `<${tagName}` });
     for (let i = 0; i < attributes.length; i++) {
       // An attribute written with `attr.` is the attribute it names
       const { attribute, value } = attributes[i];
@@ -221,21 +228,21 @@ function appendSubmitMark(descriptors: string[], bindings: Pick<ConditionalBindi
 /**
  * Returns the runtime helper writing the start tag of an element.
  *
- * @param tagName - The tag name of the element.
+ * @param selector - The name the component of the element is looked up by (see `getElementSelector`).
  * @param isComponent - Whether the element is a component.
  * @param generatorContext - The generator context of the element.
  * @returns The name of the helper.
  */
-function getStartTagWriter(tagName: string, isComponent: boolean, generatorContext: GeneratorContext): string {
+function getStartTagWriter(selector: string, isComponent: boolean, generatorContext: GeneratorContext): string {
   if (!isComponent) {
     return '_ssrStartTag';
   }
 
-  if (generatorContext.getClientComponent(tagName)) {
+  if (generatorContext.getClientComponent(selector)) {
     return '_ssrClientComponent';
   }
 
-  return generatorContext.isIsland(tagName) ? '_ssrIsland' : '_ssrComponent';
+  return generatorContext.isIsland(selector) ? '_ssrIsland' : '_ssrComponent';
 }
 
 /**

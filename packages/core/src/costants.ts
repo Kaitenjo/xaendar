@@ -16,6 +16,11 @@ export const INTERNAL_EVENTS = 'events';
  */
 export const INTERNAL_SELECTOR = 'selector';
 /**
+ * Internal metadata key holding the tag of the native element a customized built-in element extends, `extends` of
+ * `WebComponent` (see `WebComponentOptions`).
+ */
+export const INTERNAL_EXTENDS = 'extends';
+/**
  * Internal metadata key holding the host directives a web component is declared with (see `WebComponent`).
  */
 export const INTERNAL_HOST_DIRECTIVES = 'hostDirectives';
@@ -83,6 +88,12 @@ export const DIRECTIVE_DISCONNECT = Symbol('DirectiveDisconnect');
  * (see `LeaveHandler`): a single read tells whether the element waits before leaving.
  */
 export const LEAVE_HANDLER = Symbol('LeaveHandler');
+/**
+ * Key of the method of a `CustomElement` initializing the state of its element, called by its constructor and by the one
+ * of the classes `customElementOf` creates on the class of a native element, which share its prototype: it tells the
+ * element of a component, whatever class it extends.
+ */
+export const INITIALIZE = Symbol('Initialize');
 /**
  * Key of the internal list of callbacks a `CustomElement` invokes each time it is connected, right after the render.
  */

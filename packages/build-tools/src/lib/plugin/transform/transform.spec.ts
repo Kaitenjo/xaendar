@@ -254,7 +254,7 @@ describe('createTransformHook()', () => {
 
     expect(result).toBe('import { WebComponent } from "@xaendar/core";');
     expect(readFile).toHaveBeenCalledWith('/src/foo/util.ts', 'utf8');
-    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.objectContaining({ fileName: '/src/foo/util.ts' }), false, false);
+    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.objectContaining({ fileName: '/src/foo/util.ts' }), false, false, state.compilerOptions);
     expect(extractComponentsMetadataFromSourceFile).not.toHaveBeenCalled();
     expect(state.logError).not.toHaveBeenCalled();
   });
@@ -281,7 +281,7 @@ describe('createTransformHook()', () => {
     const result = await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     expect(result).toBeNull();
-    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.objectContaining({ fileName: COMPONENT_PATH }), true, false);
+    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.objectContaining({ fileName: COMPONENT_PATH }), true, false, state.compilerOptions);
     expect(state.logError).toHaveBeenCalledWith('', `The templateUrl option of FooComponent must be a string literal - ${COMPONENT_PATH}`);
     expect(extractComponentsMetadataFromSourceFile).not.toHaveBeenCalled();
   });
@@ -385,6 +385,20 @@ describe('createTransformHook()', () => {
 
     expect(claimSelectors).toHaveBeenCalledWith(metadata);
     expect(registerMetadata).toHaveBeenCalledWith('FooComponent', metadata);
+  });
+
+  it('registers a customized built-in element without a template, compiling and injecting nothing for it', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    const metadata = createMetadata({ extends: 'button', templateUrl: undefined });
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
+    const state = createState({ fileExists: () => false });
+
+    const result = await createTransformHook(state).call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
+
+    expect(registerMetadata).toHaveBeenCalledWith('FooComponent', metadata);
+    expect(state.logError).not.toHaveBeenCalled();
+    expect(compile).not.toHaveBeenCalled();
+    expect(result).not.toBeNull();
   });
 
   it('warns about an input named like an attribute every element reflects, only in the environment type-checking', async () => {
@@ -548,7 +562,7 @@ describe('createTransformHook()', () => {
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ ssr: true }));
-    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, true);
+    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, true, expect.anything());
   });
 
   it('compiles a component of a library of the workspace with the options of the library', async () => {
@@ -560,7 +574,7 @@ describe('createTransformHook()', () => {
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: ['sl-*'], ssr: true, strictEvents: false }));
-    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, true);
+    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, true, expect.anything());
   });
 
   it('rejects in a library not rendering on the server what only the server reads, whatever the project does', async () => {
@@ -572,7 +586,7 @@ describe('createTransformHook()', () => {
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: [], ssr: false, strictEvents: true }));
-    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, false);
+    expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, false, expect.anything());
   });
 
   it('extracts the metadata of the component and of the imported ones with the project compiler options', async () => {

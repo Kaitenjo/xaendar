@@ -22,6 +22,7 @@ import type { DescriptorOwner } from '../../types/descriptor-owner.type';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
 import type { StylingExpressions } from '../../types/styling-expressions.type';
 import type { TemplateListenerCode } from '../../types/template-listener-code.type';
+import { getElementSelector } from '../../../utils/element-selector/element-selector.utils';
 import { appendBlockPosition, appendContainer, rendersBlock } from '../../utils/block-position/block-position.utils';
 import { getElementIdentifier, isConstantExpression, joinVariables, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
 import { declareExpression, toArrayLiteral, toObjectLiteral, toRoleName } from '../../utils/module-code/module-code.utils';
@@ -66,9 +67,11 @@ import { describeStyling, getDirectiveOrder, orderDirectives, splitStylingAttrib
  */
 export async function generateElement(node: ElementNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null, _separated = false, last = false): Promise<GeneratorTransitionFunctionReturnType> {
   const tagName = node.tagName;
+  // The name its component is looked up by: the `is` of a customized built-in element, the tag name of any other element
+  const selector = getElementSelector(node);
   const nodeName = getElementIdentifier(node, parentNode, index);
   // A custom element of another library has no metadata: it is generated like a native element
-  const isCustomElement = isValidCustomElementName(tagName, false) && !generatorContext.isForeignElement(tagName);
+  const isCustomElement = isValidCustomElementName(selector, false) && !generatorContext.isForeignElement(selector);
   const structural = isStructuralElement(node);
   const owner: DescriptorOwner = { name: nodeName, generatorContext };
   /*
@@ -81,9 +84,9 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   // The attributes the component or the directives may write too, collected while the bindings are mapped
   const branchDirectives = !!(branchStyling(node.conditionalBindings) & 4);
   const shared = isCustomElement || node.directives.length || branchDirectives ? new Array<string>() : undefined;
-  const [attributes, written] = await mapBindings(node, elementOwner, tagName, isCustomElement, false, false, shared);
+  const [attributes, written] = await mapBindings(node, elementOwner, selector, isCustomElement, false, false, shared);
   const events = mapEvents(node.events, elementOwner);
-  const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, elementOwner, tagName, isCustomElement, false, shared);
+  const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, elementOwner, selector, isCustomElement, false, shared);
   const directives = await mapDirectives(node.directives, elementOwner);
   const structuralDirectives = await mapStructuralDirectives(node.structuralDirectives, owner);
   const structuralConditionalBindings = await mapStructuralConditionalBindings(node.conditionalBindings, owner);
@@ -96,6 +99,11 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
 
   const namespace = getElementNamespace(tagName, generatorContext.namespace);
   const members = [`tagName: ${toStringLiteral(tagName)}`];
+  // A customized built-in element is created with its `is`, which decides its class
+  if (node.is) {
+    members.push(`is: ${toStringLiteral(node.is)}`);
+  }
+
   appendNamespace(members, namespace);
   appendList(members, 'attributes', attributes);
   appendList(members, 'events', events);
@@ -470,7 +478,7 @@ function stylingFlags(node: ElementNode, writes: number, structural: boolean): n
 
   const branches = branchStyling(node.conditionalBindings);
   let flags = structural || branches & 4 ? writes : writes & branches;
-  if (isValidCustomElementName(node.tagName, false) || node.directives.length) {
+  if (isValidCustomElementName(getElementSelector(node), false) || node.directives.length) {
     flags |= (writes & ~flags) << 2;
   }
 

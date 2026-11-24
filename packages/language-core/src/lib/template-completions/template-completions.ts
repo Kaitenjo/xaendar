@@ -354,9 +354,11 @@ export function getTemplateBindingCompletions(metadatas: readonly ComponentOrDir
     return undefined;
   }
 
-  const { kind, tagName, directive, span } = context;
+  const { kind, tagName, is, directive, span } = context;
+  // A customized built-in element is the component its `is` names
+  const selector = is ?? tagName;
   const owner = metadatas.find(metadata => directive === undefined
-    ? metadata.type === 'component' && metadata.selector === tagName
+    ? metadata.type === 'component' && metadata.selector === selector
     : metadata.type === 'directive' && metadata.selector === directive);
   if (!owner) {
     return [];
@@ -399,7 +401,8 @@ export async function getTemplateSourceBindingCompletions(templatePath: string, 
 
 /**
  * Proposes the selectors of the components and directives where one is being written: the components after the `<` of
- * an opening tag, the directives after the `@@` or the `*` of a binding. The ones imported by the template come first,
+ * an opening tag, a customized built-in element as the tag it extends with its `is` (`button is="copy-button"`), the
+ * directives after the `@@` or the `*` of a binding. The ones imported by the template come first,
  * read from the `@import` statements of the current source, so that they are proposed while the template doesn't
  * compile; then the ones of the project it doesn't import yet, which add their `@import` to the template when chosen.
  *
@@ -423,7 +426,7 @@ export async function getTemplateSelectorCompletions(templatePath: string, sourc
     const { type, selector } = imported[i];
     if (type === kind) {
       importedSelectors.add(selector);
-      completions.push({ name: selector, kind, sortText: '0', replacementSpan: span });
+      completions.push({ name: toSelectorCompletion(imported[i]), kind, sortText: '0', replacementSpan: span });
     }
   }
 
@@ -431,15 +434,27 @@ export async function getTemplateSelectorCompletions(templatePath: string, sourc
   if (candidates) {
     const templateDir = dirname(templatePath);
     for (let i = 0; i < candidates.length; i++) {
-      const { fileName, metadata: { type, selector, className } } = candidates[i];
+      const { fileName, metadata } = candidates[i];
+      const { type, selector, className } = metadata;
       if (type === kind && !importedSelectors.has(selector)) {
         const path = toModulePath(templateDir, fileName);
-        completions.push({ name: selector, kind, detail: `${className} - ${path}`, sortText: '1', replacementSpan: span, additionalEdits: [getImportInsertion(source, path, className)] });
+        completions.push({ name: toSelectorCompletion(metadata), kind, detail: `${className} - ${path}`, sortText: '1', replacementSpan: span, additionalEdits: [getImportInsertion(source, path, className)] });
       }
     }
   }
 
   return completions;
+}
+
+/**
+ * Writes what a selector completion inserts: the selector, or the tag a customized built-in element extends with its
+ * selector as `is`.
+ *
+ * @param metadata - The metadata of the component or directive.
+ * @returns The text of the completion.
+ */
+function toSelectorCompletion(metadata: ComponentOrDirectiveMetadata): string {
+  return metadata.type === 'component' && metadata.extends ? `${metadata.extends} is="${metadata.selector}"` : metadata.selector;
 }
 
 /**

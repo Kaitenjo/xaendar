@@ -21,6 +21,7 @@ import { ComponentMetadata } from '../../../types/component-metadata.type';
 import type { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
 import type { Span } from '../../../types/span.type';
 import { getChildrenNamespace, getElementNamespace } from '../../../utils/element-namespace/element-namespace.utils';
+import { getElementSelector } from '../../../utils/element-selector/element-selector.utils';
 import { readsEvent } from '../../../utils/event-reads/event-reads.utils';
 import { getOwnerType } from '../../../utils/metadata/metadata.utils';
 import { ComponentPropertyMetadata } from '../../models/component-property-metadata/component-property-metadata.model';
@@ -43,7 +44,9 @@ import { getInstantiationSuffix, INSTANCE, typeCheckScope } from '../../utils/sc
  *
  * Custom elements (tag names containing a dash) are checked against the
  * metadata of the component imported for their selector; native elements, and the custom elements of other
- * libraries matching the `customElements` patterns, only get their expressions and event handlers checked.
+ * libraries matching the `customElements` patterns, only get their expressions and event handlers checked. A
+ * customized built-in element (`<button is="copy-button">`) is a component looked up by its `is`, an HTML element
+ * written with the tag its component extends (see {@link assertExtendedTag}).
  *
  * The native events of the element are typed through the event map of its namespace (see `getElementNamespace`),
  * which its children inherit: the children of an `<svg>`, a `<math>` or a `<foreignObject>` element are type-checked in
@@ -60,28 +63,34 @@ import { getInstantiationSuffix, INSTANCE, typeCheckScope } from '../../utils/sc
  * @param context - Current type-check scope.
  * @returns The generated type-check lines.
  * @throws If the tag is a custom element, or one of its directives, whose selector is not imported in the template,
- *   or a custom element both imported and matching the `customElements` patterns.
+ *   or a custom element both imported and matching the `customElements` patterns, or when the element and its component
+ *   disagree on being a customized built-in element, or on the tag it extends.
  */
 export function typeCheckElement(node: ElementNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
   const { tagName } = node;
+  const selector = getElementSelector(node);
   const namespace = getElementNamespace(tagName, context.namespace);
   const eventMap = getEventMap(namespace);
   let nativeEvents: NativeEvents = { eventMap, tagName, foreign: false };
+  if (node.is !== undefined && namespace !== 'html') {
+    throw new Error(`<${tagName}> is not an HTML element: is="${node.is}" names a customized built-in element, which extends an HTML element, e.g. <button is="copy-button">`, { cause: node.isSpan });
+  }
 
-  if (isCustomElementTag(tagName)) {
-    const metadata = context.getImportBySelector(tagName);
-    const isForeign = context.isForeignElement(tagName);
+  if (isCustomElementTag(selector)) {
+    const metadata = context.getImportBySelector(selector);
+    const isForeign = context.isForeignElement(selector);
     if (metadata && isForeign) {
-      throw new Error(`${tagName} is both imported as a WebComponent and declared in customElements`, { cause: node.span });
+      throw new Error(`${selector} is both imported as a WebComponent and declared in customElements`, { cause: node.span });
     } else if (metadata) {
+      assertExtendedTag(node, metadata);
       lines.push(...typeCheckComponentBindings(node, metadata, nativeEvents, context));
     } else if (isForeign) {
       assertUniqueForeignAttributes(node);
       nativeEvents = { eventMap, tagName, foreign: true };
       lines.push(...typeCheckNativeBindings(node, nativeEvents, context));
     } else {
-      throw new Error(`${tagName} selector is not associated to any WebComponent imported in the template, nor declared in customElements`, { cause: node.span });
+      throw new Error(`${selector} selector is not associated to any WebComponent imported in the template, nor declared in customElements`, { cause: node.span });
     }
   } else {
     lines.push(...typeCheckNativeBindings(node, nativeEvents, context));
@@ -90,7 +99,7 @@ export function typeCheckElement(node: ElementNode, processNode: ProcessNode, co
   lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], tagName, nativeEvents, context));
 
   // The element is type-checked: the element ref naming its generic component is typed with the instantiation
-  if (node.ref && context.getImportBySelector(tagName)?.typeParameters) {
+  if (node.ref && context.getImportBySelector(selector)?.typeParameters) {
     context.addInstantiation(node.span.start);
   }
 
@@ -112,6 +121,35 @@ export function typeCheckElement(node: ElementNode, processNode: ProcessNode, co
   }
 
   return lines;
+}
+
+/**
+ * Ensures an element is written as its component is defined: an autonomous custom element by its tag (`<my-card>`), a
+ * customized built-in element by the tag it extends with its selector as `is` (`<button is="copy-button">`), as the
+ * browser creates it.
+ *
+ * @param node - The element.
+ * @param metadata - The metadata of its component.
+ * @throws If the element is written in the form of the other kind of component, or with another tag than the one its
+ *   component extends.
+ */
+function assertExtendedTag(node: ElementNode, { className, selector, extends: extended }: ComponentMetadata): void {
+  const { tagName, is } = node;
+  if (extended === undefined) {
+    if (is !== undefined) {
+      throw new Error(`${className} is an autonomous custom element: write it <${selector}>, not <${tagName} is="${is}">`, { cause: node.isSpan });
+    }
+
+    return;
+  }
+
+  if (is === undefined) {
+    throw new Error(`${className} is a customized built-in element extending <${extended}>: write it <${extended} is="${selector}">, not <${selector}>`, { cause: node.nameSpan });
+  }
+
+  if (tagName !== extended) {
+    throw new Error(`${className} extends <${extended}>: write it <${extended} is="${selector}">, not <${tagName} is="${is}">`, { cause: node.nameSpan });
+  }
 }
 
 /**
