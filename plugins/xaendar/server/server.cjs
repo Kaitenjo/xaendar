@@ -23459,6 +23459,9 @@ function lexTagOpenName(cursor, _context) {
         if (!tagName && !isAsciiLetter(cursor.currentChar.code)) {
           throw `A tag name starts with a letter, not '${cursor.currentChar.value}': write a '<' in a text as &lt;`;
         }
+        if (isForbiddenNameChar(cursor.currentChar.code)) {
+          throw `${describeNameChar(cursor.currentChar.code)} cannot be part of a tag name`;
+        }
         tagName = `${tagName}${cursor.currentChar.value}`;
     }
   }
@@ -26643,7 +26646,7 @@ function getEventMap(namespace) {
 }
 function getElementType(namespace, tagName) {
   const [tagNameMap, element] = getTagNameMap(namespace);
-  return `(${tagNameMap} extends { ${toStringLiteral(tagName)}: infer Type } ? Type : ${element})`;
+  return `(${tagNameMap} extends { '${tagName}': infer Type } ? Type : ${element})`;
 }
 function getTagNameMap(namespace) {
   switch (namespace) {
