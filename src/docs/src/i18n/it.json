@@ -2205,7 +2205,7 @@
         },
         "disposing": {
           "title": "Eliminare un effetto",
-          "p1": "Chiamare la funzione di eliminazione ferma l’effetto e rilascia ogni sottoscrizione. Un effetto si elimina una volta sola: chiamare la funzione di eliminazione una seconda volta lancia un errore, che l’effetto sia autonomo o legato con <code>this.effect()</code>. Quella di <code>this.effect()</code> lancia un errore anche dopo che il componente o la direttiva non c’è più, perché lo scollegamento ha già eliminato l’effetto.",
+          "p1": "Chiamare la funzione di eliminazione ferma l’effetto e rilascia ogni sottoscrizione. Un effetto si elimina una volta sola: chiamare di nuovo la funzione di eliminazione non fa nulla, <code>onCleanup</code> compresa, che l’effetto sia autonomo o legato con <code>this.effect()</code>. Quella di <code>this.effect()</code> non fa nulla neanche dopo che il componente o la direttiva non c’è più, perché lo scollegamento ha già eliminato l’effetto.",
           "example1": "Eliminare due volte"
         },
         "errors": {
@@ -4303,8 +4303,8 @@
       "fix": "Rimanda il lavoro con queueMicrotask."
     },
     "Cannot unwatch a signal that is not being watched": {
-      "cause": "Il disposer di un effect chiamato quando l’effect è già eliminato: una seconda volta, oppure, per this.effect(), dopo che il componente o la direttiva non c’è più.",
-      "fix": "Chiamalo una volta sola, mentre l’effect è attivo."
+      "cause": "Watcher.unwatch chiamato con un signal che il watcher non osserva, come uno già rimosso.",
+      "fix": "Rimuovi solo i signal che il watcher osserva: Signal.subtle.introspectSources(watcher) li elenca."
     },
     "Tag <Widget> is not a valid custom element name. Custom element names must: …": {
       "cause": "Un nome di componente, o un nome di progetto seguito da -root, che non è un nome valido per un custom element.",

@@ -381,10 +381,12 @@ describe('effect', () => {
       expect(spy).toHaveBeenCalledTimes(1);
     });
 
-    it('throws if called multiple times (already unwatched)', () => {
-      const dispose = effect(() => {});
+    it('does nothing when called a second time', () => {
+      const onCleanup = vi.fn();
+      const dispose = effect(() => {}, { onCleanup });
       dispose();
-      expect(() => dispose()).toThrow();
+      expect(() => dispose()).not.toThrow();
+      expect(onCleanup).toHaveBeenCalledOnce();
     });
   });
 });

@@ -1071,8 +1071,8 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `Cannot unwatch a signal that is not being watched`
 
-- **Cause:** The disposer of an effect called when the effect is already disposed: a second time, or, for this.effect(), after the component or the directive is gone.
-- **Fix:** Call it once, while the effect is alive.
+- **Cause:** Watcher.unwatch called with a signal the watcher does not watch, as one already unwatched.
+- **Fix:** Unwatch only the signals the watcher watches: Signal.subtle.introspectSources(watcher) lists them.
 
 ## CLI
 

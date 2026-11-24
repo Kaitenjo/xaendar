@@ -271,17 +271,17 @@ describe('CustomDirective', () => {
       expect(onCleanup).toHaveBeenCalledOnce();
     });
 
-    it('returns a disposer that throws when it is called a second time', () => {
+    it('returns a disposer that does nothing when it is called a second time', () => {
       const directive = create(TestDirective);
       connect(directive);
 
       const dispose = directive.effect(() => undefined);
       dispose();
 
-      expect(() => dispose()).toThrow();
+      expect(() => dispose()).not.toThrow();
     });
 
-    it('returns a disposer that throws when it is called after the disconnection', () => {
+    it('returns a disposer that does nothing when it is called after the disconnection', () => {
       const state = new Signal.State(0);
       const directive = create(TestDirective);
       const context = connect(directive);
@@ -289,7 +289,7 @@ describe('CustomDirective', () => {
       const dispose = directive.effect(() => state.get());
       clear(context);
 
-      expect(() => dispose()).toThrow();
+      expect(() => dispose()).not.toThrow();
     });
 
     describe('created before the connection', () => {

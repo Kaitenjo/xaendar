@@ -2205,7 +2205,7 @@
         },
         "disposing": {
           "title": "Disposing",
-          "p1": "Calling the disposer stops the effect and releases every subscription. An effect is disposed once: calling the disposer a second time throws, whether the effect is standalone or bound with <code>this.effect()</code>. The disposer of <code>this.effect()</code> also throws after the component or the directive is gone, since the disconnection has already disposed the effect.",
+          "p1": "Calling the disposer stops the effect and releases every subscription. An effect is disposed once: calling the disposer again does nothing, <code>onCleanup</code> included, whether the effect is standalone or bound with <code>this.effect()</code>. The disposer of <code>this.effect()</code> does nothing either after the component or the directive is gone, since the disconnection has already disposed the effect.",
           "example1": "Disposing twice"
         },
         "errors": {
@@ -4303,8 +4303,8 @@
       "fix": "Defer the work with queueMicrotask."
     },
     "Cannot unwatch a signal that is not being watched": {
-      "cause": "The disposer of an effect called when the effect is already disposed: a second time, or, for this.effect(), after the component or the directive is gone.",
-      "fix": "Call it once, while the effect is alive."
+      "cause": "Watcher.unwatch called with a signal the watcher does not watch, as one already unwatched.",
+      "fix": "Unwatch only the signals the watcher watches: Signal.subtle.introspectSources(watcher) lists them."
     },
     "Tag <Widget> is not a valid custom element name. Custom element names must: …": {
       "cause": "A component name, or a project name followed by -root, that is not a valid custom element name.",

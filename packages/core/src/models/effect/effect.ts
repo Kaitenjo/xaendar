@@ -111,7 +111,7 @@ function defineEffectClass() {
     private readonly _third: Third;
     /**
      * The watcher of the effect: notified when a signal the last run read changes, it queues itself. `undefined` until
-     * the effect is watched (see {@link start} and {@link track}).
+     * the effect is watched (see {@link start} and {@link track}), and again once it is disposed.
      */
     private _watcher: Signal.subtle.Watcher | undefined;
 
@@ -207,13 +207,23 @@ function defineEffectClass() {
 
     /**
      * Disposes the effect: it calls `onCleanup`, then stops watching, severing the dependency chain, so the callback
-     * never runs again, also when a run was already queued.
+     * never runs again, also when a run was already queued. An effect already disposed is left as it is, `onCleanup`
+     * included, as a disposer called twice (a cleanup and the code of the application) expects.
      *
-     * @throws When the effect is already disposed.
+     * @throws The exception thrown by `onCleanup`: the effect is disposed all the same.
      */
     public dispose(): void {
-      this._options?.onCleanup?.();
-      this._watcher!.unwatch(this);
+      const watcher = this._watcher;
+      if (!watcher) {
+        return;
+      }
+
+      this._watcher = undefined;
+      try {
+        this._options?.onCleanup?.();
+      } finally {
+        watcher.unwatch(this);
+      }
     }
   };
 }
