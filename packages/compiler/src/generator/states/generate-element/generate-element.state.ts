@@ -98,7 +98,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   };
 
   const namespace = getElementNamespace(tagName, generatorContext.namespace);
-  const members = [`tagName: ${toStringLiteral(tagName)}`];
+  const members = [`tagName: '${tagName}'`];
   // A customized built-in element is created with its `is`, which decides its class
   if (node.is) {
     members.push(`is: ${toStringLiteral(node.is)}`);

@@ -30,12 +30,12 @@ describe('Generator', () => {
     expect(code).toContain('return this.b() + /* ) */ this.c();');
   });
 
-  it('names the elements with valid identifiers and writes their tag names as string literals, whatever characters the tag names hold', async () => {
-    const code = await generate('<a-b.c><x:y>t</x:y></a-b.c><p\'q>{ v() }</p\'q>');
+  it('names the elements with valid identifiers and writes their tag names as they are, whatever characters a tag name can hold', async () => {
+    const code = await generate('<a-b.c><x:y>t</x:y></a-b.c><p=q&é>{ v() }</p=q&é>');
 
     expect(code).toContain('const a_b_c0$element = { tagName: \'a-b.c\', children: a_b_c0Children };');
     expect(code).toContain('function a_b_c0__x_y0Children(a_b_c0__x_y0, context) {');
-    expect(code).toContain('tagName: \'p\\\'q\'');
+    expect(code).toContain('tagName: \'p=q&é\'');
     expect(() => new Function(code)).not.toThrow();
   });
 

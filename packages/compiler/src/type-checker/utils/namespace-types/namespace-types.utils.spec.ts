@@ -20,7 +20,7 @@ describe('getElementType', () => {
     expect(getElementType(namespace, tagName)).toBe(type);
   });
 
-  it('writes the tag name as a string literal, escaping its quotes', () => {
-    expect(getElementType('html', 'p\'x')).toBe('(HTMLElementTagNameMap extends { \'p\\\'x\': infer Type } ? Type : HTMLElement)');
+  it('writes the tag name as it is between quotes, the lexer rejecting the characters that would end the string', () => {
+    expect(getElementType('html', 'x:p')).toBe('(HTMLElementTagNameMap extends { \'x:p\': infer Type } ? Type : HTMLElement)');
   });
 });

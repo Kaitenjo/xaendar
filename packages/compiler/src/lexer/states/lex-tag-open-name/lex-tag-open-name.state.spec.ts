@@ -76,6 +76,16 @@ describe('lexTagOpenName', () => {
   });
 
   it.each([
+    ['<a\'b>', '\'\'\''],
+    ['<a"b>', '\'"\''],
+    ['<a<b>', '\'<\''],
+    ['<a\\b>', '\'\\\''],
+    ['<a\u0007b>', 'U+0007']
+  ])('throws on a character no name can hold, %j', (input, char) => {
+    expect(() => lexTagOpenName(new LexerCursor(input), context)).toThrow(`${char} cannot be part of a tag name`);
+  });
+
+  it.each([
     ['one type, followed by a space', '<my-list(string) items="x">', 'string', ' '],
     ['several types, followed by >', '<my-list(string, number)>', 'string, number', '>'],
     ['nested generic and function types, followed by a line break', '<my-list(Map<string, number>, (value: string) => void)\n>', 'Map<string, number>, (value: string) => void', '\n'],

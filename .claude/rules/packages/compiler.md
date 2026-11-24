@@ -15,7 +15,7 @@ Turns a Xaendar template into a JS render-function body plus a type-check result
 
 ## Names and strings in the generated code
 
-- Names the template writes (attribute names, directive selectors in the lexer; event names in `parseEvent`, the key of a key event excepted) reject what HTML rejects: quotes, `<`, plus `\` and control characters (`isForbiddenNameChar` of `lexer/utils/chars`); element refs are names of JavaScript (`isIdentifierChar`). Both generators (client and `ssr-compiler`) then write them as they are, `'${name}'`: never escape a name in a generator, reject it at the source.
+- Names the template writes (tag names, attribute names, directive selectors in the lexer; event names in `parseEvent`, the key of a key event excepted) reject what HTML rejects: quotes, `<`, plus `\` and control characters (`isForbiddenNameChar` of `lexer/utils/chars`); element refs are names of JavaScript (`isIdentifierChar`). Both generators (client and `ssr-compiler`) then write them as they are, `'${name}'`: never escape a name in a generator, reject it at the source.
 - Values (texts, static attribute values, keys of key events, paths of modules in `import`/`import()` of the generated and type-check code) go through `toStringLiteral`; the `import()` types are read back with an escape-aware regex and `fromStringLiteral` (`mapTypeModules`, `hoistImportTypes`).
 - The parser nests at most `MAX_DEPTH` (512) nodes, as HTML does: every stage walks the AST recursively.
 

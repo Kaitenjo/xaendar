@@ -37,10 +37,10 @@ describe('generateServerElement', () => {
     expect(functions).toEqual([]);
   });
 
-  it('writes the tag name of an element rendered by the runtime as a string literal, escaping its quotes', () => {
-    const { constants } = generate('<p\'x class.a="{ on() }">t</p\'x>');
+  it('writes the tag name of an element rendered by the runtime as it is, between quotes', () => {
+    const { constants } = generate('<p=x class.a="{ on() }">t</p=x>');
 
-    expect(constants.some(constant => constant.includes('tagName: \'p\\\'x\''))).toBe(true);
+    expect(constants.some(constant => constant.includes('tagName: \'p=x\''))).toBe(true);
   });
 
   it('writes no end tag for a void element, and a line feed after the start tag of an element dropping it', () => {

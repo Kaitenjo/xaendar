@@ -6,7 +6,7 @@ import { TokenType } from '../../types/token-type.enum';
 import type { TagOpenNameToken } from '../../types/tokens/tag-open-name-token.type';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
-import { isAsciiLetter } from '../../utils/chars/chars.utils';
+import { describeNameChar, isAsciiLetter, isForbiddenNameChar } from '../../utils/chars/chars.utils';
 import { lexTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 
 /**
@@ -19,8 +19,8 @@ import { lexTypeArguments } from '../../utils/type-arguments/type-arguments.util
  * @param cursor - The lexer cursor positioned at the `<` character.
  * @param _context - Unused lexer context.
  * @returns Transition result with the TAG_OPEN_NAME token and the TAG_BODY state.
- * @throws If the tag name is empty or does not start with a letter, or its type arguments are empty, declared twice or
- *   not followed by a whitespace, `/` or `>`.
+ * @throws If the tag name is empty, does not start with a letter or holds a character no name can hold
+ *   (`isForbiddenNameChar`), or its type arguments are empty, declared twice or not followed by a whitespace, `/` or `>`.
  */
 export function lexTagOpenName(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
@@ -80,6 +80,10 @@ export function lexTagOpenName(cursor: LexerCursor, _context: LexerTransitionFun
         // As in HTML, where `<` followed by anything else is text
         if (!tagName && !isAsciiLetter(cursor.currentChar.code)) {
           throw `A tag name starts with a letter, not '${cursor.currentChar.value}': write a '<' in a text as &lt;`;
+        }
+
+        if (isForbiddenNameChar(cursor.currentChar.code)) {
+          throw `${describeNameChar(cursor.currentChar.code)} cannot be part of a tag name`;
         }
 
         tagName = `${tagName}${cursor.currentChar.value}`

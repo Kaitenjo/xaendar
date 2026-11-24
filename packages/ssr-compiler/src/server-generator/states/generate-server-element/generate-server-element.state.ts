@@ -129,7 +129,7 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
   if (isComponent || classBindings.length || styleBindings.length || conditionalBindings.length || directives?.length) {
     const descriptors = mapBindings(node, owner, isComponent ? selector : undefined);
     appendSubmitMark(descriptors, node);
-    const members = [`tagName: ${toStringLiteral(tagName)}`];
+    const members = [`tagName: '${tagName}'`];
     // Written as the first attribute of a customized built-in element, which the runtime finds its component by
     if (node.is) {
       members.push(`is: ${toStringLiteral(node.is)}`);
