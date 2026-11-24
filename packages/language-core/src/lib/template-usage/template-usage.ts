@@ -131,7 +131,9 @@ function collectComponents(nodes: readonly ASTNode[], position: Pick<ComponentUs
         if (component) {
           components.push(toUsage(node, component, position, reactive));
         }
-        collectComponents(node.children, position, metadatas, reactive, components);
+
+        // The content of a standard <template> is written as it is, and only the browser creates its components, cloning it
+        collectComponents(node.children, node.tagName === 'template' ? { ...position, dynamic: true } : position, metadatas, reactive, components);
         break;
       }
 

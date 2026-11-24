@@ -113,6 +113,8 @@ describe('getTemplateUsage', () => {
       ['a reactive @switch', '@switch (kind()) { @case (1) { <x-child></x-child> } }'],
       ['a @default of a reactive @switch', '@switch (kind()) { @default { <x-child></x-child> } }'],
       ['a <template>', '<template row()><x-child></x-child></template>'],
+      ['the content of a standard <template>', '<template><div><x-child></x-child></div></template>'],
+      ['a customized built-in element in the content of a standard <template>', '<template><button is="x-copy"></button></template>'],
       ['a @client', '@client { <x-child></x-child> }'],
       ['a @try', '@try { <x-child></x-child> } @catch { }'],
       ['a @catch', '@try { } @catch (error) { <x-child></x-child> }'],
