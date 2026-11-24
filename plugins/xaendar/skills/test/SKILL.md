@@ -86,6 +86,7 @@ export class CounterHostComponent extends CustomElement {
 - `afterEach(() => document.body.replaceChildren())` disconnects the components: `onDestroy` runs and the effects are disposed.
 - Never import the `_`-prefixed helpers of `@xaendar/core` (`_Context`, `_setExpressionProperty`): they are the API of the compiled templates.
 - happy-dom computes no layout (`offsetWidth`, `getBoundingClientRect` are 0: define them on the element with `Object.defineProperty`) and has no `ElementInternals` (stub `attachInternals` on `HTMLElement.prototype` in a `beforeAll`).
+- happy-dom calls no lifecycle callback of a customized built-in element (`<button is="copy-button">`, `extends` of `@WebComponent`) and upgrades none it parses from HTML: create it with `document.createElement('button', { is: 'copy-button' })`, insert it, then call its `connectedCallback()` (and `disconnectedCallback()` after removing it) through a cast, as a browser would.
 - `@defer` blocks: their triggers are armed once the template holding them is rendered, so `await flush()` after mounting before firing one (`click()`, `dispatchEvent(new Event('mouseover', { bubbles: true }))`); the content waits for its modules (`vi.waitFor`). To show each part without triggers, import `@xaendar/core/testing`:
 
 ```ts

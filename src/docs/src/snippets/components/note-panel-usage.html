@@ -1,0 +1,9 @@
+@import { NotePanelComponent } from '../note-panel/note-panel.xd.component.ts'
+@import { PageSectionComponent } from '../page-section/page-section.xd.component.ts'
+
+<section is="page-section">
+  <!-- The content of the div is projected into the template of the panel, rendered into its shadow root -->
+  <div is="note-panel" heading="Drafts">
+    <p>Saved every minute, kept for a week.</p>
+  </div>
+</section>

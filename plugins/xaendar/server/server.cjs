@@ -603,7 +603,9 @@ var require_linkedMap = __commonJS({
         return this;
       }
       delete(key) {
-        return !!this.remove(key);
+        const existed = this._map.has(key);
+        this.remove(key);
+        return existed;
       }
       remove(key) {
         const item = this._map.get(key);
@@ -3548,7 +3550,7 @@ var init_main = __esm({
       DiagnosticRelatedInformation2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.defined(candidate) && Location.is(candidate.location) && Is.string(candidate.message);
+        return Is.objectLiteral(candidate) && Location.is(candidate.location) && Is.string(candidate.message);
       }
       DiagnosticRelatedInformation2.is = is;
     })(DiagnosticRelatedInformation || (DiagnosticRelatedInformation = {}));
@@ -3590,7 +3592,7 @@ var init_main = __esm({
       function is(value) {
         var _a;
         const candidate = value;
-        return Is.defined(candidate) && Range.is(candidate.range) && (Is.string(candidate.message) || MarkupContent.is(candidate.message)) && (Is.number(candidate.severity) || Is.undefined(candidate.severity)) && (Is.integer(candidate.code) || Is.string(candidate.code) || Is.undefined(candidate.code)) && (Is.undefined(candidate.codeDescription) || Is.string((_a = candidate.codeDescription) === null || _a === void 0 ? void 0 : _a.href)) && (Is.string(candidate.source) || Is.undefined(candidate.source)) && (Is.undefined(candidate.relatedInformation) || Is.typedArray(candidate.relatedInformation, DiagnosticRelatedInformation.is));
+        return Is.objectLiteral(candidate) && Range.is(candidate.range) && (Is.string(candidate.message) || MarkupContent.is(candidate.message)) && (Is.number(candidate.severity) || Is.undefined(candidate.severity)) && (Is.integer(candidate.code) || Is.string(candidate.code) || Is.undefined(candidate.code)) && (Is.undefined(candidate.codeDescription) || Is.string((_a = candidate.codeDescription) === null || _a === void 0 ? void 0 : _a.href)) && (Is.string(candidate.source) || Is.undefined(candidate.source)) && (Is.undefined(candidate.relatedInformation) || Is.typedArray(candidate.relatedInformation, DiagnosticRelatedInformation.is));
       }
       Diagnostic2.is = is;
       function is3_17(value) {
@@ -3619,7 +3621,7 @@ var init_main = __esm({
       Command2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.defined(candidate) && Is.string(candidate.title) && (candidate.tooltip === void 0 || Is.string(candidate.tooltip)) && Is.string(candidate.command);
+        return Is.objectLiteral(candidate) && Is.string(candidate.title) && (candidate.tooltip === void 0 || Is.string(candidate.tooltip)) && Is.string(candidate.command);
       }
       Command2.is = is;
     })(Command || (Command = {}));
@@ -3693,7 +3695,7 @@ var init_main = __esm({
       TextDocumentEdit2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.defined(candidate) && OptionalVersionedTextDocumentIdentifier.is(candidate.textDocument) && Array.isArray(candidate.edits);
+        return Is.objectLiteral(candidate) && OptionalVersionedTextDocumentIdentifier.is(candidate.textDocument) && Array.isArray(candidate.edits);
       }
       TextDocumentEdit2.is = is;
     })(TextDocumentEdit || (TextDocumentEdit = {}));
@@ -3859,7 +3861,7 @@ var init_main = __esm({
       constructor(annotations) {
         this._annotations = annotations === void 0 ? /* @__PURE__ */ Object.create(null) : annotations;
         this._counter = 0;
-        this._size = 0;
+        this._size = Object.keys(this._annotations).length;
       }
       all() {
         return this._annotations;
@@ -3886,8 +3888,12 @@ var init_main = __esm({
         return id;
       }
       nextId() {
-        this._counter++;
-        return this._counter.toString();
+        let id;
+        do {
+          this._counter++;
+          id = this._counter.toString();
+        } while (this._annotations[id] !== void 0);
+        return id;
       }
     };
     WorkspaceChange = class {
@@ -4055,7 +4061,7 @@ var init_main = __esm({
       TextDocumentIdentifier2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.defined(candidate) && Is.string(candidate.uri);
+        return Is.objectLiteral(candidate) && Is.string(candidate.uri);
       }
       TextDocumentIdentifier2.is = is;
     })(TextDocumentIdentifier || (TextDocumentIdentifier = {}));
@@ -4066,7 +4072,7 @@ var init_main = __esm({
       VersionedTextDocumentIdentifier2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.defined(candidate) && Is.string(candidate.uri) && Is.integer(candidate.version);
+        return Is.objectLiteral(candidate) && Is.string(candidate.uri) && Is.integer(candidate.version);
       }
       VersionedTextDocumentIdentifier2.is = is;
     })(VersionedTextDocumentIdentifier || (VersionedTextDocumentIdentifier = {}));
@@ -4077,7 +4083,7 @@ var init_main = __esm({
       OptionalVersionedTextDocumentIdentifier2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.defined(candidate) && Is.string(candidate.uri) && (candidate.version === null || Is.integer(candidate.version));
+        return Is.objectLiteral(candidate) && Is.string(candidate.uri) && (candidate.version === null || Is.integer(candidate.version));
       }
       OptionalVersionedTextDocumentIdentifier2.is = is;
     })(OptionalVersionedTextDocumentIdentifier || (OptionalVersionedTextDocumentIdentifier = {}));
@@ -4152,7 +4158,7 @@ var init_main = __esm({
       TextDocumentItem2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.defined(candidate) && Is.string(candidate.uri) && Is.string(candidate.languageId) && Is.integer(candidate.version) && Is.string(candidate.text);
+        return Is.objectLiteral(candidate) && Is.string(candidate.uri) && Is.string(candidate.languageId) && Is.integer(candidate.version) && Is.string(candidate.text);
       }
       TextDocumentItem2.is = is;
     })(TextDocumentItem || (TextDocumentItem = {}));
@@ -4401,7 +4407,7 @@ var init_main = __esm({
       CodeActionContext2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.defined(candidate) && Is.typedArray(candidate.diagnostics, Diagnostic.is) && (candidate.only === void 0 || Is.typedArray(candidate.only, Is.string)) && (candidate.triggerKind === void 0 || candidate.triggerKind === CodeActionTriggerKind.Invoked || candidate.triggerKind === CodeActionTriggerKind.Automatic);
+        return Is.objectLiteral(candidate) && Is.typedArray(candidate.diagnostics, Diagnostic.is) && (candidate.only === void 0 || Is.typedArray(candidate.only, Is.string)) && (candidate.triggerKind === void 0 || candidate.triggerKind === CodeActionTriggerKind.Invoked || candidate.triggerKind === CodeActionTriggerKind.Automatic);
       }
       CodeActionContext2.is = is;
     })(CodeActionContext || (CodeActionContext = {}));
@@ -4447,7 +4453,7 @@ var init_main = __esm({
       CodeLens2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.defined(candidate) && Range.is(candidate.range) && (Is.undefined(candidate.command) || Command.is(candidate.command));
+        return Is.objectLiteral(candidate) && Range.is(candidate.range) && (Is.undefined(candidate.command) || Command.is(candidate.command));
       }
       CodeLens2.is = is;
     })(CodeLens || (CodeLens = {}));
@@ -4458,7 +4464,7 @@ var init_main = __esm({
       FormattingOptions2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.defined(candidate) && Is.uinteger(candidate.tabSize) && Is.boolean(candidate.insertSpaces);
+        return Is.objectLiteral(candidate) && Is.uinteger(candidate.tabSize) && Is.boolean(candidate.insertSpaces);
       }
       FormattingOptions2.is = is;
     })(FormattingOptions || (FormattingOptions = {}));
@@ -4469,7 +4475,7 @@ var init_main = __esm({
       DocumentLink2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.defined(candidate) && Range.is(candidate.range) && (Is.undefined(candidate.target) || Is.string(candidate.target));
+        return Is.objectLiteral(candidate) && Range.is(candidate.range) && (Is.undefined(candidate.target) || Is.string(candidate.target));
       }
       DocumentLink2.is = is;
     })(DocumentLink || (DocumentLink = {}));
@@ -4569,7 +4575,7 @@ var init_main = __esm({
       InlineValueContext2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.defined(candidate) && Range.is(value.stoppedLocation);
+        return Is.objectLiteral(candidate) && Range.is(value.stoppedLocation);
       }
       InlineValueContext2.is = is;
     })(InlineValueContext || (InlineValueContext = {}));
@@ -4661,7 +4667,7 @@ var init_main = __esm({
       TextDocument3.create = create;
       function is(value) {
         const candidate = value;
-        return Is.defined(candidate) && Is.string(candidate.uri) && (Is.undefined(candidate.languageId) || Is.string(candidate.languageId)) && Is.uinteger(candidate.lineCount) && Is.func(candidate.getText) && Is.func(candidate.positionAt) && Is.func(candidate.offsetAt) ? true : false;
+        return Is.objectLiteral(candidate) && Is.string(candidate.uri) && (Is.undefined(candidate.languageId) || Is.string(candidate.languageId)) && Is.uinteger(candidate.lineCount) && Is.func(candidate.getText) && Is.func(candidate.positionAt) && Is.func(candidate.offsetAt) ? true : false;
       }
       TextDocument3.is = is;
       function applyEdits(document, edits) {
@@ -6064,7 +6070,7 @@ var require_protocol = __commonJS({
     (function(TextDocumentFilter2) {
       function is(value) {
         const candidate = value;
-        return Is2.string(candidate) || (Is2.string(candidate.language) || Is2.string(candidate.scheme) || GlobPattern.is(candidate.pattern));
+        return Is2.string(candidate) || Is2.objectLiteral(candidate) && (Is2.string(candidate.language) || Is2.string(candidate.scheme) || GlobPattern.is(candidate.pattern));
       }
       TextDocumentFilter2.is = is;
     })(TextDocumentFilter || (exports2.TextDocumentFilter = TextDocumentFilter = {}));
@@ -6072,7 +6078,7 @@ var require_protocol = __commonJS({
     (function(NotebookDocumentFilter2) {
       function is(value) {
         const candidate = value;
-        return Is2.objectLiteral(candidate) && (Is2.string(candidate.notebookType) || Is2.string(candidate.scheme) || Is2.string(candidate.pattern));
+        return Is2.objectLiteral(candidate) && (Is2.string(candidate.notebookType) || Is2.string(candidate.scheme) || GlobPattern.is(candidate.pattern));
       }
       NotebookDocumentFilter2.is = is;
     })(NotebookDocumentFilter || (exports2.NotebookDocumentFilter = NotebookDocumentFilter = {}));
@@ -6146,7 +6152,7 @@ var require_protocol = __commonJS({
     (function(TextDocumentRegistrationOptions2) {
       function is(value) {
         const candidate = value;
-        return candidate && (candidate.documentSelector === null || DocumentSelector.is(candidate.documentSelector));
+        return Is2.objectLiteral(candidate) && (candidate.documentSelector === null || DocumentSelector.is(candidate.documentSelector));
       }
       TextDocumentRegistrationOptions2.is = is;
     })(TextDocumentRegistrationOptions || (exports2.TextDocumentRegistrationOptions = TextDocumentRegistrationOptions = {}));
@@ -6597,11 +6603,63 @@ var require_api2 = __commonJS({
 var require_progress = __commonJS({
   "../node_modules/vscode-languageserver/lib/common/progress.js"(exports2) {
     "use strict";
+    var __createBinding = exports2 && exports2.__createBinding || (Object.create ? (function(o2, m2, k, k2) {
+      if (k2 === void 0) k2 = k;
+      var desc = Object.getOwnPropertyDescriptor(m2, k);
+      if (!desc || ("get" in desc ? !m2.__esModule : desc.writable || desc.configurable)) {
+        desc = { enumerable: true, get: function() {
+          return m2[k];
+        } };
+      }
+      Object.defineProperty(o2, k2, desc);
+    }) : (function(o2, m2, k, k2) {
+      if (k2 === void 0) k2 = k;
+      o2[k2] = m2[k];
+    }));
+    var __setModuleDefault = exports2 && exports2.__setModuleDefault || (Object.create ? (function(o2, v2) {
+      Object.defineProperty(o2, "default", { enumerable: true, value: v2 });
+    }) : function(o2, v2) {
+      o2["default"] = v2;
+    });
+    var __importStar = exports2 && exports2.__importStar || /* @__PURE__ */ (function() {
+      var ownKeys = function(o2) {
+        ownKeys = Object.getOwnPropertyNames || function(o3) {
+          var ar = [];
+          for (var k in o3) if (Object.prototype.hasOwnProperty.call(o3, k)) ar[ar.length] = k;
+          return ar;
+        };
+        return ownKeys(o2);
+      };
+      return function(mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) {
+          for (var k = ownKeys(mod), i2 = 0; i2 < k.length; i2++) if (k[i2] !== "default") __createBinding(result, mod, k[i2]);
+        }
+        __setModuleDefault(result, mod);
+        return result;
+      };
+    })();
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.ProgressFeature = exports2.WorkDoneProgressReporter = void 0;
     exports2.attachWorkDone = attachWorkDone;
     exports2.attachPartialResult = attachPartialResult;
     var vscode_languageserver_protocol_1 = require_api2();
+    var Is2 = __importStar(require_is());
+    var ProgressReporter;
+    (function(ProgressReporter2) {
+      function sendProgress(connection, type, token, value) {
+        try {
+          const result = connection.sendProgress(type, token, value);
+          if (Is2.thenable(result)) {
+            result.then(void 0, () => {
+            });
+          }
+        } catch {
+        }
+      }
+      ProgressReporter2.sendProgress = sendProgress;
+    })(ProgressReporter || (ProgressReporter = {}));
     var WorkDoneProgressReporter;
     (function(WorkDoneProgressReporter2) {
       function isNullInstance(reporter) {
@@ -6609,14 +6667,12 @@ var require_progress = __commonJS({
       }
       WorkDoneProgressReporter2.isNullInstance = isNullInstance;
     })(WorkDoneProgressReporter || (exports2.WorkDoneProgressReporter = WorkDoneProgressReporter = {}));
-    var WorkDoneProgressReporterImpl = class _WorkDoneProgressReporterImpl {
+    var WorkDoneProgressReporterImpl = class {
       _connection;
       _token;
-      static Instances = /* @__PURE__ */ new Map();
       constructor(_connection, _token) {
         this._connection = _connection;
         this._token = _token;
-        _WorkDoneProgressReporterImpl.Instances.set(this._token, this);
       }
       begin(title, percentage, message, cancellable) {
         const param = {
@@ -6628,7 +6684,7 @@ var require_progress = __commonJS({
         if (typeof percentage === "number") {
           param.percentage = Math.round(percentage);
         }
-        this._connection.sendProgress(vscode_languageserver_protocol_1.WorkDoneProgress.type, this._token, param);
+        ProgressReporter.sendProgress(this._connection, vscode_languageserver_protocol_1.WorkDoneProgress.type, this._token, param);
       }
       report(arg0, arg1) {
         const param = {
@@ -6642,23 +6698,30 @@ var require_progress = __commonJS({
         } else {
           param.message = arg0;
         }
-        this._connection.sendProgress(vscode_languageserver_protocol_1.WorkDoneProgress.type, this._token, param);
+        ProgressReporter.sendProgress(this._connection, vscode_languageserver_protocol_1.WorkDoneProgress.type, this._token, param);
       }
       done() {
-        _WorkDoneProgressReporterImpl.Instances.delete(this._token);
-        this._connection.sendProgress(vscode_languageserver_protocol_1.WorkDoneProgress.type, this._token, { kind: "end" });
+        ProgressReporter.sendProgress(this._connection, vscode_languageserver_protocol_1.WorkDoneProgress.type, this._token, { kind: "end" });
       }
     };
-    var WorkDoneProgressServerReporterImpl = class extends WorkDoneProgressReporterImpl {
+    var WorkDoneProgressServerReporterImpl = class _WorkDoneProgressServerReporterImpl extends WorkDoneProgressReporterImpl {
+      /**
+       * Server-created reporters, keyed by token. Only these can be cancelled via
+       * `window/workDoneProgress/cancel`, so reporters attached to client-provided
+       * tokens are never tracked here.
+       */
+      static Instances = /* @__PURE__ */ new Map();
       _source;
       constructor(connection, token) {
         super(connection, token);
         this._source = new vscode_languageserver_protocol_1.CancellationTokenSource();
+        _WorkDoneProgressServerReporterImpl.Instances.set(token, this);
       }
       get token() {
         return this._source.token;
       }
       done() {
+        _WorkDoneProgressServerReporterImpl.Instances.delete(this._token);
         this._source.dispose();
         super.done();
       }
@@ -6712,10 +6775,7 @@ var require_progress = __commonJS({
           if (capabilities?.window?.workDoneProgress === true) {
             this._progressSupported = true;
             this.connection.onNotification(vscode_languageserver_protocol_1.WorkDoneProgressCancelNotification.type, (params) => {
-              const progress = WorkDoneProgressReporterImpl.Instances.get(params.token);
-              if (progress instanceof WorkDoneProgressServerReporterImpl || progress instanceof NullProgressServerReporter) {
-                progress.cancel();
-              }
+              WorkDoneProgressServerReporterImpl.Instances.get(params.token)?.cancel();
             });
           }
         }
@@ -6752,7 +6812,7 @@ var require_progress = __commonJS({
         this._token = _token;
       }
       report(data) {
-        this._connection.sendProgress(ResultProgress.type, this._token, data);
+        ProgressReporter.sendProgress(this._connection, ResultProgress.type, this._token, data);
       }
     };
     function attachPartialResult(connection, params) {
@@ -20473,6 +20533,7 @@ var NOT_ALLOWED_TAGS = [
 var PCEN_CHAR = String.raw`\-.0-9_a-z\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u{10000}-\u{EFFFF}`;
 var CUSTOM_ELEMENT_NAME_RE = new RegExp(`^[a-z][${PCEN_CHAR}]*-[${PCEN_CHAR}]*$`, "u");
 var PATTERN_EXPRESSIONS = /* @__PURE__ */ new Map();
+var SHADOW_HOST_TAG_NAMES = /* @__PURE__ */ new Set(["article", "aside", "blockquote", "body", "div", "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "main", "nav", "p", "section", "span"]);
 function isValidCustomElementName(tagName, logErrors = true) {
   if (!CUSTOM_ELEMENT_NAME_RE.test(tagName)) {
     logErrors && console.error(`Tag <${tagName}> is not a valid custom element name. Custom element names must:
@@ -20489,6 +20550,9 @@ Reserved names are:
     return false;
   }
   return true;
+}
+function acceptsShadowRoot(tagName) {
+  return SHADOW_HOST_TAG_NAMES.has(tagName);
 }
 function matchesCustomElementPattern(tagName, patterns) {
   for (let i2 = 0; i2 < patterns.length; i2++) {
@@ -21320,6 +21384,11 @@ function readsEvent(node) {
   return (0, import_typescript5.forEachChild)(node, readsEvent) ?? false;
 }
 
+// ../packages/compiler/src/utils/element-selector/element-selector.utils.ts
+function getElementSelector({ tagName, is }) {
+  return is ?? tagName;
+}
+
 // ../packages/compiler/src/parser/utils/for-variables/for-variables.utils.ts
 var FOR_IMPLICIT_VARIABLES = ["$index", "$first", "$last", "$even", "$odd", "$count"];
 function getForVariables(node) {
@@ -21475,7 +21544,7 @@ var TemplateWalker = class {
    * @param variables - The variables declared in the scope of the element.
    */
   _walkElement(node, variables) {
-    const component = this._metadatas.find((metadata) => metadata.type === "component" && metadata.selector === node.tagName);
+    const component = this._metadatas.find((metadata) => metadata.type === "component" && metadata.selector === getElementSelector(node));
     this._visitor.element?.(node, component);
     if (node.ref) {
       this._visitor.ref?.(node.ref);
@@ -25198,6 +25267,8 @@ function parseAttribute(cursor, parseNode, token) {
     case "class":
     case "style":
       throw new Error(`${name} cannot be written: ${attribute} is merged with the directives and the component writing it, bound with ${attribute}="\u2026" and ${attribute}.name="{ expression }"`, { cause: nameSpan });
+    case "is":
+      throw new Error(`${name} cannot be written: is decides the class of a customized built-in element when it is created, written as a static attribute, e.g. <button is="copy-button">`, { cause: nameSpan });
   }
   node.attribute = attribute;
   return node;
@@ -25802,7 +25873,8 @@ function parseElement(cursor, parseNode, token) {
         read = false;
     }
   }
-  assertUniqueAttributes(attributes, conditionalBindings, isValidCustomElementName(tagName, false) ? writtenAttributeKey : nativeAttributeKey, (name) => `Attribute "${name}" is bound more than once on <${tagName}>`);
+  const is = takeIs(tagName, attributes, conditionalBindings);
+  assertUniqueAttributes(attributes, conditionalBindings, isValidCustomElementName(is?.value ?? tagName, false) ? writtenAttributeKey : nativeAttributeKey, (name) => `Attribute "${name}" is bound more than once on <${tagName}>`);
   assertUniqueClassBindings(classBindings, conditionalBindings, tagName);
   assertUniqueStyleBindings(styleBindings, conditionalBindings, tagName);
   assertUniqueDirectives(tagName, directives, conditionalBindings, (branch) => branch.directives);
@@ -25810,7 +25882,7 @@ function parseElement(cursor, parseNode, token) {
   const typeArguments = token.parts[1] === void 0 ? void 0 : parseTypeArguments(token.parts[1], nameSpan.end + 1);
   let node;
   if (tagName === "template" && declaration) {
-    const binding = typeArguments?.[0] ?? ref ?? attributes[0] ?? classBindings[0] ?? styleBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
+    const binding = typeArguments?.[0] ?? ref ?? is ?? attributes[0] ?? classBindings[0] ?? styleBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
     if (binding) {
       throw new Error("A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it", { cause: binding.span });
     }
@@ -25831,6 +25903,10 @@ function parseElement(cursor, parseNode, token) {
     };
     if (typeArguments) {
       node.typeArguments = typeArguments;
+    }
+    if (is) {
+      node.is = is.value;
+      node.isSpan = is.span;
     }
     if (ref) {
       assertNameableElement(node, ref);
@@ -25869,6 +25945,39 @@ function parseElement(cursor, parseNode, token) {
 function setTemplateContent(node) {
   if (node.type === 0 /* Element */ && node.tagName === "template") {
     node.content = serializeTemplateContent(node.children);
+  }
+}
+function takeIs(tagName, attributes, conditionalBindings) {
+  assertNoBranchIs(tagName, conditionalBindings);
+  const index = attributes.findIndex(({ name }) => name === "is");
+  if (index === -1) {
+    return void 0;
+  }
+  const attribute = attributes[index];
+  const { value, span } = attribute;
+  if (typeof value !== "string" || attribute.bare) {
+    throw new Error(`The is attribute of <${tagName}> must be a static selector, e.g. is="copy-button": it decides the class of the element when it is created`, { cause: span });
+  }
+  if (isValidCustomElementName(tagName, false)) {
+    throw new Error(`<${tagName}> is a custom element: is="\u2026" names the customized built-in element a native element is, e.g. <button is="copy-button">`, { cause: span });
+  }
+  if (!isValidCustomElementName(value, false)) {
+    throw new Error(`"${value}" is not a valid custom element name: is="\u2026" names the selector of a customized built-in element, e.g. <button is="copy-button">`, { cause: span });
+  }
+  attributes.splice(index, 1);
+  return attribute;
+}
+function assertNoBranchIs(tagName, conditionalBindings) {
+  for (let i2 = 0; i2 < conditionalBindings.length; i2++) {
+    const { branches } = conditionalBindings[i2];
+    for (let j = 0; j < branches.length; j++) {
+      const branch = branches[j];
+      const is = branch.attributes.find(({ name }) => name === "is");
+      if (is) {
+        throw new Error(`The is attribute of <${tagName}> cannot be written by a branch: it decides the class of the element when it is created, written as a static attribute, e.g. <button is="copy-button">`, { cause: is.span });
+      }
+      assertNoBranchIs(tagName, branch.conditionalBindings);
+    }
   }
 }
 function nativeAttributeKey({ name, attribute }) {
@@ -26872,18 +26981,33 @@ var ComponentPropertyMetadataWithSpan = class extends ComponentPropertyMetadata 
 // ../packages/compiler/src/utils/dom-members/dom-members.utils.ts
 var import_typescript14 = require("typescript");
 var HTML_ELEMENT = "HTMLElement";
-var htmlElementMembers;
-function getHTMLElementMembers() {
-  htmlElementMembers ??= readInterfaceMembers(`${(0, import_typescript14.getDefaultLibFilePath)({}).replace(/[^\\/]*$/, "")}lib.dom.d.ts`, HTML_ELEMENT);
-  return htmlElementMembers;
+var TAG_NAME_MAP = "HTMLElementTagNameMap";
+var domLibrary;
+var nativeClassMembers = /* @__PURE__ */ new Map();
+function getNativeClassMembers(name) {
+  let members = nativeClassMembers.get(name);
+  if (!members) {
+    const names = /* @__PURE__ */ new Set();
+    collectInterfaceMembers(getDomLibrary().interfaces, name, /* @__PURE__ */ new Set(), names);
+    members = names;
+    nativeClassMembers.set(name, members);
+  }
+  return members;
 }
-function readInterfaceMembers(fileName, name) {
-  const names = /* @__PURE__ */ new Set();
+function getNativeClassOfTag(tagName) {
+  return getDomLibrary().tagClasses.get(tagName);
+}
+function getDomLibrary() {
+  domLibrary ??= readDomLibrary(`${(0, import_typescript14.getDefaultLibFilePath)({}).replace(/[^\\/]*$/, "")}lib.dom.d.ts`);
+  return domLibrary;
+}
+function readDomLibrary(fileName) {
+  const interfaces = /* @__PURE__ */ new Map();
+  const tagClasses = /* @__PURE__ */ new Map();
   const text = import_typescript14.sys.readFile(fileName);
   if (!text) {
-    return names;
+    return { interfaces, tagClasses };
   }
-  const interfaces = /* @__PURE__ */ new Map();
   const { statements } = (0, import_typescript14.createSourceFile)(fileName, text, import_typescript14.ScriptTarget.Latest, false);
   for (let i2 = 0; i2 < statements.length; i2++) {
     const statement = statements[i2];
@@ -26892,8 +27016,21 @@ function readInterfaceMembers(fileName, name) {
       declarations ? declarations.push(statement) : interfaces.set(statement.name.text, [statement]);
     }
   }
-  collectInterfaceMembers(interfaces, name, /* @__PURE__ */ new Set(), names);
-  return names;
+  const tagNameMaps = interfaces.get(TAG_NAME_MAP);
+  if (tagNameMaps?.length) {
+    for (let i2 = 0; i2 < tagNameMaps.length; i2++) {
+      collectTagClasses(tagNameMaps[i2], tagClasses);
+    }
+  }
+  return { interfaces, tagClasses };
+}
+function collectTagClasses({ members }, tagClasses) {
+  for (let i2 = 0; i2 < members.length; i2++) {
+    const member = members[i2];
+    if ((0, import_typescript14.isPropertySignature)(member) && (0, import_typescript14.isStringLiteral)(member.name) && member.type && (0, import_typescript14.isTypeReferenceNode)(member.type) && (0, import_typescript14.isIdentifier)(member.type.typeName)) {
+      tagClasses.set(member.name.text, member.type.typeName.text);
+    }
+  }
 }
 function collectInterfaceMembers(interfaces, name, visited, names) {
   const declarations = interfaces.get(name);
@@ -26964,6 +27101,19 @@ function resolveBaseClass({ sourceFile, declaration }, context) {
 function getBaseClassExpression(declaration) {
   const extendsClause = declaration.heritageClauses?.find((clause) => clause.token === import_typescript15.SyntaxKind.ExtendsKeyword);
   return extendsClause?.types[0].expression;
+}
+function getCoreImport({ text }, sourceFile) {
+  for (let i2 = 0; i2 < sourceFile.statements.length; i2++) {
+    const statement = sourceFile.statements[i2];
+    if ((0, import_typescript15.isImportDeclaration)(statement) && (0, import_typescript15.isStringLiteral)(statement.moduleSpecifier) && statement.moduleSpecifier.text.startsWith("@xaendar/core")) {
+      const bindings = statement.importClause?.namedBindings;
+      const element = bindings && (0, import_typescript15.isNamedImports)(bindings) ? bindings.elements.find(({ name }) => name.text === text) : void 0;
+      if (element) {
+        return (element.propertyName ?? element.name).text;
+      }
+    }
+  }
+  return void 0;
 }
 function resolveReference(sourceFile, expression, finder, context, visitedExports) {
   if ((0, import_typescript15.isIdentifier)(expression)) {
@@ -27271,6 +27421,9 @@ function toLibraryMetadata(declaration, manifest, root) {
   if (typeParameters?.length) {
     metadata.typeParameters = typeParameters;
   }
+  if (declaration.extends) {
+    metadata.extends = declaration.extends;
+  }
   if (type === "component" && (ssr || !manifest.ssr)) {
     metadata.clientOnly = {};
     if (ssr?.hydrate !== void 0) {
@@ -27431,8 +27584,8 @@ async function extractComponentsMetadataFromSourceFile(sourceFile, compilerOptio
   const declarations = getWebComponentDeclarations(sourceFile);
   for (let i2 = 0; i2 < declarations.length; i2++) {
     const { klass, decorator } = declarations[i2];
-    const { selector, styleUrl, templateUrl, clientOnly } = extractMetadaFromDecorator(decorator);
-    if (!selector || !templateUrl) {
+    const { selector, styleUrl, templateUrl, clientOnly, extends: extended } = extractMetadaFromDecorator(decorator);
+    if (!selector || !templateUrl && !extended) {
       return;
     }
     const className = klass.name.text;
@@ -27444,10 +27597,15 @@ async function extractComponentsMetadataFromSourceFile(sourceFile, compilerOptio
       modulePath: sourceFile.fileName,
       selector,
       styleUrl,
-      templateUrl,
       ...bindings,
       typescriptNodes: declarations[i2]
     };
+    if (templateUrl) {
+      metadata.templateUrl = templateUrl;
+    }
+    if (extended) {
+      metadata.extends = extended;
+    }
     const typeParameters = extractTypeParameters(klass);
     if (typeParameters) {
       metadata.typeParameters = typeParameters;
@@ -27501,7 +27659,7 @@ function toReflectedAttribute(name) {
 function reportAt(errors, sourceFile, message, node) {
   errors.push({ message, span: { start: node.getStart(sourceFile), end: node.getEnd() } });
 }
-function findWebComponentErrors(sourceFile, componentFile, ssr) {
+function findWebComponentErrors(sourceFile, componentFile, ssr, compilerOptions = DEFAULT_COMPILER_OPTIONS) {
   const errors = new Array();
   const declarations = getWebComponentDeclarations(sourceFile);
   for (let i2 = 0; i2 < declarations.length; i2++) {
@@ -27517,7 +27675,10 @@ function findWebComponentErrors(sourceFile, componentFile, ssr) {
       continue;
     }
     let selector = false;
-    let templateUrl = false;
+    let templateUrl;
+    let styleUrl;
+    let extendsOption;
+    let extended;
     for (let j = 0; j < options.properties.length; j++) {
       const property = options.properties[j];
       if (!((0, import_typescript17.isPropertyAssignment)(property) || (0, import_typescript17.isShorthandPropertyAssignment)(property)) || !(0, import_typescript17.isIdentifier)(property.name)) {
@@ -27536,9 +27697,13 @@ function findWebComponentErrors(sourceFile, componentFile, ssr) {
           selector = true;
           break;
         case "templateUrl":
-          templateUrl = true;
+          templateUrl = property;
           break;
         case "styleUrl":
+          styleUrl = property;
+          break;
+        case "extends":
+          extendsOption = property;
           break;
         default:
           continue;
@@ -27547,16 +27712,87 @@ function findWebComponentErrors(sourceFile, componentFile, ssr) {
         reportAt(errors, sourceFile, `The ${name} option of ${className} must be a string literal`, (0, import_typescript17.isPropertyAssignment)(property) ? property.initializer : property);
       } else if (name === "selector" && !isValidCustomElementName(property.initializer.text)) {
         reportAt(errors, sourceFile, `Invalid custom element name "${property.initializer.text}" in component ${className}`, property.initializer);
+      } else if (name === "extends") {
+        const error = findExtendsError(property.initializer.text, className);
+        error ? reportAt(errors, sourceFile, error, property.initializer) : extended = property.initializer.text;
       }
     }
     if (!selector) {
       reportAt(errors, sourceFile, `The selector option of ${className} must be a string literal`, decorator.expression.expression);
     }
-    if (!templateUrl) {
+    if (!templateUrl && !extendsOption) {
       reportAt(errors, sourceFile, `The templateUrl option of ${className} must be a string literal`, decorator.expression.expression);
+    }
+    if (extended && !acceptsShadowRoot(extended)) {
+      reportShadowOptions(errors, sourceFile, className, extended, templateUrl, styleUrl);
+    } else if (extendsOption && styleUrl && !templateUrl) {
+      reportAt(errors, sourceFile, `The styleUrl option of ${className} styles its template, which it does not declare: add templateUrl, or remove styleUrl`, styleUrl);
+    }
+    if (!extendsOption || extended) {
+      const error = findNativeClassError({ sourceFile, declaration: klass }, extended, compilerOptions);
+      if (error) {
+        reportAt(errors, sourceFile, error, getBaseClassExpression(klass));
+      }
     }
   }
   return errors;
+}
+function findExtendsError(tagName, className) {
+  if (isValidCustomElementName(tagName, false)) {
+    return `The extends option of ${className} names <${tagName}>, a custom element: it names the tag of the native element ${className} extends, e.g. extends: 'button'`;
+  }
+  return getNativeClassOfTag(tagName) ? void 0 : `The extends option of ${className} names <${tagName}>, which is not a native HTML element: it names the tag of the native element ${className} extends, e.g. extends: 'button'`;
+}
+function reportShadowOptions(errors, sourceFile, className, tagName, ...options) {
+  for (let i2 = 0; i2 < options.length; i2++) {
+    const option = options[i2];
+    if (option) {
+      reportAt(errors, sourceFile, `<${tagName}> accepts no shadow root: ${className}, extending it, renders no template and has no stylesheet, its content being the one its tag holds. Remove ${option.name.getText(sourceFile)}`, option);
+    }
+  }
+}
+function findNativeClassError(klass, extended, compilerOptions) {
+  const native = findNativeClass(klass, compilerOptions);
+  if (!native) {
+    return void 0;
+  }
+  const className = klass.declaration.name.text;
+  if (!extended) {
+    return native === HTML_ELEMENT ? void 0 : `${className} extends customElementOf(${native}): declare the tag of the native element it extends with the extends option of @WebComponent, e.g. extends: 'button'`;
+  }
+  const expected = getNativeClassOfTag(extended);
+  if (native === expected) {
+    return void 0;
+  }
+  const fix = expected === HTML_ELEMENT ? "CustomElement" : `customElementOf(${expected})`;
+  return `${className} extends <${extended}>, whose class is ${expected}, but its class extends ${native === HTML_ELEMENT ? "CustomElement" : `customElementOf(${native})`}: extend ${fix}`;
+}
+function findNativeClass(klass, compilerOptions) {
+  const visitedClasses = /* @__PURE__ */ new Set();
+  let current = klass;
+  while (current && !visitedClasses.has(current.declaration)) {
+    visitedClasses.add(current.declaration);
+    const expression = getBaseClassExpression(current.declaration);
+    const native = expression && readNativeClass(expression, current.sourceFile);
+    if (native) {
+      return native;
+    }
+    current = resolveBaseClassOf(current, compilerOptions);
+  }
+  return void 0;
+}
+function readNativeClass(expression, sourceFile) {
+  if ((0, import_typescript17.isIdentifier)(expression)) {
+    return expression.text === HTML_ELEMENT ? HTML_ELEMENT : void 0;
+  }
+  if (!isCustomElementOfCall(expression, sourceFile)) {
+    return void 0;
+  }
+  const [base] = expression.arguments;
+  return base && (0, import_typescript17.isIdentifier)(base) ? base.text : void 0;
+}
+function isCustomElementOfCall(expression, sourceFile) {
+  return (0, import_typescript17.isCallExpression)(expression) && (0, import_typescript17.isIdentifier)(expression.expression) && getCoreImport(expression.expression, sourceFile) === "customElementOf";
 }
 function findHostDirectiveErrors(sourceFile, compilerOptions) {
   const errors = new Array();
@@ -27597,29 +27833,41 @@ function collectMemberNames(klass, compilerOptions) {
   let current = klass;
   while (current && !visitedClasses.has(current.declaration)) {
     visitedClasses.add(current.declaration);
-    const { members } = current.declaration;
-    for (let i2 = 0; i2 < members.length; i2++) {
-      const member = members[i2];
-      const name = member.name;
-      if (name && ((0, import_typescript17.isIdentifier)(name) || (0, import_typescript17.isStringLiteral)(name)) && !((0, import_typescript17.getCombinedModifierFlags)(member) & import_typescript17.ModifierFlags.Static)) {
-        names.add(name.text);
-      }
-    }
+    addOwnMemberNames(current.declaration, names);
     const base = resolveBaseClassOf(current, compilerOptions);
     if (!base) {
-      addGlobalBaseMembers(current.declaration, names);
+      addGlobalBaseMembers(current, names, compilerOptions);
     }
     current = base;
   }
   return names;
 }
-function addGlobalBaseMembers(declaration, names) {
-  const base = getBaseClassExpression(declaration);
-  if (base && (0, import_typescript17.isIdentifier)(base) && base.text === HTML_ELEMENT) {
-    for (const name of getHTMLElementMembers()) {
-      names.add(name);
+function addOwnMemberNames({ members }, names) {
+  for (let i2 = 0; i2 < members.length; i2++) {
+    const member = members[i2];
+    const name = member.name;
+    if (name && ((0, import_typescript17.isIdentifier)(name) || (0, import_typescript17.isStringLiteral)(name)) && !((0, import_typescript17.getCombinedModifierFlags)(member) & import_typescript17.ModifierFlags.Static)) {
+      names.add(name.text);
     }
   }
+}
+function addGlobalBaseMembers({ sourceFile, declaration }, names, compilerOptions) {
+  const base = getBaseClassExpression(declaration);
+  const native = base && readNativeClass(base, sourceFile);
+  if (!native) {
+    return;
+  }
+  for (const name of getNativeClassMembers(native)) {
+    names.add(name);
+  }
+  const customElement = isCustomElementOfCall(base, sourceFile) ? resolveCustomElement(sourceFile, compilerOptions) : void 0;
+  if (customElement) {
+    addOwnMemberNames(customElement.declaration, names);
+  }
+}
+function resolveCustomElement(sourceFile, compilerOptions = DEFAULT_COMPILER_OPTIONS) {
+  const path = resolveModulePath("@xaendar/core", sourceFile.fileName, compilerOptions);
+  return path ? resolveExportedClass(path, "CustomElement", compilerOptions) : void 0;
 }
 function getWebComponentDeclarations(sourceFile) {
   return getDecoratedClassDeclarations(sourceFile, "WebComponent");
@@ -27828,6 +28076,9 @@ function extractMetadaFromDecorator(decorator) {
             break;
           case "styleUrl":
             retVal.styleUrl = (0, import_typescript17.isStringLiteral)(prop.initializer) ? prop.initializer.text : void 0;
+            break;
+          case "extends":
+            retVal.extends = (0, import_typescript17.isStringLiteral)(prop.initializer) ? prop.initializer.text : void 0;
             break;
           case "ssr":
             retVal.clientOnly = extractClientOnly(prop.initializer);
@@ -28107,7 +28358,7 @@ function declareTemplate({ declaration: { name, nameSpan }, span }) {
   ];
 }
 function getVariableType(element, namespace, context) {
-  const component = context.getImportBySelector(element.tagName);
+  const component = context.getImportBySelector(getElementSelector(element));
   if (!component) {
     return getElementType(namespace, element.tagName);
   }
@@ -28272,28 +28523,33 @@ function getSwitchConstant(span) {
 function typeCheckElement(node, processNode, context) {
   const lines = new Array();
   const { tagName } = node;
+  const selector = getElementSelector(node);
   const namespace = getElementNamespace(tagName, context.namespace);
   const eventMap = getEventMap(namespace);
   let nativeEvents = { eventMap, tagName, foreign: false };
-  if (isCustomElementTag(tagName)) {
-    const metadata = context.getImportBySelector(tagName);
-    const isForeign = context.isForeignElement(tagName);
+  if (node.is !== void 0 && namespace !== "html") {
+    throw new Error(`<${tagName}> is not an HTML element: is="${node.is}" names a customized built-in element, which extends an HTML element, e.g. <button is="copy-button">`, { cause: node.isSpan });
+  }
+  if (isCustomElementTag(selector)) {
+    const metadata = context.getImportBySelector(selector);
+    const isForeign = context.isForeignElement(selector);
     if (metadata && isForeign) {
-      throw new Error(`${tagName} is both imported as a WebComponent and declared in customElements`, { cause: node.span });
+      throw new Error(`${selector} is both imported as a WebComponent and declared in customElements`, { cause: node.span });
     } else if (metadata) {
+      assertExtendedTag(node, metadata);
       lines.push(...typeCheckComponentBindings(node, metadata, nativeEvents, context));
     } else if (isForeign) {
       assertUniqueForeignAttributes(node);
       nativeEvents = { eventMap, tagName, foreign: true };
       lines.push(...typeCheckNativeBindings(node, nativeEvents, context));
     } else {
-      throw new Error(`${tagName} selector is not associated to any WebComponent imported in the template, nor declared in customElements`, { cause: node.span });
+      throw new Error(`${selector} selector is not associated to any WebComponent imported in the template, nor declared in customElements`, { cause: node.span });
     }
   } else {
     lines.push(...typeCheckNativeBindings(node, nativeEvents, context));
   }
   lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], tagName, nativeEvents, context));
-  if (node.ref && context.getImportBySelector(tagName)?.typeParameters) {
+  if (node.ref && context.getImportBySelector(selector)?.typeParameters) {
     context.addInstantiation(node.span.start);
   }
   if (node.content !== void 0) {
@@ -28311,6 +28567,21 @@ function typeCheckElement(node, processNode, context) {
     }
   }
   return lines;
+}
+function assertExtendedTag(node, { className, selector, extends: extended }) {
+  const { tagName, is } = node;
+  if (extended === void 0) {
+    if (is !== void 0) {
+      throw new Error(`${className} is an autonomous custom element: write it <${selector}>, not <${tagName} is="${is}">`, { cause: node.isSpan });
+    }
+    return;
+  }
+  if (is === void 0) {
+    throw new Error(`${className} is a customized built-in element extending <${extended}>: write it <${extended} is="${selector}">, not <${selector}>`, { cause: node.nameSpan });
+  }
+  if (tagName !== extended) {
+    throw new Error(`${className} extends <${extended}>: write it <${extended} is="${selector}">, not <${tagName} is="${is}">`, { cause: node.nameSpan });
+  }
 }
 function typeCheckComponentBindings(node, declaredMetadata, nativeEvents, context) {
   assertTypeArguments(node.typeArguments, declaredMetadata, `<${node.tagName}>`);
@@ -29704,7 +29975,7 @@ function getBindingContext(source, offset) {
   const tagName = tag.parts[0];
   const inDirective = lexer.history.some((state2) => state2 === "directive" /* DIRECTIVE */ || state2 === "structural-directive" /* STRUCTURAL_DIRECTIVE */);
   const directive = inDirective ? tokens.findLast((token) => token.type === 23 /* DIRECTIVE */ || token.type === 25 /* STRUCTURAL_DIRECTIVE */).parts[0] : void 0;
-  return { kind, tagName, directive, span: { start, end: offset } };
+  return { kind, tagName, is: readIs(tokens, tokens.lastIndexOf(tag)), directive, span: { start, end: offset } };
 }
 function getBindingKind(state) {
   switch (state) {
@@ -29718,6 +29989,15 @@ function getBindingKind(state) {
     default:
       return void 0;
   }
+}
+function readIs(tokens, tag) {
+  for (let i2 = tag + 1; i2 < tokens.length - 1; i2++) {
+    const token = tokens[i2];
+    if (token.type === 5 /* ATTRIBUTE */ && token.parts[0] === "is" && tokens[i2 + 1].type === 6 /* ATTRIBUTE_VALUE */) {
+      return tokens[i2 + 1].parts[0];
+    }
+  }
+  return void 0;
 }
 
 // ../packages/compiler/src/lexer/utils/trigger-context/trigger-context.utils.ts
@@ -32188,7 +32468,7 @@ async function resolveImportCandidates(templatePath) {
   const candidates = new Array();
   for (const [fileName, metadatas] of declarations) {
     for (const metadata of metadatas.values()) {
-      const isOwner = metadata.type === "component" && normalizeFileName2((0, import_node_path8.resolve)((0, import_node_path8.dirname)(fileName), metadata.templateUrl)) === templateKey;
+      const isOwner = metadata.type === "component" && !!metadata.templateUrl && normalizeFileName2((0, import_node_path8.resolve)((0, import_node_path8.dirname)(fileName), metadata.templateUrl)) === templateKey;
       if (!isOwner) {
         candidates.push({ fileName, metadata });
       }
@@ -32301,11 +32581,12 @@ function toError(error) {
 async function getComponentDiagnostics(fileName, text) {
   const sourceFile = (0, import_typescript31.createSourceFile)(fileName, text, import_typescript31.ScriptTarget.Latest, true);
   const diagnostics = findMissingFiles(sourceFile);
-  const errors = findWebComponentErrors(sourceFile, true, readSsr((0, import_node_path9.dirname)(fileName)));
+  const { options } = loadTsConfig((0, import_node_path9.dirname)(fileName));
+  const errors = findWebComponentErrors(sourceFile, true, readSsr((0, import_node_path9.dirname)(fileName)), options);
   if (errors.length) {
     diagnostics.push(...errors);
   }
-  const hostDirectiveErrors = getWebComponentDeclarations(sourceFile).length ? findHostDirectiveErrors(sourceFile, loadTsConfig((0, import_node_path9.dirname)(fileName)).options) : void 0;
+  const hostDirectiveErrors = getWebComponentDeclarations(sourceFile).length ? findHostDirectiveErrors(sourceFile, options) : void 0;
   if (hostDirectiveErrors?.length) {
     for (let i2 = 0; i2 < hostDirectiveErrors.length; i2++) {
       diagnostics.push(hostDirectiveErrors[i2]);
@@ -32561,8 +32842,9 @@ function getTemplateBindingCompletions(metadatas, source, offset) {
   if (!context) {
     return void 0;
   }
-  const { kind, tagName, directive, span } = context;
-  const owner = metadatas.find((metadata) => directive === void 0 ? metadata.type === "component" && metadata.selector === tagName : metadata.type === "directive" && metadata.selector === directive);
+  const { kind, tagName, is, directive, span } = context;
+  const selector = is ?? tagName;
+  const owner = metadatas.find((metadata) => directive === void 0 ? metadata.type === "component" && metadata.selector === selector : metadata.type === "directive" && metadata.selector === directive);
   if (!owner) {
     return [];
   }
@@ -32597,21 +32879,25 @@ async function getTemplateSelectorCompletions(templatePath, source, offset) {
     const { type, selector } = imported[i2];
     if (type === kind) {
       importedSelectors.add(selector);
-      completions.push({ name: selector, kind, sortText: "0", replacementSpan: span });
+      completions.push({ name: toSelectorCompletion(imported[i2]), kind, sortText: "0", replacementSpan: span });
     }
   }
   const candidates = await resolveImportCandidates(templatePath);
   if (candidates) {
     const templateDir = (0, import_node_path11.dirname)(templatePath);
     for (let i2 = 0; i2 < candidates.length; i2++) {
-      const { fileName, metadata: { type, selector, className } } = candidates[i2];
+      const { fileName, metadata } = candidates[i2];
+      const { type, selector, className } = metadata;
       if (type === kind && !importedSelectors.has(selector)) {
         const path = toModulePath(templateDir, fileName);
-        completions.push({ name: selector, kind, detail: `${className} - ${path}`, sortText: "1", replacementSpan: span, additionalEdits: [getImportInsertion(source, path, className)] });
+        completions.push({ name: toSelectorCompletion(metadata), kind, detail: `${className} - ${path}`, sortText: "1", replacementSpan: span, additionalEdits: [getImportInsertion(source, path, className)] });
       }
     }
   }
   return completions;
+}
+function toSelectorCompletion(metadata) {
+  return metadata.type === "component" && metadata.extends ? `${metadata.extends} is="${metadata.selector}"` : metadata.selector;
 }
 async function getTemplateImportCompletions(templatePath, source, offset) {
   const context = getImportContext(source, offset);
@@ -33189,6 +33475,9 @@ var TemplateRegistry = class {
     const templates = /* @__PURE__ */ new Set();
     if (metadatas?.size) {
       for (const [className, { templateUrl }] of metadatas) {
+        if (!templateUrl) {
+          continue;
+        }
         const templateKey = normalizeFileName2((0, import_node_path13.resolve)((0, import_node_path13.dirname)(componentPath), templateUrl));
         const components = this._components.getOrInsertComputed(templateKey, () => /* @__PURE__ */ new Map());
         components.getOrInsertComputed(componentPath, () => []).push(className);

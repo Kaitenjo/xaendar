@@ -191,17 +191,36 @@
           "th3": "Description",
           "td1": "yes",
           "td2": "The tag name of the component. See <a href=\"#/en/components/registration\">Selectors and registration</a>.",
-          "td3": "yes",
+          "td3": "yes, without <code>extends</code>",
           "td4": "The template, relative to the class file.",
           "td5": "no",
           "td6": "A <code>.css</code>, <code>.scss</code>, <code>.sass</code> or <code>.less</code> file relative to the class file. See <a href=\"#/en/components/styling\">Styling</a>.",
-          "p1": "The decorator does two things at run time: it stores the selector in the metadata of the class, where <code>@Query(Class)</code> finds it, and it calls <code>customElements.define(selector, Class)</code>. The rest happens at build time, where the plugin reads the three options straight from the source code."
+          "td7": "no",
+          "td8": "The tag of the native element the component extends, which makes it a customized built-in element. See <em>Customized built-in elements</em>, below.",
+          "p1": "The decorator does two things at run time: it stores the selector in the metadata of the class, where <code>@Query(Class)</code> finds it, and it calls <code>customElements.define(selector, Class)</code>. The rest happens at build time, where the plugin reads the options straight from the source code."
         },
         "theBaseClassAnd": {
           "title": "The base class and the shadow root",
           "p1": "<code>CustomElement</code> extends <code>HTMLElement</code>. Its constructor attaches an <strong>open</strong> shadow root, where the template is rendered: the page styles do not reach inside it, and the component styles do not leak out. The template is rendered each time the element is connected to the document, and the shadow root is emptied each time it is removed. The <a href=\"#/en/components/lifecycle\">Lifecycle</a> page covers the hooks in between.",
           "example1": "What the base class sets up",
           "p2": "The class is a real <code>HTMLElement</code>: <code>document.createElement('ex-rating')</code> returns an instance of <code>RatingComponent</code>, and every DOM API (attributes, events, <code>classList</code>, ...) works on it as on a native element."
+        },
+        "customizedBuiltInElements": {
+          "title": "Customized built-in elements",
+          "p1": "A component can also extend a native element, instead of being a new tag: it is then a <strong>customized built-in element</strong>. It keeps everything the native element does, its semantics, the focus, the keyboard, the forms, the accessibility, and adds its inputs, its events, its host bindings, its host directives and its lifecycle hooks. Its class extends <a href=\"#/en/reference/api/core/customElementOf\"><code>customElementOf()</code></a> of the class of the native element, and the <code>extends</code> option of <code>@WebComponent</code> names its tag. A button copying a text needs no template:",
+          "p2": "Templates write the tag it extends, with the selector as <code>is</code>, and bind its inputs and its events as on any component. The element is created with <code>document.createElement('button', { is: 'copy-button' })</code> and gets the <code>is</code> attribute too, so that CSS selectors find it: <code>@Query(CopyButtonComponent)</code> finds <code>button[is=\"copy-button\"]</code>, and <code>createComponent(CopyButtonComponent)</code> creates a <code>&lt;button is=\"copy-button\"&gt;</code>.",
+          "p3": "<code>is</code> decides the class of the element when it is created, so it is a static custom element name, written on a native HTML element: it cannot be bound, written by a conditional binding or written as <code>attr.is</code>. The compiler also checks that the element is written as its component is defined: a customized built-in element with the tag it extends and its <code>is</code>, an autonomous custom element with its own tag.",
+          "p4": "Most native elements accept no shadow root, so a component extending <code>button</code>, <code>input</code>, <code>a</code>, <code>li</code>, <code>tr</code>, <code>td</code> or <code>img</code> has no template and no stylesheet: the element shows the content its tag holds. Only <code>article</code>, <code>aside</code>, <code>blockquote</code>, <code>body</code>, <code>div</code>, <code>footer</code>, <code>h1</code>–<code>h6</code>, <code>header</code>, <code>main</code>, <code>nav</code>, <code>p</code>, <code>section</code> and <code>span</code> accept one: a component extending them may declare a <code>templateUrl</code>, rendered into its shadow root, where its content is projected as for any component, and a <code>styleUrl</code> styling it. The tags whose class is <code>HTMLElement</code>, such as <code>section</code>, <code>nav</code> or <code>article</code>, extend <code>CustomElement</code> itself:",
+          "p5": "The build checks the options and the class against the tag: a template or a stylesheet on a tag accepting no shadow root, a stylesheet without a template, a class extending the class of another tag, and <code>customElementOf()</code> without <code>extends</code> fail it.",
+          "p6": "The decorator defines the class with <code>customElements.define(selector, Class, { extends: 'button' })</code>. The class does not inherit from <code>CustomElement</code>, whose members it shares, yet <code>instanceof CustomElement</code> holds for its elements. On the server, an element without a template is written without a shadow root: the browser sets its inputs when it hydrates it, before its <code>onInit</code>.",
+          "callout1": {
+            "heading": "Safari",
+            "body": "Safari does not support customized built-in elements. A page needing them there loads a polyfill, such as <code>@ungap/custom-elements</code>, before the modules defining them: <code>main.ts</code> imports it first."
+          },
+          "callout2": {
+            "heading": "happy-dom",
+            "body": "happy-dom, the DOM <code>xd test</code> runs the specs in, neither calls the lifecycle callbacks of customized built-in elements nor upgrades the ones its parser creates from HTML: there, their <code>onInit</code>, their template, their host bindings and their host listeners never run."
+          }
         },
         "generics": {
           "title": "Generic components",
@@ -212,7 +231,7 @@
           "title": "Edge cases",
           "callout1": {
             "heading": "Options must be string literals",
-            "p1": "The plugin reads <code>selector</code>, <code>templateUrl</code> and <code>styleUrl</code> from the source code, so they must be string literals, and the class must be declared in a file ending with <code>.xd.component.ts</code>. A constant, a template literal or a computed value fails the build, and so does a component declared in another file."
+            "p1": "The plugin reads <code>selector</code>, <code>extends</code>, <code>templateUrl</code> and <code>styleUrl</code> from the source code, so they must be string literals, and the class must be declared in a file ending with <code>.xd.component.ts</code>. A constant, a template literal or a computed value fails the build, and so does a component declared in another file."
           },
           "callout2": {
             "heading": "A missing template fails the build",
@@ -244,7 +263,8 @@
           "td3": "Where the template is rendered.",
           "td4": "<a href=\"#/en/reference/api/core/CustomElement\"><code>this.effect(fn, options?)</code></a>",
           "td5": "An effect disposed when the element is removed. See <a href=\"#/en/signals/effects\">Effects</a>.",
-          "td6": "Optional hooks. See <a href=\"#/en/components/lifecycle\">Lifecycle</a>."
+          "td6": "Optional hooks. See <a href=\"#/en/components/lifecycle\">Lifecycle</a>.",
+          "td7": "The class a customized built-in element extends: the class of a native element, with the members of <code>CustomElement</code>. <code>extends</code> of <code>@WebComponent</code> names the tag."
         }
       },
       "contentProjection": {

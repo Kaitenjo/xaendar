@@ -493,6 +493,16 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A tag that is a component imported by the template and also matches a pattern of customElements.
 - **Fix:** Narrow the pattern to the tags of the other library, or rename the selector of the component.
 
+### `[TypeChecker] CopyButton is a customized built-in element extending <button>: write it <button is="copy-button">, not <copy-button>`
+
+- **Cause:** A component declaring `extends` written by its selector; the same check reports another tag than the one it extends (`CopyButton extends <button>: write it <button is="copy-button">, not <a is="copy-button">`) and an autonomous component written with `is` (`XCard is an autonomous custom element: write it <x-card>, not <div is="x-card">`).
+- **Fix:** Write the tag its `extends` names, with the selector as `is`; an autonomous component by its tag.
+
+### `[Parser] The is attribute of <button> must be a static selector, e.g. is="copy-button": it decides the class of the element when it is created`
+
+- **Cause:** `is` bound (`is="{ x }"`) or without a value; the parser also rejects `is` written by a conditional binding (`cannot be written by a branch`), `attr.is`, `is` on a custom element (`<x-card> is a custom element: is="…" names the customized built-in element a native element is`) and a value that is not a custom element name.
+- **Fix:** Write the selector of the component as a static `is` on the native tag; choose between different components with `@if`, not with `is`.
+
 ### `[TypeChecker] @@exTint selector is not associated to any Directive imported in the template`
 
 - **Cause:** A directive used without @import.
@@ -739,6 +749,16 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** A styleUrl pointing to a missing file.
 - **Fix:** Fix the path, relative to the file of the component.
+
+### `<button> accepts no shadow root: CopyButton, extending it, renders no template and has no stylesheet, its content being the one its tag holds. Remove templateUrl - <path>`
+
+- **Cause:** A customized built-in element declaring `templateUrl` or `styleUrl` on a tag that accepts no shadow root (`button`, `input`, `a`, `li`, `tr`…); a `styleUrl` without `templateUrl` on one that does is reported too (`The styleUrl option of XPanel styles its template, which it does not declare`).
+- **Fix:** Remove the options: the component works on the native element through inputs, events, host bindings and host directives. To render a template, extend a tag accepting a shadow root (`div`, `span`, `section`…) or write an autonomous component.
+
+### `CopyButton extends <button>, whose class is HTMLButtonElement, but its class extends customElementOf(HTMLInputElement): extend customElementOf(HTMLButtonElement) - <path>`
+
+- **Cause:** The class of a customized built-in element does not extend the class of the tag its `extends` names (the browser would throw `Illegal constructor`); a class extending `customElementOf(…)` without `extends` gives `CopyButton extends customElementOf(HTMLButtonElement): declare the tag of the native element it extends with the extends option of @WebComponent`. An `extends` naming no native tag gives `The extends option of CopyButton names <buton>, which is not a native HTML element`.
+- **Fix:** Extend `customElementOf` of the class of the tag (`CustomElement` for a tag whose class is `HTMLElement`), and declare `extends`.
 
 ### `The templateUrl option of XCard must be a string literal - <path>`
 

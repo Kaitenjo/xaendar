@@ -191,17 +191,36 @@
           "th3": "Descrizione",
           "td1": "sì",
           "td2": "Il nome del tag del componente. Vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>.",
-          "td3": "sì",
+          "td3": "sì, senza <code>extends</code>",
           "td4": "Il template, relativo al file della classe.",
           "td5": "no",
           "td6": "Un file <code>.css</code>, <code>.scss</code>, <code>.sass</code> o <code>.less</code> relativo al file della classe. Vedi <a href=\"#/it/components/styling\">Stili</a>.",
-          "p1": "A runtime il decoratore fa due cose: salva il selettore nei metadati della classe, dove lo trova <code>@Query(Classe)</code>, e chiama <code>customElements.define(selettore, Classe)</code>. Il resto avviene durante la build, quando il plugin legge le tre opzioni direttamente dal codice sorgente."
+          "td7": "no",
+          "td8": "Il tag dell’elemento nativo che il componente estende, e che ne fa un customized built-in element. Vedi <em>Customized built-in element</em>, più sotto.",
+          "p1": "A runtime il decoratore fa due cose: salva il selettore nei metadati della classe, dove lo trova <code>@Query(Classe)</code>, e chiama <code>customElements.define(selettore, Classe)</code>. Il resto avviene durante la build, quando il plugin legge le opzioni direttamente dal codice sorgente."
         },
         "theBaseClassAnd": {
           "title": "La classe base e lo shadow root",
           "p1": "<code>CustomElement</code> estende <code>HTMLElement</code>. Il suo costruttore aggancia uno shadow root <strong>aperto</strong>, in cui viene renderizzato il template: gli stili della pagina non vi entrano, e quelli del componente non ne escono. Il template viene renderizzato ogni volta che l’elemento viene collegato al documento, e lo shadow root viene svuotato ogni volta che viene rimosso. La pagina <a href=\"#/it/components/lifecycle\">Ciclo di vita</a> descrive gli hook che stanno nel mezzo.",
           "example1": "Cosa prepara la classe base",
           "p2": "La classe è un vero <code>HTMLElement</code>: <code>document.createElement('ex-rating')</code> restituisce un’istanza di <code>RatingComponent</code>, e tutte le API del DOM (attributi, eventi, <code>classList</code>, ...) funzionano come su un elemento nativo."
+        },
+        "customizedBuiltInElements": {
+          "title": "Customized built-in element",
+          "p1": "Un componente può anche estendere un elemento nativo, invece di essere un tag nuovo: è allora un <strong>customized built-in element</strong>. Conserva tutto ciò che fa l’elemento nativo, la semantica, il focus, la tastiera, i form, l’accessibilità, e vi aggiunge i suoi input, i suoi eventi, i suoi host binding, le sue host directive e gli hook del ciclo di vita. La sua classe estende <a href=\"#/it/reference/api/core/customElementOf\"><code>customElementOf()</code></a> della classe dell’elemento nativo, e l’opzione <code>extends</code> di <code>@WebComponent</code> ne indica il tag. A un pulsante che copia un testo non serve un template:",
+          "p2": "I template scrivono il tag che estende, con il selettore come <code>is</code>, e ne legano gli input e gli eventi come per qualsiasi componente. L’elemento viene creato con <code>document.createElement('button', { is: 'copy-button' })</code> e riceve anche l’attributo <code>is</code>, così che i selettori CSS lo trovino: <code>@Query(CopyButtonComponent)</code> trova <code>button[is=\"copy-button\"]</code>, e <code>createComponent(CopyButtonComponent)</code> crea un <code>&lt;button is=\"copy-button\"&gt;</code>.",
+          "p3": "<code>is</code> decide la classe dell’elemento quando viene creato, quindi è un nome di custom element statico, scritto su un elemento HTML nativo: non si può legare, né scrivere in un binding condizionale o come <code>attr.is</code>. Il compilatore verifica anche che l’elemento sia scritto come è definito il suo componente: un customized built-in element con il tag che estende e il suo <code>is</code>, un custom element autonomo con il suo tag.",
+          "p4": "La maggior parte degli elementi nativi non accetta uno shadow root, quindi un componente che estende <code>button</code>, <code>input</code>, <code>a</code>, <code>li</code>, <code>tr</code>, <code>td</code> o <code>img</code> non ha né template né foglio di stile: l’elemento mostra il contenuto che il suo tag contiene. Solo <code>article</code>, <code>aside</code>, <code>blockquote</code>, <code>body</code>, <code>div</code>, <code>footer</code>, <code>h1</code>–<code>h6</code>, <code>header</code>, <code>main</code>, <code>nav</code>, <code>p</code>, <code>section</code> e <code>span</code> ne accettano uno: un componente che li estende può dichiarare un <code>templateUrl</code>, renderizzato nel suo shadow root, dove il suo contenuto viene proiettato come per qualsiasi componente, e uno <code>styleUrl</code> che gli dà stile. I tag la cui classe è <code>HTMLElement</code>, come <code>section</code>, <code>nav</code> o <code>article</code>, estendono <code>CustomElement</code> stesso:",
+          "p5": "La build verifica le opzioni e la classe rispetto al tag: un template o un foglio di stile su un tag che non accetta uno shadow root, un foglio di stile senza template, una classe che estende la classe di un altro tag, e <code>customElementOf()</code> senza <code>extends</code> la fanno fallire.",
+          "p6": "Il decoratore definisce la classe con <code>customElements.define(selettore, Classe, { extends: 'button' })</code>. La classe non eredita da <code>CustomElement</code>, di cui condivide i membri, eppure <code>instanceof CustomElement</code> vale per i suoi elementi. Sul server, un elemento senza template viene scritto senza shadow root: il browser ne imposta gli input quando lo idrata, prima del suo <code>onInit</code>.",
+          "callout1": {
+            "heading": "Safari",
+            "body": "Safari non supporta i customized built-in element. Una pagina che ne ha bisogno lì carica un polyfill, come <code>@ungap/custom-elements</code>, prima dei moduli che li definiscono: <code>main.ts</code> lo importa per primo."
+          },
+          "callout2": {
+            "heading": "happy-dom",
+            "body": "happy-dom, il DOM in cui <code>xd test</code> esegue le spec, non chiama le callback del ciclo di vita dei customized built-in element, né aggiorna quelli che il suo parser crea dall’HTML: lì il loro <code>onInit</code>, il loro template, i loro host binding e i loro host listener non vengono mai eseguiti."
+          }
         },
         "generics": {
           "title": "Componenti generici",
@@ -212,7 +231,7 @@
           "title": "Casi limite",
           "callout1": {
             "heading": "Le opzioni devono essere stringhe letterali",
-            "p1": "Il plugin legge <code>selector</code>, <code>templateUrl</code> e <code>styleUrl</code> dal codice sorgente, quindi devono essere stringhe letterali, e la classe deve essere dichiarata in un file che termina con <code>.xd.component.ts</code>. Una costante, un template literal o un valore calcolato fanno fallire la build, e così un componente dichiarato in un altro file."
+            "p1": "Il plugin legge <code>selector</code>, <code>extends</code>, <code>templateUrl</code> e <code>styleUrl</code> dal codice sorgente, quindi devono essere stringhe letterali, e la classe deve essere dichiarata in un file che termina con <code>.xd.component.ts</code>. Una costante, un template literal o un valore calcolato fanno fallire la build, e così un componente dichiarato in un altro file."
           },
           "callout2": {
             "heading": "Un template mancante fa fallire la build",
@@ -244,7 +263,8 @@
           "td3": "Dove viene renderizzato il template.",
           "td4": "<a href=\"#/it/reference/api/core/CustomElement\"><code>this.effect(fn, opzioni?)</code></a>",
           "td5": "Un effect eliminato quando l’elemento viene rimosso. Vedi <a href=\"#/it/signals/effects\">Effect</a>.",
-          "td6": "Hook facoltativi. Vedi <a href=\"#/it/components/lifecycle\">Ciclo di vita</a>."
+          "td6": "Hook facoltativi. Vedi <a href=\"#/it/components/lifecycle\">Ciclo di vita</a>.",
+          "td7": "La classe che un customized built-in element estende: la classe di un elemento nativo, con i membri di <code>CustomElement</code>. <code>extends</code> di <code>@WebComponent</code> ne indica il tag."
         }
       },
       "contentProjection": {

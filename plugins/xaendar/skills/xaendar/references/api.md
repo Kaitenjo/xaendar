@@ -7,10 +7,12 @@ Every export applications use, by module. Symbols exported only for the compiled
 ### WebComponent (decorator)
 
 ```ts
-@WebComponent({ selector: 'x-y', hostDirectives?: [Tip, { directive: Tip, properties?: [{ name: 'text', alias: 'hint' }], events?: ['shown'] }], ssr?: { hydrate?: 'load' | 'idle' | 'visible' | 'interaction' | 'hover' | 'never', render?: false, static?: false }, styleUrl?: './x.css', templateUrl: './x.xd.component.html' })
+@WebComponent({ selector: 'x-y', extends?: 'button', hostDirectives?: [Tip, { directive: Tip, properties?: [{ name: 'text', alias: 'hint' }], events?: ['shown'] }], ssr?: { hydrate?: 'load' | 'idle' | 'visible' | 'interaction' | 'hover' | 'never', render?: false, static?: false }, styleUrl?: './x.css', templateUrl: './x.xd.component.html' })
 ```
 
 Defines a class extending CustomElement as a custom element, with its compiled template and its stylesheet (`.css`, `.scss`, `.sass` or `.less`). The options must be string literals; `hostDirectives` an array literal. The class must be declared in a file ending with `.xd.component.ts`; the decorator is not inherited.
+
+`extends` makes a customized built-in element: the tag of the native element it extends, whose class the component extends through `customElementOf` (`customElementOf(HTMLButtonElement)` for `button`; `CustomElement` for a tag whose class is `HTMLElement`, as `section`, `nav`, `article`). Templates write it with that tag and the selector as a static `is` (`<button is="copy-button">`); `createComponent` creates it so, `@Query(Class)` finds it as `button[is="copy-button"]`, `instanceof CustomElement` holds. `templateUrl` and `styleUrl` are optional, and allowed only on a tag accepting a shadow root (`article`, `aside`, `blockquote`, `body`, `div`, `footer`, `h1`–`h6`, `header`, `main`, `nav`, `p`, `section`, `span`): the template renders into the shadow root. On any other tag the component renders nothing: it adds its inputs, events, host bindings and host directives to the native element, whose content is the one its tag holds. The server writes a template-less one as `<button is="copy-button" data-xd-client="">`, hydrated when its parent is. Safari supports no customized built-in element: the page loads a polyfill (e.g. `@ungap/custom-elements`) first.
 
 `hostDirectives` lists custom directives applied to every instance of the component, on its own element. An entry is the class of the directive, or an object with the class (`directive`) and the `properties` and `events` of the directive the component exposes, each as `'name'` or as `{ name, alias }`: an exposed input is bound from the templates using the component, an exposed output is dispatched on it. The events not exposed are not dispatched. Code outside the templates sets an exposed input as an input of the component (`element.label = …`, an accessor of its class); the templates write it into the directive. A subclass inherits the host directives of its parent, applied before its own. The classes of the chain and their host directives are one: a directive is listed once, an exposed input has no name of an input or member of the component nor of another exposed input, an exposed event no name of an event of the component nor of another exposed event; the build reports it, the class throws it when registered. Templates cannot name the class, so expose the instance as a member (`public readonly tip = this.hostDirectives.get(Tip)`, a field of the subclass) to use it in the template.
 
@@ -166,6 +168,14 @@ class X extends CustomElement { hostDirectives: HostDirectives; onInit?(); after
 ```
 
 Base class of components: an open shadow root, the lifecycle hooks, and effects disposed at disconnection. `hostDirectives` is a map from the class of each host directive to its instance (`this.hostDirectives.get(Tip)`, typed): the directives start before `onInit` and stop after `onDestroy`. `connectedCallback` and `disconnectedCallback` belong to the base class: never declare them. Disconnection runs `onDestroy`, disposes the effects, removes the template and destroys the components created with `createComponent`.
+
+### customElementOf (function)
+
+```ts
+function customElementOf<Element extends HTMLElement>(base: Constructor<Element>): Constructor<CustomElement & Element>
+```
+
+The class a customized built-in element extends (`extends` of `@WebComponent`): `class CopyButtonComponent extends customElementOf(HTMLButtonElement)`. The class of the native element with the members of `CustomElement` (the same code), created once per native class and shared; `customElementOf(HTMLElement)` is `CustomElement`. The class the component extends must be the class of the tag it declares in `extends`: the build reports another one.
 
 ### createComponent (method of CustomElement and CustomDirective)
 

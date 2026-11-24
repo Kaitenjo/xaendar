@@ -69,6 +69,19 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 - Any element can listen to an event its map does not declare, e.g. a custom event bubbling up from a child (`<div (bubbling)="onBubbling($event as CustomEvent<string>)">`): `$event` is an `Event`, and the build and the editor warn about the name, since it may be misspelled, without failing. `"strictEvents": false` in `xaendar.json` (or in an entry of `libs`) turns the warning off. The elements of `customElements` never get it.
 - `$event` is typed by the event name (`MouseEvent` for `click`, the `CustomEvent<T>` of an `Output<T>`). An `Output` without a type argument gives a `CustomEvent<null>`.
 
+### Customized built-in elements
+
+```html
+@import { CopyButtonComponent } from './copy-button/copy-button.xd.component.ts'
+
+<!-- The tag the component extends, its selector as is: inputs, events and native attributes as on any component -->
+<button is="copy-button" text="{ code() }" type="button" (copied)="notify()">Copy</button>
+```
+
+- `is` is a static custom element name on a native HTML element: it decides the class of the element when it is created, so it is never bound (`is="{ x }"`), written by a conditional binding, written with `attr.is`, or put on a custom element or an SVG/MathML element.
+- The tag must be the one the component declares in `extends`, and a customized built-in element is never written by its selector (`<copy-button>`), nor an autonomous one with `is`: the type-check reports both.
+- The children of the tag are its content, as on the native element; a component whose tag accepts a shadow root (`div`, `section`…) and declares a template shows them through its `<slot>`.
+
 ## Element refs
 
 ```html

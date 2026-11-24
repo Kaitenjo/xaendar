@@ -1,0 +1,11 @@
+<button is="{name()}">Copy</button>
+[Parser] The is attribute of <button> must be a static selector, e.g. is="copy-button": it decides the class of the element when it is created
+
+<copy-button>Copy</copy-button>
+[TypeChecker] CopyButtonComponent is a customized built-in element extending <button>: write it <button is="copy-button">, not <copy-button>
+
+<a is="copy-button">Copy</a>
+[TypeChecker] CopyButtonComponent extends <button>: write it <button is="copy-button">, not <a is="copy-button">
+
+<div is="ex-rating" />
+[TypeChecker] RatingComponent is an autonomous custom element: write it <ex-rating>, not <div is="ex-rating">

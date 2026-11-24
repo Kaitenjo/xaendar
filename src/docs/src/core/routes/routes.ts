@@ -173,7 +173,7 @@ export const NAV: readonly NavSection[] = [
         page('signals/shared-state', 'store service module singleton dependency injection')
       ]),
       group('components', [
-        page('components/anatomy', 'WebComponent CustomElement templateUrl styleUrl'),
+        page('components/anatomy', 'WebComponent CustomElement templateUrl styleUrl extends customElementOf built-in'),
         page('components/registration', 'selector customElements define import order'),
         page('components/styling', 'css shadow dom host slotted part custom properties'),
         page('components/inputs', 'Property input alias transform required InputSignal'),

@@ -13,6 +13,46 @@ this.attachShadow({ mode: 'closed' });
 };
 
 /**
+ * The snippet `copy-button.ts`, shown by the page components/anatomy and the API reference of core.
+ */
+export const COPY_BUTTON: SourceFile = {
+  name: 'copy-button.ts',
+  lang: 'ts',
+  code: `// copy-button.xd.component.ts
+import type { Output } from '@xaendar/core';
+import { customElementOf, Event, HostListener, Property, WebComponent } from '@xaendar/core';
+import type { InputSignal } from '@xaendar/core/signals';
+
+/**
+ * A button copying a text to the clipboard. It is a native button, focused, clicked and pressed with the keyboard as
+ * any other: <button> accepts no shadow root, so it has no template, and its label is its content.
+ */
+@WebComponent({ selector: 'copy-button', extends: 'button' })
+export class CopyButtonComponent extends customElementOf(HTMLButtonElement) {
+  /**
+   * The text to copy.
+   */
+  @Property.required()
+  public accessor text!: InputSignal<string>;
+  /**
+   * Emitted once the text is in the clipboard, with the text as detail.
+   */
+  @Event()
+  public accessor copied!: Output<string>;
+
+  /**
+   * Copies the text when the button is clicked, or pressed with Enter or Space.
+   */
+  @HostListener('click')
+  public async copy(): Promise<void> {
+    const text = this.text();
+    await navigator.clipboard.writeText(text);
+    this.copied.dispatch(text);
+  }
+}`
+};
+
+/**
  * The snippet `generic-component.ts`, shown by the page components/anatomy.
  */
 export const GENERIC_COMPONENT: SourceFile = {
@@ -46,6 +86,44 @@ const TEMPLATE = './rating.xd.component.html';
  */
 @WebComponent({ selector: 'ex-rating', templateUrl: TEMPLATE })
 export class RatingComponent extends CustomElement {}`
+};
+
+/**
+ * The snippet `note-panel.ts`, shown by the page components/anatomy and the API reference of core.
+ */
+export const NOTE_PANEL: SourceFile = {
+  name: 'note-panel.ts',
+  lang: 'ts',
+  code: `// note-panel.xd.component.ts
+/**
+ * A panel with a heading. A <div> accepts a shadow root: the template is rendered there, as the one of any component,
+ * and the stylesheet styles it.
+ */
+@WebComponent({
+  selector: 'note-panel',
+  extends: 'div',
+  styleUrl: './note-panel.css',
+  templateUrl: './note-panel.xd.component.html'
+})
+export class NotePanelComponent extends customElementOf(HTMLDivElement) {
+  /**
+   * The heading of the panel.
+   */
+  @Property('')
+  public accessor heading!: InputSignal<string>;
+}
+
+// page-section.xd.component.ts
+/**
+ * A section of a page. The class of <section> is HTMLElement, whose customElementOf() is CustomElement itself: the
+ * component extends it, as an autonomous custom element does.
+ */
+@WebComponent({
+  selector: 'page-section',
+  extends: 'section',
+  templateUrl: './page-section.xd.component.html'
+})
+export class PageSectionComponent extends CustomElement {}`
 };
 
 /**

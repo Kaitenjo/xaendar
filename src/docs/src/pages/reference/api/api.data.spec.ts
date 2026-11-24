@@ -30,6 +30,7 @@ const INTERNAL_EXPORTS: ReadonlySet<string> = new Set([
   'RenderElementConditionalBinding',
   'RenderElementStructuralDirectiveConditionalBinding',
   'RenderElementAttribute',
+  'RenderElementAttributeTemplateValue',
   'RenderElementStructuralDirective'
 ]);
 

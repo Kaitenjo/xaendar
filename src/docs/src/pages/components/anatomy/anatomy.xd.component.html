@@ -8,7 +8,7 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
-@import { ATTACH_SHADOW, GENERIC_COMPONENT, NON_LITERAL_OPTIONS, WEB_COMPONENT_OPTIONS } from './anatomy.snippets.ts'
+@import { ATTACH_SHADOW, COPY_BUTTON, GENERIC_COMPONENT, NON_LITERAL_OPTIONS, NOTE_PANEL, WEB_COMPONENT_OPTIONS } from './anatomy.snippets.ts'
 
 <span class="eyebrow">
   { t(translations(), 'pages.components.anatomy.eyebrow') }
@@ -70,9 +70,7 @@
         <td>
           <code>templateUrl</code>
         </td>
-        <td>
-          { t(translations(), 'pages.components.anatomy.theDecorator.td3') }
-        </td>
+        <td @@htmlTranslation(key="pages.components.anatomy.theDecorator.td3") />
         <td>
           { t(translations(), 'pages.components.anatomy.theDecorator.td4') }
         </td>
@@ -85,6 +83,15 @@
           { t(translations(), 'pages.components.anatomy.theDecorator.td5') }
         </td>
         <td @@htmlTranslation(key="pages.components.anatomy.theDecorator.td6") />
+      </tr>
+      <tr>
+        <td>
+          <code>extends</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.components.anatomy.theDecorator.td7') }
+        </td>
+        <td @@htmlTranslation(key="pages.components.anatomy.theDecorator.td8") />
       </tr>
     </tbody>
   </table>
@@ -101,6 +108,28 @@
   <ex-shadow-inspector />
 </docs-example>
 <p @@htmlTranslation(key="pages.components.anatomy.theBaseClassAnd.p2") />
+
+<h2>
+  { t(translations(), 'pages.components.anatomy.customizedBuiltInElements.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.anatomy.customizedBuiltInElements.p1") />
+<docs-code snippet="{COPY_BUTTON}" />
+<p @@htmlTranslation(key="pages.components.anatomy.customizedBuiltInElements.p2") />
+<docs-code snippet="components/copy-button-usage.html" />
+<p @@htmlTranslation(key="pages.components.anatomy.customizedBuiltInElements.p3") />
+<docs-code snippet="components/is-attribute-errors.txt" />
+<p @@htmlTranslation(key="pages.components.anatomy.customizedBuiltInElements.p4") />
+<docs-code snippet="{NOTE_PANEL}" />
+<docs-code snippet="components/note-panel-usage.html" />
+<p @@htmlTranslation(key="pages.components.anatomy.customizedBuiltInElements.p5") />
+<docs-code snippet="components/built-in-options-errors.txt" />
+<p @@htmlTranslation(key="pages.components.anatomy.customizedBuiltInElements.p6") />
+<docs-callout kind="unsupported">
+  <docs-callout-item @@htmlTranslation(key="pages.components.anatomy.customizedBuiltInElements.callout1.body")
+    heading="{translations().pages.components.anatomy.customizedBuiltInElements.callout1.heading}" />
+  <docs-callout-item @@htmlTranslation(key="pages.components.anatomy.customizedBuiltInElements.callout2.body")
+    heading="{translations().pages.components.anatomy.customizedBuiltInElements.callout2.heading}" />
+</docs-callout>
 
 <h2>
   { t(translations(), 'pages.components.anatomy.generics.title') }
@@ -200,6 +229,14 @@
           </a>
         </td>
         <td @@htmlTranslation(key="pages.components.anatomy.summary.td6") />
+      </tr>
+      <tr>
+        <td>
+          <a href="{`#/${currentLang()}/reference/api/core/customElementOf`}">
+            <code>customElementOf(Base)</code>
+          </a>
+        </td>
+        <td @@htmlTranslation(key="pages.components.anatomy.summary.td7") />
       </tr>
     </tbody>
   </table>

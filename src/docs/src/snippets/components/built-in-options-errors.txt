@@ -1,0 +1,17 @@
+@WebComponent({ selector: 'copy-button', extends: 'button', templateUrl: './copy-button.xd.component.html' })
+Xaendar: <button> accepts no shadow root: CopyButtonComponent, extending it, renders no template and has no stylesheet, its
+content being the one its tag holds. Remove templateUrl - /src/copy-button/copy-button.xd.component.ts
+
+@WebComponent({ selector: 'copy-button', extends: 'button' })
+export class CopyButtonComponent extends CustomElement {}
+Xaendar: CopyButtonComponent extends <button>, whose class is HTMLButtonElement, but its class extends CustomElement: extend
+customElementOf(HTMLButtonElement) - /src/copy-button/copy-button.xd.component.ts
+
+@WebComponent({ selector: 'copy-button', templateUrl: './copy-button.xd.component.html' })
+export class CopyButtonComponent extends customElementOf(HTMLButtonElement) {}
+Xaendar: CopyButtonComponent extends customElementOf(HTMLButtonElement): declare the tag of the native element it extends with
+the extends option of @WebComponent, e.g. extends: 'button' - /src/copy-button/copy-button.xd.component.ts
+
+@WebComponent({ selector: 'note-panel', extends: 'div', styleUrl: './note-panel.css' })
+Xaendar: The styleUrl option of NotePanelComponent styles its template, which it does not declare: add templateUrl, or remove
+styleUrl - /src/note-panel/note-panel.xd.component.ts
