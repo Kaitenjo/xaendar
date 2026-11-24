@@ -433,6 +433,8 @@ export class Computed<T = any> {
     */
     const previousSources = this.#sources;
     this.#sources = emptySmallSet(smallSetSize(previousSources));
+    // Whether it is a sink of the previous sources, whatever the evaluation does to its own sinks
+    const live = smallSetSize(this.#sinks) !== 0;
 
     pushComputed(this);
     this.setState('computing', PRIVATE);
@@ -454,8 +456,12 @@ export class Computed<T = any> {
       popComputed();
     }
 
-    // Only a live Signal is a sink of its sources: it stops being one of the sources it no longer reads
-    if (smallSetSize(this.#sinks)) {
+    /*
+      Only a live Signal is a sink of its sources: it stops being one of the sources it no longer reads. It is the
+      liveness it had before the evaluation that counts: unwatched by its own callback (an effect disposing itself), it
+      left only the sources read until then, and would stay a sink of the others; watched by it, it was the sink of none
+    */
+    if (live) {
       forEachInSmallSet(previousSources, Computed.#unlinkSourceNotRead, this);
     }
     this.#version = GLOBAL_STATE.version;
