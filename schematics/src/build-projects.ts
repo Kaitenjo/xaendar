@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { basename, resolve } from 'node:path';
 import { build as tsupBuild } from 'tsup';
@@ -84,6 +84,11 @@ function buildProject(projectName: string): void {
   console.log(`\n▶ Build [${pkg.xaendar?.library ? 'library' : target}]: @xaendar/${projectName}`);
 
   const onSuccess = () => {
+    // The extension declares its engine and its license itself, for the Marketplace
+    if (target !== 'extension') {
+      completePublishedPackage(projectName, pkg);
+    }
+
     console.log(`✅ @xaendar/${projectName} completato`);
     markComplete(projectName);
   };
@@ -294,6 +299,32 @@ function markComplete(projectName: string): void {
       }
     }
   });
+}
+
+/**
+ * Gives the built package what every published package carries, whichever tool built it (Vite, tsup, `xd build`):
+ * the license and the author of its `package.json`, the version of Node of the root `package.json`, which the packages
+ * need (the CLI, the build, the compiler, the rendering on the server), and the `LICENSE` file of the repository.
+ *
+ * @param projectName - The folder name of the project (e.g. `"compiler"`).
+ * @param pkg - The `package.json` of the project.
+ * @throws If the root `package.json` declares no version of Node, or a file cannot be read or written.
+ */
+function completePublishedPackage(projectName: string, pkg: XaendarPackageJson): void {
+  const root: XaendarPackageJson = JSON.parse(readFileSync(resolve(projectsPath, '../package.json'), 'utf-8'));
+  const node = root.engines?.node;
+  if (!node) {
+    throw new Error('The root package.json declares no engines.node');
+  }
+
+  const outDir = resolve(projectsPath, '../dist/@xaendar', projectName);
+  const packageJsonPath = resolve(outDir, 'package.json');
+  const distPkg: XaendarPackageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+  distPkg.author = pkg.author;
+  distPkg.license = pkg.license;
+  distPkg.engines = { node };
+  writeFileSync(packageJsonPath, JSON.stringify(distPkg, null, 2), 'utf-8');
+  copyFileSync(resolve(projectsPath, '../LICENSE'), resolve(outDir, 'LICENSE'));
 }
 
 const projects = mapProjectsDependencies();
