@@ -49,7 +49,7 @@ export class ServerStyleDeclaration {
   /**
    * Sets a property, keeping its place when the attribute declares it already, or removes it for an empty value.
    *
-   * N.B. A value that would not stay a single declaration of the attribute (`red; position: fixed`, `red;`) is ignored,
+   * N.B. A value that would not stay a single declaration of the attribute (`red; position: fixed`, `red;`, `red(`) is ignored,
    * as a browser's `setProperty` rejects it: a value bound to a single key may come from a user, and joined into the
    * text of the attribute it would end its declaration and add others, which the browser then adopts as they are, since
    * hydration does not write a value already present. Do not write such a value into the attribute.
@@ -92,16 +92,18 @@ export class ServerStyleDeclaration {
   }
 
   /**
-   * Tells whether a value of a property, written into the attribute, is read back as that one declaration: no `;`
-   * outside parentheses and quotes ends it.
+   * Tells whether a value of a property, written into the attribute, is read back as that one declaration, leaving the
+   * next one whole: no `;` outside parentheses and quotes ends it, and no parenthesis or quote left open takes in the
+   * declarations after it.
    *
    * @param property - The name of the property.
    * @param value - The value.
-   * @returns `true` when the attribute would hold the property alone, with the value.
+   * @returns `true` when the attribute would hold the property, with the value, and the declaration after it.
    */
   private _isSingleDeclaration(property: string, value: string): boolean {
-    const parsed = parseStyleDeclarations(`${property}: ${value}`);
-    return parsed?.length === 2 && parsed[1] === value.trim();
+    // A declaration of another name follows the value, to find what it leaves open
+    const parsed = parseStyleDeclarations(`${property}: ${value}; ${property}-: 0`);
+    return parsed?.length === 4 && parsed[1] === value.trim();
   }
 
   /**

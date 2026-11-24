@@ -77,6 +77,8 @@ describe('ServerStyleDeclaration', () => {
     style.setProperty('color', 'red; position: fixed');
     style.setProperty('width', '1px;');
     style.setProperty('height', ' ');
+    style.setProperty('--x', 'a(');
+    style.setProperty('content', '"a');
     style.setProperty('background', 'url("a;b")');
 
     expect(owner.attributes.get('style')).toBe('color: blue; background: url("a;b");');
