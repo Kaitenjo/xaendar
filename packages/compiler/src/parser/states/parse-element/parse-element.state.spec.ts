@@ -17,6 +17,16 @@ describe('parseElement', () => {
     expect(node.children.map(c => c.type)).toEqual([ASTNodeType.Text, ASTNodeType.Element]);
   });
 
+  it.each([
+    ['a <script>', '<script>run()</script>', '<script> cannot be written in a template: the code of a component goes in its class, the scripts of the page in its HTML'],
+    ['a <style>', '<style>p { color: red }</style>', '<style> cannot be written in a template: the styles of a component go in its stylesheet (styleUrl)'],
+    ['a <SCRIPT> in upper case', '<SCRIPT src="a.js"></SCRIPT>', '<SCRIPT> cannot be written in a template'],
+    ['a <style> in an <svg>', '<svg><style>{ css }</style></svg>', '<style> cannot be written in a template'],
+    ['a <script> in a standard <template>', '<template><script>run()</script></template>', '<script> cannot be written in a template']
+  ])('throws for %s, wherever it is', (_description, template, message) => {
+    expect(() => parse(template)).toThrow(message);
+  });
+
   it('parses a self-closing element', () => {
     const [node] = parse('<input />') as ElementNode[];
     expect(node).toMatchObject({ tagName: 'input', children: [] });
@@ -146,6 +156,34 @@ describe('parseElement', () => {
       ['in a structural directive', '<div *when(attr.title="x")></div>', 'attr.title cannot be bound inside a directive: bind it on the element'],
       ['in a two-way binding', '<my-el [(attr.title)]="title"></my-el>', '[(attr.title)] binds a model of a component or of a directive, while attr. writes an attribute of the element']
     ])('rejects one %s', (_description, template, message) => {
+      expect(() => parse(template)).toThrow(message);
+    });
+  });
+
+  describe('customized built-in elements', () => {
+    it('takes the static is attribute out of the attributes, as the selector of the component the element is', () => {
+      const [node] = parse('<button is="copy-button" title="Copy" type="button">Copy</button>') as ElementNode[];
+
+      expect(node.is).toBe('copy-button');
+      expect(node.isSpan).toEqual({ start: 8, end: 24 });
+      expect(node.attributes.map(({ name }) => name)).toEqual(['title', 'type']);
+    });
+
+    it('tells x and attr.x apart on a customized built-in element, whose x may be an input', () => {
+      expect(() => parse('<button is="copy-button" title="a" attr.title="b"></button>')).not.toThrow();
+      expect(() => parse('<button title="a" attr.title="b"></button>')).toThrow('Attribute "title" is bound more than once on <button>');
+    });
+
+    it.each([
+      ['bound', '<button is="{ name() }"></button>', 'The is attribute of <button> must be a static selector, e.g. is="copy-button": it decides the class of the element when it is created'],
+      ['without a value', '<button is></button>', 'The is attribute of <button> must be a static selector'],
+      ['on a custom element', '<my-el is="copy-button"></my-el>', '<my-el> is a custom element: is="…" names the customized built-in element a native element is, e.g. <button is="copy-button">'],
+      ['that is not a custom element name', '<button is="copy"></button>', '"copy" is not a valid custom element name: is="…" names the selector of a customized built-in element'],
+      ['in a branch', '<button @if (cond()) { is="copy-button" }></button>', 'The is attribute of <button> cannot be written by a branch: it decides the class of the element when it is created'],
+      ['in a nested branch', '<button @if (cond()) { @if (other()) { is="copy-button" } }></button>', 'The is attribute of <button> cannot be written by a branch'],
+      ['written with attr.', '<button attr.is="copy-button"></button>', 'attr.is cannot be written: is decides the class of a customized built-in element when it is created'],
+      ['on a <template> declaring a template', '<template row() is="copy-button"></template>', 'A <template> declares only its name and its parameters']
+    ])('rejects an is attribute %s', (_description, template, message) => {
       expect(() => parse(template)).toThrow(message);
     });
   });
@@ -298,9 +336,9 @@ describe('parseElement', () => {
 
     describe('standard <template> elements', () => {
       it('parses a <template> without a declaration into an element, its static content serialized as HTML', () => {
-        const [node] = parse('<template id="row" #row><li class="item &amp; more">A &lt; b</li><br /><pre>x</pre><style>a > b</style></template>') as ElementNode[];
+        const [node] = parse('<template id="row" #row><li class="item &amp; more">A &lt; b</li><br /><pre>x</pre><xmp>a > b</xmp></template>') as ElementNode[];
         expect(node).toMatchObject({ type: ASTNodeType.Element, tagName: 'template', attributes: [{ name: 'id', value: 'row' }], ref: { name: 'row' } });
-        expect(node.content).toBe('<li class="item &amp; more">A &lt; b</li><br><pre>\nx</pre><style>a > b</style>');
+        expect(node.content).toBe('<li class="item &amp; more">A &lt; b</li><br><pre>\nx</pre><xmp>a > b</xmp>');
         expect(node.children.map(({ type }) => type)).toEqual([ASTNodeType.Element, ASTNodeType.Element, ASTNodeType.Element, ASTNodeType.Element]);
       });
 
@@ -313,6 +351,11 @@ describe('parseElement', () => {
       it('parses a self-closing <template>, without content', () => {
         const [node] = parse('<template id="empty" />') as ElementNode[];
         expect(node).toMatchObject({ tagName: 'template', content: '', children: [] });
+      });
+
+      it('keeps the is of a customized built-in element in the content, so that its clones are that element', () => {
+        const [node] = parse('<template><button title="Copy" is="copy-button">x</button></template>') as ElementNode[];
+        expect(node.content).toBe('<button is="copy-button" title="Copy">x</button>');
       });
 
       it('serializes a nested standard <template>', () => {

@@ -37,7 +37,7 @@ export const SSR_API: ApiPackage = {
         { key: 'output', snippets: ['tools/ssr-output.html'] },
         { key: 'errors' }
       ],
-      guides: ['tools/ssr/overview', 'tools/ssr/transfer-state', 'tools/ssr/hydration', 'components/lifecycle']
+      guides: ['tools/ssr/overview', 'tools/ssr/transfer-state', 'tools/ssr/hydration', 'components/lifecycle', 'components/security']
     },
     {
       name: 'RenderInputs',

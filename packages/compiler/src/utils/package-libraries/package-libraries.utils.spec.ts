@@ -178,6 +178,56 @@ describe('readLibrary()', () => {
   });
 });
 
+describe('readLibrary() of a manifest Xaendar does not write', () => {
+  const card = 'card/card.xd.component#Card';
+
+  /**
+   * Writes a library whose manifest has the card changed, and reads it.
+   *
+   * @param name - The name of the package, under `@evil/`.
+   * @param fields - The fields replacing the ones of the card, or of the manifest.
+   * @returns What reading it throws.
+   */
+  function readEvil(name: string, fields: { card?: object, manifest?: Partial<LibraryManifest>, packageJson?: object }): () => unknown {
+    const manifest = manifestOf(`@evil/${name}`, fields.manifest);
+    write({
+      [`app/node_modules/@evil/${name}/package.json`]: packageJsonOf(`@evil/${name}`, fields.packageJson),
+      [`app/node_modules/@evil/${name}/xaendar-manifest.json`]: fields.card ? Object.assign(manifest, { declarations: { [card]: Object.assign({}, manifest.declarations[card], fields.card) } }) : manifest
+    });
+    return () => readLibrary(`${app}/node_modules/@evil/${name}`);
+  }
+
+  it.each([
+    ['property', { card: { inputs: [{ name: 'label', property: 'x\'+globalThis.pwned`1`+\'', type: 'string' }] } }, `${card} has the input x'+globalThis.pwned\`1\`+'`],
+    ['input', { card: { inputs: [{ name: 'a\'b', type: 'string' }] } }, `${card} has the input a'b`],
+    ['empty-input', { card: { inputs: [{ name: '', type: 'string' }] } }, `${card} has the input `],
+    ['event', { card: { events: [{ name: 'a\\b', type: 'string' }] } }, `${card} has the event a\\b`],
+    ['class', { card: { className: 'Card; alert(1)' } }, `${card} has the class name Card; alert(1)`],
+    ['selector', { card: { selector: 'ui-card\'' } }, `${card} has the selector ui-card'`],
+    ['module', { card: { module: '/etc/card' } }, `${card} has the module /etc/card, not a path of the exports of the package`],
+    ['types', { card: { types: './../other/card.d.ts' } }, `${card} has the declarations ./../other/card.d.ts, not a file of the package`],
+    ['name', { manifest: { name: '@acme/ui' } }, 'it names the package @acme/ui'],
+    ['export', { manifest: { exports: { '.': { Card: 'toString' } } } }, 'the export Card of . has no declaration']
+  ])('throws on a manifest holding what no template or class declares: %s', (name, fields, reason) => {
+    expect(readEvil(name, fields)).toThrow(`The manifest of @evil/${name}, ${app}/node_modules/@evil/${name}/xaendar-manifest.json, is not one Xaendar writes: ${reason}. Build the library again with xd build.`);
+  });
+
+  it('reads a declaration of the entry of the package, and a key event or any name a template writes', () => {
+    expect(readEvil('entry', { card: { module: '.', inputs: [{ name: 'my-label', property: 'label', type: 'string' }], events: [{ name: 'done:x.y', type: 'void' }] } })()).toBeDefined();
+  });
+
+  it('throws on a manifest that is not a file of the package', () => {
+    expect(readEvil('outside', { packageJson: { xaendar: { manifest: '../ui/xaendar-manifest.json' } } })).toThrow('The manifest of @evil/outside, ../ui/xaendar-manifest.json, is not a file of the package: write xaendar.manifest of its package.json as a path inside it, e.g. ./xaendar-manifest.json');
+    expect(readEvil('absolute', { packageJson: { xaendar: { manifest: '/xaendar-manifest.json' } } })).toThrow('is not a file of the package');
+    expect(readEvil('number', { packageJson: { xaendar: { manifest: 1 } } })).toThrow('is not a file of the package');
+  });
+
+  it('reads no export named like a member of Object.prototype', () => {
+    expect(readLibraryMetadata(`${ui}/public-api.d.ts`, 'toString')).toBeUndefined();
+    expect(readLibraryMetadata(`${ui}/public-api.d.ts`, '__proto__')).toBeUndefined();
+  });
+});
+
 describe('findPackageLibraries()', () => {
   it('finds the libraries a project depends on, and the ones they depend on, once', () => {
     expect(findPackageLibraries(app)?.map(({ manifest }) => manifest.name)).toEqual(['@acme/ui', '@acme/kit', '@acme/charts']);

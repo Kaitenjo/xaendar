@@ -1,4 +1,3 @@
-import { toStringLiteral } from '../../../generator/utils/generator/generator.utils';
 import type { ElementNamespace } from '../../../types/element-namespace.type';
 import type { ElementEventMap } from '../../types/element-event-map.type';
 
@@ -34,7 +33,7 @@ export function getEventMap(namespace: ElementNamespace): ElementEventMap {
  */
 export function getElementType(namespace: ElementNamespace, tagName: string): string {
   const [tagNameMap, element] = getTagNameMap(namespace);
-  return `(${tagNameMap} extends { ${toStringLiteral(tagName)}: infer Type } ? Type : ${element})`;
+  return `(${tagNameMap} extends { '${tagName}': infer Type } ? Type : ${element})`;
 }
 
 /**

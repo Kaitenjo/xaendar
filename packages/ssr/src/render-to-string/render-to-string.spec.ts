@@ -25,6 +25,18 @@ const { _defineServerRender } = ssr;
 const renderToString: typeof ssr.renderToString = async (...args) => (await ssr.renderToString(...args)).replace(/<script>\(.*?<\/script>/s, '');
 
 /**
+ * The `<style>` of a tree holding the inline styles of its elements, one rule per block of declarations, by index.
+ */
+const serverStyle = (nonce: string, ...blocks: string[]) => `<style data-xd-style=""${nonce ? ` nonce="${nonce}"` : ''}>${blocks.map((block, index) => `:is([data-xd-style="${index}"],#a#b#c#d#e){${block}}`).join('')}</style>`;
+
+/**
+ * Declares a host attribute on a field of a class, as `@HostAttribute` does.
+ */
+function declareHostAttribute(name: string, field: string, metadata: DecoratorMetadataObject): void {
+  (HostAttribute(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: field, static: false, metadata, access: { get: (owner: Record<string, unknown>) => owner[field] } });
+}
+
+/**
  * The metadata the compiler reads of a component or of a directive a template imports: its selector and its inputs,
  * the name of their property by the name they are bound with.
  */
@@ -146,7 +158,7 @@ _defineServerRender(TeamElement, await compile([
   '<p @if (total > 1) { title="many" } @else { title="few" }>{ typeof window } { innerWidth }</p>',
   '<input #field value="{ field }" />',
   '<b *delay(allow="{ true }")>late</b><b *delay(allow="{ false }")>never</b>',
-  '<style>a > b {}</style>',
+  '<xmp>a > b {}</xmp>',
   '<lazy-element></lazy-element>'
 ].join(''), ['heading', 'users'], ['name'], [imported('component', 'user-badge', { label: 'label', admin: 'admin' }), imported('directive', 'delay', { allow: 'allow' })]));
 
@@ -174,7 +186,7 @@ describe('renderToString', () => {
       '<p title="many"><!---->undefined<!----> <!----></p>',
       '<input>',
       '<!--xd-s:1--><b>late</b><!--/xd-s--><!--xd-s:0--><!--/xd-s-->',
-      '<style>a > b </style>',
+      '<xmp>a > b </xmp>',
       '<lazy-element></lazy-element>',
       '</template></team-list>'
     ].join(''));
@@ -370,7 +382,113 @@ describe('renderToString', () => {
     customElements.define('merged-card', MergedElement);
     _defineServerRender(MergedElement, await compile('<p class="a" style="color: red" class.on="{ off }" @@wide @@narrow></p>', [], [], []));
 
-    expect(await renderToString(MergedElement)).toBe('<merged-card><template shadowrootmode="open"><p class="a wide on" style="color: red; width: 5px; gap: 2px;"></p></template></merged-card>');
+    expect(await renderToString(MergedElement)).toBe(`<merged-card><template shadowrootmode="open">${serverStyle('', 'color: red; width: 5px; gap: 2px;')}<p class="a wide on" data-xd-style="0"></p></template></merged-card>`);
+  });
+
+  it('checks a URL running code as the security of the project asks, on the elements written inline and by the runtime alike', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    /**
+     * A component binding a URL running code to the links it renders.
+     */
+    class LinkElement extends CustomElement {
+      public link = 'javascript:alert(1)';
+      public on = true;
+    }
+    customElements.define('unsafe-links', LinkElement);
+    _defineServerRender(LinkElement, await compileWith('<a href="{ link }">a</a><a class.on="{ on }" href="{ link }" title="{ link }">b</a><a href="{ \'/safe\' }">c</a>', { signals: [] }));
+
+    // Left out, as the default of the project asks: neither the title nor the safe URL are checked
+    expect(await renderToString(LinkElement)).toBe('<unsafe-links><template shadowrootmode="open"><a>a</a><a class="on" title="javascript:alert(1)">b</a><a href="/safe">c</a></template></unsafe-links>');
+    expect(warn).toHaveBeenCalledTimes(2);
+    vi.restoreAllMocks();
+  });
+
+  it('writes no declaration a style value bound to a key adds with a ;, as a browser rejects it', async () => {
+    /**
+     * A component binding a value holding a declaration to a style key.
+     */
+    class InjectedElement extends CustomElement {
+      public color = 'red; position: fixed';
+    }
+    customElements.define('injected-card', InjectedElement);
+    _defineServerRender(InjectedElement, await compile('<p style.color="{ color }" style.width="{ \'1px\' }" style.background="{ \'url(a;b)\' }"></p>', [], [], []));
+
+    expect(await renderToString(InjectedElement)).toBe(`<injected-card><template shadowrootmode="open">${serverStyle('', 'width: 1px; background: url(a;b);')}<p data-xd-style="0"></p></template></injected-card>`);
+  });
+
+  describe('the inline styles', () => {
+    it('moves the inline style of the elements into a rule of the <style> of their shadow root, after the stylesheet, both with the nonce, the elements with the same declarations sharing a rule', async () => {
+      /**
+       * A component styling the elements of its template.
+       */
+      class StyledElement extends CustomElement { }
+      customElements.define('styled-card', StyledElement);
+      _defineServerRender(StyledElement, await compile('<p style="color: red">a</p><i style="color: red"></i><b style.width.px="{ 4 }"></b><span></span>'), ':host { display: block }');
+
+      const html = await ssr.renderToString(StyledElement, undefined, { nonce: 'n"1' });
+
+      expect(html.replace(/<script nonce="n&quot;1">\(.*?<\/script>/s, '')).toBe(`<styled-card><template shadowrootmode="open"><style nonce="n&quot;1">:host { display: block }</style>${serverStyle('n&quot;1', 'color: red;', 'width: 4px;')}<p data-xd-style="0">a</p><i data-xd-style="0"></i><b data-xd-style="1"></b><span></span></template></styled-card>`);
+    });
+
+    it('moves the inline style of the root of a page into a <style> right before it, and the one of a component into the <style> of the shadow root rendering it', async () => {
+      const childMetadata: DecoratorMetadataObject = {};
+      declareHostAttribute('style.color', 'color', childMetadata);
+
+      /**
+       * A component writing a style property on its element.
+       */
+      class HostedChild extends CustomElement {
+        public color = 'red';
+      }
+      Object.defineProperty(HostedChild, Symbol.for('Symbol.metadata'), { value: childMetadata });
+      customElements.define('hosted-child', HostedChild);
+      _defineServerRender(HostedChild, await compile('<i style="gap: 1px"></i>'));
+      const rootMetadata: DecoratorMetadataObject = {};
+      declareHostAttribute('style.display', 'display', rootMetadata);
+
+      /**
+       * A root writing a style property on its element, and binding one on the element of its child.
+       */
+      class HostedRoot extends CustomElement {
+        public display = 'grid';
+      }
+      Object.defineProperty(HostedRoot, Symbol.for('Symbol.metadata'), { value: rootMetadata });
+      customElements.define('hosted-root', HostedRoot);
+      _defineServerRender(HostedRoot, await compile('<hosted-child style.width.px="{ 2 }"></hosted-child>'));
+
+      expect(await renderToString(HostedRoot)).toBe([
+        serverStyle('', 'display: grid;'),
+        '<hosted-root data-xd-style="0"><template shadowrootmode="open">',
+        serverStyle('', 'width: 2px; color: red;'),
+        `<hosted-child data-xd-style="0"><template shadowrootmode="open">${serverStyle('', 'gap: 1px;')}<i data-xd-style="0"></i></template></hosted-child>`,
+        '</template></hosted-root>'
+      ].join(''));
+    });
+
+    it('moves the inline styles of the parts rendered later into the <style> of their shadow root, once every part is rendered', async () => {
+      /**
+       * A component styling elements structural directives render later.
+       */
+      class DelayedStylesElement extends CustomElement { }
+      customElements.define('delayed-styles', DelayedStylesElement);
+      _defineServerRender(DelayedStylesElement, await compile('<p *delay(allow="{ true }")><b *delay(allow="{ true }") style="color: red"></b></p><i style="gap: 1px"></i>', [], [], [imported('directive', 'delay', { allow: 'allow' })]));
+
+      expect(await renderToString(DelayedStylesElement)).toBe(`<delayed-styles><template shadowrootmode="open">${serverStyle('', 'gap: 1px;', 'color: red;')}<!--xd-s:1--><p><!--xd-s:1--><b data-xd-style="1"></b></p><!--/xd-s--><i data-xd-style="0"></i></template></delayed-styles>`);
+    });
+
+    it('leaves out of the rule a declaration whose value would end it, writing no attribute for an element left without declarations', async () => {
+      /**
+       * A component binding a value ending the rule of its element to a style key.
+       */
+      class BreakingElement extends CustomElement {
+        public color = 'red} p {color: blue';
+      }
+      customElements.define('breaking-card', BreakingElement);
+      _defineServerRender(BreakingElement, await compile('<p style.width="{ \'1px\' }" style.color="{ color }"></p><i style.color="{ color }"></i>'));
+
+      expect(await renderToString(BreakingElement)).toBe(`<breaking-card><template shadowrootmode="open">${serverStyle('', 'width: 1px;')}<p data-xd-style="0"></p><i></i></template></breaking-card>`);
+    });
   });
 
   describe('the interactive components a static template renders', () => {
@@ -582,5 +700,63 @@ describe('renderToString', () => {
     customElements.define('client-only-root', ClientOnlyElement);
 
     await expect(renderToString(ClientOnlyElement)).rejects.toThrow('ClientOnlyElement has no template compiled for the server');
+  });
+
+  describe('customized built-in elements', () => {
+    const copyMetadata: DecoratorMetadataObject = { selector: 'copy-button', extends: 'button', hostListeners: [{ name: 'click' }] };
+    (HostAttribute('aria-label') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'label', static: false, metadata: copyMetadata, access: { get: (owner: { label: () => string }) => owner.label } });
+
+    /**
+     * A customized built-in element without a template, on a tag accepting no shadow root.
+     */
+    class CopyButtonElement extends core.customElementOf(HTMLButtonElement) {
+      public declare label: () => string;
+    }
+    declareInput(CopyButtonElement, 'label', 'Copy', copyMetadata);
+    Object.defineProperty(CopyButtonElement, Symbol.for('Symbol.metadata'), { value: copyMetadata });
+    customElements.define('copy-button', CopyButtonElement, { extends: 'button' });
+
+    /**
+     * A customized built-in element with a template, on a tag accepting a shadow root.
+     */
+    class PanelElement extends core.customElementOf(HTMLDivElement) { }
+    Object.defineProperty(PanelElement, Symbol.for('Symbol.metadata'), { value: { selector: 'x-panel', extends: 'div' } });
+    customElements.define('x-panel', PanelElement, { extends: 'div' });
+
+    beforeAll(async () => {
+      _defineServerRender(PanelElement, await compile('<h2>Panel</h2><slot></slot>'));
+    });
+
+    it('writes the ones a template renders with their tag and their is first, the shadow root of the one with a template, the attribute waiting for the hydration of the other', async () => {
+      class ToolbarElement extends CustomElement { }
+      customElements.define('built-in-toolbar', ToolbarElement);
+      _defineServerRender(ToolbarElement, await compile('<div is="x-panel" class="wide"><button is="copy-button" label="Copy the code" type="button">Copy</button></div>', [], [], [imported('component', 'x-panel', {}), imported('component', 'copy-button', { label: 'label' })]));
+
+      const html = await renderToString(ToolbarElement);
+
+      expect(html).toContain('<div is="x-panel" class="wide"><template shadowrootmode="open"><h2>Panel</h2><slot></slot></template>');
+      expect(html).toContain('<button is="copy-button" type="button" data-xd-client="" aria-label="Copy the code">Copy</button></div>');
+    });
+
+    it('renders the root of a page with the tag it extends and its is, without a shadow root when it has no template', async () => {
+      expect(await renderToString(CopyButtonElement, { label: 'Paste' })).toBe('<button is="copy-button" data-xd-client="" aria-label="Paste" data-xd-inputs="{&quot;label&quot;:&quot;Paste&quot;}"></button>');
+      expect(await renderToString(PanelElement)).toBe('<div is="x-panel"><template shadowrootmode="open"><h2>Panel</h2><slot></slot></template></div>');
+    });
+
+    it('writes no end tag for the root extending a void element, and its is on the root rendering only in the browser', async () => {
+      class MaskedInputElement extends core.customElementOf(HTMLInputElement) { }
+      Object.defineProperty(MaskedInputElement, Symbol.for('Symbol.metadata'), { value: { selector: 'masked-input', extends: 'input' } });
+      customElements.define('masked-input', MaskedInputElement, { extends: 'input' });
+      class BrowserButtonElement extends core.customElementOf(HTMLButtonElement) { }
+      Object.defineProperty(BrowserButtonElement, Symbol.for('Symbol.metadata'), { value: { selector: 'browser-button', extends: 'button', render: false } });
+      customElements.define('browser-button', BrowserButtonElement, { extends: 'button' });
+
+      expect(await renderToString(MaskedInputElement)).toBe('<input is="masked-input" data-xd-client="">');
+      expect(await renderToString(BrowserButtonElement)).toBe('<button is="browser-button" data-xd-client=""></button>');
+    });
+
+    it('records the events a customized built-in element without a template listens to on its element', async () => {
+      expect(await ssr.renderToString(CopyButtonElement)).toMatch(/<\/button><script>\(.*"click".*<\/script>$/s);
+    });
   });
 });

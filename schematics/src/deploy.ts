@@ -54,8 +54,10 @@ function schematic(label: string, script: string, args: string[] = []): DeploySt
 
 /**
  * Lists the steps of the release, in the order they run: every check comes before the first change (the version), so
- * a release failing a check changes nothing; the commit of the release comes after the install updating the lockfile,
- * and the tag after the commit, so it names the commit holding its version.
+ * a release failing a check changes nothing; the commit of the release comes after the install updating the lockfile
+ * and after the packages are built and packed, so a build failing leaves no commit, and the tag after the commit, so it
+ * names the commit holding its version. The packages and the extension are published last: a version on npm always has
+ * its commit and its tag, and a publication failing is finished with `none`, which skips the commit and the tag made.
  *
  * With `none` the version is not updated and the published versions are not installed again: the release finishes one
  * stopped halfway, whose commit is already made, and the later steps skip what is already done.
@@ -71,24 +73,22 @@ function listSteps(bump: string): DeployStep[] {
     { label: 'Run the tests', command: 'node', args: [resolve(REPOSITORY_ROOT, 'node_modules/vitest/vitest.mjs'), 'run'], cwd: REPOSITORY_ROOT },
     schematic('Type-check the packages', 'typecheck-projects')
   ];
-  const publication: DeployStep[] = [
+  const release: DeployStep[] = [
     schematic('Build the packages', 'build-projects'),
     schematic('Pack the packages', 'pack-projects'),
+    schematic('Commit and push the release', 'commit-release'),
+    schematic('Tag the release', 'tag-release'),
     schematic('Publish the packages', 'publish'),
     schematic('Publish the VS Code extension', 'publish-extension')
   ];
-  const tagging: DeployStep[] = [
-    schematic('Commit and push the release', 'commit-release'),
-    schematic('Tag the release', 'tag-release')
-  ];
 
   return bump === 'none'
-    ? checks.concat(publication, tagging)
+    ? checks.concat(release)
     : checks.concat(
       schematic('Update the version', 'update-version', [`--bump=${bump}`]),
-      publication,
-      { label: 'Install the published versions', command: 'npm', args: ['i'], cwd: REPOSITORY_ROOT },
-      tagging
+      // The root depends on no package of the repository: the install only writes the new version into the lockfile
+      { label: 'Update the lockfile', command: 'npm', args: ['i'], cwd: REPOSITORY_ROOT },
+      release
     );
 }
 

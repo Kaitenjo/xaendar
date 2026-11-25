@@ -1,7 +1,7 @@
 import type { Constructor } from '@xaendar/types';
 import { describe, expect, it } from 'vitest';
-import { INTERNAL_SELECTOR } from '../../costants';
-import { getSelector } from './get-selector.util';
+import { INTERNAL_EXTENDS, INTERNAL_SELECTOR } from '../../costants';
+import { getExtendedTagName, getSelector } from './get-selector.util';
 
 function withMetadata(metadata: unknown): Constructor<HTMLElement> {
   const klass = class Decorated { } as unknown as Constructor<HTMLElement>;
@@ -47,5 +47,19 @@ describe('getSelector', () => {
     Object.defineProperty(Child, Symbol.for('Symbol.metadata'), { value: Object.assign(Object.create(parentMetadata), { [INTERNAL_SELECTOR]: 'x-child' }) });
 
     expect(getSelector(Child)).toBe('x-child');
+  });
+});
+
+describe('getExtendedTagName', () => {
+  it('returns the tag a customized built-in element extends, stored in the metadata of the class', () => {
+    expect(getExtendedTagName(withMetadata({ [INTERNAL_SELECTOR]: 'x-copy', [INTERNAL_EXTENDS]: 'button' }))).toBe('button');
+  });
+
+  it('returns undefined for an autonomous custom element', () => {
+    expect(getExtendedTagName(withMetadata({ [INTERNAL_SELECTOR]: 'x-card' }))).toBeUndefined();
+  });
+
+  it('throws when the class is not decorated with @WebComponent', () => {
+    expect(() => getExtendedTagName(withMetadata({ [INTERNAL_EXTENDS]: 'button' }))).toThrow('Decorated does not seem to be decorated with @WebComponent');
   });
 });

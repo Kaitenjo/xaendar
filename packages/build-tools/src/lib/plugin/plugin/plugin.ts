@@ -100,6 +100,7 @@ export function xaendarPlugin(options: XaendarPluginOptions = {}): Plugin {
     projectFileNames: tsConfig.fileNames,
     customElements: options.customElements ?? [],
     strictEvents: options.strictEvents ?? true,
+    security: options.security ?? {},
     minifyStyles: false,
     isBuild: false,
     root: process.cwd(),

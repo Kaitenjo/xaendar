@@ -15,6 +15,11 @@ export type BindingContext = {
    */
   readonly tagName: string;
   /**
+   * The `is` attribute written before the binding, the selector of the customized built-in element the element is
+   * (`copy-button` of `<button is="copy-button" …`), `undefined` when the tag has none up to the binding.
+   */
+  readonly is: string | undefined;
+  /**
    * The selector of the directive or structural directive whose parentheses hold the binding, `undefined` for a
    * binding of the element itself.
    */

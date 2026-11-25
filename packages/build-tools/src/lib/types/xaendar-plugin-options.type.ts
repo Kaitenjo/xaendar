@@ -18,6 +18,14 @@ export type XaendarPluginOptions = {
    */
   readonly strictEvents?: CompileOptions['strictEvents'];
   /**
+   * How the values of the application that could run code are checked (see `SecurityOptions` of `@xaendar/compiler`):
+   * the URLs bound to the attributes loading or opening them (`urls`, `'remove'` by default), the origin of the resources
+   * loaded into the page (`resourceUrls`, `'remove'` by default, and `trustedOrigins`), checked by the runtime, and the
+   * bindings of the attributes the browser runs (`rejectUnsafeBindings`, `true` by default). The project alone sets
+   * them, for every component it renders: the libraries declare none.
+   */
+  readonly security?: CompileOptions['security'];
+  /**
    * Renders the pages on the server. The modules evaluated on the server, the ones of the `ssr` environment of Vite,
    * register templates compiled into HTML, with `@xaendar/ssr`, and the dev server renders each page it serves with the
    * entry. Without it, every environment gets the templates of the browser.

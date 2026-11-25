@@ -33,6 +33,16 @@ export type RenderElementAttribute = BindingSite & {
    */
   readonly shared?: true;
   /**
+   * Set on an attribute holding URLs bound to an expression: the runtime checks its value as the `security` of the
+   * project asks (see `_checkUrl`), the compiler carrying no option of its own. Left out for the others.
+   */
+  readonly url?: true;
+  /**
+   * Set, with `url`, on an attribute loading a resource into the page (the `src` of an `<iframe>`…) bound to an
+   * expression: the runtime checks the origin of the resource too (see `_checkUrl`). Left out for the others.
+   */
+  readonly resource?: true;
+  /**
    * Writes the value on the target: `_setProperty`, `_setExpressionProperty` or `_setReactiveProperty` for an attribute
    * or a property, `_setAttribute`, `_setExpressionAttribute` or `_setReactiveAttribute` for an attribute written with
    * `attr.`, never an input whatever its name, `_setInput`, `_setExpressionInput` or `_setReactiveInput` for an input,

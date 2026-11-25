@@ -39,6 +39,17 @@ describe('ServerStyleDeclaration', () => {
     expect(owner.attributes.get('style')).toBe('color: blue; width: 10px; --accent: #fff;');
   });
 
+  it('reads and writes the text of the declarations as the style attribute, as it is', () => {
+    const owner = ownerWith();
+    const style = new ServerStyleDeclaration(owner);
+
+    expect(style.cssText).toBe('');
+    style.cssText = 'color: red; width: 1px';
+
+    expect(owner.attributes.get('style')).toBe('color: red; width: 1px');
+    expect(style.cssText).toBe('color: red; width: 1px');
+  });
+
   it('writes the attribute of an element without one', () => {
     const owner = ownerWith();
     new ServerStyleDeclaration(owner).setProperty('width', '50%');
@@ -68,6 +79,20 @@ describe('ServerStyleDeclaration', () => {
     style.setProperty('top', '1px', 'important');
     expect(owner.attributes.get('style')).toBe('color: red !important; top: 1px !important;');
     expect(style.removeProperty('top')).toBe('1px');
+  });
+
+  it('ignores a value a ; would end, adding no declaration, as a browser rejects it', () => {
+    const owner = ownerWith('color: blue;');
+    const style = new ServerStyleDeclaration(owner);
+
+    style.setProperty('color', 'red; position: fixed');
+    style.setProperty('width', '1px;');
+    style.setProperty('height', ' ');
+    style.setProperty('--x', 'a(');
+    style.setProperty('content', '"a');
+    style.setProperty('background', 'url("a;b")');
+
+    expect(owner.attributes.get('style')).toBe('color: blue; background: url("a;b");');
   });
 
   it('keeps a ; inside parentheses or quotes in its value', () => {

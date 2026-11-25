@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { readCustomElements, readSsr, readStrictEvents } from './xaendar-config.utils';
+import { readCustomElements, readSecurity, readSsr, readStrictEvents } from './xaendar-config.utils';
 
 let root: string;
 let counter = 0;
@@ -94,6 +94,35 @@ describe('readCustomElements()', () => {
 
     expect(readCustomElements(withoutField)).toBeUndefined();
     expect(readCustomElements(malformed)).toBeUndefined();
+  });
+});
+
+describe('readSecurity()', () => {
+  it('reads the options of the nearest xaendar.json, undefined without a readable file or the field', () => {
+    const malformed = freshDir();
+    writeFileSync(join(malformed, 'xaendar.json'), '{');
+    const loose = freshDir();
+    writeFileSync(join(loose, 'xaendar.json'), JSON.stringify({ security: { rejectUnsafeBindings: false } }));
+    const withoutField = freshDir();
+    writeFileSync(join(withoutField, 'xaendar.json'), JSON.stringify({}));
+
+    expect(readSecurity(freshDir())).toBeUndefined();
+    expect(readSecurity(malformed)).toBeUndefined();
+    expect(readSecurity(withoutField)).toBeUndefined();
+    expect(readSecurity(loose)).toEqual({ rejectUnsafeBindings: false });
+  });
+
+  it('reads none in a library, whose templates are checked with the defaults whatever the project allows', () => {
+    const dir = freshDir();
+    writeFileSync(join(dir, 'xaendar.json'), JSON.stringify({
+      security: { urls: 'warn', rejectUnsafeBindings: false },
+      libs: { ui: { root: 'libraries/ui' } }
+    }));
+    mkdirSync(join(dir, 'libraries', 'ui'), { recursive: true });
+    mkdirSync(join(dir, 'src'), { recursive: true });
+
+    expect(readSecurity(join(dir, 'libraries', 'ui'))).toBeUndefined();
+    expect(readSecurity(join(dir, 'src'))).toEqual({ urls: 'warn', rejectUnsafeBindings: false });
   });
 });
 

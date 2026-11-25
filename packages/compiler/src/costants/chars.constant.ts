@@ -183,6 +183,10 @@ export const RIGHT_BRACE = 125;
  */
 export const TILDE = 126;
 /**
+ * `DEL`, the last control character of ASCII
+ */
+export const DELETE = 127;
+/**
  * `NBSP`
  */
 export const NBSP = 160;

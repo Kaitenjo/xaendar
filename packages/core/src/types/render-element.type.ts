@@ -25,6 +25,11 @@ export type RenderElement = BlockPosition & {
    */
   readonly tagName: string;
   /**
+   * The selector of the customized built-in element the element is (`<button is="copy-button">`), which creates it:
+   * left out for any other element.
+   */
+  readonly is?: string;
+  /**
    * The namespace the element is created in, the compiler knowing it from the place of the element in the template:
    * `1` for SVG, `2` for MathML, left out for HTML.
    */

@@ -10,7 +10,8 @@ function policy(elements: string[], attributes: string[] = []): HtmlSanitizerPol
   return {
     elements: createNamePolicy(new Set(elements), null, undefined, undefined),
     attributes: createAttributePolicy(new Set(attributes), null, undefined, undefined),
-    urlSchemes: new Set(['http', 'https'])
+    urlSchemes: new Set(['http', 'https']),
+    trustedOrigins: null
   };
 }
 

@@ -1,3 +1,5 @@
+import { _SECURITY } from '@xaendar/core';
+import { describeUnsafeSanitizerOptions } from '@xaendar/internals';
 import { HtmlSanitization } from '../../models/html-sanitization/html-sanitization.model';
 import type { HtmlSanitizeResult } from '../../types/html-sanitize-result.type';
 import type { HtmlSanitizerOptions } from '../../types/html-sanitizer-options.type';
@@ -44,18 +46,36 @@ const DEFAULT_ATTRIBUTE_PREFIXES: readonly string[] = ['aria-'];
 const DEFAULT_URL_SCHEMES: ReadonlySet<string> = new Set(['ftp', 'http', 'https', 'mailto', 'sms', 'tel']);
 
 /**
+ * The origins the resources loaded into the page can come from, as the security of the project asks (see
+ * `HtmlSanitizerPolicy.trustedOrigins`): the same check as the URLs the templates bind to the attributes loading them.
+ */
+const TRUSTED_ORIGINS: readonly string[] | null = _SECURITY.resourceUrls === 'off' ? null : _SECURITY.trustedOrigins;
+
+/**
  * What the sanitizer keeps without options.
  */
 const DEFAULT_POLICY: HtmlSanitizerPolicy = {
   elements: createNamePolicy(DEFAULT_ELEMENTS, null, undefined, undefined),
   attributes: createAttributePolicy(DEFAULT_ATTRIBUTES, DEFAULT_ATTRIBUTE_PREFIXES, undefined, undefined),
-  urlSchemes: DEFAULT_URL_SCHEMES
+  urlSchemes: DEFAULT_URL_SCHEMES,
+  trustedOrigins: TRUSTED_ORIGINS
 };
 
 /**
  * What the sanitizer keeps with each object of options, read from it the first time it is used.
  */
 const policies = new WeakMap<HtmlSanitizerOptions, HtmlSanitizerPolicy>();
+
+/**
+ * The options of the sanitizer for the whole project, the `html` of the security of `xaendar.json`, which the build
+ * checks: `undefined` when it sets none.
+ */
+const PROJECT_OPTIONS: HtmlSanitizerOptions | undefined = _SECURITY.html;
+
+/**
+ * What the sanitizer keeps where a use passes no options: the options of the project, or the default ones.
+ */
+const PROJECT_POLICY: HtmlSanitizerPolicy = PROJECT_OPTIONS ? createPolicy(PROJECT_OPTIONS) : DEFAULT_POLICY;
 
 /**
  * Sanitizes an HTML, as `@@innerHtml` does before rendering it: keeps only the elements and the attributes allowed,
@@ -71,7 +91,12 @@ const policies = new WeakMap<HtmlSanitizerOptions, HtmlSanitizerPolicy>();
  * `data:` URL of an image, an audio or a video in base64: otherwise its attribute is removed, where Angular prefixes it
  * with `unsafe:`. The URLs of a `srcset`, which Angular does not check, are checked one by one.
  *
- * The options are read once for each object: create them once (a constant, a field), not at each call.
+ * The options are read once for each object: create them once (a constant, a field), not at each call. They may not keep
+ * what always runs code: a `script`, a `base` or a `meta`, an event handler attribute (`on*`), a `srcdoc`, a
+ * `javascript:` or `vbscript:` URL; render such an HTML with `trustHtml`, or with a sanitizer of the application.
+ *
+ * The `html` of the `security` of `xaendar.json`, options of the same shape, applies to every HTML the project
+ * sanitizes: the lists of the options passed are added to its lists, their `urlSchemes` replace its own.
  *
  * @example
  * ```ts
@@ -84,6 +109,7 @@ const policies = new WeakMap<HtmlSanitizerOptions, HtmlSanitizerPolicy>();
  * @param html - The HTML to sanitize.
  * @param options - What to keep besides, or in place of, what is kept by default.
  * @returns The HTML sanitized.
+ * @throws If the options keep what always runs code.
  */
 export function sanitizeHtml(html: string, options?: HtmlSanitizerOptions): string {
   return sanitizeHtmlWithReport(html, options).html;
@@ -95,6 +121,7 @@ export function sanitizeHtml(html: string, options?: HtmlSanitizerOptions): stri
  * @param html - The HTML to sanitize.
  * @param options - What to keep besides, or in place of, what is kept by default.
  * @returns The HTML sanitized, and what was removed from it.
+ * @throws If the options keep what always runs code.
  */
 export function sanitizeHtmlWithReport(html: string, options?: HtmlSanitizerOptions): HtmlSanitizeResult {
   return new HtmlSanitization(readPolicy(options)).run(html);
@@ -105,21 +132,81 @@ export function sanitizeHtmlWithReport(html: string, options?: HtmlSanitizerOpti
  *
  * @param options - The options, `undefined` for the default ones.
  * @returns What the sanitizer keeps.
+ * @throws If the options keep what always runs code (see {@link assertSafeOptions}).
  */
 function readPolicy(options: HtmlSanitizerOptions | undefined): HtmlSanitizerPolicy {
   if (!options) {
-    return DEFAULT_POLICY;
+    return PROJECT_POLICY;
   }
 
   let policy = policies.get(options);
   if (!policy) {
-    policy = {
-      elements: createNamePolicy(DEFAULT_ELEMENTS, null, options.allowElements, options.removeElements),
-      attributes: createAttributePolicy(DEFAULT_ATTRIBUTES, DEFAULT_ATTRIBUTE_PREFIXES, options.allowAttributes, options.removeAttributes),
-      urlSchemes: options.urlSchemes ? new Set(options.urlSchemes.map(toAsciiLowerCase)) : DEFAULT_URL_SCHEMES
-    };
+    assertSafeOptions(options);
+    policy = createPolicy(PROJECT_OPTIONS ? joinOptions(PROJECT_OPTIONS, options) : options);
     policies.set(options, policy);
   }
 
   return policy;
+}
+
+/**
+ * Ensures the options keep nothing that always runs code, whatever the HTML (see `describeUnsafeSanitizerOptions` of
+ * `@xaendar/internals`, which the build applies to the `html` of the security of `xaendar.json` too).
+ *
+ * @param options - The options.
+ * @throws If the options keep what always runs code.
+ */
+function assertSafeOptions(options: HtmlSanitizerOptions): void {
+  const unsafe = describeUnsafeSanitizerOptions(options);
+  if (unsafe !== undefined) {
+    throw new Error(`${unsafe}: render a trusted HTML with trustHtml(), or with a sanitizer of the application, instead`);
+  }
+}
+
+/**
+ * Creates what the sanitizer keeps with some options.
+ *
+ * @param options - The options, safe (see {@link assertSafeOptions}).
+ * @returns What the sanitizer keeps.
+ */
+function createPolicy(options: HtmlSanitizerOptions): HtmlSanitizerPolicy {
+  return {
+    elements: createNamePolicy(DEFAULT_ELEMENTS, null, options.allowElements, options.removeElements),
+    attributes: createAttributePolicy(DEFAULT_ATTRIBUTES, DEFAULT_ATTRIBUTE_PREFIXES, options.allowAttributes, options.removeAttributes),
+    urlSchemes: options.urlSchemes ? new Set(options.urlSchemes.map(toAsciiLowerCase)) : DEFAULT_URL_SCHEMES,
+    trustedOrigins: TRUSTED_ORIGINS
+  };
+}
+
+/**
+ * Joins the options of the project with the ones of a use: the lists of the use are added to the ones of the project,
+ * its schemes replace the project's.
+ *
+ * @param project - The options of the project.
+ * @param options - The options of the use.
+ * @returns The options the use sanitizes with.
+ */
+function joinOptions(project: HtmlSanitizerOptions, options: HtmlSanitizerOptions): HtmlSanitizerOptions {
+  return {
+    allowElements: joinLists(project.allowElements, options.allowElements),
+    allowAttributes: joinLists(project.allowAttributes, options.allowAttributes),
+    removeElements: joinLists(project.removeElements, options.removeElements),
+    removeAttributes: joinLists(project.removeAttributes, options.removeAttributes),
+    urlSchemes: options.urlSchemes ?? project.urlSchemes
+  };
+}
+
+/**
+ * Joins two lists of names, either of them possibly missing.
+ *
+ * @param first - The first list.
+ * @param second - The second list.
+ * @returns Both lists in one, one of them as it is when the other is missing or empty.
+ */
+function joinLists(first: readonly string[] | undefined, second: readonly string[] | undefined): readonly string[] | undefined {
+  if (!first?.length) {
+    return second;
+  }
+
+  return second?.length ? first.concat(second) : first;
 }

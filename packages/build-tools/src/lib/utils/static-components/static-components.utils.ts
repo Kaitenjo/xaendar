@@ -12,6 +12,12 @@ import { resolvePosixPath } from '../path/path.utils';
 import { isSerializableInput } from '../serializable-input/serializable-input.utils';
 
 /**
+ * What a customized built-in element without a template needs from the browser for its template, which it does not
+ * have: nothing, rendering no component.
+ */
+const NO_TEMPLATE: TemplateUsage = Object.freeze({ logic: undefined, components: Object.freeze([]) });
+
+/**
  * Matches the extension of a TypeScript module.
  */
 const TS_EXTENSION = /\.[cm]?tsx?$/;
@@ -93,8 +99,9 @@ async function readComponents(file: string, importedByCode: boolean, state: Xaen
   if (metadatas?.size) {
     const moduleLogic = importedByCode ? 'its module is imported by code' : findModuleLogic(sourceFile, compilerOptions);
     for (const metadata of metadatas.values()) {
-      const templatePath = resolvePosixPath(dirname(file), metadata.templateUrl);
-      const { logic, components } = await readTemplate(templatePath, metadata, sourceFile, state);
+      const templatePath = metadata.templateUrl && resolvePosixPath(dirname(file), metadata.templateUrl);
+      // A customized built-in element without a template renders nothing: its class is all it may need from the browser
+      const { logic, components } = templatePath ? await readTemplate(templatePath, metadata, sourceFile, state) : NO_TEMPLATE;
       nodes.set(metadata.selector, {
         metadata,
         file,
@@ -161,7 +168,7 @@ function propagate(nodes: ReadonlyMap<string, ComponentNode>, getProgram: () => 
 
   const markPeers = (selector: string, { logic, file, templatePath }: ComponentNode): void => {
     if (logic) {
-      const group = peers.get(file)!.concat(peers.get(templatePath)!);
+      const group = templatePath ? peers.get(file)!.concat(peers.get(templatePath)!) : peers.get(file)!;
       for (let i = 0; i < group.length; i++) {
         mark(group[i], `shares its module or its template with <${selector}>`);
       }
@@ -205,7 +212,9 @@ function groupPeers(nodes: ReadonlyMap<string, ComponentNode>): Map<string, Comp
   const peers = new Map<string, ComponentNode[]>();
   for (const node of nodes.values()) {
     peers.getOrInsertComputed(node.file, () => new Array<ComponentNode>()).push(node);
-    peers.getOrInsertComputed(node.templatePath, () => new Array<ComponentNode>()).push(node);
+    if (node.templatePath) {
+      peers.getOrInsertComputed(node.templatePath, () => new Array<ComponentNode>()).push(node);
+    }
   }
 
   return peers;
@@ -239,7 +248,8 @@ function toStaticComponents(nodes: ReadonlyMap<string, ComponentNode>): StaticCo
       }
 
       if (child.logic) {
-        islands.getOrInsertComputed(node.templatePath, () => new Set()).add(component.selector);
+        // ! is a safe assertion: a component without a template renders no component
+        islands.getOrInsertComputed(node.templatePath!, () => new Set()).add(component.selector);
       }
     }
   }

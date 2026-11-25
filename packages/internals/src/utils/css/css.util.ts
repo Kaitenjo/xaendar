@@ -19,11 +19,6 @@ export const CSS_UNITS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * The priority a style declaration ends with, matched case-insensitively with the spaces before it.
- */
-const IMPORTANT_RE = /\s*!\s*important\s*$/i;
-
-/**
  * Converts the name of a style property to the one CSS uses: a property written in camelCase becomes kebab-case
  * (`fontSize` → `font-size`, `WebkitTransform` → `-webkit-transform`), a custom property (`--accent`) stays as written,
  * since its name is case-sensitive.
@@ -134,7 +129,9 @@ function addDeclaration(declarations: string[] | undefined, text: string, start:
   }
 
   const written = text.slice(start, colon).trim();
-  const value = text.slice(colon + 1, end).trim().replace(IMPORTANT_RE, ' !important');
+  const trimmed = text.slice(colon + 1, end).trim();
+  const important = findImportant(trimmed);
+  const value = important === -1 ? trimmed : `${trimmed.slice(0, important)} !important`;
   if (!written || !value || value === ' !important') {
     return declarations;
   }
@@ -160,7 +157,7 @@ function addDeclaration(declarations: string[] | undefined, text: string, start:
  * @returns The priority, empty when there is none.
  */
 export function stylePriority(value: string): string {
-  return IMPORTANT_RE.test(value) ? 'important' : '';
+  return findImportant(value) === -1 ? '' : 'important';
 }
 
 /**
@@ -170,5 +167,22 @@ export function stylePriority(value: string): string {
  * @returns The value without priority.
  */
 export function styleValue(value: string): string {
-  return value.replace(IMPORTANT_RE, '');
+  const important = findImportant(value);
+  return important === -1 ? value : value.slice(0, important);
+}
+
+/**
+ * Finds the priority a value of a style property ends with: `!important`, matched case-insensitively, with the
+ * whitespace around the `!` and after it.
+ *
+ * N.B. It scans the value from its last `!`, in linear time: the regular expression `/\s*!\s*important\s*$/i` it replaces
+ * tried the whitespace from every offset, quadratic in a long run of spaces, and a value bound to a style may come from a
+ * user (40,000 spaces took 1.7 s). Do not match it with an unanchored regular expression.
+ *
+ * @param value - The value.
+ * @returns The offset of the whitespace before the `!`, `-1` when the value does not end with the priority.
+ */
+function findImportant(value: string): number {
+  const bang = value.lastIndexOf('!');
+  return bang !== -1 && value.slice(bang + 1).trim().toLowerCase() === 'important' ? value.slice(0, bang).trimEnd().length : -1;
 }

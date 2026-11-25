@@ -5,7 +5,7 @@ import type { CustomElement } from '../../models/custom-element/custom-element';
 import { _getAppliedDirectives } from '../../utils/applied-directives/applied-directives.util';
 import { withoutLeaving } from '../../utils/context/context.util';
 import { _getElementRef } from '../../utils/element-refs/element-refs.util';
-import { getSelector } from '../../utils/get-selector/get-selector.util';
+import { getExtendedTagName, getSelector } from '../../utils/get-selector/get-selector.util';
 import type { QueryMatcher } from '../types/query-matcher.type';
 import type { QueryRead } from '../types/query-read.type';
 import type { QuerySignal } from '../types/query-signal.type';
@@ -19,7 +19,8 @@ import type { QueryTarget } from '../types/query-target.type';
  * @param read - What the query holds for each element found: the element itself (`'element'`), or the instances of a
  *   custom directive applied to it. By default the element, or the instances of the directive the target is.
  * @returns The matcher: the elements matching the selector itself, the ones matching the selector a component is
- *   registered with, or the ones a directive is applied to, mapped to what is read from them.
+ *   registered with (`button[is="copy-button"]` for a customized built-in element), or the ones a directive is applied
+ *   to, mapped to what is read from them.
  * @throws When the target is a class neither decorated with `@WebComponent` nor extending `CustomDirective`.
  */
 export function toMatcher(target: QueryTarget, read?: QueryRead): QueryMatcher {
@@ -35,7 +36,9 @@ export function toMatcher(target: QueryTarget, read?: QueryRead): QueryMatcher {
       : withRead({ selector: '*', description, pick: elements => elements.filter(element => _getAppliedDirectives(element, target) !== undefined) }, read);
   }
 
-  const selector = getSelector(target);
+  // A customized built-in element has the tag it extends, and its selector as `is`
+  const extended = getExtendedTagName(target);
+  const selector = extended ? `${extended}[is="${getSelector(target)}"]` : getSelector(target);
   return withRead({ selector, description: describe(selector, read) }, read);
 }
 

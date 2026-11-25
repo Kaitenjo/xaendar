@@ -1,5 +1,5 @@
 import type { ClassDecorator, Constructor, DecoratorMetadataContext } from '@xaendar/types';
-import { INTERNAL_HOST_DIRECTIVES, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_SELECTOR } from '../../costants';
+import { INTERNAL_EXTENDS, INTERNAL_HOST_DIRECTIVES, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_SELECTOR } from '../../costants';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { WebComponentOptions } from '../../types/web-component/web-component-options.type';
@@ -18,6 +18,11 @@ import { _resolveHostDirectives } from '../../utils/host-directives/host-directi
  * They are resolved when the class is registered, so a declaration that cannot be applied throws then, and each exposed
  * input gets an accessor on the prototype of the class, so that code outside the templates sets it as an input of the
  * component.
+ *
+ * With `extends`, the component is a customized built-in element: it is defined on the native element it extends, whose
+ * class its own extends through `customElementOf`, and templates write it with the tag of that element and its selector
+ * as `is` (`<button is="my-button">`). Safari does not support customized built-in elements: a page needing them there
+ * loads a polyfill first.
  *
  * @param options - Configuration object containing at least a `selector`
  *   (the custom element tag name) and a `templateUrl`.
@@ -38,12 +43,22 @@ import { _resolveHostDirectives } from '../../utils/host-directives/host-directi
  * })
  * class MyFieldComponent extends CustomElement {}
  * ```
+ *
+ * @example
+ * ```ts
+ * \@WebComponent({ selector: 'copy-button', extends: 'button' })
+ * class CopyButtonComponent extends customElementOf(HTMLButtonElement) {}
+ * ```
  */
 export function WebComponent<T extends CustomElement>(options: WebComponentOptions): ClassDecorator<T, object, WebComponentMetadata> {
   return function (klass: Constructor<T>, context: DecoratorMetadataContext<ClassDecoratorContext<Constructor<T>>, WebComponentMetadata>): void {
     const metadata = context.metadata;
     
     metadata[INTERNAL_SELECTOR] = options.selector;
+    if (options.extends) {
+      metadata[INTERNAL_EXTENDS] = options.extends;
+    }
+
     if (options.hostDirectives?.length) {
       metadata[INTERNAL_HOST_DIRECTIVES] = options.hostDirectives;
     }
@@ -63,7 +78,8 @@ export function WebComponent<T extends CustomElement>(options: WebComponentOptio
     */
     context.addInitializer(() => {
       _resolveHostDirectives(klass);
-      customElements.define(options.selector, klass);
+      // A customized built-in element is defined on the tag it extends, an autonomous one on its own
+      options.extends ? customElements.define(options.selector, klass, { extends: options.extends }) : customElements.define(options.selector, klass);
     });
   };
 }

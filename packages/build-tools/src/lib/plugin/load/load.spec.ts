@@ -58,6 +58,7 @@ function createState(files: Record<string, string>): XaendarPluginState {
     projectFileNames: [],
     customElements: [],
     strictEvents: true,
+    security: {},
     minifyStyles: false,
     isBuild: false,
     root: '/project',
@@ -128,9 +129,11 @@ describe('createLoadHook()', () => {
   it('compiles a template of a library of the workspace with the custom elements of the library', async () => {
     const library = { name: '@acme/ui', root: '/src', entry: '/src/public-api.ts', ssr: true, customElements: ['sl-*'] };
 
-    await load({ ...createState({ [TEMPLATE_PATH]: 'template source' }), customElements: ['other-*'], libraries: [library] }, createPluginContext(), TEMPLATE_MODULE_ID);
+    await load({ ...createState({ [TEMPLATE_PATH]: 'template source' }), customElements: ['other-*'], security: { urls: 'remove' }, libraries: [library] }, createPluginContext(), TEMPLATE_MODULE_ID);
 
+    // The code carries no security: the runtime applies the one of the project
     expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: ['sl-*'] }));
+    expect(vi.mocked(compile).mock.calls[0][1]).not.toHaveProperty('security');
   });
 
   it('renders on the server the components of a library not rendering there as the ones rendering only in the browser', async () => {

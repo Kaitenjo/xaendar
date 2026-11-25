@@ -1,5 +1,5 @@
 import type { NoArgsVoidFunction } from '@xaendar/types';
-import { _HYDRATE_ATTRIBUTE, _SSR_MARKERS, HYDRATE } from '../../costants';
+import { _HYDRATE_ATTRIBUTE, _SERVER_STYLE_ATTRIBUTE, _SSR_MARKERS, HYDRATE } from '../../costants';
 import type { _Context } from '../../types/context.type';
 import type { NodeBlock } from '../../types/node-block.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
@@ -8,6 +8,7 @@ import { setNodeStrategy, trackNode } from '../context/context.util';
 import { createNamespacedElement } from '../create-element/create-element.util';
 import { CREATE_NODES } from '../create-nodes/create-nodes.util';
 import { deferElementHydration, waitedForTrigger } from '../hydration-triggers/hydration-triggers.util';
+import { adoptServerStyles } from '../server-styles/server-styles.util';
 import { _encodeTrackKey } from '../track-key/track-key.util';
 
 /**
@@ -64,24 +65,26 @@ export class ClaimNodes implements NodeStrategy {
   ) { }
 
   /**
-   * Adopts the element at the position, or creates it when the node there is not one with the same tag name.
+   * Adopts the element at the position, or creates it when the node there is not one with the same tag name, and the
+   * same `is` attribute for a customized built-in element.
    *
    * @param _context - Unused: the element is adopted, or created in its namespace.
    * @param parentNode - The node the element is rendered into.
    * @param tagName - The tag name of the element.
    * @param namespace - The namespace an element created is created in, `undefined` for HTML.
+   * @param is - The selector of the customized built-in element the element is, `undefined` for any other element.
    * @returns The element.
    * @throws The error of the constructor of a custom element created, in the content of a `@try`.
    */
-  public element(_context: _Context, parentNode: Node, tagName: string, namespace?: RenderElementNamespace): Element {
+  public element(_context: _Context, parentNode: Node, tagName: string, namespace?: RenderElementNamespace, is?: string): Element {
     const node = this._next(parentNode);
-    if (node?.nodeType === Node.ELEMENT_NODE && (node as Element).localName === tagName) {
+    if (node?.nodeType === Node.ELEMENT_NODE && (node as Element).localName === tagName && (is === undefined || (node as Element).getAttribute('is') === is)) {
       this._positions.set(parentNode, node.nextSibling);
       return node as Element;
     }
 
-    this._warn(`${describe(node)} where the browser renders <${tagName}>, which it creates`);
-    const element = createNamespacedElement(tagName, namespace);
+    this._warn(`${describe(node)} where the browser renders <${is === undefined ? tagName : `${tagName} is="${is}"`}>, which it creates`);
+    const element = createNamespacedElement(tagName, namespace, is);
     this._created.add(element);
     return element;
   }
@@ -393,18 +396,25 @@ export class ClaimNodes implements NodeStrategy {
 }
 
 /**
- * Creates the strategy hydrating a component, adopting the content of its declarative shadow root. The `<style>` the
- * server wrote first, when the component has a stylesheet, is removed: the browser adopts the stylesheet instead. A
- * component that waited for a trigger, or adopted by a hydration that did, hydrates without warnings.
+ * Creates the strategy hydrating a component, adopting the content of its declarative shadow root. The `<style>` elements
+ * the server wrote first, which no template renders, are removed: the one of the stylesheet of the component, which the
+ * browser adopts instead, and the one holding the inline styles of the elements of the root, which their inline style
+ * takes first (see `adoptServerStyles`). A component that waited for a trigger, or adopted by a hydration that did,
+ * hydrates without warnings.
  *
  * @param root - The shadow root of the component.
- * @param styled - Whether the component has a stylesheet.
  * @returns The strategy.
  */
-export function claimShadowRoot(root: ShadowRoot, styled: boolean): ClaimNodes {
-  const style = root.firstChild;
-  if (styled && style?.nodeType === Node.ELEMENT_NODE && (style as Element).localName === 'style') {
-    root.removeChild(style);
+export function claimShadowRoot(root: ShadowRoot): ClaimNodes {
+  let node = root.firstChild;
+  while (node?.nodeType === Node.ELEMENT_NODE && (node as Element).localName === 'style') {
+    const next = node.nextSibling;
+    if ((node as Element).hasAttribute(_SERVER_STYLE_ATTRIBUTE)) {
+      adoptServerStyles(root, node as HTMLStyleElement);
+    }
+
+    root.removeChild(node);
+    node = next;
   }
 
   const { host } = root;

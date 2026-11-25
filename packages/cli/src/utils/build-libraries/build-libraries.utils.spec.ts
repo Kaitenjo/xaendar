@@ -85,6 +85,14 @@ describe('buildLibraries()', () => {
     expect(vi.mocked(buildLibrary).mock.calls.map(([options]) => options.strictEvents)).toEqual([false, true]);
   });
 
+  it('builds a library without the security of the workspace, which the project using it sets', async () => {
+    const project = writeWorkspace({ '@acme/ui': [{ root: 'libraries/ui' }, {}] });
+
+    await buildLibraries({ ...project, config: { ...project.config, security: { urls: 'remove', rejectUnsafeBindings: false } } });
+
+    expect(vi.mocked(buildLibrary).mock.calls[0][0]).not.toHaveProperty('security');
+  });
+
   it('builds only the library named, by the name of its folder', async () => {
     const project = writeWorkspace({
       '@acme/ui': [{ root: 'libraries/ui' }, {}],

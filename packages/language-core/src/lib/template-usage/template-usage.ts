@@ -1,4 +1,4 @@
-import { type ASTNode, ASTNodeType, type AttributeNode, type ComponentMembers, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingNode, type ElementNode, forEachExpressionChild, getForVariables, isBrowserOnlyGlobal, type SymbolImport, walkTemplate } from '@xaendar/compiler';
+import { type ASTNode, ASTNodeType, type AttributeNode, getElementSelector, type ComponentMembers, type ComponentMetadata, type ComponentOrDirectiveMetadata, type ConditionalBindingNode, type ElementNode, forEachExpressionChild, getForVariables, isBrowserOnlyGlobal, type SymbolImport, walkTemplate } from '@xaendar/compiler';
 import { type Expression, type Identifier, isCallExpression, isIdentifier, isPropertyAccessExpression, isPropertyAssignment, type Node } from 'typescript';
 import type { ComponentUsage } from '../types/component-usage.type';
 import type { TemplateUsage } from '../types/template-usage.type';
@@ -74,8 +74,9 @@ function findTemplateLogic(ast: readonly ASTNode[], metadatas: readonly Componen
       }
     },
     element: (node, component) => {
-      if (node.tagName.includes('-') && !component) {
-        logic ??= `renders <${node.tagName}>, which is not a component of the project`;
+      const selector = getElementSelector(node);
+      if (selector.includes('-') && !component) {
+        logic ??= `renders <${node.is === undefined ? selector : `${node.tagName} is="${selector}"`}>, which is not a component of the project`;
       }
     },
     ref: ({ name }) => logic ??= `declares the element ref #${name}`,
@@ -126,11 +127,13 @@ function collectComponents(nodes: readonly ASTNode[], position: Pick<ComponentUs
     const node = nodes[i];
     switch (node.type) {
       case ASTNodeType.Element: {
-        const component = metadatas.find((metadata): metadata is ComponentMetadata => metadata.type === 'component' && metadata.selector === node.tagName);
+        const component = metadatas.find((metadata): metadata is ComponentMetadata => metadata.type === 'component' && metadata.selector === getElementSelector(node));
         if (component) {
           components.push(toUsage(node, component, position, reactive));
         }
-        collectComponents(node.children, position, metadatas, reactive, components);
+
+        // The content of a standard <template> is written as it is, and only the browser creates its components, cloning it
+        collectComponents(node.children, node.tagName === 'template' ? { ...position, dynamic: true } : position, metadatas, reactive, components);
         break;
       }
 

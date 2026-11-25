@@ -1,7 +1,7 @@
 import type { TrustedTypePolicy } from './trusted-type-policy.type';
 
 /**
- * The `trustedTypes` global of the browsers supporting the Trusted Types API, as far as the directives use it.
+ * The `trustedTypes` global of the browsers supporting the Trusted Types API, as far as Xaendar uses it.
  */
 export interface TrustedTypePolicyFactory {
   /**

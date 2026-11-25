@@ -4,6 +4,7 @@ import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
+import { describeNameChar, isForbiddenNameChar } from '../../utils/chars/chars.utils';
 import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.utils';
 
 /**
@@ -15,7 +16,8 @@ import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.u
  * @param context - Unused lexer context.
  * @returns Transition result with the ATTRIBUTE token and next state.
  * @throws If the attribute name is malformed or contains `(` (but the parentheses of the name of a two-way binding,
- *   `[(value)]`), a `)` is found outside of a directive, or a `}` is found outside of a conditional binding.
+ *   `[(value)]`), a `)` is found outside of a directive, a `}` is found outside of a conditional binding, or the name
+ *   holds a character no attribute name can hold (`isForbiddenNameChar`).
  */
 export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
@@ -200,15 +202,17 @@ export function lexAttribute(cursor: LexerCursor, context: LexerTransitionFuncti
 
       case DOUBLE_QUOTE:
       case SINGLE_QUOTE:
-        /*
-          Break is missing or purpose cause the code after the if 
-          would be the same as default case
-        */
         if (!attribute) {
           throw new Error('Attribute cannot start with \' or \"');
         }
 
+      // Break is missing on purpose: a quote after the start of the name is rejected by the default case
+
       default:
+        if (isForbiddenNameChar(cursor.peek())) {
+          throw new Error(`${describeNameChar(cursor.peek())} cannot be part of an attribute name`);
+        }
+
         cursor.advance();
         attribute = `${attribute}${cursor.currentChar.value}`;
     }

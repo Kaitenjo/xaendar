@@ -1,7 +1,7 @@
 import type { TrustedHtml } from './trusted-html.type';
 
 /**
- * A policy of the Trusted Types API, as far as the directives create a `TrustedHTML` with it.
+ * A policy of the Trusted Types API, as far as Xaendar creates a `TrustedHTML` with it.
  */
 export interface TrustedTypePolicy {
   /**

@@ -5,6 +5,7 @@ import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { resolveConfig } from 'vite';
 import { buildProject } from '../../utils/build-project/build-project.utils';
+import { writeContentSecurityPolicy } from '../../utils/content-security-policy/content-security-policy.utils';
 import { enterProject, readXaendarConfig, resolveSsrPaths, SSR_OUTLET } from '../../utils/xaendar-config/xaendar-config.utils';
 
 /**
@@ -26,7 +27,8 @@ export function prerenderCommand(): Command {
  * entry of the server returns in place of `<!--xd-ssr-->`, written as the `index.html` of the folder of the route, so
  * that a static server serves the pages already rendered. The page of `/` replaces the `index.html` of the build. Each
  * route goes through `toSameOriginPath` of `@xaendar/common`, as the request of a server does: `about` and `//about`
- * are `/about`.
+ * are `/about`. With `csp` in the `ssr` of `xaendar.json`, each page gets that policy with the hashes of its inline
+ * `<script>` and `<style>` (`writeContentSecurityPolicy`), so that it needs no `'unsafe-inline'`.
  *
  * Exits the process with code `1` when the project does not render on the server, or its entry does not export
  * `render`.
@@ -60,7 +62,8 @@ async function prerender(): Promise<void> {
     await mkdir(dirname(file), { recursive: true });
     const rendered = await render(route);
     // A function, because a `$` in a replacement string is a pattern: the text of a page would change the page
-    await writeFile(file, template.replace(SSR_OUTLET, () => rendered));
+    const page = template.replace(SSR_OUTLET, () => rendered);
+    await writeFile(file, ssr.csp ? writeContentSecurityPolicy(page, ssr.csp) : page);
     console.log(`✔  ${route} → ${file}`);
   }
 }

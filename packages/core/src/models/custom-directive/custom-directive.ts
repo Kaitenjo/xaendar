@@ -154,7 +154,7 @@ export abstract class CustomDirective<T extends Element = Element> {
    * @param fn - The side-effectful function to run. Any Signal read inside it
    *   is tracked as a dependency.
    * @param options - Optional settings forwarded to the underlying effect.
-   * @returns A function that disposes the effect ahead of the disconnection. It throws when the effect is
+   * @returns A function that disposes the effect ahead of the disconnection. It does nothing when the effect is
    *   already disposed: when it is called a second time, or after the disconnection.
    */
   public effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction {

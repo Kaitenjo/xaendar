@@ -10,4 +10,8 @@ describe('_encodeTrackKey()', () => {
   it('encodes a string as a URI component, which never ends a comment', () => {
     expect(_encodeTrackKey('a b-->c')).toBe('sa%20b--%3Ec');
   });
+
+  it('encodes a string holding a lone surrogate, which a URI component cannot hold', () => {
+    expect(_encodeTrackKey('a\uD800')).toBe('sa%EF%BF%BD');
+  });
 });

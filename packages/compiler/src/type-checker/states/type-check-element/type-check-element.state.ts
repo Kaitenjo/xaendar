@@ -1,4 +1,4 @@
-import { toModelChangeEvent } from '@xaendar/internals';
+import { describeUnsafeAttribute, describeUnsafeElementAttribute, toModelChangeEvent } from '@xaendar/internals';
 import type { Expression, Identifier } from 'typescript';
 import { isIdentifier } from 'typescript';
 import { resolveExpression } from '../../../generator/utils/generator/generator.utils';
@@ -21,6 +21,7 @@ import { ComponentMetadata } from '../../../types/component-metadata.type';
 import type { ComponentOrDirectiveMetadata } from '../../../types/component-or-directive-metadata.type';
 import type { Span } from '../../../types/span.type';
 import { getChildrenNamespace, getElementNamespace } from '../../../utils/element-namespace/element-namespace.utils';
+import { getElementSelector } from '../../../utils/element-selector/element-selector.utils';
 import { readsEvent } from '../../../utils/event-reads/event-reads.utils';
 import { getOwnerType } from '../../../utils/metadata/metadata.utils';
 import { ComponentPropertyMetadata } from '../../models/component-property-metadata/component-property-metadata.model';
@@ -43,7 +44,9 @@ import { getInstantiationSuffix, INSTANCE, typeCheckScope } from '../../utils/sc
  *
  * Custom elements (tag names containing a dash) are checked against the
  * metadata of the component imported for their selector; native elements, and the custom elements of other
- * libraries matching the `customElements` patterns, only get their expressions and event handlers checked.
+ * libraries matching the `customElements` patterns, only get their expressions and event handlers checked. A
+ * customized built-in element (`<button is="copy-button">`) is a component looked up by its `is`, an HTML element
+ * written with the tag its component extends (see {@link assertExtendedTag}).
  *
  * The native events of the element are typed through the event map of its namespace (see `getElementNamespace`),
  * which its children inherit: the children of an `<svg>`, a `<math>` or a `<foreignObject>` element are type-checked in
@@ -60,37 +63,43 @@ import { getInstantiationSuffix, INSTANCE, typeCheckScope } from '../../utils/sc
  * @param context - Current type-check scope.
  * @returns The generated type-check lines.
  * @throws If the tag is a custom element, or one of its directives, whose selector is not imported in the template,
- *   or a custom element both imported and matching the `customElements` patterns.
+ *   or a custom element both imported and matching the `customElements` patterns, or when the element and its component
+ *   disagree on being a customized built-in element, or on the tag it extends.
  */
 export function typeCheckElement(node: ElementNode, processNode: ProcessNode, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
   const { tagName } = node;
+  const selector = getElementSelector(node);
   const namespace = getElementNamespace(tagName, context.namespace);
   const eventMap = getEventMap(namespace);
   let nativeEvents: NativeEvents = { eventMap, tagName, foreign: false };
+  if (node.is !== undefined && namespace !== 'html') {
+    throw new Error(`<${tagName}> is not an HTML element: is="${node.is}" names a customized built-in element, which extends an HTML element, e.g. <button is="copy-button">`, { cause: node.isSpan });
+  }
 
-  if (isCustomElementTag(tagName)) {
-    const metadata = context.getImportBySelector(tagName);
-    const isForeign = context.isForeignElement(tagName);
+  if (isCustomElementTag(selector)) {
+    const metadata = context.getImportBySelector(selector);
+    const isForeign = context.isForeignElement(selector);
     if (metadata && isForeign) {
-      throw new Error(`${tagName} is both imported as a WebComponent and declared in customElements`, { cause: node.span });
+      throw new Error(`${selector} is both imported as a WebComponent and declared in customElements`, { cause: node.span });
     } else if (metadata) {
+      assertExtendedTag(node, metadata);
       lines.push(...typeCheckComponentBindings(node, metadata, nativeEvents, context));
     } else if (isForeign) {
       assertUniqueForeignAttributes(node);
       nativeEvents = { eventMap, tagName, foreign: true };
       lines.push(...typeCheckNativeBindings(node, nativeEvents, context));
     } else {
-      throw new Error(`${tagName} selector is not associated to any WebComponent imported in the template, nor declared in customElements`, { cause: node.span });
+      throw new Error(`${selector} selector is not associated to any WebComponent imported in the template, nor declared in customElements`, { cause: node.span });
     }
   } else {
     lines.push(...typeCheckNativeBindings(node, nativeEvents, context));
   }
 
-  lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], tagName, nativeEvents, context));
+  lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], node, nativeEvents, context));
 
   // The element is type-checked: the element ref naming its generic component is typed with the instantiation
-  if (node.ref && context.getImportBySelector(tagName)?.typeParameters) {
+  if (node.ref && context.getImportBySelector(selector)?.typeParameters) {
     context.addInstantiation(node.span.start);
   }
 
@@ -112,6 +121,35 @@ export function typeCheckElement(node: ElementNode, processNode: ProcessNode, co
   }
 
   return lines;
+}
+
+/**
+ * Ensures an element is written as its component is defined: an autonomous custom element by its tag (`<my-card>`), a
+ * customized built-in element by the tag it extends with its selector as `is` (`<button is="copy-button">`), as the
+ * browser creates it.
+ *
+ * @param node - The element.
+ * @param metadata - The metadata of its component.
+ * @throws If the element is written in the form of the other kind of component, or with another tag than the one its
+ *   component extends.
+ */
+function assertExtendedTag(node: ElementNode, { className, selector, extends: extended }: ComponentMetadata): void {
+  const { tagName, is } = node;
+  if (extended === undefined) {
+    if (is !== undefined) {
+      throw new Error(`${className} is an autonomous custom element: write it <${selector}>, not <${tagName} is="${is}">`, { cause: node.isSpan });
+    }
+
+    return;
+  }
+
+  if (is === undefined) {
+    throw new Error(`${className} is a customized built-in element extending <${extended}>: write it <${extended} is="${selector}">, not <${selector}>`, { cause: node.nameSpan });
+  }
+
+  if (tagName !== extended) {
+    throw new Error(`${className} extends <${extended}>: write it <${extended} is="${selector}">, not <${tagName} is="${is}">`, { cause: node.nameSpan });
+  }
 }
 
 /**
@@ -142,7 +180,7 @@ function typeCheckComponentBindings(node: ElementNode, declaredMetadata: Compone
   assertUniqueComponentAttributes(node, metadata);
   const requiredProperties = new Set(metadata.properties.entries().filter(([_, value]) => value.required).map(([key]) => key));
   const alwaysBoundAttributes = getAlwaysBoundAttributes(node.conditionalBindings);
-  const lines = typeCheckComponentAttributes(node.attributes, metadata, context);
+  const lines = typeCheckComponentAttributes(node.attributes, metadata, context, node);
 
   /*
     Checked before the missing required properties, so that a required property bound
@@ -152,11 +190,11 @@ function typeCheckComponentBindings(node: ElementNode, declaredMetadata: Compone
     assertRequiredPropertiesAlwaysBound(branch.attributes, metadata, `<${node.tagName}>`, alwaysBoundAttributes);
 
     return [
-      ...typeCheckComponentAttributes(branch.attributes, metadata, context),
+      ...typeCheckComponentAttributes(branch.attributes, metadata, context, node),
       ...typeCheckClassBindings(branch.classBindings, context),
       ...typeCheckStyleBindings(branch.styleBindings, context),
       ...typeCheckComponentEvents(branch.events, metadata, nativeEvents, context),
-      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEvents, context)
+      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node, nativeEvents, context)
     ];
   });
 
@@ -236,13 +274,13 @@ function assertUniqueForeignAttributes(node: ElementNode): void {
  * A structural directive is checked the same way, except that it declares neither events nor conditional bindings.
  *
  * @param directives - The directive and structural directive nodes applied to the element.
- * @param tagName - Tag name of the element, used in error messages.
+ * @param element - The element the directives are applied to, whose tag name the error messages read.
  * @param nativeEvents - What types the native events bound in the directives.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines.
  * @throws If a directive is not imported, binds an unknown property, misses a required property or binds it inside a conditional binding that may not bind it.
  */
-function typeCheckDirectives(directives: (DirectiveNode | StructuralDirectiveNode)[], tagName: string, nativeEvents: NativeEvents, context: TypeCheckContext): Line[] {
+function typeCheckDirectives(directives: (DirectiveNode | StructuralDirectiveNode)[], element: ElementNode, nativeEvents: NativeEvents, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
 
   for (let i = 0; i < directives.length; i++) {
@@ -269,7 +307,7 @@ function typeCheckDirectives(directives: (DirectiveNode | StructuralDirectiveNod
       assertRequiredPropertiesAlwaysBound(branch.attributes, metadata, owner, alwaysBoundAttributes);
 
       return [
-        ...typeCheckComponentAttributes(branch.attributes, metadata, context),
+        ...typeCheckComponentAttributes(branch.attributes, metadata, context, element),
         ...typeCheckComponentEvents(branch.events, metadata, nativeEvents, context)
       ];
     });
@@ -284,11 +322,11 @@ function typeCheckDirectives(directives: (DirectiveNode | StructuralDirectiveNod
     }
 
     if (requiredProperties.size) {
-      throw new Error(`${owner} on <${tagName}> is missing the following required properties:\n ● ${Array.from(requiredProperties.values()).join('\n ● ')}`, { cause: span });
+      throw new Error(`${owner} on <${element.tagName}> is missing the following required properties:\n ● ${Array.from(requiredProperties.values()).join('\n ● ')}`, { cause: span });
     }
 
     const directiveLines = [
-      ...typeCheckComponentAttributes(attributes, metadata, context),
+      ...typeCheckComponentAttributes(attributes, metadata, context, element),
       ...typeCheckComponentEvents(events, metadata, nativeEvents, context),
       ...conditionalBindingLines
     ];
@@ -635,17 +673,20 @@ function getAlwaysBoundAttributes(conditionalBindings: ConditionalBindingNode[])
  * @param attributes - The attribute nodes to type-check.
  * @param metadata - Metadata of the component or directive the attributes are bound to.
  * @param context - Current type-check scope.
+ * @param element - The element of the component, or the one the directive is applied to.
  * @returns The generated type-check lines, one block per bound property.
  * @throws If a property is bound without a value, an attribute is the name of the property of an input declaring an alias,
- *   or a two-way binding binds no model.
+ *   a two-way binding binds no model, or an attribute that is not an input is one the browser runs (see
+ *   {@link assertSafeBinding}).
  */
-function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: ComponentOrDirectiveMetadata, context: TypeCheckContext): Line[] {
+function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: ComponentOrDirectiveMetadata, context: TypeCheckContext, element: ElementNode): Line[] {
   const lines = new Array<Line>();
 
   for (let i = 0; i < attributes.length; i++) {
     const { name, value, span, bare, attribute } = attributes[i];
     // Written with `attr.`, the attribute of the element takes any value, as on a native element
     if (attribute !== undefined) {
+      assertSafeBinding(attributes[i], element, context);
       if (typeof value !== 'string') {
         lines.push(line(mappedInterpolation(value, context, ';')));
       }
@@ -657,6 +698,8 @@ function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: Com
     const property = metadata.properties.get(name);
     if (!property) {
       assertNotAliasedProperty(attributes[i], metadata);
+      // Not an input: the value is written into the attribute of the element
+      assertSafeBinding(attributes[i], element, context);
     } else {
       if (bare) {
         throw new Error(`Property "${name}" needs a value: write ${name}="…" or ${name}="{ expression }". An attribute without a value is only valid on a native element.`, { cause: span });
@@ -725,18 +768,62 @@ function typeCheckNativeBindings(node: ElementNode, nativeEvents: NativeEvents, 
   }
 
   return [
-    ...typeCheckNativeAttributes(node.attributes, node.tagName, context),
+    ...typeCheckNativeAttributes(node.attributes, node, context),
     ...typeCheckClassBindings(node.classBindings, context),
     ...typeCheckStyleBindings(node.styleBindings, context),
     ...typeCheckNativeEvents(node.events, nativeEvents, context),
     ...typeCheckConditionalBindings(node.conditionalBindings, context, branch => [
-      ...typeCheckNativeAttributes(branch.attributes, node.tagName, context),
+      ...typeCheckNativeAttributes(branch.attributes, node, context),
       ...typeCheckClassBindings(branch.classBindings, context),
       ...typeCheckStyleBindings(branch.styleBindings, context),
       ...typeCheckNativeEvents(branch.events, nativeEvents, context),
-      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEvents, context)
+      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node, nativeEvents, context)
     ])
   ];
+}
+
+/**
+ * Ensures a binding writing an attribute of an element does not write one the browser runs, or one lifting a restriction,
+ * unless the `rejectUnsafeBindings` option of `security` is `false`: an event handler attribute (any name starting with
+ * `on`, as Angular checks it) or a `srcdoc` on any element (see `describeUnsafeAttribute`), the attributes restricting
+ * the page of an `<iframe>`, the `attributeName` of an SVG animation and the values of one animating an `href`, the
+ * `http-equiv` of a `<meta>` and the `content` of a refresh (see `describeUnsafeElementAttribute`, reading the static
+ * attributes of the element). A value written in the template is the author's own, and is allowed.
+ *
+ * @param attribute - The attribute node, written with `attr.` or not.
+ * @param element - The element holding it, or the one a directive is applied to.
+ * @param context - Current type-check scope.
+ * @throws If the attribute is bound to an expression and the browser runs its value, or it lifts a restriction.
+ */
+function assertSafeBinding({ name, attribute, value, span }: AttributeNode, element: ElementNode, context: TypeCheckContext): void {
+  if (typeof value === 'string' || !context.rejectUnsafeBindings) {
+    return;
+  }
+
+  const written = attribute ?? name;
+  const unsafe = describeUnsafeAttribute(written) ?? describeUnsafeElementAttribute(element.tagName, written, { getAttribute: attributeName => readStaticAttribute(element, attributeName) });
+  if (unsafe) {
+    throw new Error(`Binding ${name} ${unsafe}, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.`, { cause: span });
+  }
+}
+
+/**
+ * Reads the value an element writes in the template for an attribute, its name in any case, `attr.` included.
+ *
+ * @param element - The element.
+ * @param name - The name of the attribute.
+ * @returns The value, `undefined` for an attribute the element does not write, or binds to an expression.
+ */
+function readStaticAttribute({ attributes }: ElementNode, name: string): string | undefined {
+  const lowerCase = name.toLowerCase();
+  for (let i = 0; i < attributes.length; i++) {
+    const { attribute, value } = attributes[i];
+    if ((attribute ?? attributes[i].name).toLowerCase() === lowerCase && typeof value === 'string') {
+      return value;
+    }
+  }
+
+  return undefined;
 }
 
 /**
@@ -744,21 +831,22 @@ function typeCheckNativeBindings(node: ElementNode, nativeEvents: NativeEvents, 
  * resolved expression as a statement. Literal attributes are skipped.
  *
  * @param attributes - The attribute nodes to type-check.
- * @param tagName - The tag name of the element, used in the error message.
+ * @param element - The element, whose tag name the error messages and the checks of the attributes read.
  * @param context - Current type-check scope.
  * @returns The generated type-check lines, one per expression attribute.
  * @throws If an attribute is bound by a two-way binding: a native element, or a custom element of another library, has no
- *   model.
+ *   model, or binds an attribute the browser runs (see {@link assertSafeBinding}).
  */
-function typeCheckNativeAttributes(attributes: AttributeNode[], tagName: string, context: TypeCheckContext): Line[] {
+function typeCheckNativeAttributes(attributes: AttributeNode[], element: ElementNode, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
 
   for (let i = 0; i < attributes.length; i++) {
     const { name, value, span, twoWay } = attributes[i];
     if (twoWay) {
-      throw new Error(`[(${name})] binds a model of a component or of a directive: <${tagName}> is not a component imported in the template.`, { cause: span });
+      throw new Error(`[(${name})] binds a model of a component or of a directive: <${element.tagName}> is not a component imported in the template.`, { cause: span });
     }
 
+    assertSafeBinding(attributes[i], element, context);
     if (typeof value !== 'string') {
       lines.push(line(mappedInterpolation(value, context, ';')));
     }

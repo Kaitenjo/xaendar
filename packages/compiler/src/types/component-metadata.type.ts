@@ -30,16 +30,23 @@ export type ComponentMetadata = {
   importPath?: string;
   /**
    * HTML element selector (tag name), unique across every component: a custom element name can be defined only once.
+   * The `is` attribute of a customized built-in element, whose tag is {@link extends}.
    */
   selector: string;
+  /**
+   * The tag of the native element a customized built-in element extends (`extends` of `@WebComponent`): templates write
+   * it `<button is="copy-button">`. Absent for an autonomous custom element, whose tag is its selector.
+   */
+  extends?: string;
   /**
    * URL to the component's style file (CSS or similar).
    */
   styleUrl?: string;
   /**
-   * URL to the component's HTML template file 
+   * URL to the component's HTML template file. Absent for a customized built-in element without a template, which
+   * renders nothing: its content is the one its tag holds.
    */
-  templateUrl: string;
+  templateUrl?: string;
   /**
    * Component input properties metadata.
    */

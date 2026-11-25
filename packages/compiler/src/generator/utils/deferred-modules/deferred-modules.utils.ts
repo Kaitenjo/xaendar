@@ -5,6 +5,7 @@ import type { ConditionalBindingBranchNode } from '../../../parser/types/nodes/c
 import type { DeferNode } from '../../../parser/types/nodes/defer-node.type';
 import type { HydrateNode } from '../../../parser/types/nodes/hydrate-node.type';
 import type { ContextCache } from '../../../types/context-cache.type';
+import { getElementSelector } from '../../../utils/element-selector/element-selector.utils';
 import type { GeneratorContext } from '../../context/context';
 
 /**
@@ -91,8 +92,9 @@ function collectTags(nodes: readonly ASTNode[], eager: Set<string>, deferred: Ma
     switch (node.type) {
       case ASTNodeType.Element: {
         const keys = current ?? eager;
-        if (isValidCustomElementName(node.tagName, false) && !generatorContext.isForeignElement(node.tagName)) {
-          keys.add(node.tagName);
+        const selector = getElementSelector(node);
+        if (isValidCustomElementName(selector, false) && !generatorContext.isForeignElement(selector)) {
+          keys.add(selector);
         }
 
         collectDirectiveSelectors(node, keys);

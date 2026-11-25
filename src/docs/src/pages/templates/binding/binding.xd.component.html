@@ -11,6 +11,7 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { TRUSTED_URLS } from './binding.snippets.ts'
 
 <span class="eyebrow">
   { t(translations(), 'pages.templates.binding.eyebrow') }
@@ -91,6 +92,24 @@
 <docs-code snippet="templates/attribute-precedence.html" />
 <p @@htmlTranslation(key="pages.templates.binding.attributePrecedence.p2") />
 <p @@htmlTranslation(key="pages.templates.binding.attributePrecedence.p3") />
+
+<h2>
+  { t(translations(), 'pages.templates.binding.security.title') }
+</h2>
+<p @@htmlTranslation(key="pages.templates.binding.security.p1") />
+<docs-code snippet="templates/script-style-error.txt" />
+<p @@htmlTranslation(key="pages.templates.binding.security.p2") />
+<docs-code snippet="templates/unsafe-binding-error.txt" />
+<p @@htmlTranslation(key="pages.templates.binding.security.p3") />
+<docs-code snippet="templates/security-config.json" />
+<docs-code snippet="templates/unsafe-url-warning.txt" />
+<docs-code snippet="templates/untrusted-resource-warning.txt" />
+<p @@htmlTranslation(key="pages.templates.binding.security.p5") />
+<docs-code snippet="{TRUSTED_URLS}" />
+<docs-code snippet="templates/place-map.html" />
+<p @@htmlTranslation(key="pages.templates.binding.security.p6") />
+<docs-code snippet="templates/host-attribute-unsafe-error.txt" />
+<p @@htmlTranslation(key="pages.templates.binding.security.p4") />
 
 <section class="edge-cases">
   <h2>

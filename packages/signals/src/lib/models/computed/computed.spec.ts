@@ -507,6 +507,51 @@ describe('Computed', () => {
       expect(other.getSinks(PRIVATE)).toEqual([computed]);
     });
 
+    it('unwatches the sources it did not read again when it stops being watched during its evaluation', () => {
+      const unwatched = vi.fn();
+      const before = new State(1);
+      const after = new State(2, { unwatched });
+      const stop = new State(false);
+      const watcher = new Watcher(() => undefined);
+      const computed = new Computed(() => {
+        before.get();
+        if (stop.get()) {
+          watcher.unwatch(computed);
+          return 0;
+        }
+
+        return after.get();
+      });
+      watcher.watch(computed);
+      computed.get();
+
+      stop.set(true);
+      computed.get();
+      expect(before.getSinks(PRIVATE)).toEqual([]);
+      expect(stop.getSinks(PRIVATE)).toEqual([]);
+      expect(after.getSinks(PRIVATE)).toEqual([]);
+      expect(unwatched).toHaveBeenCalledOnce();
+    });
+
+    it('does not unlink the sources it did not read when it starts being watched during its evaluation', () => {
+      const removeSink = vi.fn();
+      const state = new State(1);
+      const computed = new Computed(() => state.get());
+      computed.get();
+      const watcher = new Watcher(() => undefined);
+      const other = new Computed(() => 0);
+      other.removeSink = removeSink;
+      const outer = new Computed(() => {
+        watcher.watch(outer);
+        return computed.get();
+      });
+      outer.addSource(other, PRIVATE);
+
+      expect(outer.get()).toBe(1);
+      expect(removeSink).not.toHaveBeenCalled();
+      expect(state.getSinks(PRIVATE)).toEqual([computed]);
+    });
+
     it('evaluates again, once watched, when a State changed since it was evaluated without sinks', () => {
       const state = new State(1);
       const callback = vi.fn(() => state.get());

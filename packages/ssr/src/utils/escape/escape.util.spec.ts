@@ -5,7 +5,7 @@ await vi.hoisted(async () => {
   loadServerDom();
 });
 
-const { _escapeAttribute, _escapeRawText, _escapeText, _ssrAttribute } = await import('./escape.util');
+const { _escapeAttribute, _escapeRawText, _escapeText, _ssrAttribute, writeNonceAttribute } = await import('./escape.util');
 
 describe('escape helpers', () => {
   it('converts the value of an interpolation as the browser renders it, and escapes it', () => {
@@ -40,5 +40,11 @@ describe('escape helpers', () => {
     expect(_escapeRawText('a < b </style>', 'style')).toBe('a < b <\\/style>');
     expect(_escapeRawText(1, 'script')).toBe('1');
     expect(_escapeRawText(undefined, 'script')).toBe('');
+  });
+
+  it('writes the nonce of the response escaped, and nothing without one', () => {
+    expect(writeNonceAttribute('a"b')).toBe(' nonce="a&quot;b"');
+    expect(writeNonceAttribute('')).toBe('');
+    expect(writeNonceAttribute(undefined)).toBe('');
   });
 });

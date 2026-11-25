@@ -10,6 +10,20 @@ const contextOf = (template: string) => {
 };
 
 describe('getBindingContext', () => {
+  it('finds the start of the name in linear time, after a long run of name characters', () => {
+    const start = performance.now();
+
+    expect(contextOf(`<div ${'a'.repeat(200_000)}=`)).toBeUndefined();
+    expect(performance.now() - start).toBeLessThan(500);
+  });
+
+  it('reads the static is written before the binding, the selector of a customized built-in element', () => {
+    expect(contextOf('<a title="x" is="x-link" la')).toEqual({ kind: 'attribute', tagName: 'a', is: 'x-link', directive: undefined, span: { start: 25, end: 27 } });
+    expect(contextOf('<a is="{ link }" la')?.is).toBeUndefined();
+    expect(contextOf('<a is')?.is).toBeUndefined();
+    expect(contextOf('<a la|')?.is).toBeUndefined();
+  });
+
   it.each([
     ['nothing written yet', '<my-child ', { kind: 'attribute', tagName: 'my-child', directive: undefined, span: { start: 10, end: 10 } }],
     ['a partial name', '<my-child la', { kind: 'attribute', tagName: 'my-child', directive: undefined, span: { start: 10, end: 12 } }],

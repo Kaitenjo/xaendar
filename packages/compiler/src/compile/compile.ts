@@ -40,19 +40,19 @@ const PARSED_TEMPLATES = new Map<string, ASTNode[]>();
  * @param options - The compilation options, selecting which outputs are produced.
  * @returns The compiled Javascript render functions, the type-check result, or both.
  */
-export async function compile(input: string, options: Pick<CompileOptions, 'baseDir' | 'shadowingMembers' | 'reactiveMembers' | 'customElements' | 'ssr' | 'strictEvents' | 'cache'>): Promise<TypeCheckResult>
+export async function compile(input: string, options: Pick<CompileOptions, 'baseDir' | 'shadowingMembers' | 'reactiveMembers' | 'customElements' | 'ssr' | 'strictEvents' | 'security' | 'cache'>): Promise<TypeCheckResult>
 export async function compile(input: string, options: Omit<CompileOptions, 'baseDir'>): Promise<string>
 export async function compile(input: string, options: CompileOptions): Promise<{ javascript: string; typescript: TypeCheckResult }>
 export async function compile(input: string, options: CompileOptions): Promise<string | TypeCheckResult | { javascript: string; typescript: TypeCheckResult }> {
   const nodes = parseTemplate(input);
 
-  const { baseDir, templateDir, signals, shadowingMembers = [], reactiveMembers = signals, customElements = [], ssr, strictEvents, cache } = options;
+  const { baseDir, templateDir, signals, shadowingMembers = [], reactiveMembers = signals, customElements = [], ssr, strictEvents, security, cache } = options;
   const importNodes = nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import);
   if (baseDir && signals) {
     const { metadatas, symbols } = await resolveTemplateImports(importNodes, baseDir, cache);
     const [javascript, typescript] = await Promise.all([
       generateJavascriptCode(input, nodes, signals, shadowingMembers, customElements, cache, symbols),
-      typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents)
+      typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents, security?.rejectUnsafeBindings)
     ]);
 
     return {
@@ -61,7 +61,7 @@ export async function compile(input: string, options: CompileOptions): Promise<s
     }
   } else if (baseDir) {
     const { metadatas, symbols } = await resolveTemplateImports(importNodes, baseDir, cache);
-    return await typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents);
+    return await typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents, security?.rejectUnsafeBindings);
   } else {
     const symbols = templateDir ? (await resolveTemplateImports(importNodes, templateDir, cache)).symbols : undefined;
     // Safe assertion! Overloads permit baseDir and signals not to be nullable simultaneously
@@ -119,11 +119,12 @@ async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: 
  * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
  * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
  * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
+ * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs, or lifting a restriction (`on*`, `srcdoc`, `sandbox`…) is an error (see `SecurityOptions`).
  * @returns A promise that resolves to the type-checking result.
  * @throws A `TemplateError` if the template fails type-checking with an error pointing to a part of it.
  */
-export async function typeCheckTemplate(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean, strictEvents = true): Promise<TypeCheckResult> {
-  return await new TypeChecker(input, nodes).generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents);
+export async function typeCheckTemplate(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean, strictEvents = true, rejectUnsafeBindings = true): Promise<TypeCheckResult> {
+  return await new TypeChecker(input, nodes).generate(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents, rejectUnsafeBindings);
 }
 
 /**
@@ -139,10 +140,11 @@ export async function typeCheckTemplate(input: string, nodes: ASTNode[], metadat
  * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
  * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
  * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
+ * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs, or lifting a restriction (`on*`, `srcdoc`, `sandbox`…) is an error (see `SecurityOptions`).
  * @returns A promise that resolves to the type-checking result, with the errors of the nodes that failed.
  */
-export async function typeCheckTemplateTolerant(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean, strictEvents = true): Promise<TypeCheckTolerantResult> {
-  return await new TypeChecker(input, nodes).generateTolerant(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents);
+export async function typeCheckTemplateTolerant(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean, strictEvents = true, rejectUnsafeBindings = true): Promise<TypeCheckTolerantResult> {
+  return await new TypeChecker(input, nodes).generateTolerant(metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents, rejectUnsafeBindings);
 }
 
 /**

@@ -1,5 +1,6 @@
 import type { Constructor } from '@xaendar/types';
-import { INTERNAL_SELECTOR } from '../../costants';
+import { INTERNAL_EXTENDS, INTERNAL_SELECTOR } from '../../costants';
+import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { getWebComponentMetadata } from '../get-metadata/get-metadata.util';
 
 /**
@@ -15,11 +16,33 @@ import { getWebComponentMetadata } from '../get-metadata/get-metadata.util';
  * @throws When the class is not decorated with `@WebComponent`, also when its parent class is.
  */
 export function getSelector(constructor: Constructor<HTMLElement>): string {
+  return getOwnMetadata(constructor)[INTERNAL_SELECTOR];
+}
+
+/**
+ * Reads the tag of the native element a web component class extends, declared by `extends` of its `WebComponent`: the
+ * tag of its elements, whose `is` attribute is the selector of the component.
+ *
+ * @param constructor - The class of a web component decorated with `@WebComponent`.
+ * @returns The tag the component extends, `undefined` for an autonomous custom element, whose tag is its selector.
+ * @throws When the class is not decorated with `@WebComponent`, also when its parent class is.
+ */
+export function getExtendedTagName(constructor: Constructor<HTMLElement>): keyof HTMLElementTagNameMap | undefined {
+  return getOwnMetadata(constructor)[INTERNAL_EXTENDS];
+}
+
+/**
+ * Reads the metadata `WebComponent` stored in a class itself (see {@link getSelector}).
+ *
+ * @param constructor - The class of a web component decorated with `@WebComponent`.
+ * @returns The metadata, holding the selector.
+ * @throws When the class is not decorated with `@WebComponent`, also when its parent class is.
+ */
+function getOwnMetadata(constructor: Constructor<HTMLElement>): WebComponentMetadata {
   const metadata = Object.hasOwn(constructor, Symbol.for('Symbol.metadata')) ? getWebComponentMetadata(constructor) : undefined;
-  const selector = metadata && Object.hasOwn(metadata, INTERNAL_SELECTOR) ? metadata[INTERNAL_SELECTOR] : undefined;
-  if (!selector) {
+  if (!metadata || !Object.hasOwn(metadata, INTERNAL_SELECTOR) || !metadata[INTERNAL_SELECTOR]) {
     throw new Error(`${constructor.name} does not seem to be decorated with @WebComponent`);
   }
 
-  return selector;
+  return metadata;
 }

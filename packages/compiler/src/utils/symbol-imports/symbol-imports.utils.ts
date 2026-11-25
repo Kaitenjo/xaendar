@@ -1,3 +1,4 @@
+import { toStringLiteral } from '../../generator/utils/generator/generator.utils';
 import type { SymbolImport } from '../../types/symbol-import.type';
 
 /**
@@ -45,7 +46,7 @@ export function getRuntimeAlias(local: string): string {
  */
 export function toRuntimeImport({ imported, local, modulePath, importPath = modulePath }: SymbolImport): string {
   const alias = getRuntimeAlias(local);
-  return imported === '*' ? `import * as ${alias} from '${importPath}';` : `import { ${imported} as ${alias} } from '${importPath}';`;
+  return imported === '*' ? `import * as ${alias} from ${toStringLiteral(importPath)};` : `import { ${imported} as ${alias} } from ${toStringLiteral(importPath)};`;
 }
 
 /**

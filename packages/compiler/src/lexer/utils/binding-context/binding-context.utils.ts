@@ -2,15 +2,16 @@ import { Lexer } from '../../lexer/lexer';
 import type { BindingContext } from '../../types/binding-context.type';
 import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
+import type { AttributeValueToken } from '../../types/tokens/attribute-value-token.type';
 import type { DirectiveToken } from '../../types/tokens/directive-token.type';
 import type { StructuralDirectiveToken } from '../../types/tokens/structural-directive-token.type';
 import type { TagOpenNameToken } from '../../types/tokens/tag-open-name-token.type';
 import type { TemplateDeclarationToken } from '../../types/tokens/template-declaration-token.type';
 
 /**
- * The part of a name written right before an offset: the characters an attribute or event name cannot hold end it.
+ * The characters an attribute or event name cannot hold, which end the part of a name written right before an offset.
  */
-const PARTIAL_NAME = /[^\s(){}"'=<>/@*]*$/;
+const NAME_END = /[\s(){}"'=<>/@*]/;
 
 /**
  * Tells where a binding is being written at an offset of a template, by lexing the template up to it: the template
@@ -20,6 +21,7 @@ const PARTIAL_NAME = /[^\s(){}"'=<>/@*]*$/;
  * getBindingContext('<my-child la', 12);              // { kind: 'attribute', tagName: 'my-child', directive: undefined, span: { start: 10, end: 12 } }
  * getBindingContext('<my-child @@tooltip((sh', 23);  // { kind: 'event', tagName: 'my-child', directive: 'tooltip', span: { start: 21, end: 23 } }
  * getBindingContext('<my-child [(va', 14);           // { kind: 'twoWay', tagName: 'my-child', directive: undefined, span: { start: 12, end: 14 } }
+ * getBindingContext('<a is="x-link" la', 17);         // { kind: 'attribute', tagName: 'a', is: 'x-link', directive: undefined, span: { start: 15, end: 17 } }
  *
  * @param source - The source of the template.
  * @param offset - The offset in the template.
@@ -28,7 +30,7 @@ const PARTIAL_NAME = /[^\s(){}"'=<>/@*]*$/;
  */
 export function getBindingContext(source: string, offset: number): BindingContext | undefined {
   const before = source.slice(0, offset);
-  const start = offset - PARTIAL_NAME.exec(before)![0].length;
+  const start = findNameStart(before);
   /*
     A name starts after a space, a `(` or a `{`: checked first, as it is cheaper than lexing. The attribute state is
     also left open by its `=` or by the quote opening its value, the event state by its `)`
@@ -66,7 +68,26 @@ export function getBindingContext(source: string, offset: number): BindingContex
     ? tokens.findLast((token): token is DirectiveToken | StructuralDirectiveToken => token.type === TokenType.DIRECTIVE || token.type === TokenType.STRUCTURAL_DIRECTIVE)!.parts[0]
     : undefined;
 
-  return { kind, tagName, directive, span: { start, end: offset } };
+  return { kind, tagName, is: readIs(tokens, tokens.lastIndexOf(tag)), directive, span: { start, end: offset } };
+}
+
+/**
+ * Finds where the part of a name written at the end of a text starts: after the last character a name cannot hold.
+ *
+ * N.B. It scans the text backwards, in linear time: the regular expression `/[^\s(){}"'=<>/@*]*$/` it replaces tried
+ * every offset, quadratic in a long run of name characters (80,000 took 11 s), and the editor runs it on every
+ * completion. Do not match it with an unanchored regular expression.
+ *
+ * @param text - The text, up to the offset.
+ * @returns The offset of the first character of the name, the length of the text when it ends with no name.
+ */
+function findNameStart(text: string): number {
+  let start = text.length;
+  while (start > 0 && !NAME_END.test(text[start - 1])) {
+    start--;
+  }
+
+  return start;
 }
 
 /**
@@ -89,4 +110,23 @@ function getBindingKind(state: LexerState): Exclude<BindingContext['kind'], 'two
     default:
       return undefined;
   }
+}
+
+/**
+ * Reads the static `is` attribute written after the tag name of an opening tag, the selector of a customized built-in
+ * element.
+ *
+ * @param tokens - The tokens of the template up to the binding.
+ * @param tag - The index of the token of the tag name.
+ * @returns The selector, `undefined` when the tag has no static `is` up to the binding.
+ */
+function readIs(tokens: ReturnType<Lexer['tokenize']>, tag: number): string | undefined {
+  for (let i = tag + 1; i < tokens.length - 1; i++) {
+    const token = tokens[i];
+    if (token.type === TokenType.ATTRIBUTE && token.parts[0] === 'is' && tokens[i + 1].type === TokenType.ATTRIBUTE_VALUE) {
+      return (tokens[i + 1] as AttributeValueToken).parts[0];
+    }
+  }
+
+  return undefined;
 }

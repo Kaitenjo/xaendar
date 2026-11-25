@@ -16,7 +16,7 @@ import type { ExposedEventListener } from '../../types/create-component/exposed-
 import type { ScopeHolder } from '../../types/scope-holder.type';
 import type { TemplateHandler } from '../../types/template-handler.type';
 import { _scope, addCleanup, clear, ELEMENT_LAYOUT, removeCleanup } from '../context/context.util';
-import { getSelector } from '../get-selector/get-selector.util';
+import { getExtendedTagName, getSelector } from '../get-selector/get-selector.util';
 import { _resolveHostDirectives } from '../host-directives/host-directives.util';
 import { _toPropertyName } from '../input-names/input-names.util';
 import { _renderElement, _resetExposedInput, _resetProperty, _setReactiveExposedInput, _setReactiveInput } from '../render-element/render-element.util';
@@ -52,6 +52,8 @@ export function _createComponent<
   Directives extends readonly CustomDirective[]
 >(owner: NoArgsFunction<_Context> | null, component: Constructor<Component>, options: CreateComponentOptions<Component, Directives>): ComponentRef<Component> {
   const selector = getSelector(component);
+  // A customized built-in element is created with the tag it extends, and its selector as `is`
+  const extended = getExtendedTagName(component);
   const bindings = collectBindings(component, options.properties, options.events);
   const entries = options.directives;
 
@@ -88,7 +90,7 @@ export function _createComponent<
 
   const { attributes, events, conditionalBindings, directives } = bindings;
   const element = untracked(() => {
-    _renderElement(options.target, context, null, { tagName: selector, attributes, events, conditionalBindings, directives, slot: HEADER });
+    _renderElement(options.target, context, null, { tagName: extended ?? selector, is: extended && selector, attributes, events, conditionalBindings, directives, slot: HEADER });
     // The element is the first node tracked by the context, the only one rendered in it
     const element = context[HEADER] as Component;
     // Appended once the directives are applied, as a template renders the children of a tag: they are not tracked, so they stay in the element

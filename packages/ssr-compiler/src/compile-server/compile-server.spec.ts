@@ -16,6 +16,33 @@ describe('compileServer', () => {
     expect(code).toContain('out.push(\'<p><!---->\' + _escapeText(this.title()) + \'</p>\');');
   });
 
+  it('checks the URLs bound to the attributes holding one, on the elements written inline and by the runtime', async () => {
+    const template = '<a href="{ link }" title="{ hint }" attr.formaction="{ link }"></a><a class.on="{ on }" href="{ link }"></a>';
+    const code = await compileServer(template, { signals: [], cache: createCache() });
+
+    expect(code).toContain('_ssrAttribute(\'href\', _checkUrl(\'href\', this.link))');
+    expect(code).toContain('_ssrAttribute(\'formaction\', _checkUrl(\'formaction\', this.link))');
+    expect(code).toContain('_ssrAttribute(\'title\', this.hint)');
+    expect(code).toContain('{ name: \'href\', value: a1$href, setter: _setExpressionProperty, url: true }');
+  });
+
+  it('checks the origin of the URLs bound to the attributes loading a resource', async () => {
+    const template = '<iframe src="{ page }"></iframe><iframe class.on="{ on }" src="{ page }"></iframe>';
+
+    const code = await compileServer(template, { signals: [], cache: createCache() });
+    expect(code).toContain('_ssrAttribute(\'src\', _checkUrl(\'src\', this.page, true))');
+    expect(code).toContain('{ name: \'src\', value: iframe1$src, setter: _setExpressionProperty, url: true, resource: true }');
+  });
+
+  it('writes an element with a style, static or bound, through the runtime, which moves it into the <style> of its tree', async () => {
+    const code = await compileServer('<p style="color: red"></p><i style="{ layout }"></i><b title="b"></b>', { signals: [], cache: createCache() });
+
+    expect(code).toContain('_ssrStartTag(out, context, p0$element);');
+    expect(code).toContain('_ssrStartTag(out, context, i1$element);');
+    expect(code).toContain('<b title="b"></b>');
+    expect(code).not.toContain('style="');
+  });
+
   it('writes nothing of the casts, which only the type-check reads', async () => {
     const code = await compileServer('<p title="{ title() as string }" (click)="pick($event as MouseEvent)">{ count() as number }</p>', { signals: ['title', 'count'], cache: createCache() });
 

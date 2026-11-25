@@ -1,4 +1,4 @@
-import type { PackageLibrary } from '@xaendar/compiler';
+import type { PackageLibrary, SecurityOptions } from '@xaendar/compiler';
 import type { CompilerOptions } from 'typescript';
 import type { Environment, Logger, ViteDevServer } from 'vite';
 import type { NodeCompilerHost } from '../models/node-compiler-host/node-compiler-host.model';
@@ -34,6 +34,10 @@ export type XaendarPluginState = {
    * Whether the templates warn about the events their elements do not declare, unless their library decides it.
    */
   strictEvents: boolean;
+  /**
+   * What the compiler checks in the bindings that could run code, unless their library decides it option by option.
+   */
+  security: SecurityOptions;
   /**
    * The root of Vite, set once the Vite config is resolved.
    */

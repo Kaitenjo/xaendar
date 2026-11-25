@@ -104,7 +104,32 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** Something other than ( after the type arguments of a directive (@@exList<Row>x).
 - **Fix:** Open the bindings right after the type arguments: @@exList<Row>(items="{rows()}").
 
+### `[Lexer] ''' cannot be part of an attribute name`
+
+- **Cause:** An attribute name, a directive selector (`… cannot be part of a directive selector`) or a tag name (`… cannot be part of a tag name`), holding a character no HTML name holds: a quote, <, \ or a control character (shown as U+0007): often a missing space or = (title'x'), or a quote typed twice.
+- **Fix:** Remove the character from the name, and write the value after = between double quotes.
+
+### `[Lexer] '-' cannot be part of an element ref: write #name with letters, digits, _ and $`
+
+- **Cause:** An element ref whose name is not a name of JavaScript (#my-input): the expressions of the template read it as a variable.
+- **Fix:** Name it in camelCase: #myInput.
+
 ## Parser
+
+### `[Parser] '\' cannot be part of an event name`
+
+- **Cause:** An event name holding a quote, <, \ or a control character. A key event takes any key ((keydown.\)): only the name of another event is checked.
+- **Fix:** Rename the event, or write the key event as keydown.<key>.
+
+### `[Parser] <style> cannot be written in a template: the styles of a component go in its stylesheet (styleUrl)`
+
+- **Cause:** A <style>, or a <script> (`… the code of a component goes in its class, the scripts of the page in its HTML`), anywhere in a template, in an <svg> or a standard <template> too.
+- **Fix:** Move the styles into the stylesheet of the component (styleUrl), the code into its class.
+
+### `[Parser] The template nests more than 512 elements, blocks and bindings into one another: move part of it into a component or a template`
+
+- **Cause:** A template nesting more than 512 levels, as the HTML parser stops nesting elements at 512.
+- **Fix:** Move part of the content into a child component or a <template> rendered with @render.
 
 ### `[Parser] Expected closing tag input while file is over`
 
@@ -493,6 +518,16 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A tag that is a component imported by the template and also matches a pattern of customElements.
 - **Fix:** Narrow the pattern to the tags of the other library, or rename the selector of the component.
 
+### `[TypeChecker] CopyButton is a customized built-in element extending <button>: write it <button is="copy-button">, not <copy-button>`
+
+- **Cause:** A component declaring `extends` written by its selector; the same check reports another tag than the one it extends (`CopyButton extends <button>: write it <button is="copy-button">, not <a is="copy-button">`) and an autonomous component written with `is` (`XCard is an autonomous custom element: write it <x-card>, not <div is="x-card">`).
+- **Fix:** Write the tag its `extends` names, with the selector as `is`; an autonomous component by its tag.
+
+### `[Parser] The is attribute of <button> must be a static selector, e.g. is="copy-button": it decides the class of the element when it is created`
+
+- **Cause:** `is` bound (`is="{ x }"`) or without a value; the parser also rejects `is` written by a conditional binding (`cannot be written by a branch`), `attr.is`, `is` on a custom element (`<x-card> is a custom element: is="…" names the customized built-in element a native element is`) and a value that is not a custom element name.
+- **Fix:** Write the selector of the component as a static `is` on the native tag; choose between different components with `@if`, not with `is`.
+
 ### `[TypeChecker] @@exTint selector is not associated to any Directive imported in the template`
 
 - **Cause:** A directive used without @import.
@@ -507,6 +542,46 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** A required input bound only in some branches.
 - **Fix:** Add an @else or @default branch binding it, or bind it outside the condition.
+
+### `[TypeChecker] Binding onclick writes code the browser runs from a value of the application: listen to the click event instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.`
+
+- **Cause:** An expression bound to an event handler attribute (any name starting with on, attr. included), or to srcdoc (`… writes a document the browser runs …`), outside the inputs of a component. The same message family covers `Binding sandbox sets a restriction of the <iframe> …` (sandbox, allow, allowfullscreen, referrerpolicy, csp, credentialless of an <iframe>), `Binding attributeName chooses the attribute the animation writes …` and `Binding to writes into href a value of the application …` (SVG animations), `Binding http-equiv chooses the pragma of the <meta> …` and `Binding content writes the page a refresh of the <meta> goes to …`.
+- **Fix:** Listen with (event)="…", load a page with src, or write the attribute statically (choose between elements with @if); allow it in xaendar.json only for a value the application controls.
+
+### `@HostAttribute('sandbox') on <iframe> sets a restriction of the <iframe> from a value of the application, which the browser applies only to the page it loads next: write it as a static attribute, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.`
+
+- **Cause:** Thrown at run time by a @HostAttribute writing an attribute the template type-check would reject: `@HostAttribute('onclick')`/`('srcdoc')` throw when the class is declared, element-dependent ones (iframe restrictions, SVG animation of href, meta refresh) when the directive or component starts on that element. Uses the `security` of the project (`__XAENDAR_SECURITY__`).
+- **Fix:** Write the attribute in the template, or listen with @HostListener.
+
+### `Xaendar: the URL bound to href runs code (javascript:alert(1)): href is left out, as "security": { "urls": "remove" } in xaendar.json asks.`
+
+- **Cause:** With `"security": { "urls": "remove" }` (the default), a javascript:, vbscript: or non-media data: URL bound to an attribute holding URLs (href, src, every image of srcset, every URL of ping…), in a template or a @HostAttribute, in the browser or on the server: the attribute is left out, the warning written in development only.
+- **Fix:** Bind a URL of the application, or mark one it builds with trustUrl().
+
+### `Xaendar: the URL bound to src loads a resource from an origin the application does not trust (https://videos.example.net/embed/42): src is left out, as "security": { "resourceUrls": "remove" } in xaendar.json asks.`
+
+- **Cause:** With `"security": { "resourceUrls": "remove" }` (the default), an absolute URL bound to an attribute loading a resource (<iframe>/<embed>/<frame> src, <object> data/codebase, <link>/<base> href) whose origin is not in trustedOrigins: the attribute is left out, the warning written in development only.
+- **Fix:** Add the origin to "trustedOrigins" (as URL.origin writes it), or mark the URL with trustResourceUrl().
+
+### `Xaendar: the URL bound to href runs code (javascript:alert(1)): it is written as it is. Bind a URL of the application, or mark it with trustUrl() when the application trusts it, or set "security": { "urls": "remove" } in xaendar.json to leave it out.`
+
+- **Cause:** With `"security": { "urls": "warn" }`, a javascript:, vbscript: or non-media data: URL bound to an attribute holding URLs (href, src, every image of srcset, every URL of ping…), in a template or a @HostAttribute, in the browser or on the server. With "remove" the attribute is left out (`… is left out, as "security": { "urls": "remove" } …`, in development only).
+- **Fix:** Bind a URL of the application, mark one it builds with trustUrl(), or set "urls": "remove".
+
+### `Xaendar: the URL bound to src loads a resource from an origin the application does not trust (https://videos.example.net/embed/42): it is written as it is. Bind a URL of the application, add its origin to "trustedOrigins", or mark it with trustResourceUrl() when the application trusts it, or set "security": { "resourceUrls": "remove" } in xaendar.json to leave it out.`
+
+- **Cause:** With `"security": { "resourceUrls": "warn" }`, an absolute URL bound to an attribute loading a resource (<iframe>/<embed>/<frame> src, <object> data/codebase, <link>/<base> href) whose origin is not in trustedOrigins.
+- **Fix:** Add the origin to "trustedOrigins" (as URL.origin writes it), mark the URL with trustResourceUrl(), or set "resourceUrls": "remove".
+
+### `"trustedOrigins" of the security of xaendar.json lists cdn.example.com, which is not an origin: write its scheme, its host and its port, if any, as https://cdn.example.com`
+
+- **Cause:** A trustedOrigins entry without scheme, or with a path, query or fragment; the build fails.
+- **Fix:** Write `https://cdn.example.com`, `http://localhost:8080`.
+
+### `The allowAttributes of the sanitizer list onclick, keeping an attribute the browser runs (on*, srcdoc): render a trusted HTML with trustHtml(), or with a sanitizer of the application, instead`
+
+- **Cause:** Options of @@innerHtml/sanitizeHtml keeping what always runs code: on*/srcdoc in allowAttributes (also `The allowElements of the sanitizer list script…` for script, base, meta, and `The urlSchemes of the sanitizer list javascript…`).
+- **Fix:** Render trusted HTML with trustHtml(), or pass a sanitizer such as DOMPurify.
 
 ### `'valuechange' is not an event of <ex-quantity-picker>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set "strictEvents": false in xaendar.json to turn this warning off.`
 
@@ -740,6 +815,16 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A styleUrl pointing to a missing file.
 - **Fix:** Fix the path, relative to the file of the component.
 
+### `<button> accepts no shadow root: CopyButton, extending it, renders no template and has no stylesheet, its content being the one its tag holds. Remove templateUrl - <path>`
+
+- **Cause:** A customized built-in element declaring `templateUrl` or `styleUrl` on a tag that accepts no shadow root (`button`, `input`, `a`, `li`, `tr`…); a `styleUrl` without `templateUrl` on one that does is reported too (`The styleUrl option of XPanel styles its template, which it does not declare`).
+- **Fix:** Remove the options: the component works on the native element through inputs, events, host bindings and host directives. To render a template, extend a tag accepting a shadow root (`div`, `span`, `section`…) or write an autonomous component.
+
+### `CopyButton extends <button>, whose class is HTMLButtonElement, but its class extends customElementOf(HTMLInputElement): extend customElementOf(HTMLButtonElement) - <path>`
+
+- **Cause:** The class of a customized built-in element does not extend the class of the tag its `extends` names (the browser would throw `Illegal constructor`); a class extending `customElementOf(…)` without `extends` gives `CopyButton extends customElementOf(HTMLButtonElement): declare the tag of the native element it extends with the extends option of @WebComponent`. An `extends` naming no native tag gives `The extends option of CopyButton names <buton>, which is not a native HTML element`.
+- **Fix:** Extend `customElementOf` of the class of the tag (`CustomElement` for a tag whose class is `HTMLElement`), and declare `extends`.
+
 ### `The templateUrl option of XCard must be a string literal - <path>`
 
 - **Cause:** A selector, templateUrl or styleUrl given as a constant, a template literal or a computed value, or a required option missing: the plugin reads them from the source code.
@@ -834,6 +919,16 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** The xaendar-manifest.json of a library is missing or damaged.
 - **Fix:** Install the package again.
+
+### `Error: The manifest of @acme/ui, <path>/xaendar-manifest.json, is not one Xaendar writes: card/card.xd.component#Card has the input x'+y+'. Build the library again with xd build.`
+
+- **Cause:** A xaendar-manifest.json edited by hand or written by another tool: a class name or an input property that is not a JavaScript name, a selector, input or event holding a character no template name holds, a module or declaration file outside the package, a manifest naming another package, or an export without declaration. The compiled code writes these names as they are, so a manifest holding them could write code into the application.
+- **Fix:** Build the library again with xd build; if it comes from a package of someone else, do not use that version.
+
+### `Error: The manifest of @acme/ui, ../ui/xaendar-manifest.json, is not a file of the package: write xaendar.manifest of its package.json as a path inside it, e.g. ./xaendar-manifest.json`
+
+- **Cause:** The xaendar.manifest of the package.json of a library points outside the package, or is not a ./ path.
+- **Fix:** Point it at ./xaendar-manifest.json, as xd build writes it.
 
 ### `Selector "ui-card" of component "CardComponent" - <path> is already used by a component of @acme/ui. Custom element names must be unique.`
 
@@ -1071,8 +1166,8 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 ### `Cannot unwatch a signal that is not being watched`
 
-- **Cause:** The disposer of an effect called when the effect is already disposed: a second time, or, for this.effect(), after the component or the directive is gone.
-- **Fix:** Call it once, while the effect is alive.
+- **Cause:** Watcher.unwatch called with a signal the watcher does not watch, as one already unwatched.
+- **Fix:** Unwatch only the signals the watcher watches: Signal.subtle.introspectSources(watcher) lists them.
 
 ## CLI
 

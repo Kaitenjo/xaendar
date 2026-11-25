@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { CLEANUP, CONNECTED_HOOKS, DISCONNECTED_HOOKS, HEADER, HYDRATE, IS_RENDERED } from '../../costants';
 import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
 import { _bindEffect, effect } from '../../signals/effect/effect';
+import { input } from '../../signals/input/input';
 import type { _Context } from '../../types/context.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { ClaimNodes } from '../../utils/claim-nodes/claim-nodes.util';
@@ -42,6 +43,7 @@ const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 type TestElement = HTMLElement & {
   _context: _Context,
   connectedCallback(): void,
+  disconnectedCallback(): void,
   effect(fn: NoArgsVoidFunction, options?: EffectOptions): NoArgsVoidFunction,
   createComponent: CustomElement['createComponent']
 };
@@ -107,6 +109,18 @@ const Child = (() => {
 describe('CustomElement', () => {
   it('attaches an open shadow root', () => {
     expect(create().shadowRoot?.mode).toBe('open');
+  });
+
+  it('tells its elements by instanceof, through the subclasses too, and nothing else', () => {
+    const element = create(createContext());
+    const Subclass = element.constructor as typeof CustomElement;
+
+    expect(element).toBeInstanceOf(CustomElement);
+    expect(element).toBeInstanceOf(Subclass);
+    expect(document.createElement('div')).not.toBeInstanceOf(Subclass);
+    expect(document.createElement('div')).not.toBeInstanceOf(CustomElement);
+    expect(null).not.toBeInstanceOf(CustomElement);
+    expect('x-base').not.toBeInstanceOf(CustomElement);
   });
 
   it('throws when no render function is registered', () => {
@@ -241,6 +255,22 @@ describe('CustomElement', () => {
       element.remove();
     });
 
+    it('does not hydrate when its trigger fires once it is removed, but as soon as it is inserted again', () => {
+      const element = document.createElement(`x-base-${counter++}`);
+      element.setAttribute('data-xd-hydrate', 'interaction');
+      element.attachShadow({ mode: 'open' }).innerHTML = '<p></p>';
+      document.body.appendChild(element);
+      const render = defineAfterParse(element);
+
+      element.remove();
+      element.click();
+      expect(render).not.toHaveBeenCalled();
+
+      document.body.appendChild(element);
+      expect(render).toHaveBeenCalledExactlyOnceWith(expect.any(ClaimNodes));
+      element.remove();
+    });
+
     it('waits, inside the shadow root of another component, for its trigger once that component adopts it', () => {
       const host = document.body.appendChild(document.createElement('div'));
       const element = host.attachShadow({ mode: 'open' }).appendChild(document.createElement(`x-base-${counter++}`));
@@ -301,14 +331,50 @@ describe('CustomElement', () => {
   });
 
   describe('inputs of the server', () => {
-    it('sets the inputs the server wrote into the element before onInit, and removes their attribute', () => {
-      const seen = new Array<unknown>();
-      const { element } = createWithHooks({ onInit: target => seen.push((target as unknown as { since: Date }).since, target.hasAttribute('data-xd-inputs')) });
-      element.setAttribute('data-xd-inputs', _stringifyState({ since: new Date(0) }, 'inputs'));
+    /**
+     * Upgrades an element the server rendered without a shadow root, holding the inputs written into `data-xd-inputs`,
+     * as a component declaring the input `since`, recording what its `onInit` sees.
+     */
+    function upgradeWithInputs(inputs: Record<string, unknown>, client = true) {
+      const name = `x-base-${counter++}`;
+      const element = document.createElement(name);
+      if (client) {
+        element.setAttribute('data-xd-client', '');
+      }
 
+      element.setAttribute('data-xd-inputs', _stringifyState(inputs, 'inputs'));
+      const seen = new Array<unknown>();
+      const klass = class extends CustomElement {
+        public readonly since = input<Date>();
+
+        public onInit(): void {
+          seen.push(this.since(), this.hasAttribute('data-xd-inputs'));
+        }
+      };
+      _defineRender(klass, () => _scope(null, EMPTY_LAYOUT));
       document.body.appendChild(element);
+      customElements.define(name, klass);
+
+      return { element, seen };
+    }
+
+    it('sets the inputs the server wrote into the element before onInit, and removes their attribute', () => {
+      const { element, seen } = upgradeWithInputs({ since: new Date(0) });
 
       expect(seen).toEqual([new Date(0), false]);
+      element.remove();
+    });
+
+    it('rejects a name that is not an input, never assigning it to the element', () => {
+      expect(() => upgradeWithInputs({ innerHTML: '<img src="x">' })).toThrow(`does not declare an input named "innerHTML", written into its data-xd-inputs attribute`);
+      expect(document.body.lastElementChild!.innerHTML).toBe('');
+      document.body.lastElementChild!.remove();
+    });
+
+    it('reads them only while the element hydrates', () => {
+      const { element, seen } = upgradeWithInputs({ since: new Date(0) }, false);
+
+      expect(seen).toEqual([undefined, true]);
       element.remove();
     });
   });
@@ -377,6 +443,25 @@ describe('CustomElement', () => {
       element.remove();
 
       expect(calls).toEqual(['onDestroy', 'clear', 'dispose']);
+    });
+
+    it('does not keep the component from being disposed when it throws, its error thrown afterwards', () => {
+      const calls = new Array<string>();
+      const { element } = createWithHooks({
+        onInit: element => {
+          element.effect(() => undefined, { onCleanup: () => calls.push('dispose') });
+        },
+        onDestroy: () => {
+          throw new Error('destroy');
+        },
+        onClear: () => calls.push('clear')
+      });
+      document.body.appendChild(element);
+
+      expect(() => element.disconnectedCallback()).toThrow('destroy');
+      expect(calls).toEqual(['clear', 'dispose']);
+      element.remove();
+      expect(calls).toEqual(['clear', 'dispose']);
     });
   });
 
@@ -624,7 +709,7 @@ describe('CustomElement', () => {
     /**
      * Builds a component declaring the given host directives, recording its own lifecycle in the same list.
      */
-    function createHost(calls: string[], Directive: Constructor<CustomDirective>) {
+    function createHost(calls: string[], ...directives: Constructor<CustomDirective>[]) {
       const context = createContext(() => calls.push('clear'));
       const klass = class extends CustomElement {
         public onInit(): void {
@@ -635,7 +720,7 @@ describe('CustomElement', () => {
           calls.push('onDestroy');
         }
       };
-      Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { hostDirectives: [Directive] } });
+      Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { hostDirectives: directives } });
       _defineRender(klass, () => {
         calls.push('render');
         return context;
@@ -719,6 +804,38 @@ describe('CustomElement', () => {
       element.remove();
       expect(onCleanup).toHaveBeenCalledTimes(2);
       expect(calls.filter(call => call === 'directive onInit')).toHaveLength(2);
+    });
+
+    it('are all stopped, and their effects disposed, when the onDestroy of one throws, its error reported in a microtask', () => {
+      const calls = new Array<string>();
+      const onCleanup = vi.fn();
+      const error = new Error('directive destroy');
+      const Throwing = class extends CustomDirective {
+        public onDestroy(): void {
+          throw error;
+        }
+      };
+      const element = createHost(calls, Throwing, createDirective(calls, onCleanup));
+      document.body.appendChild(element);
+      const queued = new Array<() => void>();
+      const queue = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(callback => queued.push(callback));
+
+      try {
+        element.remove();
+      } finally {
+        queue.mockRestore();
+      }
+
+      expect(calls).toContain('directive onDestroy');
+      expect(onCleanup).toHaveBeenCalledOnce();
+      expect(queued.some(callback => {
+        try {
+          callback();
+          return false;
+        } catch (thrown) {
+          return thrown === error;
+        }
+      })).toBe(true);
     });
 
     it('are not started when the component cannot render', () => {

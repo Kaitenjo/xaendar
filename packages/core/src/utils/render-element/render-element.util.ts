@@ -18,6 +18,7 @@ import type { ElementBinding } from '../../types/element-binding.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import type { RenderChildren } from '../../types/render-children.type';
 import type { RenderConditionalBinding } from '../../types/render-conditional-binding.type';
+import type { RenderElementAttributeTemplateValue } from '../../types/render-element-attribute-template-value.type';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
 import type { _RenderElementBinding } from '../../types/render-element-binding.type';
 import type { RenderElementConditionalBinding } from '../../types/render-element-conditional-binding.type';
@@ -37,9 +38,8 @@ import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { _selectBranch } from '../select-branch/select-branch.util';
 import { _prepareStyling } from '../styling-binding/styling-binding.util';
 import { ensureStylingState } from '../styling-state/styling-state.util';
+import { TEMPLATE_CONTENT_POLICY, toTrustedHtml } from '../trusted-html/trusted-html.util';
 import { connectChild } from '../try-scope/try-scope.util';
-
-export type RenderElementAttributeTemplateValue = Omit<RenderElementAttribute, 'value'> & { value: Exclude<RenderElementAttribute['value'], string> };
 
 /**
  * Creates a DOM element, applies attributes and event listeners, appends it
@@ -92,7 +92,7 @@ export function _renderElement(parentNode: Element, context: _Context, anchor: C
 function renderElement(parentNode: Element, context: _Context, anchor: Comment | null, config: RenderElement, slot = config.slot): void {
   const { attributes, events, conditionalBindings, directives, children, ref } = config;
   const nodeStrategy = getNodeStrategy(context);
-  const element = nodeStrategy.element(context, parentNode, config.tagName, config.namespace);
+  const element = nodeStrategy.element(context, parentNode, config.tagName, config.namespace, config.is);
   if (ref) {
     context[config.refSlot!] = element;
     _setElementRef(element, ref);
@@ -101,7 +101,7 @@ function renderElement(parentNode: Element, context: _Context, anchor: Comment |
   trackNode(element, parentNode, context, slot);
   // A standard <template> the server wrote already holds its content: the parser of the browser put it there
   if (config.content && !(element as HTMLTemplateElement).content.firstChild) {
-    element.innerHTML = config.content;
+    element.innerHTML = toTrustedHtml(config.content, TEMPLATE_CONTENT_POLICY);
   }
 
   // The bindings of `class` and `style` a host attribute may write keep themselves in the sources of the element
@@ -428,8 +428,11 @@ function bindDirectives(element: Element, context: _Context, directives: readonl
 
     // Registered before connecting, so that `onDestroy` runs before the effects created in `onInit` are disposed
     addCleanup(context, () => {
-      directive[DIRECTIVE_DISCONNECT]();
-      _removeAppliedDirective(element, directive);
+      try {
+        directive[DIRECTIVE_DISCONNECT]();
+      } finally {
+        _removeAppliedDirective(element, directive);
+      }
     });
     _addAppliedDirective(element, directive);
     directive[DIRECTIVE_CONNECT](context);

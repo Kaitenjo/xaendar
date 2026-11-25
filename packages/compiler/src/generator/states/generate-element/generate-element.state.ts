@@ -16,6 +16,7 @@ import { isStructuralElement } from '../../../parser/utils/scope-declarations/sc
 import type { ElementNamespace } from '../../../types/element-namespace.type';
 import { mapContentTemplates } from '../../../utils/content-templates/content-templates.utils';
 import { getChildrenNamespace, getElementNamespace } from '../../../utils/element-namespace/element-namespace.utils';
+import { getElementSelector } from '../../../utils/element-selector/element-selector.utils';
 import { readsEvent } from '../../../utils/event-reads/event-reads.utils';
 import { GeneratorContext } from '../../context/context';
 import type { DescriptorOwner } from '../../types/descriptor-owner.type';
@@ -26,6 +27,7 @@ import { appendBlockPosition, appendContainer, rendersBlock } from '../../utils/
 import { getElementIdentifier, isConstantExpression, joinVariables, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
 import { declareExpression, toArrayLiteral, toObjectLiteral, toRoleName } from '../../utils/module-code/module-code.utils';
 import { describeStyling, getDirectiveOrder, orderDirectives, splitStylingAttributes } from '../../utils/styling/styling.utils';
+import { appendUrlCheck, getUrlCheck } from '../../utils/url-check/url-check.utils';
 
 /**
  * Generates code for an HTML element node: creates the DOM element, sets attributes,
@@ -66,24 +68,26 @@ import { describeStyling, getDirectiveOrder, orderDirectives, splitStylingAttrib
  */
 export async function generateElement(node: ElementNode, parentNode: string, index: string, generatorContext: GeneratorContext, anchor: string | null, _separated = false, last = false): Promise<GeneratorTransitionFunctionReturnType> {
   const tagName = node.tagName;
+  // The name its component is looked up by: the `is` of a customized built-in element, the tag name of any other element
+  const selector = getElementSelector(node);
   const nodeName = getElementIdentifier(node, parentNode, index);
   // A custom element of another library has no metadata: it is generated like a native element
-  const isCustomElement = isValidCustomElementName(tagName, false) && !generatorContext.isForeignElement(tagName);
+  const isCustomElement = isValidCustomElementName(selector, false) && !generatorContext.isForeignElement(selector);
   const structural = isStructuralElement(node);
-  const owner: DescriptorOwner = { name: nodeName, generatorContext };
+  const owner: DescriptorOwner = { name: nodeName, tagName, generatorContext };
   /*
     An element structural directives are applied to is rendered in a scope of its own, which the runtime creates and
     clears with it: its bindings, its directives and its children are resolved in a generator context standing for it,
     while the structural directives are bound in the scope of the element
   */
-  const elementOwner: DescriptorOwner = structural ? { name: nodeName, generatorContext: new GeneratorContext(generatorContext, undefined, 'runtime') } : owner;
+  const elementOwner: DescriptorOwner = structural ? { name: nodeName, tagName, generatorContext: new GeneratorContext(generatorContext, undefined, 'runtime') } : owner;
   orderDirectives(node);
   // The attributes the component or the directives may write too, collected while the bindings are mapped
   const branchDirectives = !!(branchStyling(node.conditionalBindings) & 4);
   const shared = isCustomElement || node.directives.length || branchDirectives ? new Array<string>() : undefined;
-  const [attributes, written] = await mapBindings(node, elementOwner, tagName, isCustomElement, false, false, shared);
+  const [attributes, written] = await mapBindings(node, elementOwner, selector, isCustomElement, false, false, shared);
   const events = mapEvents(node.events, elementOwner);
-  const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, elementOwner, tagName, isCustomElement, false, shared);
+  const conditionalBindings = await mapConditionalBindings(node.conditionalBindings, elementOwner, selector, isCustomElement, false, shared);
   const directives = await mapDirectives(node.directives, elementOwner);
   const structuralDirectives = await mapStructuralDirectives(node.structuralDirectives, owner);
   const structuralConditionalBindings = await mapStructuralConditionalBindings(node.conditionalBindings, owner);
@@ -95,7 +99,12 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   };
 
   const namespace = getElementNamespace(tagName, generatorContext.namespace);
-  const members = [`tagName: ${toStringLiteral(tagName)}`];
+  const members = [`tagName: '${tagName}'`];
+  // A customized built-in element is created with its `is`, which decides its class
+  if (node.is) {
+    members.push(`is: ${toStringLiteral(node.is)}`);
+  }
+
   appendNamespace(members, namespace);
   appendList(members, 'attributes', attributes);
   appendList(members, 'events', events);
@@ -291,6 +300,12 @@ async function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner
       const once = `_setExpression${kind}`;
       role = isDirective ? `${toRoleName(target.slice(2))}_${toRoleName(property)}` : toRoleName(attribute === undefined ? property : name);
       members.push(`value: ${declareElementExpression(owner, role, expression)}`);
+      // A URL written into the attribute is checked by the runtime, as the security of the project asks
+      const check = input ? undefined : getUrlCheck(owner.tagName, property);
+      if (check) {
+        appendUrlCheck(members, check);
+      }
+
       if (isConstantExpression(value.expression)) {
         members.push(`setter: ${once}`);
       } else {
@@ -470,7 +485,7 @@ function stylingFlags(node: ElementNode, writes: number, structural: boolean): n
 
   const branches = branchStyling(node.conditionalBindings);
   let flags = structural || branches & 4 ? writes : writes & branches;
-  if (isValidCustomElementName(node.tagName, false) || node.directives.length) {
+  if (isValidCustomElementName(getElementSelector(node), false) || node.directives.length) {
     flags |= (writes & ~flags) << 2;
   }
 
@@ -709,7 +724,7 @@ async function mapConditionalBindingDescriptors(
       continue;
     }
 
-    const branchOwner: DescriptorOwner = { name: owner.name, generatorContext: new GeneratorContext(owner.generatorContext, undefined, 'runtime') };
+    const branchOwner: DescriptorOwner = { name: owner.name, tagName: owner.tagName, generatorContext: new GeneratorContext(owner.generatorContext, undefined, 'runtime') };
     const mappedBranches = new Array<string>();
     const variables: { read?: readonly number[] } = {};
     for (let j = 0; j < branches.length; j++) {

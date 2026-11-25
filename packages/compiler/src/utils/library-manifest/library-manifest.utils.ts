@@ -1,3 +1,4 @@
+import { fromStringLiteral, toStringLiteral } from '../../generator/utils/generator/generator.utils';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
 import type { ComponentEventMetadata } from '../../types/component-event-metadata.type';
 import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
@@ -10,10 +11,10 @@ import type { LibraryManifest } from '../../types/library-manifest/library-manif
 import type { TypeReference } from '../../types/type-reference.type';
 
 /**
- * The `import()` types of the types the compiler writes for the bindings, their module between single quotes, and the
- * name they reference after it, if any.
+ * The `import()` types of the types the compiler writes for the bindings, their module between single quotes, as
+ * `toStringLiteral` writes it (`'/home/o\'brien/card'`), and the name they reference after it, if any.
  */
-const IMPORT_TYPE = /import\('([^']*)'\)(?:\.([A-Za-z_$][\w$]*))?/g;
+const IMPORT_TYPE = /import\('((?:[^'\\]|\\.)*)'\)(?:\.([A-Za-z_$][\w$]*))?/g;
 
 /**
  * Rewrites the modules the `import()` types of a type reference: the compiler references the classes of the components
@@ -29,7 +30,7 @@ const IMPORT_TYPE = /import\('([^']*)'\)(?:\.([A-Za-z_$][\w$]*))?/g;
  * @returns The type, its modules rewritten.
  */
 export function mapTypeModules(type: string, map: (module: string) => string): string {
-  return type.replace(IMPORT_TYPE, (_match, module: string, name: string | undefined) => `import('${map(module)}')${name === undefined ? '' : `.${name}`}`);
+  return type.replace(IMPORT_TYPE, (_match, module: string, name: string | undefined) => `import(${toStringLiteral(map(fromStringLiteral(module)))})${name === undefined ? '' : `.${name}`}`);
 }
 
 /**
@@ -46,7 +47,7 @@ export function listTypeReferences(type: string): TypeReference[] | undefined {
   while ((match = importType.exec(type)) !== null) {
     if (match[2] !== undefined) {
       references ??= new Array<TypeReference>();
-      references.push({ module: match[1], name: match[2] });
+      references.push({ module: fromStringLiteral(match[1]), name: match[2] });
     }
   }
 
@@ -69,6 +70,10 @@ export function toLibraryDeclaration(metadata: ComponentOrDirectiveMetadata, mod
   const declaration: LibraryManifestDeclaration = { type, className, selector, module, types, inputs: toInputs(metadata, mapModule), events: toEvents(metadata, mapModule) };
   if (typeParameters?.length) {
     declaration.typeParameters = typeParameters;
+  }
+
+  if (metadata.type === 'component' && metadata.extends) {
+    declaration.extends = metadata.extends;
   }
 
   if (metadata.type === 'component' && metadata.clientOnly) {
@@ -151,6 +156,10 @@ export function toLibraryMetadata(declaration: LibraryManifestDeclaration, manif
   };
   if (typeParameters?.length) {
     metadata.typeParameters = typeParameters;
+  }
+
+  if (declaration.extends) {
+    (metadata as LibraryComponentMetadata).extends = declaration.extends;
   }
 
   if (type === 'component' && (ssr || !manifest.ssr)) {

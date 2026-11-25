@@ -1,3 +1,4 @@
+import { isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { serverTs } from './server-ts';
 
@@ -53,8 +54,21 @@ describe('serverTs()', () => {
   it('serves the files of the build, never one outside of it', () => {
     const content = serverTs('my-app-root');
 
-    expect(content).toContain('if (!path.startsWith(CLIENT_DIR)) {');
     expect(content).toContain('throw new Error(`${pathname} is outside of the build`);');
     expect(content).toContain('}).listen(port, () => console.log(`Listening on http://localhost:${port}`));');
+  });
+
+  it('refuses a path going up out of the build, also encoded so that the URL keeps it, and serves the others', () => {
+    // The code reading the path of a file and refusing it outside of the build, run as the server runs it
+    const check = /(const path = [^\n]+\n[\s\S]+?\n\s+if \(([^\n]+)\) \{)/.exec(serverTs('my-app-root'))!;
+    const readPath = new Function('CLIENT_DIR', 'pathname', 'join', 'normalize', 'relative', 'isAbsolute', 'sep', `${check[1]} return null; } return path;`) as (...args: unknown[]) => string | null;
+    const clientDir = resolve('/app/dist/client');
+    const serve = (url: string): string | null => readPath(clientDir, new URL(url, 'http://localhost').pathname, join, normalize, relative, isAbsolute, sep);
+
+    expect(serve('/assets/index.js')).toBe(join(clientDir, 'assets', 'index.js'));
+    expect(serve('/%2e%2e/client-old/secret.js')).toBe(join(clientDir, 'client-old', 'secret.js'));
+    expect(serve('/..%2Fclient-old%2Fsecret.js')).toBeNull();
+    expect(serve('/..%2F..%2Fetc%2Fpasswd.txt')).toBeNull();
+    expect(serve('/..%2Fclient.js')).toBeNull();
   });
 });

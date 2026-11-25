@@ -37,10 +37,10 @@ describe('generateServerElement', () => {
     expect(functions).toEqual([]);
   });
 
-  it('writes the tag name of an element rendered by the runtime as a string literal, escaping its quotes', () => {
-    const { constants } = generate('<p\'x class.a="{ on() }">t</p\'x>');
+  it('writes the tag name of an element rendered by the runtime as it is, between quotes', () => {
+    const { constants } = generate('<p=x class.a="{ on() }">t</p=x>');
 
-    expect(constants.some(constant => constant.includes('tagName: \'p\\\'x\''))).toBe(true);
+    expect(constants.some(constant => constant.includes('tagName: \'p=x\''))).toBe(true);
   });
 
   it('writes no end tag for a void element, and a line feed after the start tag of an element dropping it', () => {
@@ -138,6 +138,11 @@ describe('generateServerElement', () => {
     expect(generate('<p attr.title="a" attr.lang="{ on() }">t</p>').code).toEqual(['out.push(\'<p title="a"\' + _ssrAttribute(\'lang\', this.on()) + \'>{children of p0}</p>\');']);
   });
 
+  it('writes the name of an attribute bound to an expression as it is, which the lexer validates', () => {
+    expect(generate('<p data-on:x="{ on() }">t</p>').code).toEqual(['out.push(\'<p\' + _ssrAttribute(\'data-on:x\', this.on()) + \'>{children of p0}</p>\');']);
+    expect(() => generate('<p a\\b="{ on() }">t</p>')).toThrow('\'\\\' cannot be part of an attribute name');
+  });
+
   it('sets the input a two-way binding binds from the signal, writing nothing of its listener, and throws for one binding no input', () => {
     const withInput = () => {
       const context = new GeneratorContext(cache);
@@ -151,6 +156,30 @@ describe('generateServerElement', () => {
     expect(functions).toEqual([expressionFunction('x_input0$value', 'this.text()')]);
     expect(() => generate('<x-input [(other)]="text"></x-input>', withInput())).toThrow('[(other)] binds a model of a component or of a directive: x-input has no input "other"');
     expect(() => generate('<input @if (on()) { [(value)]="text" } />')).toThrow('[(value)] binds a model of a component or of a directive: a native element has no input "value"');
+  });
+
+  it('writes a customized built-in element through _ssrComponent, with its is, its void tag left without end tag', () => {
+    const { code, constants } = generate('<input is="masked-input" mask="99" />');
+
+    expect(code).toEqual(['_ssrComponent(out, context, input0$element);']);
+    expect(constants).toEqual([[
+      'const input0$element = {',
+      '  tagName: \'input\',',
+      '  is: \'masked-input\',',
+      '  attributes: [{ name: \'mask\', value: \'99\', setter: _setProperty }]',
+      '};'
+    ].join('\n')]);
+  });
+
+  it('writes a customized built-in element of another library like a native element, with its is first', () => {
+    const foreign = () => {
+      const context = new GeneratorContext(cache);
+      context.addCustomElementPatterns('sl-*');
+      return context;
+    };
+
+    expect(generate('<button is="sl-copy" type="button"></button>', foreign()).code).toEqual(['out.push(\'<button is="sl-copy" type="button"></button>\');']);
+    expect(generate('<button is="sl-copy" class.on="{ on() }"></button>', foreign()).constants.at(-1)).toContain('tagName: \'button\',\n  is: \'sl-copy\',');
   });
 
   it('writes a custom element of another library like a native element', () => {

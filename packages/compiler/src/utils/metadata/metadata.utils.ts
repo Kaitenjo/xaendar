@@ -1,6 +1,7 @@
 import { slice } from '@xaendar/common';
-import { isValidCustomElementName, toModelChangeEvent } from '@xaendar/internals';
-import { ClassDeclaration, CompilerOptions, Decorator, EntityName, Expression, forEachChild, getCombinedModifierFlags, getDecorators, getNameOfDeclaration, Identifier, isArrowFunction, isCallExpression, isClassDeclaration, isDecorator, isEnumDeclaration, isFunctionExpression, isIdentifier, isImportDeclaration, isInterfaceDeclaration, isMethodDeclaration, isNamedImports, isNamespaceImport, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isQualifiedName, isShorthandPropertyAssignment, isStringLiteral, isTypeAliasDeclaration, isTypeReferenceNode, ModifierFlags, ModifierLike, Node, ObjectLiteralElementLike, ObjectLiteralExpression, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
+import { acceptsShadowRoot, isValidCustomElementName, toModelChangeEvent } from '@xaendar/internals';
+import { CallExpression, ClassDeclaration, CompilerOptions, Decorator, EntityName, Expression, forEachChild, getCombinedModifierFlags, getDecorators, getNameOfDeclaration, Identifier, isArrowFunction, isCallExpression, isClassDeclaration, isDecorator, isEnumDeclaration, isFunctionExpression, isIdentifier, isImportDeclaration, isInterfaceDeclaration, isMethodDeclaration, isNamedImports, isNamespaceImport, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isQualifiedName, isShorthandPropertyAssignment, isStringLiteral, isTypeAliasDeclaration, isTypeReferenceNode, ModifierFlags, ModifierLike, Node, ObjectLiteralElementLike, ObjectLiteralExpression, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
+import { toStringLiteral } from '../../generator/utils/generator/generator.utils';
 import { ComponentPropertyMetadataWithSpan } from '../../models/component-property-metadata-with-span/component-property-metadata-with-span.model';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
 import type { ClassDecoratorNode } from '../../types/class-decorator-node.type';
@@ -20,10 +21,10 @@ import type { EventDecorator } from '../../types/typescript-decorator-nodes/even
 import type { PropertyDecorator } from '../../types/typescript-decorator-nodes/property-decorator.type';
 import type { WebComponentDecorator } from '../../types/typescript-decorator-nodes/web-component-decorator.type';
 import type { WebComponentError } from '../../types/web-component-error.type';
-import { getHTMLElementMembers, HTML_ELEMENT } from '../dom-members/dom-members.utils';
+import { getNativeClassMembers, getNativeClassOfTag, HTML_ELEMENT } from '../dom-members/dom-members.utils';
 import { addHostDirectiveBindings, checkHostDirectives, hasHostDirectives } from '../host-directives/host-directives.utils';
 import { readLibraryClass } from '../package-libraries/package-libraries.utils';
-import { getBaseClassExpression, resolveBaseClassOf } from '../resolve-declaration/resolve-declaration.utils';
+import { DEFAULT_COMPILER_OPTIONS, getBaseClassExpression, getCoreImport, resolveBaseClassOf, resolveExportedClass, resolveModulePath } from '../resolve-declaration/resolve-declaration.utils';
 import { toTypeCheckModuleSpecifier } from '../symbol-imports/symbol-imports.utils';
 
 /**
@@ -34,7 +35,8 @@ import { toTypeCheckModuleSpecifier } from '../symbol-imports/symbol-imports.uti
  * @param sourceFile - The source file declaring the components.
  * @param compilerOptions - Project compiler options, driving how the modules declaring the base classes are resolved.
  * @returns The metadata of every component declared in the file, keyed by class name, or `undefined`
- *   if the `@WebComponent` decorator of a component doesn't declare a literal selector and template url.
+ *   if the `@WebComponent` decorator of a component doesn't declare a literal selector and template url (or tag it
+ *   extends, for a customized built-in element, which may render no template).
  * @throws If two properties of a component resolve to the same name.
  */
 export async function extractComponentsMetadataFromSourceFile(sourceFile: SourceFile, compilerOptions?: CompilerOptions): Promise<Map<string, ComponentMetadata> | undefined> {
@@ -43,8 +45,9 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
   const declarations = getWebComponentDeclarations(sourceFile);
   for (let i = 0; i < declarations.length; i++) {
     const { klass, decorator } = declarations[i];
-    const { selector, styleUrl, templateUrl, clientOnly } = extractMetadaFromDecorator(decorator);
-    if (!selector || !templateUrl) {
+    const { selector, styleUrl, templateUrl, clientOnly, extends: extended } = extractMetadaFromDecorator(decorator);
+    // Only a customized built-in element may render no template
+    if (!selector || (!templateUrl && !extended)) {
       return;
     }
 
@@ -57,10 +60,17 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
       modulePath: sourceFile.fileName,
       selector,
       styleUrl,
-      templateUrl,
       ...bindings,
       typescriptNodes: declarations[i]
     };
+
+    if (templateUrl) {
+      metadata.templateUrl = templateUrl;
+    }
+
+    if (extended) {
+      metadata.extends = extended;
+    }
 
     const typeParameters = extractTypeParameters(klass);
     if (typeParameters) {
@@ -159,16 +169,23 @@ function reportAt(errors: WebComponentError[], sourceFile: SourceFile, message: 
 /**
  * Finds the `@WebComponent` declarations of a source file that the plugin cannot compile, as it reads them
  * from the source code: a component declared in a file not following the component convention, whose
- * `selector`, `templateUrl` or `styleUrl` is not a string literal (`selector` and `templateUrl` are required), whose
- * `selector` is not a valid custom element name, or whose `ssr` cannot be read (see {@link findSsrError}) or is declared
- * in a project that does not render on the server. The build and the editor report the same errors.
+ * `selector`, `extends`, `templateUrl` or `styleUrl` is not a string literal (`selector` is required, and so is
+ * `templateUrl` without `extends`), whose `selector` is not a valid custom element name, or whose `ssr` cannot be read
+ * (see {@link findSsrError}) or is declared in a project that does not render on the server. The build and the editor
+ * report the same errors.
+ *
+ * A customized built-in element (`extends`) names the tag of a native element, renders a template only when the tag
+ * accepts a shadow root, has a stylesheet only with a template, and extends `customElementOf` of the class of its tag
+ * (`CustomElement` for a tag whose class is `HTMLElement`): a component extending `customElementOf` of another class
+ * declares `extends` (see {@link findNativeClassError}).
  *
  * @param sourceFile - The source file declaring the components.
  * @param componentFile - Whether the file follows the component convention (`.xd.component.ts`).
  * @param ssr - Whether the project renders on the server: `false` rejects the `ssr` option, `undefined` when it is not known.
+ * @param compilerOptions - Project compiler options, driving how the modules declaring the base classes are resolved.
  * @returns One error per component or option that cannot be compiled, or `undefined` when there is none.
  */
-export function findWebComponentErrors(sourceFile: SourceFile, componentFile: boolean, ssr?: boolean): WebComponentError[] {
+export function findWebComponentErrors(sourceFile: SourceFile, componentFile: boolean, ssr?: boolean, compilerOptions: CompilerOptions = DEFAULT_COMPILER_OPTIONS): WebComponentError[] {
   const errors = new Array<WebComponentError>;
 
   const declarations = getWebComponentDeclarations(sourceFile);
@@ -187,7 +204,11 @@ export function findWebComponentErrors(sourceFile: SourceFile, componentFile: bo
     }
 
     let selector = false;
-    let templateUrl = false;
+    let templateUrl: ObjectLiteralElementLike | undefined;
+    let styleUrl: ObjectLiteralElementLike | undefined;
+    let extendsOption: ObjectLiteralElementLike | undefined;
+    // The tag the component extends, once it is known to be the one of a native element
+    let extended: string | undefined;
     for (let j = 0; j < options.properties.length; j++) {
       const property = options.properties[j];
       if (!(isPropertyAssignment(property) || isShorthandPropertyAssignment(property)) || !isIdentifier(property.name)) {
@@ -209,9 +230,13 @@ export function findWebComponentErrors(sourceFile: SourceFile, componentFile: bo
           selector = true;
           break;
         case 'templateUrl':
-          templateUrl = true;
+          templateUrl = property;
           break;
         case 'styleUrl':
+          styleUrl = property;
+          break;
+        case 'extends':
+          extendsOption = property;
           break;
         default:
           continue;
@@ -222,18 +247,159 @@ export function findWebComponentErrors(sourceFile: SourceFile, componentFile: bo
         reportAt(errors, sourceFile, `The ${name} option of ${className} must be a string literal`, isPropertyAssignment(property) ? property.initializer : property);
       } else if (name === 'selector' && !isValidCustomElementName(property.initializer.text)) {
         reportAt(errors, sourceFile, `Invalid custom element name "${property.initializer.text}" in component ${className}`, property.initializer);
+      } else if (name === 'extends') {
+        const error = findExtendsError(property.initializer.text, className);
+        error ? reportAt(errors, sourceFile, error, property.initializer) : extended = property.initializer.text;
       }
     }
 
     if (!selector) {
       reportAt(errors, sourceFile, `The selector option of ${className} must be a string literal`, decorator.expression.expression);
     }
-    if (!templateUrl) {
+
+    // A customized built-in element may render no template, an autonomous one always renders one
+    if (!templateUrl && !extendsOption) {
       reportAt(errors, sourceFile, `The templateUrl option of ${className} must be a string literal`, decorator.expression.expression);
+    }
+
+    if (extended && !acceptsShadowRoot(extended)) {
+      reportShadowOptions(errors, sourceFile, className, extended, templateUrl, styleUrl);
+    } else if (extendsOption && styleUrl && !templateUrl) {
+      reportAt(errors, sourceFile, `The styleUrl option of ${className} styles its template, which it does not declare: add templateUrl, or remove styleUrl`, styleUrl);
+    }
+
+    if (!extendsOption || extended) {
+      const error = findNativeClassError({ sourceFile, declaration: klass }, extended, compilerOptions);
+      // ! is a safe assertion: a class extending nothing has no native class to disagree with
+      if (error) {
+        reportAt(errors, sourceFile, error, getBaseClassExpression(klass)!);
+      }
     }
   }
 
   return errors;
+}
+
+/**
+ * Tells why the `extends` option of a component does not name the tag of a native HTML element.
+ *
+ * @param tagName - The tag the option names.
+ * @param className - The name of the class of the component, for the message.
+ * @returns The error, `undefined` for the tag of a native element.
+ */
+function findExtendsError(tagName: string, className: string): string | undefined {
+  if (isValidCustomElementName(tagName, false)) {
+    return `The extends option of ${className} names <${tagName}>, a custom element: it names the tag of the native element ${className} extends, e.g. extends: 'button'`;
+  }
+
+  return getNativeClassOfTag(tagName) ? undefined : `The extends option of ${className} names <${tagName}>, which is not a native HTML element: it names the tag of the native element ${className} extends, e.g. extends: 'button'`;
+}
+
+/**
+ * Reports the `templateUrl` and the `styleUrl` of a customized built-in element whose tag accepts no shadow root
+ * (`button`, `input`, `li`…): it renders no template, and has nothing to style.
+ *
+ * @param errors - The errors, filled.
+ * @param sourceFile - The source file declaring the component.
+ * @param className - The name of the class of the component.
+ * @param tagName - The tag it extends.
+ * @param options - The `templateUrl` and the `styleUrl` options, the ones it declares.
+ */
+function reportShadowOptions(errors: WebComponentError[], sourceFile: SourceFile, className: string, tagName: string, ...options: Array<ObjectLiteralElementLike | undefined>): void {
+  for (let i = 0; i < options.length; i++) {
+    const option = options[i];
+    if (option) {
+      reportAt(errors, sourceFile, `<${tagName}> accepts no shadow root: ${className}, extending it, renders no template and has no stylesheet, its content being the one its tag holds. Remove ${option.name!.getText(sourceFile)}`, option);
+    }
+  }
+}
+
+/**
+ * Tells why the class a component extends is not the one its `extends` option asks for: the class `customElementOf`
+ * creates on the class of the tag, which is `CustomElement` for a tag whose class is `HTMLElement`, or `CustomElement`
+ * for an autonomous custom element. The chain of the classes is followed up to `customElementOf(…)` or `CustomElement`.
+ *
+ * @param klass - The class of the component, with the file declaring it.
+ * @param extended - The tag the component extends, `undefined` for an autonomous custom element.
+ * @param compilerOptions - Project compiler options, driving how the modules declaring the base classes are resolved.
+ * @returns The error, `undefined` when the classes match, or when the chain cannot be read.
+ */
+function findNativeClassError(klass: ResolvedClass, extended: string | undefined, compilerOptions: CompilerOptions): string | undefined {
+  const native = findNativeClass(klass, compilerOptions);
+  if (!native) {
+    return undefined;
+  }
+
+  const className = klass.declaration.name!.text;
+
+  if (!extended) {
+    return native === HTML_ELEMENT ? undefined : `${className} extends customElementOf(${native}): declare the tag of the native element it extends with the extends option of @WebComponent, e.g. extends: 'button'`;
+  }
+
+  const expected = getNativeClassOfTag(extended)!;
+  if (native === expected) {
+    return undefined;
+  }
+
+  const fix = expected === HTML_ELEMENT ? 'CustomElement' : `customElementOf(${expected})`;
+  return `${className} extends <${extended}>, whose class is ${expected}, but its class extends ${native === HTML_ELEMENT ? 'CustomElement' : `customElementOf(${native})`}: extend ${fix}`;
+}
+
+/**
+ * Finds the native class a component extends, following the chain of its classes up to `customElementOf(…)` of
+ * `@xaendar/core`, which gives it, or to `CustomElement`, which extends `HTMLElement`.
+ *
+ * @param klass - The class of the component, with the file declaring it.
+ * @param compilerOptions - Project compiler options, driving how the modules declaring the base classes are resolved.
+ * @returns The name of the native class, `undefined` when the chain cannot be followed up to it.
+ */
+function findNativeClass(klass: ResolvedClass, compilerOptions: CompilerOptions | undefined): string | undefined {
+  const visitedClasses = new Set<ClassDeclaration>();
+  let current: ResolvedClass | undefined = klass;
+  while (current && !visitedClasses.has(current.declaration)) {
+    visitedClasses.add(current.declaration);
+    const expression = getBaseClassExpression(current.declaration);
+    const native = expression && readNativeClass(expression, current.sourceFile);
+    if (native) {
+      return native;
+    }
+
+    current = resolveBaseClassOf(current, compilerOptions);
+  }
+
+  return undefined;
+}
+
+/**
+ * Reads the native class the `extends` clause of a class names directly: the argument of `customElementOf(…)` of
+ * `@xaendar/core`, or `HTMLElement`, which `CustomElement` extends.
+ *
+ * @param expression - The expression of the `extends` clause.
+ * @param sourceFile - The file of the class.
+ * @returns The name of the native class, `undefined` when the clause names another class.
+ */
+function readNativeClass(expression: Expression, sourceFile: SourceFile): string | undefined {
+  if (isIdentifier(expression)) {
+    return expression.text === HTML_ELEMENT ? HTML_ELEMENT : undefined;
+  }
+
+  if (!isCustomElementOfCall(expression, sourceFile)) {
+    return undefined;
+  }
+
+  const [base] = expression.arguments;
+  return base && isIdentifier(base) ? base.text : undefined;
+}
+
+/**
+ * Tells whether an expression calls `customElementOf` of `@xaendar/core`.
+ *
+ * @param expression - The expression.
+ * @param sourceFile - The file of the expression.
+ * @returns `true` for a call of `customElementOf`.
+ */
+function isCustomElementOfCall(expression: Expression, sourceFile: SourceFile): expression is CallExpression & { expression: Identifier } {
+  return isCallExpression(expression) && isIdentifier(expression.expression) && getCoreImport(expression.expression, sourceFile) === 'customElementOf';
 }
 
 /**
@@ -320,18 +486,10 @@ function collectMemberNames(klass: ResolvedClass, compilerOptions: CompilerOptio
   let current: ResolvedClass | undefined = klass;
   while (current && !visitedClasses.has(current.declaration)) {
     visitedClasses.add(current.declaration);
-    const { members } = current.declaration;
-    for (let i = 0; i < members.length; i++) {
-      const member = members[i];
-      const name = member.name;
-      if (name && (isIdentifier(name) || isStringLiteral(name)) && !(getCombinedModifierFlags(member) & ModifierFlags.Static)) {
-        names.add(name.text);
-      }
-    }
-
+    addOwnMemberNames(current.declaration, names);
     const base = resolveBaseClassOf(current, compilerOptions);
     if (!base) {
-      addGlobalBaseMembers(current.declaration, names);
+      addGlobalBaseMembers(current, names, compilerOptions);
     }
 
     current = base;
@@ -341,20 +499,59 @@ function collectMemberNames(klass: ResolvedClass, compilerOptions: CompilerOptio
 }
 
 /**
- * Adds the members of the global class the last class of a chain extends, which no declaration of a class gives: the
- * ones of `HTMLElement` (`id`, `title`, `hidden`…), extended by `CustomElement`, so that an input exposed with their name
- * is reported as the runtime rejects it.
+ * Adds the names of the instance members a class declares itself: fields, accessors and methods.
  *
- * @param declaration - The last class of the chain that could be resolved.
+ * @param declaration - The class.
  * @param names - The names of the members, filled in place.
  */
-function addGlobalBaseMembers(declaration: ClassDeclaration, names: Set<string>): void {
-  const base = getBaseClassExpression(declaration);
-  if (base && isIdentifier(base) && base.text === HTML_ELEMENT) {
-    for (const name of getHTMLElementMembers()) {
-      names.add(name);
+function addOwnMemberNames({ members }: ClassDeclaration, names: Set<string>): void {
+  for (let i = 0; i < members.length; i++) {
+    const member = members[i];
+    const name = member.name;
+    if (name && (isIdentifier(name) || isStringLiteral(name)) && !(getCombinedModifierFlags(member) & ModifierFlags.Static)) {
+      names.add(name.text);
     }
   }
+}
+
+/**
+ * Adds the members of the global class the last class of a chain extends, which no declaration of a class gives: the
+ * ones of `HTMLElement` (`id`, `title`, `hidden`…), extended by `CustomElement`, or the ones of the class of the native
+ * element `customElementOf(…)` extends (`HTMLButtonElement`: `disabled`, `value`…), along with the ones of
+ * `CustomElement`, whose code the class it creates shares, so that an input exposed with their name is reported as the
+ * runtime rejects it.
+ *
+ * @param klass - The last class of the chain that could be resolved, with the file declaring it.
+ * @param names - The names of the members, filled in place.
+ * @param compilerOptions - Project compiler options, driving how the module of `CustomElement` is resolved.
+ */
+function addGlobalBaseMembers({ sourceFile, declaration }: ResolvedClass, names: Set<string>, compilerOptions: CompilerOptions | undefined): void {
+  const base = getBaseClassExpression(declaration);
+  const native = base && readNativeClass(base, sourceFile);
+  if (!native) {
+    return;
+  }
+
+  for (const name of getNativeClassMembers(native)) {
+    names.add(name);
+  }
+
+  const customElement = isCustomElementOfCall(base, sourceFile) ? resolveCustomElement(sourceFile, compilerOptions) : undefined;
+  if (customElement) {
+    addOwnMemberNames(customElement.declaration, names);
+  }
+}
+
+/**
+ * Resolves `CustomElement` of `@xaendar/core`, which exports `customElementOf` too, for a file.
+ *
+ * @param sourceFile - The file.
+ * @param compilerOptions - Project compiler options, driving how the module is resolved.
+ * @returns The class with the file declaring it, `undefined` when it cannot be resolved.
+ */
+function resolveCustomElement(sourceFile: SourceFile, compilerOptions = DEFAULT_COMPILER_OPTIONS): ResolvedClass | undefined {
+  const path = resolveModulePath('@xaendar/core', sourceFile.fileName, compilerOptions);
+  return path ? resolveExportedClass(path, 'CustomElement', compilerOptions) : undefined;
 }
 
 /**
@@ -696,7 +893,7 @@ function findClassDecorator<D extends ClassDecoratorNode>(classDecl: ClassDeclar
  * @param decorator - The decorator node to read the arguments from.
  * @returns The literal values declared by the decorator, empty when missing or not literal.
  */
-function extractMetadaFromDecorator(decorator: ClassDecoratorNode): Pick<ComponentMetadata, 'selector' | 'templateUrl' | 'styleUrl' | 'clientOnly'> {
+function extractMetadaFromDecorator(decorator: ClassDecoratorNode): Pick<ComponentMetadata, 'selector' | 'templateUrl' | 'styleUrl' | 'clientOnly' | 'extends'> {
   const retVal: ReturnType<typeof extractMetadaFromDecorator> = {
     selector: '',
     templateUrl: '',
@@ -727,6 +924,9 @@ function extractMetadaFromDecorator(decorator: ClassDecoratorNode): Pick<Compone
             break;
           case 'styleUrl':
             retVal.styleUrl = isStringLiteral(prop.initializer) ? prop.initializer.text : undefined;
+            break;
+          case 'extends':
+            retVal.extends = isStringLiteral(prop.initializer) ? prop.initializer.text : undefined;
             break;
           case 'ssr':
             retVal.clientOnly = extractClientOnly(prop.initializer);
@@ -977,7 +1177,7 @@ function collectTypeReplacements(node: Node, sourceFile: SourceFile, start: numb
     if (qualifier) {
       // A reference through a namespace import (`ns.Tag`) only needs the namespace replaced
       const isNamespace = name !== node.typeName;
-      replacements.push({ start: name.getStart(sourceFile) - start, end: name.getEnd() - start, text: isNamespace && qualifier.namespace ? `import('${qualifier.module}')` : `import('${qualifier.module}').${qualifier.name}` });
+      replacements.push({ start: name.getStart(sourceFile) - start, end: name.getEnd() - start, text: isNamespace && qualifier.namespace ? `import(${toStringLiteral(qualifier.module)})` : `import(${toStringLiteral(qualifier.module)}).${qualifier.name}` });
     }
   }
 
@@ -1123,7 +1323,7 @@ export function getOwnerType({ modulePath, className, typeParameters }: Pick<Com
  * @returns The type, e.g. `import('/src/list.directive').List<Item>`.
  */
 function toOwnerType(modulePath: string, className: string, typeParameters: readonly string[] | undefined): string {
-  const owner = `import('${toTypeCheckModuleSpecifier({ modulePath: modulePath.replaceAll('\\', '/') })}').${className}`;
+  const owner = `import(${toStringLiteral(toTypeCheckModuleSpecifier({ modulePath: modulePath.replaceAll('\\', '/') }))}).${className}`;
   return typeParameters?.length ? `${owner}<${typeParameters.join(', ')}>` : owner;
 }
 

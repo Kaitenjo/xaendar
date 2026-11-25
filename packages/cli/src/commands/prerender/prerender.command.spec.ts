@@ -65,6 +65,18 @@ describe('prerenderCommand()', () => {
     expect(readFileSync(join(projectDir, 'dist', 'client', 'team', 'index.html'), 'utf-8')).toBe('<body><app-root>/team</app-root></body>');
   });
 
+  it('writes into each page the policy of the project, with the hashes of its inline styles', async () => {
+    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ ssr: { entry: 'src/entry-server', csp: 'default-src \'self\'' } }));
+    writeFileSync(join(projectDir, 'dist', 'client', 'index.html'), '<head></head><body><!--xd-ssr--></body>');
+    writeFileSync(join(projectDir, 'dist', 'server', 'entry-server.js'), 'export function render() { return \'<style>p{}</style>\'; }');
+
+    await prerenderCommand().parseAsync([], { from: 'user' });
+
+    expect(readFileSync(join(projectDir, 'dist', 'client', 'index.html'), 'utf-8')).toMatch(
+      /^<head><meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'sha256-[\w+/=]+'"><\/head><body><style>p\{\}<\/style><\/body>$/
+    );
+  });
+
   it('renders the root route by default', async () => {
     writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ ssr: { entry: 'src/entry-server' } }));
 

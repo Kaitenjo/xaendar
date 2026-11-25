@@ -225,6 +225,36 @@ describe('typeCheckElement', () => {
       expect(text(run('<div @switch (mode()) { }></div>'))).toEqual(['switch (root.mode()) {', '}']);
     });
 
+    describe('rejectUnsafeBindings', () => {
+      it.each([
+        ['an event handler attribute', '<div onclick="{ code }"></div>', 'Binding onclick writes code the browser runs from a value of the application: listen to the click event instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.'],
+        ['an event handler attribute in any case, written with attr.', '<div attr.onMouseOver="{ code }"></div>', 'Binding attr.onMouseOver writes code the browser runs from a value of the application: listen to the mouseover event instead'],
+        ['an event handler attribute in a conditional binding', '<div @if (on) { onload="{ code }" }></div>', 'Binding onload writes code'],
+        ['the srcdoc of an iframe', '<iframe srcdoc="{ html }"></iframe>', 'Binding srcdoc writes a document the browser runs from a value of the application: bind the src of a page instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.'],
+        ['an attribute of a component that is not an input', '<my-el onclick="{ code }"></my-el>', 'Binding onclick writes code'],
+        ['an attribute of a component written with attr.', '<my-el attr.srcdoc="{ html }"></my-el>', 'Binding attr.srcdoc writes a document'],
+        ['a restriction of an iframe', '<iframe sandbox="{ flags }"></iframe>', 'Binding sandbox sets a restriction of the <iframe> from a value of the application, which the browser applies only to the page it loads next: write it as a static attribute, or set'],
+        ['the attribute an SVG animation writes', '<animate to="{ url }" attributeName="{ name }" />', 'Binding attributeName chooses the attribute the animation writes'],
+        ['a value of an SVG animation writing an href', '<set attr.attributename="href" to="{ url }" />', 'Binding to writes into href a value of the application'],
+        ['the pragma of a meta', '<meta http-equiv="{ pragma }" />', 'Binding http-equiv chooses the pragma of the <meta>'],
+        ['the page of a refresh', '<meta http-equiv="refresh" content="{ page }" />', 'Binding content writes the page a refresh of the <meta> goes to']
+      ])('rejects a value bound to %s', (_description, template, message) => {
+        expect(() => run(template, metadata({ label: new ComponentPropertyMetadata('label', 'string') }))).toThrow(message);
+      });
+
+      it('allows the values written in the template, the inputs of a component named like them, and every binding when the option is off', () => {
+        expect(text(run('<iframe onload="init()" srcdoc="<p>a</p>" sandbox="allow-scripts"></iframe>'))).toEqual([]);
+        expect(text(run('<animate attributeName="opacity" to="{ level }" />'))).toEqual(['root.level;']);
+        expect(text(run('<meta name="theme" content="{ theme }" />'))).toEqual(['root.theme;']);
+        expect(() => run('<my-el onToggle="{ handler }"></my-el>', metadata({ onToggle: new ComponentPropertyMetadata('onToggle', 'string') }))).not.toThrow();
+
+        const context = new TypeCheckContext();
+        context.strictEvents = false;
+        context.rejectUnsafeBindings = false;
+        expect(text(typeCheckElement(parse('<iframe onload="{ code }" srcdoc="{ html }"></iframe>'), processNode, context))).toEqual(['root.code;', 'root.html;']);
+      });
+    });
+
     describe('strictEvents', () => {
       it('checks the name of a native event against the event map of the element, recording the check of the binding', () => {
         const template = '<div (bubbling)="f($event)" (click)="g()"></div>';
@@ -631,6 +661,40 @@ describe('typeCheckElement', () => {
       const context = new TypeCheckContext();
       context.addCustomElementPatterns('sl-*');
       expect(() => typeCheckElement(parse('<sl-button title="a" attr.title="b"></sl-button>'), processNode, context)).toThrow('Attribute "title" is written more than once on <sl-button>: it is not a component imported in the template, so title="…" and attr.title="…" write the same attribute of the element');
+    });
+  });
+
+  describe('customized built-in elements', () => {
+    const builtIn = (extended = 'button') => Object.assign(metadata({ label: new ComponentPropertyMetadata('label', 'string') }, { copied: 'string' }), { className: 'CopyButton', selector: 'copy-button', extends: extended });
+
+    it('type-checks the bindings of the component its is names, the native events of its tag too', () => {
+      const lines = runStrict('<button is="copy-button" label="{text}" (copied)="f($event)" (click)="g()"></button>', builtIn());
+
+      expect(text(lines)).toEqual([
+        '{',
+        '  (root.text) satisfies string;',
+        '}',
+        '{',
+        '  let $event!: CustomEvent<string>;',
+        '  root.f($event);',
+        '}',
+        '\'click\' satisfies keyof HTMLElementEventMap;',
+        'root.g();'
+      ]);
+    });
+
+    it.each([
+      ['an element whose is names no imported component', '<button is="copy-button"></button>', [], 'copy-button selector is not associated to any WebComponent imported in the template, nor declared in customElements'],
+      ['a customized built-in element written with its selector', '<copy-button></copy-button>', [builtIn()], 'CopyButton is a customized built-in element extending <button>: write it <button is="copy-button">, not <copy-button>'],
+      ['a customized built-in element written with another tag', '<a is="copy-button"></a>', [builtIn()], 'CopyButton extends <button>: write it <button is="copy-button">, not <a is="copy-button">'],
+      ['an autonomous custom element written with is', '<div is="my-el"></div>', [metadata({})], 'MyEl is an autonomous custom element: write it <my-el>, not <div is="my-el">'],
+      ['an element of SVG with is', '<svg><circle is="copy-button"></circle></svg>', [builtIn()], '<circle> is not an HTML element: is="copy-button" names a customized built-in element, which extends an HTML element']
+    ])('throws for %s', (_description, template, imports, message) => {
+      const process: ProcessNode = (node, context) => typeCheckElement(node as ElementNode, process, context);
+      const context = new TypeCheckContext();
+      context.addImport(...imports);
+
+      expect(() => typeCheckElement(parse(template), process, context)).toThrow(message);
     });
   });
 
@@ -1328,6 +1392,15 @@ describe('typeCheckElement generic components', () => {
   });
 
   describe('named by an element ref', () => {
+    it('records the instantiation of a generic customized built-in element its is names', () => {
+      const context = new TypeCheckContext();
+      context.addImport(Object.assign(genericComponent([['T', true]]), { selector: 'copy-button', extends: 'button' }));
+
+      typeCheckElement(parse('<button is="copy-button" #copy></button>'), processNode, context);
+
+      expect(context.hasInstantiation(0)).toBe(true);
+    });
+
     it('declares the instantiation in the scope of the variable, under names ending with the position of the element, and records it', () => {
       const context = new TypeCheckContext();
       context.addImport(genericComponent());

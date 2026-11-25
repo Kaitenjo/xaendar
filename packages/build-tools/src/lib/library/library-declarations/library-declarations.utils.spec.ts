@@ -2,10 +2,13 @@ import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSy
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { type Bundle, type CustomTransformers, type Diagnostic, factory, type Program, type TransformationContext, type TransformerFactory } from 'typescript';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { toPosixPath } from '../../utils/path/path.utils';
 import { createLibraryProgram } from '../library-analysis/library-analysis.utils';
 import { emitLibraryDeclarations } from './library-declarations.utils';
+
+// Creating and emitting a TypeScript program is slow when the whole suite runs in parallel with coverage
+vi.setConfig({ testTimeout: 60000 });
 
 /**
  * Temporary directory holding the fixture libraries and their builds.

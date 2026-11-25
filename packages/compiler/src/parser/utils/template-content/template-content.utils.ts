@@ -87,7 +87,8 @@ function serializeElement(element: ElementNode): string {
     throw new Error(`<${tagName}> is in the content of a <template>, static HTML which the code using the template clones: it takes only static attributes`, { cause: binding.span });
   }
 
-  let html = `<${tagName}`;
+  // The `is` of a customized built-in element, taken out of the attributes, first as the server writes it
+  let html = element.is === undefined ? `<${tagName}` : `<${tagName} is="${escapeAttribute(element.is)}"`;
   for (let i = 0; i < attributes.length; i++) {
     const { name, value } = attributes[i];
     html += ` ${name}="${escapeAttribute(value as string)}"`;

@@ -23,6 +23,7 @@ import type { ComponentMetadata } from '../../types/component-metadata.type';
 import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
 import type { DirectiveMetadata } from '../../types/directive-metadata.type';
 import type { TemplateVisitor } from '../../types/template-visitor.type';
+import { getElementSelector } from '../element-selector/element-selector.utils';
 
 /**
  * Walks the AST of a template depth-first, invoking the callbacks of the visitor for its parts.
@@ -193,7 +194,7 @@ class TemplateWalker {
    * @param variables - The variables declared in the scope of the element.
    */
   private _walkElement(node: ElementNode, variables: ReadonlySet<string>): void {
-    const component = this._metadatas.find((metadata): metadata is ComponentMetadata => metadata.type === 'component' && metadata.selector === node.tagName);
+    const component = this._metadatas.find((metadata): metadata is ComponentMetadata => metadata.type === 'component' && metadata.selector === getElementSelector(node));
     this._visitor.element?.(node, component);
     if (node.ref) {
       this._visitor.ref?.(node.ref);

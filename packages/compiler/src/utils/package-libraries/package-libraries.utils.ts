@@ -2,6 +2,8 @@ import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import { dirname, posix } from 'node:path';
 import type { LibraryComponentMetadata } from '../../types/library-component-metadata.type';
 import type { LibraryDirectiveMetadata } from '../../types/library-directive-metadata.type';
+import { findForbiddenNameChar } from '../../lexer/utils/chars/chars.utils';
+import type { LibraryManifestDeclaration } from '../../types/library-manifest/library-manifest-declaration.type';
 import type { LibraryManifest } from '../../types/library-manifest/library-manifest.type';
 import type { PackageJson } from '../../types/package-json.type';
 import type { PackageLibrary } from '../../types/package-library.type';
@@ -11,6 +13,11 @@ import { toLibraryMetadata } from '../library-manifest/library-manifest.utils';
  * The format of the manifests this version of Xaendar reads.
  */
 const SCHEMA_VERSION: number = 1;
+
+/**
+ * A name of JavaScript a class or a property of a manifest has: the name of a class, or of the accessor of an input.
+ */
+const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 
 /**
  * The declaration files, the only modules of a compiled library a template imports its components and directives from.
@@ -41,8 +48,9 @@ export function readLibraryMetadata(declarationFile: string, exportedName: strin
 
   const library = findLibrary(declarationFile);
   const subpath = library?.subpaths.get(normalizeFileName(declarationFile));
-  const key = library && subpath !== undefined ? library.manifest.exports[subpath]?.[exportedName] : undefined;
-  return library && key !== undefined ? getLibraryMetadata(library, key) : undefined;
+  // Own properties only: a name of `Object.prototype` (`toString`) is no export
+  const exported = library && subpath !== undefined && Object.hasOwn(library.manifest.exports, subpath) ? library.manifest.exports[subpath] : undefined;
+  return exported && Object.hasOwn(exported, exportedName) ? getLibraryMetadata(library!, exported[exportedName]) : undefined;
 }
 
 /**
@@ -186,15 +194,125 @@ function loadLibrary(root: string, packageJson: PackageJson): PackageLibrary | u
     return undefined;
   }
 
+  if (!isPackagePath(manifestPath)) {
+    throw new Error(`The manifest of ${packageJson.name}, ${manifestPath}, is not a file of the package: write xaendar.manifest of its package.json as a path inside it, e.g. ./xaendar-manifest.json`);
+  }
+
+  const path = posix.join(root, manifestPath);
   let manifest: LibraryManifest;
   try {
-    manifest = JSON.parse(readFileSync(posix.join(root, manifestPath), 'utf-8'));
+    manifest = JSON.parse(readFileSync(path, 'utf-8'));
   } catch (error) {
-    throw new Error(`Cannot read the manifest of ${packageJson.name}, ${posix.join(root, manifestPath)}: ${error}`, { cause: error });
+    throw new Error(`Cannot read the manifest of ${packageJson.name}, ${path}: ${error}`, { cause: error });
   }
 
   checkManifest(manifest, root);
+  const invalid = findInvalidDeclaration(manifest, packageJson);
+  if (invalid !== undefined) {
+    throw new Error(`The manifest of ${packageJson.name}, ${path}, is not one Xaendar writes: ${invalid}. Build the library again with xd build.`);
+  }
+
   return { root, packageJson, manifest, subpaths: readSubpaths(packageJson, root), metadatas: new Map() };
+}
+
+/**
+ * Finds what a manifest holds that Xaendar never writes in one: the code generated for the templates of an application
+ * writes the names of its components, directives, inputs and events as they are (`name: 'label'`), so a manifest is
+ * read only when they are names a template or a class declares, and its paths only when they are inside the package.
+ *
+ * N.B. A manifest comes from a package of `node_modules`, not from the project: a name holding a quote would write code
+ * into the application (`"property": "x'+alert(1)+'"`), and a path out of the package would read another one. Do not
+ * read a manifest without this check.
+ *
+ * @param manifest - The manifest.
+ * @param packageJson - The `package.json` of its package.
+ * @returns What is wrong, `undefined` when nothing is.
+ */
+function findInvalidDeclaration({ name, exports, declarations }: LibraryManifest, packageJson: PackageJson): string | undefined {
+  if (name !== packageJson.name) {
+    return `it names the package ${name}`;
+  }
+
+  const keys = Object.keys(declarations);
+  for (let i = 0; i < keys.length; i++) {
+    const invalid = findInvalidMembers(declarations[keys[i]]);
+    if (invalid !== undefined) {
+      return `${keys[i]} ${invalid}`;
+    }
+  }
+
+  const subpaths = Object.keys(exports);
+  for (let i = 0; i < subpaths.length; i++) {
+    const exported = exports[subpaths[i]];
+    const names = Object.keys(exported);
+    for (let j = 0; j < names.length; j++) {
+      if (!Object.hasOwn(declarations, exported[names[j]])) {
+        return `the export ${names[j]} of ${subpaths[i]} has no declaration`;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Finds what a declaration of a manifest holds that Xaendar never writes in one (see {@link findInvalidDeclaration}).
+ *
+ * @param declaration - The declaration.
+ * @returns What is wrong, `undefined` when nothing is.
+ */
+function findInvalidMembers({ className, selector, module, types, inputs, events }: LibraryManifestDeclaration): string | undefined {
+  if (!IDENTIFIER.test(className)) {
+    return `has the class name ${className}`;
+  }
+
+  if (!isName(selector)) {
+    return `has the selector ${selector}`;
+  }
+
+  if (module !== '.' && !isPackagePath(module)) {
+    return `has the module ${module}, not a path of the exports of the package`;
+  }
+
+  if (!isPackagePath(types)) {
+    return `has the declarations ${types}, not a file of the package`;
+  }
+
+  for (let i = 0; i < inputs.length; i++) {
+    const { name, property } = inputs[i];
+    if (!isName(name) || (property !== undefined && !IDENTIFIER.test(property))) {
+      return `has the input ${property ?? name}`;
+    }
+  }
+
+  for (let i = 0; i < events.length; i++) {
+    if (!isName(events[i].name)) {
+      return `has the event ${events[i].name}`;
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Tells whether a name of a manifest is one a template can write: a selector, an input or an event.
+ *
+ * @param name - The name.
+ * @returns `true` for a text holding no character a name of a template cannot hold (`isForbiddenNameChar`).
+ */
+function isName(name: string): boolean {
+  return name !== '' && findForbiddenNameChar(name) === -1;
+}
+
+/**
+ * Tells whether a path of a manifest or of the `package.json` of a library leads to a file of its package: relative to
+ * its root, `./` first, and never into a folder above.
+ *
+ * @param path - The path.
+ * @returns `true` for a path inside the package.
+ */
+function isPackagePath(path: string): boolean {
+  return typeof path === 'string' && path.startsWith('./') && !path.split(/[/\\]/).includes('..');
 }
 
 /**

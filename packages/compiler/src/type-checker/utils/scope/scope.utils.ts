@@ -9,6 +9,7 @@ import { getOwnerType } from '../../../utils/metadata/metadata.utils';
 import type { TypeCheckContext } from '../../models/context/context';
 import type { Line } from '../../types/line.type';
 import type { ProcessNode } from '../../types/type-checker-process-node.type';
+import { getElementSelector } from '../../../utils/element-selector/element-selector.utils';
 import { line, mapped, plain } from '../line-builder/line-builder.utils';
 import { getElementType } from '../namespace-types/namespace-types.utils';
 import { getContentFunction, getLetValue, getParametersType, TEMPLATE } from '../template-types/template-types.utils';
@@ -106,7 +107,7 @@ function declareTemplate({ declaration: { name, nameSpan }, span }: TemplateNode
  * @returns The type of the variable.
  */
 function getVariableType(element: ElementNode, namespace: ElementNamespace, context: TypeCheckContext): string {
-  const component = context.getImportBySelector(element.tagName);
+  const component = context.getImportBySelector(getElementSelector(element));
   if (!component) {
     return getElementType(namespace, element.tagName);
   }

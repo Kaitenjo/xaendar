@@ -15,7 +15,7 @@ import { getElementSources } from '../element-sources/element-sources.util';
 import { _hostStylingFlags } from '../host-styling/host-styling.util';
 import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { templateKeys, templateString } from '../styling-opinions/styling-opinions.util';
-import { applyDirectStyling, createStylingState, ensureStylingState, keepTemplateStyling, keptValues, markStyling, removeStylingSource, setTemplateStyling, sharesNewKey, writeStylingAttribute } from '../styling-state/styling-state.util';
+import { applyDirectStyling, createStylingState, ensureStylingState, keepTemplateStyling, keptValues, markStyling, removeStylingSource, setTemplateStyling, sharesNewKey, writeStylingAttribute, writeStylingText } from '../styling-state/styling-state.util';
 
 /**
  * The most strings the cache of the values of `class` and `style` holds (see `internStyling`): enough for the distinct
@@ -294,7 +294,7 @@ function writeStyling(element: Element, styling: _RenderStyling, previous: unkno
     // An element adopted from the HTML of the server: only what it does not hold is written
     applyDirectStyling(element, attribute, null, null, keys, string);
   } else if (styling.text !== undefined && !keys) {
-    element.setAttribute(attribute, styling.text);
+    writeStylingText(element, attribute, styling.text);
   } else {
     writeStylingAttribute(element, attribute, keys, string);
   }

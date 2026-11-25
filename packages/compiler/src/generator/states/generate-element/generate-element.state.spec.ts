@@ -35,6 +35,13 @@ const expectValidJavascript = ({ code, constants, functions, reads }: Awaited<Re
 };
 
 describe('generateElement', () => {
+  it('writes the names of the events, of the attributes and the selectors of the directives as they are, which the lexer and the parser validate', async () => {
+    await expect(run('<div a\'b="{x()}"></div>')).rejects.toThrow('\'\'\' cannot be part of an attribute name');
+    await expect(run('<div (c\\d)="x()"></div>')).rejects.toThrow('\'\\\' cannot be part of an event name');
+    await expect(run('<div @@e\'f></div>')).rejects.toThrow('\'\'\' cannot be part of a directive selector');
+    await expect(run('<div #g-h></div>')).rejects.toThrow('\'-\' cannot be part of an element ref');
+  });
+
   it('generates a bare element as a constant of the module holding only its tag, without a function rendering its children', async () => {
     const { code, constants, functions, functionsToProcess } = await run('<div></div>');
 
@@ -73,6 +80,31 @@ describe('generateElement', () => {
     const native = new GeneratorContext(cache);
     native.addIdentifier('row', 'template', 'template_row_5$template');
     expect((await run('<div><template row()></template></div>', native)).constants).toEqual(['const div0$element = { tagName: \'div\', children: div0Children };']);
+  });
+
+  it('creates a customized built-in element with its is, binding the inputs of the component its is names', async () => {
+    const result = await run('<button is="copy-button" label="Copy" type="button" class.on="{ on() }"></button>', new GeneratorContext(cacheWith({ label: new ComponentPropertyMetadata('label', 'string') })));
+
+    const element = result.constants.find(constant => constant.startsWith('const button0$element'));
+
+    expect(element).toContain('tagName: \'button\',\n  is: \'copy-button\',');
+    expect(element).toContain('{ name: \'label\', value: \'Copy\', setter: _setInput }');
+    expect(element).toContain('shared: [\'type\']');
+    expect(element).toContain('styling: 4');
+    expectValidJavascript(result);
+  });
+
+  it('creates a customized built-in element of another library with its is, as a native element', async () => {
+    const context = new GeneratorContext(cache);
+    context.addCustomElementPatterns('sl-*');
+
+    expect((await run('<button is="sl-copy" type="button"></button>', context)).constants).toEqual([[
+      'const button0$element = {',
+      '  tagName: \'button\',',
+      '  is: \'sl-copy\',',
+      '  attributes: [{ name: \'type\', value: \'button\', setter: _setProperty }]',
+      '};'
+    ].join('\n')]);
   });
 
   it('generates a standard <template> without content as a bare element', async () => {

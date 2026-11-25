@@ -1,10 +1,13 @@
+import { describeUnsafeElementAttribute } from '@xaendar/internals';
 import { INTERNAL_HOST_ATTRIBUTES } from '../../costants';
 import type { HostAttributeRun } from '../../models/host-attribute-run/host-attribute-run';
 import { createAttributeState, getAttributeState, isAttributeWritten, removeAttributeOpinion, setAttributeOpinion } from '../attribute-state/attribute-state.util';
 import { addHostRun, removeHostRun } from '../element-sources/element-sources.util';
 import { getWebComponentMetadata } from '../get-metadata/get-metadata.util';
 import { _resolveHostDirectives } from '../host-directives/host-directives.util';
+import { SECURITY } from '../security/security.util';
 import { runValue } from '../styling-opinions/styling-opinions.util';
+import { checkHostUrl } from '../url-check/url-check.util';
 import { _attributeValue, writeAttribute } from '../write-attribute/write-attribute.util';
 
 /**
@@ -18,12 +21,22 @@ const attributeNames = new WeakMap<object, readonly string[] | null>();
  * when the element has no state for it yet, the state merging them is created, holding the opinion of the one that wrote
  * it before.
  *
+ * An attribute that would lift a restriction of the element, as the `sandbox` of an `<iframe>` (see
+ * `describeUnsafeElementAttribute`), throws while the `rejectUnsafeBindings` of the `security` of `xaendar.json` is on:
+ * the decorator rejects the ones the browser runs on any element.
+ *
  * @param run - The run, not run yet.
+ * @throws If a host attribute would lift a restriction of the element.
  */
 export function registerHostAttributes(run: HostAttributeRun): void {
   const { element, bindings } = run;
   for (let i = 0; i < bindings.length; i++) {
     const { name } = bindings[i];
+    const unsafe = SECURITY.rejectUnsafeBindings ? describeUnsafeElementAttribute(element.localName, name, element) : undefined;
+    if (unsafe) {
+      throw new Error(`@HostAttribute('${name}') on <${element.localName}> ${unsafe}, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.`);
+    }
+
     // The state takes the sources registered before this one, which registers in it once it runs
     if (!getAttributeState(element, name) && isAttributeWritten(element, name)) {
       createAttributeState(element, name);
@@ -35,8 +48,8 @@ export function registerHostAttributes(run: HostAttributeRun): void {
 
 /**
  * Computes the value of a host attribute of a run, reading the member of its owner (a member holding a signal or any
- * function is called), and writes it: through the state of the attribute, when the element has one, otherwise directly
- * (see `writeAttribute`). The callback of the effect of the property.
+ * function is called), checks the URLs it holds (see `checkHostUrl`), and writes it: through the state of the attribute,
+ * when the element has one, otherwise directly (see `writeAttribute`). The callback of the effect of the property.
  *
  * @param run - The run.
  * @param index - The index of the property among the ones of the run.
@@ -45,7 +58,7 @@ export function applyHostAttribute(run: HostAttributeRun, index: number): void {
   const { host, element, bindings } = run;
   const { name, read } = bindings[index];
   const member = read(host);
-  const value = typeof member === 'function' ? member() : member;
+  const value = checkHostUrl(element, name, typeof member === 'function' ? member() : member);
   const previous = runValue(run.values, bindings.length, index);
   setRunValue(run, index, value);
   const state = getAttributeState(element, name);

@@ -1,3 +1,4 @@
+import { toStringLiteral } from '../../../generator/utils/generator/generator.utils';
 import type { ImportNode } from '../../../parser/types/nodes/import-node.type';
 import { assertImportableSymbol, toTypeCheckModuleSpecifier } from '../../../utils/symbol-imports/symbol-imports.utils';
 import type { TypeCheckContext } from '../../models/context/context';
@@ -33,7 +34,7 @@ export function typeCheckImport(node: ImportNode, _processNode: ProcessNode, con
     if (symbol) {
       assertImportableSymbol(symbol);
       const { imported, local, importedSpan, localSpan } = symbol;
-      const from = ` from '${toTypeCheckModuleSpecifier(symbol)}';`;
+      const from = ` from ${toStringLiteral(toTypeCheckModuleSpecifier(symbol))};`;
 
       if (imported === '*') {
         lines.push(line('import * as ', mapped(local, localSpan), from));

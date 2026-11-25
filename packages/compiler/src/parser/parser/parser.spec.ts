@@ -9,6 +9,20 @@ import { Parser } from './parser';
 const parse = (template: string) => new Parser(template, new Lexer(template).tokenize()).parse();
 
 describe('Parser', () => {
+  it('nests 512 nodes, and throws on the one nested deeper, as the parser of HTML stops nesting elements', () => {
+    expect(() => parse(`${'<div>'.repeat(511)}x${'</div>'.repeat(511)}`)).not.toThrow();
+
+    const template = `${'<div>'.repeat(513)}x${'</div>'.repeat(513)}`;
+    let error: TemplateError | undefined;
+    try {
+      parse(template);
+    } catch (thrown) {
+      error = thrown as TemplateError;
+    }
+
+    expect(error?.message).toContain('[Ln 1, Col 2561] - The template nests more than 512 elements, blocks and bindings into one another: move part of it into a component or a template');
+  });
+
   it('parses every kind of top-level node', () => {
     const nodes = parse('@import { A } from \'./a\'\n<div></div>hello{value}');
     expect(nodes.map(n => n.type)).toEqual([

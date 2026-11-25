@@ -69,6 +69,19 @@ The whole template language of `*.xd.component.html` files. Templates are HTML5 
 - Any element can listen to an event its map does not declare, e.g. a custom event bubbling up from a child (`<div (bubbling)="onBubbling($event as CustomEvent<string>)">`): `$event` is an `Event`, and the build and the editor warn about the name, since it may be misspelled, without failing. `"strictEvents": false` in `xaendar.json` (or in an entry of `libs`) turns the warning off. The elements of `customElements` never get it.
 - `$event` is typed by the event name (`MouseEvent` for `click`, the `CustomEvent<T>` of an `Output<T>`). An `Output` without a type argument gives a `CustomEvent<null>`.
 
+### Customized built-in elements
+
+```html
+@import { CopyButtonComponent } from './copy-button/copy-button.xd.component.ts'
+
+<!-- The tag the component extends, its selector as is: inputs, events and native attributes as on any component -->
+<button is="copy-button" text="{ code() }" type="button" (copied)="notify()">Copy</button>
+```
+
+- `is` is a static custom element name on a native HTML element: it decides the class of the element when it is created, so it is never bound (`is="{ x }"`), written by a conditional binding, written with `attr.is`, or put on a custom element or an SVG/MathML element.
+- The tag must be the one the component declares in `extends`, and a customized built-in element is never written by its selector (`<copy-button>`), nor an autonomous one with `is`: the type-check reports both.
+- The children of the tag are its content, as on the native element; a component whose tag accepts a shadow root (`div`, `section`…) and declares a template shows them through its `<slot>`.
+
 ## Element refs
 
 ```html
@@ -314,6 +327,8 @@ A `@Property.required` input must be bound in every branch. By convention, a blo
 - A module signal stays reactive (`{ quantity() }`, `value="{quantity()}"`), and so does a binding calling an exported function that reads one, of the project or of a compiled package: the bindings follow the signals they read at runtime.
 - Import what belongs to another module: types for the type arguments of generic components and directives, enums and classes for particular conditions (`@if (task.status === Status.Archived)`, `@if (shape() instanceof Circle)`), helpers shared by many templates, the signals of a store. The state of the component and the logic reading or changing it stay in its class (signals, computed signals, methods): never import a function or a constant only because it is possible.
 - The variables of the template (`@for` items and aliases) hide an import named like them. Importing a name that is also a member of the component (inherited and DOM ones included, e.g. `title`) is an error: import it `as` another name. `root`, `$event` and the names starting with `__` are reserved.
+- No `<script>` nor `<style>` anywhere in a template (an `<svg>` and a standard `<template>` included): code goes in the class, styles in `styleUrl`.
+- An expression bound to an `on*` attribute (`onclick="{ x }"`, `attr.onclick`) or to `srcdoc`, to `sandbox`/`allow`/`allowfullscreen`/`referrerpolicy`/`csp`/`credentialless` of an `<iframe>`, to the `attributeName` of an SVG `<animate>`/`<set>`/`<animateMotion>`/`<animateTransform>` (or its `to`/`from`/`by`/`values` when its static `attributeName` is `href`), to the `http-equiv` of a `<meta>` or to the `content` of a `<meta http-equiv="refresh">` is a type-check error unless `"security": { "rejectUnsafeBindings": false }` in `xaendar.json`: listen with `(click)`, write the attribute statically. The URLs bound to `href`, `src`, `srcset`, `ping`, `action`, `formaction`, `xlink:href`… are checked at run time, on the server too, as `"security": { "urls": "warn" | "remove" | "off" }` asks (default `"remove"`, which leaves the attribute out: `javascript:`, `vbscript:`, non-media `data:`), and the absolute URLs loading a resource (`<iframe src>`, `<embed src>`, `<object data>`, `<link href>`, `<base href>`) as `"resourceUrls"` asks (default `"remove"`) unless their origin is in `"trustedOrigins"`. `trustUrl(url)` / `trustResourceUrl(url)` of `@xaendar/core` mark a URL the app trusts. Static values and component inputs are never checked. The `security` of the project applies to every component it renders, the ones of its libraries included, compiled or of the workspace: a library declares none (its templates are type-checked with the defaults, its URLs checked at run time as the project asks).
 - Every tag containing a dash must be an imported Xaendar component, or match a pattern of `customElements` in `xaendar.json` (`["sl-*"]`; `xaendarPlugin({ customElements })` with plain Vite). Those custom elements of other libraries are used like native elements: bindings write attributes (strings only; set object properties from code), and `$event` is typed through `HTMLElementEventMap`, or `any` for events it does not declare, without warning.
 
 ## Expressions

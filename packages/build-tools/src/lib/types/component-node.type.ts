@@ -14,9 +14,9 @@ export type ComponentNode = {
    */
   readonly file: string;
   /**
-   * The path of its template.
+   * The path of its template, `undefined` for a customized built-in element without a template.
    */
-  readonly templatePath: string;
+  readonly templatePath: string | undefined;
   /**
    * The components its template renders.
    */

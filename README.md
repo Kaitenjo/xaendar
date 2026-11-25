@@ -119,4 +119,4 @@ npm start                       # http://localhost:4200
 
 ## License
 
-ISC
+[MIT](LICENSE)

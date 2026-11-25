@@ -75,4 +75,21 @@ describe('stylePriority() and styleValue()', () => {
     expect(stylePriority('red')).toBe('');
     expect(styleValue('red')).toBe('red');
   });
+
+  it('match the priority case-insensitively, with the whitespace around the !, and nothing else', () => {
+    expect(styleValue('red\t! IMPORTANT \n')).toBe('red');
+    expect(stylePriority('red!important')).toBe('important');
+    expect(stylePriority('a!b')).toBe('');
+    expect(stylePriority('red !important x')).toBe('');
+  });
+
+  it('read a long run of whitespace in linear time', () => {
+    const value = `red${' '.repeat(200_000)}x`;
+    const start = performance.now();
+
+    expect(stylePriority(value)).toBe('');
+    expect(styleValue(value)).toBe(value);
+    expect(parseStyleDeclarations(`color: ${value}`)).toEqual(['color', value]);
+    expect(performance.now() - start).toBeLessThan(500);
+  });
 });

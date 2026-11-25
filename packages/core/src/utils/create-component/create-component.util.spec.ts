@@ -200,6 +200,22 @@ describe('_createComponent', () => {
     expect(element.isConnected).toBe(true);
   });
 
+  it('creates a customized built-in element with the tag it extends and its selector as is', async () => {
+    const { customElementOf } = await import('../custom-element-of/custom-element-of.util');
+    class Copy extends customElementOf(HTMLButtonElement) {
+      public readonly text = input<string>('');
+    }
+    Object.defineProperty(Copy, Symbol.for('Symbol.metadata'), { value: { selector: 'x-created-copy', extends: 'button' } });
+    customElements.define('x-created-copy', Copy, { extends: 'button' });
+
+    const { element } = _createComponent(owner, Copy, { target: document.body, properties: [{ text: () => 'Copy' }] });
+
+    expect(element).toBeInstanceOf(Copy);
+    expect(element.localName).toBe('button');
+    expect(element.getAttribute('is')).toBe('x-created-copy');
+    expect(element.text()).toBe('Copy');
+  });
+
   it('sets the inputs before the component is initialized', () => {
     const { element } = _createComponent(owner, Card, { target: document.body, properties: [{ heading: () => 'Hello', size: () => '21' }] });
 

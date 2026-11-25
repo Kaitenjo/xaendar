@@ -1,10 +1,10 @@
 import globals from 'globals';
-import { canHaveDecorators, ClassElement, ClassLikeDeclaration, CompilerOptions, Expression, forEachChild, getDecorators, Identifier, isArrayLiteralExpression, isArrowFunction, isAsExpression, isBinaryExpression, isBindingElement, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isConditionalExpression, isConstructorDeclaration, isElementAccessExpression, isEnumDeclaration, isExportAssignment, isExportDeclaration, isExpressionStatement, isFunctionDeclaration, isFunctionExpression, isFunctionLike, isGetAccessorDeclaration, isIdentifier, isImportClause, isImportDeclaration, isImportSpecifier, isInterfaceDeclaration, isMethodDeclaration, isNamedImports, isNamespaceImport, isNewExpression, isNonNullExpression, isNoSubstitutionTemplateLiteral, isNumericLiteral, isObjectLiteralExpression, isParameter, isParenthesizedExpression, isPrefixUnaryExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isRegularExpressionLiteral, isSatisfiesExpression, isSetAccessorDeclaration, isShorthandPropertyAssignment, isSpreadAssignment, isSpreadElement, isStringLiteral, isTemplateExpression, isTypeAliasDeclaration, isTypeAssertionExpression, isTypeNode, isTypeOfExpression, isVariableDeclaration, isVariableStatement, Node, ObjectLiteralElementLike, SourceFile, SyntaxKind } from 'typescript';
+import { canHaveDecorators, ClassElement, ClassLikeDeclaration, CompilerOptions, Expression, forEachChild, getDecorators, Identifier, isArrayLiteralExpression, isArrowFunction, isAsExpression, isBinaryExpression, isBindingElement, isCallExpression, isClassDeclaration, isClassStaticBlockDeclaration, isConditionalExpression, isConstructorDeclaration, isElementAccessExpression, isEnumDeclaration, isExportAssignment, isExportDeclaration, isExpressionStatement, isFunctionDeclaration, isFunctionExpression, isFunctionLike, isGetAccessorDeclaration, isIdentifier, isImportClause, isImportDeclaration, isImportSpecifier, isInterfaceDeclaration, isMethodDeclaration, isNamespaceImport, isNewExpression, isNonNullExpression, isNoSubstitutionTemplateLiteral, isNumericLiteral, isObjectLiteralExpression, isParameter, isParenthesizedExpression, isPrefixUnaryExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isRegularExpressionLiteral, isSatisfiesExpression, isSetAccessorDeclaration, isShorthandPropertyAssignment, isSpreadAssignment, isSpreadElement, isStringLiteral, isTemplateExpression, isTypeAliasDeclaration, isTypeAssertionExpression, isTypeNode, isTypeOfExpression, isVariableDeclaration, isVariableStatement, Node, ObjectLiteralElementLike, SourceFile, SyntaxKind } from 'typescript';
 import { isBrowserOnlyGlobal } from '../../generator/utils/generator/generator.utils';
 import type { ComponentDeclaration } from '../../types/component-declaration.type';
 import type { ResolvedClass } from '../../types/resolved-class.type';
 import { isModuleSignal, readsModuleSignal } from '../extract-component-members/extract-component-members.utils';
-import { DEFAULT_COMPILER_OPTIONS, resolveBaseClassOf } from '../resolve-declaration/resolve-declaration.utils';
+import { DEFAULT_COMPILER_OPTIONS, getCoreImport, resolveBaseClassOf } from '../resolve-declaration/resolve-declaration.utils';
 
 /**
  * The hooks of a component running in the browser: `onInit` runs there too, and its code cannot be told from one that
@@ -145,36 +145,17 @@ function findOptionsLogic(properties: readonly ObjectLiteralElementLike[]): stri
 }
 
 /**
- * Tells whether the class a component extends is `CustomElement` of `@xaendar/core`, where the chain of its classes ends.
+ * Tells whether the class a component extends is `CustomElement` of `@xaendar/core`, where the chain of its classes ends,
+ * or the class `customElementOf` of `@xaendar/core` creates on a native class, which shares its code.
  *
  * @param extended - The expression of the `extends` clause.
  * @param sourceFile - The file of the class.
- * @returns `true` for `CustomElement`.
+ * @returns `true` for `CustomElement` and `customElementOf(…)`.
  */
 function extendsCustomElement(extended: Expression, sourceFile: SourceFile): boolean {
-  return isIdentifier(extended) && getCoreImport(extended, sourceFile) === 'CustomElement';
-}
-
-/**
- * Finds the export of `@xaendar/core` an identifier reads.
- *
- * @param identifier - The identifier.
- * @param sourceFile - The file of the identifier.
- * @returns The name of the export, `undefined` when the identifier does not read one.
- */
-function getCoreImport({ text }: Identifier, sourceFile: SourceFile): string | undefined {
-  for (let i = 0; i < sourceFile.statements.length; i++) {
-    const statement = sourceFile.statements[i];
-    if (isImportDeclaration(statement) && isStringLiteral(statement.moduleSpecifier) && statement.moduleSpecifier.text.startsWith('@xaendar/core')) {
-      const bindings = statement.importClause?.namedBindings;
-      const element = bindings && isNamedImports(bindings) ? bindings.elements.find(({ name }) => name.text === text) : undefined;
-      if (element) {
-        return (element.propertyName ?? element.name).text;
-      }
-    }
-  }
-
-  return undefined;
+  return isCallExpression(extended)
+    ? isIdentifier(extended.expression) && getCoreImport(extended.expression, sourceFile) === 'customElementOf'
+    : isIdentifier(extended) && getCoreImport(extended, sourceFile) === 'CustomElement';
 }
 
 /**

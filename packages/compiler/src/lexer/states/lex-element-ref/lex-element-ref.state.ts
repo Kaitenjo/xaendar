@@ -4,6 +4,7 @@ import { LexerState } from '../../types/lexer-state.enum';
 import { TokenType } from '../../types/token-type.enum';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
+import { describeNameChar, isIdentifierChar } from '../../utils/chars/chars.utils';
 
 /**
  * Consumes an element ref, after the `#` already consumed by the tag body, and transitions back to TAG_BODY: `#name`
@@ -12,7 +13,8 @@ import { LexerTransitionFunctionReturnType } from '../../types/transition-functi
  * @param cursor - The lexer cursor positioned right after `#`.
  * @param _context - Unused lexer context.
  * @returns Transition result with the ELEMENT_REF token and the TAG_BODY state.
- * @throws If the name is empty, or followed by parentheses or a value.
+ * @throws If the name is empty, holds a character a name of JavaScript cannot hold, or is followed by parentheses or a
+ *   value.
  */
 export function lexElementRef(cursor: LexerCursor, _context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   let read = true;
@@ -43,6 +45,11 @@ export function lexElementRef(cursor: LexerCursor, _context: LexerTransitionFunc
         throw 'An element ref takes no value: write #name, which names the element it is declared on';
 
       default:
+        // The ref is a variable the expressions of the template read: a name of JavaScript
+        if (!isIdentifierChar(cursor.peek())) {
+          throw `${describeNameChar(cursor.peek())} cannot be part of an element ref: write #name with letters, digits, _ and $`;
+        }
+
         cursor.advance();
         name = `${name}${cursor.currentChar.value}`;
     }

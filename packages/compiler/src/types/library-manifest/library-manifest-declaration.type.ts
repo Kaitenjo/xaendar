@@ -19,6 +19,11 @@ export type LibraryManifestDeclaration = {
    */
   selector: string;
   /**
+   * The tag of the native element a customized built-in element extends, whose `is` is its selector: absent for any other
+   * component and for a directive.
+   */
+  extends?: string;
+  /**
    * The path of the `exports` of the package leading to the module declaring it (`./button/button.xd.component`): an
    * application imports it for the module to define it.
    */

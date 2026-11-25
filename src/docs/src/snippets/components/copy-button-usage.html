@@ -1,0 +1,4 @@
+@import { CopyButtonComponent } from '../copy-button/copy-button.xd.component.ts'
+
+<!-- The tag of the native element, with the selector as is: its content is the label of the button -->
+<button is="copy-button" text="{link()}" type="button" (copied)="notify($event)">Copy the link</button>

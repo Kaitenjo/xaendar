@@ -1,10 +1,11 @@
 // @vitest-environment happy-dom
 import { Constructor } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { INTERNAL_HOST_DIRECTIVES, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_SELECTOR } from '../../costants';
+import { INTERNAL_EXTENDS, INTERNAL_HOST_DIRECTIVES, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_SELECTOR } from '../../costants';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import type { WebComponentOptions } from '../../types/web-component/web-component-options.type';
+import { customElementOf } from '../../utils/custom-element-of/custom-element-of.util';
 import { WebComponent } from './web-component.decorator';
 
 type Initializer = (this: Constructor<CustomElement>) => void;
@@ -86,6 +87,20 @@ describe('WebComponent decorator', () => {
     WebComponent({ selector: 'x-browser', ssr: { render: false }, templateUrl: './x.html' })(class extends CustomElement { }, context as unknown as ClassDecoratorContext<Constructor<CustomElement>>);
 
     expect(metadata).toEqual({ [INTERNAL_SELECTOR]: 'x-browser', [INTERNAL_RENDER]: false });
+  });
+
+  it('defines a customized built-in element on the tag it extends, storing the tag in the class metadata', () => {
+    class CopyButton extends customElementOf(HTMLButtonElement) { }
+    const metadata = {};
+    const initializers = new Array<Initializer>();
+    const context = { metadata, addInitializer: (initializer: Initializer) => initializers.push(initializer) };
+
+    WebComponent({ selector: 'x-copy-button', extends: 'button' })(CopyButton, context as unknown as ClassDecoratorContext<Constructor<CustomElement>>);
+    initializers[0].call(CopyButton);
+
+    expect(metadata).toEqual({ [INTERNAL_SELECTOR]: 'x-copy-button', [INTERNAL_EXTENDS]: 'button' });
+    expect(customElements.get('x-copy-button')).toBe(CopyButton);
+    expect(document.createElement('button', { is: 'x-copy-button' })).toBeInstanceOf(CopyButton);
   });
 
   it('throws when the selector is already used by another component', () => {

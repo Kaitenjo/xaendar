@@ -500,7 +500,7 @@ export function getBlockIdentifier(prefix: 'if' | 'elseIf' | 'else' | 'for' | 's
 }
 
 /**
- * Turns a text of the template (a text node, a static attribute value) into a
+ * Turns a text of the template (a text node, a static attribute value) or a path of a module into a
  * single-quoted string literal for the generated code, escaping the characters that would end
  * the literal or change its value: backslashes, single quotes and line terminators.
  *
@@ -515,6 +515,34 @@ export function toStringLiteral(value: string): string {
     '\r': '\\r'
   };
   return `'${value.replace(/[\\'\n\r\p{Zl}\p{Zp}]/gu, char => STRING_LITERAL_ESCAPES[char] ?? `\\u${char.charCodeAt(0).toString(16)}`)}'`;
+}
+
+/**
+ * Reads the value of the content of a string literal written by {@link toStringLiteral}, between its quotes.
+ *
+ * @example
+ * fromStringLiteral('/home/o\\\'brien/card'); // "/home/o'brien/card"
+ *
+ * @param content - The content of the literal, without its quotes.
+ * @returns The value.
+ */
+export function fromStringLiteral(content: string): string {
+  return content.replace(/\\(?:u([0-9a-f]{4})|(.))/g, (_match, code: string | undefined, char: string) => {
+    if (code !== undefined) {
+      return String.fromCharCode(parseInt(code, 16));
+    }
+
+    switch (char) {
+      case 'n':
+        return '\n';
+
+      case 'r':
+        return '\r';
+
+      default:
+        return char;
+    }
+  });
 }
 
 /**

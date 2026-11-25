@@ -5,6 +5,7 @@ import { TokenType } from '../../../lexer/types/token-type.enum';
 import { EventHandlerToken } from '../../../lexer/types/tokens/event-handler-token.type';
 import { EventParAmeterToken } from '../../../lexer/types/tokens/event-parameter-token.type';
 import { EventToken } from '../../../lexer/types/tokens/event-token.type';
+import { describeNameChar, findForbiddenNameChar } from '../../../lexer/utils/chars/chars.utils';
 import { ParserCursor } from '../../models/parser-cursor/parser-cursor.model';
 import { ASTNode } from '../../types/ast.type';
 import { ASTNodeType } from '../../types/node.enum';
@@ -22,7 +23,9 @@ import { parseCast } from '../parse-cast/parse-cast.state';
  * @param _parseNode - Unused parser function (kept for signature consistency).
  * @param token - The EVENT token to parse.
  * @returns The parsed `EventNode`.
- * @throws If the handler is missing, or the name is a key event naming no key or a modifier that does not exist.
+ * @throws If the handler is missing, the name is a key event naming no key or a modifier that does not exist, or the name
+ *   of another event holds a character no name can hold (`isForbiddenNameChar`): the key of a key event can be any key
+ *   (`keydown.\`).
  */
 export function parseEvent(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTNode | undefined>, token: EventToken): EventNode {
   const startOffset = token.span.start;
@@ -35,6 +38,13 @@ export function parseEvent(cursor: ParserCursor, _parseNode: NoArgsFunction<ASTN
   } catch (error) {
     // Reported on the name of the event
     throw Object.assign(error as Error, { cause: nameSpan });
+  }
+
+  // The event a key event listens to is `keydown` or `keyup`, its key a value the handler compares
+  const forbidden = key ? -1 : findForbiddenNameChar(name);
+  if (forbidden !== -1) {
+    const start = nameSpan.start + forbidden;
+    throw new Error(`${describeNameChar(name.charCodeAt(forbidden))} cannot be part of an event name`, { cause: { start, end: start + 1 } });
   }
 
   const handlerToken = cursor.peek<EventHandlerToken>();

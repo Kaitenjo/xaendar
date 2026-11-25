@@ -119,6 +119,7 @@
       "components/dom-apis": "Usare le API del DOM",
       "components/dynamic-creation": "Creare componenti nel codice",
       "components/inheritance": "Ereditarietà",
+      "components/security": "Sicurezza e CSP",
       "templates/overview": "Sintassi dei template",
       "templates/text-interpolation": "Interpolazione del testo",
       "templates/binding": "Binding di attributi e proprietà",
@@ -191,17 +192,36 @@
           "th3": "Descrizione",
           "td1": "sì",
           "td2": "Il nome del tag del componente. Vedi <a href=\"#/it/components/registration\">Selettori e registrazione</a>.",
-          "td3": "sì",
+          "td3": "sì, senza <code>extends</code>",
           "td4": "Il template, relativo al file della classe.",
           "td5": "no",
           "td6": "Un file <code>.css</code>, <code>.scss</code>, <code>.sass</code> o <code>.less</code> relativo al file della classe. Vedi <a href=\"#/it/components/styling\">Stili</a>.",
-          "p1": "A runtime il decoratore fa due cose: salva il selettore nei metadati della classe, dove lo trova <code>@Query(Classe)</code>, e chiama <code>customElements.define(selettore, Classe)</code>. Il resto avviene durante la build, quando il plugin legge le tre opzioni direttamente dal codice sorgente."
+          "td7": "no",
+          "td8": "Il tag dell’elemento nativo che il componente estende, e che ne fa un customized built-in element. Vedi <em>Customized built-in element</em>, più sotto.",
+          "p1": "A runtime il decoratore fa due cose: salva il selettore nei metadati della classe, dove lo trova <code>@Query(Classe)</code>, e chiama <code>customElements.define(selettore, Classe)</code>. Il resto avviene durante la build, quando il plugin legge le opzioni direttamente dal codice sorgente."
         },
         "theBaseClassAnd": {
           "title": "La classe base e lo shadow root",
           "p1": "<code>CustomElement</code> estende <code>HTMLElement</code>. Il suo costruttore aggancia uno shadow root <strong>aperto</strong>, in cui viene renderizzato il template: gli stili della pagina non vi entrano, e quelli del componente non ne escono. Il template viene renderizzato ogni volta che l’elemento viene collegato al documento, e lo shadow root viene svuotato ogni volta che viene rimosso. La pagina <a href=\"#/it/components/lifecycle\">Ciclo di vita</a> descrive gli hook che stanno nel mezzo.",
           "example1": "Cosa prepara la classe base",
           "p2": "La classe è un vero <code>HTMLElement</code>: <code>document.createElement('ex-rating')</code> restituisce un’istanza di <code>RatingComponent</code>, e tutte le API del DOM (attributi, eventi, <code>classList</code>, ...) funzionano come su un elemento nativo."
+        },
+        "customizedBuiltInElements": {
+          "title": "Customized built-in element",
+          "p1": "Un componente può anche estendere un elemento nativo, invece di essere un tag nuovo: è allora un <strong>customized built-in element</strong>. Conserva tutto ciò che fa l’elemento nativo, la semantica, il focus, la tastiera, i form, l’accessibilità, e vi aggiunge i suoi input, i suoi eventi, i suoi host binding, le sue host directive e gli hook del ciclo di vita. La sua classe estende <a href=\"#/it/reference/api/core/customElementOf\"><code>customElementOf()</code></a> della classe dell’elemento nativo, e l’opzione <code>extends</code> di <code>@WebComponent</code> ne indica il tag. A un pulsante che copia un testo non serve un template:",
+          "p2": "I template scrivono il tag che estende, con il selettore come <code>is</code>, e ne legano gli input e gli eventi come per qualsiasi componente. L’elemento viene creato con <code>document.createElement('button', { is: 'copy-button' })</code> e riceve anche l’attributo <code>is</code>, così che i selettori CSS lo trovino: <code>@Query(CopyButtonComponent)</code> trova <code>button[is=\"copy-button\"]</code>, e <code>createComponent(CopyButtonComponent)</code> crea un <code>&lt;button is=\"copy-button\"&gt;</code>.",
+          "p3": "<code>is</code> decide la classe dell’elemento quando viene creato, quindi è un nome di custom element statico, scritto su un elemento HTML nativo: non si può legare, né scrivere in un binding condizionale o come <code>attr.is</code>. Il compilatore verifica anche che l’elemento sia scritto come è definito il suo componente: un customized built-in element con il tag che estende e il suo <code>is</code>, un custom element autonomo con il suo tag.",
+          "p4": "La maggior parte degli elementi nativi non accetta uno shadow root, quindi un componente che estende <code>button</code>, <code>input</code>, <code>a</code>, <code>li</code>, <code>tr</code>, <code>td</code> o <code>img</code> non ha né template né foglio di stile: l’elemento mostra il contenuto che il suo tag contiene. Solo <code>article</code>, <code>aside</code>, <code>blockquote</code>, <code>body</code>, <code>div</code>, <code>footer</code>, <code>h1</code>–<code>h6</code>, <code>header</code>, <code>main</code>, <code>nav</code>, <code>p</code>, <code>section</code> e <code>span</code> ne accettano uno: un componente che li estende può dichiarare un <code>templateUrl</code>, renderizzato nel suo shadow root, dove il suo contenuto viene proiettato come per qualsiasi componente, e uno <code>styleUrl</code> che gli dà stile. I tag la cui classe è <code>HTMLElement</code>, come <code>section</code>, <code>nav</code> o <code>article</code>, estendono <code>CustomElement</code> stesso:",
+          "p5": "La build verifica le opzioni e la classe rispetto al tag: un template o un foglio di stile su un tag che non accetta uno shadow root, un foglio di stile senza template, una classe che estende la classe di un altro tag, e <code>customElementOf()</code> senza <code>extends</code> la fanno fallire.",
+          "p6": "Il decoratore definisce la classe con <code>customElements.define(selettore, Classe, { extends: 'button' })</code>. La classe non eredita da <code>CustomElement</code>, di cui condivide i membri, eppure <code>instanceof CustomElement</code> vale per i suoi elementi. Sul server, un elemento senza template viene scritto senza shadow root: il browser ne imposta gli input quando lo idrata, prima del suo <code>onInit</code>.",
+          "callout1": {
+            "heading": "Safari",
+            "body": "Safari non supporta i customized built-in element. Una pagina che ne ha bisogno lì carica un polyfill, come <code>@ungap/custom-elements</code>, prima dei moduli che li definiscono: <code>main.ts</code> lo importa per primo."
+          },
+          "callout2": {
+            "heading": "happy-dom",
+            "body": "happy-dom, il DOM in cui <code>xd test</code> esegue le spec, non chiama le callback del ciclo di vita dei customized built-in element, né aggiorna quelli che il suo parser crea dall’HTML: lì il loro <code>onInit</code>, il loro template, i loro host binding e i loro host listener non vengono mai eseguiti."
+          }
         },
         "generics": {
           "title": "Componenti generici",
@@ -212,7 +232,7 @@
           "title": "Casi limite",
           "callout1": {
             "heading": "Le opzioni devono essere stringhe letterali",
-            "p1": "Il plugin legge <code>selector</code>, <code>templateUrl</code> e <code>styleUrl</code> dal codice sorgente, quindi devono essere stringhe letterali, e la classe deve essere dichiarata in un file che termina con <code>.xd.component.ts</code>. Una costante, un template literal o un valore calcolato fanno fallire la build, e così un componente dichiarato in un altro file."
+            "p1": "Il plugin legge <code>selector</code>, <code>extends</code>, <code>templateUrl</code> e <code>styleUrl</code> dal codice sorgente, quindi devono essere stringhe letterali, e la classe deve essere dichiarata in un file che termina con <code>.xd.component.ts</code>. Una costante, un template literal o un valore calcolato fanno fallire la build, e così un componente dichiarato in un altro file."
           },
           "callout2": {
             "heading": "Un template mancante fa fallire la build",
@@ -244,7 +264,8 @@
           "td3": "Dove viene renderizzato il template.",
           "td4": "<a href=\"#/it/reference/api/core/CustomElement\"><code>this.effect(fn, opzioni?)</code></a>",
           "td5": "Un effect eliminato quando l’elemento viene rimosso. Vedi <a href=\"#/it/signals/effects\">Effect</a>.",
-          "td6": "Hook facoltativi. Vedi <a href=\"#/it/components/lifecycle\">Ciclo di vita</a>."
+          "td6": "Hook facoltativi. Vedi <a href=\"#/it/components/lifecycle\">Ciclo di vita</a>.",
+          "td7": "La classe che un customized built-in element estende: la classe di un elemento nativo, con i membri di <code>CustomElement</code>. <code>extends</code> di <code>@WebComponent</code> ne indica il tag."
         }
       },
       "contentProjection": {
@@ -501,6 +522,146 @@
           "td10": "sì",
           "td11": "Template e foglio di stile",
           "td12": "no: ogni classe decorata ha i propri"
+        }
+      },
+      "security": {
+        "eyebrow": "Componenti",
+        "title": "Sicurezza e CSP",
+        "lead": "Cosa controlla Xaendar perché un valore dell’applicazione non venga eseguito come codice, cosa configura il progetto, e cosa deve permettere una Content-Security-Policy per una pagina scritta con Xaendar.",
+        "summary": {
+          "title": "Cosa viene controllato",
+          "p1": "Ogni caso dice dove Xaendar lo ferma, in compilazione (la build e l’editor) o a runtime (nel browser e sul server), e l’opzione che lo cambia. Le opzioni sono la voce <code>security</code> dello <code>xaendar.json</code> del progetto.",
+          "th1": "Caso",
+          "th2": "Cosa fa Xaendar",
+          "th3": "Configurazione",
+          "templates": {
+            "title": "Template",
+            "scriptStyle": {
+              "case": "<code>&lt;script&gt;</code> e <code>&lt;style&gt;</code> in un template",
+              "protection": "Errore di compilazione, ovunque siano e in qualsiasi maiuscolo: il codice va nella classe, gli stili in <code>styleUrl</code>.",
+              "configuration": "Nessuna"
+            },
+            "text": {
+              "case": "Interpolazione del testo, <code>{ value }</code>",
+              "protection": "Scritta come testo, mai come HTML: con escape sul server, come nodo di testo nel browser.",
+              "configuration": "Nessuna"
+            },
+            "handlers": {
+              "case": "Un’espressione collegata a un attributo event handler (<code>onclick</code>, qualsiasi <code>on*</code>) o a <code>srcdoc</code>",
+              "protection": "Errore del type check, nella build e nell’editor: si ascolta l’evento con <code>(click)</code>, si collega lo <code>src</code> di una pagina.",
+              "configuration": "<code>rejectUnsafeBindings</code>, <code>true</code> di default"
+            },
+            "iframe": {
+              "case": "Un’espressione collegata a una restrizione di un <code>&lt;iframe&gt;</code>: <code>sandbox</code>, <code>allow</code>, <code>allowfullscreen</code>, <code>referrerpolicy</code>, <code>csp</code>, <code>credentialless</code>",
+              "protection": "Errore del type check: un valore dell’applicazione potrebbe togliere la restrizione.",
+              "configuration": "<code>rejectUnsafeBindings</code>, <code>true</code> di default"
+            },
+            "svg": {
+              "case": "L’<code>attributeName</code> di un’animazione SVG (<code>&lt;animate&gt;</code>, <code>&lt;set&gt;</code>…), o i suoi <code>to</code>, <code>from</code>, <code>by</code> e <code>values</code> quando anima un <code>href</code>",
+              "protection": "Errore del type check: l’animazione scriverebbe un URL che nessun controllo vede.",
+              "configuration": "<code>rejectUnsafeBindings</code>, <code>true</code> di default"
+            },
+            "meta": {
+              "case": "L’<code>http-equiv</code> di un <code>&lt;meta&gt;</code>, il <code>content</code> di un <code>&lt;meta http-equiv=\"refresh\"&gt;</code>",
+              "protection": "Errore del type check: un valore potrebbe impostare una direttiva della pagina, o mandarla altrove.",
+              "configuration": "<code>rejectUnsafeBindings</code>, <code>true</code> di default"
+            },
+            "urls": {
+              "case": "Un URL che esegue codice (<code>javascript:</code>, <code>vbscript:</code>, un URL <code>data:</code> che non è un’immagine, un audio o un video) collegato a <code>href</code>, <code>src</code>, <code>action</code>, <code>formaction</code>, <code>xlink:href</code>…, a un’immagine di un <code>srcset</code> o di un <code>imagesrcset</code>, a un URL di un <code>ping</code>",
+              "protection": "Controllato a runtime, nel browser e sul server: scritto con un warning, oppure omesso.",
+              "configuration": "<code>urls</code>: <code>\"remove\"</code> di default, <code>\"warn\"</code> o <code>\"off\"</code>; <a href=\"#/it/reference/api/core/trustUrl\"><code>trustUrl()</code></a> per un URL di cui l’applicazione si fida"
+            },
+            "resources": {
+              "case": "Un URL assoluto che carica una risorsa nella pagina da un’origine di cui l’applicazione non si fida: lo <code>src</code> di un <code>&lt;iframe&gt;</code>, di un <code>&lt;embed&gt;</code> o di un <code>&lt;frame&gt;</code>, il <code>data</code> e il <code>codebase</code> di un <code>&lt;object&gt;</code>, l’<code>href</code> di un <code>&lt;link&gt;</code> o della <code>&lt;base&gt;</code>",
+              "protection": "Controllato a runtime come gli URL sopra. Un URL relativo carica dall’applicazione, e passa.",
+              "configuration": "<code>resourceUrls</code>, <code>\"remove\"</code> di default; <code>trustedOrigins</code>; <a href=\"#/it/reference/api/core/trustResourceUrl\"><code>trustResourceUrl()</code></a>"
+            },
+            "styles": {
+              "case": "Un valore collegato a una chiave di stile che aggiunge una dichiarazione (<code>style.color=\"{ color }\"</code> con <code>red; position: fixed</code>)",
+              "protection": "Ignorato, come lo ignora il browser, nel browser e sul server. <code>@@style</code> accetta solo le unità CSS che conosce.",
+              "configuration": "Nessuna"
+            },
+            "static": {
+              "case": "I valori scritti nel template, gli input dei componenti",
+              "protection": "Non controllati: i primi li scrive l’autore, dei secondi decide il componente.",
+              "configuration": "—"
+            }
+          },
+          "host": {
+            "title": "Attributi dell’host",
+            "names": {
+              "case": "Un <code>@HostAttribute</code> di un attributo event handler o di <code>srcdoc</code>",
+              "protection": "Errore alla dichiarazione della classe.",
+              "configuration": "<code>rejectUnsafeBindings</code>, <code>true</code> di default"
+            },
+            "restrictions": {
+              "case": "Un <code>@HostAttribute</code> di una restrizione del suo elemento (il <code>sandbox</code> di un <code>&lt;iframe&gt;</code>…), di un’animazione SVG o di un <code>&lt;meta&gt;</code>",
+              "protection": "Errore quando il componente o la direttiva parte sull’elemento.",
+              "configuration": "<code>rejectUnsafeBindings</code>, <code>true</code> di default"
+            },
+            "urls": {
+              "case": "Gli URL che scrive un <code>@HostAttribute</code>",
+              "protection": "Controllati a ogni scrittura, come quelli dei template.",
+              "configuration": "<code>urls</code>, <code>resourceUrls</code>, <code>trustedOrigins</code>"
+            }
+          },
+          "html": {
+            "title": "HTML dell’applicazione",
+            "sanitized": {
+              "case": "HTML collegato con <a href=\"#/it/directives/inner-html\"><code>@@innerHtml</code></a>",
+              "protection": "Sanificato senza DOM, uguale sul server e nel browser: <code>script</code>, <code>style</code>, <code>iframe</code>, <code>object</code>, <code>template</code>… rimossi con il loro contenuto, gli altri elementi non permessi solo nei tag; <code>on*</code> e <code>srcdoc</code> rimossi; un URL di uno schema non permesso rimosso; un’animazione SVG non anima mai un <code>href</code>.",
+              "configuration": "Le opzioni del sanitizer (<code>allowElements</code>, <code>allowAttributes</code>, <code>urlSchemes</code>…); <code>trustHtml()</code>, o un sanitizer dell’applicazione"
+            },
+            "options": {
+              "case": "Opzioni del sanitizer che tengono ciò che esegue sempre codice: <code>script</code>, <code>base</code>, <code>meta</code>, <code>on*</code>, <code>srcdoc</code>, gli schemi <code>javascript</code> e <code>vbscript</code>, compresi i prefissi che li includono",
+              "protection": "Errore: un HTML di cui l’applicazione si fida si renderizza invece con <code>trustHtml()</code>.",
+              "configuration": "Nessuna"
+            },
+            "code": {
+              "case": "Un <code>innerHTML</code>, un <code>setAttribute</code>… scritti dal codice di una classe",
+              "protection": "Non controllati: Xaendar vede ciò che scrivono i suoi template e i suoi decorator. Una policy che richiede i Trusted Types li blocca (vedi sotto).",
+              "configuration": "—"
+            }
+          },
+          "server": {
+            "title": "Rendering sul server",
+            "escape": {
+              "case": "I testi e gli attributi che scrive il server",
+              "protection": "Con escape. Il transfer state viene scritto come JSON, con i suoi <code>&lt;</code> in escape, in uno script che non viene eseguito.",
+              "configuration": "Nessuna"
+            },
+            "styles": {
+              "case": "Gli stili inline degli elementi, che una <code>Content-Security-Policy</code> blocca come attributi <code>style</code>",
+              "protection": "Scritti in una regola di un <code>&lt;style&gt;</code> della loro shadow root, che porta il nonce della risposta, mai come attributi <code>style</code>; un valore che chiuderebbe la sua regola viene scartato. Il browser li riporta negli elementi tramite il CSSOM quando li idrata.",
+              "configuration": "L’opzione <code>nonce</code> di <a href=\"#/it/reference/api/ssr/renderToString\"><code>renderToString()</code></a>"
+            },
+            "inputs": {
+              "case": "Gli input di <code>data-xd-inputs</code>, letti all’idratazione",
+              "protection": "Impostati solo negli input del componente: qualsiasi altro nome lancia un errore, così un HTML iniettato nella pagina non può scrivere <code>innerHTML</code> o <code>__proto__</code>.",
+              "configuration": "Nessuna"
+            },
+            "manifest": {
+              "case": "Il manifest di una libreria compilata (<code>xaendar-manifest.json</code>)",
+              "protection": "Letto come input non fidato: nomi, selettori e percorsi vengono controllati prima di essere usati.",
+              "configuration": "Nessuna"
+            }
+          }
+        },
+        "options": {
+          "title": "La voce security di xaendar.json",
+          "p1": "Le opzioni sono del progetto, che le applica a ogni componente che renderizza, compresi quelli delle sue librerie, compilate o del workspace: una libreria non ne dichiara. Il codice compilato dice solo quali attributi contengono URL, e il runtime li controlla come chiede il progetto; i template di una libreria passano il type check con i default, così da funzionare in qualsiasi progetto. Vedi <a href=\"#/it/templates/binding\">Binding</a> e <a href=\"#/it/reference/api/build-tools/xaendarPlugin\"><code>xaendarPlugin()</code></a>."
+        },
+        "csp": {
+          "title": "Content-Security-Policy",
+          "p1": "Xaendar funziona con una policy restrittiva: i template sono compilati in anticipo, e niente viene valutato da una stringa. Cosa deve permettere ogni direttiva:",
+          "th1": "Direttiva",
+          "th2": "Cosa serve a una pagina di Xaendar",
+          "scriptSrc": "Né <code>'unsafe-eval'</code> né <code>'unsafe-inline'</code>: nessun <code>eval</code>, nessun <code>new Function</code>. Una pagina renderizzata sul server contiene un solo script inline, il contratto degli eventi, che registra gli eventi prima dell’idratazione: si passa il suo nonce a <a href=\"#/it/reference/api/ssr/renderToString\"><code>renderToString()</code></a> con l’opzione <code>nonce</code>, o, per una pagina prerenderizzata, si lascia che <code>xd prerender</code> ne permetta l’hash; senza nessuno dei due, la pagina funziona, perdendo gli eventi prima dell’idratazione. Il transfer state è JSON (<code>type=\"application/json\"</code>), che nessuna policy blocca.",
+          "styleSrc": "Niente <code>'unsafe-inline'</code>. Nel browser i fogli di stile sono costruiti (<code>adoptedStyleSheets</code>) e gli stili degli elementi sono scritti tramite il CSSOM (<code>style.setProperty</code>, <code>style.cssText</code>), che nessuna policy blocca. Una pagina renderizzata sul server non scrive attributi <code>style</code>: ogni shadow root dichiarativa contiene il foglio di stile del suo componente e uno <code>&lt;style&gt;</code> con gli stili inline dei suoi elementi, la radice della pagina uno subito prima di sé, che il browser riporta negli elementi quando li idrata. <code>renderToString()</code> scrive la sua opzione <code>nonce</code> su ogni <code>&lt;style&gt;</code>, come sullo script: lo stesso nonce va in <code>style-src</code>. Solo gli attributi <code>style</code> di un <code>@@innerHtml</code> le cui opzioni li tengono richiedono <code>'unsafe-inline'</code>, altrimenti il browser li ignora.",
+          "trustedTypes": "Xaendar scrive HTML solo tramite le sue policy, che lo lasciano com’è: <code>xaendar#template</code> per il contenuto statico di un <code>&lt;template&gt;</code> standard, <code>xaendar#inner-html</code> per l’HTML che <code>@@innerHtml</code> sanifica, <code>xaendar#inner-html-unsafe</code> per quello che marca <code>trustHtml()</code> o che dà un sanitizer dell’applicazione. Si elencano solo quelle che la pagina usa: senza <code>xaendar#inner-html-unsafe</code>, qualsiasi HTML non sanificato da Xaendar fallisce.",
+          "frameSrc": "La controparte di <code>trustedOrigins</code> nel browser: blocca un frame o un plugin di un’altra origine, qualunque codice lo scriva. Si elencano le stesse origini.",
+          "p2": "Una policy per una pagina renderizzata sul server, con il nonce della risposta e un video incorporato:",
+          "p3": "Una pagina renderizzata solo nel browser non ha bisogno del nonce: <code>'self'</code> basta in entrambe. Una pagina prerenderizzata non ha una risposta propria da cui prendere un nonce: con <code>csp</code> nello <code>ssr</code> di <code>xaendar.json</code>, <code>xd prerender</code> scrive quella policy in ogni pagina, come <code>&lt;meta http-equiv=\"Content-Security-Policy\"&gt;</code> in testa al suo <code>&lt;head&gt;</code>, aggiungendo a <code>script-src</code> e <code>style-src</code> gli hash degli <code>&lt;script&gt;</code> e <code>&lt;style&gt;</code> inline della pagina, così che anche lei non abbia bisogno di <code>'unsafe-inline'</code>. Una policy in un <code>&lt;meta&gt;</code> ignora <code>frame-ancestors</code>, <code>report-uri</code> e <code>sandbox</code>: quelle vanno in un header dell’hosting. Vedi <a href=\"#/it/tools/ssr/hydration\">Idratazione</a> per il contratto degli eventi, e <a href=\"#/it/directives/inner-html\">@@innerHtml</a> per il sanitizer."
         }
       },
       "inputs": {
@@ -1116,7 +1277,7 @@
           "example1": "Un commento scritto in HTML, renderizzato sanificato",
           "p1": "L’HTML è sanificato di default: gli elementi, gli attributi e gli URL che possono eseguire codice vengono rimossi (<code>script</code>, <code>onerror</code>, <code>javascript:</code>), mentre gli elementi di testo e di blocco, le liste, le tabelle e i media restano. Quando rimuove qualcosa, l’elemento emette <code>sanitized</code>, il cui detail elenca gli elementi e gli attributi rimossi: l’esempio li mostra sotto il commento.",
           "p2": "<code>options</code> cambia cosa viene mantenuto (<code>allowElements</code>, <code>allowAttributes</code>, <code>removeElements</code>, <code>removeAttributes</code>, <code>urlSchemes</code>, un attributo di un solo elemento scritto <code>elemento[attributo]</code>), <code>sanitizer</code> sostituisce il sanificatore con uno dell’applicazione, e un HTML marcato con <code>trustHtml</code> viene renderizzato così com’è:",
-          "p3": "Lo stesso sanificatore è esportato come <code>sanitizeHtml</code>: non richiede il DOM, quindi il server e il browser scrivono lo stesso HTML.",
+          "p3": "Lo stesso sanificatore è esportato come <code>sanitizeHtml</code>: non richiede il DOM, quindi il server e il browser scrivono lo stesso HTML. Le opzioni non mantengono mai ciò che esegue sempre codice, qualunque sia l’HTML: <code>script</code>, <code>base</code> e <code>meta</code> in <code>allowElements</code>, gli event handler (<code>on*</code>) e <code>srcdoc</code> in <code>allowAttributes</code>, <code>javascript</code> e <code>vbscript</code> in <code>urlSchemes</code> lanciano un errore, quindi un HTML del genere passa da <code>trustHtml</code> o da un sanificatore dell’applicazione; un <code>animate</code> o un <code>set</code> SVG mantenuto non anima mai un <code>href</code>, perché il suo <code>attributeName</code> viene rimosso. Gli URL che caricano una risorsa nella pagina (lo <code>src</code> di un <code>iframe</code> o di un <code>embed</code>, il <code>data</code> di un <code>object</code>…) degli elementi che un’applicazione ammette vengono controllati come nei template: mantenuti quando caricano dall’applicazione o da una delle <code>trustedOrigins</code> della <code>security</code> di <code>xaendar.json</code>, tutti quando il suo <code>resourceUrls</code> è <code>\"off\"</code>. L’<code>html</code> di quella <code>security</code>, opzioni della stessa forma, vale per ogni HTML che il progetto sanitizza: le liste passate da un uso si aggiungono alle sue, e i suoi <code>urlSchemes</code> le sostituiscono; la build fallisce quando mantengono ciò che esegue sempre codice.",
           "callout1": {
             "heading": "Fidati solo di ciò che costruisce l’applicazione",
             "p1": "<code>trustHtml</code> e un <code>sanitizer</code> dell’applicazione disattivano la sanificazione della direttiva: gli script negli attributi del loro HTML vengono eseguiti. Usa <code>trustHtml</code> solo per un HTML costruito dall’applicazione, o proveniente da una fonte fidata e già sanificato, e chiamala dove l’HTML viene costruito, così ogni HTML fidato è facile da trovare."
@@ -2205,7 +2366,7 @@
         },
         "disposing": {
           "title": "Eliminare un effetto",
-          "p1": "Chiamare la funzione di eliminazione ferma l’effetto e rilascia ogni sottoscrizione. Un effetto si elimina una volta sola: chiamare la funzione di eliminazione una seconda volta lancia un errore, che l’effetto sia autonomo o legato con <code>this.effect()</code>. Quella di <code>this.effect()</code> lancia un errore anche dopo che il componente o la direttiva non c’è più, perché lo scollegamento ha già eliminato l’effetto.",
+          "p1": "Chiamare la funzione di eliminazione ferma l’effetto e rilascia ogni sottoscrizione. Un effetto si elimina una volta sola: chiamare di nuovo la funzione di eliminazione non fa nulla, <code>onCleanup</code> compresa, che l’effetto sia autonomo o legato con <code>this.effect()</code>. Quella di <code>this.effect()</code> non fa nulla neanche dopo che il componente o la direttiva non c’è più, perché lo scollegamento ha già eliminato l’effetto.",
           "example1": "Eliminare due volte"
         },
         "errors": {
@@ -2445,6 +2606,15 @@
           "example1": "Un ruolo scritto dal template, da una direttiva e dal componente",
           "p2": "<code>null</code> e <code>undefined</code> non esprimono un’opinione: l’attributo passa alla sorgente sotto, e viene rimosso quando nessuna sorgente ne ha una, solo se l’aveva scritto il runtime. <code>false</code> è un valore: rimuove l’attributo anche quando lo scrive il componente, tranne sugli attributi <code>aria-*</code> ed enumerati, che ricevono <code>\"false\"</code>. Quando una sorgente sparisce (un ramo non più selezionato, una direttiva distrutta, il componente disconnesso) l’attributo riprende il valore delle sorgenti sotto.",
           "p3": "Un attributo scritto da una sola sorgente, quasi tutti, costa quanto prima: viene scritto direttamente, e lo stato della fusione viene tenuto solo per gli attributi che scrive un secondo livello. Il server applica la stessa precedenza e scrive il valore finale, che il browser adotta senza riscriverlo. Gli attributi che altro codice scrive sull’elemento non vengono tracciati."
+        },
+        "security": {
+          "title": "Valori che potrebbero eseguire codice",
+          "p1": "Un template non contiene <code>&lt;script&gt;</code> né <code>&lt;style&gt;</code>, ovunque siano, anche in un <code>&lt;svg&gt;</code> e nel contenuto di un <code>&lt;template&gt;</code> standard: il codice di un componente va nella sua classe, i suoi stili nel suo stylesheet (<code>styleUrl</code>), e un binding al loro interno scriverebbe codice o stili dai valori dell’applicazione. Il compiler li rifiuta.",
+          "p2": "Un valore collegato a un attributo che il browser esegue, o a uno che toglie una restrizione, viene rifiutato dal type check, nella build e nell’editor: un attributo event handler (qualunque nome che inizia con <code>on</code>, anche con <code>attr.</code>) e uno <code>srcdoc</code> su qualunque elemento; gli attributi che limitano la pagina di un <code>&lt;iframe&gt;</code> (<code>sandbox</code>, <code>allow</code>, <code>allowfullscreen</code>, <code>referrerpolicy</code>, <code>csp</code>, <code>credentialless</code>), che il browser applica solo alla pagina che carica dopo; l’<code>attributeName</code> di un’animazione SVG (<code>&lt;animate&gt;</code>, <code>&lt;set&gt;</code>…), e i valori (<code>to</code>, <code>from</code>, <code>by</code>, <code>values</code>) di una che anima un <code>href</code>; l’<code>http-equiv</code> di un <code>&lt;meta&gt;</code>, e il <code>content</code> di un <code>&lt;meta http-equiv=\"refresh\"&gt;</code>. Ascolta l’evento con <code>(evento)</code>, oppure scrivi l’attributo nel template: un valore scritto lì è dell’autore, ed è ammesso, così come un input di un componente che si chiama allo stesso modo.",
+          "p3": "I controlli si impostano con la voce <code>security</code> dello <code>xaendar.json</code> del progetto, per ogni componente che renderizza, compresi quelli delle sue librerie: una libreria non ne dichiara, perché i suoi componenti funzionano in qualsiasi progetto. Il compiler si limita a marcare gli attributi che contengono URL, e il runtime li controlla come chiede il progetto; i template di una libreria passano il type check con i default. <code>rejectUnsafeBindings</code>, <code>true</code> di default, rende errori questi binding. <code>urls</code>, <code>\"remove\"</code> di default, controlla gli URL collegati agli attributi che li caricano o li aprono (<code>href</code>, <code>src</code>, <code>action</code>, <code>formaction</code>, <code>xlink:href</code>…), ogni immagine di un <code>srcset</code> e ogni URL di un <code>ping</code>, allo stesso modo sul client e sul server: un URL <code>javascript:</code> o <code>vbscript:</code>, o un URL <code>data:</code> che non è un’immagine, un audio o un video, viene scritto con un warning con <code>\"warn\"</code>, omesso con <code>\"remove\"</code>, con il warning solo in sviluppo, e scritto così com’è con <code>\"off\"</code>. <code>resourceUrls</code>, <code>\"remove\"</code> di default, controlla allo stesso modo gli URL che caricano una risorsa nella pagina (lo <code>src</code> di un <code>&lt;iframe&gt;</code>, di un <code>&lt;embed&gt;</code> o di un <code>&lt;frame&gt;</code>, il <code>data</code> e il <code>codebase</code> di un <code>&lt;object&gt;</code>, l’<code>href</code> di un <code>&lt;link&gt;</code> o della <code>&lt;base&gt;</code>): un URL relativo carica dall’applicazione, e passa, uno assoluto solo quando la sua origine è tra le <code>trustedOrigins</code>. I valori scritti nel template e gli input dei componenti non vengono controllati.",
+          "p5": "Un URL costruito dall’applicazione, o preso da una fonte fidata, si marca dove viene costruito: <a href=\"#/it/reference/api/core/trustUrl\"><code>trustUrl()</code></a> supera il controllo di <code>urls</code>, <a href=\"#/it/reference/api/core/trustResourceUrl\"><code>trustResourceUrl()</code></a> entrambi i controlli, qualunque sia l’origine. L’attributo viene scritto con l’URL contenuto nel valore.",
+          "p6": "Gli <code>@HostAttribute</code> dei componenti e delle direttive vengono controllati allo stesso modo, con la voce <code>security</code> del progetto, che la build passa al runtime: un nome che il browser esegue (<code>on*</code>, <code>srcdoc</code>) lancia un errore quando la classe viene dichiarata, un attributo che toglie una restrizione del suo elemento quando la direttiva o il componente parte, e gli URL vengono controllati a ogni scrittura. Dove la <code>Content-Security-Policy</code> richiede i Trusted Types, il contenuto statico di un <code>&lt;template&gt;</code> standard viene scritto con la policy <code>xaendar#template</code>, che i suoi <code>trusted-types</code> elencano.",
+          "p4": "Questi controlli avvengono dove il compiler vede il binding. Un HTML scritto in un elemento viene sanitizzato da <a href=\"#/it/directives/inner-html\"><code>@@innerHtml</code></a>, a run time, con le opzioni del suo uso unite all’<code>html</code> della <code>security</code> del progetto, che valgono per ogni HTML che sanitizza."
         },
         "edgeCases": {
           "title": "Casi limite",
@@ -3420,6 +3590,7 @@
             "entry": "Obbligatoria. Il modulo che esporta <code>render(url)</code>, relativo al progetto e senza estensione (<code>src/entry-server</code>): con l’estensione i comandi si fermano con un errore.",
             "outDir": "Dove <code>xd build</code> scrive il server. Default: <code>dist/server</code>.",
             "prerender": "Le route che <code>xd prerender</code> scrive in file HTML. Default: <code>[\"/\"]</code>.",
+            "csp": "La <code>Content-Security-Policy</code> che <code>xd prerender</code> scrive in ogni pagina, con gli hash dei suoi <code>&lt;script&gt;</code> e <code>&lt;style&gt;</code> inline aggiunti a <code>script-src</code> e <code>style-src</code> (vedi <a href=\"#/it/components/security\">Sicurezza e CSP</a>). Default: nessuna.",
             "staticComponents": "<code>true</code> fa lasciare alla build i <a href=\"#/it/tools/ssr/static-components\">componenti statici</a> fuori dal bundle del browser. Default: <code>false</code>."
           },
           "entry": {
@@ -3431,7 +3602,7 @@
             "title": "Cosa scrive il server",
             "p1": "Ogni componente è scritto come il suo elemento, con gli attributi dei suoi <code>@HostAttribute</code>, seguito da un declarative shadow root con il suo <code>&lt;style&gt;</code> e il suo template, poi il contenuto che proietta negli slot. Il browser trasforma il template in uno shadow root mentre legge la pagina, quindi i componenti appaiono, con i loro stili, prima dei loro script:",
             "p2": "I commenti segnano le parti dinamiche che il browser adotta: <code>&lt;!----&gt;</code> prima di ogni interpolazione, <code>&lt;!--xd-if:0--&gt;</code> … <code>&lt;!--/xd-if--&gt;</code> attorno a un blocco con l’indice del suo ramo, e lo stesso per <code>@switch</code>, per <code>@for</code>, i cui elementi portano la chiave di <code>track</code>, e per le direttive strutturali. L’ultimo blocco di un elemento, o di uno shadow root, non ha il commento di chiusura: il browser lo renderizza senza ancora, aggiungendo in fondo ciò che renderizza. Nessuno viene scritto dentro <code>&lt;textarea&gt;</code>, <code>&lt;title&gt;</code>, <code>&lt;style&gt;</code> e <code>&lt;script&gt;</code>.",
-            "p3": "Un custom element di cui il server non ha la classe, come uno di un’altra libreria o un componente importato con <code>@import lazy</code>, è scritto senza shadow root: il browser lo renderizza quando la sua classe è definita. Testi e attributi vengono escapati, e un attributo legato a <code>null</code> o <code>undefined</code> non viene scritto, come il browser lo rimuove."
+            "p3": "Un custom element di cui il server non ha la classe, come uno di un’altra libreria o un componente importato con <code>@import lazy</code>, è scritto senza shadow root: il browser lo renderizza quando la sua classe è definita. Testi e attributi vengono escapati, e un attributo legato a <code>null</code> o <code>undefined</code> non viene scritto, come il browser lo rimuove. Non viene scritto alcun attributo <code>style</code>: gli stili inline degli elementi vanno in un secondo <code>&lt;style&gt;</code> della loro shadow root, una regola per blocco di dichiarazioni, e ogni elemento tiene l’indice della sua regola in <code>data-xd-style</code>, così che una <code>Content-Security-Policy</code> li permetta con il nonce della risposta (vedi <a href=\"#/it/components/security\">Sicurezza e CSP</a>); il browser li riporta negli elementi quando li idrata."
           },
           "onTheServer": {
             "title": "Il codice dei componenti sul server",
@@ -3542,8 +3713,8 @@
             },
             "csp": {
               "title": "Content-Security-Policy",
-              "p1": "Il contract è uno script inline, che una <code>Content-Security-Policy</code> rigida blocca. Passa a <code>renderToString()</code> il nonce della risposta con l’opzione <code>nonce</code>: il server ne crea uno nuovo per ogni risposta, e lo passa a <code>render</code> insieme all’URL. Il <code>server.ts</code> generato non imposta alcuna policy.",
-              "p2": "Una pagina prerenderizzata non ha una risposta per cui creare un nonce, perché lo stesso file serve ogni richiesta: consenti lo script nella policy dell’host statico con il suo hash, calcolato sul file, che cambia quando cambiano gli eventi della pagina. Senza nessuna di queste, la pagina funziona, e perde gli eventi prima dell’hydration."
+              "p1": "Il contract è uno script inline, che una <code>Content-Security-Policy</code> rigida blocca, come blocca gli <code>&lt;style&gt;</code> con i fogli di stile e gli stili inline dei componenti. Passa a <code>renderToString()</code> il nonce della risposta con l’opzione <code>nonce</code>, che lo scrive su tutti: il server ne crea uno nuovo per ogni risposta, e lo passa a <code>render</code> insieme all’URL. Il <code>server.ts</code> generato non imposta alcuna policy.",
+              "p2": "Una pagina prerenderizzata non ha una risposta per cui creare un nonce, perché lo stesso file serve ogni richiesta: dichiara la policy in <code>csp</code> dello <code>ssr</code> di <code>xaendar.json</code>, e <code>xd prerender</code> la scrive in ogni pagina con gli hash dei suoi script e stili inline. Senza, la pagina funziona, e perde gli eventi prima dell’idratazione."
             }
           },
           "edgeCases": {
@@ -3733,7 +3904,7 @@
           },
           "prerender": {
             "title": "Prerendering",
-            "p1": "<code>xd prerender</code> compila il progetto, poi renderizza ogni route elencata da <code>prerender</code> in <code>xaendar.json</code>, <code>/</code> per default, nell’<code>index.html</code> della sua cartella in <code>dist/client</code>: <code>/</code> in <code>dist/client/index.html</code>, <code>/about</code> in <code>dist/client/about/index.html</code>. Un hosting statico serve allora le pagine già renderizzate, senza un server dell’applicazione.",
+            "p1": "<code>xd prerender</code> compila il progetto, poi renderizza ogni route elencata da <code>prerender</code> in <code>xaendar.json</code>, <code>/</code> per default, nell’<code>index.html</code> della sua cartella in <code>dist/client</code>: <code>/</code> in <code>dist/client/index.html</code>, <code>/about</code> in <code>dist/client/about/index.html</code>. Un hosting statico serve allora le pagine già renderizzate, senza un server dell’applicazione. Con <code>csp</code> nello <code>ssr</code> di <code>xaendar.json</code>, ogni pagina riceve quella <code>Content-Security-Policy</code> in un <code>&lt;meta&gt;</code>, che ne permette script e stili inline con i loro hash.",
             "p2": "<strong>Prerender o server</strong>: prerenderizza le pagine uguali per ogni utente che cambiano solo con un nuovo rilascio, come una documentazione, un blog o una landing page. Tieni un server per le pagine che dipendono dalla richiesta: l’utente, la query string, dati che cambiano spesso."
           },
           "withoutCli": {
@@ -4130,6 +4301,46 @@
       "cause": "Un listener per un evento che non è né un output del componente né un evento del suo elemento: maiuscole diverse, un nome sbagliato, o un evento che risale dal contenuto dell’elemento. È un warning: la build non fallisce.",
       "fix": "Usa il nome dell’accessor, lettera per lettera. Per un evento che risale di proposito, tieni il binding, o imposta \"strictEvents\": false in xaendar.json."
     },
+    "[Parser] <style> cannot be written in a template: the styles of a component go in its stylesheet (styleUrl)": {
+      "cause": "Uno <style> o uno <script> in un template, ovunque, anche in un <svg> o in un <template> standard.",
+      "fix": "Sposta gli stili nello stylesheet del componente (styleUrl), il codice nella sua classe."
+    },
+    "[TypeChecker] Binding onclick writes code the browser runs from a value of the application: listen to the click event instead, or set \"security\": { \"rejectUnsafeBindings\": false } in xaendar.json to allow it.": {
+      "cause": "Un valore collegato a un attributo che il browser esegue, o che toglie una restrizione: un attributo event handler (on…), srcdoc, sandbox, allow… di un <iframe>, l’attributeName di un’animazione SVG o i valori di una che anima un href, l’http-equiv di un <meta> o il content del suo refresh.",
+      "fix": "Ascolta con (evento)=\"…\", carica una pagina con src, o scrivi l’attributo nel template; imposta \"security\": { \"rejectUnsafeBindings\": false } in xaendar.json solo per un valore controllato dall’applicazione."
+    },
+    "Xaendar: the URL bound to href runs code (javascript:alert(1)): href is left out, as \"security\": { \"urls\": \"remove\" } in xaendar.json asks.": {
+      "cause": "Con \"security\": { \"urls\": \"remove\" }, il default, un URL javascript:, vbscript: o data: non multimediale collegato a un attributo che contiene URL (href, src, srcset, ping…), in un template o in un @HostAttribute, nel browser o sul server: l’attributo viene omesso. Il warning viene scritto solo in sviluppo.",
+      "fix": "Collega un URL dell’applicazione, o marca con trustUrl() un URL di cui si fida."
+    },
+    "Xaendar: the URL bound to src loads a resource from an origin the application does not trust (https://videos.example.net/embed/42): src is left out, as \"security\": { \"resourceUrls\": \"remove\" } in xaendar.json asks.": {
+      "cause": "Con \"security\": { \"resourceUrls\": \"remove\" }, il default, un URL assoluto la cui origine non è tra le trustedOrigins collegato a un attributo che carica una risorsa nella pagina: lo src di un <iframe>, di un <embed> o di un <frame>, il data di un <object>, l’href di un <link> o della <base>. L’attributo viene omesso; il warning viene scritto solo in sviluppo.",
+      "fix": "Aggiungi l’origine a \"trustedOrigins\" nella voce security di xaendar.json, o marca l’URL con trustResourceUrl()."
+    },
+    "Xaendar: the URL bound to href runs code (javascript:alert(1)): it is written as it is. Bind a URL of the application, or mark it with trustUrl() when the application trusts it, or set \"security\": { \"urls\": \"remove\" } in xaendar.json to leave it out.": {
+      "cause": "Con \"security\": { \"urls\": \"warn\" }, un URL javascript:, vbscript: o data: non multimediale collegato a un attributo che contiene URL (href, src, srcset, ping…). È un warning: l’URL viene scritto.",
+      "fix": "Collega un URL dell’applicazione, marca con trustUrl() un URL di cui si fida, o imposta \"urls\": \"remove\" per omettere questi URL."
+    },
+    "Xaendar: the URL bound to src loads a resource from an origin the application does not trust (https://videos.example.net/embed/42): it is written as it is. Bind a URL of the application, add its origin to \"trustedOrigins\", or mark it with trustResourceUrl() when the application trusts it, or set \"security\": { \"resourceUrls\": \"remove\" } in xaendar.json to leave it out.": {
+      "cause": "Con \"security\": { \"resourceUrls\": \"warn\" }, un URL assoluto la cui origine non è tra le trustedOrigins collegato a un attributo che carica una risorsa nella pagina: lo src di un <iframe>, di un <embed> o di un <frame>, il data di un <object>, l’href di un <link> o della <base>. È un warning: l’URL viene scritto.",
+      "fix": "Aggiungi l’origine a \"trustedOrigins\" nella voce security di xaendar.json, marca l’URL con trustResourceUrl(), o imposta \"resourceUrls\": \"remove\" per omettere questi URL."
+    },
+    "[TypeChecker] Binding sandbox sets a restriction of the <iframe> from a value of the application, which the browser applies only to the page it loads next: write it as a static attribute, or set \"security\": { \"rejectUnsafeBindings\": false } in xaendar.json to allow it.": {
+      "cause": "Un valore collegato a un attributo che limita la pagina di un <iframe> (sandbox, allow, allowfullscreen, referrerpolicy, csp, credentialless): il browser lo applica solo alla pagina che il frame carica dopo.",
+      "fix": "Scrivi l’attributo nel template, scegliendo tra più frame con @if se varia."
+    },
+    "@HostAttribute('sandbox') on <iframe> sets a restriction of the <iframe> from a value of the application, which the browser applies only to the page it loads next: write it as a static attribute, or set \"security\": { \"rejectUnsafeBindings\": false } in xaendar.json to allow it.": {
+      "cause": "Un @HostAttribute che scrive, sul suo elemento, un attributo che toglie una restrizione (lo sandbox di un <iframe>, i valori di un’animazione SVG di un href, il content di un refresh di <meta>), mentre il rejectUnsafeBindings del progetto è attivo. Un nome che il browser esegue su qualunque elemento (on…, srcdoc) lancia un errore quando la classe viene dichiarata.",
+      "fix": "Scrivi l’attributo nel template dell’elemento, o ascolta con @HostListener; imposta \"security\": { \"rejectUnsafeBindings\": false } in xaendar.json solo per un valore controllato dall’applicazione."
+    },
+    "\"trustedOrigins\" of the security of xaendar.json lists cdn.example.com, which is not an origin: write its scheme, its host and its port, if any, as https://cdn.example.com": {
+      "cause": "Una voce delle trustedOrigins della voce security di xaendar.json che non è un’origine: senza schema, o con un percorso, una query o un frammento.",
+      "fix": "Scrivi lo schema, l’host e la porta, se c’è, come li scrive URL.origin: https://cdn.example.com, http://localhost:8080."
+    },
+    "The allowAttributes of the sanitizer list onclick, keeping an attribute the browser runs (on*, srcdoc): render a trusted HTML with trustHtml(), or with a sanitizer of the application, instead": {
+      "cause": "Opzioni di @@innerHtml o di sanitizeHtml che mantengono ciò che esegue sempre codice: script, base o meta in allowElements, un event handler (on…) o srcdoc in allowAttributes, javascript o vbscript in urlSchemes. Conta anche un nome che finisce con * e li comprende.",
+      "fix": "Renderizza un HTML di cui l’applicazione si fida con trustHtml(), o passa un sanificatore dell’applicazione, come DOMPurify."
+    },
     "[TypeChecker] Unknown property \"shade\" on @@exTint (TintDirective has no @Property with this name).": {
       "cause": "Un input che la direttiva non dichiara.",
       "fix": "Usa il nome di una @Property della direttiva."
@@ -4303,8 +4514,8 @@
       "fix": "Rimanda il lavoro con queueMicrotask."
     },
     "Cannot unwatch a signal that is not being watched": {
-      "cause": "Il disposer di un effect chiamato quando l’effect è già eliminato: una seconda volta, oppure, per this.effect(), dopo che il componente o la direttiva non c’è più.",
-      "fix": "Chiamalo una volta sola, mentre l’effect è attivo."
+      "cause": "Watcher.unwatch chiamato con un signal che il watcher non osserva, come uno già rimosso.",
+      "fix": "Rimuovi solo i signal che il watcher osserva: Signal.subtle.introspectSources(watcher) li elenca."
     },
     "Tag <Widget> is not a valid custom element name. Custom element names must: …": {
       "cause": "Un nome di componente, o un nome di progetto seguito da -root, che non è un nome valido per un custom element.",

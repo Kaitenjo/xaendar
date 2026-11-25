@@ -10,6 +10,7 @@
 @import lazy { ComponentsOutputsPage } from '../../pages/components/outputs/outputs.xd.component.ts'
 @import lazy { ComponentsQueriesPage } from '../../pages/components/queries/queries.xd.component.ts'
 @import lazy { ComponentsRegistrationPage } from '../../pages/components/registration/registration.xd.component.ts'
+@import lazy { ComponentsSecurityPage } from '../../pages/components/security/security.xd.component.ts'
 @import lazy { ComponentsStylingPage } from '../../pages/components/styling/styling.xd.component.ts'
 @import lazy { ComponentsTwoWayBindingPage } from '../../pages/components/two-way-binding/two-way-binding.xd.component.ts'
 @import lazy { DirectivesAnimationsPage } from '../../pages/directives/animations/animations.xd.component.ts'
@@ -118,6 +119,9 @@
   }
   @case ('components/registration') {
     <page-components-registration />
+  }
+  @case ('components/security') {
+    <page-components-security />
   }
   @case ('components/styling') {
     <page-components-styling />

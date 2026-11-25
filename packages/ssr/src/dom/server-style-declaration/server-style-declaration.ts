@@ -9,13 +9,6 @@ import type { AttributeOwner } from '../types/attribute-owner.type';
  */
 export class ServerStyleDeclaration {
   /**
-   * Creates the inline style of an element.
-   *
-   * @param _owner - The element owning the `style` attribute.
-   */
-  constructor(private readonly _owner: AttributeOwner) { }
-
-  /**
    * The number of the declarations.
    *
    * @returns The number of the properties the attribute declares.
@@ -23,6 +16,32 @@ export class ServerStyleDeclaration {
   public get length(): number {
     return this._read().size;
   }
+
+  /**
+   * The text of the declarations: the `style` attribute.
+   *
+   * @returns The text, an empty string when the element has no `style` attribute.
+   */
+  public get cssText(): string {
+    return this._owner.getAttribute('style') ?? '';
+  }
+
+  /**
+   * Writes the text of the declarations as it is into the `style` attribute, as the runtime writes the whole style of an
+   * element: its static text, or the declarations it joins, without the values it sets alone (see `setProperty`).
+   *
+   * @param text - The text.
+   */
+  public set cssText(text: string) {
+    this._owner.setAttribute('style', text);
+  }
+
+  /**
+   * Creates the inline style of an element.
+   *
+   * @param _owner - The element owning the `style` attribute.
+   */
+  constructor(private readonly _owner: AttributeOwner) { }
 
   /**
    * Reads the value of a property.
@@ -49,6 +68,11 @@ export class ServerStyleDeclaration {
   /**
    * Sets a property, keeping its place when the attribute declares it already, or removes it for an empty value.
    *
+   * N.B. A value that would not stay a single declaration of the attribute (`red; position: fixed`, `red;`, `red(`) is ignored,
+   * as a browser's `setProperty` rejects it: a value bound to a single key may come from a user, and joined into the
+   * text of the attribute it would end its declaration and add others, which the browser then adopts as they are, since
+   * hydration does not write a value already present. Do not write such a value into the attribute.
+   *
    * @param property - The name of the property.
    * @param value - The value.
    * @param priority - `'important'` to declare it with `!important`.
@@ -56,6 +80,10 @@ export class ServerStyleDeclaration {
   public setProperty(property: string, value: string, priority = ''): void {
     if (!value) {
       this.removeProperty(property);
+      return;
+    }
+
+    if (!this._isSingleDeclaration(property, value)) {
       return;
     }
 
@@ -80,6 +108,21 @@ export class ServerStyleDeclaration {
     declarations.delete(property);
     this._write(declarations);
     return styleValue(value);
+  }
+
+  /**
+   * Tells whether a value of a property, written into the attribute, is read back as that one declaration, leaving the
+   * next one whole: no `;` outside parentheses and quotes ends it, and no parenthesis or quote left open takes in the
+   * declarations after it.
+   *
+   * @param property - The name of the property.
+   * @param value - The value.
+   * @returns `true` when the attribute would hold the property, with the value, and the declaration after it.
+   */
+  private _isSingleDeclaration(property: string, value: string): boolean {
+    // A declaration of another name follows the value, to find what it leaves open
+    const parsed = parseStyleDeclarations(`${property}: ${value}; ${property}-: 0`);
+    return parsed?.length === 4 && parsed[1] === value.trim();
   }
 
   /**

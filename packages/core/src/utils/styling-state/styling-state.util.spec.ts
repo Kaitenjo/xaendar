@@ -328,6 +328,15 @@ describe('writeStylingAttribute', () => {
     expect(element.getAttribute('style')).toBe('color: red !important; width: 1px;');
   });
 
+  it('sets alone a value holding a semicolon, which adds no declaration to the attribute', () => {
+    const element = document.createElement('div');
+    writeStylingAttribute(element, 'style', ['color', 'red; position: fixed', 'background-image', 'url("a;b")', 'width', '1px'], null);
+
+    expect(element.style.getPropertyValue('position')).toBe('');
+    expect(element.style.getPropertyValue('width')).toBe('1px');
+    expect(element.style.getPropertyValue('background-image')).toBe('url("a;b")');
+  });
+
   it('writes nothing without opinions present', () => {
     const element = document.createElement('div');
     writeStylingAttribute(element, 'class', ['a', false], null);

@@ -33,6 +33,11 @@ describe('serializeTemplateContent', () => {
     expect(serializeTemplateContent([text('1 < 2 & 3'), element('b', [text('x')], attributes)])).toBe('1 &lt; 2 &amp; 3<b title="a &quot;b&quot; &amp; &lt;c&gt;">x</b>');
   });
 
+  it('writes the is of a customized built-in element first, which the parser takes out of the attributes', () => {
+    const attributes: ElementNode['attributes'] = [{ type: ASTNodeType.Attribute, name: 'title', nameSpan: span, value: 'Copy', span }];
+    expect(serializeTemplateContent([Object.assign(element('button', [text('x')], attributes), { is: 'copy-button' })])).toBe('<button is="copy-button" title="Copy">x</button>');
+  });
+
   it('writes void elements without end tag, the leading line feed of a <pre>, and the text of a raw text element as it is', () => {
     expect(serializeTemplateContent([element('input'), element('pre', [text('a')]), element('script', [text('a < b')])])).toBe('<input><pre>\na</pre><script>a < b</script>');
   });

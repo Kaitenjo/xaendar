@@ -25,7 +25,7 @@ import { SERVER_RESOLVE_OPTIONS, toStatements } from '../utils/server-code/serve
  * The runtime helpers the code rendering on the server calls, imported by the module of every template.
  */
 const RUNTIME_IMPORTS: readonly string[] = [
-  'import { _declare, _forItems, _iterationVariables, _read, _scope, _set, _setAttribute, _setExpressionAttribute, _setExpressionExposedInput, _setExpressionInput, _setExpressionProperty, _setExpressionStyling, _setExposedInput, _setInput, _setProperty, _setStyling, _templateRef } from \'@xaendar/core\';',
+  'import { _checkUrl, _declare, _forItems, _iterationVariables, _read, _scope, _set, _setAttribute, _setExpressionAttribute, _setExpressionExposedInput, _setExpressionInput, _setExpressionProperty, _setExpressionStyling, _setExposedInput, _setInput, _setProperty, _setStyling, _templateRef } from \'@xaendar/core\';',
   'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrRenderTemplate, _ssrRenderTemplateRef, _ssrStartTag, _ssrStructural, _ssrTry } from \'@xaendar/ssr\';'
 ];
 

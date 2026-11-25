@@ -14,10 +14,11 @@ import { isInTryScope } from '../try-scope/try-scope.util';
  *
  * @param tagName - The tag name of the element.
  * @param namespace - The namespace of the element, `undefined` for HTML.
+ * @param is - The selector of the customized built-in element the element is, `undefined` for any other element.
  * @returns The element.
  * @throws The error of the constructor of a custom element, in the content of a `@try`.
  */
-export function createNamespacedElement(tagName: string, namespace: RenderElementNamespace | undefined): Element {
+export function createNamespacedElement(tagName: string, namespace: RenderElementNamespace | undefined, is?: string): Element {
   switch (namespace) {
     case 1:
       return _createSVGElement(tagName);
@@ -26,7 +27,7 @@ export function createNamespacedElement(tagName: string, namespace: RenderElemen
       return _createMATHMLElement(tagName);
 
     default:
-      return _createElement(tagName);
+      return _createElement(tagName, is);
   }
 }
 
@@ -35,13 +36,24 @@ export function createNamespacedElement(tagName: string, namespace: RenderElemen
  * already defined is constructed by its class, so that the error of the constructor is thrown here, as the template
  * calls it: `document.createElement` reports it and creates an element that is not the component.
  *
+ * A customized built-in element is created with its selector as `is`, which decides its class only at the creation,
+ * and gets the `is` attribute too, which `document.createElement` does not write: the element is the one the HTML of the
+ * server holds, and selectors such as the one of `@Query` (`button[is="copy-button"]`) find it.
+ *
  * @param tagName - The HTML tag name of the element to create.
+ * @param is - The selector of the customized built-in element the element is, `undefined` for any other element.
  * @returns The newly created HTML element.
  * @throws The error of the constructor of the custom element, in the content of a `@try`.
  */
-export function _createElement(tagName: string): HTMLElement {
-  const Component = isInTryScope() ? customElements.get(tagName) : undefined;
-  return Component ? new Component() : document.createElement(tagName);
+export function _createElement(tagName: string, is?: string): HTMLElement {
+  const Component = isInTryScope() ? customElements.get(is ?? tagName) : undefined;
+  if (is === undefined) {
+    return Component ? new Component() : document.createElement(tagName);
+  }
+
+  const element = Component ? new Component() : document.createElement(tagName, { is });
+  element.setAttribute('is', is);
+  return element;
 }
 
 /**

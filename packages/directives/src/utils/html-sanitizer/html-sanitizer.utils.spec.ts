@@ -1,7 +1,20 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { HtmlSanitizerOptions } from '../../types/html-sanitizer-options.type';
 import { sanitizeHtml, sanitizeHtmlWithReport } from './html-sanitizer.utils';
+
+/**
+ * Loads the sanitizer again, with the security of the project the plugin defines.
+ */
+async function loadWith(security: object): Promise<typeof import('./html-sanitizer.utils')> {
+  vi.stubGlobal('__XAENDAR_SECURITY__', security);
+  vi.resetModules();
+  try {
+    return await import('./html-sanitizer.utils');
+  } finally {
+    vi.unstubAllGlobals();
+  }
+}
 
 /**
  * Inputs written to run code in a page, from the cheat sheets of XSS and of mutation XSS.
@@ -142,6 +155,61 @@ describe('sanitizeHtml', () => {
     (options.allowAttributes as string[]).push('data-x');
 
     expect(sanitizeHtml('<p style="x" data-x="1">p</p>', options)).toBe('<p style="x">p</p>');
+  });
+
+  it.each([
+    [{ allowElements: ['SCRIPT'] }, 'The allowElements of the sanitizer list SCRIPT, keeping <script>, whose code the browser runs once the page rendered on the server holds it: render a trusted HTML with trustHtml(), or with a sanitizer of the application, instead'],
+    [{ allowElements: ['b*'] }, 'The allowElements of the sanitizer list b*, keeping <base>, which changes where every relative URL of the page leads'],
+    [{ allowElements: ['meta'] }, 'keeping <meta>, which can send the page elsewhere'],
+    [{ allowAttributes: ['onclick'] }, 'The allowAttributes of the sanitizer list onclick, keeping an attribute the browser runs (on*, srcdoc)'],
+    [{ allowAttributes: ['img[onError]'] }, 'list img[onError], keeping an attribute'],
+    [{ allowAttributes: ['o*'] }, 'list o*, keeping an attribute'],
+    [{ allowAttributes: ['on-*'] }, 'list on-*, keeping an attribute'],
+    [{ allowAttributes: ['iframe[srcdoc]'] }, 'list iframe[srcdoc], keeping an attribute'],
+    [{ urlSchemes: ['https', 'JavaScript'] }, 'The urlSchemes of the sanitizer list JavaScript, a scheme running code']
+  ])('rejects options keeping what always runs code: %j', (options: HtmlSanitizerOptions, message) => {
+    expect(() => sanitizeHtml('', options)).toThrow(message);
+  });
+
+  it('accepts the options naming what only looks like what runs code', () => {
+    expect(sanitizeHtml('<p data-on="1" no-onclick="2">p</p>', { allowElements: ['scripts', 'p*'], allowAttributes: ['data-*', 'no-onclick', 'srcset'], urlSchemes: ['data'] })).toBe('<p data-on="1" no-onclick="2">p</p>');
+  });
+
+  it('keeps the resources an element allowed loads from the application only, as the security of the project asks by default', () => {
+    const options: HtmlSanitizerOptions = { allowElements: ['iframe', 'object'], allowAttributes: ['src', 'data'] };
+
+    expect(sanitizeHtmlWithReport('<iframe src="/frame.html"></iframe><iframe src="https://evil.com/frame.html"></iframe><object data="//evil.com/x"></object><img src="https://example.com/a.png">', options)).toEqual({
+      html: '<iframe src="/frame.html"></iframe><iframe></iframe><object></object><img src="https://example.com/a.png">',
+      report: { removedElements: [], removedAttributes: ['iframe[src]', 'object[data]'] }
+    });
+  });
+
+  it('keeps the resources of the trusted origins of the project, and every resource when it does not check them', async () => {
+    const options: HtmlSanitizerOptions = { allowElements: ['iframe'], allowAttributes: ['src'] };
+    const html = '<iframe src="https://cdn.example.com/a.html"></iframe><iframe src="https://evil.com/b.html"></iframe>';
+
+    expect((await loadWith({ urls: 'remove', resourceUrls: 'remove', trustedOrigins: ['https://cdn.example.com'], rejectUnsafeBindings: true })).sanitizeHtml(html, options))
+      .toBe('<iframe src="https://cdn.example.com/a.html"></iframe><iframe></iframe>');
+    expect((await loadWith({ urls: 'remove', resourceUrls: 'off', trustedOrigins: [], rejectUnsafeBindings: true })).sanitizeHtml(html, options)).toBe(html);
+  });
+
+  it('applies the html of the security of the project to every use, adding the lists a use passes and taking its schemes', async () => {
+    const html = { allowElements: ['iframe'], allowAttributes: ['src'], removeAttributes: ['a[target]'], urlSchemes: ['https'] };
+    const { sanitizeHtml: sanitize } = await loadWith({ urls: 'remove', resourceUrls: 'off', trustedOrigins: [], rejectUnsafeBindings: true, html });
+    const page = '<iframe src="/a.html"></iframe><a href="http://x" target="_blank" data-x="1">a</a>';
+
+    expect(sanitize(page)).toBe('<iframe src="/a.html"></iframe><a>a</a>');
+    expect(sanitize(page, { allowAttributes: ['data-x'], urlSchemes: ['http'] })).toBe('<iframe src="/a.html"></iframe><a href="http://x" data-x="1">a</a>');
+    expect(sanitize(page, {})).toBe('<iframe src="/a.html"></iframe><a>a</a>');
+  });
+
+  it('never lets an SVG animation write an href', () => {
+    const options: HtmlSanitizerOptions = { allowElements: ['svg', 'a', 'animate', 'set'], allowAttributes: ['attributeName', 'to'] };
+
+    expect(sanitizeHtmlWithReport('<svg><a><set attributeName="href" to="javascript:alert(1)"/><animate attributeName=" XLINK:HREF " to="x"/><animate attributeName="opacity" to="0"/></a></svg>', options)).toEqual({
+      html: '<svg><a><set to="javascript:alert(1)"></set><animate to="x"></animate><animate attributename="opacity" to="0"></animate></a></svg>',
+      report: { removedElements: [], removedAttributes: ['set[attributename]', 'animate[attributename]'] }
+    });
   });
 });
 

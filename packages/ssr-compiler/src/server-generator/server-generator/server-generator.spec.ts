@@ -25,7 +25,7 @@ const symbol = (local: string, reactive = false): SymbolImport => ({
 describe('ServerGenerator', () => {
   it('writes the imports of the runtime helpers, then render creating the root context and writing the template', () => {
     expect(generate('<p>{ title() }</p>', ['title'])).toBe([
-      'import { _declare, _forItems, _iterationVariables, _read, _scope, _set, _setAttribute, _setExpressionAttribute, _setExpressionExposedInput, _setExpressionInput, _setExpressionProperty, _setExpressionStyling, _setExposedInput, _setInput, _setProperty, _setStyling, _templateRef } from \'@xaendar/core\';',
+      'import { _checkUrl, _declare, _forItems, _iterationVariables, _read, _scope, _set, _setAttribute, _setExpressionAttribute, _setExpressionExposedInput, _setExpressionInput, _setExpressionProperty, _setExpressionStyling, _setExposedInput, _setInput, _setProperty, _setStyling, _templateRef } from \'@xaendar/core\';',
       'import { _escapeRawText, _escapeText, _ssrAttribute, _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrItemMarker, _ssrRenderTemplate, _ssrRenderTemplateRef, _ssrStartTag, _ssrStructural, _ssrTry } from \'@xaendar/ssr\';',
       'const _layout0 = { size: 5, nodes: 5 };',
       'function render(out) {',
@@ -306,9 +306,9 @@ describe('ServerGenerator', () => {
   });
 
   it('writes no marker in the elements whose content the parser reads as text, but writes them in the foreign elements', () => {
-    const code = generate('<textarea>a{ x }</textarea><title>{ x }</title><style>{ x }</style><svg><style>{ x }</style></svg>');
+    const code = generate('<textarea>a{ x }</textarea><title>{ x }</title><xmp>{ x }</xmp><svg><xmp>{ x }</xmp></svg>');
 
-    expect(code).toContain('\'<textarea>\\na\' + _escapeText(this.x) + \'</textarea><title>\' + _escapeText(this.x) + \'</title><style>\' + _escapeRawText(this.x, \'style\') + \'</style><svg><style><!---->\' + _escapeText(this.x) + \'</style></svg>\'');
+    expect(code).toContain('\'<textarea>\\na\' + _escapeText(this.x) + \'</textarea><title>\' + _escapeText(this.x) + \'</title><xmp>\' + _escapeRawText(this.x, \'xmp\') + \'</xmp><svg><xmp><!---->\' + _escapeText(this.x) + \'</xmp></svg>\'');
   });
 
   it('throws a template error naming the server generator when the code of a node cannot be generated', () => {

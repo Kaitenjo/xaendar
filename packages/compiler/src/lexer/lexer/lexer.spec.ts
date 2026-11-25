@@ -358,6 +358,37 @@ describe('Lexer', () => {
     expect(() => new Lexer('<div @if (cond()) { title="x"></div>').tokenize()).toThrow('Conditional binding blocks must be closed by \'}\'');
   });
 
+  describe('context of the errors', () => {
+    /**
+     * The context the message of the error thrown by tokenizing a template shows, the part in error underlined.
+     */
+    function contextOf(template: string): string {
+      try {
+        new Lexer(template).tokenize();
+      } catch (error) {
+        return (error as Error).message.split('\n ---> ')[1].replace('\x1b[4m', '[').replace('\x1b[0m', ']');
+      }
+
+      throw new Error('The template was tokenized');
+    }
+
+    it('shows the start of the input when no line break or space far enough comes before the error', () => {
+      expect(contextOf('<div @foo')).toBe('<div[ @]foo');
+    });
+
+    it('shows the end of the input when no line break or space far enough comes after the error', () => {
+      expect(contextOf('<p>hello\n<div a=1 b=2 @@ x>')).toBe('<div [a=]1 b=2 @@ x>');
+    });
+
+    it('shows the whole word before the space ending the context, its last character included', () => {
+      expect(contextOf('abcdefghijklmnopqrstuvwxyz <div class) id="a"></div> trailing words here and more')).toBe('abcdefghijklmnopqrstuvwxyz <div [class]) id="a"></div> trailing');
+    });
+
+    it('stops at the line breaks around the error', () => {
+      expect(contextOf('<p>\n<div class) id="a">\n</div>')).toBe('<div [class]) id="a">');
+    });
+  });
+
   describe('tags spanning multiple lines', () => {
     const describeTokens = (template: string) => new Lexer(template).tokenize().map(token => ({
       type: TokenType[token.type],

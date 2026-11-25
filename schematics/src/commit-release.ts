@@ -28,9 +28,9 @@ function readVersion(): string {
  * Commits the changes of the release, `Release <version>`, and pushes the commit to the branch it was made on.
  *
  * The commit holds the tracked files the release changed: the versions written by `update-version` (packages, plugin,
- * catalog), the lockfile updated by the install of the published versions, and the fixes of `check-dependencies`;
- * new files, such as the tarballs of `pack-projects`, stay out. It runs before `tag-release`, so the tag names the
- * commit holding the version it names. The identity of the commit is the one git is configured with: the release
+ * catalog), the lockfile the install updates with the new version, and the fixes of `check-dependencies`; new files,
+ * such as the tarballs of `pack-projects`, stay out. It runs before `tag-release`, so the tag names the commit holding
+ * the version it names, and both before the publication, so a version on npm always has its commit and its tag. The identity of the commit is the one git is configured with: the release
  * workflow sets the owner's (see the Commits section of `CLAUDE.md`).
  *
  * Does nothing when nothing changed, as in a release run again without a bump (`--bump=none`). Exits the process

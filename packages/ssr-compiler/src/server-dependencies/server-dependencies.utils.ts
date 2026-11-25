@@ -1,4 +1,4 @@
-import { ASTNodeType, parseTemplate, resolveTemplateImports, type ASTNode, type ConditionalBindingBranchNode, type ImportNode } from '@xaendar/compiler';
+import { ASTNodeType, getElementSelector, parseTemplate, resolveTemplateImports, type ASTNode, type ConditionalBindingBranchNode, type ImportNode } from '@xaendar/compiler';
 import { isClientComponent } from '../server-generator/utils/client-component/client-component.utils';
 import type { ServerCompileOptions } from '../types/server-compile-options.type';
 
@@ -53,7 +53,7 @@ function collectSelectors(nodes: readonly ASTNode[], selectors: Set<string>): bo
     const node = nodes[i];
     switch (node.type) {
       case ASTNodeType.Element:
-        selectors.add(node.tagName);
+        selectors.add(getElementSelector(node));
         collectBindingSelectors(node, selectors);
         client = collectSelectors(node.children, selectors) || client;
         break;

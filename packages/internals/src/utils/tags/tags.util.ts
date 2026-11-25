@@ -23,6 +23,14 @@ const CUSTOM_ELEMENT_NAME_RE = new RegExp(`^[a-z][${PCEN_CHAR}]*-[${PCEN_CHAR}]*
 const PATTERN_EXPRESSIONS = new Map<string, RegExp>();
 
 /**
+ * The tags of the native elements accepting a shadow root (`attachShadow`), the custom elements apart: the only native
+ * elements a customized built-in element renders a template into.
+ *
+ * @see https://dom.spec.whatwg.org/#dom-element-attachshadow
+ */
+const SHADOW_HOST_TAG_NAMES: ReadonlySet<string> = new Set(['article', 'aside', 'blockquote', 'body', 'div', 'footer', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'main', 'nav', 'p', 'section', 'span']);
+
+/**
  * Checks whether a given tag name is valid for use as a custom element name, with the rules of the HTML
  * specification. A valid custom element name must:
  * - start with a lowercase ASCII letter;
@@ -55,6 +63,18 @@ Reserved names are:
   }
 
   return true;
+}
+
+/**
+ * Tells whether a native element accepts a shadow root, so that a customized built-in element extending it can render
+ * a template (`extends` of `@WebComponent`): `div`, `section` and a few others do, `button`, `input`, `li` and most of
+ * them do not.
+ *
+ * @param tagName - The tag name of the native element.
+ * @returns `true` when the element accepts a shadow root.
+ */
+export function acceptsShadowRoot(tagName: string): boolean {
+  return SHADOW_HOST_TAG_NAMES.has(tagName);
 }
 
 /**

@@ -41,7 +41,7 @@ const ATTRIBUTE_PREFIX = 'attr.';
  * @param token - The ATTRIBUTE token to parse.
  * @returns The parsed `AttributeNode`.
  * @throws If the attribute is followed by a token that is neither a value nor another binding or the end of the tag, or
- *   its name is in brackets without being a two-way binding, or `attr.` names no attribute, or `class` or `style`.
+ *   its name is in brackets without being a two-way binding, or `attr.` names no attribute, or `class`, `style` or `is`.
  */
 export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode | undefined>, token: AttributeToken): AttributeNode {
   const node = readAttribute(cursor, parseNode, token);
@@ -64,6 +64,9 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
     case 'class':
     case 'style':
       throw new Error(`${name} cannot be written: ${attribute} is merged with the directives and the component writing it, bound with ${attribute}="…" and ${attribute}.name="{ expression }"`, { cause: nameSpan });
+
+    case 'is':
+      throw new Error(`${name} cannot be written: is decides the class of a customized built-in element when it is created, written as a static attribute, e.g. <button is="copy-button">`, { cause: nameSpan });
   }
 
   node.attribute = attribute;

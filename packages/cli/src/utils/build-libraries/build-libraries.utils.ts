@@ -15,7 +15,7 @@ import { findProjectLibrary } from '../library/library.utils';
  * named, by the name of its package or of its folder, with the libraries of the workspace it depends on. A library is
  * built after the ones it depends on, which it reads from their builds, as an application installing them does; the
  * others in the order of the `libs` of `xaendar.json`. A library not declaring `strictEvents` takes the one of the
- * workspace.
+ * workspace; the `security` of the workspace does not apply, since the project using the library sets it.
  *
  * Exits the process with code `1` when no library has the name given, or a library depends on itself through the
  * libraries it depends on.

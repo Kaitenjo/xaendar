@@ -52,6 +52,17 @@ export function _escapeRawText(value: unknown, tagName: string): string {
 }
 
 /**
+ * Writes the nonce of the `Content-Security-Policy` of the response on the start tag of a `<script>` or of a
+ * `<style>` the server writes, which a strict policy would block as any inline script or style.
+ *
+ * @param nonce - The nonce, if any.
+ * @returns The attribute, preceded by a space, or an empty string without a nonce.
+ */
+export function writeNonceAttribute(nonce: string | undefined): string {
+  return nonce ? ` nonce="${escapeAttribute(nonce)}"` : '';
+}
+
+/**
  * Converts the value of an interpolation to the text the browser renders for it: `null` and `undefined` are an empty
  * text, as `textContent` writes them, any other value its string.
  *

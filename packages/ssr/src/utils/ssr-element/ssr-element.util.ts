@@ -1,4 +1,4 @@
-import { _applyHostAttributes, _CLIENT_ATTRIBUTE, _COMPONENT, _createStylingState, _DIRECTIVE_ORDER, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _mergeAttributes, _resolveDirective, _selectBranch, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _setContentTemplates, _setExposedInput, _setExpressionExposedInput, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
+import { _applyHostAttributes, _CLIENT_ATTRIBUTE, _COMPONENT, _createStylingState, _DIRECTIVE_ORDER, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _mergeAttributes, _resolveDirective, _selectBranch, _SERVER_INPUTS_ATTRIBUTE, _SERVER_STYLE_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _setContentTemplates, _setExposedInput, _setExpressionExposedInput, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
 import { escapeAttribute, escapeRawText } from '@xaendar/internals';
 import type { Constructor, Dictionary, Function } from '@xaendar/types';
 import { ServerElement } from '../../dom/server-element/server-element';
@@ -10,7 +10,11 @@ import type { ServerElementConfig } from '../../types/server-element-config.type
 import type { ServerOutput } from '../../types/server-output.type';
 import type { ServerRenderDefinition } from '../../types/server-render-definition.type';
 import type { ServerRuntime } from '../../types/server-runtime.type';
+import type { ServerStyles } from '../../types/server-styles.type';
+import { writeNonceAttribute } from '../escape/escape.util';
 import { _getServerRender } from '../server-render-registry/server-render-registry.util';
+import { _renderInTree } from '../server-runtime/server-runtime.util';
+import { addStyleRule, writeShadowStyles } from '../server-styles/server-styles.util';
 
 /**
  * Writes the start tag of an element with its bindings, applied as the client applies them: the attributes and the
@@ -29,8 +33,7 @@ import { _getServerRender } from '../server-render-registry/server-render-regist
  */
 export function _ssrStartTag(out: ServerOutput, context: _Context, config: ServerElementConfig): void {
   const { tagName, directives } = config;
-  const element = new ServerElement();
-  element.localName = tagName;
+  const element = createServerElement(tagName, config.is);
   prepareStyling(element as unknown as Element);
   // The directives of the selected branches, applied once every binding of the element is, as the client does
   const branchDirectives = config.conditionalBindings?.length ? new Array<readonly ServerDirective[]>() : undefined;
@@ -56,7 +59,7 @@ export function _ssrStartTag(out: ServerOutput, context: _Context, config: Serve
  * client applies them: an input is set, any other attribute written. The code calling it writes the light DOM and the
  * end tag. A custom element without a class rendering on the server, such as one imported with `@import lazy` or one
  * of a library compiled only for the browser, is written as an element without shadow root, which the browser renders
- * once its class is defined.
+ * once its class is defined. A customized built-in element (`<button is="copy-button">`) is found by its `is`.
  *
  * @param out - The output.
  * @param context - The runtime context of the element.
@@ -117,8 +120,7 @@ export function _ssrIsland(out: ServerOutput, context: _Context, config: ServerE
  */
 export function _ssrClientComponent(out: ServerOutput, context: _Context, config: ServerElementConfig, options: ClientComponentOptions): void {
   const { tagName } = config;
-  const element = new ServerElement();
-  element.localName = tagName;
+  const element = createServerElement(tagName, config.is);
   const inputs: Dictionary<string, unknown> = {};
   applyClientBindings(element as unknown as Element, context, config, options, inputs);
   writeClientComponent(out, tagName, element as unknown as Element, options.island ? _stringifyState(inputs, `<${tagName}>`) : undefined, options.hydrate);
@@ -129,12 +131,23 @@ export function _ssrClientComponent(out: ServerOutput, context: _Context, config
  * from `data-xd-inputs`, as for any root.
  *
  * @param out - The output.
- * @param tagName - The tag name of the component.
+ * @param tagName - The tag name of the component, the one it extends for a customized built-in element.
+ * @param is - The selector of a customized built-in element, `undefined` for an autonomous one.
  * @param Component - The class of the component.
  * @param serializedInputs - The inputs, serialized, if any.
  */
-export function _writeClientRoot(out: ServerOutput, tagName: string, Component: Constructor<CustomElement>, serializedInputs: string | undefined): void {
-  writeClientComponent(out, tagName, new ServerElement() as unknown as Element, serializedInputs, getSsrMetadata(Component)?.hydrate);
+export function _writeClientRoot(out: ServerOutput, tagName: string, is: string | undefined, Component: Constructor<CustomElement>, serializedInputs: string | undefined): void {
+  writeClientComponent(out, tagName, createServerElement(tagName, is) as unknown as Element, serializedInputs, getSsrMetadata(Component)?.hydrate);
+}
+
+/**
+ * Returns the tag of the native element a component extends, declared by `extends` of its `@WebComponent`.
+ *
+ * @param Component - The class of the component.
+ * @returns The tag, `undefined` for an autonomous custom element.
+ */
+export function _getExtendedTagName(Component: Constructor<CustomElement>): string | undefined {
+  return (Component as unknown as Record<symbol, Pick<WebComponentOptions, 'extends'> | undefined>)[Symbol.for('Symbol.metadata')]?.extends;
 }
 
 /**
@@ -171,6 +184,23 @@ function writeClientComponent(out: ServerOutput, tagName: string, element: Eleme
 }
 
 /**
+ * Creates the element whose start tag is written, holding the `is` attribute of a customized built-in element first.
+ *
+ * @param tagName - The tag name of the element.
+ * @param is - The selector of the customized built-in element the element is, `undefined` for any other element.
+ * @returns The element.
+ */
+function createServerElement(tagName: string, is: string | undefined): ServerElement {
+  const element = new ServerElement();
+  element.localName = tagName;
+  if (is !== undefined) {
+    element.setAttribute('is', is);
+  }
+
+  return element;
+}
+
+/**
  * Returns what the `@WebComponent` of a class stores about the rendering on the server.
  *
  * @param Component - The class of the component.
@@ -181,23 +211,24 @@ function getSsrMetadata(Component: Constructor<CustomElement>): WebComponentOpti
 }
 
 /**
- * Renders a component, or writes the start tag of a custom element without a class rendering on the server.
+ * Renders a component, or writes the start tag of a custom element without a class rendering on the server. A
+ * customized built-in element without a template renders without one.
  *
  * @param out - The output.
  * @param context - The runtime context of the element.
- * @param config - The element: its tag name and its bindings.
+ * @param config - The element: its tag name, the selector of a customized built-in element and its bindings.
  * @param bind - Binds the component (see {@link _renderComponent}).
  */
 function renderOrWriteComponent(out: ServerOutput, context: _Context, config: ServerElementConfig, bind: Function<[element: CustomElement], string | undefined>): void {
-  const { tagName } = config;
-  const Component = customElements.get(tagName) as Constructor<CustomElement> | undefined;
+  const { tagName, is } = config;
+  const Component = customElements.get(is ?? tagName) as Constructor<CustomElement> | undefined;
   const definition = Component && _getServerRender(Component);
-  if (!Component || !definition) {
+  if (!Component || (!definition && is === undefined)) {
     _ssrStartTag(out, context, config);
     return;
   }
 
-  _renderComponent(out, tagName, Component, definition, bind);
+  _renderComponent(out, tagName, is, Component, definition, bind);
 }
 
 /**
@@ -207,30 +238,34 @@ function renderOrWriteComponent(out: ServerOutput, context: _Context, config: Se
  * rendered, before the start tag is, with the trigger hydrating the element its `@WebComponent` declares, if other than
  * `load`, in `data-xd-hydrate`. `afterRender` does not run, since nothing is rendered into a document.
  *
+ * A customized built-in element holds its selector in its `is` attribute, first. Without a template it has no shadow
+ * root: `data-xd-client` tells the browser to wait for its hydration all the same, as it waits for the one of a component
+ * rendering only in the browser, so that its inputs are set before its `onInit` runs.
+ *
  * @param out - The output.
- * @param tagName - The tag name of the component.
+ * @param tagName - The tag name of the component, the one it extends for a customized built-in element.
+ * @param is - The selector of a customized built-in element, `undefined` for an autonomous one.
  * @param Component - The class of the component.
- * @param definition - What the server renders the component with.
+ * @param definition - What the server renders the component with, `undefined` for a customized built-in element
+ *   without a template.
  * @param bind - Binds the component before `onInit` runs. It returns the inputs no template sets in the browser,
  *   serialized, if any: the ones of the root of a page or of a component a static one renders, written into the
  *   `data-xd-inputs` attribute of its start tag, which the browser sets them from (see `CustomElement`). Set once the
  *   template is rendered, the attribute is never read by the code of the component.
  */
-export function _renderComponent<Component extends CustomElement>(out: ServerOutput, tagName: string, Component: Constructor<Component>, definition: ServerRenderDefinition, bind: Function<[element: Component], string | undefined>): void {
+export function _renderComponent<Component extends CustomElement>(out: ServerOutput, tagName: string, is: string | undefined, Component: Constructor<Component>, definition: ServerRenderDefinition | undefined, bind: Function<[element: Component], string | undefined>): void {
   collectEvents(Component, definition);
   const element = new Component();
+  if (is !== undefined) {
+    element.setAttribute('is', is);
+  }
+
   const serializedInputs = bind(element);
   element.onInit?.();
 
   // The start tag is written in its place once the template is rendered, with the attributes of the host
   const startTag = out.push('') - 1;
-  out.push('<template shadowrootmode="open">');
-  if (definition.css) {
-    out.push(`<style>${escapeRawText(definition.css, 'style')}</style>`);
-  }
-  definition.render.call(element, out);
-  out.push('</template>');
-
+  definition ? renderShadowRoot(out, element, definition) : element.setAttribute(_CLIENT_ATTRIBUTE, '');
   _applyHostAttributes(element, element);
   const hydrate = getSsrMetadata(Component)?.hydrate;
   if (hydrate && hydrate !== 'load') {
@@ -245,23 +280,57 @@ export function _renderComponent<Component extends CustomElement>(out: ServerOut
 }
 
 /**
+ * Writes the declarative shadow root of a component: its stylesheet, then the `<style>` holding the inline styles of the
+ * elements of its template, which their `data-xd-style` attribute refers to (see `_SERVER_STYLE_ATTRIBUTE`), then its
+ * template. The `<style>` elements hold the nonce of the `Content-Security-Policy` of the response, if any. Rendered
+ * outside of a page, by code calling the helpers by itself, the elements keep their `style` attribute.
+ *
+ * @param out - The output.
+ * @param element - The element of the component, bound.
+ * @param definition - What the server renders the component with.
+ */
+function renderShadowRoot(out: ServerOutput, element: CustomElement, definition: ServerRenderDefinition): void {
+  const runtime = _getComponentRuntime() as Partial<ServerRuntime>;
+  const { nonce } = runtime;
+  out.push('<template shadowrootmode="open">');
+  if (definition.css) {
+    out.push(`<style${writeNonceAttribute(nonce)}>${escapeRawText(definition.css, 'style')}</style>`);
+  }
+
+  if (!runtime.styles) {
+    definition.render.call(element, out);
+    out.push('</template>');
+    return;
+  }
+
+  // Written in its place once the template is rendered, with the rules of its elements
+  const styles: ServerStyles = { blocks: null };
+  const slot = out.push('') - 1;
+  _renderInTree(styles, () => definition.render.call(element, out));
+  out[slot] = writeShadowStyles(out.slice(slot + 1), styles, nonce);
+  out.push('</template>');
+}
+
+/**
  * Adds the events a component listens to, in its template and with `@HostListener` on its element, to the ones the
  * event contract of the page records. A `@HostListener` of the window or of the document is left out: it hears the
  * events from when it is added, and there is no element of the component to replay them to. Rendered outside of a page,
  * by code calling the helpers by itself, there is no contract to tell.
  *
  * @param Component - The class of the component.
- * @param definition - What the server renders the component with.
+ * @param definition - What the server renders the component with, `undefined` for a customized built-in element without
+ *   a template.
  */
-function collectEvents(Component: Constructor<CustomElement>, { render }: ServerRenderDefinition): void {
+function collectEvents(Component: Constructor<CustomElement>, definition: ServerRenderDefinition | undefined): void {
   const pageEvents = (_getComponentRuntime() as Partial<ServerRuntime>).events;
   if (!pageEvents) {
     return;
   }
 
-  if (render.events?.length) {
-    for (let i = 0; i < render.events.length; i++) {
-      pageEvents.add(render.events[i]);
+  const events = definition?.render.events;
+  if (events?.length) {
+    for (let i = 0; i < events.length; i++) {
+      pageEvents.add(events[i]);
     }
   }
 
@@ -413,17 +482,31 @@ function isInputSetter(setter: ServerAttribute['setter']): boolean {
 }
 
 /**
- * Writes the start tag of an element, with its attributes in the order they are written.
+ * Writes the start tag of an element, with its attributes in the order they are written. Its `style` attribute, which a
+ * `Content-Security-Policy` blocks without `'unsafe-inline'`, is moved into a rule of the `<style>` of its tree, the
+ * element holding the index of the rule in its `data-xd-style` attribute (see `addStyleRule`). Rendered outside of a
+ * page, by code calling the helpers by itself, the element keeps its `style` attribute.
  *
  * @param tagName - The tag name of the element.
  * @param element - The element.
  * @returns The start tag.
  */
 function writeStartTag(tagName: string, element: Element): string {
+  const { styles } = _getComponentRuntime() as Partial<ServerRuntime>;
   let tag = `<${tagName}`;
   const names = element.getAttributeNames();
   for (let i = 0; i < names.length; i++) {
-    tag = `${tag} ${names[i]}="${escapeAttribute(element.getAttribute(names[i])!)}"`;
+    const name = names[i];
+    const value = element.getAttribute(name)!;
+    if (name !== 'style' || !styles) {
+      tag = `${tag} ${name}="${escapeAttribute(value)}"`;
+      continue;
+    }
+
+    const index = addStyleRule(styles, value);
+    if (index !== undefined) {
+      tag = `${tag} ${_SERVER_STYLE_ATTRIBUTE}="${index}"`;
+    }
   }
 
   return `${tag}>`;

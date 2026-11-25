@@ -10,7 +10,7 @@ import type { RenderElementStructuralDirective } from '../../types/render-elemen
 import type { RenderElement } from '../../types/render-element.type';
 import type { _ScopeLayout } from '../../types/scope-layout.type';
 import type { TemplateExpression } from '../../types/template-expression.type';
-import { RenderElementAttributeTemplateValue } from './render-element.util';
+import type { RenderElementAttributeTemplateValue } from '../../types/render-element-attribute-template-value.type';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
@@ -544,8 +544,9 @@ describe('_renderElement', () => {
 
     _renderElement(parent, context, anchor, { tagName: 'article' });
     _renderElement(parent, context, anchor, { tagName: 'circle', namespace: 1 });
+    _renderElement(parent, context, anchor, { tagName: 'button', is: 'copy-button' });
 
-    expect(element.mock.calls).toEqual([[context, parent, 'article', undefined], [context, parent, 'circle', 1]]);
+    expect(element.mock.calls).toEqual([[context, parent, 'article', undefined, undefined], [context, parent, 'circle', 1, undefined], [context, parent, 'button', undefined, 'copy-button']]);
     expect(mount).toHaveBeenCalledWith(created, parent, anchor);
     expect(parent.firstChild).toBe(created);
   });
@@ -1548,6 +1549,34 @@ describe('_renderElement', () => {
       clear(context);
 
       expect(_getAppliedDirectives(element, LabelDirective)).toBeUndefined();
+    });
+
+    it('unregisters the directive also when its onDestroy throws, its error reported in a microtask', () => {
+      const context = createRoot();
+      const element = render(document.createElement('div'), context, { directives: [directive()] });
+      const instance = lastInstance();
+      const error = new Error('destroy');
+      instance.destroyed.mockImplementation(() => {
+        throw error;
+      });
+      const queued = new Array<() => void>();
+      const queue = vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(callback => queued.push(callback));
+
+      try {
+        clear(context);
+      } finally {
+        queue.mockRestore();
+      }
+
+      expect(_getAppliedDirectives(element, LabelDirective)).toBeUndefined();
+      expect(queued.some(callback => {
+        try {
+          callback();
+          return false;
+        } catch (thrown) {
+          return thrown === error;
+        }
+      })).toBe(true);
     });
 
     it('binds the properties of a conditional binding only while its condition is true, then resets them', async () => {

@@ -479,6 +479,56 @@ export const ERRORS: readonly ErrorEntry[] = [
     page: 'components/outputs'
   },
   {
+    phase: 'Parser',
+    message: '[Parser] <style> cannot be written in a template: the styles of a component go in its stylesheet (styleUrl)',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] Binding onclick writes code the browser runs from a value of the application: listen to the click event instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Runtime',
+    message: 'Xaendar: the URL bound to href runs code (javascript:alert(1)): href is left out, as "security": { "urls": "remove" } in xaendar.json asks.',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Runtime',
+    message: 'Xaendar: the URL bound to src loads a resource from an origin the application does not trust (https://videos.example.net/embed/42): src is left out, as "security": { "resourceUrls": "remove" } in xaendar.json asks.',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Runtime',
+    message: 'Xaendar: the URL bound to href runs code (javascript:alert(1)): it is written as it is. Bind a URL of the application, or mark it with trustUrl() when the application trusts it, or set "security": { "urls": "remove" } in xaendar.json to leave it out.',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Runtime',
+    message: 'Xaendar: the URL bound to src loads a resource from an origin the application does not trust (https://videos.example.net/embed/42): it is written as it is. Bind a URL of the application, add its origin to "trustedOrigins", or mark it with trustResourceUrl() when the application trusts it, or set "security": { "resourceUrls": "remove" } in xaendar.json to leave it out.',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'TypeChecker',
+    message: '[TypeChecker] Binding sandbox sets a restriction of the <iframe> from a value of the application, which the browser applies only to the page it loads next: write it as a static attribute, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Runtime',
+    message: '@HostAttribute(\'sandbox\') on <iframe> sets a restriction of the <iframe> from a value of the application, which the browser applies only to the page it loads next: write it as a static attribute, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Build',
+    message: '"trustedOrigins" of the security of xaendar.json lists cdn.example.com, which is not an origin: write its scheme, its host and its port, if any, as https://cdn.example.com',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Runtime',
+    message: 'The allowAttributes of the sanitizer list onclick, keeping an attribute the browser runs (on*, srcdoc): render a trusted HTML with trustHtml(), or with a sanitizer of the application, instead',
+    page: 'directives/inner-html'
+  },
+  {
     phase: 'TypeChecker',
     message: '[TypeChecker] Unknown property "shade" on @@exTint (TintDirective has no @Property with this name).',
     page: 'directives/custom'

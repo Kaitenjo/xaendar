@@ -14,6 +14,7 @@ import { _getDirective } from '../directive-registry/directive-registry.util';
 import { getElementSources } from '../element-sources/element-sources.util';
 import { _hostAttributeNames } from '../host-attributes/host-attributes.util';
 import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
+import { _checkUrl } from '../url-check/url-check.util';
 import { writeAttribute } from '../write-attribute/write-attribute.util';
 
 /**
@@ -59,14 +60,17 @@ export function _setReactiveAttribute(context: _Context, target: Element | Bindi
  * Writes the value a template binds to an attribute of an element: as the opinion of the template in the state of the
  * attribute, when the attribute is merged with the directives and the component writing it, otherwise directly (see
  * `writeAttribute`). Only an attribute the compiler flags as shared (see `RenderElementAttribute.shared`) looks its
- * state up, and any attribute on the server, which merges all of them (see `_mergeAttributes`).
+ * state up, and any attribute on the server, which merges all of them (see `_mergeAttributes`). An attribute holding a
+ * URL the compiler flags (`RenderElementAttribute.url`, `RenderElementAttribute.resource`) has its value checked first (see
+ * `_checkUrl`).
  *
  * @param element - The element.
  * @param attribute - The attribute.
- * @param value - The value.
+ * @param bound - The value bound to it.
  */
-export function writeTemplateAttribute(element: Element, attribute: RenderElementAttribute, value: unknown): void {
-  const { name } = attribute;
+export function writeTemplateAttribute(element: Element, attribute: RenderElementAttribute, bound: unknown): void {
+  const { name, url, resource } = attribute;
+  const value = url ? _checkUrl(name, bound, resource) : bound;
   if (!attribute.shared && !mergesAllAttributes()) {
     writeAttribute(element, name, value);
     return;

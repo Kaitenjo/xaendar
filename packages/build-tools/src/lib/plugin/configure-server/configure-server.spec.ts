@@ -65,6 +65,7 @@ function createState(): XaendarPluginState {
     projectFileNames: [],
     customElements: [],
     strictEvents: true,
+    security: {},
     minifyStyles: false,
     isBuild: false,
     root: '/project',

@@ -65,6 +65,11 @@ export class TemplateRegistry {
     const templates = new Set<string>();
     if (metadatas?.size) {
       for (const [className, { templateUrl }] of metadatas) {
+        // A customized built-in element without a template has none to index
+        if (!templateUrl) {
+          continue;
+        }
+
         const templateKey = normalizeFileName(resolve(dirname(componentPath), templateUrl));
         const components = this._components.getOrInsertComputed(templateKey, () => new Map());
         components.getOrInsertComputed(componentPath, () => []).push(className);

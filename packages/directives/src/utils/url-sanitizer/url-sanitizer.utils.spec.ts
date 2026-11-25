@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decodeCharacterReferences, isSafeSrcset, isSafeUrl, isSafeUrlAttribute } from './url-sanitizer.utils';
+import { decodeCharacterReferences, isSafeAnimationTarget, isSafeSrcset, isSafeUrl, isSafeUrlAttribute, isTrustedResource } from './url-sanitizer.utils';
 
 /**
  * The schemes allowed by default.
@@ -79,6 +79,24 @@ describe('decodeCharacterReferences', () => {
   });
 });
 
+describe('isTrustedResource', () => {
+  it('keeps a resource loaded from the application or from a trusted origin, decoding the references of its URL', () => {
+    const trusted = ['https://cdn.example.com'];
+
+    expect(isTrustedResource('iframe', 'src', '/frame.html', trusted)).toBe(true);
+    expect(isTrustedResource('iframe', 'src', 'https://cdn.example.com/frame.html', trusted)).toBe(true);
+    expect(isTrustedResource('iframe', 'src', 'https://evil.com/frame.html', trusted)).toBe(false);
+    expect(isTrustedResource('embed', 'src', '//evil.com/x', trusted)).toBe(false);
+    expect(isTrustedResource('object', 'data', 'https&#x3a;//evil.com/x', trusted)).toBe(false);
+  });
+
+  it('keeps the attributes loading no resource, and every resource when the project does not check them', () => {
+    expect(isTrustedResource('img', 'src', 'https://evil.com/x.png', [])).toBe(true);
+    expect(isTrustedResource('iframe', 'title', 'https://evil.com/', [])).toBe(true);
+    expect(isTrustedResource('iframe', 'src', 'https://evil.com/frame.html', null)).toBe(true);
+  });
+});
+
 describe('isSafeUrlAttribute', () => {
   it('checks the attributes holding a URL, decoding their references', () => {
     expect(isSafeUrlAttribute('href', '&#106;avascript:x', schemes)).toBe(false);
@@ -95,5 +113,23 @@ describe('isSafeUrlAttribute', () => {
 
   it('allows the other attributes whatever their value', () => {
     expect(isSafeUrlAttribute('title', 'javascript:x', schemes)).toBe(true);
+  });
+
+  it('checks the images of an imagesrcset', () => {
+    expect(isSafeUrlAttribute('imagesrcset', 'a.png 1x, javascript:x 2x', schemes)).toBe(false);
+  });
+});
+
+describe('isSafeAnimationTarget', () => {
+  it('rejects an SVG animation writing an href, decoding the references', () => {
+    expect(isSafeAnimationTarget('set', 'attributename', 'href')).toBe(false);
+    expect(isSafeAnimationTarget('animatemotion', 'attributename', '&#104;ref')).toBe(false);
+    expect(isSafeAnimationTarget('animate', 'attributename', 'xlink:href')).toBe(false);
+  });
+
+  it('allows any other attribute', () => {
+    expect(isSafeAnimationTarget('animate', 'attributename', 'opacity')).toBe(true);
+    expect(isSafeAnimationTarget('animate', 'to', 'href')).toBe(true);
+    expect(isSafeAnimationTarget('a', 'attributename', 'href')).toBe(true);
   });
 });

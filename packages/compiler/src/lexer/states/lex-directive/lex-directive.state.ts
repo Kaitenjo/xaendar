@@ -7,6 +7,7 @@ import type { DirectiveToken } from '../../types/tokens/directive-token.type';
 import type { StructuralDirectiveToken } from '../../types/tokens/structural-directive-token.type';
 import { LexerTransitionFunctionContext } from '../../types/transition-function/transition-function-context.type';
 import { LexerTransitionFunctionReturnType } from '../../types/transition-function/transition-function-return-type.type';
+import { describeNameChar, isForbiddenNameChar } from '../../utils/chars/chars.utils';
 import { resolveTagBodyState } from '../../utils/tag-body-state/tag-body-state.utils';
 import { lexTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 
@@ -22,7 +23,8 @@ import { lexTypeArguments } from '../../utils/type-arguments/type-arguments.util
  * @param cursor - The lexer cursor positioned right after `@@`.
  * @param context - The lexer context, whose history tells where the directive is declared.
  * @returns Transition result with the directive tokens and the next state.
- * @throws If the selector is empty, the bindings are not declared between parentheses, a `)` is found, or a `}` is found outside of a conditional binding.
+ * @throws If the selector is empty or holds a character no name can hold (`isForbiddenNameChar`), the bindings are not
+ *   declared between parentheses, a `)` is found, or a `}` is found outside of a conditional binding.
  */
 export function lexDirective(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   return lexSelector(cursor, context, TokenType.DIRECTIVE);
@@ -37,7 +39,8 @@ export function lexDirective(cursor: LexerCursor, context: LexerTransitionFuncti
  * @param cursor - The lexer cursor positioned right after `*`.
  * @param context - The lexer context, whose history tells where the structural directive is declared.
  * @returns Transition result with the structural directive tokens and the next state.
- * @throws If the selector is empty, the bindings are not declared between parentheses, a `)` is found, or a `}` is found outside of a conditional binding.
+ * @throws If the selector is empty or holds a character no name can hold (`isForbiddenNameChar`), the bindings are not
+ *   declared between parentheses, a `)` is found, or a `}` is found outside of a conditional binding.
  */
 export function lexStructuralDirective(cursor: LexerCursor, context: LexerTransitionFunctionContext): LexerTransitionFunctionReturnType {
   return lexSelector(cursor, context, TokenType.STRUCTURAL_DIRECTIVE);
@@ -50,7 +53,8 @@ export function lexStructuralDirective(cursor: LexerCursor, context: LexerTransi
  * @param context - The lexer context, whose history tells where the directive is declared.
  * @param type - The type of the token opening the directive.
  * @returns Transition result with the directive tokens and the next state.
- * @throws If the selector is empty, the bindings are not declared between parentheses, a `)` is found, or a `}` is found outside of a conditional binding.
+ * @throws If the selector is empty or holds a character no name can hold (`isForbiddenNameChar`), the bindings are not
+ *   declared between parentheses, a `)` is found, or a `}` is found outside of a conditional binding.
  */
 function lexSelector(cursor: LexerCursor, context: LexerTransitionFunctionContext, type: TokenType.DIRECTIVE | TokenType.STRUCTURAL_DIRECTIVE): LexerTransitionFunctionReturnType {
   let read = true;
@@ -127,6 +131,10 @@ function lexSelector(cursor: LexerCursor, context: LexerTransitionFunctionContex
       default:
         if (typeArguments !== undefined) {
           throw 'The type arguments of a directive must be followed by its bindings between parentheses, e.g. @@selector<string>(name="value")';
+        }
+
+        if (isForbiddenNameChar(cursor.peek())) {
+          throw `${describeNameChar(cursor.peek())} cannot be part of a directive selector`;
         }
 
         cursor.advance();

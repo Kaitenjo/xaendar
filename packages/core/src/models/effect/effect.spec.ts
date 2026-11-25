@@ -243,10 +243,26 @@ describe('createEffect', () => {
       expect(Signal.subtle.hasSinks(state)).toBe(false);
     });
 
-    it('throws when it is already disposed', () => {
-      const effect = createEffect(() => undefined);
+    it('does nothing when it is already disposed, onCleanup included', () => {
+      const onCleanup = vi.fn();
+      const effect = createEffect(() => undefined, { onCleanup });
       effect.dispose();
-      expect(() => effect.dispose()).toThrow();
+      expect(() => effect.dispose()).not.toThrow();
+      expect(onCleanup).toHaveBeenCalledOnce();
+    });
+
+    it('stops watching also when onCleanup throws', async () => {
+      const state = new Signal.State(0);
+      const callback = vi.fn(() => state.get());
+      const effect = createEffect(callback, { onCleanup: () => { throw new Error('cleanup'); } });
+
+      expect(() => effect.dispose()).toThrow('cleanup');
+      state.set(1);
+      await flush();
+
+      expect(callback).toHaveBeenCalledOnce();
+      expect(Signal.subtle.hasSinks(state)).toBe(false);
+      expect(() => effect.dispose()).not.toThrow();
     });
 
     it('does not run when another effect of the same round disposes it before its turn', async () => {

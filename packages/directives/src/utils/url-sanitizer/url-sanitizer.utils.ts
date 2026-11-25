@@ -1,23 +1,4 @@
-import { isWhitespace } from '../html-syntax/html-syntax.utils';
-
-/**
- * The attributes holding a single URL, of HTML and of SVG.
- */
-const URL_ATTRIBUTES: ReadonlySet<string> = new Set([
-  'action', 'background', 'cite', 'codebase', 'data', 'dynsrc', 'formaction', 'href', 'icon', 'itemtype', 'longdesc',
-  'lowsrc', 'manifest', 'poster', 'src', 'xlink:href'
-]);
-
-/**
- * The URLs `data:` kept whatever the schemes allowed: an image, an audio or a video in base64, which runs no code
- * (an SVG image, which can, is not among them).
- */
-const DATA_MEDIA_URL = /^data:(?:image[/](?:avif|bmp|gif|jpeg|jpg|png|tiff|webp)|video[/](?:mpeg|mp4|ogg|webm)|audio[/](?:mp3|mpeg|oga|ogg|opus|wav));base64,[a-z0-9+/]+=*$/i;
-
-/**
- * The scheme of a URL: letters, digits, `+`, `-` and `.` after a letter, up to a `:`.
- */
-const SCHEME = /^([a-z][a-z0-9+.-]*):/i;
+import { cleanUrl, everySrcsetUrl, isMediaDataUrl, isResourceUrlAttribute, isUntrustedResourceUrl, isUrlAttribute, readUrlScheme } from '@xaendar/internals';
 
 /**
  * The character references of an attribute value the URLs are decoded with: the numeric ones, with or without `;` as
@@ -38,13 +19,19 @@ const NAMED_REFERENCES: ReadonlyMap<string, string> = new Map([
 ]);
 
 /**
+ * The SVG animation elements, lowercase as the tokenizer reads them, whose `attributeName` chooses the attribute they
+ * animate.
+ */
+const ANIMATION_ELEMENTS: ReadonlySet<string> = new Set(['animate', 'animatemotion', 'animatetransform', 'set']);
+
+/**
  * The character the HTML parser decodes an invalid numeric character reference to: U+FFFD.
  */
 const REPLACEMENT_CHARACTER = String.fromCharCode(0xfffd);
 
 /**
  * Tells whether an attribute holds only URLs allowed: the attributes holding a URL (`href`, `src`, …), a list of
- * images (`srcset`) or a list of URLs (`ping`); the other attributes always are.
+ * images (`srcset`, `imagesrcset`) or a list of URLs (`ping`); the other attributes always are.
  *
  * @param name - The name of the attribute, lowercase.
  * @param value - The value of the attribute as it is written, its character references not decoded.
@@ -53,13 +40,49 @@ const REPLACEMENT_CHARACTER = String.fromCharCode(0xfffd);
  */
 export function isSafeUrlAttribute(name: string, value: string, schemes: ReadonlySet<string>): boolean {
   switch (name) {
+    case 'imagesrcset':
     case 'srcset':
       return isSafeSrcset(decodeCharacterReferences(value), schemes);
     case 'ping':
       return decodeCharacterReferences(value).split(/[ \t\n\f\r]+/).every(url => isSafeUrl(url, schemes));
     default:
-      return !URL_ATTRIBUTES.has(name) || isSafeUrl(decodeCharacterReferences(value), schemes);
+      return !isUrlAttribute(name) || isSafeUrl(decodeCharacterReferences(value), schemes);
   }
+}
+
+/**
+ * Tells whether a URL loading a resource into the page can be kept: the `src` of an `<iframe>`, an `<embed>` or a
+ * `<frame>`, the `data` and `codebase` of an `<object>`, the `href` of a `<link>` or of the `<base>`, as the templates
+ * check them (`isResourceUrlAttribute`). Kept when it loads from the application (a relative URL) or from one of the
+ * trusted origins of the project; any other attribute always is.
+ *
+ * @param element - The name of the element, lowercase.
+ * @param name - The name of the attribute, lowercase.
+ * @param value - The value of the attribute as it is written, its character references not decoded.
+ * @param trustedOrigins - The origins trusted, `null` when the project does not check the resources.
+ * @returns Whether the attribute can be kept.
+ */
+export function isTrustedResource(element: string, name: string, value: string, trustedOrigins: readonly string[] | null): boolean {
+  return trustedOrigins === null || !isResourceUrlAttribute(element, name) || !isUntrustedResourceUrl(decodeCharacterReferences(value), trustedOrigins);
+}
+
+/**
+ * Tells whether the `attributeName` of an SVG animation element (`animate`, `set`, `animateMotion`,
+ * `animateTransform`) can be kept: not when it names an `href`, whose URL the animation would write from its `to`,
+ * `from`, `by` or `values`, which hold no URL the sanitizer checks. Any other attribute can be kept.
+ *
+ * @param element - The name of the element, lowercase.
+ * @param name - The name of the attribute, lowercase.
+ * @param value - The value of the attribute as it is written, its character references not decoded.
+ * @returns Whether the attribute can be kept.
+ */
+export function isSafeAnimationTarget(element: string, name: string, value: string): boolean {
+  if (name !== 'attributename' || !ANIMATION_ELEMENTS.has(element)) {
+    return true;
+  }
+
+  const target = decodeCharacterReferences(value).trim().toLowerCase();
+  return target !== 'href' && target !== 'xlink:href';
 }
 
 /**
@@ -80,8 +103,8 @@ export function isSafeUrl(url: string, schemes: ReadonlySet<string>): boolean {
     return false;
   }
 
-  const scheme = SCHEME.exec(head)?.[1].toLowerCase();
-  return scheme === undefined || schemes.has(scheme) || (scheme === 'data' && DATA_MEDIA_URL.test(cleaned));
+  const scheme = readUrlScheme(head);
+  return scheme === undefined || schemes.has(scheme) || (scheme === 'data' && isMediaDataUrl(cleaned));
 }
 
 /**
@@ -94,33 +117,7 @@ export function isSafeUrl(url: string, schemes: ReadonlySet<string>): boolean {
  * @returns Whether the value can be kept.
  */
 export function isSafeSrcset(srcset: string, schemes: ReadonlySet<string>): boolean {
-  let position = 0;
-  while (position < srcset.length) {
-    const code = srcset.charCodeAt(position);
-    // White spaces and `,` between the candidates
-    if (isWhitespace(code) || code === 44) {
-      position++;
-      continue;
-    }
-
-    const start = position;
-    while (position < srcset.length && !isWhitespace(srcset.charCodeAt(position))) {
-      position++;
-    }
-
-    let url = srcset.slice(start, position);
-    if (url.endsWith(',')) {
-      url = url.replace(/,+$/, '');
-    } else {
-      position = skipDescriptors(srcset, position);
-    }
-
-    if (!isSafeUrl(url, schemes)) {
-      return false;
-    }
-  }
-
-  return true;
+  return everySrcsetUrl(srcset, url => isSafeUrl(url, schemes));
 }
 
 /**
@@ -150,65 +147,4 @@ function decodeReference(reference: string, hexadecimal: string | undefined, dec
 
   const code = hexadecimal !== undefined ? parseInt(hexadecimal, 16) : parseInt(decimal!, 10);
   return code === 0 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff) ? REPLACEMENT_CHARACTER : String.fromCodePoint(code);
-}
-
-/**
- * Removes from a URL what the browser ignores: the control characters and the spaces at its ends, and the tabs and the
- * line breaks anywhere (`java\tscript:` is `javascript:`).
- *
- * @param url - The URL.
- * @returns The URL as the browser reads it.
- */
-function cleanUrl(url: string): string {
-  let start = 0;
-  let end = url.length;
-  while (start < end && url.charCodeAt(start) <= 32) {
-    start++;
-  }
-
-  while (end > start && url.charCodeAt(end - 1) <= 32) {
-    end--;
-  }
-
-  let cleaned = '';
-  for (let i = start; i < end; i++) {
-    const code = url.charCodeAt(i);
-    if (code !== 9 && code !== 10 && code !== 13) {
-      cleaned = `${cleaned}${url[i]}`;
-    }
-  }
-
-  return cleaned;
-}
-
-/**
- * Skips the descriptors of a candidate of a `srcset` (`2x`, `640w`), up to the `,` ending it outside parentheses.
- *
- * @param srcset - The value of the attribute.
- * @param position - The position after the URL of the candidate.
- * @returns The position after the `,`, the length of the value without one.
- */
-function skipDescriptors(srcset: string, position: number): number {
-  let depth = 0;
-  for (; position < srcset.length; position++) {
-    switch (srcset.charCodeAt(position)) {
-      // `(`
-      case 40:
-        depth++;
-        break;
-      // `)`
-      case 41:
-        depth = Math.max(0, depth - 1);
-        break;
-      // `,`
-      case 44:
-        if (depth === 0) {
-          return position + 1;
-        }
-
-        break;
-    }
-  }
-
-  return position;
 }

@@ -123,7 +123,8 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
       set: registerMetadata
     };
     // A template of a library of the workspace is compiled with the options of the library
-    const customElements = findWorkspaceLibrary(state.libraries, templatePath)?.customElements ?? state.customElements;
+    const library = findWorkspaceLibrary(state.libraries, templatePath);
+    const customElements = library?.customElements ?? state.customElements;
 
     let nodes: ASTNode[];
     let compiledFunctions: string;
