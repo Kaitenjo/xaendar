@@ -1,0 +1,261 @@
+@import { translations } from '../../../core/i18n/i18n.ts'
+@import { translate as t } from '../../../core/i18n/i18n.utils.ts'
+@import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+@import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
+
+<span class="eyebrow">
+  { t(translations(), 'pages.components.security.eyebrow') }
+</span>
+<h1>
+  { t(translations(), 'pages.components.security.title') }
+</h1>
+<p class="lead">
+  { t(translations(), 'pages.components.security.lead') }
+</p>
+
+<h2>
+  { t(translations(), 'pages.components.security.summary.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.security.summary.p1") />
+<h3>
+  { t(translations(), 'pages.components.security.summary.templates.title') }
+</h3>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.components.security.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.security.summary.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.security.summary.th3') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.scriptStyle.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.scriptStyle.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.scriptStyle.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.text.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.text.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.text.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.handlers.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.handlers.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.handlers.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.iframe.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.iframe.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.iframe.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.svg.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.svg.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.svg.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.meta.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.meta.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.meta.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.urls.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.urls.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.urls.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.resources.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.resources.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.resources.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.styles.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.styles.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.styles.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.static.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.static.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.templates.static.configuration") />
+      </tr>
+    </tbody>
+  </table>
+</div>
+<h3>
+  { t(translations(), 'pages.components.security.summary.host.title') }
+</h3>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.components.security.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.security.summary.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.security.summary.th3') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.host.names.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.host.names.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.host.names.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.host.restrictions.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.host.restrictions.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.host.restrictions.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.host.urls.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.host.urls.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.host.urls.configuration") />
+      </tr>
+    </tbody>
+  </table>
+</div>
+<h3>
+  { t(translations(), 'pages.components.security.summary.html.title') }
+</h3>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.components.security.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.security.summary.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.security.summary.th3') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.html.sanitized.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.html.sanitized.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.html.sanitized.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.html.options.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.html.options.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.html.options.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.html.code.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.html.code.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.html.code.configuration") />
+      </tr>
+    </tbody>
+  </table>
+</div>
+<h3>
+  { t(translations(), 'pages.components.security.summary.server.title') }
+</h3>
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.components.security.summary.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.security.summary.th2') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.security.summary.th3') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.server.escape.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.server.escape.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.server.escape.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.server.styles.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.server.styles.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.server.styles.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.server.inputs.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.server.inputs.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.server.inputs.configuration") />
+      </tr>
+      <tr>
+        <td @@htmlTranslation(key="pages.components.security.summary.server.manifest.case") />
+        <td @@htmlTranslation(key="pages.components.security.summary.server.manifest.protection") />
+        <td @@htmlTranslation(key="pages.components.security.summary.server.manifest.configuration") />
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>
+  { t(translations(), 'pages.components.security.options.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.security.options.p1") />
+<docs-code snippet="templates/security-config.json" />
+
+<h2>
+  { t(translations(), 'pages.components.security.csp.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.security.csp.p1") />
+<div class="table-wrap">
+  <table class="summary">
+    <thead>
+      <tr>
+        <th>
+          { t(translations(), 'pages.components.security.csp.th1') }
+        </th>
+        <th>
+          { t(translations(), 'pages.components.security.csp.th2') }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <code>script-src</code>
+        </td>
+        <td @@htmlTranslation(key="pages.components.security.csp.scriptSrc") />
+      </tr>
+      <tr>
+        <td>
+          <code>style-src</code>
+        </td>
+        <td @@htmlTranslation(key="pages.components.security.csp.styleSrc") />
+      </tr>
+      <tr>
+        <td>
+          <code>require-trusted-types-for</code>, <code>trusted-types</code>
+        </td>
+        <td @@htmlTranslation(key="pages.components.security.csp.trustedTypes") />
+      </tr>
+      <tr>
+        <td>
+          <code>frame-src</code>, <code>object-src</code>
+        </td>
+        <td @@htmlTranslation(key="pages.components.security.csp.frameSrc") />
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p @@htmlTranslation(key="pages.components.security.csp.p2") />
+<docs-code snippet="components/content-security-policy.txt" />
+<p @@htmlTranslation(key="pages.components.security.csp.p3") />

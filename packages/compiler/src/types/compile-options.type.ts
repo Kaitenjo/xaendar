@@ -88,8 +88,8 @@ export type CompileOptions = {
   strictEvents?: boolean;
   /**
    * What the compiler checks in the bindings that could run code from the values of the application (see
-   * `SecurityOptions`): the type-check reads `rejectUnsafeBindings`, the generated code `urls`. Defaults to none of them
-   * set.
+   * `SecurityOptions`): the type-check reads `rejectUnsafeBindings`. The generated code reads none: it flags the
+   * attributes holding URLs, which the runtime checks as the project asks. Defaults to none of them set.
    */
   security?: SecurityOptions;
   /**

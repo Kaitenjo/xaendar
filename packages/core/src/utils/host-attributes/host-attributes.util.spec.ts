@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { DIRECTIVE_ORDER } from '../../costants';
+import { DIRECTIVE_ORDER, INTERNAL_HOST_ATTRIBUTES } from '../../costants';
 import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { _Context } from '../../types/context.type';
+import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { _hasAttributeState, _mergeAttributes } from '../attribute-state/attribute-state.util';
 import { _scope, clear, EMPTY_LAYOUT } from '../context/context.util';
 import { _applyHostAttributes, _bindHost } from '../host-bindings/host-bindings.util';
@@ -119,6 +120,47 @@ describe('host attributes of attributes', () => {
     _applyHostAttributes(directive, element);
     expect(element.getAttribute('id')).toBe('directive');
     expect(element.getAttribute('role')).toBe('note');
+  });
+
+  it('checks the URLs it writes, as the security of the project asks', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const link = document.createElement('a');
+    bindDirective(link, { href: 'href' }, { href: 'javascript:alert(1)' }, 0);
+    expect(link.getAttribute('href')).toBe('javascript:alert(1)');
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Xaendar: the URL bound to href runs code (javascript:alert(1))'));
+    warn.mockRestore();
+  });
+
+  it('rejects an attribute lifting a restriction of its element', () => {
+    const frame = document.createElement('iframe');
+    expect(() => bindDirective(frame, { flags: 'sandbox' }, { flags: 'allow-scripts' }, 0)).toThrow('@HostAttribute(\'sandbox\') on <iframe> sets a restriction of the <iframe> from a value of the application, which the browser applies only to the page it loads next: write it as a static attribute, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.');
+
+    const animation = document.createElementNS('http://www.w3.org/2000/svg', 'set');
+    animation.setAttribute('attributeName', 'href');
+    expect(() => bindDirective(animation, { to: 'to' }, { to: 'javascript:alert(1)' }, 0)).toThrow('@HostAttribute(\'to\') on <set> writes into href a value of the application');
+    expect(() => bindDirective(document.createElement('div'), { flags: 'sandbox' }, { flags: 'a' }, 0)).not.toThrow();
+  });
+});
+
+describe('host attributes with the security of a project allowing everything', () => {
+  it('neither rejects nor checks what the security of the project does not ask for', async () => {
+    vi.stubGlobal('__XAENDAR_SECURITY__', { urls: 'off', resourceUrls: 'off', trustedOrigins: [], rejectUnsafeBindings: false });
+    vi.resetModules();
+    const { HostAttribute: hostAttribute } = await import('../../decorators/host-attribute/host-attribute.decorator');
+    const { registerHostAttributes, applyHostAttribute } = await import('./host-attributes.util');
+    const { HostAttributeRun } = await import('../../models/host-attribute-run/host-attribute-run');
+    const metadata: DecoratorMetadataObject = {};
+    (hostAttribute('sandbox') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'flags', static: false, metadata, access: { get: () => 'allow-scripts' } });
+    (hostAttribute('onload') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'code', static: false, metadata, access: { get: () => 'init()' } });
+
+    const frame = document.createElement('iframe');
+    const run = new HostAttributeRun({} as never, frame, (metadata as WebComponentMetadata)[INTERNAL_HOST_ATTRIBUTES]!, 0);
+    registerHostAttributes(run);
+    applyHostAttribute(run, 0);
+    applyHostAttribute(run, 1);
+    expect([frame.getAttribute('sandbox'), frame.getAttribute('onload')]).toEqual(['allow-scripts', 'init()']);
+    vi.unstubAllGlobals();
+    vi.resetModules();
   });
 });
 

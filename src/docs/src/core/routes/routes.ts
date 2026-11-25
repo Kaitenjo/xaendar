@@ -186,7 +186,8 @@ export const NAV: readonly NavSection[] = [
         page('components/content-queries', 'Query.content contentChild contentChildren descendants'),
         page('components/dom-apis', 'afterRender canvas focus ResizeObserver'),
         page('components/dynamic-creation', 'createComponent imperative dynamic create destroy ComponentRef'),
-        page('components/inheritance', 'extends base class subclass')
+        page('components/inheritance', 'extends base class subclass'),
+        page('components/security', 'security sanitize sanitizer xss csp content security policy nonce trusted types trustUrl trustResourceUrl trustedOrigins rejectUnsafeBindings')
       ]),
       group('templates', [
         page('templates/overview', 'whitespace self-closing comments special characters escape'),

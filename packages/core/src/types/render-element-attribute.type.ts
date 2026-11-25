@@ -2,7 +2,6 @@ import type { BindingHost } from './binding-host.type';
 import type { BindingSite } from './binding-site.type';
 import type { _Context } from './context.type';
 import type { TemplateExpression } from './template-expression.type';
-import type { _UrlCheck } from './url-check.type';
 
 /**
  * Describes a single HTML attribute to be applied to a rendered DOM element, or an input of a component or of a
@@ -34,10 +33,15 @@ export type RenderElementAttribute = BindingSite & {
    */
   readonly shared?: true;
   /**
-   * Set on an attribute holding a URL bound to an expression, when the `security.urls` of `xaendar.json` asks for it:
-   * what the runtime does with a URL running code (see `_checkUrl`). Left out for the others.
+   * Set on an attribute holding URLs bound to an expression: the runtime checks its value as the `security` of the
+   * project asks (see `_checkUrl`), the compiler carrying no option of its own. Left out for the others.
    */
-  readonly url?: _UrlCheck;
+  readonly url?: true;
+  /**
+   * Set, with `url`, on an attribute loading a resource into the page (the `src` of an `<iframe>`…) bound to an
+   * expression: the runtime checks the origin of the resource too (see `_checkUrl`). Left out for the others.
+   */
+  readonly resource?: true;
   /**
    * Writes the value on the target: `_setProperty`, `_setExpressionProperty` or `_setReactiveProperty` for an attribute
    * or a property, `_setAttribute`, `_setExpressionAttribute` or `_setReactiveAttribute` for an attribute written with

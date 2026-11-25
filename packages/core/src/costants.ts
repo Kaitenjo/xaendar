@@ -239,6 +239,14 @@ export const _CLIENT_ATTRIBUTE = 'data-xd-client';
  */
 export const _SUBMIT_ATTRIBUTE = 'data-xd-submit';
 /**
+ * The attribute moving the inline style of an element rendered on the server into a `<style>`, which a
+ * `Content-Security-Policy` allows by its nonce, while it blocks the `style` attributes of the HTML. The `<style>` of a
+ * tree, the first children of a declarative shadow root after the stylesheet of the component, or the element before
+ * the root of a page, holds it without value, and holds one rule per element; an element holds it with the index of its
+ * rule. The browser moves the declarations of the rule into the inline style of the element when it adopts it.
+ */
+export const _SERVER_STYLE_ATTRIBUTE = 'data-xd-style';
+/**
  * The key of the property of `window` holding the event contract, the script `renderToString` writes into the page (see
  * `_EventContract`). It is a symbol of the global registry, which no other property can clash with: the script, whose
  * text reads nothing outside of it, gets the same symbol from `Symbol.for` and its description.

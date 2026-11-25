@@ -10,8 +10,9 @@ export type RenderOptions = {
    */
   readonly state?: Readonly<Record<string, unknown>>;
   /**
-   * The nonce of the `Content-Security-Policy` of the response, written on the script of the event contract, which a
-   * strict policy would block as any inline script. It must be a new one for each response, the same of the header.
+   * The nonce of the `Content-Security-Policy` of the response, written on the script of the event contract and on the
+   * `<style>` elements, the stylesheets of the components and the inline styles of the elements, which a strict policy
+   * would block as any inline script and style. It must be a new one for each response, the same of the header.
    */
   readonly nonce?: string;
 };

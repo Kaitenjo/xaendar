@@ -55,7 +55,7 @@ function readPluginOptions(): XaendarPluginOptions {
 function readLibraries(libs: NonNullable<XaendarConfig['libs']>): XaendarPluginOptions['libraries'] {
   const names = Object.keys(libs);
   return names.map(name => {
-    const { root, entry, ssr, customElements, strictEvents, security } = libs[name];
-    return { name, root: resolve(process.cwd(), root), entry, ssr: ssr === true, customElements, strictEvents, security };
+    const { root, entry, ssr, customElements, strictEvents } = libs[name];
+    return { name, root: resolve(process.cwd(), root), entry, ssr: ssr === true, customElements, strictEvents };
   });
 }

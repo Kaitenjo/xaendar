@@ -1,0 +1,7 @@
+Content-Security-Policy: default-src 'self';
+  script-src 'self' 'nonce-R4nd0mP3rR3sp0ns3';
+  style-src 'self' 'nonce-R4nd0mP3rR3sp0ns3';
+  frame-src https://www.youtube-nocookie.com;
+  object-src 'none';
+  require-trusted-types-for 'script';
+  trusted-types xaendar#template xaendar#inner-html

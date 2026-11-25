@@ -1,4 +1,4 @@
-import { CSS_UNITS, toCssPropertyName } from '@xaendar/internals';
+import { CSS_UNITS, describeUnsafeAttribute, toCssPropertyName } from '@xaendar/internals';
 import type { DecoratorMetadataContext } from '@xaendar/types';
 import { INTERNAL_HOST_ATTRIBUTES } from '../../costants';
 import type { EventHost } from '../../types/event/event-host.type';
@@ -7,6 +7,7 @@ import type { HostAttributeDecorator } from '../../types/host/host-attribute-dec
 import type { HostAttributeValue } from '../../types/host/host-attribute-value.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { _addHostMetadata } from '../../utils/host-bindings/host-bindings.util';
+import { SECURITY } from '../../utils/security/security.util';
 
 /**
  * The prefix of the name of a class binding (`class.name`).
@@ -33,7 +34,9 @@ const STYLE_PROPERTY_RE = /^([a-zA-Z][a-zA-Z-]*)(?:\.([a-z]+|%))?$/;
  * changes: a member that reads no signal is written once. A field holding a signal, or any other function, is called to
  * get the value. On an attribute, `null` and `undefined` have no opinion, which removes it, a boolean adds it empty or
  * removes it, but is written as `"true"` or `"false"` on the `aria-*` and enumerated attributes, any other value is
- * written as a string.
+ * written as a string. A value written into an attribute holding URLs (`href`, `src`, `srcset`…) is checked as the
+ * `urls` and `resourceUrls` of the `security` of `xaendar.json` ask, as in the templates: mark a URL the application
+ * trusts with `trustUrl` or `trustResourceUrl`.
  *
  * An attribute is merged with the other sources writing it: the template rendering the element (`attr.name`, or `name`
  * when the component has no input of that name) wins over the directives, which win over the component, whatever the
@@ -59,7 +62,8 @@ const STYLE_PROPERTY_RE = /^([a-zA-Z][a-zA-Z-]*)(?:\.([a-z]+|%))?$/;
  *   followed by the name of the style property and its unit, if any.
  * @returns A decorator for a field, a getter or an accessor, not static.
  * @throws If the name is empty, `class.` is followed by no class, `style.` by no style property or by a unit CSS does not
- *   have, and, once applied, if the member is static or the class binds the same class or property twice.
+ *   have, or names an attribute the browser runs (`on*`, `srcdoc`) while the `rejectUnsafeBindings` of the `security` of
+ *   `xaendar.json` is on, and, once applied, if the member is static or the class binds the same class or property twice.
  *
  * @example
  * ```ts
@@ -102,7 +106,8 @@ export function HostAttribute<const Name extends string>(name: Name): HostAttrib
  *
  * @param name - The name given to `@HostAttribute`.
  * @returns The binding, without the member reading it.
- * @throws If the name is empty, `class.` is followed by no class, `style.` by no style property or by an unknown unit.
+ * @throws If the name is empty, `class.` is followed by no class, `style.` by no style property or by an unknown unit, or
+ *   it names an attribute the browser runs, as `rejectUnsafeBindings` of the `security` of `xaendar.json` asks.
  */
 function toBinding(name: string): Omit<HostAttributeBinding, 'read'> {
   switch (name) {
@@ -125,6 +130,11 @@ function toBinding(name: string): Omit<HostAttributeBinding, 'read'> {
 
   if (name.startsWith(STYLE_PREFIX)) {
     return toStyleBinding(name, name.slice(STYLE_PREFIX.length));
+  }
+
+  const unsafe = SECURITY.rejectUnsafeBindings ? describeUnsafeAttribute(name) : undefined;
+  if (unsafe) {
+    throw new Error(`@HostAttribute('${name}') ${unsafe}, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.`);
   }
 
   return { name, kind: 'attribute' };

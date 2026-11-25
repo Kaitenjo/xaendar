@@ -92,25 +92,36 @@ describe('compile', () => {
     const message = 'Binding onclick writes code the browser runs';
 
     await expect(compile(template, { baseDir: '/base', cache: createCache() })).rejects.toThrow(message);
-    await expect(compile(template, { baseDir: '/base', signals: [], security: { urls: 'warn' }, cache: createCache() })).rejects.toThrow(message);
+    await expect(compile(template, { baseDir: '/base', signals: [], security: { urls: 'off' }, cache: createCache() })).rejects.toThrow(message);
     await expect(compile(template, { baseDir: '/base', security: { rejectUnsafeBindings: false }, cache: createCache() })).resolves.toMatchObject({ text: expect.stringContaining('root.code;') });
     await expect(typeCheckTemplateTolerant(template, parseTemplate(template), [], [], [], [], [], undefined, true, false)).resolves.toMatchObject({ errors: [] });
     await expect(typeCheckTemplateTolerant(template, parseTemplate(template), [])).resolves.toMatchObject({ errors: [expect.objectContaining({ message: expect.stringContaining(message) })] });
   });
 
-  it('flags the URLs bound to the attributes holding one as security asks, not the static ones nor the inputs', async () => {
+  it('flags the URLs bound to the attributes holding one, not the static ones nor the inputs', async () => {
     const template = '<a href="{ link }" title="{ hint }" attr.formAction="{ link }" @if (on) { src="{ link }" }></a><a href="/static"></a><a-b href="{ link }"></a-b>';
     const cache = { ...createCache(), getOrInsert: vi.fn(async () => ({ ...component, properties: new Map([['href', { name: 'href' }]]) }) as never) };
 
-    const checked = await compile(template, { signals: [], security: { urls: 'remove' }, cache });
-    expect(checked).toMatch(/name: 'href',\s+value: a0\$href,\s+url: 'remove',/);
-    expect(checked).toMatch(/name: 'formAction',\s+value: a0\$attr_formAction,\s+url: 'remove',/);
-    expect(checked).toMatch(/name: 'src',\s+value: a0\$src,\s+url: 'remove',/);
+    const checked = await compile(template, { signals: [], cache });
+    expect(checked).toMatch(/name: 'href',\s+value: a0\$href,\s+url: true,/);
+    expect(checked).toMatch(/name: 'formAction',\s+value: a0\$attr_formAction,\s+url: true,/);
+    expect(checked).toMatch(/name: 'src',\s+value: a0\$src,\s+url: true,/);
     // Neither the title, nor the static href, nor the input href of the component
     expect(checked.match(/url: /g)).toHaveLength(3);
+    // The runtime checks them as the project asks: the security of the template changes nothing
+    await expect(compile(template, { signals: [], security: { urls: 'off' }, cache })).resolves.toBe(checked);
+  });
 
-    await expect(compile(template, { signals: [], security: { urls: 'off' }, cache })).resolves.not.toContain('url: ');
-    await expect(compile(template, { signals: [], cache })).resolves.not.toContain('url: ');
+  it('flags the URLs bound to the attributes loading a resource, the srcset and the ping too', async () => {
+    const template = '<iframe src="{ page }"></iframe><img src="{ page }" srcset="{ images }" /><a ping="{ tracker }"></a><link href="{ sheet }" />';
+
+    const checked = await compile(template, { signals: [], cache: createCache() });
+    expect(checked).toMatch(/name: 'src',\s+value: iframe0\$src,\s+url: true,\s+resource: true,/);
+    expect(checked).toMatch(/name: 'href',\s+value: link3\$href,\s+url: true,\s+resource: true,/);
+    expect(checked.match(/resource: /g)).toHaveLength(2);
+    expect(checked).toMatch(/name: 'src',\s+value: img1\$src,\s+url: true,\s+setter/);
+    expect(checked).toMatch(/name: 'srcset',\s+value: img1\$srcset,\s+url: true,/);
+    expect(checked).toMatch(/name: 'ping',\s+value: a2\$ping,\s+url: true,/);
   });
 
   it('compiles a @hydrate loading the modules of the components only its content renders, and type-checks the expression of when', async () => {

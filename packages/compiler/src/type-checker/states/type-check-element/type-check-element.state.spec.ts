@@ -227,18 +227,25 @@ describe('typeCheckElement', () => {
 
     describe('rejectUnsafeBindings', () => {
       it.each([
-        ['an event handler attribute', '<div onclick="{ code }"></div>', 'Binding onclick writes code the browser runs from a value of the application: listen with (click)="…" instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.'],
-        ['an event handler attribute in any case, written with attr.', '<div attr.onMouseOver="{ code }"></div>', 'Binding attr.onMouseOver writes code the browser runs from a value of the application: listen with (mouseover)="…" instead'],
+        ['an event handler attribute', '<div onclick="{ code }"></div>', 'Binding onclick writes code the browser runs from a value of the application: listen to the click event instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.'],
+        ['an event handler attribute in any case, written with attr.', '<div attr.onMouseOver="{ code }"></div>', 'Binding attr.onMouseOver writes code the browser runs from a value of the application: listen to the mouseover event instead'],
         ['an event handler attribute in a conditional binding', '<div @if (on) { onload="{ code }" }></div>', 'Binding onload writes code'],
         ['the srcdoc of an iframe', '<iframe srcdoc="{ html }"></iframe>', 'Binding srcdoc writes a document the browser runs from a value of the application: bind the src of a page instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.'],
         ['an attribute of a component that is not an input', '<my-el onclick="{ code }"></my-el>', 'Binding onclick writes code'],
-        ['an attribute of a component written with attr.', '<my-el attr.srcdoc="{ html }"></my-el>', 'Binding attr.srcdoc writes a document']
+        ['an attribute of a component written with attr.', '<my-el attr.srcdoc="{ html }"></my-el>', 'Binding attr.srcdoc writes a document'],
+        ['a restriction of an iframe', '<iframe sandbox="{ flags }"></iframe>', 'Binding sandbox sets a restriction of the <iframe> from a value of the application, which the browser applies only to the page it loads next: write it as a static attribute, or set'],
+        ['the attribute an SVG animation writes', '<animate to="{ url }" attributeName="{ name }" />', 'Binding attributeName chooses the attribute the animation writes'],
+        ['a value of an SVG animation writing an href', '<set attr.attributename="href" to="{ url }" />', 'Binding to writes into href a value of the application'],
+        ['the pragma of a meta', '<meta http-equiv="{ pragma }" />', 'Binding http-equiv chooses the pragma of the <meta>'],
+        ['the page of a refresh', '<meta http-equiv="refresh" content="{ page }" />', 'Binding content writes the page a refresh of the <meta> goes to']
       ])('rejects a value bound to %s', (_description, template, message) => {
         expect(() => run(template, metadata({ label: new ComponentPropertyMetadata('label', 'string') }))).toThrow(message);
       });
 
       it('allows the values written in the template, the inputs of a component named like them, and every binding when the option is off', () => {
-        expect(text(run('<iframe onload="init()" srcdoc="<p>a</p>"></iframe>'))).toEqual([]);
+        expect(text(run('<iframe onload="init()" srcdoc="<p>a</p>" sandbox="allow-scripts"></iframe>'))).toEqual([]);
+        expect(text(run('<animate attributeName="opacity" to="{ level }" />'))).toEqual(['root.level;']);
+        expect(text(run('<meta name="theme" content="{ theme }" />'))).toEqual(['root.theme;']);
         expect(() => run('<my-el onToggle="{ handler }"></my-el>', metadata({ onToggle: new ComponentPropertyMetadata('onToggle', 'string') }))).not.toThrow();
 
         const context = new TypeCheckContext();

@@ -1,5 +1,3 @@
-import type { SecurityOptions } from '@xaendar/compiler';
-
 /**
  * What the language service reads of a library of the workspace, in the `libs` of `xaendar.json`.
  */
@@ -22,8 +20,4 @@ export type XaendarLibraryConfig = {
    * Whether its templates warn about the events their elements do not declare, in place of the option of the project.
    */
   readonly strictEvents?: boolean;
-  /**
-   * What the compiler checks in the bindings that could run code, each option in place of the one of the project.
-   */
-  readonly security?: SecurityOptions;
 };

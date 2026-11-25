@@ -1,7 +1,7 @@
 import type { ComponentOrDirectiveMetadata, ImportedSymbol } from '@xaendar/compiler';
 import { describe, expect, it } from 'vitest';
 import { resolvePosixPath } from '../path/path.utils';
-import { findWorkspaceLibrary, getLibraryAliases, markClientOnly, resolveSecurity, resolveWorkspaceLibraries, withLibraryDependencies } from './workspace-libraries.utils';
+import { findWorkspaceLibrary, getLibraryAliases, markClientOnly, resolveWorkspaceLibraries, withLibraryDependencies } from './workspace-libraries.utils';
 
 /**
  * The folder of a library of the workspace, resolved.
@@ -16,16 +16,6 @@ const LIBRARIES = [
   { name: 'charts', root: resolvePosixPath('/ws/libraries/charts'), entry: resolvePosixPath('/ws/libraries/charts/lib/index.ts'), ssr: true, customElements: ['sl-*'] }
 ];
 
-describe('resolveSecurity()', () => {
-  it('gives each option a library declares in place of the one of the project, and the ones of the project otherwise', () => {
-    const security = { urls: 'warn', rejectUnsafeBindings: false } as const;
-
-    expect(resolveSecurity({ ...LIBRARIES[0], security: { urls: 'remove' } }, security)).toEqual({ urls: 'remove', rejectUnsafeBindings: false });
-    expect(resolveSecurity(LIBRARIES[0], security)).toBe(security);
-    expect(resolveSecurity(undefined, security)).toBe(security);
-  });
-});
-
 describe('resolveWorkspaceLibraries()', () => {
   it('resolves the folders against the working directory and the entries against the folders, with the defaults', () => {
     expect(resolveWorkspaceLibraries([
@@ -34,16 +24,14 @@ describe('resolveWorkspaceLibraries()', () => {
     ], '/ws')).toEqual(LIBRARIES);
   });
 
-  it('keeps strictEvents and security only when the library declares them, the options of the project applying otherwise', () => {
+  it('keeps strictEvents only when the library declares it, the option of the project applying otherwise', () => {
     const [declared, inherited] = resolveWorkspaceLibraries([
-      { name: '@acme/ui', root: 'libraries/ui', strictEvents: false, security: { urls: 'remove' } },
+      { name: '@acme/ui', root: 'libraries/ui', strictEvents: false },
       { name: 'charts', root: 'libraries/charts' }
     ], '/ws')!;
 
     expect(declared.strictEvents).toBe(false);
-    expect(declared.security).toEqual({ urls: 'remove' });
     expect(inherited).not.toHaveProperty('strictEvents');
-    expect(inherited).not.toHaveProperty('security');
   });
 
   it('resolves nothing without libraries', () => {

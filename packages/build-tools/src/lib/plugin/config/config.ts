@@ -2,6 +2,7 @@ import { findPackageLibraries } from '@xaendar/compiler';
 import type { HookHandler, Plugin, UserConfig } from 'vite';
 import type { XaendarPluginState } from '../../types/xaendar-plugin-state.type';
 import { getPackageLibrariesConfig } from '../../utils/package-libraries/package-libraries.utils';
+import { toRuntimeSecurity } from '../../utils/runtime-security/runtime-security.utils';
 import { getLibraryAliases } from '../../utils/workspace-libraries/workspace-libraries.utils';
 
 /**
@@ -10,20 +11,22 @@ import { getLibraryAliases } from '../../utils/workspace-libraries/workspace-lib
  * always defines `__XAENDAR_HYDRATION__`, the flag of the hydration of `@xaendar/core` (`HYDRATION`), as whether it renders
  * on the server: without, the bundle leaves out the code adopting the nodes of the server and replaying the events. It
  * defines `__XAENDAR_DEV__` (`DEV_MODE` of core) too, `false` in the mode `production`, so that a build for production
- * leaves out the checks of development. When
+ * leaves out the checks of development, and `__XAENDAR_SECURITY__` (`SECURITY` of core), the `security` of the project with
+ * the trusted origins of its libraries (see `toRuntimeSecurity`), which the runtime applies to the `@HostAttribute`. When
  * the project belongs to a workspace, its libraries are imported from their sources: their names lead to their
  * entries (see `getLibraryAliases`). The compiled libraries the project depends on, found from the directory Vite is
  * launched from, share the packages of Xaendar with it, and are optimized when the dev server starts (see
  * `getPackageLibrariesConfig`).
  *
- * @param state - The shared plugin state, with the rendering on the server and the libraries of the workspace, whose
+ * @param state - The shared plugin state, with the rendering on the server, the security and the libraries of the workspace, whose
  *   `packageLibraries` are set.
  * @returns The `config` hook handler.
+ * @throws If a trusted origin of the security is not an origin.
  */
-export function createConfigHook(state: Pick<XaendarPluginState, 'ssr' | 'libraries' | 'packageLibraries'>): NonNullable<HookHandler<Plugin['config']>> {
+export function createConfigHook(state: Pick<XaendarPluginState, 'ssr' | 'security' | 'libraries' | 'packageLibraries'>): NonNullable<HookHandler<Plugin['config']>> {
   return function config(_config, { mode }) {
     state.packageLibraries = findPackageLibraries(process.cwd());
-    const config: UserConfig = { define: { __XAENDAR_DEV__: mode === 'production' ? 'false' : 'true', __XAENDAR_HYDRATION__: state.ssr ? 'true' : 'false' } };
+    const config: UserConfig = { define: { __XAENDAR_DEV__: mode === 'production' ? 'false' : 'true', __XAENDAR_HYDRATION__: state.ssr ? 'true' : 'false', __XAENDAR_SECURITY__: toRuntimeSecurity(state.security) } };
     if (state.ssr) {
       config.appType = 'custom';
     }

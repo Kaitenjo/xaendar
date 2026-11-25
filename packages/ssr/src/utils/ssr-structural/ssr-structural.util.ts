@@ -1,7 +1,8 @@
 import { _COMPONENT, _getComponentRuntime, _resolveDirective, _selectBranch, _SSR_MARKERS, StructuralDirective, type _Context, type RenderElementStructuralDirective, type RenderElementStructuralDirectiveConditionalBinding } from '@xaendar/core';
 import type { ServerOutput } from '../../types/server-output.type';
+import type { ServerRuntime } from '../../types/server-runtime.type';
 import type { ServerStructuralConfig } from '../../types/server-structural-config.type';
-import { _runOnServer } from '../server-runtime/server-runtime.util';
+import { _renderInTree, _runOnServer } from '../server-runtime/server-runtime.util';
 
 /**
  * The marker opening an element structural directives allow.
@@ -24,8 +25,8 @@ const CLOSE = `<!--/${_SSR_MARKERS.structural}-->`;
  * set, and `shouldRender` evaluated once.
  *
  * The element is written at once when every outcome is synchronous. When some is a promise, the place of the element in
- * the output is held by the promise of its own output, written once every promise settles, with the runtime of the page:
- * a rejected one renders nothing, like a `false`. A synchronous `false` renders nothing without waiting.
+ * the output is held by the promise of its own output, written once every promise settles, with the runtime of the page
+ * and the inline styles of the tree it is in: a rejected one renders nothing, like a `false`. A synchronous `false` renders nothing without waiting.
  *
  * The element is written between the markers of the browser, `<!--xd-s:1-->` and `<!--/xd-s-->`, the place of the anchor
  * of the element; when it is not rendered, the markers are `<!--xd-s:0--><!--/xd-s-->`. The last node of its parent
@@ -63,13 +64,14 @@ export function _ssrStructural(out: ServerOutput, context: _Context, config: Ser
   } else {
     // The element is rendered once the promises settle, out of the synchronous segment running with the runtime of the page
     const runtime = _getComponentRuntime();
+    const { styles } = runtime as Partial<ServerRuntime>;
     out.push(Promise.all(pending).then(values => {
       if (!values.every(value => value)) {
         return [NOT_RENDERED];
       }
 
       const output: ServerOutput = [RENDERED];
-      _runOnServer(runtime, () => render.call(context[_COMPONENT], output, context));
+      _runOnServer(runtime, () => _renderInTree(styles, () => render.call(context[_COMPONENT], output, context)));
       return output;
     }));
   }

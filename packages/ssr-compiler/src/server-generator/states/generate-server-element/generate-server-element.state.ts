@@ -1,4 +1,4 @@
-import { appendBlockPosition, ASTNodeType, declareExpression, describeStyling, GeneratorContext, getChildrenNamespace, getDirectiveOrder, getElementIdentifier, getElementNamespace, getElementSelector, isStructuralElement, mapContentTemplates, orderDirectives, resolveExpression, splitStylingAttributes, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, type AttributeNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
+import { appendBlockPosition, appendUrlCheck, ASTNodeType, declareExpression, describeStyling, GeneratorContext, getChildrenNamespace, getDirectiveOrder, getElementIdentifier, getElementNamespace, getElementSelector, getUrlCheck, isStructuralElement, mapContentTemplates, orderDirectives, resolveExpression, splitStylingAttributes, toArrayLiteral, toObjectLiteral, toRoleName, toStringLiteral, toUrlCheckCall, type AttributeNode, type ComponentMetadata, type ConditionalBindingBranchNode, type ConditionalBindingNode, type DescriptorOwner, type DirectiveNode, type ElementNode, type StructuralDirectiveNode } from '@xaendar/compiler';
 import { dropsLeadingNewline, escapeAttribute, isValidCustomElementName, isVoidElement } from '@xaendar/internals';
 import type { Function } from '@xaendar/types';
 import { SUBMIT_ATTRIBUTE } from '../../../costants/ssr-markers.constants';
@@ -14,8 +14,9 @@ import { SERVER_RESOLVE_OPTIONS, toStatements } from '../../utils/server-code/se
  *
  * A native element with only static and expression attributes, the most common case, is written as HTML, each attribute
  * bound to an expression written when it is rendered by `_ssrAttribute`, which escapes its value and leaves it out for
- * `null` and `undefined`, as the client removes it. An element toggling classes, with conditional bindings or applying custom
- * directives writes its start tag through `_ssrStartTag`, which applies the bindings and the directives as the client
+ * `null` and `undefined`, as the client removes it. An element with a `style`, which the runtime moves into the `<style>`
+ * of its tree since a `Content-Security-Policy` blocks the `style` attributes of the HTML, toggling classes, with
+ * conditional bindings or applying custom directives writes its start tag through `_ssrStartTag`, which applies the bindings and the directives as the client
  * applies them, receiving a constant of the module describing the element (`div0$element`), whose expressions are
  * functions of the module named after the element and called with the component and the context, and a component through
  * `_ssrComponent`, which renders it, `_ssrIsland` for an interactive one a static template renders, or
@@ -62,7 +63,7 @@ export function generateServerElement(node: ElementNode, parent: ServerParent, i
     return { pieces: writeElement(node, id, generatorContext, children.pieces), functionsToProcess: children.functionsToProcess };
   }
 
-  const owner: DescriptorOwner = { name: id, generatorContext };
+  const owner: DescriptorOwner = { name: id, tagName: node.tagName, generatorContext };
   const structuralDirectives = mapStructuralDirectives(node.structuralDirectives, owner);
   const structuralConditionalBindings = mapConditionalBindingDescriptors(node.conditionalBindings, owner, branch => !appliesStructuralDirectives(branch), (branch, condition) => mapStructuralBranch(branch, condition, owner));
   const functionsToProcess = new Map<string, ServerFunctionToProcess>();
@@ -108,7 +109,7 @@ function toContentPieces(content: string): ServerCodePiece[] {
  */
 function writeElement(node: ElementNode, id: string, generatorContext: GeneratorContext, children: readonly ServerCodePiece[]): ServerCodePiece[] {
   const { tagName, attributes, classBindings, styleBindings, ref } = node;
-  const owner: DescriptorOwner = { name: id, generatorContext };
+  const owner: DescriptorOwner = { name: id, tagName: node.tagName, generatorContext };
   const isHtml = getElementNamespace(tagName, generatorContext.namespace) === 'html';
   // The name its component is looked up by: the `is` of a customized built-in element, the tag name of any other element
   const selector = getElementSelector(node);
@@ -126,7 +127,7 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
 
   registerEvents(node, generatorContext);
 
-  if (isComponent || classBindings.length || styleBindings.length || conditionalBindings.length || directives?.length) {
+  if (isComponent || classBindings.length || styleBindings.length || conditionalBindings.length || directives?.length || hasStyleAttribute(attributes)) {
     const descriptors = mapBindings(node, owner, isComponent ? selector : undefined);
     appendSubmitMark(descriptors, node);
     const members = [`tagName: '${tagName}'`];
@@ -158,9 +159,9 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
         pieces.push({ html: ` ${name}="${escapeAttribute(value)}"` });
       } else {
         // A URL is checked as on the client, which adopts the attribute as it is
-        const url = generatorContext.getUrlCheck(name);
+        const check = getUrlCheck(tagName, name);
         const expression = resolve(value.expression, generatorContext);
-        pieces.push({ value: `_ssrAttribute('${name}', ${url ? `_checkUrl('${name}', ${expression}, '${url}')` : expression})` });
+        pieces.push({ value: `_ssrAttribute('${name}', ${check ? toUrlCheckCall(name, expression, check) : expression})` });
       }
     }
 
@@ -184,6 +185,17 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
   }
 
   return pieces;
+}
+
+/**
+ * Tells whether an element has a `style` attribute, static or bound: the runtime writes it, moving it into the `<style>`
+ * of the tree of the element, which a `Content-Security-Policy` allows by its nonce (see `_ssrStartTag`).
+ *
+ * @param attributes - The attributes of the element.
+ * @returns `true` when one of them is `style`.
+ */
+function hasStyleAttribute(attributes: readonly AttributeNode[]): boolean {
+  return attributes.some(({ name }) => name === 'style');
 }
 
 /**
@@ -301,9 +313,9 @@ function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, targ
     const role = metadata?.type === 'directive' ? `${toRoleName(target!.slice(2))}_${toRoleName(property)}` : toRoleName(attribute === undefined ? property : name);
     const members = [`name: '${property}'`, `value: ${declareElementExpression(owner, role, value.expression)}`, `setter: _setExpression${kind}`];
     // A URL written into the attribute is checked by the runtime, as on the client
-    const url = input ? undefined : generatorContext.getUrlCheck(property);
-    if (url) {
-      members.push(`url: '${url}'`);
+    const check = input ? undefined : getUrlCheck(owner.tagName, property);
+    if (check) {
+      appendUrlCheck(members, check);
     }
 
     return toObjectLiteral(members);

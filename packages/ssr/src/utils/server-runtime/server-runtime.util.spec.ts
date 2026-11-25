@@ -8,7 +8,7 @@ await vi.hoisted(async () => {
 });
 
 const { _getComponentRuntime, CustomElement } = await import('@xaendar/core');
-const { _createServerRuntime, _runOnServer } = await import('./server-runtime.util');
+const { _createServerRuntime, _renderInTree, _runOnServer } = await import('./server-runtime.util');
 
 class ProbeElement extends CustomElement { }
 customElements.define('runtime-probe', ProbeElement);
@@ -41,6 +41,34 @@ describe('_createServerRuntime', () => {
     expect(runtime.getTransferState('product')).toBe(42);
     expect(runtime.getTransferState('toString')).toBeUndefined();
     expect(_createServerRuntime(undefined).getTransferState('product')).toBeUndefined();
+  });
+
+  it('holds the nonce of the response and the inline styles of the page around its root', () => {
+    expect(_createServerRuntime(undefined, 'n')).toMatchObject({ nonce: 'n', styles: { blocks: null } });
+    expect(_createServerRuntime(undefined).nonce).toBeUndefined();
+  });
+});
+
+describe('_renderInTree', () => {
+  it('renders with the inline styles of the tree, putting the ones around back, also when the rendering throws', () => {
+    const runtime = _createServerRuntime(undefined);
+    const page = runtime.styles;
+    const tree = { blocks: null };
+
+    const seen = _runOnServer(runtime, () => _renderInTree(tree, () => runtime.styles));
+    _runOnServer(runtime, () => expect(() => _renderInTree(tree, () => {
+      throw new Error('render failed');
+    })).toThrow('render failed'));
+
+    expect(seen).toBe(tree);
+    expect(runtime.styles).toBe(page);
+  });
+
+  it('only renders outside of a page, without styles', () => {
+    const browser = _getComponentRuntime();
+
+    expect(_renderInTree(undefined, () => 'html')).toBe('html');
+    expect(browser).not.toHaveProperty('styles');
   });
 });
 

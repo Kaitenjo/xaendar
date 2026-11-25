@@ -1,5 +1,3 @@
-import type { XaendarPluginOptions } from '@xaendar/build-tools';
-
 /**
  * A library of a workspace, as the `libs` of its `xaendar.json` declares it, keyed by the name of its package
  * (`"libs": { "@acme/ui": { "root": "libraries/ui" } }`).
@@ -32,9 +30,4 @@ export type XaendarLibraryConfig = {
    * Whether its templates warn about the events their elements do not declare. Defaults to the one of the workspace.
    */
   strictEvents?: boolean;
-  /**
-   * What the compiler checks in the bindings that could run code, each option in place of the one of the workspace.
-   * Defaults to the options of the workspace.
-   */
-  security?: XaendarPluginOptions['security'];
 };

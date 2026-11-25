@@ -515,5 +515,47 @@
         "body": "<p>Safari non supporta i customized built-in element: una pagina che ne ha bisogno lì carica un polyfill, come <code>@ungap/custom-elements</code>, prima dei moduli che li definiscono. happy-dom, il DOM in cui <code>xd test</code> esegue le spec, non chiama le loro callback del ciclo di vita, né aggiorna quelli che il suo parser crea dall’HTML: lì il loro <code>onInit</code>, il loro template, i loro host binding e i loro host listener non vengono mai eseguiti.</p>"
       }
     }
+  },
+  "trustUrl": {
+    "summary": "Marca un URL come fidato: collegato a un attributo che contiene URL, viene scritto così com’è, senza il controllo di <code>urls</code> della voce <code>security</code> di <code>xaendar.json</code>.",
+    "description": "<p>Un URL che esegue codice (<code>javascript:</code>) collegato a <code>href</code>, <code>src</code>, <code>srcset</code>… in un template o da un <code>@HostAttribute</code> viene scritto con un warning, o omesso, come chiede <code>urls</code>; marcato con <code>trustUrl()</code> viene scritto così com’è. Dove carica una risorsa nella pagina, come lo <code>src</code> di un <code>&lt;iframe&gt;</code>, viene comunque controllato come chiede <code>resourceUrls</code>: lì marcalo con <a href=\"#/it/reference/api/core/trustResourceUrl\"><code>trustResourceUrl()</code></a>. L’equivalente di <code>bypassSecurityTrustUrl</code> di Angular.</p><p>Usala solo per un URL costruito dall’applicazione, o proveniente da una fonte fidata, e chiamala dove l’URL viene costruito, così ogni URL fidato è facile da trovare. Il valore è un <a href=\"#/it/reference/api/core/SafeUrl\"><code>SafeUrl</code></a>, con cui l’attributo viene scritto come l’URL che contiene.</p>",
+    "members": {
+      "url": "<p>L’URL di cui fidarsi.</p>"
+    },
+    "usage": {
+      "binding": {
+        "title": "In un componente",
+        "body": "<p>Il link che stampa la pagina esegue codice: il componente lo marca una volta, in un campo, dove il template lo collega.</p>"
+      }
+    }
+  },
+  "trustResourceUrl": {
+    "summary": "Marca un URL come fidato per caricare una risorsa nella pagina: collegato a qualunque attributo che contiene URL, viene scritto così com’è, senza i controlli di <code>urls</code> e <code>resourceUrls</code> della voce <code>security</code> di <code>xaendar.json</code>.",
+    "description": "<p>Lo <code>src</code> di un <code>&lt;iframe&gt;</code>, di un <code>&lt;embed&gt;</code> o di un <code>&lt;frame&gt;</code>, il <code>data</code> di un <code>&lt;object&gt;</code> e l’<code>href</code> di un <code>&lt;link&gt;</code> o della <code>&lt;base&gt;</code> caricano una risorsa che gira con la pagina: un URL assoluto la cui origine non è tra le <code>trustedOrigins</code> viene scritto con un warning, o omesso, come chiede <code>resourceUrls</code>. Marcato con <code>trustResourceUrl()</code> viene scritto così com’è, qualunque sia l’origine, e supera anche il controllo di <code>urls</code>. L’equivalente di <code>bypassSecurityTrustResourceUrl</code> di Angular.</p><p>Usala solo per un URL costruito dall’applicazione, o proveniente da una fonte fidata; un’origine da cui l’applicazione carica sempre è meglio elencarla una volta nelle <code>trustedOrigins</code> di <code>xaendar.json</code>. Il valore è un <a href=\"#/it/reference/api/core/SafeResourceUrl\"><code>SafeResourceUrl</code></a>.</p>",
+    "members": {
+      "url": "<p>L’URL di cui fidarsi.</p>"
+    },
+    "usage": {
+      "binding": {
+        "title": "In un componente",
+        "body": "<p>La mappa arriva da un server dell’azienda di cui l’applicazione si fida solo qui: un computed costruisce il suo URL dall’input e lo marca.</p>"
+      }
+    }
+  },
+  "SafeUrl": {
+    "summary": "Un URL di cui l’applicazione si fida, creato con <a href=\"#/it/reference/api/core/trustUrl\"><code>trustUrl()</code></a> o <a href=\"#/it/reference/api/core/trustResourceUrl\"><code>trustResourceUrl()</code></a>.",
+    "description": "<p>Collegato a un attributo, viene scritto come l’URL che contiene, senza i controlli chiesti dalla voce <code>security</code> di <code>xaendar.json</code>: quello di <code>urls</code> sempre, quello di <code>resourceUrls</code> solo quando <code>resource</code> è <code>true</code>. Il runtime riconosce i valori creati dalle due funzioni, mai un oggetto con le stesse proprietà: nessun valore letto da una richiesta o da un JSON passa per uno di essi. L’equivalente del <code>SafeUrl</code> di Angular.</p>",
+    "members": {
+      "url": "<p>L’URL fidato.</p>",
+      "resource": "<p>Se l’URL è fidato anche per caricare una risorsa nella pagina: <code>true</code> per <code>trustResourceUrl()</code>.</p>",
+      "toString": "<p>Restituisce l’URL, con cui viene scritto un attributo collegato al valore.</p>"
+    }
+  },
+  "SafeResourceUrl": {
+    "summary": "Un URL di cui l’applicazione si fida per caricare una risorsa nella pagina, creato con <a href=\"#/it/reference/api/core/trustResourceUrl\"><code>trustResourceUrl()</code></a>.",
+    "description": "<p>Un <a href=\"#/it/reference/api/core/SafeUrl\"><code>SafeUrl</code></a> il cui <code>resource</code> è <code>true</code>: collegato allo <code>src</code> di un <code>&lt;iframe&gt;</code>, al <code>data</code> di un <code>&lt;object&gt;</code> o all’<code>href</code> di un <code>&lt;link&gt;</code>, viene scritto così com’è, qualunque sia l’origine. L’equivalente del <code>SafeResourceUrl</code> di Angular.</p>",
+    "members": {
+      "resource": "<p>Sempre <code>true</code>.</p>"
+    }
   }
 }

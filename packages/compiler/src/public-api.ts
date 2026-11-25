@@ -1,5 +1,6 @@
 export * from './compile/compile';
 export * from './generator/context/context';
+export type * from './generator/types/attribute-url-check.type';
 export type * from './generator/types/descriptor-owner.type';
 export type * from './generator/types/for-variable.type';
 export type * from './generator/types/generator-function-to-process.type';
@@ -17,6 +18,7 @@ export * from './generator/utils/module-code/module-code.utils';
 export * from './generator/utils/scope-generation/scope-generation.utils';
 export * from './generator/utils/styling/styling.utils';
 export * from './generator/utils/text-separators/text-separators.utils';
+export * from './generator/utils/url-check/url-check.utils';
 export type * from './lexer/types/binding-context.type';
 export type * from './lexer/types/expression-context.type';
 export type * from './lexer/types/import-context.type';

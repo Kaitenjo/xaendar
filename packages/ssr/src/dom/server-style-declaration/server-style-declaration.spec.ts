@@ -39,6 +39,17 @@ describe('ServerStyleDeclaration', () => {
     expect(owner.attributes.get('style')).toBe('color: blue; width: 10px; --accent: #fff;');
   });
 
+  it('reads and writes the text of the declarations as the style attribute, as it is', () => {
+    const owner = ownerWith();
+    const style = new ServerStyleDeclaration(owner);
+
+    expect(style.cssText).toBe('');
+    style.cssText = 'color: red; width: 1px';
+
+    expect(owner.attributes.get('style')).toBe('color: red; width: 1px');
+    expect(style.cssText).toBe('color: red; width: 1px');
+  });
+
   it('writes the attribute of an element without one', () => {
     const owner = ownerWith();
     new ServerStyleDeclaration(owner).setProperty('width', '50%');

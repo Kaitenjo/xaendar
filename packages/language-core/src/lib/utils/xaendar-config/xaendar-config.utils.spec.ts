@@ -112,17 +112,17 @@ describe('readSecurity()', () => {
     expect(readSecurity(loose)).toEqual({ rejectUnsafeBindings: false });
   });
 
-  it('reads each option of a library in place of the one of the project', () => {
+  it('reads none in a library, whose templates are checked with the defaults whatever the project allows', () => {
     const dir = freshDir();
     writeFileSync(join(dir, 'xaendar.json'), JSON.stringify({
       security: { urls: 'warn', rejectUnsafeBindings: false },
-      libs: { ui: { root: 'libraries/ui' }, charts: { root: 'libraries/charts', security: { rejectUnsafeBindings: true } } }
+      libs: { ui: { root: 'libraries/ui' } }
     }));
     mkdirSync(join(dir, 'libraries', 'ui'), { recursive: true });
-    mkdirSync(join(dir, 'libraries', 'charts'), { recursive: true });
+    mkdirSync(join(dir, 'src'), { recursive: true });
 
-    expect(readSecurity(join(dir, 'libraries', 'ui'))).toEqual({ urls: 'warn', rejectUnsafeBindings: false });
-    expect(readSecurity(join(dir, 'libraries', 'charts'))).toEqual({ urls: 'warn', rejectUnsafeBindings: true });
+    expect(readSecurity(join(dir, 'libraries', 'ui'))).toBeUndefined();
+    expect(readSecurity(join(dir, 'src'))).toEqual({ urls: 'warn', rejectUnsafeBindings: false });
   });
 });
 

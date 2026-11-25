@@ -4,6 +4,7 @@ import { DIRECTIVE_ORDER, HEADER } from '../../costants';
 import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { _Context } from '../../types/context.type';
+import type { RenderElementAttributeTemplateValue } from '../../types/render-element-attribute-template-value.type';
 import type { RenderElementAttribute } from '../../types/render-element-attribute.type';
 import type { RenderElementConditionalBinding } from '../../types/render-element-conditional-binding.type';
 import type { RenderElement } from '../../types/render-element.type';
@@ -12,7 +13,6 @@ import { _hasAttributeState, _mergeAttributes } from '../attribute-state/attribu
 import { _scope, clear, EMPTY_LAYOUT, refresh, update } from '../context/context.util';
 import { _defineDirective } from '../directive-registry/directive-registry.util';
 import { _applyHostAttributes, _bindHost } from '../host-bindings/host-bindings.util';
-import type { RenderElementAttributeTemplateValue } from '../../types/render-element-attribute-template-value.type';
 import { _removeAttribute, _setExpressionProperty } from '../render-element/render-element.util';
 import { _prepareAttributes, _setAttribute, _setExpressionAttribute, _setReactiveAttribute, removeTemplateAttribute, writeTemplateAttribute } from './attribute-binding.util';
 
@@ -110,20 +110,24 @@ describe('attributes written with attr.', () => {
     expect(title()).toBe('input');
   });
 
-  it('check the URL bound to an attribute the compiler flags, writing it or leaving it out as it asks', () => {
+  it('check the URL bound to an attribute the compiler flags, as the security of the project asks', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const element = document.createElement('a');
     const url = signal('javascript:alert(1)');
-    _setReactiveAttribute(_scope(null, EMPTY_LAYOUT), element, { name: 'href', value: () => url(), setter: _setReactiveAttribute, url: 'remove' });
-    expect(element.hasAttribute('href')).toBe(false);
+    _setReactiveAttribute(_scope(null, EMPTY_LAYOUT), element, { name: 'href', value: () => url(), setter: _setReactiveAttribute, url: true });
+    expect(element.getAttribute('href')).toBe('javascript:alert(1)');
+    expect(warn).toHaveBeenCalledTimes(1);
 
     _setExpressionAttribute(_scope(null, EMPTY_LAYOUT), element, { name: 'ping', value: () => 'javascript:a', setter: _setExpressionAttribute });
-    _setExpressionProperty(_scope(null, EMPTY_LAYOUT), element, { name: 'href', value: () => '/safe', setter: _setExpressionProperty, url: 'remove' });
-    _setExpressionProperty(_scope(null, EMPTY_LAYOUT), element, { name: 'formaction', value: () => 'vbscript:x', setter: _setExpressionProperty, url: 'warn' });
-
+    _setExpressionProperty(_scope(null, EMPTY_LAYOUT), element, { name: 'formaction', value: () => '/safe', setter: _setExpressionProperty, url: true });
     expect(element.getAttribute('ping')).toBe('javascript:a');
-    expect(element.getAttribute('href')).toBe('/safe');
-    expect(element.getAttribute('formaction')).toBe('vbscript:x');
+    expect(element.getAttribute('formaction')).toBe('/safe');
+    expect(warn).toHaveBeenCalledTimes(1);
+
+    // A resource, its origin not trusted
+    const frame = document.createElement('iframe');
+    _setExpressionProperty(_scope(null, EMPTY_LAYOUT), frame, { name: 'src', value: () => 'https://evil.com/frame.html', setter: _setExpressionProperty, url: true, resource: true });
+    expect(frame.getAttribute('src')).toBe('https://evil.com/frame.html');
     expect(warn).toHaveBeenCalledTimes(2);
     warn.mockRestore();
   });

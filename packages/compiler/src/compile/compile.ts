@@ -11,7 +11,6 @@ import type { CompileOptions } from '../types/compile-options.type';
 import type { ComponentOrDirectiveMetadata } from '../types/component-or-directive-metadata.type';
 import type { ContextCache } from '../types/context-cache.type';
 import type { SymbolImport } from '../types/symbol-import.type';
-import type { UrlSanitization } from '../types/url-sanitization.type';
 
 /**
  * How many templates {@link parseTemplate} keeps the nodes of, the ones parsed last.
@@ -52,7 +51,7 @@ export async function compile(input: string, options: CompileOptions): Promise<s
   if (baseDir && signals) {
     const { metadatas, symbols } = await resolveTemplateImports(importNodes, baseDir, cache);
     const [javascript, typescript] = await Promise.all([
-      generateJavascriptCode(input, nodes, signals, shadowingMembers, customElements, cache, symbols, security?.urls),
+      generateJavascriptCode(input, nodes, signals, shadowingMembers, customElements, cache, symbols),
       typeCheckTemplate(input, nodes, metadatas, shadowingMembers, customElements, symbols, reactiveMembers, ssr, strictEvents, security?.rejectUnsafeBindings)
     ]);
 
@@ -66,7 +65,7 @@ export async function compile(input: string, options: CompileOptions): Promise<s
   } else {
     const symbols = templateDir ? (await resolveTemplateImports(importNodes, templateDir, cache)).symbols : undefined;
     // Safe assertion! Overloads permit baseDir and signals not to be nullable simultaneously
-    return await generateJavascriptCode(input, nodes, signals!, shadowingMembers, customElements, cache, symbols, security?.urls);
+    return await generateJavascriptCode(input, nodes, signals!, shadowingMembers, customElements, cache, symbols);
   }
 }
 /**
@@ -102,11 +101,10 @@ export function parseTemplate(input: string): ASTNode[] {
  * @param customElements - Patterns of the tag names of the custom elements of other libraries.
  * @param cache - The cache of the metadata of the components and directives.
  * @param symbols - The symbols the template imports from modules, if they are resolved.
- * @param urls - How the URLs bound to the attributes holding one are checked by the runtime (see `SecurityOptions`).
  * @returns A string containing the compiled Javascript render functions.
  */
-async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: string[], shadowingMembers: readonly string[], customElements: readonly string[], cache: ContextCache, symbols?: readonly SymbolImport[], urls?: UrlSanitization): Promise<string> {
-  return await new Generator(input, nodes, cache).generate(signals, shadowingMembers, customElements, symbols, urls);
+async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: string[], shadowingMembers: readonly string[], customElements: readonly string[], cache: ContextCache, symbols?: readonly SymbolImport[]): Promise<string> {
+  return await new Generator(input, nodes, cache).generate(signals, shadowingMembers, customElements, symbols);
 }
 
 /**
@@ -121,7 +119,7 @@ async function generateJavascriptCode(input: string, nodes: ASTNode[], signals: 
  * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
  * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
  * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
- * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error (see `SecurityOptions`).
+ * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs, or lifting a restriction (`on*`, `srcdoc`, `sandbox`…) is an error (see `SecurityOptions`).
  * @returns A promise that resolves to the type-checking result.
  * @throws A `TemplateError` if the template fails type-checking with an error pointing to a part of it.
  */
@@ -142,7 +140,7 @@ export async function typeCheckTemplate(input: string, nodes: ASTNode[], metadat
  * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
  * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
  * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
- * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error (see `SecurityOptions`).
+ * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs, or lifting a restriction (`on*`, `srcdoc`, `sandbox`…) is an error (see `SecurityOptions`).
  * @returns A promise that resolves to the type-checking result, with the errors of the nodes that failed.
  */
 export async function typeCheckTemplateTolerant(input: string, nodes: ASTNode[], metadatas: ComponentOrDirectiveMetadata[], shadowingMembers: readonly string[] = [], customElements: readonly string[] = [], symbols: readonly SymbolImport[] = [], reactiveMembers: readonly string[] = [], ssr?: boolean, strictEvents = true, rejectUnsafeBindings = true): Promise<TypeCheckTolerantResult> {

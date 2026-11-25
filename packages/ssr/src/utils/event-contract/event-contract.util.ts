@@ -1,5 +1,5 @@
 import { _EVENT_CONTRACT_KEY, _RECORDED_EVENTS, _SUBMIT_ATTRIBUTE } from '@xaendar/core';
-import { escapeAttribute } from '@xaendar/internals';
+import { writeNonceAttribute } from '../escape/escape.util';
 
 /**
  * The most events the contract keeps. A page made only of static components never loads the runtime that empties the
@@ -94,6 +94,5 @@ export function _writeEventContract(names: ReadonlySet<string>, nonce?: string):
   // A symbol has no JSON form: the script gets the key from the registry, by its description
   const key = `Symbol.for(${JSON.stringify(_EVENT_CONTRACT_KEY.description)})`;
   const args = JSON.stringify([Array.from(events), _SUBMIT_ATTRIBUTE, EVENTS_LIMIT]).slice(1, -1).replaceAll('<', '\\u003c');
-  const nonceAttribute = nonce ? ` nonce="${escapeAttribute(nonce)}"` : '';
-  return `<script${nonceAttribute}>(${eventContract.toString()})(document.currentScript.previousElementSibling,${key},${args})</script>`;
+  return `<script${writeNonceAttribute(nonce)}>(${eventContract.toString()})(document.currentScript.previousElementSibling,${key},${args})</script>`;
 }

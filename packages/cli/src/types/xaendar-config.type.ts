@@ -17,9 +17,8 @@ export type XaendarConfig = {
    */
   strictEvents?: boolean;
   /**
-   * What the compiler checks in the bindings that could run code from the values of the application: `urls` (`'off'`,
-   * `'warn'` or `'remove'`, `'off'` by default) for the URLs bound to the attributes loading or opening them,
-   * `rejectUnsafeBindings` (`true` by default) for the bindings of the event handler attributes and of `srcdoc`.
+   * How the values of the application that could run code are checked (see `XaendarPluginOptions['security']`), for
+   * every component the project renders: the libraries declare none.
    */
   security?: XaendarPluginOptions['security'];
   /**

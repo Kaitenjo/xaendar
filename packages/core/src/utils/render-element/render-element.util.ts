@@ -38,6 +38,7 @@ import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { _selectBranch } from '../select-branch/select-branch.util';
 import { _prepareStyling } from '../styling-binding/styling-binding.util';
 import { ensureStylingState } from '../styling-state/styling-state.util';
+import { _toTrustedHtml, TEMPLATE_CONTENT_POLICY } from '../trusted-html/trusted-html.util';
 import { connectChild } from '../try-scope/try-scope.util';
 
 /**
@@ -100,7 +101,7 @@ function renderElement(parentNode: Element, context: _Context, anchor: Comment |
   trackNode(element, parentNode, context, slot);
   // A standard <template> the server wrote already holds its content: the parser of the browser put it there
   if (config.content && !(element as HTMLTemplateElement).content.firstChild) {
-    element.innerHTML = config.content;
+    element.innerHTML = _toTrustedHtml(config.content, TEMPLATE_CONTENT_POLICY);
   }
 
   // The bindings of `class` and `style` a host attribute may write keep themselves in the sources of the element

@@ -20,6 +20,7 @@ import { HYDRATION } from '../../utils/hydration-flag/hydration-flag.util';
 import { deferElementHydration, replayContractEvents, replayElementEvents } from '../../utils/hydration-triggers/hydration-triggers.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
 import { reportError } from '../../utils/report-error/report-error.util';
+import { adoptHostServerStyle } from '../../utils/server-styles/server-styles.util';
 import { _parseState } from '../../utils/state-serialization/state-serialization.util';
 import { runConnection } from '../../utils/try-scope/try-scope.util';
 import type { CustomDirective } from '../custom-directive/custom-directive';
@@ -246,7 +247,8 @@ export class CustomElement extends HTMLElement {
    * page before the runtime was there.
    *
    * Sets the inputs the server rendered the element with, when it is the root of a page rendered on the server (see
-   * {@link _restoreServerInputs}), adopts the stylesheet registered for this component class (see `_defineRender`), if any,
+   * {@link _restoreServerInputs}) and the inline style the server moved into a `<style>` (see `adoptHostServerStyle`),
+   * adopts the stylesheet registered for this component class (see `_defineRender`), if any,
    * and invokes `onInit`, if declared. Then triggers the render by invoking the compiler-generated render
    * function registered for it, which builds the Shadow DOM tree, or adopts the one the server rendered, and sets up
    * reactive signal subscriptions (a customized built-in element without a template renders nothing), then invokes the
@@ -370,6 +372,8 @@ export class CustomElement extends HTMLElement {
 
     if (hydrating) {
       this._restoreServerInputs();
+      // The root of a page, or a component a static one renders: no component adopting it took its inline style
+      adoptHostServerStyle(this);
     }
 
     /*
@@ -430,7 +434,7 @@ export class CustomElement extends HTMLElement {
     }
 
     // The first render of an element rendered on the server adopts its nodes, any other one creates them
-    const nodeStrategy = serverRoot ? claimShadowRoot(root, !!styleSheet) : CREATE_NODES;
+    const nodeStrategy = serverRoot ? claimShadowRoot(root) : CREATE_NODES;
     this._start();
     /*
       The context of the render exists only once the render has ended: the effects and the components

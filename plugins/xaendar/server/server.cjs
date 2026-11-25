@@ -20772,6 +20772,9 @@ function toTypeCheckModuleSpecifier({ modulePath, importPath }) {
   return importPath ?? modulePath.replace(/(?:\.d)?\.[cm]?tsx?$/, "");
 }
 
+// ../packages/compiler/src/costants/scope-header.costant.ts
+var SCOPE_HEADER = 5;
+
 // ../packages/internals/src/utils/css/css.util.ts
 var CSS_UNITS = /* @__PURE__ */ new Set([
   "%",
@@ -20986,8 +20989,45 @@ function isReservedTagName(tagName) {
   return NOT_ALLOWED_TAGS.includes(tagName);
 }
 
-// ../packages/compiler/src/costants/scope-header.costant.ts
-var SCOPE_HEADER = 5;
+// ../packages/internals/src/utils/unsafe-attribute/unsafe-attribute.util.ts
+var IFRAME_POLICY_ATTRIBUTES = /* @__PURE__ */ new Set(["allow", "allowfullscreen", "credentialless", "csp", "referrerpolicy", "sandbox"]);
+var ANIMATION_ELEMENTS = /* @__PURE__ */ new Set(["animate", "animatemotion", "animatetransform", "set"]);
+var ANIMATION_VALUE_ATTRIBUTES = /* @__PURE__ */ new Set(["by", "from", "to", "values"]);
+var ANIMATED_URL_ATTRIBUTES = /* @__PURE__ */ new Set(["href", "xlink:href"]);
+function describeUnsafeAttribute(name) {
+  const lowerCase = name.toLowerCase();
+  if (lowerCase.startsWith("on")) {
+    return `writes code the browser runs from a value of the application: listen to the ${lowerCase.slice(2)} event instead`;
+  }
+  return lowerCase === "srcdoc" ? "writes a document the browser runs from a value of the application: bind the src of a page instead" : void 0;
+}
+function describeUnsafeElementAttribute(tagName, name, element) {
+  const lowerCaseTag = tagName.toLowerCase();
+  if (lowerCaseTag === "iframe") {
+    return IFRAME_POLICY_ATTRIBUTES.has(name.toLowerCase()) ? "sets a restriction of the <iframe> from a value of the application, which the browser applies only to the page it loads next: write it as a static attribute" : void 0;
+  }
+  if (ANIMATION_ELEMENTS.has(lowerCaseTag)) {
+    return describeUnsafeAnimationAttribute(name.toLowerCase(), element);
+  }
+  if (lowerCaseTag !== "meta") {
+    return void 0;
+  }
+  const lowerCase = name.toLowerCase();
+  if (lowerCase === "http-equiv") {
+    return "chooses the pragma of the <meta> from a value of the application: write it as a static attribute";
+  }
+  return lowerCase === "content" && element.getAttribute("http-equiv")?.toLowerCase() === "refresh" ? "writes the page a refresh of the <meta> goes to from a value of the application, which no check of the URLs reaches: write it as a static attribute" : void 0;
+}
+function describeUnsafeAnimationAttribute(name, element) {
+  if (name === "attributename") {
+    return "chooses the attribute the animation writes from a value of the application, which could give an href a URL running code: write it as a static attribute";
+  }
+  if (!ANIMATION_VALUE_ATTRIBUTES.has(name)) {
+    return void 0;
+  }
+  const animated = element.getAttribute("attributeName")?.toLowerCase();
+  return animated !== void 0 && ANIMATED_URL_ATTRIBUTES.has(animated) ? `writes into ${animated} a value of the application, which no check of the URLs reaches: bind ${animated} itself instead` : void 0;
+}
 
 // ../packages/compiler/src/models/compiler-context/compiler-context.model.ts
 var CompilerContext = class {
@@ -26710,7 +26750,7 @@ var TypeCheckContext = class extends CompilerContext {
    */
   _strictEvents = true;
   /**
-   * Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error: kept by the outermost scope,
+   * Whether binding a value to an attribute the browser runs, or lifting a restriction (`on*`, `srcdoc`, `sandbox`…) is an error: kept by the outermost scope,
    * for the whole template.
    */
   _rejectUnsafeBindings = true;
@@ -26774,7 +26814,7 @@ var TypeCheckContext = class extends CompilerContext {
     this._strictEvents = value;
   }
   /**
-   * Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error, read from the outermost
+   * Whether binding a value to an attribute the browser runs, or lifting a restriction (`on*`, `srcdoc`, `sandbox`…) is an error, read from the outermost
    * scope.
    *
    * @returns `true` unless the `rejectUnsafeBindings` option of `security` is `false`.
@@ -28696,7 +28736,7 @@ function typeCheckElement(node, processNode, context) {
   } else {
     lines.push(...typeCheckNativeBindings(node, nativeEvents, context));
   }
-  lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], tagName, nativeEvents, context));
+  lines.push(...typeCheckDirectives([...node.directives, ...node.structuralDirectives], node, nativeEvents, context));
   if (node.ref && context.getImportBySelector(selector)?.typeParameters) {
     context.addInstantiation(node.span.start);
   }
@@ -28738,15 +28778,15 @@ function typeCheckComponentBindings(node, declaredMetadata, nativeEvents, contex
   assertUniqueComponentAttributes(node, metadata);
   const requiredProperties = new Set(metadata.properties.entries().filter(([_2, value]) => value.required).map(([key]) => key));
   const alwaysBoundAttributes = getAlwaysBoundAttributes(node.conditionalBindings);
-  const lines = typeCheckComponentAttributes(node.attributes, metadata, context);
+  const lines = typeCheckComponentAttributes(node.attributes, metadata, context, node);
   const conditionalBindingLines = typeCheckConditionalBindings(node.conditionalBindings, context, (branch) => {
     assertRequiredPropertiesAlwaysBound(branch.attributes, metadata, `<${node.tagName}>`, alwaysBoundAttributes);
     return [
-      ...typeCheckComponentAttributes(branch.attributes, metadata, context),
+      ...typeCheckComponentAttributes(branch.attributes, metadata, context, node),
       ...typeCheckClassBindings(branch.classBindings, context),
       ...typeCheckStyleBindings(branch.styleBindings, context),
       ...typeCheckComponentEvents(branch.events, metadata, nativeEvents, context),
-      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEvents, context)
+      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node, nativeEvents, context)
     ];
   });
   for (let i2 = 0; i2 < node.attributes.length; i2++) {
@@ -28783,7 +28823,7 @@ function assertUniqueComponentAttributes(node, metadata) {
 function assertUniqueForeignAttributes(node) {
   assertUniqueAttributes(node.attributes, node.conditionalBindings, ({ name, attribute }) => attribute ?? name, (name) => `Attribute "${name}" is written more than once on <${node.tagName}>: it is not a component imported in the template, so ${name}="\u2026" and attr.${name}="\u2026" write the same attribute of the element`);
 }
-function typeCheckDirectives(directives, tagName, nativeEvents, context) {
+function typeCheckDirectives(directives, element, nativeEvents, context) {
   const lines = new Array();
   for (let i2 = 0; i2 < directives.length; i2++) {
     const directive = directives[i2];
@@ -28802,7 +28842,7 @@ function typeCheckDirectives(directives, tagName, nativeEvents, context) {
       assertDirectiveProperties(branch.attributes, metadata, owner);
       assertRequiredPropertiesAlwaysBound(branch.attributes, metadata, owner, alwaysBoundAttributes);
       return [
-        ...typeCheckComponentAttributes(branch.attributes, metadata, context),
+        ...typeCheckComponentAttributes(branch.attributes, metadata, context, element),
         ...typeCheckComponentEvents(branch.events, metadata, nativeEvents, context)
       ];
     });
@@ -28814,11 +28854,11 @@ function typeCheckDirectives(directives, tagName, nativeEvents, context) {
       requiredProperties.delete(name);
     }
     if (requiredProperties.size) {
-      throw new Error(`${owner} on <${tagName}> is missing the following required properties:
+      throw new Error(`${owner} on <${element.tagName}> is missing the following required properties:
  \u25CF ${Array.from(requiredProperties.values()).join("\n \u25CF ")}`, { cause: span });
     }
     const directiveLines = [
-      ...typeCheckComponentAttributes(attributes, metadata, context),
+      ...typeCheckComponentAttributes(attributes, metadata, context, element),
       ...typeCheckComponentEvents(events, metadata, nativeEvents, context),
       ...conditionalBindingLines
     ];
@@ -28980,12 +29020,12 @@ function getAlwaysBoundAttributes(conditionalBindings) {
   }
   return alwaysBoundAttributes;
 }
-function typeCheckComponentAttributes(attributes, metadata, context) {
+function typeCheckComponentAttributes(attributes, metadata, context, element) {
   const lines = new Array();
   for (let i2 = 0; i2 < attributes.length; i2++) {
     const { name, value, span, bare, attribute } = attributes[i2];
     if (attribute !== void 0) {
-      assertSafeBinding(attributes[i2], context);
+      assertSafeBinding(attributes[i2], element, context);
       if (typeof value !== "string") {
         lines.push(line(mappedInterpolation(value, context, ";")));
       }
@@ -28995,7 +29035,7 @@ function typeCheckComponentAttributes(attributes, metadata, context) {
     const property = metadata.properties.get(name);
     if (!property) {
       assertNotAliasedProperty(attributes[i2], metadata);
-      assertSafeBinding(attributes[i2], context);
+      assertSafeBinding(attributes[i2], element, context);
     } else {
       if (bare) {
         throw new Error(`Property "${name}" needs a value: write ${name}="\u2026" or ${name}="{ expression }". An attribute without a value is only valid on a native element.`, { cause: span });
@@ -29025,40 +29065,47 @@ function typeCheckNativeBindings(node, nativeEvents, context) {
     throw new Error(`<${node.tagName}> declares type arguments, but only a WebComponent imported in the template can declare them.`, { cause: getTypeArgumentsSpan(node.typeArguments) });
   }
   return [
-    ...typeCheckNativeAttributes(node.attributes, node.tagName, context),
+    ...typeCheckNativeAttributes(node.attributes, node, context),
     ...typeCheckClassBindings(node.classBindings, context),
     ...typeCheckStyleBindings(node.styleBindings, context),
     ...typeCheckNativeEvents(node.events, nativeEvents, context),
     ...typeCheckConditionalBindings(node.conditionalBindings, context, (branch) => [
-      ...typeCheckNativeAttributes(branch.attributes, node.tagName, context),
+      ...typeCheckNativeAttributes(branch.attributes, node, context),
       ...typeCheckClassBindings(branch.classBindings, context),
       ...typeCheckStyleBindings(branch.styleBindings, context),
       ...typeCheckNativeEvents(branch.events, nativeEvents, context),
-      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node.tagName, nativeEvents, context)
+      ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node, nativeEvents, context)
     ])
   ];
 }
-function assertSafeBinding({ name, attribute, value, span }, context) {
+function assertSafeBinding({ name, attribute, value, span }, element, context) {
   if (typeof value === "string" || !context.rejectUnsafeBindings) {
     return;
   }
-  const written = (attribute ?? name).toLowerCase();
-  const allow = 'or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it';
-  if (written.startsWith("on")) {
-    throw new Error(`Binding ${name} writes code the browser runs from a value of the application: listen with (${written.slice(2)})="\u2026" instead, ${allow}.`, { cause: span });
-  }
-  if (written === "srcdoc") {
-    throw new Error(`Binding ${name} writes a document the browser runs from a value of the application: bind the src of a page instead, ${allow}.`, { cause: span });
+  const written = attribute ?? name;
+  const unsafe = describeUnsafeAttribute(written) ?? describeUnsafeElementAttribute(element.tagName, written, { getAttribute: (attributeName) => readStaticAttribute(element, attributeName) });
+  if (unsafe) {
+    throw new Error(`Binding ${name} ${unsafe}, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.`, { cause: span });
   }
 }
-function typeCheckNativeAttributes(attributes, tagName, context) {
+function readStaticAttribute({ attributes }, name) {
+  const lowerCase = name.toLowerCase();
+  for (let i2 = 0; i2 < attributes.length; i2++) {
+    const { attribute, value } = attributes[i2];
+    if ((attribute ?? attributes[i2].name).toLowerCase() === lowerCase && typeof value === "string") {
+      return value;
+    }
+  }
+  return void 0;
+}
+function typeCheckNativeAttributes(attributes, element, context) {
   const lines = new Array();
   for (let i2 = 0; i2 < attributes.length; i2++) {
     const { name, value, span, twoWay } = attributes[i2];
     if (twoWay) {
-      throw new Error(`[(${name})] binds a model of a component or of a directive: <${tagName}> is not a component imported in the template.`, { cause: span });
+      throw new Error(`[(${name})] binds a model of a component or of a directive: <${element.tagName}> is not a component imported in the template.`, { cause: span });
     }
-    assertSafeBinding(attributes[i2], context);
+    assertSafeBinding(attributes[i2], element, context);
     if (typeof value !== "string") {
       lines.push(line(mappedInterpolation(value, context, ";")));
     }
@@ -29950,7 +29997,7 @@ var TypeChecker = class {
    * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
    * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
    * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
-   * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error (see `SecurityOptions`).
+   * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs, or lifting a restriction (`on*`, `srcdoc`, `sandbox`…) is an error (see `SecurityOptions`).
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws If the template fails type-checking, e.g. it uses a selector not imported in it, with the error message prefixed by `[TypeChecker]` and, when the error carries its span, the slice of the template it refers to.
    */
@@ -29973,7 +30020,7 @@ var TypeChecker = class {
    * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
    * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
    * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
-   * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error (see `SecurityOptions`).
+   * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs, or lifting a restriction (`on*`, `srcdoc`, `sandbox`…) is an error (see `SecurityOptions`).
    * @returns The text of the shim and its mapping table, together with the errors of the nodes that failed, formatted like the ones thrown by {@link generate}.
    * @throws If a node has no transition function, with the error message prefixed by `[TypeChecker]`.
    */
@@ -32541,8 +32588,7 @@ function readStrictEvents(fromDir) {
 }
 function readSecurity(fromDir) {
   const config = readConfig(fromDir);
-  const library = config && findLibrary2(config, fromDir);
-  return library?.security ? Object.assign({}, config.config.security, library.security) : config?.config.security;
+  return config && !findLibrary2(config, fromDir) ? config.config.security : void 0;
 }
 function readConfig(fromDir) {
   const configPath = (0, import_typescript29.findConfigFile)(fromDir, import_typescript29.sys.fileExists, "xaendar.json");

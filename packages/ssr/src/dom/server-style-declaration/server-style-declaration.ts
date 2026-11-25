@@ -9,13 +9,6 @@ import type { AttributeOwner } from '../types/attribute-owner.type';
  */
 export class ServerStyleDeclaration {
   /**
-   * Creates the inline style of an element.
-   *
-   * @param _owner - The element owning the `style` attribute.
-   */
-  constructor(private readonly _owner: AttributeOwner) { }
-
-  /**
    * The number of the declarations.
    *
    * @returns The number of the properties the attribute declares.
@@ -23,6 +16,32 @@ export class ServerStyleDeclaration {
   public get length(): number {
     return this._read().size;
   }
+
+  /**
+   * The text of the declarations: the `style` attribute.
+   *
+   * @returns The text, an empty string when the element has no `style` attribute.
+   */
+  public get cssText(): string {
+    return this._owner.getAttribute('style') ?? '';
+  }
+
+  /**
+   * Writes the text of the declarations as it is into the `style` attribute, as the runtime writes the whole style of an
+   * element: its static text, or the declarations it joins, without the values it sets alone (see `setProperty`).
+   *
+   * @param text - The text.
+   */
+  public set cssText(text: string) {
+    this._owner.setAttribute('style', text);
+  }
+
+  /**
+   * Creates the inline style of an element.
+   *
+   * @param _owner - The element owning the `style` attribute.
+   */
+  constructor(private readonly _owner: AttributeOwner) { }
 
   /**
    * Reads the value of a property.

@@ -298,6 +298,31 @@ createComponent<Component extends CustomElement, const Directives extends readon
 
 Creates a component outside of any component or directive (the root of an application in `main.ts`, a component mounted from a service), with the same options as the method but `target` required. The component belongs to nothing: it lives until `ref.destroy()`, which removes it and disposes the effects binding its inputs. Inside a component or a directive use `this.createComponent`, which destroys it along with them. On the server it constructs the component without rendering it.
 
+### trustUrl (function)
+
+```ts
+trustUrl(url: string): SafeUrl
+```
+
+Angular's `bypassSecurityTrustUrl`: bound to an attribute holding URLs (`href`, `src`, `srcset`…), in a template or by a `@HostAttribute`, the URL is written as it is, even `javascript:`, without the check of `security.urls` of `xaendar.json`. Where it loads a resource (`<iframe src>`, `<object data>`, `<link href>`…) it is still checked as `security.resourceUrls` asks: use `trustResourceUrl` there. Call it where the application builds the URL, only for URLs it controls.
+
+### trustResourceUrl (function)
+
+```ts
+trustResourceUrl(url: string): SafeResourceUrl
+```
+
+Angular's `bypassSecurityTrustResourceUrl`: the URL passes both `security.urls` and `security.resourceUrls`, whatever its origin. An origin always loaded from is better listed once in `security.trustedOrigins`.
+
+### SafeUrl, SafeResourceUrl (types)
+
+```ts
+interface SafeUrl { readonly url: string; readonly resource: boolean; toString(): string }
+interface SafeResourceUrl extends SafeUrl { readonly resource: true }
+```
+
+The values `trustUrl`/`trustResourceUrl` return, written as the URL they hold. The runtime recognizes only the values they create (`instanceof`), never an object with the same shape.
+
 ## `@xaendar/directives`
 
 The built-in directives, imported by the templates (`@import { AnimationDirective } from '@xaendar/directives'`), and the sanitizer of HTML. `@xaendar/core` and `@xaendar/internals` are peers, installed with it.
@@ -383,7 +408,7 @@ The sanitizer of `@@innerHtml` (Angular's `DomSanitizer.sanitize(SecurityContext
 interface HtmlSanitizerOptions { allowElements?: string[]; allowAttributes?: string[]; removeElements?: string[]; removeAttributes?: string[]; urlSchemes?: string[] }
 ```
 
-`allow…` add to the defaults, `remove…` take off them (a removed element keeps its content) and win over `allow…`; names are case-insensitive, `'data-*'`/`'x-*'` are prefixes. Attributes apply to every kept element, or to one only when written `element[attribute]` (`allowAttributes: ['span[style]', 'img[data-*]']`, `removeAttributes: ['a[target]']`). `urlSchemes` replaces `['http', 'https', 'mailto', 'tel', 'ftp', 'sms']`. Allowing `script`, `iframe`, `object`, `embed`, `form`, defined custom elements, SVG `animate`/`set`, `on*` or `style` lets code or arbitrary CSS through.
+`allow…` add to the defaults, `remove…` take off them (a removed element keeps its content) and win over `allow…`; names are case-insensitive, `'data-*'`/`'x-*'` are prefixes. Attributes apply to every kept element, or to one only when written `element[attribute]` (`allowAttributes: ['span[style]', 'img[data-*]']`, `removeAttributes: ['a[target]']`). `urlSchemes` replaces `['http', 'https', 'mailto', 'tel', 'ftp', 'sms']`. Options keeping what always runs code throw: `script`, `base`, `meta` in `allowElements`, `on*` or `srcdoc` in `allowAttributes` (a prefix like `o*` too), `javascript`/`vbscript` in `urlSchemes`; use `trustHtml` or a `sanitizer` for such HTML. A kept SVG `animate`/`set` never animates `href` (its `attributeName` is removed). Allowing `iframe`, `object`, `embed`, `form`, defined custom elements or `style` still lets code or arbitrary CSS through.
 
 ### trustHtml (function)
 
@@ -580,10 +605,10 @@ The low-level API of the proposal: watchers and introspection. It works on `Sign
 ### xaendarPlugin (function)
 
 ```ts
-xaendarPlugin({ customElements?: readonly string[]; strictEvents?: boolean; security?: { urls?: 'off' | 'warn' | 'remove'; rejectUnsafeBindings?: boolean }; ssr?: { entry: string }; libraries?: XaendarLibraryOptions[] }?): Plugin
+xaendarPlugin({ customElements?: readonly string[]; strictEvents?: boolean; security?: { urls?: 'off' | 'warn' | 'remove'; resourceUrls?: 'off' | 'warn' | 'remove'; trustedOrigins?: readonly string[]; rejectUnsafeBindings?: boolean }; ssr?: { entry: string }; libraries?: XaendarLibraryOptions[] }?): Plugin
 ```
 
-The Vite plugin `xd start`/`build`/`test` add themselves, with `customElements`, `strictEvents`, `security`, `ssr` and `libraries` read from `xaendar.json`. `strictEvents` (default `true`) makes the type check warn about the events the elements of a template do not declare (`$event` is then an `Event`); `false` turns the warning off, in the editor too. `security.rejectUnsafeBindings` (default `true`) makes an expression bound to an `on*` attribute or to `srcdoc` a type-check error (static values and inputs allowed); `security.urls` (default `'off'`) checks the URLs bound to `href`, `src`, `action`, `formaction`, `xlink:href`… on the client and on the server: `'warn'` writes a `javascript:`/`vbscript:`/non-media `data:` URL with a warning, `'remove'` leaves it out (warning in development). A library of `libs` overrides each option. A project running Vite directly lists it after the decorators transform:
+The Vite plugin `xd start`/`build`/`test` add themselves, with `customElements`, `strictEvents`, `security`, `ssr` and `libraries` read from `xaendar.json`. `strictEvents` (default `true`) makes the type check warn about the events the elements of a template do not declare (`$event` is then an `Event`); `false` turns the warning off, in the editor too. `security.rejectUnsafeBindings` (default `true`) makes an expression bound to an `on*` attribute or to `srcdoc`, to the restrictions of an `<iframe>` (`sandbox`, `allow`…), to the `attributeName` of an SVG animation (or its values when it animates `href`), to the `http-equiv` of a `<meta>` or the `content` of its refresh a type-check error (static values and inputs allowed); `security.urls` (default `'warn'`) checks the URLs bound to `href`, `src`, `srcset`, `ping`, `action`, `formaction`, `xlink:href`… on the client and on the server: `'warn'` writes a `javascript:`/`vbscript:`/non-media `data:` URL with a warning, `'remove'` leaves it out (warning in development), `'off'` writes it silently; `security.resourceUrls` (default `'warn'`) checks the same way an absolute URL loading a resource (`<iframe src>`, `<embed src>`, `<object data>`, `<link href>`, `<base href>`) whose origin is not in `security.trustedOrigins` (as `URL.origin` writes them). `security` is the project's alone, for every component it renders, the ones of its libraries included: a library declares none, its templates are type-checked with the defaults, and the compiler only flags the attributes holding URLs. The plugin defines `__XAENDAR_SECURITY__`, the project's options, which the runtime applies to those URLs and to `@HostAttribute`. A project running Vite directly lists it after the decorators transform:
 
 ```ts
 // vite.config.ts
@@ -603,15 +628,15 @@ It compiles the `*.xd.component.ts` files (template, stylesheet, selector), type
 
 `ssr: { entry }` renders the pages on the server. The modules evaluated by the server environments of Vite register templates compiled into HTML (no type check there); the dev server renders every page with the `render(url)` exported by `entry` (absolute, or relative to the root of Vite) in place of `<!--xd-ssr-->` in `index.html`, `url` being the path of the request with its query string, starting with a single slash (`toSameOriginPath` of `@xaendar/common`), and sets the Vite application type to `custom`. The build of the server is `vite build --ssr <entry>`. The CLI passes the `ssr` of `xaendar.json`, its entry resolved against the project.
 
-`libraries: [{ name, root, entry?, ssr?, customElements?, strictEvents?, security? }]` are the libraries of the workspace the project imports from its sources: the name of the package leads to `entry` (default `src/public-api.ts`, relative to `root`) and `name/<path>` to the files beside it, as the `paths` of `tsconfig.json` do for TypeScript; the files under `root` are compiled with the `ssr` (default `false`) and the `customElements` of the library. The CLI passes the `libs` of `xaendar.json`.
+`libraries: [{ name, root, entry?, ssr?, customElements?, strictEvents? }]` are the libraries of the workspace the project imports from its sources: the name of the package leads to `entry` (default `src/public-api.ts`, relative to `root`) and `name/<path>` to the files beside it, as the `paths` of `tsconfig.json` do for TypeScript; the files under `root` are compiled with the `ssr` (default `false`) and the `customElements` of the library. The CLI passes the `libs` of `xaendar.json`.
 
 ### buildLibrary (function)
 
 ```ts
-buildLibrary({ name: string; root: string; entry?: string; outDir: string; ssr?: boolean; customElements?: readonly string[]; strictEvents?: boolean; security?: { urls?: 'off' | 'warn' | 'remove'; rejectUnsafeBindings?: boolean }; plugins?: readonly PluginOption[]; xaendarVersion: string; dependencies?: Record<string, string> }): Promise<void>
+buildLibrary({ name: string; root: string; entry?: string; outDir: string; ssr?: boolean; customElements?: readonly string[]; strictEvents?: boolean; plugins?: readonly PluginOption[]; xaendarVersion: string; dependencies?: Record<string, string> }): Promise<void>
 ```
 
-What `xd build` runs for each library of a workspace: it compiles the library ahead of time into `outDir` (emptied first), a package ready for `npm publish`. It writes an ES module for the entry (`public-api.js`) and one for each module declaring a component or a directive, the shared code in `chunks/`, not minified, with `@xaendar/*` and the dependencies of the library left as imports; the declarations, emitted by TypeScript with the `tsconfig.json` of `root`, their paths relative with `.js`; `xaendar-manifest.json` (the components and directives, their selectors, inputs and events); the `package.json` (`exports` of the entry and of each module the entry exports, `sideEffects`, `@xaendar/core` `^xaendarVersion` as a peer dependency); the README and the license. With `ssr: true`, it also writes the code of the server into `server/` (the condition `xaendar-server` of `exports`), with `@xaendar/ssr` as an optional peer dependency. `plugins` run before the Xaendar plugin (the Babel transform of the decorators). `dependencies` maps the libraries of the workspace it depends on to the folders of their builds, written before: it reads them from their declarations and manifests, as an application does, and imports them by name. It fails before writing on a component or a directive outside the folder of `entry`, a selector declared twice, or the type of an input or of an event reading a name its module does not export.
+What `xd build` runs for each library of a workspace: it compiles the library ahead of time into `outDir` (emptied first), a package ready for `npm publish`. It writes an ES module for the entry (`public-api.js`) and one for each module declaring a component or a directive, the shared code in `chunks/`, not minified, with `@xaendar/*` and the dependencies of the library left as imports; the declarations, emitted by TypeScript with the `tsconfig.json` of `root`, their paths relative with `.js`; `xaendar-manifest.json` (the components and directives, their selectors, inputs and events); the `package.json` (`exports` of the entry and of each module the entry exports, `sideEffects`, `@xaendar/core` `^xaendarVersion` as a peer dependency); the README and the license. With `ssr: true`, it also writes the code of the server into `server/` (the condition `xaendar-server` of `exports`), with `@xaendar/ssr` as an optional peer dependency. `plugins` run before the Xaendar plugin (the Babel transform of the decorators). A library has no `security`: its templates are type-checked with the defaults, and the URLs they bind are checked at runtime with the `security` of the application using it. `dependencies` maps the libraries of the workspace it depends on to the folders of their builds, written before: it reads them from their declarations and manifests, as an application does, and imports them by name. It fails before writing on a component or a directive outside the folder of `entry`, a selector declared twice, or the type of an input or of an event reading a name its module does not export.
 
 ## `@xaendar/ssr`
 
@@ -623,7 +648,7 @@ renderToString<Component extends CustomElement>(component: Constructor<Component
 
 Renders a component to HTML on the server: its element with the attributes of its `@HostAttribute`, a `<template shadowrootmode="open">` holding its stylesheet and its template, and its end tag; the components it renders are written the same way, and a custom element the server does not define (`@import lazy`, other libraries) without shadow root. The component is constructed, `inputs` are assigned to their properties (by property name, not alias; the `transform` applies), `onInit` runs and the template is rendered once. Effects, `afterRender`, `onDestroy`, listeners, `@HostListener`, custom and host directives and queries do not run; `createComponent` constructs without rendering; element refs are `undefined`. Structural directives run, the asynchronous ones are awaited, and a rejected one renders nothing.
 
-Comments mark the dynamic parts for the browser (`<!---->` before interpolations, `<!--xd-if:0-->…<!--/xd-if-->`, `xd-switch`, `xd-for` with `<!--xd-item:KEY-->` per item, `xd-s` for structural directives; the last block of an element or of a shadow root has no closing comment, the browser appending its content): never strip them. `inputs` are written as JSON into `data-xd-inputs` on the element, which the browser assigns before the component renders; `options.state` into a `<script type="application/json" data-xd-state>` after it, read by `getTransferState`. Both carry JSON plus `undefined`, `NaN`, `±Infinity`, `bigint`, `Date`, `Map`, `Set`. The promise rejects when the class is not defined, when its module was not built for the server, when an input or a state value is a function, a symbol, an instance of another class or contains itself (the error names its path, e.g. `inputs.product.onSave`), or when the code of a component throws.
+Comments mark the dynamic parts for the browser (`<!---->` before interpolations, `<!--xd-if:0-->…<!--/xd-if-->`, `xd-switch`, `xd-for` with `<!--xd-item:KEY-->` per item, `xd-s` for structural directives; the last block of an element or of a shadow root has no closing comment, the browser appending its content): never strip them. `inputs` are written as JSON into `data-xd-inputs` on the element, which the browser assigns before the component renders; `options.state` into a `<script type="application/json" data-xd-state>` after it, read by `getTransferState`. Both carry JSON plus `undefined`, `NaN`, `±Infinity`, `bigint`, `Date`, `Map`, `Set`. No `style` attribute is written (a strict `Content-Security-Policy` blocks them): the inline style of each element becomes a rule of a `<style data-xd-style>` of its shadow root, after the stylesheet (the root's own, in one right before the root), the element holding `data-xd-style="<index>"`; a declaration whose value could end the rule is dropped, and the browser moves the declarations back into the elements when it hydrates them. Never match `style="` in the server HTML. The promise rejects when the class is not defined, when its module was not built for the server, when an input or a state value is a function, a symbol, an instance of another class or contains itself (the error names its path, e.g. `inputs.product.onSave`), or when the code of a component throws.
 
 ### RenderInputs (type)
 
@@ -636,10 +661,10 @@ The inputs `renderToString` sets, named like the properties declaring them with 
 ### RenderOptions (type)
 
 ```ts
-{ readonly state?: Readonly<Record<string, unknown>> }
+{ readonly state?: Readonly<Record<string, unknown>>, readonly nonce?: string }
 ```
 
-The options of `renderToString`: `state` is the transfer state of the page, a value per key, read by `getTransferState(key)` on the server during the render and in the browser from the page; `nonce` is the nonce of the `Content-Security-Policy` of the response, written on the inline script of the event contract, a new one for each response.
+The options of `renderToString`: `state` is the transfer state of the page, a value per key, read by `getTransferState(key)` on the server during the render and in the browser from the page; `nonce` is the nonce of the `Content-Security-Policy` of the response, written on the inline script of the event contract and on every `<style>` (stylesheets and inline styles), a new one for each response: the same one goes in `script-src` and `style-src`, which then need no `'unsafe-inline'`.
 
 ## `@xaendar/ssr/dom`
 

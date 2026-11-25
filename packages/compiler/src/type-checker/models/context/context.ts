@@ -61,7 +61,7 @@ export class TypeCheckContext extends CompilerContext {
    */
   private _strictEvents = true;
   /**
-   * Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error: kept by the outermost scope,
+   * Whether binding a value to an attribute the browser runs, or lifting a restriction (`on*`, `srcdoc`, `sandbox`…) is an error: kept by the outermost scope,
    * for the whole template.
    */
   private _rejectUnsafeBindings = true;
@@ -132,7 +132,7 @@ export class TypeCheckContext extends CompilerContext {
   }
 
   /**
-   * Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error, read from the outermost
+   * Whether binding a value to an attribute the browser runs, or lifting a restriction (`on*`, `srcdoc`, `sandbox`…) is an error, read from the outermost
    * scope.
    *
    * @returns `true` unless the `rejectUnsafeBindings` option of `security` is `false`.

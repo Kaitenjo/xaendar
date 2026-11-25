@@ -1,4 +1,3 @@
-import { isUrlAttribute } from '@xaendar/internals';
 import { CONTAINER_SLOTS } from '../../costants/container-slots.costant';
 import { SCOPE_HEADER } from '../../costants/scope-header.costant';
 import { CompilerContext } from '../../models/compiler-context/compiler-context.model';
@@ -8,7 +7,6 @@ import type { ComponentMetadata } from '../../types/component-metadata.type';
 import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
 import type { ContextCache } from '../../types/context-cache.type';
 import type { ElementNamespace } from '../../types/element-namespace.type';
-import type { UrlSanitization } from '../../types/url-sanitization.type';
 import type { BlockBranch } from '../types/block-branch.type';
 import type { PendingBlock } from '../types/pending-block.type';
 import type { ScopeKind } from '../types/scope-kind.type';
@@ -37,11 +35,6 @@ export class GeneratorContext extends CompilerContext {
    * element, generated in the scope of the element, are rendered into it, and track nothing.
    */
   public tracksNodes = false;
-  /**
-   * How the URLs bound to the attributes holding one are checked (the `urls` of `SecurityOptions`): set on the root scope
-   * before the template is generated, and read by every scope created after (see {@link getUrlCheck}).
-   */
-  public urls: UrlSanitization = 'off';
   /**
    * Parent context representing the enclosing scope.
    */
@@ -205,23 +198,10 @@ export class GeneratorContext extends CompilerContext {
       super(parentContextOrCache, namespace, scopeKind);
       this.cache = parentContextOrCache.cache;
       this.deferredModules = parentContextOrCache.deferredModules;
-      this.urls = parentContextOrCache.urls;
     } else {
       super(undefined, namespace);
       this.cache = parentContextOrCache;
     }
-  }
-
-  /**
-   * Tells how the runtime checks the value an expression binds to an attribute, written into the attribute (not an input):
-   * an attribute holding a URL (`href`, `src`…, see `isUrlAttribute`) is checked as `urls` asks, unless it is `'off'`.
-   * Both generators write it in the descriptor of the attribute (`url: 'warn'`), or around the value they write.
-   *
-   * @param name - The name of the attribute.
-   * @returns `'warn'` or `'remove'`, `undefined` when the value is not checked.
-   */
-  public getUrlCheck(name: string): Exclude<UrlSanitization, 'off'> | undefined {
-    return this.urls !== 'off' && isUrlAttribute(name.toLowerCase()) ? this.urls : undefined;
   }
 
   /**

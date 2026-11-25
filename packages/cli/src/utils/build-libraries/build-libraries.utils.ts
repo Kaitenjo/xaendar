@@ -15,7 +15,7 @@ import { findProjectLibrary } from '../library/library.utils';
  * named, by the name of its package or of its folder, with the libraries of the workspace it depends on. A library is
  * built after the ones it depends on, which it reads from their builds, as an application installing them does; the
  * others in the order of the `libs` of `xaendar.json`. A library not declaring `strictEvents` takes the one of the
- * workspace, and each option of `security` it leaves out the one of the workspace.
+ * workspace; the `security` of the workspace does not apply, since the project using the library sets it.
  *
  * Exits the process with code `1` when no library has the name given, or a library depends on itself through the
  * libraries it depends on.
@@ -37,10 +37,9 @@ export async function buildLibraries(project: XaendarProject, name?: string): Pr
   const outDirs = new Map<string, string>();
   for (const [libraryName, dependencies] of order.ordered) {
     const { root } = order.libraries.get(libraryName)!;
-    const { outDir, ssr, customElements, strictEvents = project.config.strictEvents, security, entry } = libs[libraryName];
+    const { outDir, ssr, customElements, strictEvents = project.config.strictEvents, entry } = libs[libraryName];
     const libraryOutDir = resolve(project.dir, outDir ?? `dist/${basename(root)}`);
-    // Each option of security the library leaves out is the one of the workspace
-    const options = { name: libraryName, root, entry, outDir: libraryOutDir, ssr: ssr === true, customElements, strictEvents, security: Object.assign({}, project.config.security, security), plugins: [createBabelPlugin(), createCachePlugin(project.dir)], xaendarVersion: version };
+    const options = { name: libraryName, root, entry, outDir: libraryOutDir, ssr: ssr === true, customElements, strictEvents, plugins: [createBabelPlugin(), createCachePlugin(project.dir)], xaendarVersion: version };
     await buildLibrary(dependencies.length ? Object.assign(options, { dependencies: toBuildDependencies(dependencies, outDirs) }) : options);
     outDirs.set(libraryName, libraryOutDir);
     console.log(`✔  ${libraryName} → ${libraryOutDir}`);

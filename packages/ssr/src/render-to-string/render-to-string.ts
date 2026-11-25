@@ -1,5 +1,6 @@
 import { entries, isNonEmpty, keys } from '@xaendar/common';
 import { _assertRequiredInputs, _stringifyState, _toPropertyName, _TRANSFER_STATE_ATTRIBUTE, _updateInput, type CustomElement } from '@xaendar/core';
+import { isVoidElement } from '@xaendar/internals';
 import type { Constructor, Dictionary } from '@xaendar/types';
 import type { RenderInputs } from '../types/render-inputs.type';
 import type { RenderOptions } from '../types/render-options.type';
@@ -7,7 +8,7 @@ import type { ServerOutput } from '../types/server-output.type';
 import { _writeEventContract } from '../utils/event-contract/event-contract.util';
 import { _getServerRender } from '../utils/server-render-registry/server-render-registry.util';
 import { _createServerRuntime, _runOnServer } from '../utils/server-runtime/server-runtime.util';
-import { isVoidElement } from '@xaendar/internals';
+import { writeStyleElement } from '../utils/server-styles/server-styles.util';
 import { _getExtendedTagName, _isClientComponent, _renderComponent, _writeClientRoot } from '../utils/ssr-element/ssr-element.util';
 
 /**
@@ -40,6 +41,12 @@ const LESS_THAN_ESCAPE = `${String.fromCharCode(92)}u003c`;
  * A script following the element, the event contract, records the events of the user until the runtime of the browser is
  * there, which replays them once the components they happened on are hydrated (see `eventContract`).
  *
+ * No `style` attribute is written, since a `Content-Security-Policy` without `'unsafe-inline'` blocks them: the inline
+ * style of an element is moved into a rule of a `<style>`, the one the declarative shadow root holds after the stylesheet
+ * of its component, or the one before the element for the attributes of the root, and the element holds the index of
+ * its rule in its `data-xd-style` attribute. The browser moves the declarations back into the inline style of the
+ * element when it hydrates it, through the CSSOM. The script and every `<style>` hold the nonce of `options`, if any.
+ *
  * A component declaring `ssr: { render: false }` runs no code: only its empty element is written, with its inputs, and
  * the browser renders it. A customized built-in element is written with the tag it extends and its selector as `is`
  * (`<button is="copy-button">`), without a shadow root when it has no template.
@@ -54,7 +61,8 @@ const LESS_THAN_ESCAPE = `${String.fromCharCode(92)}u003c`;
  *
  * @param component - The class of the component, decorated with `@WebComponent`.
  * @param inputs - The inputs to set, by the name the templates bind them with: their alias, when they declare one.
- * @param options - The transfer state of the page, and the nonce of the `Content-Security-Policy` of the response.
+ * @param options - The transfer state of the page, and the nonce of the `Content-Security-Policy` of the response, written
+ *   on the script of the event contract and on the `<style>` elements.
  * @returns A promise resolving to the HTML of the component.
  * @throws When the component is not defined, or has no template compiled for the server, when `inputs` leaves out a
  *   required input, passes an input declaring an alias by the name of its property or a name that is not an input of
@@ -65,7 +73,8 @@ const LESS_THAN_ESCAPE = `${String.fromCharCode(92)}u003c`;
 export async function renderToString<Component extends CustomElement>(component: Constructor<Component>, inputs?: RenderInputs<Component>, options?: RenderOptions): Promise<string> {
   const out: ServerOutput = [];
   const state = options?.state;
-  const runtime = _createServerRuntime(state);
+  const nonce = options?.nonce;
+  const runtime = _createServerRuntime(state, nonce);
   let stateScript = '';
   _runOnServer(runtime, () => {
     const selector = customElements.getName(component);
@@ -119,7 +128,7 @@ export async function renderToString<Component extends CustomElement>(component:
 
   const html = await flatten(out);
   // Written once the page is rendered, when the events of the components of its asynchronous parts are known too
-  return `${html}${_writeEventContract(runtime.events, options?.nonce)}${stateScript}`;
+  return `${writeStyleElement(runtime.styles, nonce)}${html}${_writeEventContract(runtime.events, nonce)}${stateScript}`;
 }
 
 /**

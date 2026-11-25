@@ -295,7 +295,7 @@ export function writeStylingAttribute(element: Element, attribute: StylingAttrib
   });
 
   if (text) {
-    element.setAttribute(attribute, text);
+    writeStylingText(element, attribute, text);
   }
 
   if (separate) {
@@ -303,6 +303,20 @@ export function writeStylingAttribute(element: Element, attribute: StylingAttrib
       writeKey(element, attribute, separate[i], separate[i + 1], false);
     }
   }
+}
+
+/**
+ * Writes the whole text of the `class` or of the `style` of an element: the `class` attribute, and the inline style
+ * through the CSSOM, which a `Content-Security-Policy` allows, while it blocks a `style` attribute written with
+ * `setAttribute`, as one of the HTML.
+ *
+ * @param element - The element.
+ * @param attribute - The attribute.
+ * @param text - The text.
+ */
+export function writeStylingText(element: Element, attribute: StylingAttribute, text: string): void {
+  // Every element a template renders, HTML, SVG or MathML, has the inline style of an HTMLElement
+  attribute === 'class' ? element.setAttribute(attribute, text) : (element as HTMLElement).style.cssText = text;
 }
 
 /**

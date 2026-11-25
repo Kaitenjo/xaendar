@@ -10,6 +10,11 @@ export type DescriptorOwner = {
    */
   readonly name: string;
   /**
+   * The tag name of the element, as written (`iframe` for `<iframe is="video-frame">`): it tells the attributes loading a
+   * resource (see `getUrlCheck`).
+   */
+  readonly tagName: string;
+  /**
    * The generator context of the scope of the element.
    */
   readonly generatorContext: GeneratorContext;

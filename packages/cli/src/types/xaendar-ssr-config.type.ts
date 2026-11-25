@@ -12,6 +12,12 @@ export type XaendarSsrConfig = {
    */
   prerender?: string[];
   /**
+   * The `Content-Security-Policy` `xd prerender` writes into each page, as a `<meta http-equiv>` first in its `<head>`,
+   * adding to `script-src` and `style-src` the hashes of the inline `<script>` and `<style>` of the page
+   * (`"default-src 'self'; object-src 'none'"`). No policy is written without it.
+   */
+  csp?: string;
+  /**
    * The folder the build of the server is written to, relative to the project. Defaults to `dist/server`.
    */
   outDir?: string;

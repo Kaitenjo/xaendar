@@ -18,9 +18,11 @@ export type XaendarPluginOptions = {
    */
   readonly strictEvents?: CompileOptions['strictEvents'];
   /**
-   * What the compiler checks in the bindings that could run code from the values of the application (see
-   * `SecurityOptions` of `@xaendar/compiler`): the URLs bound to the attributes loading or opening them (`urls`,
-   * `'off'` by default) and the bindings of the attributes the browser runs (`rejectUnsafeBindings`, `true` by default).
+   * How the values of the application that could run code are checked (see `SecurityOptions` of `@xaendar/compiler`):
+   * the URLs bound to the attributes loading or opening them (`urls`, `'warn'` by default), the origin of the resources
+   * loaded into the page (`resourceUrls`, `'warn'` by default, and `trustedOrigins`), checked by the runtime, and the
+   * bindings of the attributes the browser runs (`rejectUnsafeBindings`, `true` by default). The project alone sets
+   * them, for every component it renders: the libraries declare none.
    */
   readonly security?: CompileOptions['security'];
   /**

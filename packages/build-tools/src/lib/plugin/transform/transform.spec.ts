@@ -569,13 +569,13 @@ describe('createTransformHook()', () => {
   it('compiles a component of a library of the workspace with the options of the library', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
-    const library = { name: '@acme/ui', root: dirname(dirname(COMPONENT_PATH)), entry: '/src/public-api.ts', ssr: true, customElements: ['sl-*'], strictEvents: false, security: { rejectUnsafeBindings: false } };
+    const library = { name: '@acme/ui', root: dirname(dirname(COMPONENT_PATH)), entry: '/src/public-api.ts', ssr: true, customElements: ['sl-*'], strictEvents: false };
     const hook = createTransformHook({ ...createState(), libraries: [library] });
 
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
-    // Each option of security the library declares in place of the one of the project
-    expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: ['sl-*'], ssr: true, strictEvents: false, security: { urls: 'warn', rejectUnsafeBindings: false } }));
+    // A library declares no security, and its templates are checked with the defaults, whatever the project allows
+    expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: ['sl-*'], ssr: true, strictEvents: false, security: undefined }));
     expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, true, expect.anything());
   });
 

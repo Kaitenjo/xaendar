@@ -1,4 +1,4 @@
-import type { ComponentOrDirectiveMetadata, ImportedSymbol, SecurityOptions } from '@xaendar/compiler';
+import type { ComponentOrDirectiveMetadata, ImportedSymbol } from '@xaendar/compiler';
 import { posix } from 'node:path';
 import type { CompilerOptions } from 'typescript';
 import type { Alias } from 'vite';
@@ -25,31 +25,15 @@ export function resolveWorkspaceLibraries(libraries: readonly XaendarLibraryOpti
     return undefined;
   }
 
-  return libraries.map(({ name, root, entry = DEFAULT_ENTRY, ssr = false, customElements = [], strictEvents, security }) => {
+  return libraries.map(({ name, root, entry = DEFAULT_ENTRY, ssr = false, customElements = [], strictEvents }) => {
     const resolvedRoot = resolvePosixPath(cwd, root);
     const library: WorkspaceLibrary = { name, root: resolvedRoot, entry: resolvePosixPath(resolvedRoot, entry), ssr, customElements };
     if (strictEvents !== undefined) {
       Object.assign(library, { strictEvents });
     }
 
-    if (security) {
-      Object.assign(library, { security });
-    }
-
     return library;
   });
-}
-
-/**
- * Resolves the options of `security` a file is compiled with: the ones its library declares, each one in place of the
- * one of the project.
- *
- * @param library - The library of the file, `undefined` for a file of the project.
- * @param security - The options of the project.
- * @returns The options.
- */
-export function resolveSecurity(library: WorkspaceLibrary | undefined, security: SecurityOptions): SecurityOptions {
-  return library?.security ? Object.assign({}, security, library.security) : security;
 }
 
 /**

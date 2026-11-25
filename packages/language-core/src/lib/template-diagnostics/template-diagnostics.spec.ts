@@ -88,7 +88,7 @@ describe('getTemplateDiagnostics', () => {
       const source = '<div onclick="{ select }"></div>';
 
       expect(await diagnoseIn('unsafe-bindings', source)).toEqual([
-        ['onclick', 'Binding onclick writes code the browser runs from a value of the application: listen with (click)="…" instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.', DiagnosticCategory.Error]
+        ['onclick', 'Binding onclick writes code the browser runs from a value of the application: listen to the click event instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.', DiagnosticCategory.Error]
       ]);
       expect(await diagnoseIn('allowed-bindings', source, { security: { rejectUnsafeBindings: false } })).toEqual([]);
     }, TIMEOUT);

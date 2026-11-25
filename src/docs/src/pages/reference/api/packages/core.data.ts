@@ -9,6 +9,7 @@ import { MODEL_DECLARATION } from '../../../components/two-way-binding/two-way-b
 import { LEAVE_HANDLER_DIRECTIVE } from '../../../directives/animations/animations.snippets';
 import { CONSTRUCTOR_ACCESS, HOST_DIRECTIVE } from '../../../directives/custom/custom.snippets';
 import { DIRECTIVE_REGISTRATION } from '../../../directives/overview/overview.snippets';
+import { TRUSTED_URLS } from '../../../templates/binding/binding.snippets';
 import { HYDRATE_COMPONENT } from '../../../tools/ssr/progressive-hydration/progressive-hydration.snippets';
 import { TRANSFER_STATE_COMPONENT, TRANSFER_STATE_ENTRY } from '../../../tools/ssr/transfer-state/transfer-state.snippets';
 import type { ApiPackage } from '../api.data';
@@ -809,6 +810,74 @@ export const CORE_API: ApiPackage = {
         { key: 'support' }
       ],
       guides: ['components/anatomy']
+    },
+    {
+      name: 'trustUrl',
+      kind: 'function',
+      signature: 'function trustUrl(url: string): SafeUrl',
+      members: [
+        {
+          name: 'url',
+          group: 'parameters',
+          signature: 'url: string'
+        }
+      ],
+      usage: [
+        { key: 'binding', snippets: [TRUSTED_URLS, 'templates/place-map.html'] }
+      ],
+      guides: ['templates/binding', 'components/security']
+    },
+    {
+      name: 'trustResourceUrl',
+      kind: 'function',
+      signature: 'function trustResourceUrl(url: string): SafeResourceUrl',
+      members: [
+        {
+          name: 'url',
+          group: 'parameters',
+          signature: 'url: string'
+        }
+      ],
+      usage: [
+        { key: 'binding', snippets: [TRUSTED_URLS, 'templates/place-map.html', 'templates/untrusted-resource-warning.txt'] }
+      ],
+      guides: ['templates/binding', 'components/security']
+    },
+    {
+      name: 'SafeUrl',
+      kind: 'type',
+      signature: 'interface SafeUrl {\n  readonly url: string;\n  readonly resource: boolean;\n  toString(): string;\n}',
+      members: [
+        {
+          name: 'url',
+          group: 'properties',
+          signature: 'readonly url: string'
+        },
+        {
+          name: 'resource',
+          group: 'properties',
+          signature: 'readonly resource: boolean'
+        },
+        {
+          name: 'toString',
+          group: 'methods',
+          signature: 'toString(): string'
+        }
+      ],
+      guides: ['templates/binding', 'components/security']
+    },
+    {
+      name: 'SafeResourceUrl',
+      kind: 'type',
+      signature: 'interface SafeResourceUrl extends SafeUrl {\n  readonly resource: true;\n}',
+      members: [
+        {
+          name: 'resource',
+          group: 'properties',
+          signature: 'readonly resource: true'
+        }
+      ],
+      guides: ['templates/binding', 'components/security']
     }
   ]
 };

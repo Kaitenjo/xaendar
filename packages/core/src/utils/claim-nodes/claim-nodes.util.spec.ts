@@ -451,25 +451,24 @@ describe('ClaimNodes', () => {
   });
 
   describe('shadow root', () => {
-    it('removes the style the server wrote first for a component with a stylesheet, and only then', () => {
-      const styled = document.createElement('div').attachShadow({ mode: 'open' });
-      styled.innerHTML = '<style>p{}</style><p></p>';
-      const plain = document.createElement('div').attachShadow({ mode: 'open' });
-      plain.innerHTML = '<style>p{}</style>';
+    it('removes the <style> elements the server wrote first, once the elements of the root take the declarations of their rule into their inline style', () => {
+      const host = document.body.appendChild(document.createElement('div'));
+      const root = host.attachShadow({ mode: 'open' });
+      root.innerHTML = '<style>p{}</style><style data-xd-style="">:is([data-xd-style="0"],#a#b#c#d#e){color: red;}</style><p data-xd-style="0"><i data-xd-style="0"></i></p><style></style>';
       const empty = document.createElement('div').attachShadow({ mode: 'open' });
 
-      claimShadowRoot(styled, true);
-      claimShadowRoot(plain, false);
-      claimShadowRoot(empty, true);
+      claimShadowRoot(root);
+      claimShadowRoot(empty);
 
-      expect(styled.innerHTML).toBe('<p></p>');
-      expect(plain.innerHTML).toBe('<style>p{}</style>');
+      // A <style> after the first node is no longer one of the server
+      expect(root.innerHTML).toBe('<p style="color: red;"><i style="color: red;"></i></p><style></style>');
+      host.remove();
     });
 
     it('removes, at the end, what the server rendered and the browser did not adopt, with a warning, and forgets the positions', () => {
       const root = document.createElement('x-host').attachShadow({ mode: 'open' });
       root.innerHTML = '<p></p><i></i><b></b>';
-      const claim = claimShadowRoot(root, false);
+      const claim = claimShadowRoot(root);
 
       claim.element(context, root, 'p');
       claim.end(root, context);
@@ -488,7 +487,7 @@ describe('ClaimNodes', () => {
       withinBlock.mount(withinBlock.element(context, block, 'p'), block);
       withinBlock.end(block as unknown as ShadowRoot, context);
 
-      const childClaim = claimShadowRoot(child.shadowRoot!, false);
+      const childClaim = claimShadowRoot(child.shadowRoot!);
       childClaim.element(context, child.shadowRoot!, 'b');
 
       const waited = document.body.appendChild(document.createElement('x-waited'));
@@ -496,7 +495,7 @@ describe('ClaimNodes', () => {
       waited.attachShadow({ mode: 'open' }).innerHTML = '<i></i>';
       deferElementHydration(waited, () => undefined);
       waited.click();
-      claimShadowRoot(waited.shadowRoot!, false).element(context, waited.shadowRoot!, 'b');
+      claimShadowRoot(waited.shadowRoot!).element(context, waited.shadowRoot!, 'b');
 
       expect(block.firstElementChild).toBe(child);
       expect(block.innerHTML).toBe('<x-child></x-child><p></p>');
@@ -520,7 +519,7 @@ describe('ClaimNodes', () => {
     it('removes nothing at the end when every node is adopted', () => {
       const root = document.createElement('x-host').attachShadow({ mode: 'open' });
       root.innerHTML = '<p></p>';
-      const claim = claimShadowRoot(root, false);
+      const claim = claimShadowRoot(root);
 
       claim.element(context, root, 'p');
       claim.end(root, context);
@@ -531,7 +530,7 @@ describe('ClaimNodes', () => {
 
     it('makes the contexts of the render create what they render once the hydration ends, at any depth', () => {
       const root = document.createElement('x-host').attachShadow({ mode: 'open' });
-      const claim = claimShadowRoot(root, false);
+      const claim = claimShadowRoot(root);
       // Each scope holds the next one in its container
       const holder = { size: HEADER + 1, nodes: HEADER, containers: HEADER };
       const render = _scope(context, holder, claim);

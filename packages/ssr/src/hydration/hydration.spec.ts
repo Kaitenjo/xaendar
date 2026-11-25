@@ -1449,6 +1449,20 @@ describe('hydration', () => {
       expect(console.warn).not.toHaveBeenCalled();
     });
 
+    it('takes the inline style of an interactive component a static one renders from the <style> of the static one, which stays', async () => {
+      const island = await register('styled-island', class extends CustomElement { }, () => '<i>i</i>');
+      const host = await renderStatic('styled-shell', name => `<p style="color: red">p</p><${name('styled-island')} style.width.px="{ 3 }"></${name('styled-island')}>`, ['styled-island']);
+      const element = host.shadowRoot!.lastElementChild!;
+      expect(element.getAttribute('data-xd-style')).toBe('1');
+
+      island.define();
+
+      expect(element.getAttribute('style')).toBe('width: 3px;');
+      expect(element.hasAttribute('data-xd-style')).toBe(false);
+      expect(host.shadowRoot!.querySelector('p')!.getAttribute('data-xd-style')).toBe('0');
+      expect(host.shadowRoot!.firstElementChild!.localName).toBe('style');
+    });
+
     it('waits for the trigger of an interactive component a static one renders', async () => {
       class Waiting extends Counter { }
       Object.defineProperty(Waiting, Symbol.for('Symbol.metadata'), { value: { hydrate: 'interaction' } });
@@ -2346,15 +2360,19 @@ describe('style bindings', () => {
 
     const bar = await register('bar', Bar, () => '<div style="height: 4px;" style.width.%="{width()}" style.--accent="{accent()}" style.color="{null}"></div>', ['width', 'accent']);
     const html = await renderToString(bar.Server);
-    expect(html).toContain('<div style="height: 4px; width: 40%; --accent: red;"></div>');
+    expect(html).toContain('<style data-xd-style="">:is([data-xd-style="0"],#a#b#c#d#e){height: 4px; width: 40%; --accent: red;}</style><div data-xd-style="0"></div>');
 
     const host = load(html);
     const div = host.shadowRoot!.querySelector('div')!;
-    const records = observe(div);
+    const setProperty = vi.spyOn(CSSStyleDeclaration.prototype, 'setProperty');
     bar.define();
     await flush();
 
-    expect(records()).toEqual([]);
+    // The declarations of its rule taken into its inline style at once, nothing written again, the <style> removed
+    expect(setProperty).not.toHaveBeenCalled();
+    expect(div.hasAttribute('data-xd-style')).toBe(false);
+    expect(div.getAttribute('style')).toBe('height: 4px; width: 40%; --accent: red;');
+    expect(host.shadowRoot!.querySelector('style')).toBeNull();
     expect(console.warn).not.toHaveBeenCalled();
 
     (host as Bar).width.set(75);
@@ -2388,22 +2406,54 @@ describe('style bindings', () => {
     const board = await register('board', Board, child => `<${child('tile')} class="extra" class.on="{ false }" style.gap.px="{ gap() }"></${child('tile')}>`, ['gap']);
     const html = await renderToString(board.Server);
     expect(html).toContain('<server-tile-');
-    expect(html).toMatch(/<server-tile-\d+ class="extra tile base" style="gap: 4px; display: flex; width: 10px;">/);
+    expect(html).toMatch(/<style data-xd-style="">:is\(\[data-xd-style="0"\],#a#b#c#d#e\)\{gap: 4px; display: flex; width: 10px;\}<\/style><server-tile-\d+ class="extra tile base" data-xd-style="0">/);
 
     const host = load(html);
-    const element = host.shadowRoot!.firstElementChild as HTMLElement;
-    const records = observe(element);
+    const element = host.shadowRoot!.lastElementChild as HTMLElement;
+    const setProperty = vi.spyOn(CSSStyleDeclaration.prototype, 'setProperty');
     tile.define();
     board.define();
     await flush();
 
-    expect(records().filter(record => record.type === 'attributes')).toEqual([]);
+    expect(setProperty).not.toHaveBeenCalled();
+    expect(element.getAttribute('style')).toBe('gap: 4px; display: flex; width: 10px;');
+    expect(element.hasAttribute('data-xd-style')).toBe(false);
     expect(console.warn).not.toHaveBeenCalled();
 
     (host as Board).gap.set(null);
     await flush();
     expect(element.style.getPropertyValue('gap')).toBe('1px');
     expect(element.className).toBe('extra tile base');
+  });
+
+  it('takes the inline style of the root of a page from the <style> before it, which the browser leaves', async () => {
+    /**
+     * A root writing a style property on its element.
+     */
+    class Grid extends CustomElement {
+      public display = signal('grid');
+    }
+    const metadata: DecoratorMetadataObject = {};
+    (core.HostAttribute('style.display') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'display', static: false, metadata, access: { get: (owner: Grid) => owner.display } });
+    Object.defineProperty(Grid, Symbol.for('Symbol.metadata'), { value: metadata });
+    const grid = await register('grid', Grid, () => '<p>g</p>');
+    const html = await renderToString(grid.Server);
+    expect(html.startsWith('<style data-xd-style="">:is([data-xd-style="0"],#a#b#c#d#e){display: grid;}</style><server-grid-')).toBe(true);
+
+    load(html);
+    const host = document.body.querySelector(tag('client', 'grid')) as HTMLElement & Grid;
+    const setProperty = vi.spyOn(CSSStyleDeclaration.prototype, 'setProperty');
+    grid.define();
+    await flush();
+
+    expect(setProperty).not.toHaveBeenCalled();
+    expect(host.hasAttribute('data-xd-style')).toBe(false);
+    expect(host.getAttribute('style')).toBe('display: grid;');
+    expect(host.previousElementSibling!.localName).toBe('style');
+
+    host.display.set('flex');
+    await flush();
+    expect(host.style.getPropertyValue('display')).toBe('flex');
   });
 });
 

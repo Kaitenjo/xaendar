@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decodeCharacterReferences, isSafeSrcset, isSafeUrl, isSafeUrlAttribute } from './url-sanitizer.utils';
+import { decodeCharacterReferences, isSafeAnimationTarget, isSafeSrcset, isSafeUrl, isSafeUrlAttribute } from './url-sanitizer.utils';
 
 /**
  * The schemes allowed by default.
@@ -95,5 +95,23 @@ describe('isSafeUrlAttribute', () => {
 
   it('allows the other attributes whatever their value', () => {
     expect(isSafeUrlAttribute('title', 'javascript:x', schemes)).toBe(true);
+  });
+
+  it('checks the images of an imagesrcset', () => {
+    expect(isSafeUrlAttribute('imagesrcset', 'a.png 1x, javascript:x 2x', schemes)).toBe(false);
+  });
+});
+
+describe('isSafeAnimationTarget', () => {
+  it('rejects an SVG animation writing an href, decoding the references', () => {
+    expect(isSafeAnimationTarget('set', 'attributename', 'href')).toBe(false);
+    expect(isSafeAnimationTarget('animatemotion', 'attributename', '&#104;ref')).toBe(false);
+    expect(isSafeAnimationTarget('animate', 'attributename', 'xlink:href')).toBe(false);
+  });
+
+  it('allows any other attribute', () => {
+    expect(isSafeAnimationTarget('animate', 'attributename', 'opacity')).toBe(true);
+    expect(isSafeAnimationTarget('animate', 'to', 'href')).toBe(true);
+    expect(isSafeAnimationTarget('a', 'attributename', 'href')).toBe(true);
   });
 });

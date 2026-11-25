@@ -543,15 +543,35 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A required input bound only in some branches.
 - **Fix:** Add an @else or @default branch binding it, or bind it outside the condition.
 
-### `[TypeChecker] Binding onclick writes code the browser runs from a value of the application: listen with (click)="…" instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.`
+### `[TypeChecker] Binding onclick writes code the browser runs from a value of the application: listen to the click event instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.`
 
-- **Cause:** An expression bound to an event handler attribute (any name starting with on, attr. included), or to srcdoc (`… writes a document the browser runs …`), outside the inputs of a component.
-- **Fix:** Listen with (event)="…", or load a page with src; allow it in xaendar.json only for a value the application controls.
+- **Cause:** An expression bound to an event handler attribute (any name starting with on, attr. included), or to srcdoc (`… writes a document the browser runs …`), outside the inputs of a component. The same message family covers `Binding sandbox sets a restriction of the <iframe> …` (sandbox, allow, allowfullscreen, referrerpolicy, csp, credentialless of an <iframe>), `Binding attributeName chooses the attribute the animation writes …` and `Binding to writes into href a value of the application …` (SVG animations), `Binding http-equiv chooses the pragma of the <meta> …` and `Binding content writes the page a refresh of the <meta> goes to …`.
+- **Fix:** Listen with (event)="…", load a page with src, or write the attribute statically (choose between elements with @if); allow it in xaendar.json only for a value the application controls.
 
-### `Xaendar: the URL bound to href runs code (javascript:alert(1)): it is written as it is. Bind a URL of the application, or set "security": { "urls": "remove" } in xaendar.json to leave it out.`
+### `@HostAttribute('sandbox') on <iframe> sets a restriction of the <iframe> from a value of the application, which the browser applies only to the page it loads next: write it as a static attribute, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.`
 
-- **Cause:** With `"security": { "urls": "warn" }`, a javascript:, vbscript: or non-media data: URL bound to an attribute holding a URL, in the browser or on the server. With "remove" the attribute is left out (`… is left out, as "security": { "urls": "remove" } …`, in development only).
-- **Fix:** Bind a URL of the application, or set "urls": "remove".
+- **Cause:** Thrown at run time by a @HostAttribute writing an attribute the template type-check would reject: `@HostAttribute('onclick')`/`('srcdoc')` throw when the class is declared, element-dependent ones (iframe restrictions, SVG animation of href, meta refresh) when the directive or component starts on that element. Uses the `security` of the project (`__XAENDAR_SECURITY__`).
+- **Fix:** Write the attribute in the template, or listen with @HostListener.
+
+### `Xaendar: the URL bound to href runs code (javascript:alert(1)): it is written as it is. Bind a URL of the application, or mark it with trustUrl() when the application trusts it, or set "security": { "urls": "remove" } in xaendar.json to leave it out.`
+
+- **Cause:** With `"security": { "urls": "warn" }` (the default), a javascript:, vbscript: or non-media data: URL bound to an attribute holding URLs (href, src, every image of srcset, every URL of ping…), in a template or a @HostAttribute, in the browser or on the server. With "remove" the attribute is left out (`… is left out, as "security": { "urls": "remove" } …`, in development only).
+- **Fix:** Bind a URL of the application, mark one it builds with trustUrl(), or set "urls": "remove".
+
+### `Xaendar: the URL bound to src loads a resource from an origin the application does not trust (https://videos.example.net/embed/42): it is written as it is. Bind a URL of the application, add its origin to "trustedOrigins", or mark it with trustResourceUrl() when the application trusts it, or set "security": { "resourceUrls": "remove" } in xaendar.json to leave it out.`
+
+- **Cause:** With `"security": { "resourceUrls": "warn" }` (the default), an absolute URL bound to an attribute loading a resource (<iframe>/<embed>/<frame> src, <object> data/codebase, <link>/<base> href) whose origin is not in trustedOrigins.
+- **Fix:** Add the origin to "trustedOrigins" (as URL.origin writes it), mark the URL with trustResourceUrl(), or set "resourceUrls": "remove".
+
+### `"trustedOrigins" of the security of xaendar.json lists cdn.example.com, which is not an origin: write its scheme, its host and its port, if any, as https://cdn.example.com`
+
+- **Cause:** A trustedOrigins entry without scheme, or with a path, query or fragment; the build fails.
+- **Fix:** Write `https://cdn.example.com`, `http://localhost:8080`.
+
+### `The allowAttributes of the sanitizer list onclick, keeping an attribute the browser runs (on*, srcdoc): render a trusted HTML with trustHtml(), or with a sanitizer of the application, instead`
+
+- **Cause:** Options of @@innerHtml/sanitizeHtml keeping what always runs code: on*/srcdoc in allowAttributes (also `The allowElements of the sanitizer list script…` for script, base, meta, and `The urlSchemes of the sanitizer list javascript…`).
+- **Fix:** Render trusted HTML with trustHtml(), or pass a sanitizer such as DOMPurify.
 
 ### `'valuechange' is not an event of <ex-quantity-picker>: the listener hears it only when it is dispatched on the element, or bubbles up to it from its content (composed, to leave a shadow root). Set "strictEvents": false in xaendar.json to turn this warning off.`
 

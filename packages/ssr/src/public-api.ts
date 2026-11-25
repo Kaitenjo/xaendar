@@ -1,7 +1,7 @@
 export * from './render-to-string/render-to-string';
 export type * from './types/render-inputs.type';
 export type * from './types/render-options.type';
-export * from './utils/escape/escape.util';
+export { _escapeAttribute, _escapeRawText, _escapeText, _ssrAttribute } from './utils/escape/escape.util';
 export { _defineServerRender } from './utils/server-render-registry/server-render-registry.util';
 export { _ssrClientComponent, _ssrComponent, _ssrIsland, _ssrStartTag } from './utils/ssr-element/ssr-element.util';
 export * from './utils/ssr-items/ssr-items.util';

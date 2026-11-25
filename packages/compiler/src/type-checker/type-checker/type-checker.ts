@@ -115,7 +115,7 @@ export class TypeChecker {
    * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
    * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
    * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
-   * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error (see `SecurityOptions`).
+   * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs, or lifting a restriction (`on*`, `srcdoc`, `sandbox`…) is an error (see `SecurityOptions`).
    * @returns The text of the shim, together with the table mapping its lines to the spans of the template they come from.
    * @throws If the template fails type-checking, e.g. it uses a selector not imported in it, with the error message prefixed by `[TypeChecker]` and, when the error carries its span, the slice of the template it refers to.
    */
@@ -139,7 +139,7 @@ export class TypeChecker {
    * @param reactiveMembers - Class members that can read a signal, which the conditions of an `@if` narrow (see `narrowSignals`).
    * @param ssr - Whether the project renders on the server: `false` rejects the `@hydrate` and `@client` blocks, `undefined` when it is not known.
    * @param strictEvents - Whether the names of the events the elements do not declare are checked, warning about them (see `findEventCheck`).
-   * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs (`on*`, `srcdoc`) is an error (see `SecurityOptions`).
+   * @param rejectUnsafeBindings - Whether binding a value to an attribute the browser runs, or lifting a restriction (`on*`, `srcdoc`, `sandbox`…) is an error (see `SecurityOptions`).
    * @returns The text of the shim and its mapping table, together with the errors of the nodes that failed, formatted like the ones thrown by {@link generate}.
    * @throws If a node has no transition function, with the error message prefixed by `[TypeChecker]`.
    */

@@ -1,4 +1,4 @@
-import { _applyHostAttributes, _CLIENT_ATTRIBUTE, _COMPONENT, _createStylingState, _DIRECTIVE_ORDER, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _mergeAttributes, _resolveDirective, _selectBranch, _SERVER_INPUTS_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _setContentTemplates, _setExposedInput, _setExpressionExposedInput, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
+import { _applyHostAttributes, _CLIENT_ATTRIBUTE, _COMPONENT, _createStylingState, _DIRECTIVE_ORDER, _getComponentRuntime, _HYDRATE_ATTRIBUTE, _mergeAttributes, _resolveDirective, _selectBranch, _SERVER_INPUTS_ATTRIBUTE, _SERVER_STYLE_ATTRIBUTE, _SET_DIRECTIVE_ELEMENT, _setContentTemplates, _setExposedInput, _setExpressionExposedInput, _setExpressionInput, _setInput, _stringifyState, CustomDirective, type _Context, type CustomElement, type WebComponentOptions } from '@xaendar/core';
 import { escapeAttribute, escapeRawText } from '@xaendar/internals';
 import type { Constructor, Dictionary, Function } from '@xaendar/types';
 import { ServerElement } from '../../dom/server-element/server-element';
@@ -10,7 +10,11 @@ import type { ServerElementConfig } from '../../types/server-element-config.type
 import type { ServerOutput } from '../../types/server-output.type';
 import type { ServerRenderDefinition } from '../../types/server-render-definition.type';
 import type { ServerRuntime } from '../../types/server-runtime.type';
+import type { ServerStyles } from '../../types/server-styles.type';
+import { writeNonceAttribute } from '../escape/escape.util';
 import { _getServerRender } from '../server-render-registry/server-render-registry.util';
+import { _renderInTree } from '../server-runtime/server-runtime.util';
+import { addStyleRule, writeShadowStyles } from '../server-styles/server-styles.util';
 
 /**
  * Writes the start tag of an element with its bindings, applied as the client applies them: the attributes and the
@@ -276,19 +280,34 @@ export function _renderComponent<Component extends CustomElement>(out: ServerOut
 }
 
 /**
- * Writes the declarative shadow root of a component: its stylesheet, then its template.
+ * Writes the declarative shadow root of a component: its stylesheet, then the `<style>` holding the inline styles of the
+ * elements of its template, which their `data-xd-style` attribute refers to (see `_SERVER_STYLE_ATTRIBUTE`), then its
+ * template. The `<style>` elements hold the nonce of the `Content-Security-Policy` of the response, if any. Rendered
+ * outside of a page, by code calling the helpers by itself, the elements keep their `style` attribute.
  *
  * @param out - The output.
  * @param element - The element of the component, bound.
  * @param definition - What the server renders the component with.
  */
 function renderShadowRoot(out: ServerOutput, element: CustomElement, definition: ServerRenderDefinition): void {
+  const runtime = _getComponentRuntime() as Partial<ServerRuntime>;
+  const { nonce } = runtime;
   out.push('<template shadowrootmode="open">');
   if (definition.css) {
-    out.push(`<style>${escapeRawText(definition.css, 'style')}</style>`);
+    out.push(`<style${writeNonceAttribute(nonce)}>${escapeRawText(definition.css, 'style')}</style>`);
   }
 
-  definition.render.call(element, out);
+  if (!runtime.styles) {
+    definition.render.call(element, out);
+    out.push('</template>');
+    return;
+  }
+
+  // Written in its place once the template is rendered, with the rules of its elements
+  const styles: ServerStyles = { blocks: null };
+  const slot = out.push('') - 1;
+  _renderInTree(styles, () => definition.render.call(element, out));
+  out[slot] = writeShadowStyles(out.slice(slot + 1), styles, nonce);
   out.push('</template>');
 }
 
@@ -463,17 +482,31 @@ function isInputSetter(setter: ServerAttribute['setter']): boolean {
 }
 
 /**
- * Writes the start tag of an element, with its attributes in the order they are written.
+ * Writes the start tag of an element, with its attributes in the order they are written. Its `style` attribute, which a
+ * `Content-Security-Policy` blocks without `'unsafe-inline'`, is moved into a rule of the `<style>` of its tree, the
+ * element holding the index of the rule in its `data-xd-style` attribute (see `addStyleRule`). Rendered outside of a
+ * page, by code calling the helpers by itself, the element keeps its `style` attribute.
  *
  * @param tagName - The tag name of the element.
  * @param element - The element.
  * @returns The start tag.
  */
 function writeStartTag(tagName: string, element: Element): string {
+  const { styles } = _getComponentRuntime() as Partial<ServerRuntime>;
   let tag = `<${tagName}`;
   const names = element.getAttributeNames();
   for (let i = 0; i < names.length; i++) {
-    tag = `${tag} ${names[i]}="${escapeAttribute(element.getAttribute(names[i])!)}"`;
+    const name = names[i];
+    const value = element.getAttribute(name)!;
+    if (name !== 'style' || !styles) {
+      tag = `${tag} ${name}="${escapeAttribute(value)}"`;
+      continue;
+    }
+
+    const index = addStyleRule(styles, value);
+    if (index !== undefined) {
+      tag = `${tag} ${_SERVER_STYLE_ATTRIBUTE}="${index}"`;
+    }
   }
 
   return `${tag}>`;

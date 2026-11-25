@@ -110,7 +110,7 @@ describe('createLoadHook()', () => {
     const result = await load(createState({ [TEMPLATE_PATH]: 'template source' }), ctx, TEMPLATE_MODULE_ID);
 
     // The symbols the template imports are resolved against its directory
-    expect(compile).toHaveBeenCalledWith('template source', { signals: ['count', 'items'], templateDir: '/src/foo', shadowingMembers: [], customElements: [], security: {}, cache: { getOrInsert: expect.any(Function), getImport: expect.any(Function), set: registerMetadata } });
+    expect(compile).toHaveBeenCalledWith('template source', { signals: ['count', 'items'], templateDir: '/src/foo', shadowingMembers: [], customElements: [], cache: { getOrInsert: expect.any(Function), getImport: expect.any(Function), set: registerMetadata } });
     expect(result).toEqual({ code: expect.stringContaining('function render() {}\n\nexport { render };'), map: { mappings: '' }, moduleType: 'js' });
     expect(ctx.addWatchFile).toHaveBeenCalledWith(TEMPLATE_PATH);
   });
@@ -127,11 +127,13 @@ describe('createLoadHook()', () => {
   });
 
   it('compiles a template of a library of the workspace with the custom elements of the library', async () => {
-    const library = { name: '@acme/ui', root: '/src', entry: '/src/public-api.ts', ssr: true, customElements: ['sl-*'], security: { urls: 'remove' as const } };
+    const library = { name: '@acme/ui', root: '/src', entry: '/src/public-api.ts', ssr: true, customElements: ['sl-*'] };
 
-    await load({ ...createState({ [TEMPLATE_PATH]: 'template source' }), customElements: ['other-*'], security: { urls: 'warn', rejectUnsafeBindings: false }, libraries: [library] }, createPluginContext(), TEMPLATE_MODULE_ID);
+    await load({ ...createState({ [TEMPLATE_PATH]: 'template source' }), customElements: ['other-*'], security: { urls: 'remove' }, libraries: [library] }, createPluginContext(), TEMPLATE_MODULE_ID);
 
-    expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: ['sl-*'], security: { urls: 'remove', rejectUnsafeBindings: false } }));
+    // The code carries no security: the runtime applies the one of the project
+    expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: ['sl-*'] }));
+    expect(vi.mocked(compile).mock.calls[0][1]).not.toHaveProperty('security');
   });
 
   it('renders on the server the components of a library not rendering there as the ones rendering only in the browser', async () => {
@@ -233,7 +235,7 @@ describe('createLoadHook()', () => {
 
     const result = await load(createState({ [TEMPLATE_PATH]: template, [existing]: '' }), createPluginContext('server'), TEMPLATE_MODULE_ID);
 
-    expect(compileServer).toHaveBeenCalledWith(template, { signals: ['count', 'items'], templateDir: '/src/foo', shadowingMembers: [], customElements: [], security: {}, cache: expect.any(Object) });
+    expect(compileServer).toHaveBeenCalledWith(template, { signals: ['count', 'items'], templateDir: '/src/foo', shadowingMembers: [], customElements: [], cache: expect.any(Object) });
     expect(compile).not.toHaveBeenCalled();
     expect(result).toEqual({ code: `import ${JSON.stringify(existing)};\nfunction render(out) {}\n\nexport { render };\n`, map: { mappings: '' }, moduleType: 'js' });
   });

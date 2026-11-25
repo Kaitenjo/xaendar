@@ -49,6 +49,11 @@ describe('HostAttribute decorator', () => {
     expect(() => HostAttribute('style.width.px.em')).toThrow('@HostAttribute(\'style.width.px.em\') names no style property');
   });
 
+  it('throws for an attribute the browser runs, whatever its case', () => {
+    expect(() => HostAttribute('onClick')).toThrow('@HostAttribute(\'onClick\') writes code the browser runs from a value of the application: listen to the click event instead, or set "security": { "rejectUnsafeBindings": false } in xaendar.json to allow it.');
+    expect(() => HostAttribute('srcdoc')).toThrow('@HostAttribute(\'srcdoc\') writes a document the browser runs from a value of the application: bind the src of a page instead');
+  });
+
   it('throws for a static member', () => {
     expect(() => decorate('role', {}, 'role', true)).toThrow('@HostAttribute(\'role\') cannot decorate the static member role');
   });

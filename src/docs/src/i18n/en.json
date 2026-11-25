@@ -119,6 +119,7 @@
       "components/dom-apis": "Using DOM APIs",
       "components/dynamic-creation": "Creating components in code",
       "components/inheritance": "Inheritance",
+      "components/security": "Security and CSP",
       "templates/overview": "Template syntax",
       "templates/text-interpolation": "Text interpolation",
       "templates/binding": "Attribute and property binding",
@@ -521,6 +522,146 @@
           "td10": "yes",
           "td11": "Template and stylesheet",
           "td12": "no: each decorated class has its own"
+        }
+      },
+      "security": {
+        "eyebrow": "Components",
+        "title": "Security and CSP",
+        "lead": "What Xaendar checks so that a value of the application does not run as code, what the project configures, and what a Content-Security-Policy must allow for a page written with Xaendar.",
+        "summary": {
+          "title": "What is checked",
+          "p1": "Each case says where Xaendar stops it, at compile time (the build and the editor) or at run time (in the browser and on the server), and the option changing it. The options are the <code>security</code> of the <code>xaendar.json</code> of the project.",
+          "th1": "Case",
+          "th2": "What Xaendar does",
+          "th3": "Configuration",
+          "templates": {
+            "title": "Templates",
+            "scriptStyle": {
+              "case": "<code>&lt;script&gt;</code> and <code>&lt;style&gt;</code> in a template",
+              "protection": "Compile error, wherever they are and in any case: the code goes in the class, the styles in <code>styleUrl</code>.",
+              "configuration": "None"
+            },
+            "text": {
+              "case": "Text interpolation, <code>{ value }</code>",
+              "protection": "Written as text, never as HTML: escaped on the server, a text node in the browser.",
+              "configuration": "None"
+            },
+            "handlers": {
+              "case": "An expression bound to an event handler attribute (<code>onclick</code>, any <code>on*</code>) or to <code>srcdoc</code>",
+              "protection": "Type-check error, in the build and in the editor: listen to the event with <code>(click)</code>, bind the <code>src</code> of a page.",
+              "configuration": "<code>rejectUnsafeBindings</code>, <code>true</code> by default"
+            },
+            "iframe": {
+              "case": "An expression bound to a restriction of an <code>&lt;iframe&gt;</code>: <code>sandbox</code>, <code>allow</code>, <code>allowfullscreen</code>, <code>referrerpolicy</code>, <code>csp</code>, <code>credentialless</code>",
+              "protection": "Type-check error: a value of the application could lift the restriction.",
+              "configuration": "<code>rejectUnsafeBindings</code>, <code>true</code> by default"
+            },
+            "svg": {
+              "case": "The <code>attributeName</code> of an SVG animation (<code>&lt;animate&gt;</code>, <code>&lt;set&gt;</code>…), or its <code>to</code>, <code>from</code>, <code>by</code> and <code>values</code> when it animates an <code>href</code>",
+              "protection": "Type-check error: the animation would write a URL no check sees.",
+              "configuration": "<code>rejectUnsafeBindings</code>, <code>true</code> by default"
+            },
+            "meta": {
+              "case": "The <code>http-equiv</code> of a <code>&lt;meta&gt;</code>, the <code>content</code> of a <code>&lt;meta http-equiv=\"refresh\"&gt;</code>",
+              "protection": "Type-check error: a value could set a pragma of the page, or send it elsewhere.",
+              "configuration": "<code>rejectUnsafeBindings</code>, <code>true</code> by default"
+            },
+            "urls": {
+              "case": "A URL running code (<code>javascript:</code>, <code>vbscript:</code>, a <code>data:</code> URL that is not an image, an audio or a video) bound to <code>href</code>, <code>src</code>, <code>action</code>, <code>formaction</code>, <code>xlink:href</code>…, to an image of a <code>srcset</code> or of an <code>imagesrcset</code>, to a URL of a <code>ping</code>",
+              "protection": "Checked at run time, in the browser and on the server: written with a warning, or left out.",
+              "configuration": "<code>urls</code>: <code>\"warn\"</code> by default, <code>\"remove\"</code> or <code>\"off\"</code>; <a href=\"#/en/reference/api/core/trustUrl\"><code>trustUrl()</code></a> for a URL the application trusts"
+            },
+            "resources": {
+              "case": "An absolute URL loading a resource into the page from an origin the application does not trust: the <code>src</code> of an <code>&lt;iframe&gt;</code>, an <code>&lt;embed&gt;</code> or a <code>&lt;frame&gt;</code>, the <code>data</code> and the <code>codebase</code> of an <code>&lt;object&gt;</code>, the <code>href</code> of a <code>&lt;link&gt;</code> or of the <code>&lt;base&gt;</code>",
+              "protection": "Checked at run time as the URLs above. A relative URL loads from the application, and passes.",
+              "configuration": "<code>resourceUrls</code>, <code>\"warn\"</code> by default; <code>trustedOrigins</code>; <a href=\"#/en/reference/api/core/trustResourceUrl\"><code>trustResourceUrl()</code></a>"
+            },
+            "styles": {
+              "case": "A value bound to a style key that adds a declaration (<code>style.color=\"{ color }\"</code> with <code>red; position: fixed</code>)",
+              "protection": "Ignored, as the browser ignores it, in the browser and on the server. <code>@@style</code> accepts only the CSS units it knows.",
+              "configuration": "None"
+            },
+            "static": {
+              "case": "The values written in the template, the inputs of the components",
+              "protection": "Not checked: the author writes the former, and the component decides what to do with the latter.",
+              "configuration": "—"
+            }
+          },
+          "host": {
+            "title": "Host attributes",
+            "names": {
+              "case": "A <code>@HostAttribute</code> of an event handler attribute or of <code>srcdoc</code>",
+              "protection": "Error when the class is declared.",
+              "configuration": "<code>rejectUnsafeBindings</code>, <code>true</code> by default"
+            },
+            "restrictions": {
+              "case": "A <code>@HostAttribute</code> of a restriction of its element (the <code>sandbox</code> of an <code>&lt;iframe&gt;</code>…), of an SVG animation or of a <code>&lt;meta&gt;</code>",
+              "protection": "Error when the component or the directive starts on the element.",
+              "configuration": "<code>rejectUnsafeBindings</code>, <code>true</code> by default"
+            },
+            "urls": {
+              "case": "The URLs a <code>@HostAttribute</code> writes",
+              "protection": "Checked at each write, as the ones of the templates.",
+              "configuration": "<code>urls</code>, <code>resourceUrls</code>, <code>trustedOrigins</code>"
+            }
+          },
+          "html": {
+            "title": "HTML of the application",
+            "sanitized": {
+              "case": "HTML bound with <a href=\"#/en/directives/inner-html\"><code>@@innerHtml</code></a>",
+              "protection": "Sanitized without a DOM, the same on the server and in the browser: <code>script</code>, <code>style</code>, <code>iframe</code>, <code>object</code>, <code>template</code>… removed with their content, the other elements not allowed with their tags only; <code>on*</code> and <code>srcdoc</code> removed; a URL of a scheme not allowed removed; an SVG animation never animates an <code>href</code>.",
+              "configuration": "The options of the sanitizer (<code>allowElements</code>, <code>allowAttributes</code>, <code>urlSchemes</code>…); <code>trustHtml()</code>, or a sanitizer of the application"
+            },
+            "options": {
+              "case": "Options of the sanitizer keeping what always runs code: <code>script</code>, <code>base</code>, <code>meta</code>, <code>on*</code>, <code>srcdoc</code>, the schemes <code>javascript</code> and <code>vbscript</code>, the prefixes matching them included",
+              "protection": "Error: an HTML the application trusts is rendered with <code>trustHtml()</code> instead.",
+              "configuration": "None"
+            },
+            "code": {
+              "case": "An <code>innerHTML</code>, a <code>setAttribute</code>… written by the code of a class",
+              "protection": "Not checked: Xaendar sees what its templates and its decorators write. A policy requiring Trusted Types blocks them (see below).",
+              "configuration": "—"
+            }
+          },
+          "server": {
+            "title": "Rendering on the server",
+            "escape": {
+              "case": "The texts and the attributes the server writes",
+              "protection": "Escaped. The transfer state is written as JSON, its <code>&lt;</code> escaped, in a script that does not run.",
+              "configuration": "None"
+            },
+            "styles": {
+              "case": "The inline styles of the elements, which a <code>Content-Security-Policy</code> blocks as <code>style</code> attributes",
+              "protection": "Written into a rule of a <code>&lt;style&gt;</code> of their shadow root, which holds the nonce of the response, never as <code>style</code> attributes; a value that would end its rule is left out. The browser moves them back into the elements through the CSSOM when it hydrates them.",
+              "configuration": "The option <code>nonce</code> of <a href=\"#/en/reference/api/ssr/renderToString\"><code>renderToString()</code></a>"
+            },
+            "inputs": {
+              "case": "The inputs of <code>data-xd-inputs</code>, read at hydration",
+              "protection": "Set only into the inputs of the component: any other name throws, so that HTML injected into the page cannot write <code>innerHTML</code> or <code>__proto__</code>.",
+              "configuration": "None"
+            },
+            "manifest": {
+              "case": "The manifest of a compiled library (<code>xaendar-manifest.json</code>)",
+              "protection": "Read as untrusted input: its names, selectors and paths are checked before being used.",
+              "configuration": "None"
+            }
+          }
+        },
+        "options": {
+          "title": "The security of xaendar.json",
+          "p1": "The options belong to the project, which applies them to every component it renders, the ones of its libraries included, compiled or of the workspace: a library declares none. The compiled code only says which attributes hold URLs, and the runtime checks them as the project asks; the templates of a library are type-checked with the defaults, so that they work in any project. See <a href=\"#/en/templates/binding\">Binding</a> and <a href=\"#/en/reference/api/build-tools/xaendarPlugin\"><code>xaendarPlugin()</code></a>."
+        },
+        "csp": {
+          "title": "Content-Security-Policy",
+          "p1": "Xaendar runs under a strict policy: the templates are compiled ahead of time, and nothing is evaluated from a string. What each directive must allow:",
+          "th1": "Directive",
+          "th2": "What a page of Xaendar needs",
+          "scriptSrc": "No <code>'unsafe-eval'</code> and no <code>'unsafe-inline'</code>: no <code>eval</code>, no <code>new Function</code>. A page rendered on the server holds one inline script, the event contract, which records the events before the hydration: give its nonce to <a href=\"#/en/reference/api/ssr/renderToString\"><code>renderToString()</code></a> with the option <code>nonce</code>, or, for a prerendered page, let <code>xd prerender</code> allow its hash; without either, the page works, losing the events before the hydration. The transfer state is JSON (<code>type=\"application/json\"</code>), which no policy blocks.",
+          "styleSrc": "No <code>'unsafe-inline'</code>. In the browser the stylesheets are constructed (<code>adoptedStyleSheets</code>) and the styles of the elements are written through the CSSOM (<code>style.setProperty</code>, <code>style.cssText</code>), which no policy blocks. A page rendered on the server writes no <code>style</code> attribute: each declarative shadow root holds the stylesheet of its component and a <code>&lt;style&gt;</code> with the inline styles of its elements, the root of the page one right before it, which the browser moves back into the elements when it hydrates them. <code>renderToString()</code> writes its option <code>nonce</code> on every <code>&lt;style&gt;</code>, as on the script: the same nonce goes in <code>style-src</code>. Only the <code>style</code> attributes of an <code>@@innerHtml</code> whose options keep them need <code>'unsafe-inline'</code>, or the browser ignores them.",
+          "trustedTypes": "Xaendar writes HTML only through its policies, which keep it as it is: <code>xaendar#template</code> for the static content of a standard <code>&lt;template&gt;</code>, <code>xaendar#inner-html</code> for the HTML <code>@@innerHtml</code> sanitizes, <code>xaendar#inner-html-unsafe</code> for the one <code>trustHtml()</code> marks or a sanitizer of the application gives. List only the ones the page uses: without <code>xaendar#inner-html-unsafe</code>, any HTML Xaendar did not sanitize fails.",
+          "frameSrc": "The counterpart of <code>trustedOrigins</code> in the browser: it blocks a frame or a plugin of another origin, whatever code writes it. List the same origins.",
+          "p2": "A policy for a page rendered on the server, with the nonce of the response and an embedded video:",
+          "p3": "A page rendered only in the browser needs no nonce: <code>'self'</code> is enough in both. A prerendered page has no response of its own to take a nonce from: with <code>csp</code> in the <code>ssr</code> of <code>xaendar.json</code>, <code>xd prerender</code> writes that policy into each page, as a <code>&lt;meta http-equiv=\"Content-Security-Policy\"&gt;</code> first in its <code>&lt;head&gt;</code>, adding to <code>script-src</code> and <code>style-src</code> the hashes of the inline <code>&lt;script&gt;</code> and <code>&lt;style&gt;</code> of the page, so that it needs no <code>'unsafe-inline'</code> either. A <code>&lt;meta&gt;</code> policy ignores <code>frame-ancestors</code>, <code>report-uri</code> and <code>sandbox</code>: send those in a header of the host. See <a href=\"#/en/tools/ssr/hydration\">Hydration</a> for the event contract, and <a href=\"#/en/directives/inner-html\">@@innerHtml</a> for the sanitizer."
         }
       },
       "inputs": {
@@ -1136,7 +1277,7 @@
           "example1": "A comment written in HTML, rendered sanitized",
           "p1": "The HTML is sanitized by default: the elements, the attributes and the URLs that can run code are removed (<code>script</code>, <code>onerror</code>, <code>javascript:</code>), the text-level and block elements, the lists, the tables and the media kept. When something is removed, the element dispatches <code>sanitized</code>, whose detail lists the elements and the attributes removed: the example shows them under the comment.",
           "p2": "<code>options</code> changes what is kept (<code>allowElements</code>, <code>allowAttributes</code>, <code>removeElements</code>, <code>removeAttributes</code>, <code>urlSchemes</code>, an attribute of one element only written <code>element[attribute]</code>), <code>sanitizer</code> replaces the sanitizer with one of the application, and an HTML marked with <code>trustHtml</code> is rendered as it is:",
-          "p3": "The same sanitizer is exported as <code>sanitizeHtml</code>: it needs no DOM, so the server and the browser write the same HTML.",
+          "p3": "The same sanitizer is exported as <code>sanitizeHtml</code>: it needs no DOM, so the server and the browser write the same HTML. The options never keep what always runs code, whatever the HTML: <code>script</code>, <code>base</code> and <code>meta</code> in <code>allowElements</code>, the event handlers (<code>on*</code>) and <code>srcdoc</code> in <code>allowAttributes</code>, <code>javascript</code> and <code>vbscript</code> in <code>urlSchemes</code> throw, so such an HTML goes through <code>trustHtml</code> or a sanitizer of the application; an SVG <code>animate</code> or <code>set</code> kept never animates an <code>href</code>, its <code>attributeName</code> being removed.",
           "callout1": {
             "heading": "Trust only what the application builds",
             "p1": "<code>trustHtml</code> and a <code>sanitizer</code> of the application turn the sanitization of the directive off: the scripts in the attributes of their HTML run. Use <code>trustHtml</code> only for an HTML the application builds, or that comes from a source it trusts and has already sanitized, and call it where the HTML is built, so that every trusted HTML is easy to find."
@@ -2469,8 +2610,10 @@
         "security": {
           "title": "Values that could run code",
           "p1": "A template holds no <code>&lt;script&gt;</code> and no <code>&lt;style&gt;</code>, wherever they are, in an <code>&lt;svg&gt;</code> and in the content of a standard <code>&lt;template&gt;</code> too: the code of a component goes in its class, its styles in its stylesheet (<code>styleUrl</code>), and a binding inside them would write code or styles from the values of the application. The compiler rejects them.",
-          "p2": "A value bound to an attribute the browser runs is rejected by the type check, in the build and in the editor: an event handler attribute (any name starting with <code>on</code>, with <code>attr.</code> too) and the <code>srcdoc</code> of an <code>&lt;iframe&gt;</code>. Listen with <code>(event)</code> instead. A value written in the template is the author’s own, and is allowed, and so is an input of a component named like them.",
-          "p3": "Both are set by the <code>security</code> of <code>xaendar.json</code>, a library of the workspace overriding each option in its <code>libs</code>: <code>rejectUnsafeBindings</code>, <code>true</code> by default, makes these bindings errors, and <code>urls</code>, <code>\"off\"</code> by default, checks the URLs bound to the attributes loading or opening them (<code>href</code>, <code>src</code>, <code>action</code>, <code>formaction</code>, <code>xlink:href</code>…), on the client and on the server alike. A <code>javascript:</code> or <code>vbscript:</code> URL, or a <code>data:</code> URL that is not an image, an audio or a video, is written with a warning with <code>\"warn\"</code>, and left out with <code>\"remove\"</code>, the warning written in development only. The other schemes and the relative URLs pass, and so do the values written in the template and the inputs of the components.",
+          "p2": "A value bound to an attribute the browser runs, or to one lifting a restriction, is rejected by the type check, in the build and in the editor: an event handler attribute (any name starting with <code>on</code>, with <code>attr.</code> too) and a <code>srcdoc</code> on any element; the attributes restricting the page of an <code>&lt;iframe&gt;</code> (<code>sandbox</code>, <code>allow</code>, <code>allowfullscreen</code>, <code>referrerpolicy</code>, <code>csp</code>, <code>credentialless</code>), which the browser applies only to the page it loads next; the <code>attributeName</code> of an SVG animation (<code>&lt;animate&gt;</code>, <code>&lt;set&gt;</code>…), and the values (<code>to</code>, <code>from</code>, <code>by</code>, <code>values</code>) of one animating an <code>href</code>; the <code>http-equiv</code> of a <code>&lt;meta&gt;</code>, and the <code>content</code> of a <code>&lt;meta http-equiv=\"refresh\"&gt;</code>. Listen with <code>(event)</code> instead, or write the attribute in the template: a value written there is the author’s own, and is allowed, and so is an input of a component named like them.",
+          "p3": "The checks are set by the <code>security</code> of the <code>xaendar.json</code> of the project, for every component it renders, the ones of its libraries included: a library declares none, since its components work in any project. The compiler only flags the attributes holding URLs, and the runtime checks them as the project asks; the templates of a library are type-checked with the defaults. <code>rejectUnsafeBindings</code>, <code>true</code> by default, makes these bindings errors. <code>urls</code>, <code>\"warn\"</code> by default, checks the URLs bound to the attributes loading or opening them (<code>href</code>, <code>src</code>, <code>action</code>, <code>formaction</code>, <code>xlink:href</code>…), every image of a <code>srcset</code> and every URL of a <code>ping</code>, on the client and on the server alike: a <code>javascript:</code> or <code>vbscript:</code> URL, or a <code>data:</code> URL that is not an image, an audio or a video, is written with a warning with <code>\"warn\"</code>, left out with <code>\"remove\"</code>, the warning written in development only, and written as it is with <code>\"off\"</code>. <code>resourceUrls</code>, <code>\"warn\"</code> by default, checks the same way the URLs loading a resource into the page (the <code>src</code> of an <code>&lt;iframe&gt;</code>, an <code>&lt;embed&gt;</code> or a <code>&lt;frame&gt;</code>, the <code>data</code> and the <code>codebase</code> of an <code>&lt;object&gt;</code>, the <code>href</code> of a <code>&lt;link&gt;</code> or of the <code>&lt;base&gt;</code>): a relative URL loads from the application, and passes, an absolute one only when its origin is one of the <code>trustedOrigins</code>. The values written in the template and the inputs of the components are not checked.",
+          "p5": "A URL the application builds, or takes from a source it trusts, is marked where it is built: <a href=\"#/en/reference/api/core/trustUrl\"><code>trustUrl()</code></a> passes the check of <code>urls</code>, <a href=\"#/en/reference/api/core/trustResourceUrl\"><code>trustResourceUrl()</code></a> both checks, whatever its origin. The attribute is written with the URL the value holds.",
+          "p6": "The <code>@HostAttribute</code> of the components and of the directives are checked the same way, with the <code>security</code> of the project, which the build gives to the runtime: a name the browser runs (<code>on*</code>, <code>srcdoc</code>) throws when the class is declared, an attribute lifting a restriction of its element when the directive or the component starts, and the URLs are checked at each write. Where the <code>Content-Security-Policy</code> requires Trusted Types, the static content of a standard <code>&lt;template&gt;</code> is written with the policy <code>xaendar#template</code>, which its <code>trusted-types</code> lists.",
           "p4": "These checks are made where the compiler sees the binding. An HTML written into an element is sanitized by <a href=\"#/en/directives/inner-html\"><code>@@innerHtml</code></a>, at run time, with its own options."
         },
         "edgeCases": {
@@ -3447,6 +3590,7 @@
             "entry": "Required. The module exporting <code>render(url)</code>, relative to the project and without extension (<code>src/entry-server</code>): with one, the commands stop with an error.",
             "outDir": "Where <code>xd build</code> writes the server. Default: <code>dist/server</code>.",
             "prerender": "The routes <code>xd prerender</code> writes into HTML files. Default: <code>[\"/\"]</code>.",
+            "csp": "The <code>Content-Security-Policy</code> <code>xd prerender</code> writes into each page, with the hashes of its inline <code>&lt;script&gt;</code> and <code>&lt;style&gt;</code> added to <code>script-src</code> and <code>style-src</code> (see <a href=\"#/en/components/security\">Security and CSP</a>). Default: none.",
             "staticComponents": "<code>true</code> makes the build leave the <a href=\"#/en/tools/ssr/static-components\">static components</a> out of the bundle of the browser. Default: <code>false</code>."
           },
           "entry": {
@@ -3458,7 +3602,7 @@
             "title": "What the server writes",
             "p1": "Each component is written as its element, with the attributes of its <code>@HostAttribute</code>, followed by a declarative shadow root holding its <code>&lt;style&gt;</code> and its template, then the content it projects into its slots. The browser turns the template into a shadow root while it parses the page, so the components show, styled, before their scripts:",
             "p2": "The comments mark the dynamic parts the browser adopts: <code>&lt;!----&gt;</code> before each interpolation, <code>&lt;!--xd-if:0--&gt;</code> … <code>&lt;!--/xd-if--&gt;</code> around a block with the index of its branch, and the same for <code>@switch</code>, for <code>@for</code>, whose items carry the key of <code>track</code>, and for the structural directives. The last block of an element, or of a shadow root, has no closing comment: the browser renders it without anchor, appending what it renders. None is written inside <code>&lt;textarea&gt;</code>, <code>&lt;title&gt;</code>, <code>&lt;style&gt;</code> and <code>&lt;script&gt;</code>.",
-            "p3": "A custom element the server has no class for, such as one of another library or a component imported with <code>@import lazy</code>, is written without shadow root: the browser renders it once its class is defined. Texts and attributes are escaped, and an attribute bound to <code>null</code> or <code>undefined</code> is left out, as the browser removes it."
+            "p3": "A custom element the server has no class for, such as one of another library or a component imported with <code>@import lazy</code>, is written without shadow root: the browser renders it once its class is defined. Texts and attributes are escaped, and an attribute bound to <code>null</code> or <code>undefined</code> is left out, as the browser removes it. No <code>style</code> attribute is written: the inline styles of the elements go into a second <code>&lt;style&gt;</code> of their shadow root, one rule per block of declarations, each element holding the index of its rule in <code>data-xd-style</code>, so that a <code>Content-Security-Policy</code> allows them by the nonce of the response (see <a href=\"#/en/components/security\">Security and CSP</a>); the browser moves them back into the elements when it hydrates them."
           },
           "onTheServer": {
             "title": "The code of the components on the server",
@@ -3569,8 +3713,8 @@
             },
             "csp": {
               "title": "Content-Security-Policy",
-              "p1": "The contract is an inline script, which a strict <code>Content-Security-Policy</code> blocks. Give <code>renderToString()</code> the nonce of the response with its <code>nonce</code> option: the server creates a new one for each response, and passes it to <code>render</code> along with the URL. The generated <code>server.ts</code> sets no policy.",
-              "p2": "A prerendered page has no response to create a nonce for, since the same file serves every request: allow the script in the policy of the static host with its hash, computed on the file, which changes when the events of the page do. Without any of these, the page works, and loses the events before the hydration."
+              "p1": "The contract is an inline script, which a strict <code>Content-Security-Policy</code> blocks, as it blocks the <code>&lt;style&gt;</code> elements holding the stylesheets and the inline styles of the components. Give <code>renderToString()</code> the nonce of the response with its <code>nonce</code> option, which it writes on all of them: the server creates a new one for each response, and passes it to <code>render</code> along with the URL. The generated <code>server.ts</code> sets no policy.",
+              "p2": "A prerendered page has no response to create a nonce for, since the same file serves every request: declare the policy in <code>csp</code> of the <code>ssr</code> of <code>xaendar.json</code>, and <code>xd prerender</code> writes it into each page with the hashes of its inline scripts and styles. Without it, the page works, and loses the events before the hydration."
             }
           },
           "edgeCases": {
@@ -3760,7 +3904,7 @@
           },
           "prerender": {
             "title": "Prerendering",
-            "p1": "<code>xd prerender</code> builds the project, then renders each route listed by <code>prerender</code> in <code>xaendar.json</code>, <code>/</code> by default, into the <code>index.html</code> of its folder in <code>dist/client</code>: <code>/</code> into <code>dist/client/index.html</code>, <code>/about</code> into <code>dist/client/about/index.html</code>. A static host then serves the pages already rendered, without a server of the application.",
+            "p1": "<code>xd prerender</code> builds the project, then renders each route listed by <code>prerender</code> in <code>xaendar.json</code>, <code>/</code> by default, into the <code>index.html</code> of its folder in <code>dist/client</code>: <code>/</code> into <code>dist/client/index.html</code>, <code>/about</code> into <code>dist/client/about/index.html</code>. A static host then serves the pages already rendered, without a server of the application. With <code>csp</code> in the <code>ssr</code> of <code>xaendar.json</code>, each page gets that <code>Content-Security-Policy</code> in a <code>&lt;meta&gt;</code>, allowing its inline scripts and styles by their hashes.",
             "p2": "<strong>Prerender or server</strong>: prerender the pages that are the same for every user and change only with a new release, such as documentation, a blog or a landing page. Keep a server for the pages depending on the request: the user, the query string, data changing often."
           },
           "withoutCli": {
@@ -4161,13 +4305,33 @@
       "cause": "A <style> or a <script> in a template, anywhere, in an <svg> or in a standard <template> too.",
       "fix": "Move the styles into the stylesheet of the component (styleUrl), the code into its class."
     },
-    "[TypeChecker] Binding onclick writes code the browser runs from a value of the application: listen with (click)=\"…\" instead, or set \"security\": { \"rejectUnsafeBindings\": false } in xaendar.json to allow it.": {
-      "cause": "A value bound to an attribute the browser runs: an event handler attribute (on…) or srcdoc.",
-      "fix": "Listen with (event)=\"…\", or load a page with src; set \"security\": { \"rejectUnsafeBindings\": false } in xaendar.json only for a value the application controls."
+    "[TypeChecker] Binding onclick writes code the browser runs from a value of the application: listen to the click event instead, or set \"security\": { \"rejectUnsafeBindings\": false } in xaendar.json to allow it.": {
+      "cause": "A value bound to an attribute the browser runs, or lifting a restriction: an event handler attribute (on…), srcdoc, the sandbox, allow… of an <iframe>, the attributeName of an SVG animation or the values of one animating an href, the http-equiv of a <meta> or the content of its refresh.",
+      "fix": "Listen with (event)=\"…\", load a page with src, or write the attribute in the template; set \"security\": { \"rejectUnsafeBindings\": false } in xaendar.json only for a value the application controls."
     },
-    "Xaendar: the URL bound to href runs code (javascript:alert(1)): it is written as it is. Bind a URL of the application, or set \"security\": { \"urls\": \"remove\" } in xaendar.json to leave it out.": {
-      "cause": "With \"security\": { \"urls\": \"warn\" }, a javascript:, vbscript: or non-media data: URL bound to an attribute holding a URL. It is a warning: the URL is written.",
-      "fix": "Bind a URL of the application, or set \"urls\": \"remove\" to leave such URLs out."
+    "Xaendar: the URL bound to href runs code (javascript:alert(1)): it is written as it is. Bind a URL of the application, or mark it with trustUrl() when the application trusts it, or set \"security\": { \"urls\": \"remove\" } in xaendar.json to leave it out.": {
+      "cause": "With \"security\": { \"urls\": \"warn\" }, the default, a javascript:, vbscript: or non-media data: URL bound to an attribute holding URLs (href, src, srcset, ping…). It is a warning: the URL is written.",
+      "fix": "Bind a URL of the application, mark a URL it trusts with trustUrl(), or set \"urls\": \"remove\" to leave such URLs out."
+    },
+    "Xaendar: the URL bound to src loads a resource from an origin the application does not trust (https://videos.example.net/embed/42): it is written as it is. Bind a URL of the application, add its origin to \"trustedOrigins\", or mark it with trustResourceUrl() when the application trusts it, or set \"security\": { \"resourceUrls\": \"remove\" } in xaendar.json to leave it out.": {
+      "cause": "With \"security\": { \"resourceUrls\": \"warn\" }, the default, an absolute URL whose origin is not one of the trustedOrigins bound to an attribute loading a resource into the page: the src of an <iframe>, an <embed> or a <frame>, the data of an <object>, the href of a <link> or of the <base>. It is a warning: the URL is written.",
+      "fix": "Add the origin to \"trustedOrigins\" in the security of xaendar.json, mark the URL with trustResourceUrl(), or set \"resourceUrls\": \"remove\" to leave such URLs out."
+    },
+    "[TypeChecker] Binding sandbox sets a restriction of the <iframe> from a value of the application, which the browser applies only to the page it loads next: write it as a static attribute, or set \"security\": { \"rejectUnsafeBindings\": false } in xaendar.json to allow it.": {
+      "cause": "A value bound to an attribute restricting the page of an <iframe> (sandbox, allow, allowfullscreen, referrerpolicy, csp, credentialless): the browser applies it only to the page the frame loads next.",
+      "fix": "Write the attribute in the template, choosing between frames with @if if it varies."
+    },
+    "@HostAttribute('sandbox') on <iframe> sets a restriction of the <iframe> from a value of the application, which the browser applies only to the page it loads next: write it as a static attribute, or set \"security\": { \"rejectUnsafeBindings\": false } in xaendar.json to allow it.": {
+      "cause": "A @HostAttribute writing, on its element, an attribute that lifts a restriction (the sandbox of an <iframe>, the values of an SVG animation of an href, the content of a <meta> refresh), while the rejectUnsafeBindings of the project is on. A name the browser runs on any element (on…, srcdoc) throws when the class is declared.",
+      "fix": "Write the attribute in the template of the element, or listen with @HostListener; set \"security\": { \"rejectUnsafeBindings\": false } in xaendar.json only for a value the application controls."
+    },
+    "\"trustedOrigins\" of the security of xaendar.json lists cdn.example.com, which is not an origin: write its scheme, its host and its port, if any, as https://cdn.example.com": {
+      "cause": "An entry of the trustedOrigins of the security of xaendar.json that is not an origin: without scheme, or with a path, a query or a fragment.",
+      "fix": "Write the scheme, the host and the port, if any, as URL.origin writes them: https://cdn.example.com, http://localhost:8080."
+    },
+    "The allowAttributes of the sanitizer list onclick, keeping an attribute the browser runs (on*, srcdoc): render a trusted HTML with trustHtml(), or with a sanitizer of the application, instead": {
+      "cause": "Options of @@innerHtml or sanitizeHtml keeping what always runs code: script, base or meta in allowElements, an event handler (on…) or srcdoc in allowAttributes, javascript or vbscript in urlSchemes. A name ending with * matching one counts.",
+      "fix": "Render an HTML the application trusts with trustHtml(), or pass a sanitizer of the application, such as DOMPurify."
     },
     "[TypeChecker] Unknown property \"shade\" on @@exTint (TintDirective has no @Property with this name).": {
       "cause": "An input the directive does not declare.",

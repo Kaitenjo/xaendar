@@ -143,6 +143,33 @@ describe('sanitizeHtml', () => {
 
     expect(sanitizeHtml('<p style="x" data-x="1">p</p>', options)).toBe('<p style="x">p</p>');
   });
+
+  it.each([
+    [{ allowElements: ['SCRIPT'] }, 'The allowElements of the sanitizer list SCRIPT, keeping <script>, whose code the browser runs once the page rendered on the server holds it: render a trusted HTML with trustHtml(), or with a sanitizer of the application, instead'],
+    [{ allowElements: ['b*'] }, 'The allowElements of the sanitizer list b*, keeping <base>, which changes where every relative URL of the page leads'],
+    [{ allowElements: ['meta'] }, 'keeping <meta>, which can send the page elsewhere'],
+    [{ allowAttributes: ['onclick'] }, 'The allowAttributes of the sanitizer list onclick, keeping an attribute the browser runs (on*, srcdoc)'],
+    [{ allowAttributes: ['img[onError]'] }, 'list img[onError], keeping an attribute'],
+    [{ allowAttributes: ['o*'] }, 'list o*, keeping an attribute'],
+    [{ allowAttributes: ['on-*'] }, 'list on-*, keeping an attribute'],
+    [{ allowAttributes: ['iframe[srcdoc]'] }, 'list iframe[srcdoc], keeping an attribute'],
+    [{ urlSchemes: ['https', 'JavaScript'] }, 'The urlSchemes of the sanitizer list JavaScript, a scheme running code']
+  ])('rejects options keeping what always runs code: %j', (options: HtmlSanitizerOptions, message) => {
+    expect(() => sanitizeHtml('', options)).toThrow(message);
+  });
+
+  it('accepts the options naming what only looks like what runs code', () => {
+    expect(sanitizeHtml('<p data-on="1" no-onclick="2">p</p>', { allowElements: ['scripts', 'p*'], allowAttributes: ['data-*', 'no-onclick', 'srcset'], urlSchemes: ['data'] })).toBe('<p data-on="1" no-onclick="2">p</p>');
+  });
+
+  it('never lets an SVG animation write an href', () => {
+    const options: HtmlSanitizerOptions = { allowElements: ['svg', 'a', 'animate', 'set'], allowAttributes: ['attributeName', 'to'] };
+
+    expect(sanitizeHtmlWithReport('<svg><a><set attributeName="href" to="javascript:alert(1)"/><animate attributeName=" XLINK:HREF " to="x"/><animate attributeName="opacity" to="0"/></a></svg>', options)).toEqual({
+      html: '<svg><a><set to="javascript:alert(1)"></set><animate to="x"></animate><animate attributename="opacity" to="0"></animate></a></svg>',
+      report: { removedElements: [], removedAttributes: ['set[attributename]', 'animate[attributename]'] }
+    });
+  });
 });
 
 describe('sanitizeHtmlWithReport', () => {

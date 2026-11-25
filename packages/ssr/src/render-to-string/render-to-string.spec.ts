@@ -25,6 +25,18 @@ const { _defineServerRender } = ssr;
 const renderToString: typeof ssr.renderToString = async (...args) => (await ssr.renderToString(...args)).replace(/<script>\(.*?<\/script>/s, '');
 
 /**
+ * The `<style>` of a tree holding the inline styles of its elements, one rule per block of declarations, by index.
+ */
+const serverStyle = (nonce: string, ...blocks: string[]) => `<style data-xd-style=""${nonce ? ` nonce="${nonce}"` : ''}>${blocks.map((block, index) => `:is([data-xd-style="${index}"],#a#b#c#d#e){${block}}`).join('')}</style>`;
+
+/**
+ * Declares a host attribute on a field of a class, as `@HostAttribute` does.
+ */
+function declareHostAttribute(name: string, field: string, metadata: DecoratorMetadataObject): void {
+  (HostAttribute(name) as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: field, static: false, metadata, access: { get: (owner: Record<string, unknown>) => owner[field] } });
+}
+
+/**
  * The metadata the compiler reads of a component or of a directive a template imports: its selector and its inputs,
  * the name of their property by the name they are bound with.
  */
@@ -34,7 +46,7 @@ const imported = (type: 'component' | 'directive', selector: string, inputs: Rec
  * Compiles a template for the server, importing the components and the directives given, and evaluates its code, the
  * imports of the runtime helpers given as parameters.
  */
-async function compileWith(source: string, options: Pick<ServerCompileOptions, 'signals' | 'shadowingMembers' | 'islands' | 'security'>, imports: ComponentOrDirectiveMetadata[] = []): Promise<ServerRenderFunction> {
+async function compileWith(source: string, options: Pick<ServerCompileOptions, 'signals' | 'shadowingMembers' | 'islands'>, imports: ComponentOrDirectiveMetadata[] = []): Promise<ServerRenderFunction> {
   const declarations = imports.length ? `@import { ${imports.map((_, index) => `Imported${index}`).join(', ')} } from './imported'` : '';
   const cache = { getImport: async (name: string) => imports[Number(name.slice('Imported'.length))] } as unknown as ContextCache;
   const code = await compileServer(`${declarations}${source}`, { ...options, templateDir: '/', cache });
@@ -370,11 +382,11 @@ describe('renderToString', () => {
     customElements.define('merged-card', MergedElement);
     _defineServerRender(MergedElement, await compile('<p class="a" style="color: red" class.on="{ off }" @@wide @@narrow></p>', [], [], []));
 
-    expect(await renderToString(MergedElement)).toBe('<merged-card><template shadowrootmode="open"><p class="a wide on" style="color: red; width: 5px; gap: 2px;"></p></template></merged-card>');
+    expect(await renderToString(MergedElement)).toBe(`<merged-card><template shadowrootmode="open">${serverStyle('', 'color: red; width: 5px; gap: 2px;')}<p class="a wide on" data-xd-style="0"></p></template></merged-card>`);
   });
 
-  it('leaves out a URL running code as security asks, on the elements written inline and by the runtime alike', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  it('checks a URL running code as the security of the project asks, on the elements written inline and by the runtime alike', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
     /**
      * A component binding a URL running code to the links it renders.
@@ -384,9 +396,11 @@ describe('renderToString', () => {
       public on = true;
     }
     customElements.define('unsafe-links', LinkElement);
-    _defineServerRender(LinkElement, await compileWith('<a href="{ link }">a</a><a class.on="{ on }" href="{ link }" title="{ link }">b</a><a href="{ \'/safe\' }">c</a>', { signals: [], security: { urls: 'remove' } }));
+    _defineServerRender(LinkElement, await compileWith('<a href="{ link }">a</a><a class.on="{ on }" href="{ link }" title="{ link }">b</a><a href="{ \'/safe\' }">c</a>', { signals: [] }));
 
-    expect(await renderToString(LinkElement)).toBe('<unsafe-links><template shadowrootmode="open"><a>a</a><a class="on" title="javascript:alert(1)">b</a><a href="/safe">c</a></template></unsafe-links>');
+    // Written with a warning, as the default of the project asks: neither the title nor the safe URL are warned about
+    expect(await renderToString(LinkElement)).toBe('<unsafe-links><template shadowrootmode="open"><a href="javascript:alert(1)">a</a><a class="on" href="javascript:alert(1)" title="javascript:alert(1)">b</a><a href="/safe">c</a></template></unsafe-links>');
+    expect(warn).toHaveBeenCalledTimes(2);
     vi.restoreAllMocks();
   });
 
@@ -400,7 +414,81 @@ describe('renderToString', () => {
     customElements.define('injected-card', InjectedElement);
     _defineServerRender(InjectedElement, await compile('<p style.color="{ color }" style.width="{ \'1px\' }" style.background="{ \'url(a;b)\' }"></p>', [], [], []));
 
-    expect(await renderToString(InjectedElement)).toBe('<injected-card><template shadowrootmode="open"><p style="width: 1px; background: url(a;b);"></p></template></injected-card>');
+    expect(await renderToString(InjectedElement)).toBe(`<injected-card><template shadowrootmode="open">${serverStyle('', 'width: 1px; background: url(a;b);')}<p data-xd-style="0"></p></template></injected-card>`);
+  });
+
+  describe('the inline styles', () => {
+    it('moves the inline style of the elements into a rule of the <style> of their shadow root, after the stylesheet, both with the nonce, the elements with the same declarations sharing a rule', async () => {
+      /**
+       * A component styling the elements of its template.
+       */
+      class StyledElement extends CustomElement { }
+      customElements.define('styled-card', StyledElement);
+      _defineServerRender(StyledElement, await compile('<p style="color: red">a</p><i style="color: red"></i><b style.width.px="{ 4 }"></b><span></span>'), ':host { display: block }');
+
+      const html = await ssr.renderToString(StyledElement, undefined, { nonce: 'n"1' });
+
+      expect(html.replace(/<script nonce="n&quot;1">\(.*?<\/script>/s, '')).toBe(`<styled-card><template shadowrootmode="open"><style nonce="n&quot;1">:host { display: block }</style>${serverStyle('n&quot;1', 'color: red;', 'width: 4px;')}<p data-xd-style="0">a</p><i data-xd-style="0"></i><b data-xd-style="1"></b><span></span></template></styled-card>`);
+    });
+
+    it('moves the inline style of the root of a page into a <style> right before it, and the one of a component into the <style> of the shadow root rendering it', async () => {
+      const childMetadata: DecoratorMetadataObject = {};
+      declareHostAttribute('style.color', 'color', childMetadata);
+
+      /**
+       * A component writing a style property on its element.
+       */
+      class HostedChild extends CustomElement {
+        public color = 'red';
+      }
+      Object.defineProperty(HostedChild, Symbol.for('Symbol.metadata'), { value: childMetadata });
+      customElements.define('hosted-child', HostedChild);
+      _defineServerRender(HostedChild, await compile('<i style="gap: 1px"></i>'));
+      const rootMetadata: DecoratorMetadataObject = {};
+      declareHostAttribute('style.display', 'display', rootMetadata);
+
+      /**
+       * A root writing a style property on its element, and binding one on the element of its child.
+       */
+      class HostedRoot extends CustomElement {
+        public display = 'grid';
+      }
+      Object.defineProperty(HostedRoot, Symbol.for('Symbol.metadata'), { value: rootMetadata });
+      customElements.define('hosted-root', HostedRoot);
+      _defineServerRender(HostedRoot, await compile('<hosted-child style.width.px="{ 2 }"></hosted-child>'));
+
+      expect(await renderToString(HostedRoot)).toBe([
+        serverStyle('', 'display: grid;'),
+        '<hosted-root data-xd-style="0"><template shadowrootmode="open">',
+        serverStyle('', 'width: 2px; color: red;'),
+        `<hosted-child data-xd-style="0"><template shadowrootmode="open">${serverStyle('', 'gap: 1px;')}<i data-xd-style="0"></i></template></hosted-child>`,
+        '</template></hosted-root>'
+      ].join(''));
+    });
+
+    it('moves the inline styles of the parts rendered later into the <style> of their shadow root, once every part is rendered', async () => {
+      /**
+       * A component styling elements structural directives render later.
+       */
+      class DelayedStylesElement extends CustomElement { }
+      customElements.define('delayed-styles', DelayedStylesElement);
+      _defineServerRender(DelayedStylesElement, await compile('<p *delay(allow="{ true }")><b *delay(allow="{ true }") style="color: red"></b></p><i style="gap: 1px"></i>', [], [], [imported('directive', 'delay', { allow: 'allow' })]));
+
+      expect(await renderToString(DelayedStylesElement)).toBe(`<delayed-styles><template shadowrootmode="open">${serverStyle('', 'gap: 1px;', 'color: red;')}<!--xd-s:1--><p><!--xd-s:1--><b data-xd-style="1"></b></p><!--/xd-s--><i data-xd-style="0"></i></template></delayed-styles>`);
+    });
+
+    it('leaves out of the rule a declaration whose value would end it, writing no attribute for an element left without declarations', async () => {
+      /**
+       * A component binding a value ending the rule of its element to a style key.
+       */
+      class BreakingElement extends CustomElement {
+        public color = 'red} p {color: blue';
+      }
+      customElements.define('breaking-card', BreakingElement);
+      _defineServerRender(BreakingElement, await compile('<p style.width="{ \'1px\' }" style.color="{ color }"></p><i style.color="{ color }"></i>'));
+
+      expect(await renderToString(BreakingElement)).toBe(`<breaking-card><template shadowrootmode="open">${serverStyle('', 'width: 1px;')}<p data-xd-style="0"></p><i></i></template></breaking-card>`);
+    });
   });
 
   describe('the interactive components a static template renders', () => {
