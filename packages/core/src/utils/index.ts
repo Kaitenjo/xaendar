@@ -13,6 +13,7 @@ export type * from '../types/scope-layout.type';
 export type * from '../types/security-config.type';
 export type * from '../types/styling/render-styling.type';
 export type * from '../types/template.type';
+export type { TrustedTypePolicyFactory as _TrustedTypePolicyFactory } from '../types/trusted-types/trusted-type-policy-factory.type';
 export { _prepareAttributes, _setAttribute, _setExpressionAttribute, _setReactiveAttribute } from './attribute-binding/attribute-binding.util';
 export { _hasAttributeState, _mergeAttributes } from './attribute-state/attribute-state.util';
 export { _client } from './client/client.util';
