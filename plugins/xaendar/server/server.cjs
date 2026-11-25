@@ -603,9 +603,7 @@ var require_linkedMap = __commonJS({
         return this;
       }
       delete(key) {
-        const existed = this._map.has(key);
-        this.remove(key);
-        return existed;
+        return !!this.remove(key);
       }
       remove(key) {
         const item = this._map.get(key);
@@ -3550,7 +3548,7 @@ var init_main = __esm({
       DiagnosticRelatedInformation2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && Location.is(candidate.location) && Is.string(candidate.message);
+        return Is.defined(candidate) && Location.is(candidate.location) && Is.string(candidate.message);
       }
       DiagnosticRelatedInformation2.is = is;
     })(DiagnosticRelatedInformation || (DiagnosticRelatedInformation = {}));
@@ -3592,7 +3590,7 @@ var init_main = __esm({
       function is(value) {
         var _a;
         const candidate = value;
-        return Is.objectLiteral(candidate) && Range.is(candidate.range) && (Is.string(candidate.message) || MarkupContent.is(candidate.message)) && (Is.number(candidate.severity) || Is.undefined(candidate.severity)) && (Is.integer(candidate.code) || Is.string(candidate.code) || Is.undefined(candidate.code)) && (Is.undefined(candidate.codeDescription) || Is.string((_a = candidate.codeDescription) === null || _a === void 0 ? void 0 : _a.href)) && (Is.string(candidate.source) || Is.undefined(candidate.source)) && (Is.undefined(candidate.relatedInformation) || Is.typedArray(candidate.relatedInformation, DiagnosticRelatedInformation.is));
+        return Is.defined(candidate) && Range.is(candidate.range) && (Is.string(candidate.message) || MarkupContent.is(candidate.message)) && (Is.number(candidate.severity) || Is.undefined(candidate.severity)) && (Is.integer(candidate.code) || Is.string(candidate.code) || Is.undefined(candidate.code)) && (Is.undefined(candidate.codeDescription) || Is.string((_a = candidate.codeDescription) === null || _a === void 0 ? void 0 : _a.href)) && (Is.string(candidate.source) || Is.undefined(candidate.source)) && (Is.undefined(candidate.relatedInformation) || Is.typedArray(candidate.relatedInformation, DiagnosticRelatedInformation.is));
       }
       Diagnostic2.is = is;
       function is3_17(value) {
@@ -3621,7 +3619,7 @@ var init_main = __esm({
       Command2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && Is.string(candidate.title) && (candidate.tooltip === void 0 || Is.string(candidate.tooltip)) && Is.string(candidate.command);
+        return Is.defined(candidate) && Is.string(candidate.title) && (candidate.tooltip === void 0 || Is.string(candidate.tooltip)) && Is.string(candidate.command);
       }
       Command2.is = is;
     })(Command || (Command = {}));
@@ -3695,7 +3693,7 @@ var init_main = __esm({
       TextDocumentEdit2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && OptionalVersionedTextDocumentIdentifier.is(candidate.textDocument) && Array.isArray(candidate.edits);
+        return Is.defined(candidate) && OptionalVersionedTextDocumentIdentifier.is(candidate.textDocument) && Array.isArray(candidate.edits);
       }
       TextDocumentEdit2.is = is;
     })(TextDocumentEdit || (TextDocumentEdit = {}));
@@ -3861,7 +3859,7 @@ var init_main = __esm({
       constructor(annotations) {
         this._annotations = annotations === void 0 ? /* @__PURE__ */ Object.create(null) : annotations;
         this._counter = 0;
-        this._size = Object.keys(this._annotations).length;
+        this._size = 0;
       }
       all() {
         return this._annotations;
@@ -3888,12 +3886,8 @@ var init_main = __esm({
         return id;
       }
       nextId() {
-        let id;
-        do {
-          this._counter++;
-          id = this._counter.toString();
-        } while (this._annotations[id] !== void 0);
-        return id;
+        this._counter++;
+        return this._counter.toString();
       }
     };
     WorkspaceChange = class {
@@ -4061,7 +4055,7 @@ var init_main = __esm({
       TextDocumentIdentifier2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && Is.string(candidate.uri);
+        return Is.defined(candidate) && Is.string(candidate.uri);
       }
       TextDocumentIdentifier2.is = is;
     })(TextDocumentIdentifier || (TextDocumentIdentifier = {}));
@@ -4072,7 +4066,7 @@ var init_main = __esm({
       VersionedTextDocumentIdentifier2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && Is.string(candidate.uri) && Is.integer(candidate.version);
+        return Is.defined(candidate) && Is.string(candidate.uri) && Is.integer(candidate.version);
       }
       VersionedTextDocumentIdentifier2.is = is;
     })(VersionedTextDocumentIdentifier || (VersionedTextDocumentIdentifier = {}));
@@ -4083,7 +4077,7 @@ var init_main = __esm({
       OptionalVersionedTextDocumentIdentifier2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && Is.string(candidate.uri) && (candidate.version === null || Is.integer(candidate.version));
+        return Is.defined(candidate) && Is.string(candidate.uri) && (candidate.version === null || Is.integer(candidate.version));
       }
       OptionalVersionedTextDocumentIdentifier2.is = is;
     })(OptionalVersionedTextDocumentIdentifier || (OptionalVersionedTextDocumentIdentifier = {}));
@@ -4158,7 +4152,7 @@ var init_main = __esm({
       TextDocumentItem2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && Is.string(candidate.uri) && Is.string(candidate.languageId) && Is.integer(candidate.version) && Is.string(candidate.text);
+        return Is.defined(candidate) && Is.string(candidate.uri) && Is.string(candidate.languageId) && Is.integer(candidate.version) && Is.string(candidate.text);
       }
       TextDocumentItem2.is = is;
     })(TextDocumentItem || (TextDocumentItem = {}));
@@ -4407,7 +4401,7 @@ var init_main = __esm({
       CodeActionContext2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && Is.typedArray(candidate.diagnostics, Diagnostic.is) && (candidate.only === void 0 || Is.typedArray(candidate.only, Is.string)) && (candidate.triggerKind === void 0 || candidate.triggerKind === CodeActionTriggerKind.Invoked || candidate.triggerKind === CodeActionTriggerKind.Automatic);
+        return Is.defined(candidate) && Is.typedArray(candidate.diagnostics, Diagnostic.is) && (candidate.only === void 0 || Is.typedArray(candidate.only, Is.string)) && (candidate.triggerKind === void 0 || candidate.triggerKind === CodeActionTriggerKind.Invoked || candidate.triggerKind === CodeActionTriggerKind.Automatic);
       }
       CodeActionContext2.is = is;
     })(CodeActionContext || (CodeActionContext = {}));
@@ -4453,7 +4447,7 @@ var init_main = __esm({
       CodeLens2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && Range.is(candidate.range) && (Is.undefined(candidate.command) || Command.is(candidate.command));
+        return Is.defined(candidate) && Range.is(candidate.range) && (Is.undefined(candidate.command) || Command.is(candidate.command));
       }
       CodeLens2.is = is;
     })(CodeLens || (CodeLens = {}));
@@ -4464,7 +4458,7 @@ var init_main = __esm({
       FormattingOptions2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && Is.uinteger(candidate.tabSize) && Is.boolean(candidate.insertSpaces);
+        return Is.defined(candidate) && Is.uinteger(candidate.tabSize) && Is.boolean(candidate.insertSpaces);
       }
       FormattingOptions2.is = is;
     })(FormattingOptions || (FormattingOptions = {}));
@@ -4475,7 +4469,7 @@ var init_main = __esm({
       DocumentLink2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && Range.is(candidate.range) && (Is.undefined(candidate.target) || Is.string(candidate.target));
+        return Is.defined(candidate) && Range.is(candidate.range) && (Is.undefined(candidate.target) || Is.string(candidate.target));
       }
       DocumentLink2.is = is;
     })(DocumentLink || (DocumentLink = {}));
@@ -4575,7 +4569,7 @@ var init_main = __esm({
       InlineValueContext2.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && Range.is(value.stoppedLocation);
+        return Is.defined(candidate) && Range.is(value.stoppedLocation);
       }
       InlineValueContext2.is = is;
     })(InlineValueContext || (InlineValueContext = {}));
@@ -4667,7 +4661,7 @@ var init_main = __esm({
       TextDocument3.create = create;
       function is(value) {
         const candidate = value;
-        return Is.objectLiteral(candidate) && Is.string(candidate.uri) && (Is.undefined(candidate.languageId) || Is.string(candidate.languageId)) && Is.uinteger(candidate.lineCount) && Is.func(candidate.getText) && Is.func(candidate.positionAt) && Is.func(candidate.offsetAt) ? true : false;
+        return Is.defined(candidate) && Is.string(candidate.uri) && (Is.undefined(candidate.languageId) || Is.string(candidate.languageId)) && Is.uinteger(candidate.lineCount) && Is.func(candidate.getText) && Is.func(candidate.positionAt) && Is.func(candidate.offsetAt) ? true : false;
       }
       TextDocument3.is = is;
       function applyEdits(document, edits) {
@@ -6070,7 +6064,7 @@ var require_protocol = __commonJS({
     (function(TextDocumentFilter2) {
       function is(value) {
         const candidate = value;
-        return Is2.string(candidate) || Is2.objectLiteral(candidate) && (Is2.string(candidate.language) || Is2.string(candidate.scheme) || GlobPattern.is(candidate.pattern));
+        return Is2.string(candidate) || (Is2.string(candidate.language) || Is2.string(candidate.scheme) || GlobPattern.is(candidate.pattern));
       }
       TextDocumentFilter2.is = is;
     })(TextDocumentFilter || (exports2.TextDocumentFilter = TextDocumentFilter = {}));
@@ -6078,7 +6072,7 @@ var require_protocol = __commonJS({
     (function(NotebookDocumentFilter2) {
       function is(value) {
         const candidate = value;
-        return Is2.objectLiteral(candidate) && (Is2.string(candidate.notebookType) || Is2.string(candidate.scheme) || GlobPattern.is(candidate.pattern));
+        return Is2.objectLiteral(candidate) && (Is2.string(candidate.notebookType) || Is2.string(candidate.scheme) || Is2.string(candidate.pattern));
       }
       NotebookDocumentFilter2.is = is;
     })(NotebookDocumentFilter || (exports2.NotebookDocumentFilter = NotebookDocumentFilter = {}));
@@ -6152,7 +6146,7 @@ var require_protocol = __commonJS({
     (function(TextDocumentRegistrationOptions2) {
       function is(value) {
         const candidate = value;
-        return Is2.objectLiteral(candidate) && (candidate.documentSelector === null || DocumentSelector.is(candidate.documentSelector));
+        return candidate && (candidate.documentSelector === null || DocumentSelector.is(candidate.documentSelector));
       }
       TextDocumentRegistrationOptions2.is = is;
     })(TextDocumentRegistrationOptions || (exports2.TextDocumentRegistrationOptions = TextDocumentRegistrationOptions = {}));
@@ -6603,63 +6597,11 @@ var require_api2 = __commonJS({
 var require_progress = __commonJS({
   "../node_modules/vscode-languageserver/lib/common/progress.js"(exports2) {
     "use strict";
-    var __createBinding = exports2 && exports2.__createBinding || (Object.create ? (function(o2, m2, k, k2) {
-      if (k2 === void 0) k2 = k;
-      var desc = Object.getOwnPropertyDescriptor(m2, k);
-      if (!desc || ("get" in desc ? !m2.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function() {
-          return m2[k];
-        } };
-      }
-      Object.defineProperty(o2, k2, desc);
-    }) : (function(o2, m2, k, k2) {
-      if (k2 === void 0) k2 = k;
-      o2[k2] = m2[k];
-    }));
-    var __setModuleDefault = exports2 && exports2.__setModuleDefault || (Object.create ? (function(o2, v2) {
-      Object.defineProperty(o2, "default", { enumerable: true, value: v2 });
-    }) : function(o2, v2) {
-      o2["default"] = v2;
-    });
-    var __importStar = exports2 && exports2.__importStar || /* @__PURE__ */ (function() {
-      var ownKeys = function(o2) {
-        ownKeys = Object.getOwnPropertyNames || function(o3) {
-          var ar = [];
-          for (var k in o3) if (Object.prototype.hasOwnProperty.call(o3, k)) ar[ar.length] = k;
-          return ar;
-        };
-        return ownKeys(o2);
-      };
-      return function(mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) {
-          for (var k = ownKeys(mod), i2 = 0; i2 < k.length; i2++) if (k[i2] !== "default") __createBinding(result, mod, k[i2]);
-        }
-        __setModuleDefault(result, mod);
-        return result;
-      };
-    })();
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.ProgressFeature = exports2.WorkDoneProgressReporter = void 0;
     exports2.attachWorkDone = attachWorkDone;
     exports2.attachPartialResult = attachPartialResult;
     var vscode_languageserver_protocol_1 = require_api2();
-    var Is2 = __importStar(require_is());
-    var ProgressReporter;
-    (function(ProgressReporter2) {
-      function sendProgress(connection, type, token, value) {
-        try {
-          const result = connection.sendProgress(type, token, value);
-          if (Is2.thenable(result)) {
-            result.then(void 0, () => {
-            });
-          }
-        } catch {
-        }
-      }
-      ProgressReporter2.sendProgress = sendProgress;
-    })(ProgressReporter || (ProgressReporter = {}));
     var WorkDoneProgressReporter;
     (function(WorkDoneProgressReporter2) {
       function isNullInstance(reporter) {
@@ -6667,12 +6609,14 @@ var require_progress = __commonJS({
       }
       WorkDoneProgressReporter2.isNullInstance = isNullInstance;
     })(WorkDoneProgressReporter || (exports2.WorkDoneProgressReporter = WorkDoneProgressReporter = {}));
-    var WorkDoneProgressReporterImpl = class {
+    var WorkDoneProgressReporterImpl = class _WorkDoneProgressReporterImpl {
       _connection;
       _token;
+      static Instances = /* @__PURE__ */ new Map();
       constructor(_connection, _token) {
         this._connection = _connection;
         this._token = _token;
+        _WorkDoneProgressReporterImpl.Instances.set(this._token, this);
       }
       begin(title, percentage, message, cancellable) {
         const param = {
@@ -6684,7 +6628,7 @@ var require_progress = __commonJS({
         if (typeof percentage === "number") {
           param.percentage = Math.round(percentage);
         }
-        ProgressReporter.sendProgress(this._connection, vscode_languageserver_protocol_1.WorkDoneProgress.type, this._token, param);
+        this._connection.sendProgress(vscode_languageserver_protocol_1.WorkDoneProgress.type, this._token, param);
       }
       report(arg0, arg1) {
         const param = {
@@ -6698,30 +6642,23 @@ var require_progress = __commonJS({
         } else {
           param.message = arg0;
         }
-        ProgressReporter.sendProgress(this._connection, vscode_languageserver_protocol_1.WorkDoneProgress.type, this._token, param);
+        this._connection.sendProgress(vscode_languageserver_protocol_1.WorkDoneProgress.type, this._token, param);
       }
       done() {
-        ProgressReporter.sendProgress(this._connection, vscode_languageserver_protocol_1.WorkDoneProgress.type, this._token, { kind: "end" });
+        _WorkDoneProgressReporterImpl.Instances.delete(this._token);
+        this._connection.sendProgress(vscode_languageserver_protocol_1.WorkDoneProgress.type, this._token, { kind: "end" });
       }
     };
-    var WorkDoneProgressServerReporterImpl = class _WorkDoneProgressServerReporterImpl extends WorkDoneProgressReporterImpl {
-      /**
-       * Server-created reporters, keyed by token. Only these can be cancelled via
-       * `window/workDoneProgress/cancel`, so reporters attached to client-provided
-       * tokens are never tracked here.
-       */
-      static Instances = /* @__PURE__ */ new Map();
+    var WorkDoneProgressServerReporterImpl = class extends WorkDoneProgressReporterImpl {
       _source;
       constructor(connection, token) {
         super(connection, token);
         this._source = new vscode_languageserver_protocol_1.CancellationTokenSource();
-        _WorkDoneProgressServerReporterImpl.Instances.set(token, this);
       }
       get token() {
         return this._source.token;
       }
       done() {
-        _WorkDoneProgressServerReporterImpl.Instances.delete(this._token);
         this._source.dispose();
         super.done();
       }
@@ -6775,7 +6712,10 @@ var require_progress = __commonJS({
           if (capabilities?.window?.workDoneProgress === true) {
             this._progressSupported = true;
             this.connection.onNotification(vscode_languageserver_protocol_1.WorkDoneProgressCancelNotification.type, (params) => {
-              WorkDoneProgressServerReporterImpl.Instances.get(params.token)?.cancel();
+              const progress = WorkDoneProgressReporterImpl.Instances.get(params.token);
+              if (progress instanceof WorkDoneProgressServerReporterImpl || progress instanceof NullProgressServerReporter) {
+                progress.cancel();
+              }
             });
           }
         }
@@ -6812,7 +6752,7 @@ var require_progress = __commonJS({
         this._token = _token;
       }
       report(data) {
-        ProgressReporter.sendProgress(this._connection, ResultProgress.type, this._token, data);
+        this._connection.sendProgress(ResultProgress.type, this._token, data);
       }
     };
     function attachPartialResult(connection, params) {
@@ -21424,6 +21364,11 @@ var CompilerContext = class {
 // ../packages/compiler/src/generator/states/generate-element/generate-element.state.ts
 var import_typescript6 = require("typescript");
 
+// ../packages/compiler/src/utils/element-selector/element-selector.utils.ts
+function getElementSelector({ tagName, is }) {
+  return is ?? tagName;
+}
+
 // ../packages/compiler/src/utils/event-reads/event-reads.utils.ts
 var import_typescript5 = require("typescript");
 function readsEvent(node) {
@@ -21437,11 +21382,6 @@ function readsEvent(node) {
     return readsEvent(node.initializer);
   }
   return (0, import_typescript5.forEachChild)(node, readsEvent) ?? false;
-}
-
-// ../packages/compiler/src/utils/element-selector/element-selector.utils.ts
-function getElementSelector({ tagName, is }) {
-  return is ?? tagName;
 }
 
 // ../packages/compiler/src/parser/utils/for-variables/for-variables.utils.ts
