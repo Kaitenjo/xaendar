@@ -1,3 +1,4 @@
+import type { HtmlSecurityOptions } from './html-security-options.type';
 import type { UrlSanitization } from './url-sanitization.type';
 
 /**
@@ -36,4 +37,9 @@ export interface SecurityOptions {
    * always checked, since they must work in any project.
    */
   readonly rejectUnsafeBindings?: boolean;
+  /**
+   * The options of the sanitizer of `@@innerHtml` and `sanitizeHtml` for every HTML the project sanitizes (see
+   * `HtmlSecurityOptions`), passed by the build to the runtime. None by default.
+   */
+  readonly html?: HtmlSecurityOptions;
 }

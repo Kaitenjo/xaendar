@@ -2,6 +2,7 @@ export type * from '../types/bound-template.type';
 export type * from '../types/component-runtime.type';
 export type * from '../types/context.type';
 export type * from '../types/declaration-kind.type';
+export type * from '../types/html-security-config.type';
 export type * from '../types/render-definition.type';
 export type * from '../types/render-element-binding.type';
 export type * from '../types/render-element-template.type';

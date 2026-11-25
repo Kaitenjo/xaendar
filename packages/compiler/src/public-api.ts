@@ -126,6 +126,7 @@ export * from './utils/element-namespace/element-namespace.utils';
 export * from './utils/element-selector/element-selector.utils';
 export * from './utils/expression-children/expression-children.utils';
 export * from './utils/extract-component-members/extract-component-members.utils';
+export * from './utils/html-security/html-security.utils';
 export * from './utils/library-manifest/library-manifest.utils';
 export * from './utils/metadata/metadata.utils';
 export * from './utils/package-libraries/package-libraries.utils';

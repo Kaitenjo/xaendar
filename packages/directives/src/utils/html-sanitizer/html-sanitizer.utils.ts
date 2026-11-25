@@ -1,4 +1,5 @@
 import { _SECURITY } from '@xaendar/core';
+import { describeUnsafeSanitizerOptions } from '@xaendar/internals';
 import { HtmlSanitization } from '../../models/html-sanitization/html-sanitization.model';
 import type { HtmlSanitizeResult } from '../../types/html-sanitize-result.type';
 import type { HtmlSanitizerOptions } from '../../types/html-sanitizer-options.type';
@@ -61,25 +62,20 @@ const DEFAULT_POLICY: HtmlSanitizerPolicy = {
 };
 
 /**
- * The elements the options may not allow, whatever the attributes kept, with the reason: a `script` runs once the page
- * rendered on the server holds it, a `base` changes where every relative URL of the page leads, a `meta` can send the
- * page elsewhere.
- */
-const UNSAFE_ELEMENTS: ReadonlyMap<string, string> = new Map([
-  ['base', 'which changes where every relative URL of the page leads'],
-  ['meta', 'which can send the page elsewhere (http-equiv="refresh")'],
-  ['script', 'whose code the browser runs once the page rendered on the server holds it']
-]);
-
-/**
- * The schemes the options may not allow, which run code.
- */
-const UNSAFE_URL_SCHEMES: ReadonlySet<string> = new Set(['javascript', 'vbscript']);
-
-/**
  * What the sanitizer keeps with each object of options, read from it the first time it is used.
  */
 const policies = new WeakMap<HtmlSanitizerOptions, HtmlSanitizerPolicy>();
+
+/**
+ * The options of the sanitizer for the whole project, the `html` of the security of `xaendar.json`, which the build
+ * checks: `undefined` when it sets none.
+ */
+const PROJECT_OPTIONS: HtmlSanitizerOptions | undefined = _SECURITY.html;
+
+/**
+ * What the sanitizer keeps where a use passes no options: the options of the project, or the default ones.
+ */
+const PROJECT_POLICY: HtmlSanitizerPolicy = PROJECT_OPTIONS ? createPolicy(PROJECT_OPTIONS) : DEFAULT_POLICY;
 
 /**
  * Sanitizes an HTML, as `@@innerHtml` does before rendering it: keeps only the elements and the attributes allowed,
@@ -98,6 +94,9 @@ const policies = new WeakMap<HtmlSanitizerOptions, HtmlSanitizerPolicy>();
  * The options are read once for each object: create them once (a constant, a field), not at each call. They may not keep
  * what always runs code: a `script`, a `base` or a `meta`, an event handler attribute (`on*`), a `srcdoc`, a
  * `javascript:` or `vbscript:` URL; render such an HTML with `trustHtml`, or with a sanitizer of the application.
+ *
+ * The `html` of the `security` of `xaendar.json`, options of the same shape, applies to every HTML the project
+ * sanitizes: the lists of the options passed are added to its lists, their `urlSchemes` replace its own.
  *
  * @example
  * ```ts
@@ -137,18 +136,13 @@ export function sanitizeHtmlWithReport(html: string, options?: HtmlSanitizerOpti
  */
 function readPolicy(options: HtmlSanitizerOptions | undefined): HtmlSanitizerPolicy {
   if (!options) {
-    return DEFAULT_POLICY;
+    return PROJECT_POLICY;
   }
 
   let policy = policies.get(options);
   if (!policy) {
     assertSafeOptions(options);
-    policy = {
-      elements: createNamePolicy(DEFAULT_ELEMENTS, null, options.allowElements, options.removeElements),
-      attributes: createAttributePolicy(DEFAULT_ATTRIBUTES, DEFAULT_ATTRIBUTE_PREFIXES, options.allowAttributes, options.removeAttributes),
-      urlSchemes: options.urlSchemes ? new Set(options.urlSchemes.map(toAsciiLowerCase)) : DEFAULT_URL_SCHEMES,
-      trustedOrigins: TRUSTED_ORIGINS
-    };
+    policy = createPolicy(PROJECT_OPTIONS ? joinOptions(PROJECT_OPTIONS, options) : options);
     policies.set(options, policy);
   }
 
@@ -156,56 +150,63 @@ function readPolicy(options: HtmlSanitizerOptions | undefined): HtmlSanitizerPol
 }
 
 /**
- * Ensures the options keep nothing that always runs code, whatever the HTML: a `script`, a `base` or a `meta` (see
- * `UNSAFE_ELEMENTS`), an event handler attribute or a `srcdoc`, on every element or on some (`img[onerror]`), a
- * `javascript:` or `vbscript:` URL. A name ending with `*` matching one of them counts as listing it (`o*`).
+ * Ensures the options keep nothing that always runs code, whatever the HTML (see `describeUnsafeSanitizerOptions` of
+ * `@xaendar/internals`, which the build applies to the `html` of the security of `xaendar.json` too).
  *
  * @param options - The options.
  * @throws If the options keep what always runs code.
  */
-function assertSafeOptions({ allowElements, allowAttributes, urlSchemes }: HtmlSanitizerOptions): void {
-  const instead = 'render a trusted HTML with trustHtml(), or with a sanitizer of the application, instead';
-  if (allowElements?.length) {
-    for (let i = 0; i < allowElements.length; i++) {
-      const listed = toAsciiLowerCase(allowElements[i]);
-      for (const [element, reason] of UNSAFE_ELEMENTS) {
-        if (listsName(listed, element, false)) {
-          throw new Error(`The allowElements of the sanitizer list ${allowElements[i]}, keeping <${element}>, ${reason}: ${instead}`);
-        }
-      }
-    }
-  }
-
-  if (allowAttributes?.length) {
-    for (let i = 0; i < allowAttributes.length; i++) {
-      const written = toAsciiLowerCase(allowAttributes[i]);
-      const listed = written.endsWith(']') ? written.slice(written.indexOf('[') + 1, -1) : written;
-      if (listsName(listed, 'on', true) || listsName(listed, 'srcdoc', false)) {
-        throw new Error(`The allowAttributes of the sanitizer list ${allowAttributes[i]}, keeping an attribute the browser runs (on*, srcdoc): ${instead}`);
-      }
-    }
-  }
-
-  const scheme = urlSchemes?.find(listed => UNSAFE_URL_SCHEMES.has(toAsciiLowerCase(listed)));
-  if (scheme !== undefined) {
-    throw new Error(`The urlSchemes of the sanitizer list ${scheme}, a scheme running code: ${instead}`);
+function assertSafeOptions(options: HtmlSanitizerOptions): void {
+  const unsafe = describeUnsafeSanitizerOptions(options);
+  if (unsafe !== undefined) {
+    throw new Error(`${unsafe}: render a trusted HTML with trustHtml(), or with a sanitizer of the application, instead`);
   }
 }
 
 /**
- * Tells whether a name the options list matches a name, or the names starting with a prefix: as it is, or as a prefix
- * ending with `*` (`o*` matches `onclick`).
+ * Creates what the sanitizer keeps with some options.
  *
- * @param listed - The name listed, lowercase.
- * @param name - The name, or the prefix.
- * @param prefix - Whether `name` is a prefix of names (`on`).
- * @returns `true` when the name listed matches it.
+ * @param options - The options, safe (see {@link assertSafeOptions}).
+ * @returns What the sanitizer keeps.
  */
-function listsName(listed: string, name: string, prefix: boolean): boolean {
-  if (listed.endsWith('*')) {
-    const start = listed.slice(0, -1);
-    return name.startsWith(start) || (prefix && start.startsWith(name));
+function createPolicy(options: HtmlSanitizerOptions): HtmlSanitizerPolicy {
+  return {
+    elements: createNamePolicy(DEFAULT_ELEMENTS, null, options.allowElements, options.removeElements),
+    attributes: createAttributePolicy(DEFAULT_ATTRIBUTES, DEFAULT_ATTRIBUTE_PREFIXES, options.allowAttributes, options.removeAttributes),
+    urlSchemes: options.urlSchemes ? new Set(options.urlSchemes.map(toAsciiLowerCase)) : DEFAULT_URL_SCHEMES,
+    trustedOrigins: TRUSTED_ORIGINS
+  };
+}
+
+/**
+ * Joins the options of the project with the ones of a use: the lists of the use are added to the ones of the project,
+ * its schemes replace the project's.
+ *
+ * @param project - The options of the project.
+ * @param options - The options of the use.
+ * @returns The options the use sanitizes with.
+ */
+function joinOptions(project: HtmlSanitizerOptions, options: HtmlSanitizerOptions): HtmlSanitizerOptions {
+  return {
+    allowElements: joinLists(project.allowElements, options.allowElements),
+    allowAttributes: joinLists(project.allowAttributes, options.allowAttributes),
+    removeElements: joinLists(project.removeElements, options.removeElements),
+    removeAttributes: joinLists(project.removeAttributes, options.removeAttributes),
+    urlSchemes: options.urlSchemes ?? project.urlSchemes
+  };
+}
+
+/**
+ * Joins two lists of names, either of them possibly missing.
+ *
+ * @param first - The first list.
+ * @param second - The second list.
+ * @returns Both lists in one, one of them as it is when the other is missing or empty.
+ */
+function joinLists(first: readonly string[] | undefined, second: readonly string[] | undefined): readonly string[] | undefined {
+  if (!first?.length) {
+    return second;
   }
 
-  return prefix ? listed.startsWith(name) : listed === name;
+  return second?.length ? first.concat(second) : first;
 }

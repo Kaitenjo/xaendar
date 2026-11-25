@@ -193,6 +193,16 @@ describe('sanitizeHtml', () => {
     expect((await loadWith({ urls: 'remove', resourceUrls: 'off', trustedOrigins: [], rejectUnsafeBindings: true })).sanitizeHtml(html, options)).toBe(html);
   });
 
+  it('applies the html of the security of the project to every use, adding the lists a use passes and taking its schemes', async () => {
+    const html = { allowElements: ['iframe'], allowAttributes: ['src'], removeAttributes: ['a[target]'], urlSchemes: ['https'] };
+    const { sanitizeHtml: sanitize } = await loadWith({ urls: 'remove', resourceUrls: 'off', trustedOrigins: [], rejectUnsafeBindings: true, html });
+    const page = '<iframe src="/a.html"></iframe><a href="http://x" target="_blank" data-x="1">a</a>';
+
+    expect(sanitize(page)).toBe('<iframe src="/a.html"></iframe><a>a</a>');
+    expect(sanitize(page, { allowAttributes: ['data-x'], urlSchemes: ['http'] })).toBe('<iframe src="/a.html"></iframe><a href="http://x" data-x="1">a</a>');
+    expect(sanitize(page, {})).toBe('<iframe src="/a.html"></iframe><a>a</a>');
+  });
+
   it('never lets an SVG animation write an href', () => {
     const options: HtmlSanitizerOptions = { allowElements: ['svg', 'a', 'animate', 'set'], allowAttributes: ['attributeName', 'to'] };
 

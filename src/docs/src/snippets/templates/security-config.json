@@ -4,6 +4,10 @@
     "urls": "remove",
     "resourceUrls": "warn",
     "trustedOrigins": ["https://www.youtube-nocookie.com"],
-    "rejectUnsafeBindings": true
+    "rejectUnsafeBindings": true,
+    "html": {
+      "allowElements": ["iframe"],
+      "allowAttributes": ["iframe[src]"]
+    }
   }
 }
