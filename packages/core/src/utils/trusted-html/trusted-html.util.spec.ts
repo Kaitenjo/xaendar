@@ -30,32 +30,32 @@ async function load(): Promise<typeof import('./trusted-html.util')> {
   return import('./trusted-html.util');
 }
 
-describe('_toTrustedHtml', () => {
+describe('toTrustedHtml', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
   it('gives the HTML itself where the browser does not support Trusted Types', async () => {
-    const { _toTrustedHtml } = await load();
+    const { toTrustedHtml } = await load();
 
-    expect(_toTrustedHtml('<b>a</b>', 'xaendar#template')).toBe('<b>a</b>');
+    expect(toTrustedHtml('<b>a</b>', 'xaendar#template')).toBe('<b>a</b>');
   });
 
   it('gives a TrustedHTML of the policy, created once', async () => {
     const createPolicy = installTrustedTypes();
-    const { _toTrustedHtml, TEMPLATE_CONTENT_POLICY } = await load();
+    const { toTrustedHtml, TEMPLATE_CONTENT_POLICY } = await load();
 
-    expect(_toTrustedHtml('<b>a</b>', TEMPLATE_CONTENT_POLICY)).toEqual(new FakeTrustedHtml('<b>a</b>', 'xaendar#template'));
-    expect(_toTrustedHtml('<i>b</i>', TEMPLATE_CONTENT_POLICY)).toEqual(new FakeTrustedHtml('<i>b</i>', 'xaendar#template'));
+    expect(toTrustedHtml('<b>a</b>', TEMPLATE_CONTENT_POLICY)).toEqual(new FakeTrustedHtml('<b>a</b>', 'xaendar#template'));
+    expect(toTrustedHtml('<i>b</i>', TEMPLATE_CONTENT_POLICY)).toEqual(new FakeTrustedHtml('<i>b</i>', 'xaendar#template'));
     expect(createPolicy).toHaveBeenCalledOnce();
   });
 
   it('gives the HTML itself when the Content-Security-Policy does not allow the policy, trying to create it once', async () => {
     const createPolicy = installTrustedTypes(['xaendar#template']);
-    const { _toTrustedHtml } = await load();
+    const { toTrustedHtml } = await load();
 
-    expect(_toTrustedHtml('<b>a</b>', 'xaendar#template')).toBe('<b>a</b>');
-    expect(_toTrustedHtml('<b>a</b>', 'xaendar#template')).toBe('<b>a</b>');
+    expect(toTrustedHtml('<b>a</b>', 'xaendar#template')).toBe('<b>a</b>');
+    expect(toTrustedHtml('<b>a</b>', 'xaendar#template')).toBe('<b>a</b>');
     expect(createPolicy).toHaveBeenCalledOnce();
   });
 });

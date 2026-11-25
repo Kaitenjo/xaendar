@@ -45,7 +45,6 @@ export * from './template/template.util';
 export * from './track-key/track-key.util';
 export * from './transfer-state/transfer-state.util';
 export { trustResourceUrl, trustUrl } from './trust-url/trust-url.util';
-export { _toTrustedHtml } from './trusted-html/trusted-html.util';
 export { _try } from './try/try.util';
 export { _checkUrl } from './url-check/url-check.util';
 export { _attributeValue } from './write-attribute/write-attribute.util';

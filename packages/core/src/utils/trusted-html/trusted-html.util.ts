@@ -8,6 +8,11 @@ export const TEMPLATE_CONTENT_POLICY = 'xaendar#template';
 
 /**
  * The Trusted Types policies created, by name: `null` for one the `Content-Security-Policy` does not allow.
+ *
+ * N.B. Deliberate: the policies are created by core alone, for the HTML the compiler writes, and no function creating
+ * them is exported (`@@innerHtml` creates its own in `@xaendar/directives`). Their `createHTML` keeps the HTML as it is:
+ * exported, it would let any code of the page turn an HTML never sanitized into a `TrustedHTML` of a policy the
+ * `Content-Security-Policy` allows. Do not export it.
  */
 const policies = new Map<string, TrustedTypePolicy | null>();
 
@@ -21,7 +26,7 @@ const policies = new Map<string, TrustedTypePolicy | null>();
  * @param policyName - The name of the policy, which the `trusted-types` of the `Content-Security-Policy` lists.
  * @returns What to assign to the `innerHTML`, typed as the string the DOM library of TypeScript expects.
  */
-export function _toTrustedHtml(html: string, policyName: string): string {
+export function toTrustedHtml(html: string, policyName: string): string {
   const policy = readPolicy(policyName);
   return policy ? policy.createHTML(html) as unknown as string : html;
 }

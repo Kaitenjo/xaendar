@@ -1,10 +1,10 @@
-import { _toTrustedHtml } from '@xaendar/core';
 import type { HtmlContent } from '../../types/html-content.type';
 import type { HtmlSanitizeReport } from '../../types/html-sanitize-report.type';
 import type { HtmlSanitizerOptions } from '../../types/html-sanitizer-options.type';
 import type { HtmlSanitizer } from '../../types/html-sanitizer.type';
 import { sanitizeHtmlWithReport } from '../html-sanitizer/html-sanitizer.utils';
 import { SAFE_HTML } from '../trust-html/trust-html.utils';
+import { toTrustedHtml } from '../trusted-html/trusted-html.utils';
 
 /**
  * The name of the Trusted Types policy the HTML sanitized by `@@innerHtml` is written with.
@@ -53,12 +53,12 @@ export function renderHtml(element: Element, content: HtmlContent, options: Html
 
 /**
  * Writes an HTML into the `innerHTML` of an element, as a `TrustedHTML` of a policy where the browser supports Trusted
- * Types and the `Content-Security-Policy` allows the policy, as a string otherwise (see `_toTrustedHtml`).
+ * Types and the `Content-Security-Policy` allows the policy, as a string otherwise (see `toTrustedHtml`).
  *
  * @param element - The element.
  * @param html - The HTML.
  * @param policyName - The name of the Trusted Types policy.
  */
 function writeHtml(element: Element, html: string, policyName: string): void {
-  element.innerHTML = _toTrustedHtml(html, policyName);
+  element.innerHTML = toTrustedHtml(html, policyName);
 }
