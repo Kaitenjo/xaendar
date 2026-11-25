@@ -4,7 +4,7 @@ import type { HtmlSanitizeResult } from '../../types/html-sanitize-result.type';
 import type { HtmlSanitizerPolicy } from '../../types/html-sanitizer-policy.type';
 import type { ImpliedEnd } from '../../types/implied-end.type';
 import { isAllowedAttribute, isAllowedName } from '../../utils/html-name-policy/html-name-policy.utils';
-import { isSafeAnimationTarget, isSafeUrlAttribute } from '../../utils/url-sanitizer/url-sanitizer.utils';
+import { isSafeAnimationTarget, isSafeUrlAttribute, isTrustedResource } from '../../utils/url-sanitizer/url-sanitizer.utils';
 import { HtmlTokenizer } from '../html-tokenizer/html-tokenizer.model';
 
 /**
@@ -235,7 +235,7 @@ export class HtmlSanitization {
 
     for (let i = 0; i < attributes.length; i++) {
       const { name, value } = attributes[i];
-      if (isAllowedAttribute(this._policy.attributes, element, name) && isSafeUrlAttribute(name, value, this._policy.urlSchemes) && isSafeAnimationTarget(element, name, value)) {
+      if (isAllowedAttribute(this._policy.attributes, element, name) && isSafeUrlAttribute(name, value, this._policy.urlSchemes) && isTrustedResource(element, name, value, this._policy.trustedOrigins) && isSafeAnimationTarget(element, name, value)) {
         written = `${written} ${name}="${value.replace(/["<>]/g, encodeAttributeCharacter)}"`;
       } else {
         (this._removedAttributes ??= new Set()).add(`${element}[${name}]`);

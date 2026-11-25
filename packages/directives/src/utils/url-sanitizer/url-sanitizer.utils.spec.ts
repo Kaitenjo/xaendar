@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decodeCharacterReferences, isSafeAnimationTarget, isSafeSrcset, isSafeUrl, isSafeUrlAttribute } from './url-sanitizer.utils';
+import { decodeCharacterReferences, isSafeAnimationTarget, isSafeSrcset, isSafeUrl, isSafeUrlAttribute, isTrustedResource } from './url-sanitizer.utils';
 
 /**
  * The schemes allowed by default.
@@ -76,6 +76,24 @@ describe('decodeCharacterReferences', () => {
 
   it('returns a value without & as it is', () => {
     expect(decodeCharacterReferences('/a')).toBe('/a');
+  });
+});
+
+describe('isTrustedResource', () => {
+  it('keeps a resource loaded from the application or from a trusted origin, decoding the references of its URL', () => {
+    const trusted = ['https://cdn.example.com'];
+
+    expect(isTrustedResource('iframe', 'src', '/frame.html', trusted)).toBe(true);
+    expect(isTrustedResource('iframe', 'src', 'https://cdn.example.com/frame.html', trusted)).toBe(true);
+    expect(isTrustedResource('iframe', 'src', 'https://evil.com/frame.html', trusted)).toBe(false);
+    expect(isTrustedResource('embed', 'src', '//evil.com/x', trusted)).toBe(false);
+    expect(isTrustedResource('object', 'data', 'https&#x3a;//evil.com/x', trusted)).toBe(false);
+  });
+
+  it('keeps the attributes loading no resource, and every resource when the project does not check them', () => {
+    expect(isTrustedResource('img', 'src', 'https://evil.com/x.png', [])).toBe(true);
+    expect(isTrustedResource('iframe', 'title', 'https://evil.com/', [])).toBe(true);
+    expect(isTrustedResource('iframe', 'src', 'https://evil.com/frame.html', null)).toBe(true);
   });
 });
 

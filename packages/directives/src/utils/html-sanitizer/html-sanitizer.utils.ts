@@ -1,3 +1,4 @@
+import { _SECURITY } from '@xaendar/core';
 import { HtmlSanitization } from '../../models/html-sanitization/html-sanitization.model';
 import type { HtmlSanitizeResult } from '../../types/html-sanitize-result.type';
 import type { HtmlSanitizerOptions } from '../../types/html-sanitizer-options.type';
@@ -44,12 +45,19 @@ const DEFAULT_ATTRIBUTE_PREFIXES: readonly string[] = ['aria-'];
 const DEFAULT_URL_SCHEMES: ReadonlySet<string> = new Set(['ftp', 'http', 'https', 'mailto', 'sms', 'tel']);
 
 /**
+ * The origins the resources loaded into the page can come from, as the security of the project asks (see
+ * `HtmlSanitizerPolicy.trustedOrigins`): the same check as the URLs the templates bind to the attributes loading them.
+ */
+const TRUSTED_ORIGINS: readonly string[] | null = _SECURITY.resourceUrls === 'off' ? null : _SECURITY.trustedOrigins;
+
+/**
  * What the sanitizer keeps without options.
  */
 const DEFAULT_POLICY: HtmlSanitizerPolicy = {
   elements: createNamePolicy(DEFAULT_ELEMENTS, null, undefined, undefined),
   attributes: createAttributePolicy(DEFAULT_ATTRIBUTES, DEFAULT_ATTRIBUTE_PREFIXES, undefined, undefined),
-  urlSchemes: DEFAULT_URL_SCHEMES
+  urlSchemes: DEFAULT_URL_SCHEMES,
+  trustedOrigins: TRUSTED_ORIGINS
 };
 
 /**
@@ -138,7 +146,8 @@ function readPolicy(options: HtmlSanitizerOptions | undefined): HtmlSanitizerPol
     policy = {
       elements: createNamePolicy(DEFAULT_ELEMENTS, null, options.allowElements, options.removeElements),
       attributes: createAttributePolicy(DEFAULT_ATTRIBUTES, DEFAULT_ATTRIBUTE_PREFIXES, options.allowAttributes, options.removeAttributes),
-      urlSchemes: options.urlSchemes ? new Set(options.urlSchemes.map(toAsciiLowerCase)) : DEFAULT_URL_SCHEMES
+      urlSchemes: options.urlSchemes ? new Set(options.urlSchemes.map(toAsciiLowerCase)) : DEFAULT_URL_SCHEMES,
+      trustedOrigins: TRUSTED_ORIGINS
     };
     policies.set(options, policy);
   }

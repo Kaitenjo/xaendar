@@ -1,4 +1,4 @@
-import { cleanUrl, everySrcsetUrl, isMediaDataUrl, isUrlAttribute, readUrlScheme } from '@xaendar/internals';
+import { cleanUrl, everySrcsetUrl, isMediaDataUrl, isResourceUrlAttribute, isUntrustedResourceUrl, isUrlAttribute, readUrlScheme } from '@xaendar/internals';
 
 /**
  * The character references of an attribute value the URLs are decoded with: the numeric ones, with or without `;` as
@@ -48,6 +48,22 @@ export function isSafeUrlAttribute(name: string, value: string, schemes: Readonl
     default:
       return !isUrlAttribute(name) || isSafeUrl(decodeCharacterReferences(value), schemes);
   }
+}
+
+/**
+ * Tells whether a URL loading a resource into the page can be kept: the `src` of an `<iframe>`, an `<embed>` or a
+ * `<frame>`, the `data` and `codebase` of an `<object>`, the `href` of a `<link>` or of the `<base>`, as the templates
+ * check them (`isResourceUrlAttribute`). Kept when it loads from the application (a relative URL) or from one of the
+ * trusted origins of the project; any other attribute always is.
+ *
+ * @param element - The name of the element, lowercase.
+ * @param name - The name of the attribute, lowercase.
+ * @param value - The value of the attribute as it is written, its character references not decoded.
+ * @param trustedOrigins - The origins trusted, `null` when the project does not check the resources.
+ * @returns Whether the attribute can be kept.
+ */
+export function isTrustedResource(element: string, name: string, value: string, trustedOrigins: readonly string[] | null): boolean {
+  return trustedOrigins === null || !isResourceUrlAttribute(element, name) || !isUntrustedResourceUrl(decodeCharacterReferences(value), trustedOrigins);
 }
 
 /**

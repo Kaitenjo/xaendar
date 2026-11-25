@@ -1,7 +1,20 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { HtmlSanitizerOptions } from '../../types/html-sanitizer-options.type';
 import { sanitizeHtml, sanitizeHtmlWithReport } from './html-sanitizer.utils';
+
+/**
+ * Loads the sanitizer again, with the security of the project the plugin defines.
+ */
+async function loadWith(security: object): Promise<typeof import('./html-sanitizer.utils')> {
+  vi.stubGlobal('__XAENDAR_SECURITY__', security);
+  vi.resetModules();
+  try {
+    return await import('./html-sanitizer.utils');
+  } finally {
+    vi.unstubAllGlobals();
+  }
+}
 
 /**
  * Inputs written to run code in a page, from the cheat sheets of XSS and of mutation XSS.
@@ -160,6 +173,24 @@ describe('sanitizeHtml', () => {
 
   it('accepts the options naming what only looks like what runs code', () => {
     expect(sanitizeHtml('<p data-on="1" no-onclick="2">p</p>', { allowElements: ['scripts', 'p*'], allowAttributes: ['data-*', 'no-onclick', 'srcset'], urlSchemes: ['data'] })).toBe('<p data-on="1" no-onclick="2">p</p>');
+  });
+
+  it('keeps the resources an element allowed loads from the application only, as the security of the project asks by default', () => {
+    const options: HtmlSanitizerOptions = { allowElements: ['iframe', 'object'], allowAttributes: ['src', 'data'] };
+
+    expect(sanitizeHtmlWithReport('<iframe src="/frame.html"></iframe><iframe src="https://evil.com/frame.html"></iframe><object data="//evil.com/x"></object><img src="https://example.com/a.png">', options)).toEqual({
+      html: '<iframe src="/frame.html"></iframe><iframe></iframe><object></object><img src="https://example.com/a.png">',
+      report: { removedElements: [], removedAttributes: ['iframe[src]', 'object[data]'] }
+    });
+  });
+
+  it('keeps the resources of the trusted origins of the project, and every resource when it does not check them', async () => {
+    const options: HtmlSanitizerOptions = { allowElements: ['iframe'], allowAttributes: ['src'] };
+    const html = '<iframe src="https://cdn.example.com/a.html"></iframe><iframe src="https://evil.com/b.html"></iframe>';
+
+    expect((await loadWith({ urls: 'remove', resourceUrls: 'remove', trustedOrigins: ['https://cdn.example.com'], rejectUnsafeBindings: true })).sanitizeHtml(html, options))
+      .toBe('<iframe src="https://cdn.example.com/a.html"></iframe><iframe></iframe>');
+    expect((await loadWith({ urls: 'remove', resourceUrls: 'off', trustedOrigins: [], rejectUnsafeBindings: true })).sanitizeHtml(html, options)).toBe(html);
   });
 
   it('never lets an SVG animation write an href', () => {
