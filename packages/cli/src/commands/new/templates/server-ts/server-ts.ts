@@ -20,7 +20,7 @@ export function serverTs(componentName: string): string {
   return `import { toSameOriginPath } from '@xaendar/common';
 import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
-import { extname, join, normalize, resolve } from 'node:path';
+import { extname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
 
 /**
  * The folder of the build of the browser, whose files are served as they are.
@@ -69,8 +69,9 @@ createServer(async (request, response) => {
   if (extension && extension !== '.html') {
     try {
       const path = normalize(join(CLIENT_DIR, decodeURIComponent(pathname)));
-      // Never a file outside of the build
-      if (!path.startsWith(CLIENT_DIR)) {
+      // Never a file outside of the build: one its path reaches going up (an encoded ..%2F), or on another root
+      const inside = relative(CLIENT_DIR, path);
+      if (inside === '..' || inside.startsWith(\`..\${sep}\`) || isAbsolute(inside)) {
         throw new Error(\`\${pathname} is outside of the build\`);
       }
 
