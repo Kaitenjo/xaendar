@@ -11,8 +11,8 @@ declare const __XAENDAR_SECURITY__: _SecurityConfig | undefined;
  * The checks applied where nothing defines the `security` of the project: the defaults of `xaendar.json`.
  */
 const DEFAULT_SECURITY: _SecurityConfig = {
-  urls: 'warn',
-  resourceUrls: 'warn',
+  urls: 'remove',
+  resourceUrls: 'remove',
   trustedOrigins: [],
   rejectUnsafeBindings: true
 };

@@ -115,7 +115,7 @@ describe('attributes written with attr.', () => {
     const element = document.createElement('a');
     const url = signal('javascript:alert(1)');
     _setReactiveAttribute(_scope(null, EMPTY_LAYOUT), element, { name: 'href', value: () => url(), setter: _setReactiveAttribute, url: true });
-    expect(element.getAttribute('href')).toBe('javascript:alert(1)');
+    expect(element.hasAttribute('href')).toBe(false);
     expect(warn).toHaveBeenCalledTimes(1);
 
     _setExpressionAttribute(_scope(null, EMPTY_LAYOUT), element, { name: 'ping', value: () => 'javascript:a', setter: _setExpressionAttribute });
@@ -127,7 +127,7 @@ describe('attributes written with attr.', () => {
     // A resource, its origin not trusted
     const frame = document.createElement('iframe');
     _setExpressionProperty(_scope(null, EMPTY_LAYOUT), frame, { name: 'src', value: () => 'https://evil.com/frame.html', setter: _setExpressionProperty, url: true, resource: true });
-    expect(frame.getAttribute('src')).toBe('https://evil.com/frame.html');
+    expect(frame.hasAttribute('src')).toBe(false);
     expect(warn).toHaveBeenCalledTimes(2);
     warn.mockRestore();
   });

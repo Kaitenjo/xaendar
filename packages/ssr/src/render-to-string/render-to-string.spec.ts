@@ -398,8 +398,8 @@ describe('renderToString', () => {
     customElements.define('unsafe-links', LinkElement);
     _defineServerRender(LinkElement, await compileWith('<a href="{ link }">a</a><a class.on="{ on }" href="{ link }" title="{ link }">b</a><a href="{ \'/safe\' }">c</a>', { signals: [] }));
 
-    // Written with a warning, as the default of the project asks: neither the title nor the safe URL are warned about
-    expect(await renderToString(LinkElement)).toBe('<unsafe-links><template shadowrootmode="open"><a href="javascript:alert(1)">a</a><a class="on" href="javascript:alert(1)" title="javascript:alert(1)">b</a><a href="/safe">c</a></template></unsafe-links>');
+    // Left out, as the default of the project asks: neither the title nor the safe URL are checked
+    expect(await renderToString(LinkElement)).toBe('<unsafe-links><template shadowrootmode="open"><a>a</a><a class="on" title="javascript:alert(1)">b</a><a href="/safe">c</a></template></unsafe-links>');
     expect(warn).toHaveBeenCalledTimes(2);
     vi.restoreAllMocks();
   });

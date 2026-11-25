@@ -23,7 +23,7 @@
 | `hostDirectives` | the same option of `@WebComponent`, with `{ directive, properties, events }` |
 | `{{ expr }}` | `{ expr }` |
 | `[innerHTML]="html"`, `DomSanitizer` | `@@innerHtml(html="{html}")` of `@xaendar/directives`, sanitized as Angular does (`options` changes what is kept, `sanitizer` replaces the sanitizer); `bypassSecurityTrustHtml(x)` → `trustHtml(x)`; `sanitize(SecurityContext.HTML, x)` → `sanitizeHtml(x)` |
-| URL sanitization (`unsafe:`), `bypassSecurityTrustUrl`, `bypassSecurityTrustResourceUrl` | bound URLs checked as `security.urls`/`security.resourceUrls` of `xaendar.json` ask (default `"warn"`, `"remove"` leaves the attribute out; resource URLs pass for the origins of `security.trustedOrigins`); `bypassSecurityTrustUrl(x)` → `trustUrl(x)`, `bypassSecurityTrustResourceUrl(x)` → `trustResourceUrl(x)` of `@xaendar/core` |
+| URL sanitization (`unsafe:`), `bypassSecurityTrustUrl`, `bypassSecurityTrustResourceUrl` | bound URLs checked as `security.urls`/`security.resourceUrls` of `xaendar.json` ask (default `"remove"`, which leaves the attribute out, `"warn"` writes it with a warning; resource URLs pass for the origins of `security.trustedOrigins`); `bypassSecurityTrustUrl(x)` → `trustUrl(x)`, `bypassSecurityTrustResourceUrl(x)` → `trustResourceUrl(x)` of `@xaendar/core` |
 | `[attr]="expr"`, `[prop]="expr"` | `attr="{expr}"`: an attribute on native elements, an input on components |
 | `[attr.x]="expr"` | `attr.x="{expr}"`: always the attribute, never the input named `x`; merged with the host bindings (template > directives > component, `null` no opinion) |
 | `[class.x]="cond"` | `class.x="{cond}"`, without brackets |

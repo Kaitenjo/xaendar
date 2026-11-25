@@ -16,6 +16,11 @@ async function loadWith(security: object): Promise<typeof import('./url-check.ut
  */
 const REMOVING = { urls: 'remove', resourceUrls: 'remove', trustedOrigins: ['https://cdn.example.com'], rejectUnsafeBindings: true };
 
+/**
+ * The security of a project writing what is not safe, with a warning.
+ */
+const WARNING = { urls: 'warn', resourceUrls: 'warn', trustedOrigins: [], rejectUnsafeBindings: true };
+
 describe('_checkUrl', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -35,10 +40,18 @@ describe('_checkUrl', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it('writes a URL running code with a warning by default', () => {
+  it('leaves out a URL running code by default', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
-    expect(_checkUrl('href', 'javascript:alert(1)')).toBe('javascript:alert(1)');
+    expect(_checkUrl('href', 'javascript:alert(1)')).toBeNull();
+    expect(warn).toHaveBeenCalledWith('Xaendar: the URL bound to href runs code (javascript:alert(1)): href is left out, as "security": { "urls": "remove" } in xaendar.json asks.');
+  });
+
+  it('writes a URL running code with a warning, as "warn" asks', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { _checkUrl: check } = await loadWith(WARNING);
+
+    expect(check('href', 'javascript:alert(1)')).toBe('javascript:alert(1)');
     expect(warn).toHaveBeenCalledWith('Xaendar: the URL bound to href runs code (javascript:alert(1)): it is written as it is. Bind a URL of the application, or mark it with trustUrl() when the application trusts it, or set "security": { "urls": "remove" } in xaendar.json to leave it out.');
   });
 
@@ -67,13 +80,20 @@ describe('_checkUrl', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it('checks the origin of a resource the attribute loads, with a warning by default', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  it('leaves out a resource of an origin that is not trusted by default', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
-    expect(_checkUrl('src', '/frame.html', true)).toBe('/frame.html');
-    expect(_checkUrl('src', 'https://evil.com/frame.html')).toBe('https://evil.com/frame.html');
+    expect(_checkUrl('src', 'https://evil.com/frame.html', true)).toBeNull();
+  });
+
+  it('checks the origin of a resource the attribute loads, with a warning as "warn" asks', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { _checkUrl: check } = await loadWith(WARNING);
+
+    expect(check('src', '/frame.html', true)).toBe('/frame.html');
+    expect(check('src', 'https://evil.com/frame.html')).toBe('https://evil.com/frame.html');
     expect(warn).not.toHaveBeenCalled();
-    expect(_checkUrl('src', 'https://evil.com/frame.html', true)).toBe('https://evil.com/frame.html');
+    expect(check('src', 'https://evil.com/frame.html', true)).toBe('https://evil.com/frame.html');
     expect(warn).toHaveBeenCalledWith('Xaendar: the URL bound to src loads a resource from an origin the application does not trust (https://evil.com/frame.html): it is written as it is. Bind a URL of the application, add its origin to "trustedOrigins", or mark it with trustResourceUrl() when the application trusts it, or set "security": { "resourceUrls": "remove" } in xaendar.json to leave it out.');
   });
 
@@ -129,7 +149,7 @@ describe('checkHostUrl', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const frame = { localName: 'iframe' } as Element;
 
-    expect(checkHostUrl(frame, 'src', 'https://evil.com/frame.html')).toBe('https://evil.com/frame.html');
+    expect(checkHostUrl(frame, 'src', 'https://evil.com/frame.html')).toBeNull();
     expect(console.warn).toHaveBeenCalledTimes(1);
     expect(checkHostUrl(frame, 'title', 'javascript:x')).toBe('javascript:x');
     expect(console.warn).toHaveBeenCalledTimes(1);

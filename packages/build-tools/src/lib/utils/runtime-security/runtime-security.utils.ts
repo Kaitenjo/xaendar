@@ -2,7 +2,7 @@ import type { SecurityOptions } from '@xaendar/compiler';
 
 /**
  * Writes the `security` the runtime of `@xaendar/core` applies (`__XAENDAR_SECURITY__`, read by `SECURITY`): the
- * options of the project, with their defaults (`'warn'` for `urls` and `resourceUrls`, `true` for
+ * options of the project, with their defaults (`'remove'` for `urls` and `resourceUrls`, `true` for
  * `rejectUnsafeBindings`) and its trusted origins. The runtime applies them to every component the project renders,
  * the ones of its libraries included, which declare no security: the URLs bound in the templates, which the compiler
  * only flags, and the `@HostAttribute`s.
@@ -16,8 +16,8 @@ export function toRuntimeSecurity(security: SecurityOptions): string {
   addOrigins(trustedOrigins, security.trustedOrigins);
 
   return JSON.stringify({
-    urls: security.urls ?? 'warn',
-    resourceUrls: security.resourceUrls ?? 'warn',
+    urls: security.urls ?? 'remove',
+    resourceUrls: security.resourceUrls ?? 'remove',
     trustedOrigins: Array.from(trustedOrigins),
     rejectUnsafeBindings: security.rejectUnsafeBindings ?? true
   });

@@ -490,6 +490,16 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Runtime',
+    message: 'Xaendar: the URL bound to href runs code (javascript:alert(1)): href is left out, as "security": { "urls": "remove" } in xaendar.json asks.',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Runtime',
+    message: 'Xaendar: the URL bound to src loads a resource from an origin the application does not trust (https://videos.example.net/embed/42): src is left out, as "security": { "resourceUrls": "remove" } in xaendar.json asks.',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Runtime',
     message: 'Xaendar: the URL bound to href runs code (javascript:alert(1)): it is written as it is. Bind a URL of the application, or mark it with trustUrl() when the application trusts it, or set "security": { "urls": "remove" } in xaendar.json to leave it out.',
     page: 'templates/binding'
   },

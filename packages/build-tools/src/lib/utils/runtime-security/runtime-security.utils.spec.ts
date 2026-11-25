@@ -3,7 +3,7 @@ import { toRuntimeSecurity } from './runtime-security.utils';
 
 describe('toRuntimeSecurity()', () => {
   it('writes the defaults of xaendar.json for the options left out', () => {
-    expect(JSON.parse(toRuntimeSecurity({}))).toEqual({ urls: 'warn', resourceUrls: 'warn', trustedOrigins: [], rejectUnsafeBindings: true });
+    expect(JSON.parse(toRuntimeSecurity({}))).toEqual({ urls: 'remove', resourceUrls: 'remove', trustedOrigins: [], rejectUnsafeBindings: true });
   });
 
   it('writes the options of the project, the trusted origins each once and as origins', () => {

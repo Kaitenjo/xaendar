@@ -126,7 +126,7 @@ describe('host attributes of attributes', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const link = document.createElement('a');
     bindDirective(link, { href: 'href' }, { href: 'javascript:alert(1)' }, 0);
-    expect(link.getAttribute('href')).toBe('javascript:alert(1)');
+    expect(link.hasAttribute('href')).toBe(false);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('Xaendar: the URL bound to href runs code (javascript:alert(1))'));
     warn.mockRestore();
   });

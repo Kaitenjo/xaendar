@@ -17,7 +17,7 @@ const run = (hook: ReturnType<typeof createConfigHook>, mode = 'development') =>
 /**
  * The security the runtime applies with the defaults of xaendar.json.
  */
-const DEFAULT_SECURITY = '{"urls":"warn","resourceUrls":"warn","trustedOrigins":[],"rejectUnsafeBindings":true}';
+const DEFAULT_SECURITY = '{"urls":"remove","resourceUrls":"remove","trustedOrigins":[],"rejectUnsafeBindings":true}';
 
 /**
  * A library of the workspace, resolved.

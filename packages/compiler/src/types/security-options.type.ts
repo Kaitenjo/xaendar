@@ -11,14 +11,15 @@ export interface SecurityOptions {
   /**
    * How a URL bound to an attribute loading or opening it (`href="{ url() }"`, the images of a `srcset`, the URLs of a
    * `ping`) is checked (see `UrlSanitization`): a URL running code (`javascript:`, `vbscript:`, a `data:` URL that is not
-   * an image, an audio or a video) is written with a warning, or left out. Defaults to `'warn'`.
+   * an image, an audio or a video) is left out, with a warning in development, or written with a warning. Defaults to
+   * `'remove'`.
    */
   readonly urls?: UrlSanitization;
   /**
    * How a URL bound to an attribute loading a resource into the page (the `src` of an `<iframe>`, an `<embed>` or a
    * `<frame>`, the `data` and `codebase` of an `<object>`, the `href` of a `<link>` or of the `<base>`) is checked (see
    * `UrlSanitization`): an absolute URL whose origin is not one of `trustedOrigins` is written with a warning, or left
-   * out; a relative URL loads from the application, and passes. Defaults to `'warn'`.
+   * out, with a warning in development; a relative URL loads from the application, and passes. Defaults to `'remove'`.
    */
   readonly resourceUrls?: UrlSanitization;
   /**

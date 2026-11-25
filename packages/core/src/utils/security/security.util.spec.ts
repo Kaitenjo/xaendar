@@ -7,7 +7,7 @@ describe('SECURITY', () => {
   });
 
   it('applies the defaults of xaendar.json where nothing defines the security of the project, as in the tests', async () => {
-    expect((await import('./security.util')).SECURITY).toEqual({ urls: 'warn', resourceUrls: 'warn', trustedOrigins: [], rejectUnsafeBindings: true });
+    expect((await import('./security.util')).SECURITY).toEqual({ urls: 'remove', resourceUrls: 'remove', trustedOrigins: [], rejectUnsafeBindings: true });
   });
 
   it('applies the security the plugin defines', async () => {

@@ -553,14 +553,24 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** Thrown at run time by a @HostAttribute writing an attribute the template type-check would reject: `@HostAttribute('onclick')`/`('srcdoc')` throw when the class is declared, element-dependent ones (iframe restrictions, SVG animation of href, meta refresh) when the directive or component starts on that element. Uses the `security` of the project (`__XAENDAR_SECURITY__`).
 - **Fix:** Write the attribute in the template, or listen with @HostListener.
 
+### `Xaendar: the URL bound to href runs code (javascript:alert(1)): href is left out, as "security": { "urls": "remove" } in xaendar.json asks.`
+
+- **Cause:** With `"security": { "urls": "remove" }` (the default), a javascript:, vbscript: or non-media data: URL bound to an attribute holding URLs (href, src, every image of srcset, every URL of ping…), in a template or a @HostAttribute, in the browser or on the server: the attribute is left out, the warning written in development only.
+- **Fix:** Bind a URL of the application, or mark one it builds with trustUrl().
+
+### `Xaendar: the URL bound to src loads a resource from an origin the application does not trust (https://videos.example.net/embed/42): src is left out, as "security": { "resourceUrls": "remove" } in xaendar.json asks.`
+
+- **Cause:** With `"security": { "resourceUrls": "remove" }` (the default), an absolute URL bound to an attribute loading a resource (<iframe>/<embed>/<frame> src, <object> data/codebase, <link>/<base> href) whose origin is not in trustedOrigins: the attribute is left out, the warning written in development only.
+- **Fix:** Add the origin to "trustedOrigins" (as URL.origin writes it), or mark the URL with trustResourceUrl().
+
 ### `Xaendar: the URL bound to href runs code (javascript:alert(1)): it is written as it is. Bind a URL of the application, or mark it with trustUrl() when the application trusts it, or set "security": { "urls": "remove" } in xaendar.json to leave it out.`
 
-- **Cause:** With `"security": { "urls": "warn" }` (the default), a javascript:, vbscript: or non-media data: URL bound to an attribute holding URLs (href, src, every image of srcset, every URL of ping…), in a template or a @HostAttribute, in the browser or on the server. With "remove" the attribute is left out (`… is left out, as "security": { "urls": "remove" } …`, in development only).
+- **Cause:** With `"security": { "urls": "warn" }`, a javascript:, vbscript: or non-media data: URL bound to an attribute holding URLs (href, src, every image of srcset, every URL of ping…), in a template or a @HostAttribute, in the browser or on the server. With "remove" the attribute is left out (`… is left out, as "security": { "urls": "remove" } …`, in development only).
 - **Fix:** Bind a URL of the application, mark one it builds with trustUrl(), or set "urls": "remove".
 
 ### `Xaendar: the URL bound to src loads a resource from an origin the application does not trust (https://videos.example.net/embed/42): it is written as it is. Bind a URL of the application, add its origin to "trustedOrigins", or mark it with trustResourceUrl() when the application trusts it, or set "security": { "resourceUrls": "remove" } in xaendar.json to leave it out.`
 
-- **Cause:** With `"security": { "resourceUrls": "warn" }` (the default), an absolute URL bound to an attribute loading a resource (<iframe>/<embed>/<frame> src, <object> data/codebase, <link>/<base> href) whose origin is not in trustedOrigins.
+- **Cause:** With `"security": { "resourceUrls": "warn" }`, an absolute URL bound to an attribute loading a resource (<iframe>/<embed>/<frame> src, <object> data/codebase, <link>/<base> href) whose origin is not in trustedOrigins.
 - **Fix:** Add the origin to "trustedOrigins" (as URL.origin writes it), mark the URL with trustResourceUrl(), or set "resourceUrls": "remove".
 
 ### `"trustedOrigins" of the security of xaendar.json lists cdn.example.com, which is not an origin: write its scheme, its host and its port, if any, as https://cdn.example.com`
