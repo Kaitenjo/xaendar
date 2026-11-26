@@ -3,7 +3,8 @@ import type { InputSignal, ModelSignal, QuerySignal } from '@xaendar/core/signal
 
 /**
  * A rating from 1 to 5 stars taking part in the form holding it, as a native field does: its value goes with the form,
- * its validity blocks the submission, the reset of the form empties it and a disabled `<fieldset>` disables it.
+ * its validity blocks the submission, the reset of the form empties it and a disabled `<fieldset>` disables it. Once
+ * touched and invalid, it is outlined (`:host(:state(touched):invalid)`).
  */
 @WebComponent({
   selector: 'ex-rating-input',
@@ -36,8 +37,8 @@ export class RatingInputComponent extends CustomElement {
    * Gives the form the rating and its validity, following their signals.
    */
   public onInit(): void {
-    this.formValue(this.value, value => value ? String(value) : null);
-    this.formValidity(() => this.required() && !this.value() ? { valueMissing: 'Choose a rating.' } : {}, this.firstStar);
+    this.setFormValue(this.value, value => value ? String(value) : null);
+    this.setFormValidators([() => this.required() && !this.value() ? { valueMissing: 'Choose a rating.' } : undefined], () => this.firstStar() ?? undefined);
   }
 
   /**

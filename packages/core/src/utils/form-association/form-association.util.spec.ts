@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 import { loadSignals } from '@xaendar/signals';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { signal } from '../../signals/signal/signal';
 import type { _FormAssociation } from '../../types/form/form-association.type';
-import { createFormAssociation, requireFormAssociation, writeFormValidity, writeFormValue } from './form-association.util';
+import { bindFormValue, createFormAssociation, isFormDirty, requireFormAssociation, resetFormAssociation, unbindFormValue, writeFormValidity, writeFormValue } from './form-association.util';
 
 loadSignals();
 
@@ -10,14 +11,33 @@ loadSignals();
  * An `ElementInternals` recording the calls, which happy-dom lacks.
  */
 function fakeInternals(): ElementInternals {
-  return { setFormValue: vi.fn(), setValidity: vi.fn() } as unknown as ElementInternals;
+  return { setFormValue: vi.fn(), setValidity: vi.fn(), states: new Set<string>() } as unknown as ElementInternals;
 }
 
 /**
- * What a component keeps of its form, with the given internals.
+ * Defines a form-associated class, and one that is not.
  */
-function association(internals: ElementInternals | null): _FormAssociation {
-  return { internals, disabled: Object.assign(() => false, { set: vi.fn(), get: vi.fn(), update: vi.fn() }), source: null, initial: undefined, converts: false };
+let counter = 0;
+function defineClasses(): { Field: typeof HTMLElement, Plain: typeof HTMLElement } {
+  class Field extends HTMLElement {
+    public static formAssociated = true;
+  }
+  class Plain extends HTMLElement { }
+  customElements.define(`x-form-field-${counter}`, Field);
+  customElements.define(`x-form-plain-${counter++}`, Plain);
+  return { Field, Plain };
+}
+
+/**
+ * Creates what a form-associated component keeps of its form, with the given internals.
+ */
+function associate(internals: ElementInternals | undefined): { association: _FormAssociation, element: HTMLElement } {
+  if (internals) {
+    Object.defineProperty(HTMLElement.prototype, 'attachInternals', { configurable: true, value: () => internals });
+  }
+
+  const element = new (defineClasses().Field)();
+  return { association: createFormAssociation(element)!, element };
 }
 
 describe('form association', () => {
@@ -25,67 +45,114 @@ describe('form association', () => {
     Reflect.deleteProperty(HTMLElement.prototype, 'attachInternals');
   });
 
-  it('is created only for a class declaring static formAssociated = true, attaching its internals once', () => {
+  it('is created only for a form-associated class, attaching its internals once', () => {
     const internals = fakeInternals();
     const attachInternals = vi.fn(() => internals);
     Object.defineProperty(HTMLElement.prototype, 'attachInternals', { configurable: true, value: attachInternals });
-    class Field extends HTMLElement {
-      public static formAssociated = true;
-    }
-    class Plain extends HTMLElement { }
-    customElements.define('x-form-field', Field);
-    customElements.define('x-form-plain', Plain);
+    const { Field, Plain } = defineClasses();
 
-    const form = createFormAssociation(new Field());
+    const association = createFormAssociation(new Field());
 
-    expect(form).toMatchObject({ internals, source: null, initial: undefined, converts: false });
-    expect(form!.disabled()).toBe(false);
+    expect(association).toMatchObject({ internals, source: null, initial: undefined, converts: false, stopValidators: null });
+    expect(association!.disabled()).toBe(false);
+    expect(association!.touched()).toBe(false);
     expect(attachInternals).toHaveBeenCalledTimes(1);
     expect(createFormAssociation(new Plain())).toBeNull();
   });
 
-  it('has no internals where the DOM has none, as on the server', () => {
-    class ServerField extends HTMLElement {
-      public static formAssociated = true;
-    }
-    customElements.define('x-form-server', ServerField);
+  it('has no internals where the DOM has none, as on the server, writing nothing', () => {
+    const { association, element } = associate(undefined);
+    const value = signal('a');
 
-    expect(createFormAssociation(new ServerField())!.internals).toBeNull();
+    expect(association.internals).toBeNull();
+    bindFormValue(association, element, value, false);
+    expect(() => writeFormValue(association, 'b', undefined)).not.toThrow();
+    expect(() => writeFormValidity(association, [() => ({ valueMissing: 'Required' })], undefined)).not.toThrow();
+    element.dispatchEvent(new Event('focusout'));
+    expect(association.touched()).toBe(true);
   });
 
   it('is required by the methods of the forms, naming the class and the method', () => {
-    const form = association(null);
-    class Missing extends HTMLElement { }
-    customElements.define('x-form-missing', Missing);
+    const { association, element } = associate(fakeInternals());
 
-    expect(requireFormAssociation(form, new Missing(), 'formValue')).toBe(form);
-    expect(() => requireFormAssociation(null, new Missing(), 'formValue')).toThrow('Missing.formValue() needs a form-associated component: declare formAssociated: true in its @WebComponent');
+    expect(requireFormAssociation(association, element, 'setFormValue')).toBe(association);
+    expect(() => requireFormAssociation(null, element, 'setFormValue')).toThrow(/^Field\.setFormValue\(\) needs a form-associated component: declare formAssociated: true in its @WebComponent$/);
   });
 
-  it('gives the form the value, converted when asked', () => {
-    const internals = fakeInternals();
+  it('keeps the signal of the value once, with its initial value, until it is unbound', () => {
+    const { association, element } = associate(fakeInternals());
+    const value = signal(3);
 
-    writeFormValue(association(internals), 'a', undefined);
-    writeFormValue(association(internals), 3, (value: number) => String(value * 2));
-    writeFormValue(association(null), 'b', undefined);
+    bindFormValue(association, element, value, true);
 
-    expect(internals.setFormValue).toHaveBeenNthCalledWith(1, 'a');
-    expect(internals.setFormValue).toHaveBeenNthCalledWith(2, '6');
-    expect(internals.setFormValue).toHaveBeenCalledTimes(2);
+    expect(association).toMatchObject({ source: value, initial: 3, converts: true });
+    expect(() => bindFormValue(association, element, signal(1), false)).toThrow('Field.setFormValue() was already called: a form-associated component gives its form the value of one signal, set once');
+    unbindFormValue(association);
+    expect(association.source).toBeNull();
+    expect(() => bindFormValue(association, element, signal(1), false)).not.toThrow();
   });
 
-  it('gives the form the validity: the flags of the errors with the message of the first one, or valid', () => {
+  it('gives the form the value, converted when asked, with the dirty state', () => {
     const internals = fakeInternals();
+    const { association, element } = associate(internals);
+    bindFormValue(association, element, signal('a'), false);
+
+    writeFormValue(association, 'b', undefined);
+    expect(internals.setFormValue).toHaveBeenLastCalledWith('b');
+    expect(internals.states.has('dirty')).toBe(true);
+
+    writeFormValue(association, 'a', (value: string) => value.toUpperCase());
+    expect(internals.setFormValue).toHaveBeenLastCalledWith('A');
+    expect(internals.states.has('dirty')).toBe(false);
+  });
+
+  it('tells whether the value differs from the initial one', () => {
+    const { association, element } = associate(fakeInternals());
+    const value = signal('a');
+
+    expect(isFormDirty(null)).toBe(false);
+    expect(isFormDirty(association)).toBe(false);
+    bindFormValue(association, element, value, false);
+    expect(isFormDirty(association)).toBe(false);
+    value.set('b');
+    expect(isFormDirty(association)).toBe(true);
+  });
+
+  it('gives the form the validity of the validators: the flags of every error with the message of the first one, or valid', () => {
+    const internals = fakeInternals();
+    const { association } = associate(internals);
     const anchor = document.createElement('button');
 
-    writeFormValidity(association(internals), { valueMissing: 'Required', customError: 'Custom', rangeOverflow: undefined }, anchor);
-    writeFormValidity(association(internals), { tooLong: 'Too long' }, null);
-    writeFormValidity(association(internals), {}, anchor);
-    writeFormValidity(association(null), { valueMissing: 'Required' }, anchor);
+    writeFormValidity(association, [() => undefined, () => ({ valueMissing: 'Required', rangeOverflow: undefined }), () => ({ customError: 'Custom' })], anchor);
+    writeFormValidity(association, [() => ({ tooLong: 'Too long' })], undefined);
+    writeFormValidity(association, [() => undefined, () => ({})], anchor);
+    writeFormValidity(association, [], undefined);
 
     expect(internals.setValidity).toHaveBeenNthCalledWith(1, { valueMissing: true, customError: true }, 'Required', anchor);
     expect(internals.setValidity).toHaveBeenNthCalledWith(2, { tooLong: true }, 'Too long', undefined);
     expect(internals.setValidity).toHaveBeenNthCalledWith(3, {});
-    expect(internals.setValidity).toHaveBeenCalledTimes(3);
+    expect(internals.setValidity).toHaveBeenNthCalledWith(4, {});
+  });
+
+  it('is touched when the user leaves the element or the form finds it invalid, and untouched by the reset, with the value written back', () => {
+    const internals = fakeInternals();
+    const { association, element } = associate(internals);
+    const value = signal('a');
+    bindFormValue(association, element, value, false);
+
+    element.dispatchEvent(new Event('focusout'));
+    expect(association.touched()).toBe(true);
+    expect(internals.states.has('touched')).toBe(true);
+
+    value.set('b');
+    resetFormAssociation(association);
+    expect(value()).toBe('a');
+    expect(association.touched()).toBe(false);
+    expect(internals.states.has('touched')).toBe(false);
+
+    element.dispatchEvent(new Event('invalid'));
+    expect(association.touched()).toBe(true);
+    unbindFormValue(association);
+    expect(() => resetFormAssociation(association)).not.toThrow();
   });
 });

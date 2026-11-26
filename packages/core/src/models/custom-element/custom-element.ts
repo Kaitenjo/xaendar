@@ -4,12 +4,11 @@ import { _CLIENT_ATTRIBUTE, _HYDRATE_ATTRIBUTE, _SERVER_INPUTS_ATTRIBUTE, CONNEC
 import { isInputSignal } from '../../signals/input/input-instance.symbol';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
 import { EffectOptions } from '../../signals/types/effect-options.type';
-import { untracked } from '../../signals/untracked';
 import type { _Context } from '../../types/context.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
 import type { CreateComponentOptionsWithOptionalTarget } from '../../types/create-component/create-component-options-with-optional-target.type';
 import type { _FormAssociation } from '../../types/form/form-association.type';
-import type { FormValidityErrors } from '../../types/form/form-validity-errors.type';
+import type { FormValidator } from '../../types/form/form-validator.type';
 import type { FormValueSource } from '../../types/form/form-value-source.type';
 import type { FormValue } from '../../types/form/form-value.type';
 import type { RenderDefinition } from '../../types/render-definition.type';
@@ -18,7 +17,7 @@ import { claimShadowRoot, isClaimed, releaseClaim } from '../../utils/claim-node
 import { _getComponentRuntime } from '../../utils/component-runtime/component-runtime.util';
 import { _scope, addCleanup, clear, EMPTY_LAYOUT, moveTo, removeCleanup } from '../../utils/context/context.util';
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
-import { createFormAssociation, requireFormAssociation, writeFormValidity, writeFormValue } from '../../utils/form-association/form-association.util';
+import { bindFormValue, createFormAssociation, isFormDirty, requireFormAssociation, resetFormAssociation, unbindFormValue, writeFormValidity, writeFormValue } from '../../utils/form-association/form-association.util';
 import { getWebComponentMetadata } from '../../utils/get-metadata/get-metadata.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import { _checkExposedFields, _createHostDirectives } from '../../utils/host-directives/host-directives.util';
@@ -96,7 +95,7 @@ export class CustomElement extends HTMLElement {
   private declare _root: ShadowRoot | null;
   /**
    * What the component keeps of its form, when its `@WebComponent` declares `formAssociated: true`: its `ElementInternals`
-   * and its disabled state (see {@link formValue}). `null` for any other component.
+   * and its states (see {@link setFormValue}). `null` for any other component.
    */
   private declare _formAssociation: _FormAssociation | null;
 
@@ -158,8 +157,8 @@ export class CustomElement extends HTMLElement {
 
   /**
    * Tells whether the form, a `<fieldset disabled>` holding the element or its own `disabled` attribute disables a
-   * form-associated component, as the browser tells it through `formDisabledCallback`: a signal, which a template can
-   * read (`disabled="{formDisabled()}"`).
+   * form-associated component, as the browser tells it through `formDisabledCallback`: read from a signal, so a template
+   * binds it (`disabled="{formDisabled()}"`).
    *
    * @returns `true` when the component is disabled, always `false` for a component that is not form-associated.
    */
@@ -168,13 +167,55 @@ export class CustomElement extends HTMLElement {
   }
 
   /**
+   * Tells whether the user left a form-associated component after focusing it (`focusout`), or the form found it invalid
+   * (a submission, `checkValidity()`): Angular's `touched`, read from a signal. `false` again when the form is reset. The
+   * element has the custom state `touched` meanwhile, `:state(touched)` in CSS (`:host(:state(touched):invalid)`).
+   *
+   * @returns `true` when the component is touched, always `false` for a component that is not form-associated.
+   */
+  public formTouched(): boolean {
+    return this._formAssociation?.touched() ?? false;
+  }
+
+  /**
+   * The opposite of {@link formTouched}: Angular's `untouched`.
+   *
+   * @returns `true` while the component is not touched.
+   */
+  public formUntouched(): boolean {
+    return !this.formTouched();
+  }
+
+  /**
+   * Tells whether the value of a form-associated component differs from the one its signal had when given to
+   * {@link setFormValue}, following the signal: Angular's `dirty`, compared with `Object.is`. `false` again when the form
+   * is reset, which writes that value back. The element has the custom state `dirty` meanwhile, `:state(dirty)` in CSS.
+   *
+   * @returns `true` when the value differs, always `false` before `setFormValue` and for a component that is not
+   *   form-associated.
+   */
+  public formDirty(): boolean {
+    return isFormDirty(this._formAssociation);
+  }
+
+  /**
+   * The opposite of {@link formDirty}: Angular's `pristine`.
+   *
+   * @returns `true` while the value is the initial one.
+   */
+  public formPristine(): boolean {
+    return !this.formDirty();
+  }
+
+  /**
    * Called by the browser when the form holding a form-associated component is reset: writes back into the signal given
-   * to {@link formValue} the value it had then. A component declaring its own calls `super.formResetCallback()` to keep
-   * it.
+   * to {@link setFormValue} the value it had then, and makes the component untouched. A component declaring its own calls
+   * `super.formResetCallback()` to keep it.
    */
   public formResetCallback(): void {
-    const form = this._formAssociation;
-    form?.source?.set(form.initial);
+    if (this._formAssociation) {
+      resetFormAssociation(this._formAssociation);
+    }
   }
 
   /**
@@ -191,16 +232,16 @@ export class CustomElement extends HTMLElement {
   /**
    * Called by the browser when it gives a form-associated component back a value: going back in the history to the page
    * (`'restore'`), or filling the form with what it remembers (`'autocomplete'`). Writes the value into the signal given to
-   * {@link formValue}, when it goes to the form as it is: a value converted for the form cannot be turned back here, so a
-   * component converting it declares its own, converting the value back.
+   * {@link setFormValue}, when it goes to the form as it is: a value converted for the form cannot be turned back here, so
+   * a component converting it declares its own, converting the value back.
    *
    * @param state - The value the component gave the form, or the one the browser fills in.
    * @param _mode - Why the browser gives it back.
    */
   public formStateRestoreCallback(state: FormValue, _mode: 'autocomplete' | 'restore'): void {
-    const form = this._formAssociation;
-    if (form?.source && !form.converts) {
-      form.source.set(state);
+    const association = this._formAssociation;
+    if (association?.source && !association.converts) {
+      association.source.set(state);
     }
   }
 
@@ -311,56 +352,72 @@ export class CustomElement extends HTMLElement {
   }
 
   /**
-   * Gives the form of a form-associated component (`formAssociated: true` of its `@WebComponent`) the value of a signal, a `signal` or a
-   * model, following it in an effect bound to the lifecycle of the component (`ElementInternals.setFormValue`): the form
-   * sends it with the name of the element, and `FormData` holds it. The reset of the form writes back into the signal the
-   * value it has now, and the restoration of the browser the value it gives back (see {@link formResetCallback},
-   * {@link formStateRestoreCallback}). Call it once, in `onInit`.
+   * Gives the form of a form-associated component (`formAssociated: true` of its `@WebComponent`) the value of a signal, a
+   * `signal` or a model, following it in an effect bound to the lifecycle of the component (`ElementInternals.setFormValue`):
+   * the form sends it under the `name` of the element, and `FormData` holds it. The value the signal has now is the initial
+   * one: the component is dirty while its value differs, and the reset of the form writes it back; the restoration of the
+   * browser writes the value it gives back (see {@link formResetCallback}, {@link formStateRestoreCallback}).
+   *
+   * A control has one value: call it once, in `onInit`, as a two-way binding names its field once. Connected again, the
+   * component calls it again, its effect having been disposed with it.
    *
    * @example
    * ```ts
    * public onInit(): void {
-   *   this.formValue(this.value, value => value ? String(value) : null);
+   *   this.setFormValue(this.value, value => value ? String(value) : null);
    * }
    * ```
    *
    * @param source - The signal whose value goes to the form.
-   * @param toFormValue - Converts the value for the form, required when it is not a text, a `File`, a `FormData` or
+   * @param transform - Converts the value for the form, required when it is not a text, a `File`, a `FormData` or
    *   `null`.
-   * @throws When the `@WebComponent` of the component does not declare `formAssociated: true`.
+   * @throws When the `@WebComponent` of the component does not declare `formAssociated: true`, or when the component
+   *   already gives its form the value of a signal.
    */
-  protected formValue<Value extends FormValue>(source: FormValueSource<Value>): void;
-  protected formValue<Value>(source: FormValueSource<Value>, transform: (value: Value) => FormValue): void;
-  protected formValue<Value>(source: FormValueSource<Value>, transform?: (value: Value) => FormValue): void {
-    const form = requireFormAssociation(this._formAssociation, this, 'formValue');
-    form.source = source;
-    form.initial = untracked(source);
-    form.converts = transform !== undefined;
-    this.effect(() => writeFormValue(form, source(), transform));
+  protected setFormValue<Value extends FormValue>(source: FormValueSource<Value>): void;
+  protected setFormValue<Value>(source: FormValueSource<Value>, transform: (value: Value) => FormValue): void;
+  protected setFormValue<Value>(source: FormValueSource<Value>, transform?: (value: Value) => FormValue): void {
+    const association = requireFormAssociation(this._formAssociation, this, 'setFormValue');
+    bindFormValue(association, this, source, transform !== undefined);
+    this.effect(() => writeFormValue(association, source(), transform), { onCleanup: () => unbindFormValue(association) });
   }
 
   /**
-   * Gives the form of a form-associated component (`formAssociated: true` of its `@WebComponent`) its validity, following the signals
-   * read by a function in an effect bound to the lifecycle of the component (`ElementInternals.setValidity`): the
-   * function returns the errors, as the flags of `ValidityState` each with its message. With errors, the component is
-   * `:invalid`, blocks the submission of the form, answers `checkValidity()` and `reportValidity()`, and the browser
-   * shows the message of the first one on the anchor, if any; without, it is valid. Call it once, in `onInit`.
+   * Gives the form of a form-associated component (`formAssociated: true` of its `@WebComponent`) its validity, computed by
+   * its validators in an effect bound to the lifecycle of the component (`ElementInternals.setValidity`). Each validator
+   * returns its errors, as the flags of `ValidityState` each with its message (`customError` for an error of its own), or
+   * `undefined` when the value passes; the signals they read are followed. With errors, the component is `:invalid`,
+   * blocks the submission of the form, answers `checkValidity()` and `reportValidity()`, and the browser shows the message
+   * of the first one on the anchor; without, it is valid.
+   *
+   * Each call replaces the validators set before, as Angular's `setValidators`: a validator depending on a state either
+   * reads its signal and returns `undefined` when it does not apply, or the component sets the list again; called with
+   * none, it removes them, and the component is valid.
    *
    * @example
    * ```ts
    * public onInit(): void {
-   *   this.formValidity(() => this.required() && !this.value() ? { valueMissing: 'Choose a rating' } : {}, this.firstStar);
+   *   this.setFormValue(this.value, value => value ? String(value) : null);
+   *   this.setFormValidators([
+   *     () => this.required() && !this.value() ? { valueMissing: 'Choose a rating.' } : undefined,
+   *     () => this.value() === 1 ? { customError: 'One star needs a comment.' } : undefined
+   *   ], () => this.firstStar() ?? undefined);
    * }
    * ```
    *
-   * @param errors - Returns the errors of the component, none when it is valid.
-   * @param anchor - Returns the element of the shadow root the browser shows the message on, such as a query signal,
-   *   followed until it exists. The host when missing.
+   * @param validators - The validators, in the order their messages are chosen; none removes the ones set before.
+   * @param anchor - Returns the element of the shadow root the browser shows the message on, followed until it exists;
+   *   the host when it returns `undefined` or is missing.
    * @throws When the `@WebComponent` of the component does not declare `formAssociated: true`.
    */
-  protected formValidity(errors: () => FormValidityErrors, anchor?: () => HTMLElement | undefined): void {
-    const form = requireFormAssociation(this._formAssociation, this, 'formValidity');
-    this.effect(() => writeFormValidity(form, errors(), anchor?.()));
+  protected setFormValidators(validators: readonly FormValidator[], anchor?: () => HTMLElement | undefined): void {
+    const association = requireFormAssociation(this._formAssociation, this, 'setFormValidators');
+    association.stopValidators?.();
+    if (validators.length) {
+      association.stopValidators = this.effect(() => writeFormValidity(association, validators, anchor?.()), { onCleanup: () => association.stopValidators = null });
+    } else {
+      writeFormValidity(association, validators, undefined);
+    }
   }
 
   /**

@@ -367,7 +367,7 @@ export const CORE_API: ApiPackage = {
     {
       name: 'CustomElement',
       kind: 'class',
-      signature: 'class CustomElement extends HTMLElement {\n  readonly hostDirectives: HostDirectives;\n  protected get internals(): ElementInternals | null;\n  onInit?(): void;\n  afterRender?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n  createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options?: CreateComponentOptionsWithOptionalTarget<Component, Directives>): ComponentRef<Component>;\n  formDisabled(): boolean;\n  formResetCallback(): void;\n  formDisabledCallback(disabled: boolean): void;\n  formStateRestoreCallback(state: FormValue, mode: \'autocomplete\' | \'restore\'): void;\n  protected formValue<Value>(source: FormValueSource<Value>, toFormValue?: (value: Value) => FormValue): void;\n  protected formValidity(errors: () => FormValidityErrors, anchor?: () => HTMLElement | null): void;\n  onDestroy?(): void;\n}',
+      signature: 'class CustomElement extends HTMLElement {\n  readonly hostDirectives: HostDirectives;\n  protected get internals(): ElementInternals | null;\n  onInit?(): void;\n  afterRender?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n  createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options?: CreateComponentOptionsWithOptionalTarget<Component, Directives>): ComponentRef<Component>;\n  formDisabled(): boolean;\n  formTouched(): boolean;\n  formUntouched(): boolean;\n  formDirty(): boolean;\n  formPristine(): boolean;\n  formResetCallback(): void;\n  formDisabledCallback(disabled: boolean): void;\n  formStateRestoreCallback(state: FormValue, mode: \'autocomplete\' | \'restore\'): void;\n  protected setFormValue<Value>(source: FormValueSource<Value>, transform?: (value: Value) => FormValue): void;\n  protected setFormValidators(validators: readonly FormValidator[], anchor?: () => HTMLElement | undefined): void;\n  onDestroy?(): void;\n}',
       members: [
         {
           name: 'hostDirectives',
@@ -407,19 +407,39 @@ export const CORE_API: ApiPackage = {
           signature: 'protected get internals(): ElementInternals | null'
         },
         {
-          name: 'formValue',
+          name: 'setFormValue',
           group: 'methods',
-          signature: 'protected formValue<Value>(source: FormValueSource<Value>, toFormValue?: (value: Value) => FormValue): void'
+          signature: 'protected setFormValue<Value>(source: FormValueSource<Value>, transform?: (value: Value) => FormValue): void'
         },
         {
-          name: 'formValidity',
+          name: 'setFormValidators',
           group: 'methods',
-          signature: 'protected formValidity(errors: () => FormValidityErrors, anchor?: () => HTMLElement | null): void'
+          signature: 'protected setFormValidators(validators: readonly FormValidator[], anchor?: () => HTMLElement | undefined): void'
         },
         {
           name: 'formDisabled',
           group: 'methods',
           signature: 'formDisabled(): boolean'
+        },
+        {
+          name: 'formTouched',
+          group: 'methods',
+          signature: 'formTouched(): boolean'
+        },
+        {
+          name: 'formUntouched',
+          group: 'methods',
+          signature: 'formUntouched(): boolean'
+        },
+        {
+          name: 'formDirty',
+          group: 'methods',
+          signature: 'formDirty(): boolean'
+        },
+        {
+          name: 'formPristine',
+          group: 'methods',
+          signature: 'formPristine(): boolean'
         },
         {
           name: 'formResetCallback',
@@ -893,6 +913,12 @@ export const CORE_API: ApiPackage = {
       name: 'FormValueSource',
       kind: 'type',
       signature: 'type FormValueSource<Value> = (() => Value) & { set(value: Value): void }',
+      guides: ['patterns/forms']
+    },
+    {
+      name: 'FormValidator',
+      kind: 'type',
+      signature: 'type FormValidator = () => FormValidityErrors | undefined',
       guides: ['patterns/forms']
     },
     {

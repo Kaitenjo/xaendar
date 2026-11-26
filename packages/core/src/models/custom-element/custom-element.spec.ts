@@ -858,7 +858,7 @@ describe('CustomElement', () => {
      * calls, which happy-dom lacks.
      */
     function createField(onInit: (element: FormField) => void): { element: FormField, internals: ElementInternals } {
-      const internals = { setFormValue: vi.fn(), setValidity: vi.fn() } as unknown as ElementInternals;
+      const internals = { setFormValue: vi.fn(), setValidity: vi.fn(), states: new Set<string>() } as unknown as ElementInternals;
       Object.defineProperty(HTMLElement.prototype, 'attachInternals', { configurable: true, value: () => internals });
       const klass = class extends FormField {
         public static formAssociated = true;
@@ -878,8 +878,9 @@ describe('CustomElement', () => {
      * A component reaching the protected members of the forms.
      */
     class FormField extends CustomElement {
-      public readonly value = signal<string | null>('a');
+      public readonly value = signal<string>('a');
       public readonly count = signal(1);
+      public readonly required = signal(true);
       public readonly anchor = signal<HTMLElement | undefined>(undefined);
 
       public get exposedInternals(): ElementInternals | null {
@@ -887,34 +888,60 @@ describe('CustomElement', () => {
       }
 
       public giveValue(): void {
-        this.formValue(this.value);
+        this.setFormValue(this.value);
       }
 
       public giveCount(): void {
-        this.formValue(this.count, count => String(count * 10));
+        this.setFormValue(this.count, count => String(count * 10));
       }
 
-      public giveValidity(): void {
-        this.formValidity(() => this.value() ? {} : { valueMissing: 'Required' }, this.anchor);
+      public giveValidators(): void {
+        this.setFormValidators([
+          () => this.required() && !this.value() ? { valueMissing: 'Required' } : undefined,
+          () => this.value() === 'x' ? { customError: 'Not x' } : undefined
+        ], this.anchor);
+      }
+
+      public giveCustomValidator(): void {
+        this.setFormValidators([() => ({ customError: 'Always' })]);
+      }
+
+      public removeValidators(): void {
+        this.setFormValidators([]);
       }
     }
 
-    it('gives the form the value of a signal, writing the initial one back on reset and the one the browser restores', async () => {
+    it('gives the form the value of a signal, dirty while it differs, written back with the touched state cleared on reset', async () => {
       const { element, internals } = createField(field => field.giveValue());
       document.body.appendChild(element);
 
       expect(element.exposedInternals).toBe(internals);
       expect(internals.setFormValue).toHaveBeenLastCalledWith('a');
+      expect([element.formDirty(), element.formPristine(), element.formTouched(), element.formUntouched()]).toEqual([false, true, false, true]);
 
       element.value.set('b');
+      element.dispatchEvent(new Event('focusout'));
       await flush();
       expect(internals.setFormValue).toHaveBeenLastCalledWith('b');
+      expect([element.formDirty(), element.formPristine(), element.formTouched(), element.formUntouched()]).toEqual([true, false, true, false]);
 
       element.formResetCallback();
       expect(element.value()).toBe('a');
+      expect([element.formDirty(), element.formTouched()]).toEqual([false, false]);
 
       element.formStateRestoreCallback('c', 'restore');
       expect(element.value()).toBe('c');
+      element.remove();
+    });
+
+    it('gives the form the value of one signal only, again once connected again', () => {
+      const { element } = createField(field => field.giveValue());
+      document.body.appendChild(element);
+
+      expect(() => element.giveValue()).toThrow('setFormValue() was already called: a form-associated component gives its form the value of one signal, set once');
+
+      element.remove();
+      expect(() => document.body.appendChild(element)).not.toThrow();
       element.remove();
     });
 
@@ -929,19 +956,33 @@ describe('CustomElement', () => {
       element.remove();
     });
 
-    it('gives the form the validity the signals tell, on the anchor once it exists', async () => {
-      const { element, internals } = createField(field => field.giveValidity());
+    it('gives the form the validity of its validators, replaced by each call and removed by an empty list', async () => {
+      const { element, internals } = createField(field => field.giveValidators());
       document.body.appendChild(element);
       expect(internals.setValidity).toHaveBeenLastCalledWith({});
 
-      element.value.set(null);
+      element.value.set('');
       await flush();
       expect(internals.setValidity).toHaveBeenLastCalledWith({ valueMissing: true }, 'Required', undefined);
 
       const anchor = document.createElement('button');
       element.anchor.set(anchor);
+      element.value.set('x');
       await flush();
-      expect(internals.setValidity).toHaveBeenLastCalledWith({ valueMissing: true }, 'Required', anchor);
+      expect(internals.setValidity).toHaveBeenLastCalledWith({ customError: true }, 'Not x', anchor);
+
+      element.giveCustomValidator();
+      expect(internals.setValidity).toHaveBeenLastCalledWith({ customError: true }, 'Always', undefined);
+      element.value.set('');
+      await flush();
+      expect(internals.setValidity).toHaveBeenLastCalledWith({ customError: true }, 'Always', undefined);
+
+      element.removeValidators();
+      expect(internals.setValidity).toHaveBeenLastCalledWith({});
+      const calls = vi.mocked(internals.setValidity).mock.calls.length;
+      element.value.set('x');
+      await flush();
+      expect(internals.setValidity).toHaveBeenCalledTimes(calls);
       element.remove();
     });
 
@@ -957,6 +998,7 @@ describe('CustomElement', () => {
       expect(states).toEqual([false, true]);
       element.formResetCallback();
       element.formStateRestoreCallback('x', 'restore');
+      expect(element.formDirty()).toBe(false);
       element.remove();
     });
 
@@ -965,12 +1007,12 @@ describe('CustomElement', () => {
       Object.setPrototypeOf(element, FormField.prototype);
 
       expect(element.exposedInternals).toBeNull();
-      expect(element.formDisabled()).toBe(false);
+      expect([element.formDisabled(), element.formTouched(), element.formDirty()]).toEqual([false, false, false]);
       expect(() => element.formDisabledCallback(true)).not.toThrow();
       expect(() => element.formResetCallback()).not.toThrow();
       expect(() => element.formStateRestoreCallback('x', 'restore')).not.toThrow();
-      expect(() => element.giveValue()).toThrow('needs a form-associated component: declare formAssociated: true in its @WebComponent');
-      expect(() => element.giveValidity()).toThrow('needs a form-associated component');
+      expect(() => element.giveValue()).toThrow('setFormValue() needs a form-associated component: declare formAssociated: true in its @WebComponent');
+      expect(() => element.giveValidators()).toThrow('setFormValidators() needs a form-associated component');
     });
   });
 

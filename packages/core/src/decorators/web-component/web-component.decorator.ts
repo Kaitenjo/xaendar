@@ -25,7 +25,7 @@ import { _resolveHostDirectives } from '../../utils/host-directives/host-directi
  * loads a polyfill first.
  *
  * With `formAssociated: true`, an autonomous component takes part in the forms as the native fields do (see
- * `CustomElement.formValue`): the decorator sets the static `formAssociated` the browser reads, which the class can also
+ * `CustomElement.setFormValue`): the decorator sets the static `formAssociated` the browser reads, which the class can also
  * declare itself. A customized built-in one cannot, which the registration rejects.
  *
  * @param options - Configuration object containing at least a `selector`

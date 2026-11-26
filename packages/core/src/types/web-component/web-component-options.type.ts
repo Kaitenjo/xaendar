@@ -38,8 +38,8 @@ export type WebComponentOptions = {
   /**
    * Makes the element a control of the form holding it, as the native fields are (the `formAssociated` of the custom
    * elements): its value goes with the form, its validity blocks the submission, the reset of the form and a disabled
-   * `<fieldset>` reach it. The component gives the form its value and its validity with `formValue` and `formValidity`
-   * of `CustomElement`. Defaults to `false`.
+   * `<fieldset>` reach it. The component gives the form its value and its validity with `setFormValue` and
+   * `setFormValidators` of `CustomElement`. Defaults to `false`.
    */
   formAssociated?: boolean,
   /**
