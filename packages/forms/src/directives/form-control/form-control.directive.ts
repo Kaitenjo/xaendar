@@ -19,7 +19,7 @@ import { findFormErrors, writeFormValidity, writeState } from '../../utils/form-
  *
  * The states are read-only signals, which an effect or a template follows: `untouched`, `pristine`, `valid` and
  * `disabled`; their opposites are the negation (`!control.untouched()`). The control is touched when the user leaves the
- * element (`focusout`) or the form finds it invalid, and dirty as soon as the user changes its value: a `input` or
+ * element (`focusout`), as Angular's does on `blur`, and dirty as soon as the user changes its value: a `input` or
  * `change` event on the element, which a control dispatches as a native one does, whether the value ends up different or
  * not. Both are reset by the reset of the form, and are also custom states of the element for CSS (`:state(touched)`,
  * `:state(dirty)`). On the server there are no `ElementInternals` nor effects: it does nothing there.
@@ -44,7 +44,7 @@ import { findFormErrors, writeFormValidity, writeState } from '../../utils/form-
 })
 export class FormControlDirective extends CustomDirective<HTMLElement> {
   /**
-   * Whether the user has not left the element after focusing it, nor has the form found it invalid since it was reset:
+   * Whether the user has not left the element after focusing it since it was reset:
    * Angular's `untouched`. The element has the custom state `touched` meanwhile, `:state(touched)` in CSS
    * (`:host(:state(touched):invalid)`).
    */
@@ -217,11 +217,11 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
   }
 
   /**
-   * Marks the control touched when the user leaves the element, or when the form finds it invalid, on a submission or
-   * `checkValidity()`.
+   * Marks the control touched when the user leaves the element, as Angular does on `blur`: not when the form is
+   * submitted, nor when it finds the control invalid, which a silent `checkValidity()` also does. Showing every error after
+   * a submission is for the form to decide, with a flag of its own.
    */
   @HostListener('focusout')
-  @HostListener('invalid')
   private _touch(): void {
     this._setTouched(true);
   }
@@ -257,7 +257,7 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
    */
   private _writeValidity(validators: readonly FormValidator[], anchor: HTMLElement | undefined): void {
     const errors = findFormErrors(validators);
-    this._valid.set(!!errors);
+    this._valid.set(errors === undefined);
     const internals = this.internals;
     if (internals) {
       writeFormValidity(internals, errors, anchor);

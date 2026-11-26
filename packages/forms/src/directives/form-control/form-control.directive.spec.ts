@@ -86,9 +86,13 @@ describe('FormControlDirective', () => {
     expect(seen.at(-1)).toBe('false false true true');
   });
 
-  it('is touched when the user leaves the element or the form finds it invalid, with the custom state', () => {
+  it('is touched when the user leaves the element, with the custom state, and not when the form finds it invalid', () => {
     const { element, internals } = createField(() => undefined);
     document.body.appendChild(element);
+
+    element.dispatchEvent(new Event('invalid'));
+    expect(element.control.untouched()).toBe(true);
+    expect([...internals.states]).toEqual([]);
 
     element.dispatchEvent(new Event('focusout'));
     expect(element.control.untouched()).toBe(false);
@@ -96,8 +100,7 @@ describe('FormControlDirective', () => {
 
     (element as unknown as { formResetCallback(): void }).formResetCallback();
     expect(element.control.untouched()).toBe(true);
-    element.dispatchEvent(new Event('invalid'));
-    expect(element.control.untouched()).toBe(false);
+    expect([...internals.states]).toEqual([]);
   });
 
   it('is dirty as soon as the user changes the value, even to the same value or back to the first one, never for the code of the application', async () => {
