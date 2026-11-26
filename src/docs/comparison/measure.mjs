@@ -6,7 +6,7 @@ import { extname, join, resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 /*
-  Measures the three pages of the framework comparison, built into ../public/comparison (`npm run build:comparison`),
+  Measures the pages of the framework comparison, built into ../public/comparison (`npm run build:comparison`),
   as the documentation reports them: each page alone, in a new browser context (no cache, nothing else running), the
   same number of times, keeping the median of every figure. Requires Playwright, not a dependency of the site
   (`npm install --no-save playwright` in src/docs), and its Chromium (`npx playwright install chromium`).
@@ -20,7 +20,7 @@ import { gzipSync } from 'node:zlib';
 /**
  * The pages measured, by the folder of their build.
  */
-const FRAMEWORKS = ['angular', 'react', 'xaendar'];
+const FRAMEWORKS = ['angular', 'lit', 'react', 'xaendar'];
 
 /**
  * The CPU throttling rates the pages are measured with: the machine as it is, and four times slower, as a mid-range

@@ -1,17 +1,19 @@
 # Framework comparison
 
-The same page written with Angular, React and Xaendar, measured for the **Reference → Framework comparison** page of
+The same page written with Angular, Lit, React and Xaendar, measured for the **Reference → Framework comparison** page of
 the documentation, which links them. Each folder is its own npm project, with its own `package.json`,
 `node_modules`, toolchain and build, exactly as a reader's application would be.
 
-- `shared` holds what the three pages have in common, so that only the rendering code changes: the data (1,000
+- `shared` holds what the four pages have in common, so that only the rendering code changes: the data (1,000
   employees from a fixed seed) and the filtering function, the CSS of the page, of the button and of the fields.
-- `angular`, `react` and `xaendar` are split the same way: four small components (a button, a text field, a date
+- `angular`, `lit`, `react` and `xaendar` are split the same way: four small components (a button, a text field, a date
   field, a select) and a page holding the filters being edited, the filters applied and the table, whose rows are
   selected by a click and whose salaries **Raise 5%** raises (`raiseSalaries` of `shared/data.ts`, new rows).
 - Each page uses the optimizations its framework offers, so that an update renders only what changed: Angular is
-  zoneless, with `OnPush` components, signals and `track`; React memoizes its components (`memo`, with the table and
-  its rows as components of their own) and keeps its callbacks stable (`useCallback`, `useMemo`).
+  zoneless, with `OnPush` components, signals and `track`; Lit keys the rows (`repeat`), computes them again only
+  when the data or the applied filters change (`willUpdate`) and writes to the page only the bindings whose value
+  changed; React memoizes its components (`memo`, with the table and its rows as components of their own) and keeps
+  its callbacks stable (`useCallback`, `useMemo`).
 - Every page builds into `../public/comparison/<name>/`, which is **generated and not committed** (`.gitignore`).
   Build them once after a clone, and again whenever you change one: otherwise the links of the page lead nowhere,
   and `npm start` and `npm run build` of the site say so instead of failing.
@@ -21,14 +23,14 @@ the documentation, which links them. Each folder is its own npm project, with it
 ## Commands
 
 ```bash
-npm run build:comparison                  # from src/docs: install (when needed) and build the three pages
+npm run build:comparison                  # from src/docs: install (when needed) and build the four pages
 node comparison/build.mjs react xaendar   # only these
 node comparison/build.mjs --check         # report which ones are missing (what prestart/prebuild run)
 ```
 
 ## Measuring
 
-`measure.mjs` measures the three builds as the documentation reports them, and writes the figures its page shows
+`measure.mjs` measures the four builds as the documentation reports them, and writes the figures its page shows
 (`src/pages/reference/framework-comparison/framework-comparison.results.json`). The page explains each step; in short:
 
 - the JavaScript of each build, minified and with gzip (level 9), read from the files;
@@ -38,7 +40,7 @@ node comparison/build.mjs --check         # report which ones are missing (what 
   (`Runtime.getHeapUsage`, `Memory.getDOMCounters`); then, in this order, the time of selecting row 500 (one class
   changes), **Raise 5%** (a text changes in every row), **Apply** (department `Engineering`, 132 rows) and **Reset**,
   each from the click to the first task after the frame showing the change;
-- the elements of the page and the rows the filter leaves, to check that the three pages do the same work;
+- the elements of the page and the rows the filter leaves, to check that the four pages do the same work;
 - the pages take turns run after run, and every figure is the median of its runs.
 
 ```bash
