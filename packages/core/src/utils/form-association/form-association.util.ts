@@ -22,7 +22,7 @@ export function createFormAssociation(element: HTMLElement): _FormAssociation | 
   }
 
   return {
-    internals: typeof element.attachInternals === 'function' ? element.attachInternals() : null,
+    internals: element.attachInternals(),
     disabled: signal(false),
     source: null,
     initial: undefined,
@@ -55,7 +55,7 @@ export function requireFormAssociation(form: _FormAssociation | null, element: H
  * @param toFormValue - The conversion of the value, if any.
  */
 export function writeFormValue(form: _FormAssociation, value: unknown, toFormValue: ((value: never) => FormValue) | undefined): void {
-  form.internals?.setFormValue(toFormValue ? toFormValue(value as never) : value as FormValue);
+  form.internals?.setFormValue(toFormValue ? toFormValue(value as never) : value as FormData);
 }
 
 /**
@@ -66,15 +66,16 @@ export function writeFormValue(form: _FormAssociation, value: unknown, toFormVal
  * @param errors - The errors of the component.
  * @param anchor - The element of its shadow root the browser shows the message on, `null` or `undefined` for the host.
  */
-export function writeFormValidity(form: _FormAssociation, errors: FormValidityErrors, anchor: HTMLElement | null | undefined): void {
+export function writeFormValidity(form: _FormAssociation, errors: FormValidityErrors, anchor: HTMLElement | undefined): void {
   const internals = form.internals;
   if (!internals) {
     return;
   }
 
   const flags: ValidityStateFlags = {};
-  let message: string | undefined;
   const names = keys(errors);
+  let message: string | undefined;
+
   for (let i = 0; i < names.length; i++) {
     const name = names[i];
     const error = errors[name];

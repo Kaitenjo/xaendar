@@ -98,7 +98,7 @@ export class CustomElement extends HTMLElement {
    * What the component keeps of its form, when its `@WebComponent` declares `formAssociated: true`: its `ElementInternals`
    * and its disabled state (see {@link formValue}). `null` for any other component.
    */
-  private declare _form: _FormAssociation | null;
+  private declare _formAssociation: _FormAssociation | null;
 
   /**
    * The `ElementInternals` of a form-associated component (`formAssociated: true` of its `@WebComponent`), attached by Xaendar once:
@@ -110,7 +110,7 @@ export class CustomElement extends HTMLElement {
    * @returns The `ElementInternals` of the element, or `null`.
    */
   protected get internals(): ElementInternals | null {
-    return this._form?.internals ?? null;
+    return this._formAssociation?.internals ?? null;
   }
 
   /**
@@ -164,7 +164,7 @@ export class CustomElement extends HTMLElement {
    * @returns `true` when the component is disabled, always `false` for a component that is not form-associated.
    */
   public formDisabled(): boolean {
-    return this._form ? this._form.disabled() : false;
+    return this._formAssociation?.disabled() ?? false;
   }
 
   /**
@@ -173,10 +173,8 @@ export class CustomElement extends HTMLElement {
    * it.
    */
   public formResetCallback(): void {
-    const form = this._form;
-    if (form?.source) {
-      form.source.set(form.initial);
-    }
+    const form = this._formAssociation;
+    form?.source?.set(form.initial);
   }
 
   /**
@@ -187,7 +185,7 @@ export class CustomElement extends HTMLElement {
    * @param disabled - Whether the component is disabled.
    */
   public formDisabledCallback(disabled: boolean): void {
-    this._form?.disabled.set(disabled);
+    this._formAssociation?.disabled.set(disabled);
   }
 
   /**
@@ -200,7 +198,7 @@ export class CustomElement extends HTMLElement {
    * @param _mode - Why the browser gives it back.
    */
   public formStateRestoreCallback(state: FormValue, _mode: 'autocomplete' | 'restore'): void {
-    const form = this._form;
+    const form = this._formAssociation;
     if (form?.source && !form.converts) {
       form.source.set(state);
     }
@@ -269,10 +267,10 @@ export class CustomElement extends HTMLElement {
     this[DISCONNECTED_HOOKS] = null;
     this._context = _scope(null, EMPTY_LAYOUT);
     this._hostDirectivesContext = null;
-    this._form = createFormAssociation(this);
+    this._formAssociation = createFormAssociation(this);
     this._state = HYDRATION && (this.shadowRoot || this.hasAttribute(_CLIENT_ATTRIBUTE)) ? 'hydrating' : 'idle';
-    // A customized built-in element attaches a shadow root only to render its template (see `_root`)
     this._root = this.shadowRoot ?? (!getWebComponentMetadata(this.constructor)?.[INTERNAL_EXTENDS] || _getRender(this.constructor) ? this.attachShadow({ mode: 'open' }) : null);
+    
     const hostDirectives = _createHostDirectives(this);
     this.hostDirectives = hostDirectives;
     if (hostDirectives.size) {
@@ -332,13 +330,13 @@ export class CustomElement extends HTMLElement {
    * @throws When the `@WebComponent` of the component does not declare `formAssociated: true`.
    */
   protected formValue<Value extends FormValue>(source: FormValueSource<Value>): void;
-  protected formValue<Value>(source: FormValueSource<Value>, toFormValue: (value: Value) => FormValue): void;
-  protected formValue<Value>(source: FormValueSource<Value>, toFormValue?: (value: Value) => FormValue): void {
-    const form = requireFormAssociation(this._form, this, 'formValue');
-    form.source = source as FormValueSource<unknown>;
+  protected formValue<Value>(source: FormValueSource<Value>, transform: (value: Value) => FormValue): void;
+  protected formValue<Value>(source: FormValueSource<Value>, transform?: (value: Value) => FormValue): void {
+    const form = requireFormAssociation(this._formAssociation, this, 'formValue');
+    form.source = source;
     form.initial = untracked(source);
-    form.converts = toFormValue !== undefined;
-    this.effect(() => writeFormValue(form, source(), toFormValue));
+    form.converts = transform !== undefined;
+    this.effect(() => writeFormValue(form, source(), transform));
   }
 
   /**
@@ -360,8 +358,8 @@ export class CustomElement extends HTMLElement {
    *   followed until it exists. The host when missing.
    * @throws When the `@WebComponent` of the component does not declare `formAssociated: true`.
    */
-  protected formValidity(errors: () => FormValidityErrors, anchor?: () => HTMLElement | null): void {
-    const form = requireFormAssociation(this._form, this, 'formValidity');
+  protected formValidity(errors: () => FormValidityErrors, anchor?: () => HTMLElement | undefined): void {
+    const form = requireFormAssociation(this._formAssociation, this, 'formValidity');
     this.effect(() => writeFormValidity(form, errors(), anchor?.()));
   }
 

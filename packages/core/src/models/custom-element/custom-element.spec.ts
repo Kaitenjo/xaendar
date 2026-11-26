@@ -880,7 +880,7 @@ describe('CustomElement', () => {
     class FormField extends CustomElement {
       public readonly value = signal<string | null>('a');
       public readonly count = signal(1);
-      public readonly anchor = signal<HTMLElement | null>(null);
+      public readonly anchor = signal<HTMLElement | undefined>(undefined);
 
       public get exposedInternals(): ElementInternals | null {
         return this.internals;
