@@ -37,9 +37,11 @@ node comparison/build.mjs --check         # report which ones are missing (what 
 - every run opens one page in a new context of a headless Chromium (Playwright), served by a local static server, at
   CPU 1× and 4× (CDP throttling);
 - startup: from the navigation to the first frame showing the 1,000 rows; memory after a forced garbage collection
-  (`Runtime.getHeapUsage`, `Memory.getDOMCounters`); then, in this order, the time of selecting row 500 (one class
-  changes), **Raise 5%** (a text changes in every row), **Apply** (department `Engineering`, 132 rows) and **Reset**,
-  each from the click to the first task after the frame showing the change;
+  (`Runtime.getHeapUsage`, `Memory.getDOMCounters`, and the whole memory of the page, JavaScript, DOM and the rest, by
+  `performance.measureUserAgentSpecificMemory()`, which is why the server isolates the pages from other origins and
+  the script runs the full Chromium rather than its headless shell); then, in this order, the time of selecting row
+  500 (one class changes), **Raise 5%** (a text changes in every row), **Apply** (department `Engineering`, 132 rows)
+  and **Reset**, each from the click to the first task after the frame showing the change;
 - the elements of the page and the rows the filter leaves, to check that the four pages do the same work;
 - the pages take turns run after run, and every figure is the median of its runs.
 
