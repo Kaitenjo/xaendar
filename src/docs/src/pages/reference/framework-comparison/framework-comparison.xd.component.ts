@@ -91,6 +91,8 @@ export class ReferenceFrameworkComparisonPage extends CustomElement {
         rows: [
           this._row('footprint.gzip', figures => `${kilobytes.format(figures.scripts.gzip / 1000)} kB`),
           this._row('footprint.raw', figures => `${kilobytes.format(figures.scripts.raw / 1000)} kB`),
+          this._row('footprint.memory', figures => `${megabytes.format(figures.cpu1x.memory / 1000000)} MB`),
+          this._row('footprint.dom', figures => `${megabytes.format(figures.cpu1x.dom / 1000000)} MB`),
           this._row('footprint.heap', figures => `${megabytes.format(figures.cpu1x.heap / 1000000)} MB`),
           this._row('footprint.nodes', figures => integer.format(figures.cpu1x.nodes)),
           this._row('footprint.listeners', figures => integer.format(figures.cpu1x.listeners))
