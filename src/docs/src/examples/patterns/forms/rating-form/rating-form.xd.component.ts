@@ -21,6 +21,15 @@ export class RatingFormComponent extends CustomElement {
   public readonly sent = signal('');
 
   /**
+   * Disables or enables the fieldset, as the checkbox says.
+   *
+   * @param event - The change event of the checkbox.
+   */
+  public lock(event: Event): void {
+    this.locked.set((event.target as HTMLInputElement).checked);
+  }
+
+  /**
    * Shows what the form sends, instead of sending it: the browser submits it only when every control is valid.
    *
    * @param event - The submit event.
