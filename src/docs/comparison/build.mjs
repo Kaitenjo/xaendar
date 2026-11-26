@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /*
-  Builds the three pages of the framework comparison, measured and linked by the "Framework comparison" page of the
+  Builds the pages of the framework comparison, measured and linked by the "Framework comparison" page of the
   documentation. Each one is a standalone project with its own toolchain: this script only installs and builds
   them, in order.
 
@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const OUTPUT = join(ROOT, '..', 'public', 'comparison');
-const APPS = ['angular', 'react', 'xaendar'];
+const APPS = ['angular', 'lit', 'react', 'xaendar'];
 const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
 /**

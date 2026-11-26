@@ -1,4 +1,4 @@
-/* The text, select and date components of the three frameworks: a label above a control */
+/* The text, select and date components of the four frameworks: a label above a control */
 :host { display: contents; }
 .ui-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .ui-field__label { color: #3d4459; font-size: 12px; font-weight: 600; }
