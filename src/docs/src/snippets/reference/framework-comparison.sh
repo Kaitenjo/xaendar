@@ -1,4 +1,4 @@
-# From src/docs: install and build the three pages (production builds, into public/comparison)
+# From src/docs: install and build the four pages (production builds, into public/comparison)
 npm run build:comparison
 
 # Once: Playwright, not a dependency of the site, and the Chromium it drives

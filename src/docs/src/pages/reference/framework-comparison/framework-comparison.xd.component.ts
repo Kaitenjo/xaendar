@@ -8,7 +8,7 @@ import type { ComparisonTable } from './comparison-table.type';
 import results from './framework-comparison.results.json';
 
 /**
- * The "Framework comparison" page: the same page written with Angular, React and Xaendar, the way the three were
+ * The "Framework comparison" page: the same page written with Angular, Lit, React and Xaendar, the way they were
  * measured and the figures measured (`framework-comparison.results.json`, written by `comparison/measure.mjs`).
  */
 @WebComponent({
@@ -24,6 +24,7 @@ export class ReferenceFrameworkComparisonPage extends CustomElement {
    */
   public readonly frameworks = [
     { label: 'Angular', figures: results.pages.angular, src: 'comparison/angular/index.html' },
+    { label: 'Lit', figures: results.pages.lit, src: 'comparison/lit/index.html' },
     { label: 'React', figures: results.pages.react, src: 'comparison/react/index.html' },
     { label: 'Xaendar', figures: results.pages.xaendar, src: 'comparison/xaendar/index.html' }
   ] as const;
@@ -90,6 +91,8 @@ export class ReferenceFrameworkComparisonPage extends CustomElement {
         rows: [
           this._row('footprint.gzip', figures => `${kilobytes.format(figures.scripts.gzip / 1000)} kB`),
           this._row('footprint.raw', figures => `${kilobytes.format(figures.scripts.raw / 1000)} kB`),
+          this._row('footprint.memory', figures => `${megabytes.format(figures.cpu1x.memory / 1000000)} MB`),
+          this._row('footprint.dom', figures => `${megabytes.format(figures.cpu1x.dom / 1000000)} MB`),
           this._row('footprint.heap', figures => `${megabytes.format(figures.cpu1x.heap / 1000000)} MB`),
           this._row('footprint.nodes', figures => integer.format(figures.cpu1x.nodes)),
           this._row('footprint.listeners', figures => integer.format(figures.cpu1x.listeners))
