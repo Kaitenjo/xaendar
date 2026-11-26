@@ -10,7 +10,7 @@ export type DirectiveOptions = {
    * Makes the components declaring the directive among their `hostDirectives` form-associated, as the static
    * `formAssociated` of the custom elements does: controls of the forms holding them, which the browser calls the form
    * callbacks of (`formResetCallback`, `formDisabledCallback`…), forwarded to the directive. For a directive giving the
-   * form the value of its component, such as `FormControlDirective` of `@xaendar/directives`. Defaults to `false`.
+   * form the value of its component, such as `FormControlDirective` of `@xaendar/forms`. Defaults to `false`.
    */
   formAssociated?: boolean;
 };

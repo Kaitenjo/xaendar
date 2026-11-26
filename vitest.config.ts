@@ -30,16 +30,16 @@ export default defineConfig({
           test: {
             name: 'packages',
             include: ['packages/**/*.spec.ts'],
-            exclude: ['packages/directives/**', '**/node_modules/**']
+            exclude: ['packages/directives/**', 'packages/forms/**', '**/node_modules/**']
           }
         },
         {
-          // the built-in directives are written with decorators: Babel transpiles them, as the CLI does for a library
+          // the built-in directives and the forms are written with decorators: Babel transpiles them, as the CLI does for a library
           extends: true,
           plugins: [createBabelPlugin()],
           test: {
             name: 'directives',
-            include: ['packages/directives/**/*.spec.ts']
+            include: ['packages/directives/**/*.spec.ts', 'packages/forms/**/*.spec.ts']
           }
         }
       ],
@@ -51,7 +51,7 @@ export default defineConfig({
           their specs, but Babel gives each `accessor` a setter that `@Property` replaces, never called, which v8 counts
           as uncovered lines of their source
         */
-        exclude: ['packages/**/*.spec.ts', 'packages/*/vite.config.ts', 'packages/directives/src/directives/**/*.directive.ts'],
+        exclude: ['packages/**/*.spec.ts', 'packages/*/vite.config.ts', 'packages/directives/src/directives/**/*.directive.ts', 'packages/forms/src/directives/**/*.directive.ts'],
         thresholds: {
           lines: 100,
           functions: 100,

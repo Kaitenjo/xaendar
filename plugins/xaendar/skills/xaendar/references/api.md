@@ -420,22 +420,6 @@ interface HtmlSanitizerOptions { allowElements?: string[]; allowAttributes?: str
 
 `allow…` add to the defaults, `remove…` take off them (a removed element keeps its content) and win over `allow…`; names are case-insensitive, `'data-*'`/`'x-*'` are prefixes. Attributes apply to every kept element, or to one only when written `element[attribute]` (`allowAttributes: ['span[style]', 'img[data-*]']`, `removeAttributes: ['a[target]']`). `urlSchemes` replaces `['http', 'https', 'mailto', 'tel', 'ftp', 'sms']`. Options keeping what always runs code throw: `script`, `base`, `meta` in `allowElements`, `on*` or `srcdoc` in `allowAttributes` (a prefix like `o*` too), `javascript`/`vbscript` in `urlSchemes`; use `trustHtml` or a `sanitizer` for such HTML. A kept SVG `animate`/`set` never animates `href` (its `attributeName` is removed). The resource URLs of allowed elements (`iframe`/`embed`/`frame` `src`, `object` `data`/`codebase`, `link` `href`) are kept only for the app's origin or `security.trustedOrigins` of `xaendar.json` (all of them with `resourceUrls: "off"`), as in templates. `setHtmlSanitizerOptions(options)` sets options for every sanitized HTML of the application: a use's lists are added to them, its `urlSchemes` replace theirs; it throws when they keep what always runs code, `undefined` restores the defaults. Allowing `object`, `embed`, `form`, defined custom elements or `style` still lets code or arbitrary CSS through.
 
-### FormControlDirective (host directive)
-
-```ts
-@WebComponent({ selector: 'x-rating', hostDirectives: [FormControlDirective], templateUrl: './x-rating.html' })
-class Rating extends CustomElement {
-  @Model(0) public accessor value!: ModelSignal<number>;
-  public readonly control = this.hostDirectives.get(FormControlDirective)!;
-  public onInit(): void {
-    this.control.setValue(this.value, value => value ? String(value) : null);
-    this.control.setValidators([() => this.value() ? undefined : { valueMissing: 'Required' }], () => this.firstStar() ?? undefined);
-  }
-}
-```
-
-Angular's `ControlValueAccessor`, on the native form-associated custom elements: the component becomes a control of any `<form>` (`FormData` under its `name`, validation blocking the submission, `reset()`, `<fieldset disabled>`). Only as a host directive: it declares `formAssociated` in its `@Directive`, so `@WebComponent` sets the static `formAssociated` and forwards the native form callbacks to it; applied from a template it throws. `setValue(signal, transform?)`: once (a second call throws; connected again, `onInit` calls it again), convert anything not `string | File | FormData | null`. `setValidators(validators, anchor?)`: `FormValidator` returns `ValidityState` flags with messages (`customError` for custom errors) or `undefined`; signals followed; each call replaces the previous ones, `[]` removes them; the anchor returns `HTMLElement | undefined`, never `null`. States as signals: `touched()`/`untouched()` (focusout, or invalid on submit), `dirty()`/`pristine()` (value vs initial, `Object.is`), `disabled()` (bind `disabled="{control.disabled()}"`); custom states `:state(touched)`, `:state(dirty)` (`:host(:state(touched):invalid)`). `internals` is the element's `ElementInternals` (never call `attachInternals()` yourself; `null` on the server). The callbacks keep their native names on the directive (`formResetCallback` writes back the initial value and clears touched, `formDisabledCallback`, `formStateRestoreCallback` writes back an unconverted value): a component declaring its own replaces the forwarding (declare `formStateRestoreCallback` when converting the value). Not with `extends`: a native field is a control already (`value`, `setCustomValidity()`).
-
 ### setHtmlSanitizerOptions (function)
 
 ```ts
@@ -451,6 +435,24 @@ trustHtml(html: string): SafeHtml
 ```
 
 Angular's `bypassSecurityTrustHtml`: bound to the `html` of `@@innerHtml`, the HTML is rendered without sanitizing it. Only for HTML the application builds or has already sanitized.
+
+## `@xaendar/forms`
+
+### FormControlDirective (host directive)
+
+```ts
+@WebComponent({ selector: 'x-rating', hostDirectives: [FormControlDirective], templateUrl: './x-rating.html' })
+class Rating extends CustomElement {
+  @Model(0) public accessor value!: ModelSignal<number>;
+  public readonly control = this.hostDirectives.get(FormControlDirective)!;
+  public onInit(): void {
+    this.control.setValue(this.value, value => value ? String(value) : null);
+    this.control.setValidators([() => this.value() ? undefined : { valueMissing: 'Required' }], () => this.firstStar() ?? undefined);
+  }
+}
+```
+
+Angular's `ControlValueAccessor`, on the native form-associated custom elements: the component becomes a control of any `<form>` (`FormData` under its `name`, validation blocking the submission, `reset()`, `<fieldset disabled>`). Only as a host directive: it declares `formAssociated` in its `@Directive`, so `@WebComponent` sets the static `formAssociated` and forwards the native form callbacks to it; applied from a template it throws. `setValue(signal, transform?)`: once (a second call throws; connected again, `onInit` calls it again), convert anything not `string | File | FormData | null`. `setValidators(validators, anchor?)`: `FormValidator` returns `ValidityState` flags with messages (`customError` for custom errors) or `undefined`; signals followed; each call replaces the previous ones, `[]` removes them; the anchor returns `HTMLElement | undefined`, never `null`. States as signals: `touched()`/`untouched()` (focusout, or invalid on submit), `dirty()`/`pristine()` (value vs initial, `Object.is`), `disabled()` (bind `disabled="{control.disabled()}"`); custom states `:state(touched)`, `:state(dirty)` (`:host(:state(touched):invalid)`). `internals` is the element's `ElementInternals` (never call `attachInternals()` yourself; `null` on the server). The callbacks keep their native names on the directive (`formResetCallback` writes back the initial value and clears touched, `formDisabledCallback`, `formStateRestoreCallback` writes back an unconverted value): a component declaring its own replaces the forwarding (declare `formStateRestoreCallback` when converting the value). Not with `extends`: a native field is a control already (`value`, `setCustomValidity()`).
 
 ## `@xaendar/core/signals`
 

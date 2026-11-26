@@ -39,7 +39,7 @@ The references follow the documentation site:
 
 | Reference | Source |
 | --- | --- |
-| `skills/xaendar/references/api.md` | `src/docs/src/pages/reference/api/packages/<package>.data.ts` and the texts in `src/docs/src/i18n/api/en/<package>.json`; for `@xaendar/directives`, which has no API pages, the Directives section of the site and the JSDoc of `packages/directives/src` |
+| `skills/xaendar/references/api.md` | `src/docs/src/pages/reference/api/packages/<package>.data.ts` and the texts in `src/docs/src/i18n/api/en/<package>.json`; for `@xaendar/directives` and `@xaendar/forms`, which have no API pages, the Directives section and the Forms pattern of the site and the JSDoc of `packages/directives/src` and `packages/forms/src` |
 | `skills/xaendar/references/errors.md` | `src/docs/src/pages/reference/errors/errors.data.ts` and the `errors` texts of `src/docs/src/i18n/en.json`, plus the compiler and runtime messages the site does not list yet |
 | `skills/xaendar/references/template-syntax.md` | the Template syntax cheat sheet and the Templates guides |
 | `skills/xaendar/references/patterns.md` | the Patterns section, the Inner HTML and Component outlet pages of the Directives section, Using DOM APIs, Creating components in code, Selectors and registration |

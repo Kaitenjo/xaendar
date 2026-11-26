@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.typecheck.json",
+  "include": [
+    "src",
+    "../core/src/globals.d.ts",
+    "../core/src/window.d.ts"
+  ]
+}

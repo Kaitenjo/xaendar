@@ -217,7 +217,7 @@ Look up a compiler or runtime message by its text in [references/errors.md](refe
 ## References
 
 - [references/template-syntax.md](references/template-syntax.md): the full template language, its limits, what does not exist
-- [references/api.md](references/api.md): every public export of `@xaendar/core`, `@xaendar/directives`, `@xaendar/core/signals`, `@xaendar/core/testing`, `@xaendar/signals`, `@xaendar/build-tools` (`xaendarPlugin`, `buildLibrary`), `@xaendar/ssr`, `@xaendar/ssr/dom`
+- [references/api.md](references/api.md): every public export of `@xaendar/core`, `@xaendar/directives`, `@xaendar/forms`, `@xaendar/core/signals`, `@xaendar/core/testing`, `@xaendar/signals`, `@xaendar/build-tools` (`xaendarPlugin`, `buildLibrary`), `@xaendar/ssr`, `@xaendar/ssr/dom`
 - [references/errors.md](references/errors.md): compiler, build, runtime and CLI messages, with cause and fix
 - [references/patterns.md](references/patterns.md): stores, async data, forms, lists, routing, HTML rendering, theming, DOM work, components created in code, lazy loading, server-side rendering, libraries
 - [references/angular.md](references/angular.md): porting Angular components, directives and services

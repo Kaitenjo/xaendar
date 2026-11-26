@@ -1,6 +1,6 @@
 import { CustomElement, Model, Property, Query, WebComponent } from '@xaendar/core';
 import type { InputSignal, ModelSignal, QuerySignal } from '@xaendar/core/signals';
-import { FormControlDirective } from '@xaendar/directives';
+import { FormControlDirective } from '@xaendar/forms';
 
 /**
  * A rating from 1 to 5 stars taking part in the form holding it, as a native field does: its value goes with the form,

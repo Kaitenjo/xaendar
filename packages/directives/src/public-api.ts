@@ -1,16 +1,11 @@
 export { AnimationDirective } from './directives/animation/animation.directive';
 export { ClassDirective } from './directives/class/class.directive';
 export { ComponentOutlet } from './directives/component-outlet/component-outlet.directive';
-export { FormControlDirective } from './directives/form-control/form-control.directive';
 export { InnerHtmlDirective } from './directives/inner-html/inner-html.directive';
 export { StyleDirective } from './directives/style/style.directive';
 export type { ElementAnimation } from './types/element-animation.type';
 export type { ElementClasses } from './types/element-classes.type';
 export type { ElementStyles } from './types/element-styles.type';
-export type { FormValidator } from './types/form-validator.type';
-export type { FormValidityErrors } from './types/form-validity-errors.type';
-export type { FormValueSource } from './types/form-value-source.type';
-export type { FormValue } from './types/form-value.type';
 export type { HtmlContent } from './types/html-content.type';
 export type { HtmlSanitizeReport } from './types/html-sanitize-report.type';
 export type { HtmlSanitizerOptions } from './types/html-sanitizer-options.type';

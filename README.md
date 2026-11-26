@@ -91,6 +91,7 @@ npm start
 | [`@xaendar/core`](packages/core) | Runtime: `CustomElement`, the decorators, directives, queries and the template runtime. The signals live in `@xaendar/core/signals` |
 | [`@xaendar/signals`](packages/signals) | Signal polyfill based on the TC39 proposal, installed with `loadSignals()` |
 | [`@xaendar/directives`](packages/directives) | Built-in directives: `@@animation`, `@@class`, `@@style`, `@@innerHtml`, `@@componentOutlet` |
+| [`@xaendar/forms`](packages/forms) | `FormControlDirective`: a component as a control of the native forms (value, validators, touched, dirty) |
 | [`@xaendar/compiler`](packages/compiler) | Template lexer, parser, type-checker and code generator |
 | [`@xaendar/ssr`](packages/ssr) | Server rendering runtime: `renderToString` renders components to HTML with Declarative Shadow DOM, `loadServerDom()` (`@xaendar/ssr/dom`) provides the DOM on the server |
 | [`@xaendar/ssr-compiler`](packages/ssr-compiler) | Compiles templates into functions writing HTML on the server |
