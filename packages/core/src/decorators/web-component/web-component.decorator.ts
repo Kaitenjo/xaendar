@@ -86,9 +86,9 @@ export function WebComponent<T extends CustomElement>(options: WebComponentOptio
     */
     context.addInitializer(() => {
       // Before the definition: the browser reads the static formAssociated and the callbacks then
-      _applyHostCallbacks(klass, _resolveHostDirectives(klass));
+      const formAssociated = _applyHostCallbacks(klass, _resolveHostDirectives(klass));
       // A native control takes part in the forms by itself, and the browser gives a customized built-in no ElementInternals
-      if (options.extends && (klass as { formAssociated?: unknown }).formAssociated === true) {
+      if (options.extends && formAssociated) {
         throw new Error(`${klass.name} extends <${options.extends}> and is form-associated (a host directive declaring a form callback, or a static formAssociated): a customized built-in element cannot be, since attachInternals() throws for it. A native control (<input>, <select>, <textarea>, <button>) already takes part in the forms: use its value and setCustomValidity(), or make the component autonomous`);
       }
 

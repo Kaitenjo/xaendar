@@ -45,10 +45,10 @@ describe('_applyHostCallbacks', () => {
     class Field extends CustomElement { }
     class Other extends CustomElement { }
 
-    _applyHostCallbacks(Field, resolved(Plain, Recorder));
+    const formAssociated = _applyHostCallbacks(Field, resolved(Plain, Recorder));
     _applyHostCallbacks(Other, resolved(Plain));
 
-    expect((Field as unknown as { formAssociated: boolean }).formAssociated).toBe(true);
+    expect(formAssociated).toBe(true);
     expect('formAssociated' in Other).toBe(false);
     expect('formResetCallback' in Other.prototype).toBe(false);
   });

@@ -46,19 +46,23 @@ const FORM_CALLBACKS: Readonly<Record<FormCallbackName, (this: CustomElement, fi
  * @param klass - The class of the component.
  * @param resolved - Its host directives, the ones of its ancestors included.
  */
-export function _applyHostCallbacks(klass: object, { directives }: ResolvedHostDirectives): void {
+export function _applyHostCallbacks(klass: object, { directives }: ResolvedHostDirectives): boolean {
+  let retVal = false;
+  
   const prototype = (klass as { prototype: object }).prototype;
   for (let i = 0; i < directives.length; i++) {
     const directive = directives[i].directive;
     for (const name in FORM_CALLBACKS) {
       if (typeof directive.prototype[name] === 'function') {
-        Object.defineProperty(klass, 'formAssociated', { configurable: true, value: true });
+        retVal = true;
         if (!(name in prototype)) {
           Object.defineProperty(prototype, name, { configurable: true, writable: true, value: FORM_CALLBACKS[name as FormCallbackName] });
         }
       }
     }
   }
+
+  return retVal;
 }
 
 /**

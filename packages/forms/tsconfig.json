@@ -1,11 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "skipLibCheck": true,
-    "paths": {
-      "@xaendar/*": ["../../dist/@xaendar/*"],
-      "@xaendar/core/signals": ["../../dist/@xaendar/core/dist/signals.d.ts"]
-    }
+    "skipLibCheck": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.spec.ts"]

@@ -156,9 +156,9 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
       throw new Error('FormControlDirective.setValue() was already called: a control gives its form the value of one signal, set once');
     }
 
-    this._source = source as FormValueSource<unknown>;
+    this._source = source;
     this._initial = untracked(source);
-    this._converts = transform !== undefined;
+    this._converts = !!transform;
     this.effect(() => this._writeValue(source(), transform), { onCleanup: () => this._source = null });
   }
 
