@@ -314,6 +314,15 @@ trustResourceUrl(url: string): SafeResourceUrl
 
 Angular's `bypassSecurityTrustResourceUrl`: the URL passes both `security.urls` and `security.resourceUrls`, whatever its origin. An origin always loaded from is better listed once in `security.trustedOrigins`.
 
+### sanitizeUrl, sanitizeResourceUrl (functions)
+
+```ts
+sanitizeUrl(url: string | SafeUrl): string | null
+sanitizeResourceUrl(url: string | SafeUrl): string | null
+```
+
+Angular's `sanitize(SecurityContext.URL | RESOURCE_URL, url)`, for URLs the code uses itself (`location.href`, `window.open`, a frame it creates): the URL, or `null` when it runs code (`javascript:`, `vbscript:`, non-media `data:`); `sanitizeResourceUrl` also gives `null` for an absolute URL whose origin is not in `security.trustedOrigins`. Always checked, whatever `security.urls`/`resourceUrls` ask. A `trustUrl` value passes `sanitizeUrl`, a `trustResourceUrl` value both.
+
 ### SafeUrl, SafeResourceUrl (types)
 
 ```ts

@@ -844,6 +844,32 @@ export const CORE_API: ApiPackage = {
       guides: ['templates/binding', 'components/security']
     },
     {
+      name: 'sanitizeUrl',
+      kind: 'function',
+      signature: 'function sanitizeUrl(url: string | SafeUrl): string | null',
+      members: [
+        {
+          name: 'url',
+          group: 'parameters',
+          signature: 'url: string | SafeUrl'
+        }
+      ],
+      guides: ['templates/binding', 'components/security']
+    },
+    {
+      name: 'sanitizeResourceUrl',
+      kind: 'function',
+      signature: 'function sanitizeResourceUrl(url: string | SafeUrl): string | null',
+      members: [
+        {
+          name: 'url',
+          group: 'parameters',
+          signature: 'url: string | SafeUrl'
+        }
+      ],
+      guides: ['templates/binding', 'components/security']
+    },
+    {
       name: 'SafeUrl',
       kind: 'type',
       signature: 'interface SafeUrl {\n  readonly url: string;\n  readonly resource: boolean;\n  toString(): string;\n}',

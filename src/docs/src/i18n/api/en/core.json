@@ -542,6 +542,20 @@
       }
     }
   },
+  "sanitizeUrl": {
+    "summary": "Checks a URL the application uses outside of a template: the URL when it runs no code, <code>null</code> otherwise.",
+    "description": "<p>For the URLs the code of the application uses itself, which no template checks: a redirect (<code>location.href</code>), a <code>window.open</code>, an attribute it writes. A <code>javascript:</code> or <code>vbscript:</code> URL, or a <code>data:</code> URL that is not an image, an audio or a video, gives <code>null</code>; any other URL is given back as it is. It is the check the templates apply to <code>href</code>, <code>src</code>… as <code>urls</code> of the <code>security</code> of <code>xaendar.json</code> asks, made always, whatever <code>urls</code> asks. A URL marked with <a href=\"#/en/reference/api/core/trustUrl\"><code>trustUrl()</code></a> or <a href=\"#/en/reference/api/core/trustResourceUrl\"><code>trustResourceUrl()</code></a> is given back as it is. The equivalent of <code>sanitize(SecurityContext.URL, url)</code> of the <code>DomSanitizer</code> of Angular, which prefixes an unsafe URL with <code>unsafe:</code> instead.</p>",
+    "members": {
+      "url": "<p>The URL, or a URL the application trusts.</p>"
+    }
+  },
+  "sanitizeResourceUrl": {
+    "summary": "Checks a URL the application loads into the page outside of a template: the URL when it runs no code and loads from the application or a trusted origin, <code>null</code> otherwise.",
+    "description": "<p>For the resources the code of the application loads itself, as the <code>src</code> of a frame it creates. The URL is given back when it runs no code (see <a href=\"#/en/reference/api/core/sanitizeUrl\"><code>sanitizeUrl()</code></a>) and is relative, or its origin is one of the <code>trustedOrigins</code> of the <code>security</code> of <code>xaendar.json</code>; otherwise the result is <code>null</code>. It is the check the templates apply to the <code>src</code> of an <code>&lt;iframe&gt;</code>, the <code>data</code> of an <code>&lt;object&gt;</code>… as <code>resourceUrls</code> asks, made always, whatever <code>resourceUrls</code> asks. A URL marked with <a href=\"#/en/reference/api/core/trustResourceUrl\"><code>trustResourceUrl()</code></a> is given back as it is; one marked with <a href=\"#/en/reference/api/core/trustUrl\"><code>trustUrl()</code></a> still has its origin checked. The equivalent of <code>sanitize(SecurityContext.RESOURCE_URL, url)</code> of the <code>DomSanitizer</code> of Angular, which throws for any URL not marked instead.</p>",
+    "members": {
+      "url": "<p>The URL, or a URL the application trusts.</p>"
+    }
+  },
   "SafeUrl": {
     "summary": "A URL the application trusts, created with <a href=\"#/en/reference/api/core/trustUrl\"><code>trustUrl()</code></a> or <a href=\"#/en/reference/api/core/trustResourceUrl\"><code>trustResourceUrl()</code></a>.",
     "description": "<p>Bound to an attribute, it is written as the URL it holds, without the checks the <code>security</code> of <code>xaendar.json</code> asks for: the one of <code>urls</code> always, the one of <code>resourceUrls</code> only when <code>resource</code> is <code>true</code>. The runtime recognizes the values the two functions create, never an object with the same properties: no value read from a request or a JSON passes as one. The equivalent of the <code>SafeUrl</code> of Angular.</p>",
