@@ -76,7 +76,7 @@ public onDestroy(): void {
 ## Forms
 
 - A form control written as a component (a toggle, a stepper, a date picker) declares its value as a `@Model` and the form binds it with `[(value)]="field"`, `field` a signal of the form.
-- To take part in a native `<form>` too (`FormData`, `required` blocking the submission, `reset()`, `<fieldset disabled>`), the component declares `FormControlDirective` (`@xaendar/forms`) in its `hostDirectives`, keeps it in a field and calls `control.setValue(this.value)` and `control.setValidators([…])` in `onInit`; `control.touched()`/`control.dirty()` and `:state(touched)`/`:state(dirty)` give Angular's states (api.md, FormControlDirective).
+- To take part in a native `<form>` too (`FormData`, `required` blocking the submission, `reset()`, `<fieldset disabled>`), the component declares `FormControlDirective` (`@xaendar/forms`) in its `hostDirectives`, keeps it in a field and calls `control.setValue(this.value)` and `control.setValidators([…])` in `onInit`; the signals `control.untouched`/`control.pristine`/`control.valid` and the CSS states `:state(touched)`/`:state(dirty)` give Angular's states (dirty comes from `input`/`change` events the component dispatches when the user changes the value) (api.md, FormControlDirective).
 - Read each field with `(input)` (text) or `(change)` (select, checkbox) calling a method: `this.name.set((event.target as HTMLInputElement).value)`, or pass a ref property: `(input)="setName(field.value)"`.
 - Validate with a `computed` over the field signals; show the errors after the first submit attempt.
 - `<form novalidate (submit)="submit($event)">`, and `event.preventDefault()` in the method.

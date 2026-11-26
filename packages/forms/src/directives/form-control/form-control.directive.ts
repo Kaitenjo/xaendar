@@ -1,10 +1,11 @@
 import { CustomDirective, Directive, HostListener } from '@xaendar/core';
-import { signal, untracked } from '@xaendar/core/signals';
+import { computed, signal, untracked } from '@xaendar/core/signals';
+import type { Computed } from '@xaendar/core/signals';
 import type { NoArgsVoidFunction } from '@xaendar/types';
 import type { FormValidator } from '../../types/form-validator.type';
 import type { FormValueSource } from '../../types/form-value-source.type';
 import type { FormValue } from '../../types/form-value.type';
-import { writeFormValidity, writeState } from '../../utils/form-control/form-control.utils';
+import { findFormErrors, writeFormValidity, writeState } from '../../utils/form-control/form-control.utils';
 
 /**
  * Makes a component a control of the form holding it, as the native fields are: its value goes with the form under
@@ -14,10 +15,14 @@ import { writeFormValidity, writeState } from '../../utils/form-control/form-con
  *
  * A host directive: declared in the `hostDirectives` of the `@WebComponent` of the component, it declares the form
  * callbacks the browser calls on a form-associated element, which makes the class form-associated and which the
- * component forwards to it. The component keeps it in a field, and gives it its value and its validators in `onInit`. The states of
- * Angular are signals, each with its opposite (`touched`/`untouched`, `dirty`/`pristine`, `disabled`), and `touched`
- * and `dirty` are also custom states of the element for CSS (`:state(touched)`, `:state(dirty)`). On the server there
- * are no `ElementInternals` nor effects: it does nothing there.
+ * component forwards to it. The component keeps it in a field, and gives it its value and its validators in `onInit`.
+ *
+ * The states are read-only signals, which an effect or a template follows: `untouched`, `pristine`, `valid` and
+ * `disabled`; their opposites are the negation (`!control.untouched()`). The control is touched when the user leaves the
+ * element (`focusout`) or the form finds it invalid, and dirty as soon as the user changes its value: a `input` or
+ * `change` event on the element, which a control dispatches as a native one does, whether the value ends up different or
+ * not. Both are reset by the reset of the form, and are also custom states of the element for CSS (`:state(touched)`,
+ * `:state(dirty)`). On the server there are no `ElementInternals` nor effects: it does nothing there.
  *
  * @example
  * ```ts
@@ -39,13 +44,44 @@ import { writeFormValidity, writeState } from '../../utils/form-control/form-con
 })
 export class FormControlDirective extends CustomDirective<HTMLElement> {
   /**
-   * Whether the browser disables the element, as `formDisabledCallback` says.
+   * Whether the user has not left the element after focusing it, nor has the form found it invalid since it was reset:
+   * Angular's `untouched`. The element has the custom state `touched` meanwhile, `:state(touched)` in CSS
+   * (`:host(:state(touched):invalid)`).
+   */
+  public readonly untouched: Computed<boolean> = computed(() => this._computeUntouched());
+  /**
+   * Whether the user has not changed the value since the control was reset: Angular's `pristine`. The user changes it
+   * with an `input` or a `change` event on the element, as a native control dispatches them; a value written by the code
+   * of the application does not count, and a value changed back is dirty all the same. The element has the custom state
+   * `dirty` meanwhile, `:state(dirty)` in CSS.
+   */
+  public readonly pristine: Computed<boolean> = computed(() => this._computePristine());
+  /**
+   * Whether the validators find no error, following the signals they read: Angular's `valid`. The browser's own
+   * validity is `:valid` and `:invalid`, and `internals.validity`.
+   */
+  public readonly valid: Computed<boolean> = computed(() => this._computeValid());
+  /**
+   * Whether the form, a `<fieldset disabled>` holding the element or its own `disabled` attribute disables it, as
+   * `formDisabledCallback` says: a template binds it (`disabled="{control.disabled()}"`).
+   */
+  public readonly disabled: Computed<boolean> = computed(() => this._computeDisabled());
+  /**
+   * Whether the browser disables the element.
    */
   private readonly _disabled = signal(false);
   /**
    * Whether the user left the element after focusing it, or the form found it invalid.
    */
   private readonly _touched = signal(false);
+  /**
+   * Whether the user changed the value.
+   */
+  private readonly _dirty = signal(false);
+  /**
+   * Whether the validators find an error.
+   */
+  private readonly _invalid = signal(false);
   /**
    * The `ElementInternals` of the element, `undefined` until attached, `null` where the DOM has none.
    */
@@ -56,8 +92,7 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
    */
   private _source: FormValueSource<unknown> | null = null;
   /**
-   * The value of the signal when `setValue` was called: the control is dirty while its value differs, and the reset of
-   * the form writes it back.
+   * The value of the signal when `setValue` was called, which the reset of the form writes back.
    */
   private _initial: unknown = undefined;
   /**
@@ -82,57 +117,6 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
     }
 
     return this._internals;
-  }
-
-  /**
-   * Tells whether the form, a `<fieldset disabled>` holding the element or its own `disabled` attribute disables it, read
-   * from a signal: a template binds it (`disabled="{control.disabled()}"`).
-   *
-   * @returns `true` when the element is disabled.
-   */
-  public disabled(): boolean {
-    return this._disabled();
-  }
-
-  /**
-   * Tells whether the user left the element after focusing it (`focusout`), or the form found it invalid (a submission,
-   * `checkValidity()`): Angular's `touched`, read from a signal. `false` again when the form is reset. The element has the
-   * custom state `touched` meanwhile, `:state(touched)` in CSS (`:host(:state(touched):invalid)`).
-   *
-   * @returns `true` when the control is touched.
-   */
-  public touched(): boolean {
-    return this._touched();
-  }
-
-  /**
-   * The opposite of {@link touched}: Angular's `untouched`.
-   *
-   * @returns `true` while the control is not touched.
-   */
-  public untouched(): boolean {
-    return !this._touched();
-  }
-
-  /**
-   * Tells whether the value differs, by `Object.is`, from the one its signal had when given to {@link setValue},
-   * following the signal: Angular's `dirty`. `false` again when the form is reset, which writes that value back. The
-   * element has the custom state `dirty` meanwhile, `:state(dirty)` in CSS.
-   *
-   * @returns `true` when the value differs, always `false` before `setValue`.
-   */
-  public dirty(): boolean {
-    const source = this._source;
-    return source ? !Object.is(source(), this._initial) : false;
-  }
-
-  /**
-   * The opposite of {@link dirty}: Angular's `pristine`.
-   *
-   * @returns `true` while the value is the initial one.
-   */
-  public pristine(): boolean {
-    return !this.dirty();
   }
 
   /**
@@ -198,11 +182,13 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
 
   /**
    * Called when the form is reset, forwarded by the component: writes back into the signal given to {@link setValue} the
-   * value it had then, and makes the control untouched. A component declaring its own `formResetCallback` calls this one.
+   * value it had then, and makes the control untouched and pristine. A component declaring its own `formResetCallback`
+   * calls this one.
    */
   public formResetCallback(): void {
     this._source?.set(this._initial);
     this._setTouched(false);
+    this._setDirty(false);
   }
 
   /**
@@ -221,45 +207,86 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
   }
 
   /**
-   * Marks the control touched when the user leaves the element.
+   * Marks the control touched when the user leaves the element, or when the form finds it invalid, on a submission or
+   * `checkValidity()`.
    */
   @HostListener('focusout')
-  private _leave(): void {
-    this._setTouched(true);
-  }
-
-  /**
-   * Marks the control touched when the form finds it invalid, on a submission or `checkValidity()`.
-   */
   @HostListener('invalid')
-  private _invalid(): void {
+  private _touch(): void {
     this._setTouched(true);
   }
 
   /**
-   * Gives the form the value, converted when asked, and writes the `dirty` state of the element.
+   * Marks the control dirty when the user changes the value: a native control dispatches `input` and `change` for it,
+   * also when the user writes what the control already holds, as pasting the same text does, which a signal would not
+   * see. The `input` of a native field inside the shadow root crosses it, the `change` does not: the component dispatches
+   * it itself.
+   */
+  @HostListener('change')
+  @HostListener('input')
+  private _edit(): void {
+    this._setDirty(true);
+  }
+
+  /**
+   * Computes the value of `untouched`.
+   *
+   * @returns Whether the control is not touched.
+   */
+  private _computeUntouched(): boolean {
+    return !this._touched();
+  }
+
+  /**
+   * Computes the value of `pristine`.
+   *
+   * @returns Whether the control is not dirty.
+   */
+  private _computePristine(): boolean {
+    return !this._dirty();
+  }
+
+  /**
+   * Computes the value of `valid`.
+   *
+   * @returns Whether the validators find no error.
+   */
+  private _computeValid(): boolean {
+    return !this._invalid();
+  }
+
+  /**
+   * Computes the value of `disabled`.
+   *
+   * @returns Whether the browser disables the element.
+   */
+  private _computeDisabled(): boolean {
+    return this._disabled();
+  }
+
+  /**
+   * Gives the form the value, converted when asked.
    *
    * @param value - The value of the signal.
    * @param transform - The conversion of the value, if any.
    */
   private _writeValue(value: unknown, transform: ((value: never) => FormValue) | undefined): void {
-    const internals = this.internals;
-    if (internals) {
-      internals.setFormValue(transform ? transform(value as never) : value as FormValue);
-      writeState(internals, 'dirty', !Object.is(value, this._initial));
-    }
+    this.internals?.setFormValue(transform ? transform(value as never) : value as FormValue);
   }
 
   /**
-   * Gives the form the validity the validators compute, where the DOM has `ElementInternals`.
+   * Computes the errors of the validators, which `valid` follows, and gives them to the form where the DOM has
+   * `ElementInternals`.
    *
    * @param validators - The validators.
    * @param anchor - The element the browser shows the message on, `undefined` for the host.
    */
   private _writeValidity(validators: readonly FormValidator[], anchor: HTMLElement | undefined): void {
+    const errors = findFormErrors(validators);
+    this._invalid.set(errors !== undefined);
     const internals = this.internals;
     if (internals) {
-      writeFormValidity(internals, validators, anchor);
+      writeFormValidity(internals, errors, anchor);
     }
   }
 
@@ -270,9 +297,29 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
    */
   private _setTouched(touched: boolean): void {
     this._touched.set(touched);
+    this._writeState('touched', touched);
+  }
+
+  /**
+   * Sets whether the control is dirty, and the `dirty` state of the element.
+   *
+   * @param dirty - Whether it is dirty.
+   */
+  private _setDirty(dirty: boolean): void {
+    this._dirty.set(dirty);
+    this._writeState('dirty', dirty);
+  }
+
+  /**
+   * Writes a custom state of the element, where the DOM has `ElementInternals`.
+   *
+   * @param state - The name of the state.
+   * @param on - Whether the element has it.
+   */
+  private _writeState(state: string, on: boolean): void {
     const internals = this.internals;
     if (internals) {
-      writeState(internals, 'touched', touched);
+      writeState(internals, state, on);
     }
   }
 }

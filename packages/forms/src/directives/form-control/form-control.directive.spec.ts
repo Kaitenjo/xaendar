@@ -54,33 +54,79 @@ describe('FormControlDirective', () => {
     document.body.replaceChildren();
   });
 
-  it('makes its component form-associated, gives the form its value and tracks dirty and touched, until the reset', async () => {
+  it('makes its component form-associated and gives the form its value, following the signal', async () => {
+    const { element, internals } = createField(field => field.control.setValue(field.value));
+    document.body.appendChild(element);
+
+    expect((element.constructor as unknown as { formAssociated: boolean }).formAssociated).toBe(true);
+    expect(element.control.internals).toBe(internals);
+    expect(internals.setFormValue).toHaveBeenLastCalledWith('a');
+
+    element.value.set('b');
+    await flush();
+    expect(internals.setFormValue).toHaveBeenLastCalledWith('b');
+  });
+
+  it('exposes untouched, pristine, valid and disabled as signals to follow, leaving the opposites to the consumer', async () => {
+    const { element } = createField(field => field.control.setValue(field.value));
+    document.body.appendChild(element);
+    const control = element.control;
+    const seen = new Array<string>();
+    element.effect(() => seen.push(`${control.untouched()} ${control.pristine()} ${control.valid()} ${control.disabled()}`));
+
+    expect(seen).toEqual(['true true true false']);
+
+    (element as unknown as { formDisabledCallback(disabled: boolean): void }).formDisabledCallback(true);
+    await flush();
+    element.dispatchEvent(new Event('focusout'));
+    await flush();
+    element.dispatchEvent(new Event('input'));
+    await flush();
+
+    expect(seen.at(-1)).toBe('false false true true');
+  });
+
+  it('is touched when the user leaves the element or the form finds it invalid, with the custom state', () => {
+    const { element, internals } = createField(() => undefined);
+    document.body.appendChild(element);
+
+    element.dispatchEvent(new Event('focusout'));
+    expect(element.control.untouched()).toBe(false);
+    expect([...internals.states]).toEqual(['touched']);
+
+    (element as unknown as { formResetCallback(): void }).formResetCallback();
+    expect(element.control.untouched()).toBe(true);
+    element.dispatchEvent(new Event('invalid'));
+    expect(element.control.untouched()).toBe(false);
+  });
+
+  it('is dirty as soon as the user changes the value, even to the same value or back to the first one, never for the code of the application', async () => {
     const { element, internals } = createField(field => field.control.setValue(field.value));
     document.body.appendChild(element);
     const control = element.control;
 
-    expect((element.constructor as unknown as { formAssociated: boolean }).formAssociated).toBe(true);
-    expect(control.internals).toBe(internals);
-    expect(internals.setFormValue).toHaveBeenLastCalledWith('a');
-    expect([control.dirty(), control.pristine(), control.touched(), control.untouched()]).toEqual([false, true, false, true]);
-
     element.value.set('b');
-    element.dispatchEvent(new Event('focusout'));
+    (element as unknown as { formStateRestoreCallback(state: string, mode: string): void }).formStateRestoreCallback('c', 'restore');
     await flush();
-    expect(internals.setFormValue).toHaveBeenLastCalledWith('b');
-    expect([control.dirty(), control.pristine(), control.touched(), control.untouched()]).toEqual([true, false, true, false]);
-    expect([...internals.states].sort()).toEqual(['dirty', 'touched']);
+    expect(control.pristine()).toBe(true);
+
+    // Pasting the text the field already holds changes no signal: the event of the browser is what tells
+    element.value.set('a');
+    element.dispatchEvent(new Event('change'));
+    await flush();
+    expect(control.pristine()).toBe(false);
+    expect([...internals.states]).toEqual(['dirty']);
+
+    // Back to the first value, it stays dirty
+    element.value.set('b');
+    element.value.set('a');
+    await flush();
+    expect(control.pristine()).toBe(false);
 
     (element as unknown as { formResetCallback(): void }).formResetCallback();
-    await flush();
+    expect(control.pristine()).toBe(true);
     expect(element.value()).toBe('a');
-    expect([control.dirty(), control.touched()]).toEqual([false, false]);
     expect([...internals.states]).toEqual([]);
-
-    (element as unknown as { formStateRestoreCallback(state: string, mode: string): void }).formStateRestoreCallback('c', 'restore');
-    expect(element.value()).toBe('c');
-    element.dispatchEvent(new Event('invalid'));
-    expect(control.touched()).toBe(true);
   });
 
   it('gives the form the value of one signal only, again once connected again', () => {
@@ -125,7 +171,9 @@ describe('FormControlDirective', () => {
     element.control.setValidators([() => ({ customError: 'Always' })]);
     expect(internals.setValidity).toHaveBeenLastCalledWith({ customError: true }, 'Always', undefined);
 
+    expect(element.control.valid()).toBe(false);
     element.control.setValidators([]);
+    expect(element.control.valid()).toBe(true);
     expect(internals.setValidity).toHaveBeenLastCalledWith({});
     const calls = vi.mocked(internals.setValidity).mock.calls.length;
     element.value.set('');
@@ -148,6 +196,7 @@ describe('FormControlDirective', () => {
     expect(() => document.body.appendChild(element)).not.toThrow();
     expect(element.control.internals).toBeNull();
     element.dispatchEvent(new Event('focusout'));
-    expect(element.control.touched()).toBe(true);
+    element.dispatchEvent(new Event('input'));
+    expect([element.control.untouched(), element.control.pristine(), element.control.valid()]).toEqual([false, false, false]);
   });
 });

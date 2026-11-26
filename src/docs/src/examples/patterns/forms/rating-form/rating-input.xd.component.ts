@@ -47,6 +47,18 @@ export class RatingInputComponent extends CustomElement {
   }
 
   /**
+   * Gives the rating the user chose, and says so as a native control does, `input` then `change`: the form control marks
+   * the component dirty.
+   *
+   * @param star - The rating.
+   */
+  public choose(star: number): void {
+    this.value.set(star);
+    this.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    this.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  /**
    * Takes back the rating the browser restores, going back to the page: it gave the form a text, which the form control
    * cannot turn back into a number.
    *
