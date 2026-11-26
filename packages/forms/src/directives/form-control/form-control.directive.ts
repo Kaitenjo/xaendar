@@ -175,11 +175,9 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
    */
   public setValidators(validators: readonly FormValidator[], anchor?: () => HTMLElement | undefined): void {
     this._stopValidators?.();
-    if (validators.length) {
-      this._stopValidators = this.effect(() => this._writeValidity(validators, anchor?.()), { onCleanup: () => this._stopValidators = null });
-    } else {
-      this._writeValidity(validators, undefined);
-    }
+    validators.length
+      ? this._stopValidators = this.effect(() => this._writeValidity(validators, anchor?.()), { onCleanup: () => this._stopValidators = null })
+      : this._writeValidity(validators, undefined);
   }
 
   /**
@@ -259,7 +257,7 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
    */
   private _writeValidity(validators: readonly FormValidator[], anchor: HTMLElement | undefined): void {
     const errors = findFormErrors(validators);
-    this._valid.set(errors === undefined);
+    this._valid.set(!!errors);
     const internals = this.internals;
     if (internals) {
       writeFormValidity(internals, errors, anchor);
