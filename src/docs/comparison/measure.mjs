@@ -6,7 +6,7 @@ import { extname, join, resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
 /*
-  Measures the three pages of the framework comparison, built into ../public/comparison (`npm run build:comparison`),
+  Measures the pages of the framework comparison, built into ../public/comparison (`npm run build:comparison`),
   as the documentation reports them: each page alone, in a new browser context (no cache, nothing else running), the
   same number of times, keeping the median of every figure. Requires Playwright, not a dependency of the site
   (`npm install --no-save playwright` in src/docs), and its Chromium (`npx playwright install chromium`).
@@ -20,7 +20,7 @@ import { gzipSync } from 'node:zlib';
 /**
  * The pages measured, by the folder of their build.
  */
-const FRAMEWORKS = ['angular', 'react', 'xaendar'];
+const FRAMEWORKS = ['angular', 'lit', 'react', 'xaendar'];
 
 /**
  * The CPU throttling rates the pages are measured with: the machine as it is, and four times slower, as a mid-range
@@ -126,7 +126,12 @@ function serve() {
     const path = join(BUILDS, decodeURIComponent(new URL(request.url, 'http://localhost').pathname));
     try {
       const body = readFileSync(path);
-      response.writeHead(200, { 'content-type': CONTENT_TYPES[extname(path)] ?? 'application/octet-stream' });
+      // Isolated from other origins, as `performance.measureUserAgentSpecificMemory()` requires
+      response.writeHead(200, {
+        'content-type': CONTENT_TYPES[extname(path)] ?? 'application/octet-stream',
+        'cross-origin-opener-policy': 'same-origin',
+        'cross-origin-embedder-policy': 'require-corp'
+      });
       response.end(body);
     } catch {
       response.writeHead(404);
@@ -179,6 +184,10 @@ async function measureRun(browser, url, rate) {
   await cdp.send('HeapProfiler.collectGarbage');
   const { usedSize } = await cdp.send('Runtime.getHeapUsage');
   const { nodes, jsEventListeners } = await cdp.send('Memory.getDOMCounters');
+  const { memory, dom } = await page.evaluate(async () => {
+    const { bytes, breakdown } = await performance.measureUserAgentSpecificMemory();
+    return { memory: bytes, dom: breakdown.reduce((sum, entry) => entry.types.includes('DOM') ? sum + entry.bytes : sum, 0) };
+  });
   const select = await page.evaluate(row => window.__measure.clickRow(row, 'selected'), SELECTED_ROW);
   const raise = await page.evaluate(() => window.__measure.clickButton('Raise 5%', 'salary'));
   await page.evaluate(department => window.__measure.select(department, department), DEPARTMENT);
@@ -186,7 +195,7 @@ async function measureRun(browser, url, rate) {
   const filtered = await page.evaluate(() => window.__measure.rows());
   const reset = await page.evaluate(() => window.__measure.clickButton('Reset', 'rows'));
   await context.close();
-  return { startup, elements, heap: usedSize, nodes, listeners: jsEventListeners, select, raise, filter, filtered, reset };
+  return { startup, elements, heap: usedSize, memory, dom, nodes, listeners: jsEventListeners, select, raise, filter, filtered, reset };
 }
 
 /**
@@ -202,7 +211,11 @@ function median(values) {
 }
 
 const server = await serve();
-const browser = await chromium.launch();
+/*
+  The full Chromium, in its new headless mode: the headless shell has no `performance.measureUserAgentSpecificMemory()`,
+  which the flag makes answer at once instead of at the next garbage collection
+*/
+const browser = await chromium.launch({ channel: 'chromium', args: ['--enable-blink-features=ForceEagerMeasureMemory'] });
 const machine = `${cpus()[0].model.trim()}, ${cpus().length} cores`;
 const results = { date: new Date().toISOString().slice(0, 10), browser: `Chromium ${browser.version()}`, machine, runs, pages: {} };
 try {

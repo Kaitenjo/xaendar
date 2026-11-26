@@ -1,8 +1,8 @@
 {
-  "date": "2026-11-22",
-  "browser": "Chromium 159.0.8154.6",
-  "machine": "13th Gen Intel(R) Core(TM) i7-13700KF, 24 cores",
-  "runs": 1000,
+  "date": "2026-11-26",
+  "browser": "Chromium 153.0.8010.12",
+  "machine": "Intel(R) Xeon(R) Processor @ 2.10GHz, 4 cores",
+  "runs": 100,
   "pages": {
     "angular": {
       "scripts": {
@@ -10,28 +10,66 @@
         "gzip": 43274
       },
       "cpu1x": {
-        "startup": 96.8,
+        "startup": 252.7,
         "elements": 10075,
-        "heap": 3561992,
+        "heap": 3758058,
+        "memory": 5263847,
+        "dom": 1582672,
         "nodes": 18243,
         "listeners": 1026,
-        "select": 3.5,
-        "raise": 16.2,
-        "filter": 14.5,
+        "select": 9.7,
+        "raise": 48.2,
+        "filter": 39.5,
         "filtered": 132,
-        "reset": 59.6
+        "reset": 160.2
       },
       "cpu4x": {
-        "startup": 388.5,
+        "startup": 1100.5,
         "elements": 10075,
-        "heap": 3509922,
+        "heap": 3752736,
+        "memory": 5256947,
+        "dom": 1582672,
         "nodes": 18243,
         "listeners": 1026,
-        "select": 14.4,
-        "raise": 66,
-        "filter": 54,
+        "select": 44.2,
+        "raise": 217.5,
+        "filter": 178.8,
         "filtered": 132,
-        "reset": 273.6
+        "reset": 758.3
+      }
+    },
+    "lit": {
+      "scripts": {
+        "raw": 27581,
+        "gzip": 10096
+      },
+      "cpu1x": {
+        "startup": 233.9,
+        "elements": 10073,
+        "heap": 2864118,
+        "memory": 5984867.5,
+        "dom": 3293960,
+        "nodes": 39549,
+        "listeners": 1026,
+        "select": 9.8,
+        "raise": 46.2,
+        "filter": 39.3,
+        "filtered": 132,
+        "reset": 160
+      },
+      "cpu4x": {
+        "startup": 1062.9,
+        "elements": 10073,
+        "heap": 2861774,
+        "memory": 5984387,
+        "dom": 3293960,
+        "nodes": 39549,
+        "listeners": 1026,
+        "select": 45.5,
+        "raise": 211.3,
+        "filter": 171.7,
+        "filtered": 132,
+        "reset": 761.6
       }
     },
     "react": {
@@ -40,58 +78,66 @@
         "gzip": 69616
       },
       "cpu1x": {
-        "startup": 55.3,
+        "startup": 118.7,
         "elements": 10062,
-        "heap": 4129764,
+        "heap": 4394042,
+        "memory": 5982234.5,
+        "dom": 1579624,
         "nodes": 18226,
         "listeners": 1166,
-        "select": 10.8,
-        "raise": 24.9,
-        "filter": 13,
+        "select": 9.7,
+        "raise": 60.1,
+        "filter": 42.9,
         "filtered": 132,
-        "reset": 58.8
+        "reset": 152.3
       },
       "cpu4x": {
-        "startup": 162.4,
+        "startup": 406.8,
         "elements": 10062,
-        "heap": 4128135,
+        "heap": 4393196,
+        "memory": 5979452,
+        "dom": 1579624,
         "nodes": 18226,
         "listeners": 1166,
-        "select": 13.6,
-        "raise": 78.2,
-        "filter": 57.4,
+        "select": 45.7,
+        "raise": 272.6,
+        "filter": 197.7,
         "filtered": 132,
-        "reset": 270
+        "reset": 760.4
       }
     },
     "xaendar": {
       "scripts": {
-        "raw": 84472,
-        "gzip": 28106
+        "raw": 98097,
+        "gzip": 32887
       },
       "cpu1x": {
-        "startup": 47.1,
+        "startup": 136.7,
         "elements": 10075,
-        "heap": 2564083,
+        "heap": 2643200,
+        "memory": 4194057,
+        "dom": 1583400,
         "nodes": 18248,
         "listeners": 1026,
-        "select": 2.6,
-        "raise": 20.4,
-        "filter": 11.4,
+        "select": 7.2,
+        "raise": 60.3,
+        "filter": 36.4,
         "filtered": 132,
-        "reset": 59.8
+        "reset": 155.9
       },
       "cpu4x": {
-        "startup": 147.6,
+        "startup": 519.1,
         "elements": 10075,
-        "heap": 2563388,
+        "heap": 2762258,
+        "memory": 4309767.5,
+        "dom": 1583400,
         "nodes": 18248,
         "listeners": 1026,
-        "select": 9.2,
-        "raise": 82.6,
-        "filter": 48.2,
+        "select": 30.8,
+        "raise": 277.2,
+        "filter": 161.3,
         "filtered": 132,
-        "reset": 275.7
+        "reset": 752.3
       }
     }
   }
