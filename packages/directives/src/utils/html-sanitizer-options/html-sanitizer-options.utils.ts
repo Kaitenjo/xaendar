@@ -1,4 +1,5 @@
-import type { SanitizerOptionLists } from '../../types/sanitizer-option-lists.type';
+import type { HtmlSanitizerOptions } from '../../types/html-sanitizer-options.type';
+import { toAsciiLowerCase } from '../html-syntax/html-syntax.utils';
 
 /**
  * The elements the options of the sanitizer may not allow, whatever the attributes kept, with the reason: a `script`
@@ -20,14 +21,14 @@ const UNSAFE_URL_SCHEMES: ReadonlySet<string> = new Set(['javascript', 'vbscript
  * Describes what options of the HTML sanitizer keep that always runs code, whatever the HTML: a `script`, a `base` or a
  * `meta` (see `UNSAFE_ELEMENTS`), an event handler attribute or a `srcdoc`, on every element or on some
  * (`img[onerror]`), a `javascript:` or `vbscript:` URL. A name ending with `*` matching one of them counts as listing it
- * (`o*`). Shared by `@@innerHtml`, which throws at the first use of the options, and the build, which rejects the `html`
- * of the security of `xaendar.json`.
+ * (`o*`). `@@innerHtml` and `sanitizeHtml` throw at the first use of such options, and `setHtmlSanitizerOptions` when it
+ * receives them.
  *
  * @param options - The options.
  * @returns The first one found, as `The <option> of the sanitizer list <name>, <what it keeps>`, `undefined` when the
  *   options keep nothing that always runs code.
  */
-export function describeUnsafeSanitizerOptions({ allowElements, allowAttributes, urlSchemes }: SanitizerOptionLists): string | undefined {
+export function describeUnsafeSanitizerOptions({ allowElements, allowAttributes, urlSchemes }: HtmlSanitizerOptions): string | undefined {
   if (allowElements?.length) {
     for (let i = 0; i < allowElements.length; i++) {
       const listed = toAsciiLowerCase(allowElements[i]);
@@ -69,14 +70,4 @@ function listsName(listed: string, name: string, prefix: boolean): boolean {
   }
 
   return prefix ? listed.startsWith(name) : listed === name;
-}
-
-/**
- * Turns the ASCII letters of a name lowercase, as HTML compares the names of the elements and of the attributes.
- *
- * @param name - The name.
- * @returns The name, lowercase.
- */
-function toAsciiLowerCase(name: string): string {
-  return name.replace(/[A-Z]+/g, letters => letters.toLowerCase());
 }

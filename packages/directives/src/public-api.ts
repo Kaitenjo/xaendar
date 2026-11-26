@@ -11,5 +11,5 @@ export type { HtmlSanitizeReport } from './types/html-sanitize-report.type';
 export type { HtmlSanitizerOptions } from './types/html-sanitizer-options.type';
 export type { HtmlSanitizer } from './types/html-sanitizer.type';
 export type { SafeHtml } from './types/safe-html.type';
-export { sanitizeHtml } from './utils/html-sanitizer/html-sanitizer.utils';
+export { sanitizeHtml, setHtmlSanitizerOptions } from './utils/html-sanitizer/html-sanitizer.utils';
 export { trustHtml } from './utils/trust-html/trust-html.utils';

@@ -7,7 +7,7 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
-@import { INNER_HTML_OPTIONS, SANITIZE_HTML } from './inner-html.snippets.ts'
+@import { INNER_HTML_OPTIONS, SANITIZE_HTML, SANITIZER_OPTIONS } from './inner-html.snippets.ts'
 
 <span class="eyebrow">
   { t(translations(), 'pages.directives.innerHtml.eyebrow') }
@@ -42,6 +42,7 @@
 <docs-code snippet="{INNER_HTML_OPTIONS}" />
 <p @@htmlTranslation(key="pages.directives.innerHtml.sanitizing.p3") />
 <docs-code snippet="{SANITIZE_HTML}" />
+<docs-code snippet="{SANITIZER_OPTIONS}" />
 
 <docs-callout kind="warning" heading="{translations().pages.directives.innerHtml.sanitizing.callout1.heading}">
   <p @@htmlTranslation(key="pages.directives.innerHtml.sanitizing.callout1.p1") />

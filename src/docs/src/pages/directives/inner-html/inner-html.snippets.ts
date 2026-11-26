@@ -46,3 +46,19 @@ export const SANITIZE_HTML: SourceFile = {
 const safe = sanitizeHtml('<img src="x.png" onerror="alert(1)"><b>Hi</b>');
 // '<img src="x.png"><b>Hi</b>'`
 };
+
+/**
+ * The snippet `main.ts`, shown by the page directives/inner-html.
+ */
+export const SANITIZER_OPTIONS: SourceFile = {
+  name: 'main.ts',
+  lang: 'ts',
+  code: `import { setHtmlSanitizerOptions } from '@xaendar/directives';
+
+// Every HTML the application sanitizes keeps the embedded videos and the data-* attributes, and no link opens a new tab
+setHtmlSanitizerOptions({
+  allowElements: ['iframe'],
+  allowAttributes: ['iframe[src]', 'data-*'],
+  removeAttributes: ['a[target]']
+});`
+};

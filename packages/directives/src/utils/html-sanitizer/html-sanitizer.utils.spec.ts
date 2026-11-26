@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
 import type { HtmlSanitizerOptions } from '../../types/html-sanitizer-options.type';
-import { sanitizeHtml, sanitizeHtmlWithReport } from './html-sanitizer.utils';
+import { sanitizeHtml, sanitizeHtmlWithReport, setHtmlSanitizerOptions } from './html-sanitizer.utils';
 
 /**
  * Loads the sanitizer again, with the security of the project the plugin defines.
@@ -193,14 +193,27 @@ describe('sanitizeHtml', () => {
     expect((await loadWith({ urls: 'remove', resourceUrls: 'off', trustedOrigins: [], rejectUnsafeBindings: true })).sanitizeHtml(html, options)).toBe(html);
   });
 
-  it('applies the html of the security of the project to every use, adding the lists a use passes and taking its schemes', async () => {
-    const html = { allowElements: ['iframe'], allowAttributes: ['src'], removeAttributes: ['a[target]'], urlSchemes: ['https'] };
-    const { sanitizeHtml: sanitize } = await loadWith({ urls: 'remove', resourceUrls: 'off', trustedOrigins: [], rejectUnsafeBindings: true, html });
+  it('applies the options of the application to every use, adding the lists a use passes and taking its schemes', () => {
     const page = '<iframe src="/a.html"></iframe><a href="http://x" target="_blank" data-x="1">a</a>';
+    const options: HtmlSanitizerOptions = { allowAttributes: ['data-x'], urlSchemes: ['http'] };
+    try {
+      expect(sanitizeHtml(page, options)).toBe('<a href="http://x" target="_blank" data-x="1">a</a>');
+      setHtmlSanitizerOptions({ allowElements: ['iframe'], allowAttributes: ['src'], removeAttributes: ['a[target]'], urlSchemes: ['https'] });
 
-    expect(sanitize(page)).toBe('<iframe src="/a.html"></iframe><a>a</a>');
-    expect(sanitize(page, { allowAttributes: ['data-x'], urlSchemes: ['http'] })).toBe('<iframe src="/a.html"></iframe><a href="http://x" data-x="1">a</a>');
-    expect(sanitize(page, {})).toBe('<iframe src="/a.html"></iframe><a>a</a>');
+      expect(sanitizeHtml(page)).toBe('<iframe src="/a.html"></iframe><a>a</a>');
+      expect(sanitizeHtml(page, options)).toBe('<iframe src="/a.html"></iframe><a href="http://x" data-x="1">a</a>');
+      expect(sanitizeHtml(page, {})).toBe('<iframe src="/a.html"></iframe><a>a</a>');
+    } finally {
+      setHtmlSanitizerOptions(undefined);
+    }
+
+    expect(sanitizeHtml(page)).toBe('<a href="http://x" target="_blank">a</a>');
+    expect(sanitizeHtml(page, options)).toBe('<a href="http://x" target="_blank" data-x="1">a</a>');
+  });
+
+  it('rejects options of the application keeping what always runs code, keeping the previous ones', () => {
+    expect(() => setHtmlSanitizerOptions({ allowElements: ['script'] })).toThrow('The allowElements of the sanitizer list script, keeping <script>');
+    expect(sanitizeHtml('<script>x</script><b>b</b>')).toBe('<b>b</b>');
   });
 
   it('never lets an SVG animation write an href', () => {

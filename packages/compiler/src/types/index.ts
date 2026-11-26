@@ -7,7 +7,6 @@ export * from './component-or-directive-metadata.type';
 export * from './directive-declaration.type';
 export * from './directive-metadata.type';
 export * from './element-namespace.type';
-export * from './html-security-options.type';
 export * from './imported-symbol.type';
 export * from './library-component-metadata.type';
 export * from './library-directive-metadata.type';

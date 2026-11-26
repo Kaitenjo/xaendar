@@ -1,4 +1,3 @@
-import type { _HtmlSecurityConfig } from './html-security-config.type';
 import type { _UrlCheck } from './url-check.type';
 
 /**
@@ -22,8 +21,4 @@ export type _SecurityConfig = {
    * Whether a `@HostAttribute` writing an attribute the browser runs, or one lifting a restriction, throws.
    */
   readonly rejectUnsafeBindings: boolean;
-  /**
-   * The options of the sanitizer of `@@innerHtml` and `sanitizeHtml` for the whole project, absent when it sets none.
-   */
-  readonly html?: _HtmlSecurityConfig;
 };

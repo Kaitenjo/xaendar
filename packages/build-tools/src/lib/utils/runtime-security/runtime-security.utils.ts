@@ -1,4 +1,4 @@
-import { findHtmlSecurityError, type SecurityOptions } from '@xaendar/compiler';
+import type { SecurityOptions } from '@xaendar/compiler';
 
 /**
  * Writes the `security` the runtime of `@xaendar/core` applies (`__XAENDAR_SECURITY__`, read by `SECURITY`): the
@@ -9,30 +9,18 @@ import { findHtmlSecurityError, type SecurityOptions } from '@xaendar/compiler';
  *
  * @param security - The options of the project.
  * @returns The object, as the code of the `define` of Vite.
- * @throws If a trusted origin is not an origin (`https://cdn.example.com`), or `html` is not options of the sanitizer
- *   keeping nothing that always runs code (see `findHtmlSecurityError`).
+ * @throws If a trusted origin is not an origin (`https://cdn.example.com`).
  */
 export function toRuntimeSecurity(security: SecurityOptions): string {
   const trustedOrigins = new Set<string>();
   addOrigins(trustedOrigins, security.trustedOrigins);
 
-  const runtime: Record<string, unknown> = {
+  return JSON.stringify({
     urls: security.urls ?? 'remove',
     resourceUrls: security.resourceUrls ?? 'remove',
     trustedOrigins: Array.from(trustedOrigins),
     rejectUnsafeBindings: security.rejectUnsafeBindings ?? true
-  };
-  // Written only when the project sets it: the sanitizer keeps its defaults otherwise
-  if (security.html !== undefined) {
-    const error = findHtmlSecurityError(security.html);
-    if (error !== undefined) {
-      throw new Error(`"html" of the security of xaendar.json ${error}`);
-    }
-
-    runtime.html = security.html;
-  }
-
-  return JSON.stringify(runtime);
+  });
 }
 
 /**

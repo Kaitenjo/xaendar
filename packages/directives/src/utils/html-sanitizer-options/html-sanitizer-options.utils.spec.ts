@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { describeUnsafeSanitizerOptions } from './sanitizer-options.util';
+import { describeUnsafeSanitizerOptions } from './html-sanitizer-options.utils';
 
 describe('describeUnsafeSanitizerOptions', () => {
   it.each([
