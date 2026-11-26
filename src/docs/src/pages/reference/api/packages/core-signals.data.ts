@@ -134,6 +134,7 @@ export const CORE_SIGNALS_API: ApiPackage = {
       signature: `type Signal<Value = unknown> = Pick<Signal.State<Value>, 'get' | 'set'> & {
   (): Value;
   update(updater: (prev: Value) => Value): void;
+  asReadonly(): ReadonlySignal<Value>;
 }`,
       members: [
         {
@@ -150,12 +151,32 @@ export const CORE_SIGNALS_API: ApiPackage = {
           name: 'update',
           group: 'methods',
           signature: 'update(updater: (prev: Value) => Value): void'
+        },
+        {
+          name: 'asReadonly',
+          group: 'methods',
+          signature: 'asReadonly(): ReadonlySignal<Value>'
         }
       ],
       usage: [
         { key: 'annotating', snippets: [MEMBERS] }
       ],
       guides: ['signals/overview', 'signals/shared-state']
+    },
+    {
+      name: 'ReadonlySignal',
+      kind: 'type',
+      signature: `type ReadonlySignal<Value = unknown> = Pick<Signal.State<Value>, 'get'> & {
+  (): Value;
+}`,
+      members: [
+        {
+          name: 'get',
+          group: 'methods',
+          signature: 'get(): Value'
+        }
+      ],
+      guides: ['signals/shared-state']
     },
     {
       name: 'Computed',

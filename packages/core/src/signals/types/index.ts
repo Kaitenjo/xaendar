@@ -10,4 +10,5 @@ export * from './query-options.type';
 export * from './query-read.type';
 export * from './query-signal.type';
 export * from './query-target.type';
+export * from './readonly-signal.type';
 export * from './signal.type';

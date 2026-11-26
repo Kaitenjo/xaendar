@@ -167,10 +167,11 @@ describe('extractComponentMembers', () => {
           j!: Input<number>;
           k!: s.QuerySignal<HTMLElement>;
           l!: import('@xaendar/core/signals').Computed<number>;
+          m!: s.ReadonlySignal<number>;
         }
       `);
 
-      expect(members).toEqual(['i', 'j', 'k', 'l']);
+      expect(members).toEqual(['i', 'j', 'k', 'l', 'm']);
     });
 
     it('ignores side-effect and default imports of the signals module', () => {

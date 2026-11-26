@@ -28,6 +28,19 @@ const SIGNAL_PROTOTYPE = Object.create(Function.prototype, {
       return this[NODE].get();
     }
   },
+  asReadonly: {
+    /**
+     * Gives the signal itself, which the type of the result shows without its `set` and `update`.
+     *
+     * N.B. Deliberate: no wrapper and no check at run time, which would be another signal with a `set` of its own and
+     * more memory for each one: the protection is the type-check's. Do not return a copy.
+     *
+     * @returns The signal.
+     */
+    value(): unknown {
+      return this;
+    }
+  },
   update: {
     /**
      * Sets the value of the underlying {@link Signal.State} to the one derived from the previous value, read untracked.

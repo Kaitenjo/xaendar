@@ -1,3 +1,5 @@
+import type { ReadonlySignal } from './readonly-signal.type';
+
 /**
  * A writable reactive value.
  *
@@ -19,4 +21,11 @@ export type Signal<Value = unknown> = Pick<Signal.State<Value>, 'get' | 'set'> &
    * @param updater - Function receiving the previous value and returning the next one.
    */
   update(updater: (prev: Value) => Value): void;
+  /**
+   * Gives the signal typed without its `set` and `update`, to expose it to code that must not write it. It returns the
+   * signal itself, not a copy: the protection is the one of the type-check.
+   *
+   * @returns The same signal, as a {@link ReadonlySignal}.
+   */
+  asReadonly(): ReadonlySignal<Value>;
 } 

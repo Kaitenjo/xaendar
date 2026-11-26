@@ -491,10 +491,18 @@ Runs a function without tracking the signals it reads.
 ### Signal (type)
 
 ```ts
-Signal<T> = { (): T; get(): T; set(value: T): void; update(fn: (prev: T) => T): void }
+Signal<T> = { (): T; get(): T; set(value: T): void; update(fn: (prev: T) => T): void; asReadonly(): ReadonlySignal<T> }
 ```
 
-The type returned by signal(). Annotating a member with it makes the attributes reading the member reactive. `update` reads the current value untracked. It is a function, not a `Signal.State`: never pass it to `Signal.subtle` APIs or a `Watcher`.
+The type returned by signal(). Annotating a member with it makes the attributes reading the member reactive. `update` reads the current value untracked. `asReadonly()` returns the same signal typed as `ReadonlySignal` (no `set`, no `update`): no copy and no run-time check, the protection is the type-check's; keep the writable one private (`public readonly count = this._count.asReadonly()`). It is a function, not a `Signal.State`: never pass it to `Signal.subtle` APIs or a `Watcher`.
+
+### ReadonlySignal (type)
+
+```ts
+ReadonlySignal<T> = { (): T; get(): T }
+```
+
+What `signal.asReadonly()` returns: a view of a writable signal without `set` and `update` (not derived, unlike Computed). Recognized as a signal member by the template compiler.
 
 ### Computed (type)
 

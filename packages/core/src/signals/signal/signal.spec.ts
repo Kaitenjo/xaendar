@@ -24,6 +24,20 @@ describe('signal', () => {
     expect(first.set).toBe(second.set);
   });
 
+  it('gives the signal itself as read-only, typed without its set and update', () => {
+    const state = signal(1);
+    const readonly = state.asReadonly();
+
+    expect(readonly).toBe(state);
+    state.set(2);
+    expect([readonly(), readonly.get()]).toEqual([2, 2]);
+    // @ts-expect-error a read-only signal has no set
+    expect(typeof readonly.set).toBe('function');
+    // @ts-expect-error a read-only signal has no update
+    expect(typeof readonly.update).toBe('function');
+    expect(state.asReadonly).toBe(signal(5).asReadonly);
+  });
+
   it('keeps the value of each signal apart', () => {
     const first = signal(1);
     const second = signal(2);
