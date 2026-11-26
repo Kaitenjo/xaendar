@@ -4,7 +4,7 @@ import type { NoArgsVoidFunction } from '@xaendar/types';
 import type { FormValidator } from '../../types/form-validator.type';
 import type { FormValueSource } from '../../types/form-value-source.type';
 import type { FormValue } from '../../types/form-value.type';
-import { assertFormAssociated, writeFormValidity, writeState } from '../../utils/form-control/form-control.utils';
+import { writeFormValidity, writeState } from '../../utils/form-control/form-control.utils';
 
 /**
  * Makes a component a control of the form holding it, as the native fields are: its value goes with the form under
@@ -12,9 +12,9 @@ import { assertFormAssociated, writeFormValidity, writeState } from '../../utils
  * reach it. The equivalent of a `ControlValueAccessor` of Angular, on the form-associated custom elements of the
  * browser.
  *
- * A host directive: declared in the `hostDirectives` of the `@WebComponent` of the component, it makes its class
- * form-associated (`formAssociated` of `@Directive`), and the component forwards it the form callbacks the browser
- * calls. The component keeps it in a field, and gives it its value and its validators in `onInit`. The states of
+ * A host directive: declared in the `hostDirectives` of the `@WebComponent` of the component, it declares the form
+ * callbacks the browser calls on a form-associated element, which makes the class form-associated and which the
+ * component forwards to it. The component keeps it in a field, and gives it its value and its validators in `onInit`. The states of
  * Angular are signals, each with its opposite (`touched`/`untouched`, `dirty`/`pristine`, `disabled`), and `touched`
  * and `dirty` are also custom states of the element for CSS (`:state(touched)`, `:state(dirty)`). On the server there
  * are no `ElementInternals` nor effects: it does nothing there.
@@ -35,8 +35,7 @@ import { assertFormAssociated, writeFormValidity, writeState } from '../../utils
  * ```
  */
 @Directive({
-  selector: 'formControl',
-  formAssociated: true
+  selector: 'formControl'
 })
 export class FormControlDirective extends CustomDirective<HTMLElement> {
   /**
@@ -83,15 +82,6 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
     }
 
     return this._internals;
-  }
-
-  /**
-   * Ensures the directive is a host directive of a form-associated component.
-   *
-   * @throws When it is applied from a template, to an element that is not form-associated.
-   */
-  public onInit(): void {
-    assertFormAssociated(this.element);
   }
 
   /**

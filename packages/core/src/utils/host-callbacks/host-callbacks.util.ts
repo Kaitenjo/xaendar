@@ -3,12 +3,6 @@ import type { FormCallbackName } from '../../types/host/form-callback-name.type'
 import type { ResolvedHostDirectives } from '../../types/web-component/resolved-host-directives.type';
 
 /**
- * The classes of the directives declaring `formAssociated` in their `@Directive`: a component declaring one among its
- * host directives is form-associated.
- */
-const FORM_ASSOCIATED_DIRECTIVES = new WeakSet<object>();
-
-/**
  * The form callbacks the browser calls on a form-associated custom element, each forwarding its arguments to the host
  * directives of the component declaring it (see {@link forwardFormCallback}).
  *
@@ -43,20 +37,11 @@ const FORM_CALLBACKS: Readonly<Record<FormCallbackName, (this: CustomElement, fi
 };
 
 /**
- * Marks the class of a directive declaring `formAssociated` in its `@Directive`.
- *
- * @param klass - The class of the directive.
- */
-export function markFormAssociatedDirective(klass: object): void {
-  FORM_ASSOCIATED_DIRECTIVES.add(klass);
-}
-
-/**
- * Gives the class of a component what its host directives need of the browser, before it is defined, when the browser
- * reads it: the static `formAssociated`, when one of them declares `formAssociated` in its `@Directive`, and the form
- * callbacks one of them declares, which the browser calls on the element and the component forwards to every host
- * directive declaring them. A callback the class, or one of its ancestors, declares itself is left as it is: it calls
- * the one of the directive when it needs it.
+ * Gives the class of a component the form callbacks its host directives declare, before it is defined, when the browser
+ * reads it: the browser calls them on the element, and the component forwards them to every host directive declaring
+ * them. A host directive declaring one makes the component form-associated, the static `formAssociated` the browser
+ * reads, since it calls them only on those: no option tells it. A callback the class, or one of its ancestors, declares
+ * itself is left as it is: it calls the one of the directive when it needs it.
  *
  * @param klass - The class of the component.
  * @param resolved - Its host directives, the ones of its ancestors included.
@@ -65,13 +50,12 @@ export function _applyHostCallbacks(klass: object, { directives }: ResolvedHostD
   const prototype = (klass as { prototype: object }).prototype;
   for (let i = 0; i < directives.length; i++) {
     const directive = directives[i].directive;
-    if (FORM_ASSOCIATED_DIRECTIVES.has(directive)) {
-      Object.defineProperty(klass, 'formAssociated', { configurable: true, value: true });
-    }
-
     for (const name in FORM_CALLBACKS) {
-      if (typeof directive.prototype[name] === 'function' && !(name in prototype)) {
-        Object.defineProperty(prototype, name, { configurable: true, writable: true, value: FORM_CALLBACKS[name as FormCallbackName] });
+      if (typeof directive.prototype[name] === 'function') {
+        Object.defineProperty(klass, 'formAssociated', { configurable: true, value: true });
+        if (!(name in prototype)) {
+          Object.defineProperty(prototype, name, { configurable: true, writable: true, value: FORM_CALLBACKS[name as FormCallbackName] });
+        }
       }
     }
   }

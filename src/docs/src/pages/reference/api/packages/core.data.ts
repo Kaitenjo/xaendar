@@ -583,20 +583,15 @@ export const CORE_API: ApiPackage = {
     {
       name: 'DirectiveOptions',
       kind: 'type',
-      signature: 'type DirectiveOptions = {\n  selector: string;\n  formAssociated?: boolean;\n};',
+      signature: 'type DirectiveOptions = {\n  selector: string;\n};',
       members: [
         {
           name: 'selector',
           group: 'properties',
           signature: 'selector: string'
-        },
-        {
-          name: 'formAssociated',
-          group: 'properties',
-          signature: 'formAssociated?: boolean'
         }
       ],
-      guides: ['directives/overview', 'patterns/forms']
+      guides: ['directives/overview']
     },
     {
       name: 'HostDirectiveOptions',

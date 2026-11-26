@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest';
-import { assertFormAssociated, writeFormValidity, writeState } from './form-control.utils';
+import { writeFormValidity, writeState } from './form-control.utils';
 
 /**
  * An `ElementInternals` recording the calls, which happy-dom lacks.
@@ -32,17 +32,5 @@ describe('form control', () => {
     expect(internals.states.has('touched')).toBe(true);
     writeState(internals, 'touched', false);
     expect(internals.states.has('touched')).toBe(false);
-  });
-
-  it('rejects an element whose class is not form-associated', () => {
-    class Field extends HTMLElement {
-      public static formAssociated = true;
-    }
-    class Plain extends HTMLElement { }
-    customElements.define('x-control-field', Field);
-    customElements.define('x-control-plain', Plain);
-
-    expect(() => assertFormAssociated(new Field())).not.toThrow();
-    expect(() => assertFormAssociated(new Plain())).toThrow('FormControlDirective is applied to <x-control-plain>, which is not form-associated: declare it in the hostDirectives of the @WebComponent of the component, which it makes form-associated');
   });
 });

@@ -40,16 +40,3 @@ export function writeFormValidity(internals: ElementInternals, validators: reado
 export function writeState(internals: ElementInternals, state: string, on: boolean): void {
   on ? internals.states.add(state) : internals.states.delete(state);
 }
-
-/**
- * Ensures the element a form control is applied to is form-associated: the directive is a host directive of its
- * component, whose class it makes form-associated, never applied from a template.
- *
- * @param element - The element.
- * @throws When the class of the element is not form-associated.
- */
-export function assertFormAssociated(element: HTMLElement): void {
-  if ((element.constructor as { formAssociated?: unknown }).formAssociated !== true) {
-    throw new Error(`FormControlDirective is applied to <${element.localName}>, which is not form-associated: declare it in the hostDirectives of the @WebComponent of the component, which it makes form-associated`);
-  }
-}

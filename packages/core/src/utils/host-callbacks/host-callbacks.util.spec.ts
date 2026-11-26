@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import type { ResolvedHostDirectives } from '../../types/web-component/resolved-host-directives.type';
-import { _applyHostCallbacks, markFormAssociatedDirective } from './host-callbacks.util';
+import { _applyHostCallbacks } from './host-callbacks.util';
 
 /**
  * The host directives of a component, as `_resolveHostDirectives` gives them.
@@ -41,13 +41,11 @@ class Recorder extends CustomDirective {
 class Plain extends CustomDirective { }
 
 describe('_applyHostCallbacks', () => {
-  it('makes the class form-associated for a directive marked so, leaving the others as they are', () => {
-    class Marked extends CustomDirective { }
-    markFormAssociatedDirective(Marked);
+  it('makes the class form-associated for a host directive declaring a form callback, leaving the others as they are', () => {
     class Field extends CustomElement { }
     class Other extends CustomElement { }
 
-    _applyHostCallbacks(Field, resolved(Plain, Marked));
+    _applyHostCallbacks(Field, resolved(Plain, Recorder));
     _applyHostCallbacks(Other, resolved(Plain));
 
     expect((Field as unknown as { formAssociated: boolean }).formAssociated).toBe(true);

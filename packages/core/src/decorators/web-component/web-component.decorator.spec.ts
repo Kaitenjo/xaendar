@@ -3,7 +3,6 @@ import { Constructor } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
 import { INTERNAL_EXTENDS, INTERNAL_HOST_DIRECTIVES, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_SELECTOR } from '../../costants';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
-import { Directive } from '../directive/directive.decorator';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import type { WebComponentOptions } from '../../types/web-component/web-component-options.type';
 import { customElementOf } from '../../utils/custom-element-of/custom-element-of.util';
@@ -104,14 +103,13 @@ describe('WebComponent decorator', () => {
     expect(document.createElement('button', { is: 'x-copy-button' })).toBeInstanceOf(CopyButton);
   });
 
-  it('makes form-associated a component declaring a form-associated host directive, forwarding it the form callbacks', () => {
+  it('makes form-associated a component declaring a host directive with a form callback, forwarding it the callbacks', () => {
     const calls = new Array<string>();
     class FormControl extends CustomDirective {
       public formResetCallback(): void {
         calls.push('reset');
       }
     }
-    Directive({ selector: 'xFormControl', formAssociated: true })(FormControl, {} as ClassDecoratorContext<Constructor<FormControl>>);
     class Rating extends CustomElement { }
     const metadata = {};
     Object.defineProperty(Rating, Symbol.for('Symbol.metadata'), { value: metadata });
@@ -132,7 +130,7 @@ describe('WebComponent decorator', () => {
 
     WebComponent({ selector: 'x-form-button', extends: 'button' })(FormButton, context as unknown as ClassDecoratorContext<Constructor<CustomElement>>);
 
-    expect(() => initializers[0].call(FormButton)).toThrow('FormButton extends <button> and is form-associated (a host directive declaring formAssociated, or a static formAssociated): a customized built-in element cannot be');
+    expect(() => initializers[0].call(FormButton)).toThrow('FormButton extends <button> and is form-associated (a host directive declaring a form callback, or a static formAssociated): a customized built-in element cannot be');
     expect(customElements.get('x-form-button')).toBeUndefined();
   });
 

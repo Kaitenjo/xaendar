@@ -361,8 +361,7 @@
     "summary": "The options of <code>@Directive</code>: the selector the templates apply the directive with.",
     "description": "<p>The object passed to <a href=\"#/en/reference/api/core/Directive\"><code>@Directive</code></a>. Its only option is described in detail on the page of the decorator.</p>",
     "members": {
-      "selector": "<p>The name of the directive in the templates, after <code>@@</code> or <code>*</code>, written as a string literal. It needs no hyphen, and must be unique among the directives of the application.</p>",
-      "formAssociated": "<p>Makes the components declaring the directive among their <code>hostDirectives</code> form-associated, as the static <code>formAssociated</code> of the custom elements does: controls of the forms holding them. The form callbacks the browser calls on them (<code>formResetCallback</code>, <code>formDisabledCallback</code>, <code>formStateRestoreCallback</code>, <code>formAssociatedCallback</code>) are forwarded to the host directives declaring them, unless the component declares its own. <code>FormControlDirective</code> of <code>@xaendar/forms</code> declares it. <code>false</code> by default.</p>"
+      "selector": "<p>The name of the directive in the templates, after <code>@@</code> or <code>*</code>, written as a string literal. It needs no hyphen, and must be unique among the directives of the application.</p>"
     }
   },
   "HostDirectiveOptions": {

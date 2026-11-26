@@ -25,10 +25,10 @@ import { _resolveHostDirectives } from '../../utils/host-directives/host-directi
  * as `is` (`<button is="my-button">`). Safari does not support customized built-in elements: a page needing them there
  * loads a polyfill first.
  *
- * A host directive declaring `formAssociated` in its `@Directive` makes the component form-associated: the decorator sets
- * the static `formAssociated` the browser reads, which the class can also declare itself, and the form callbacks the
- * browser calls (`formResetCallback`, `formDisabledCallback`…) the component does not declare are forwarded to its host
- * directives. A customized built-in element cannot be form-associated, which the registration rejects.
+ * The form callbacks the browser calls on a form-associated element (`formResetCallback`, `formDisabledCallback`…) the
+ * component does not declare are forwarded to the host directives declaring them, and a host directive declaring one
+ * makes the component form-associated: the decorator sets the static `formAssociated` the browser reads, which a class
+ * can also declare itself. A customized built-in element cannot be form-associated, which the registration rejects.
  *
  * @param options - Configuration object containing at least a `selector`
  *   (the custom element tag name) and a `templateUrl`.
@@ -89,7 +89,7 @@ export function WebComponent<T extends CustomElement>(options: WebComponentOptio
       _applyHostCallbacks(klass, _resolveHostDirectives(klass));
       // A native control takes part in the forms by itself, and the browser gives a customized built-in no ElementInternals
       if (options.extends && (klass as { formAssociated?: unknown }).formAssociated === true) {
-        throw new Error(`${klass.name} extends <${options.extends}> and is form-associated (a host directive declaring formAssociated, or a static formAssociated): a customized built-in element cannot be, since attachInternals() throws for it. A native control (<input>, <select>, <textarea>, <button>) already takes part in the forms: use its value and setCustomValidity(), or make the component autonomous`);
+        throw new Error(`${klass.name} extends <${options.extends}> and is form-associated (a host directive declaring a form callback, or a static formAssociated): a customized built-in element cannot be, since attachInternals() throws for it. A native control (<input>, <select>, <textarea>, <button>) already takes part in the forms: use its value and setCustomValidity(), or make the component autonomous`);
       }
 
       // A customized built-in element is defined on the tag it extends, an autonomous one on its own
