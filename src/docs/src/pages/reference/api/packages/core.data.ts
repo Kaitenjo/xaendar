@@ -557,7 +557,7 @@ export const CORE_API: ApiPackage = {
     {
       name: 'WebComponentOptions',
       kind: 'type',
-      signature: 'type WebComponentOptions = {\n  selector: string;\n  hostDirectives?: Array<Constructor<CustomDirective> | HostDirectiveOptions>;\n  ssr?: WebComponentSsrOptions;\n} & ({\n  extends?: undefined;\n  styleUrl?: string;\n  templateUrl: string;\n} | {\n  extends: ShadowHostTagName;\n  styleUrl?: string;\n  templateUrl?: string;\n} | {\n  extends: Exclude<keyof HTMLElementTagNameMap, ShadowHostTagName>;\n  styleUrl?: undefined;\n  templateUrl?: undefined;\n});\n\ntype ShadowHostTagName = \'article\' | \'aside\' | \'blockquote\' | \'body\' | \'div\' | \'footer\' | \'h1\' | \'h2\' | \'h3\' | \'h4\' | \'h5\' | \'h6\' | \'header\' | \'main\' | \'nav\' | \'p\' | \'section\' | \'span\';',
+      signature: 'type WebComponentOptions = {\n  selector: string;\n  hostDirectives?: Array<Constructor<CustomDirective> | HostDirectiveOptions>;\n  ssr?: WebComponentSsrOptions;\n} & ({\n  extends?: undefined;\n  formAssociated?: boolean;\n  styleUrl?: string;\n  templateUrl: string;\n} | {\n  extends: ShadowHostTagName;\n  formAssociated?: false;\n  styleUrl?: string;\n  templateUrl?: string;\n} | {\n  extends: Exclude<keyof HTMLElementTagNameMap, ShadowHostTagName>;\n  formAssociated?: false;\n  styleUrl?: undefined;\n  templateUrl?: undefined;\n});\n\ntype ShadowHostTagName = \'article\' | \'aside\' | \'blockquote\' | \'body\' | \'div\' | \'footer\' | \'h1\' | \'h2\' | \'h3\' | \'h4\' | \'h5\' | \'h6\' | \'header\' | \'main\' | \'nav\' | \'p\' | \'section\' | \'span\';',
       members: [
         {
           name: 'selector',
@@ -568,6 +568,11 @@ export const CORE_API: ApiPackage = {
           name: 'extends',
           group: 'properties',
           signature: 'extends?: keyof HTMLElementTagNameMap'
+        },
+        {
+          name: 'formAssociated',
+          group: 'properties',
+          signature: 'formAssociated?: boolean'
         },
         {
           name: 'hostDirectives',
@@ -590,7 +595,7 @@ export const CORE_API: ApiPackage = {
           signature: 'templateUrl?: string'
         }
       ],
-      guides: ['components/anatomy']
+      guides: ['components/anatomy', 'patterns/forms']
     },
     {
       name: 'WebComponentSsrOptions',

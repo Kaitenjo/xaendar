@@ -59,7 +59,7 @@ describe('form association', () => {
     customElements.define('x-form-missing', Missing);
 
     expect(requireFormAssociation(form, new Missing(), 'formValue')).toBe(form);
-    expect(() => requireFormAssociation(null, new Missing(), 'formValue')).toThrow('Missing.formValue() needs a form-associated component: declare static formAssociated = true in its class');
+    expect(() => requireFormAssociation(null, new Missing(), 'formValue')).toThrow('Missing.formValue() needs a form-associated component: declare formAssociated: true in its @WebComponent');
   });
 
   it('gives the form the value, converted when asked', () => {

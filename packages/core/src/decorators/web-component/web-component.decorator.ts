@@ -24,8 +24,9 @@ import { _resolveHostDirectives } from '../../utils/host-directives/host-directi
  * as `is` (`<button is="my-button">`). Safari does not support customized built-in elements: a page needing them there
  * loads a polyfill first.
  *
- * An autonomous component declaring `static formAssociated = true` takes part in the forms (see `CustomElement.formValue`);
- * a customized built-in one cannot, which the registration rejects.
+ * With `formAssociated: true`, an autonomous component takes part in the forms as the native fields do (see
+ * `CustomElement.formValue`): the decorator sets the static `formAssociated` the browser reads, which the class can also
+ * declare itself. A customized built-in one cannot, which the registration rejects.
  *
  * @param options - Configuration object containing at least a `selector`
  *   (the custom element tag name) and a `templateUrl`.
@@ -82,6 +83,11 @@ export function WebComponent<T extends CustomElement>(options: WebComponentOptio
       runs once both are set.
     */
     context.addInitializer(() => {
+      // The browser reads the static field when the class is defined, as the native way of declaring it
+      if (options.formAssociated) {
+        Object.defineProperty(klass, 'formAssociated', { configurable: true, value: true });
+      }
+
       // A native control takes part in the forms by itself, and the browser gives a customized built-in no ElementInternals
       if (options.extends && (klass as { formAssociated?: unknown }).formAssociated === true) {
         throw new Error(`${klass.name} extends <${options.extends}> and declares static formAssociated = true: a customized built-in element cannot be form-associated, since attachInternals() throws for it. A native control (<input>, <select>, <textarea>, <button>) already takes part in the forms: use its value and setCustomValidity(), or make the component autonomous`);

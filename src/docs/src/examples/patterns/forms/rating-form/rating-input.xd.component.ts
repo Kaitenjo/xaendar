@@ -7,15 +7,11 @@ import type { InputSignal, ModelSignal, QuerySignal } from '@xaendar/core/signal
  */
 @WebComponent({
   selector: 'ex-rating-input',
+  formAssociated: true,
   styleUrl: './rating-input.css',
   templateUrl: './rating-input.xd.component.html'
 })
 export class RatingInputComponent extends CustomElement {
-  /**
-   * Makes the element a control of its form, as the browser reads it.
-   */
-  public static formAssociated = true;
-
   /**
    * The rating, 0 for none.
    */

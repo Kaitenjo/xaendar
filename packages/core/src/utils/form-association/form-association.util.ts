@@ -5,7 +5,7 @@ import type { FormValidityErrors } from '../../types/form/form-validity-errors.t
 import type { FormValue } from '../../types/form/form-value.type';
 
 /**
- * Creates what a component keeps of its form, when its class declares `static formAssociated = true`, as the browser
+ * Creates what a component keeps of its form, when its `@WebComponent` declares `formAssociated: true`, as the browser
  * reads it: its `ElementInternals`, attached once, `null` where the DOM has none, as on the server, and the signal of its
  * disabled state.
  *
@@ -37,11 +37,11 @@ export function createFormAssociation(element: HTMLElement): _FormAssociation | 
  * @param element - The element of the component.
  * @param method - The name of the method called, for the message.
  * @returns What the component keeps of its form.
- * @throws When the class of the component does not declare `static formAssociated = true`.
+ * @throws When the `@WebComponent` of the component does not declare `formAssociated: true`.
  */
 export function requireFormAssociation(form: _FormAssociation | null, element: HTMLElement, method: string): _FormAssociation {
   if (!form) {
-    throw new Error(`${element.constructor.name}.${method}() needs a form-associated component: declare static formAssociated = true in its class`);
+    throw new Error(`${element.constructor.name}.${method}() needs a form-associated component: declare formAssociated: true in its @WebComponent`);
   }
 
   return form;

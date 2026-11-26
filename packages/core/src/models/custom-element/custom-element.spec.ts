@@ -969,7 +969,7 @@ describe('CustomElement', () => {
       expect(() => element.formDisabledCallback(true)).not.toThrow();
       expect(() => element.formResetCallback()).not.toThrow();
       expect(() => element.formStateRestoreCallback('x', 'restore')).not.toThrow();
-      expect(() => element.giveValue()).toThrow('needs a form-associated component: declare static formAssociated = true in its class');
+      expect(() => element.giveValue()).toThrow('needs a form-associated component: declare formAssociated: true in its @WebComponent');
       expect(() => element.giveValidity()).toThrow('needs a form-associated component');
     });
   });

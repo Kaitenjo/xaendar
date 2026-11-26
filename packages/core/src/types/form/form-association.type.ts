@@ -3,7 +3,7 @@ import type { FormValueSource } from './form-value-source.type';
 
 /**
  * What a form-associated component keeps of its form (see `CustomElement.formValue`), created only for the classes
- * declaring `static formAssociated = true`.
+ * whose `@WebComponent` declares `formAssociated: true`, or which declare the static `formAssociated` themselves.
  */
 export type _FormAssociation = {
   /**

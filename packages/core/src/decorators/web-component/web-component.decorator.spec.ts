@@ -103,6 +103,21 @@ describe('WebComponent decorator', () => {
     expect(document.createElement('button', { is: 'x-copy-button' })).toBeInstanceOf(CopyButton);
   });
 
+  it('sets the static formAssociated the browser reads when the options ask for it, before defining the class', () => {
+    class RatingInput extends CustomElement { }
+    class Plain extends CustomElement { }
+    const initializers = new Array<Initializer>();
+    const context = { metadata: {}, addInitializer: (initializer: Initializer) => initializers.push(initializer) };
+
+    WebComponent({ selector: 'x-form-rating', formAssociated: true, templateUrl: './x.html' })(RatingInput, context as unknown as ClassDecoratorContext<Constructor<CustomElement>>);
+    WebComponent({ selector: 'x-form-plain', formAssociated: false, templateUrl: './x.html' })(Plain, context as unknown as ClassDecoratorContext<Constructor<CustomElement>>);
+    initializers[0].call(RatingInput);
+    initializers[1].call(Plain);
+
+    expect((RatingInput as unknown as { formAssociated: boolean }).formAssociated).toBe(true);
+    expect('formAssociated' in Plain).toBe(false);
+  });
+
   it('rejects a customized built-in element declaring static formAssociated = true, which the browser cannot give internals', () => {
     class FormButton extends customElementOf(HTMLButtonElement) {
       public static formAssociated = true;

@@ -95,13 +95,13 @@ export class CustomElement extends HTMLElement {
    */
   private declare _root: ShadowRoot | null;
   /**
-   * What the component keeps of its form, when its class declares `static formAssociated = true`: its `ElementInternals`
+   * What the component keeps of its form, when its `@WebComponent` declares `formAssociated: true`: its `ElementInternals`
    * and its disabled state (see {@link formValue}). `null` for any other component.
    */
   private declare _form: _FormAssociation | null;
 
   /**
-   * The `ElementInternals` of a form-associated component (`static formAssociated = true`), attached by Xaendar once:
+   * The `ElementInternals` of a form-associated component (`formAssociated: true` of its `@WebComponent`), attached by Xaendar once:
    * the object of the browser itself, for anything the methods of the forms do not cover (`setFormValue`, `setValidity`,
    * `form`, `labels`, `states`, `role` and the ARIA properties). The component does not call `attachInternals()`, which
    * throws a second time. `null` for a component that is not form-associated, which can call `attachInternals()` itself,
@@ -313,7 +313,7 @@ export class CustomElement extends HTMLElement {
   }
 
   /**
-   * Gives the form of a form-associated component (`static formAssociated = true`) the value of a signal, a `signal` or a
+   * Gives the form of a form-associated component (`formAssociated: true` of its `@WebComponent`) the value of a signal, a `signal` or a
    * model, following it in an effect bound to the lifecycle of the component (`ElementInternals.setFormValue`): the form
    * sends it with the name of the element, and `FormData` holds it. The reset of the form writes back into the signal the
    * value it has now, and the restoration of the browser the value it gives back (see {@link formResetCallback},
@@ -329,7 +329,7 @@ export class CustomElement extends HTMLElement {
    * @param source - The signal whose value goes to the form.
    * @param toFormValue - Converts the value for the form, required when it is not a text, a `File`, a `FormData` or
    *   `null`.
-   * @throws When the class of the component does not declare `static formAssociated = true`.
+   * @throws When the `@WebComponent` of the component does not declare `formAssociated: true`.
    */
   protected formValue<Value extends FormValue>(source: FormValueSource<Value>): void;
   protected formValue<Value>(source: FormValueSource<Value>, toFormValue: (value: Value) => FormValue): void;
@@ -342,7 +342,7 @@ export class CustomElement extends HTMLElement {
   }
 
   /**
-   * Gives the form of a form-associated component (`static formAssociated = true`) its validity, following the signals
+   * Gives the form of a form-associated component (`formAssociated: true` of its `@WebComponent`) its validity, following the signals
    * read by a function in an effect bound to the lifecycle of the component (`ElementInternals.setValidity`): the
    * function returns the errors, as the flags of `ValidityState` each with its message. With errors, the component is
    * `:invalid`, blocks the submission of the form, answers `checkValidity()` and `reportValidity()`, and the browser
@@ -358,7 +358,7 @@ export class CustomElement extends HTMLElement {
    * @param errors - Returns the errors of the component, none when it is valid.
    * @param anchor - Returns the element of the shadow root the browser shows the message on, such as a query signal,
    *   followed until it exists. The host when missing.
-   * @throws When the class of the component does not declare `static formAssociated = true`.
+   * @throws When the `@WebComponent` of the component does not declare `formAssociated: true`.
    */
   protected formValidity(errors: () => FormValidityErrors, anchor?: () => HTMLElement | null): void {
     const form = requireFormAssociation(this._form, this, 'formValidity');

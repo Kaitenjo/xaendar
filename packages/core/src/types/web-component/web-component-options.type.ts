@@ -36,6 +36,13 @@ export type WebComponentOptions = {
    */
   extends?: undefined,
   /**
+   * Makes the element a control of the form holding it, as the native fields are (the `formAssociated` of the custom
+   * elements): its value goes with the form, its validity blocks the submission, the reset of the form and a disabled
+   * `<fieldset>` reach it. The component gives the form its value and its validity with `formValue` and `formValidity`
+   * of `CustomElement`. Defaults to `false`.
+   */
+  formAssociated?: boolean,
+  /**
    * Optional path to the component's stylesheet, relative to the component file.
    */
   styleUrl?: string,
@@ -50,6 +57,10 @@ export type WebComponentOptions = {
    * `main`, `nav` and `section`, whose class is `CustomElement`), and templates write it `<div is="my-panel">`.
    */
   extends: ShadowHostTagName,
+  /**
+   * Left out: the browser gives a customized built-in element no `ElementInternals`, so it cannot be form-associated.
+   */
+  formAssociated?: false,
   /**
    * Optional path to the component's stylesheet, relative to the component file: it styles the shadow root of the
    * template, which it needs.
@@ -67,6 +78,11 @@ export type WebComponentOptions = {
    * templates write it `<button is="my-button">`.
    */
   extends: Exclude<keyof HTMLElementTagNameMap, ShadowHostTagName>,
+  /**
+   * Left out: a native control already takes part in the forms, and the browser gives a customized built-in element no
+   * `ElementInternals`.
+   */
+  formAssociated?: false,
   /**
    * Left out: the element has no shadow root to style.
    */

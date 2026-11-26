@@ -11,7 +11,7 @@
 | `model()`, `model.required()` | `@Model(default)` / `@Model.required()` on `public accessor x!: ModelSignal<T>`, `this.x.set(v)` dispatching `xChange` (a DOM `CustomEvent`, `$event.detail`) |
 | `[(x)]="sig"` two-way binding | the same: `[(x)]="sig"`, `sig` a writable signal named without `()`; Angular's assignment to a plain field (`[(x)]="field"`) does not exist |
 | `[(ngModel)]` on native fields | `(input)` + a directive writing the property (patterns.md, Forms) |
-| `ControlValueAccessor` (a component in a form) | the native form-associated custom elements: `static formAssociated = true`, `this.formValue(signal)`, `this.formValidity(() => errors)` in `onInit`, `formDisabled()`; the element joins any native `<form>` (`FormData`, validation, reset, `<fieldset disabled>`) |
+| `ControlValueAccessor` (a component in a form) | the native form-associated custom elements: `@WebComponent({ …, formAssociated: true })`, `this.formValue(signal)`, `this.formValidity(() => errors)` in `onInit`, `formDisabled()`; the element joins any native `<form>` (`FormData`, validation, reset, `<fieldset disabled>`) |
 | `host: {...}`, `@HostBinding`, `@HostListener` | `@HostAttribute('attr' \| 'class.x' \| 'style.x')`, `@HostListener('event' \| 'window:event' \| 'document:event')`, key events included (`@HostListener('document:keydown.escape')`) |
 | `(keydown.enter)`, `(keyup.control.shift.z)`, `(keydown.code.keya)` | the same key events; `control` (not `ctrl`), `esc` for `escape`, `space`, `dot`; modifiers matched exactly; no `.prevent`/`.stop` (call it on `$event`) |
 | `signal`, `computed`, `effect`, `untracked` | the same names from `@xaendar/core/signals`; `this.effect()` for effects bound to the component |
