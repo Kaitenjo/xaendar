@@ -27,7 +27,7 @@ export function writeFormValidity(internals: ElementInternals, validators: reado
     }
   }
 
-  message === undefined ? internals.setValidity() : internals.setValidity(flags, message, anchor);
+  message === undefined ? internals.setValidity({}) : internals.setValidity(flags, message, anchor);
 }
 
 /**
