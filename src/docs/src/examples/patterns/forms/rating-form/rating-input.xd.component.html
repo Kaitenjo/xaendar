@@ -1,0 +1,12 @@
+@for (star of stars; track star) {
+  <button
+    aria-label="{`${star} stars`}"
+    class="star"
+    class.on="{star <= value()}"
+    disabled="{formDisabled()}"
+    type="button"
+    (click)="value.set(star)"
+  >
+    ★
+  </button>
+}

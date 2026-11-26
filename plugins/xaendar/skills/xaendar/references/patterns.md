@@ -76,6 +76,7 @@ public onDestroy(): void {
 ## Forms
 
 - A form control written as a component (a toggle, a stepper, a date picker) declares its value as a `@Model` and the form binds it with `[(value)]="field"`, `field` a signal of the form.
+- To take part in a native `<form>` too (`FormData`, `required` blocking the submission, `reset()`, `<fieldset disabled>`), the component declares `public static formAssociated = true` and calls `this.formValue(this.value)` and `this.formValidity(() => …)` in `onInit` (api.md, CustomElement).
 - Read each field with `(input)` (text) or `(change)` (select, checkbox) calling a method: `this.name.set((event.target as HTMLInputElement).value)`, or pass a ref property: `(input)="setName(field.value)"`.
 - Validate with a `computed` over the field signals; show the errors after the first submit attempt.
 - `<form novalidate (submit)="submit($event)">`, and `event.preventDefault()` in the method.

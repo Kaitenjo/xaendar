@@ -2,6 +2,7 @@
 @import { translate as t } from '../../../core/i18n/i18n.utils.ts'
 @import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
 @import { BindValueDemoComponent } from '../../../examples/patterns/forms/bind-value/bind-value-demo.xd.component.ts'
+@import { RatingFormComponent } from '../../../examples/patterns/forms/rating-form/rating-form.xd.component.ts'
 @import { SignupFormComponent } from '../../../examples/patterns/forms/signup-form/signup-form.xd.component.ts'
 @import { DocsCalloutItemComponent } from '../../../ui/docs-callout-item/docs-callout-item.xd.component.ts'
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
@@ -38,6 +39,18 @@
 <p>
   { t(translations(), 'pages.patterns.forms.writingTheFields.p3') }
 </p>
+
+<h2>
+  { t(translations(), 'pages.patterns.forms.formAssociated.title') }
+</h2>
+<p @@htmlTranslation(key="pages.patterns.forms.formAssociated.p1") />
+<docs-example name="patterns/forms/rating-form"
+  heading="{translations().pages.patterns.forms.formAssociated.example1}">
+  <ex-rating-form />
+</docs-example>
+<p @@htmlTranslation(key="pages.patterns.forms.formAssociated.p2") />
+<p @@htmlTranslation(key="pages.patterns.forms.formAssociated.p3") />
+<p @@htmlTranslation(key="pages.patterns.forms.formAssociated.p4") />
 
 <section class="edge-cases">
   <h2>

@@ -164,10 +164,12 @@ Registers a class extending CustomDirective or StructuralDirective under a selec
 ### CustomElement (class)
 
 ```ts
-class X extends CustomElement { hostDirectives: HostDirectives; onInit?(); afterRender?(); onDestroy?(); effect(fn, options?): () => void; createComponent(Class, options?): ComponentRef<Class> }
+class X extends CustomElement { hostDirectives: HostDirectives; onInit?(); afterRender?(); onDestroy?(); effect(fn, options?): () => void; createComponent(Class, options?): ComponentRef<Class>; protected internals: ElementInternals | null; protected formValue(source, toFormValue?); protected formValidity(errors: () => FormValidityErrors, anchor?); formDisabled(): boolean; formResetCallback(); formDisabledCallback(disabled); formStateRestoreCallback(state, mode) }
 ```
 
 Base class of components: an open shadow root, the lifecycle hooks, and effects disposed at disconnection. `hostDirectives` is a map from the class of each host directive to its instance (`this.hostDirectives.get(Tip)`, typed): the directives start before `onInit` and stop after `onDestroy`. `connectedCallback` and `disconnectedCallback` belong to the base class: never declare them. Disconnection runs `onDestroy`, disposes the effects, removes the template and destroys the components created with `createComponent`.
+
+Form-associated components (the native standard): `public static formAssociated = true` makes the element a control of its `<form>`; Xaendar attaches its `ElementInternals` (`this.internals`, protected; never call `attachInternals()`, which throws a second time; `null` on the server). In `onInit`: `this.formValue(this.value, v => v ? String(v) : null)` sends a signal or model with the form under the element's `name` (convert anything not `string | File | FormData | null`); `this.formValidity(() => this.required() && !this.value() ? { valueMissing: 'Required' } : {}, this.firstStar)` sets the validity from signals (`ValidityState` flags with messages, `FormValidityErrors`; anchor a query, followed until it exists): `:invalid`, submission blocked, `checkValidity()`. `formDisabled()` is a signal of the browser's disabled state (form, `<fieldset disabled>`, `disabled` attribute) for templates. The native callbacks keep their names: `formResetCallback` writes back the value of the `formValue` call, `formDisabledCallback` sets `formDisabled()`, `formStateRestoreCallback(state, mode)` writes back an unconverted value (a component converting its value declares its own); an override calls `super`. A customized built-in (`extends`) cannot be form-associated (`@WebComponent` throws): a native field is a control already, use its `value` and `setCustomValidity()`.
 
 ### customElementOf (function)
 

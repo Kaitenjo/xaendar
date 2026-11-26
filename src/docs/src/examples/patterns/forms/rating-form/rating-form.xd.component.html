@@ -1,0 +1,26 @@
+@import { RatingInputComponent } from './rating-input.xd.component.ts'
+
+<form (reset)="clear()" (submit)="submit($event)">
+  <fieldset disabled="{locked()}">
+    <label for="rating">Rating</label>
+    <ex-rating-input id="rating" name="rating" required="{true}" />
+    <label>
+      Comment
+      <textarea name="comment"></textarea>
+    </label>
+  </fieldset>
+  <label class="inline">
+    <input type="checkbox" (change)="locked.set(($event.target as HTMLInputElement).checked)" />
+    Disable the fieldset
+  </label>
+  <div class="actions">
+    <button type="submit">Send</button>
+    <button type="reset">Reset</button>
+  </div>
+</form>
+@if (sent()) {
+  <p class="sent">
+    Sent:
+    <code>{ sent() }</code>
+  </p>
+}

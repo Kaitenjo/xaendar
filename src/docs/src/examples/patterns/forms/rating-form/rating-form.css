@@ -1,0 +1,41 @@
+:host {
+  display: block;
+}
+
+form,
+fieldset {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 22rem;
+}
+
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+label {
+  display: grid;
+  gap: 0.2rem;
+}
+
+label.inline {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+textarea {
+  font: inherit;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sent {
+  margin: 0.6rem 0 0;
+  overflow-wrap: anywhere;
+}

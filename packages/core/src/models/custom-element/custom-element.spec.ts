@@ -7,6 +7,7 @@ import { CLEANUP, CONNECTED_HOOKS, DISCONNECTED_HOOKS, HEADER, HYDRATE, IS_RENDE
 import { HostAttribute } from '../../decorators/host-attribute/host-attribute.decorator';
 import { _bindEffect, effect } from '../../signals/effect/effect';
 import { input } from '../../signals/input/input';
+import { signal } from '../../signals/signal/signal';
 import type { _Context } from '../../types/context.type';
 import type { NodeStrategy } from '../../types/node-strategy.type';
 import { ClaimNodes } from '../../utils/claim-nodes/claim-nodes.util';
@@ -848,6 +849,128 @@ describe('CustomElement', () => {
 
       expect(() => element.connectedCallback()).toThrow('does not seem to have a Render Function');
       expect(calls).toEqual([]);
+    });
+  });
+
+  describe('forms', () => {
+    /**
+     * Defines a form-associated component whose `onInit` runs the given code, with an `ElementInternals` recording the
+     * calls, which happy-dom lacks.
+     */
+    function createField(onInit: (element: FormField) => void): { element: FormField, internals: ElementInternals } {
+      const internals = { setFormValue: vi.fn(), setValidity: vi.fn() } as unknown as ElementInternals;
+      Object.defineProperty(HTMLElement.prototype, 'attachInternals', { configurable: true, value: () => internals });
+      const klass = class extends FormField {
+        public static formAssociated = true;
+
+        public onInit(): void {
+          onInit(this);
+        }
+      };
+      _defineRender(klass, () => _scope(null, EMPTY_LAYOUT));
+      customElements.define(`x-field-${counter++}`, klass);
+      const element = new klass();
+      Reflect.deleteProperty(HTMLElement.prototype, 'attachInternals');
+      return { element, internals };
+    }
+
+    /**
+     * A component reaching the protected members of the forms.
+     */
+    class FormField extends CustomElement {
+      public readonly value = signal<string | null>('a');
+      public readonly count = signal(1);
+      public readonly anchor = signal<HTMLElement | null>(null);
+
+      public get exposedInternals(): ElementInternals | null {
+        return this.internals;
+      }
+
+      public giveValue(): void {
+        this.formValue(this.value);
+      }
+
+      public giveCount(): void {
+        this.formValue(this.count, count => String(count * 10));
+      }
+
+      public giveValidity(): void {
+        this.formValidity(() => this.value() ? {} : { valueMissing: 'Required' }, this.anchor);
+      }
+    }
+
+    it('gives the form the value of a signal, writing the initial one back on reset and the one the browser restores', async () => {
+      const { element, internals } = createField(field => field.giveValue());
+      document.body.appendChild(element);
+
+      expect(element.exposedInternals).toBe(internals);
+      expect(internals.setFormValue).toHaveBeenLastCalledWith('a');
+
+      element.value.set('b');
+      await flush();
+      expect(internals.setFormValue).toHaveBeenLastCalledWith('b');
+
+      element.formResetCallback();
+      expect(element.value()).toBe('a');
+
+      element.formStateRestoreCallback('c', 'restore');
+      expect(element.value()).toBe('c');
+      element.remove();
+    });
+
+    it('converts the value for the form, leaving the restoration to the component', () => {
+      const { element, internals } = createField(field => field.giveCount());
+      document.body.appendChild(element);
+
+      expect(internals.setFormValue).toHaveBeenLastCalledWith('10');
+
+      element.formStateRestoreCallback('30', 'autocomplete');
+      expect(element.count()).toBe(1);
+      element.remove();
+    });
+
+    it('gives the form the validity the signals tell, on the anchor once it exists', async () => {
+      const { element, internals } = createField(field => field.giveValidity());
+      document.body.appendChild(element);
+      expect(internals.setValidity).toHaveBeenLastCalledWith({});
+
+      element.value.set(null);
+      await flush();
+      expect(internals.setValidity).toHaveBeenLastCalledWith({ valueMissing: true }, 'Required', undefined);
+
+      const anchor = document.createElement('button');
+      element.anchor.set(anchor);
+      await flush();
+      expect(internals.setValidity).toHaveBeenLastCalledWith({ valueMissing: true }, 'Required', anchor);
+      element.remove();
+    });
+
+    it('tells whether the browser disables the component, as a signal', async () => {
+      const { element } = createField(() => undefined);
+      const states = new Array<boolean>();
+      document.body.appendChild(element);
+      element.effect(() => states.push(element.formDisabled()));
+
+      element.formDisabledCallback(true);
+      await flush();
+
+      expect(states).toEqual([false, true]);
+      element.formResetCallback();
+      element.formStateRestoreCallback('x', 'restore');
+      element.remove();
+    });
+
+    it('has none of the forms for a component that is not form-associated', () => {
+      const element = create(_scope(null, EMPTY_LAYOUT)) as unknown as FormField;
+      Object.setPrototypeOf(element, FormField.prototype);
+
+      expect(element.exposedInternals).toBeNull();
+      expect(element.formDisabled()).toBe(false);
+      expect(() => element.formDisabledCallback(true)).not.toThrow();
+      expect(() => element.formResetCallback()).not.toThrow();
+      expect(() => element.formStateRestoreCallback('x', 'restore')).not.toThrow();
+      expect(() => element.giveValue()).toThrow('needs a form-associated component: declare static formAssociated = true in its class');
+      expect(() => element.giveValidity()).toThrow('needs a form-associated component');
     });
   });
 

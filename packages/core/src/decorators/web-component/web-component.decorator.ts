@@ -24,9 +24,14 @@ import { _resolveHostDirectives } from '../../utils/host-directives/host-directi
  * as `is` (`<button is="my-button">`). Safari does not support customized built-in elements: a page needing them there
  * loads a polyfill first.
  *
+ * An autonomous component declaring `static formAssociated = true` takes part in the forms (see `CustomElement.formValue`);
+ * a customized built-in one cannot, which the registration rejects.
+ *
  * @param options - Configuration object containing at least a `selector`
  *   (the custom element tag name) and a `templateUrl`.
  * @returns A class decorator applied to the web component class.
+ * @throws When the class is registered: a host directive cannot be applied, or a customized built-in element declares
+ *   `static formAssociated = true`.
  *
  * @example
  * ```ts
@@ -77,6 +82,11 @@ export function WebComponent<T extends CustomElement>(options: WebComponentOptio
       runs once both are set.
     */
     context.addInitializer(() => {
+      // A native control takes part in the forms by itself, and the browser gives a customized built-in no ElementInternals
+      if (options.extends && (klass as { formAssociated?: unknown }).formAssociated === true) {
+        throw new Error(`${klass.name} extends <${options.extends}> and declares static formAssociated = true: a customized built-in element cannot be form-associated, since attachInternals() throws for it. A native control (<input>, <select>, <textarea>, <button>) already takes part in the forms: use its value and setCustomValidity(), or make the component autonomous`);
+      }
+
       _resolveHostDirectives(klass);
       // A customized built-in element is defined on the tag it extends, an autonomous one on its own
       options.extends ? customElements.define(options.selector, klass, { extends: options.extends }) : customElements.define(options.selector, klass);

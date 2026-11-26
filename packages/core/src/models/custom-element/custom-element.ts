@@ -4,15 +4,21 @@ import { _CLIENT_ATTRIBUTE, _HYDRATE_ATTRIBUTE, _SERVER_INPUTS_ATTRIBUTE, CONNEC
 import { isInputSignal } from '../../signals/input/input-instance.symbol';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
 import { EffectOptions } from '../../signals/types/effect-options.type';
+import { untracked } from '../../signals/untracked';
 import type { _Context } from '../../types/context.type';
 import type { ComponentRef } from '../../types/create-component/component-ref.type';
 import type { CreateComponentOptionsWithOptionalTarget } from '../../types/create-component/create-component-options-with-optional-target.type';
+import type { _FormAssociation } from '../../types/form/form-association.type';
+import type { FormValidityErrors } from '../../types/form/form-validity-errors.type';
+import type { FormValueSource } from '../../types/form/form-value-source.type';
+import type { FormValue } from '../../types/form/form-value.type';
 import type { RenderDefinition } from '../../types/render-definition.type';
 import type { HostDirectives } from '../../types/web-component/host-directives.type';
 import { claimShadowRoot, isClaimed, releaseClaim } from '../../utils/claim-nodes/claim-nodes.util';
 import { _getComponentRuntime } from '../../utils/component-runtime/component-runtime.util';
 import { _scope, addCleanup, clear, EMPTY_LAYOUT, moveTo, removeCleanup } from '../../utils/context/context.util';
 import { CREATE_NODES } from '../../utils/create-nodes/create-nodes.util';
+import { createFormAssociation, requireFormAssociation, writeFormValidity, writeFormValue } from '../../utils/form-association/form-association.util';
 import { getWebComponentMetadata } from '../../utils/get-metadata/get-metadata.util';
 import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import { _checkExposedFields, _createHostDirectives } from '../../utils/host-directives/host-directives.util';
@@ -88,6 +94,24 @@ export class CustomElement extends HTMLElement {
    * the native elements accept no shadow root.
    */
   private declare _root: ShadowRoot | null;
+  /**
+   * What the component keeps of its form, when its class declares `static formAssociated = true`: its `ElementInternals`
+   * and its disabled state (see {@link formValue}). `null` for any other component.
+   */
+  private declare _form: _FormAssociation | null;
+
+  /**
+   * The `ElementInternals` of a form-associated component (`static formAssociated = true`), attached by Xaendar once:
+   * the object of the browser itself, for anything the methods of the forms do not cover (`setFormValue`, `setValidity`,
+   * `form`, `labels`, `states`, `role` and the ARIA properties). The component does not call `attachInternals()`, which
+   * throws a second time. `null` for a component that is not form-associated, which can call `attachInternals()` itself,
+   * and on the server, whose DOM has none.
+   *
+   * @returns The `ElementInternals` of the element, or `null`.
+   */
+  protected get internals(): ElementInternals | null {
+    return this._form?.internals ?? null;
+  }
 
   /**
    * Creates the element and the host directives declared by its `@WebComponent`, applied to it.
@@ -130,6 +154,56 @@ export class CustomElement extends HTMLElement {
       removeCleanup(this._context, stop);
       stop();
     };
+  }
+
+  /**
+   * Tells whether the form, a `<fieldset disabled>` holding the element or its own `disabled` attribute disables a
+   * form-associated component, as the browser tells it through `formDisabledCallback`: a signal, which a template can
+   * read (`disabled="{formDisabled()}"`).
+   *
+   * @returns `true` when the component is disabled, always `false` for a component that is not form-associated.
+   */
+  public formDisabled(): boolean {
+    return this._form ? this._form.disabled() : false;
+  }
+
+  /**
+   * Called by the browser when the form holding a form-associated component is reset: writes back into the signal given
+   * to {@link formValue} the value it had then. A component declaring its own calls `super.formResetCallback()` to keep
+   * it.
+   */
+  public formResetCallback(): void {
+    const form = this._form;
+    if (form?.source) {
+      form.source.set(form.initial);
+    }
+  }
+
+  /**
+   * Called by the browser when it disables or enables a form-associated component (the form, a `<fieldset disabled>`, its
+   * own `disabled` attribute): sets the value {@link formDisabled} reads. A component declaring its own calls
+   * `super.formDisabledCallback(disabled)` to keep it.
+   *
+   * @param disabled - Whether the component is disabled.
+   */
+  public formDisabledCallback(disabled: boolean): void {
+    this._form?.disabled.set(disabled);
+  }
+
+  /**
+   * Called by the browser when it gives a form-associated component back a value: going back in the history to the page
+   * (`'restore'`), or filling the form with what it remembers (`'autocomplete'`). Writes the value into the signal given to
+   * {@link formValue}, when it goes to the form as it is: a value converted for the form cannot be turned back here, so a
+   * component converting it declares its own, converting the value back.
+   *
+   * @param state - The value the component gave the form, or the one the browser fills in.
+   * @param _mode - Why the browser gives it back.
+   */
+  public formStateRestoreCallback(state: FormValue, _mode: 'autocomplete' | 'restore'): void {
+    const form = this._form;
+    if (form?.source && !form.converts) {
+      form.source.set(state);
+    }
   }
 
   /**
@@ -195,6 +269,7 @@ export class CustomElement extends HTMLElement {
     this[DISCONNECTED_HOOKS] = null;
     this._context = _scope(null, EMPTY_LAYOUT);
     this._hostDirectivesContext = null;
+    this._form = createFormAssociation(this);
     this._state = HYDRATION && (this.shadowRoot || this.hasAttribute(_CLIENT_ATTRIBUTE)) ? 'hydrating' : 'idle';
     // A customized built-in element attaches a shadow root only to render its template (see `_root`)
     this._root = this.shadowRoot ?? (!getWebComponentMetadata(this.constructor)?.[INTERNAL_EXTENDS] || _getRender(this.constructor) ? this.attachShadow({ mode: 'open' }) : null);
@@ -235,6 +310,59 @@ export class CustomElement extends HTMLElement {
    */
   public [IS_RENDERED](): boolean {
     return this._state === 'rendered';
+  }
+
+  /**
+   * Gives the form of a form-associated component (`static formAssociated = true`) the value of a signal, a `signal` or a
+   * model, following it in an effect bound to the lifecycle of the component (`ElementInternals.setFormValue`): the form
+   * sends it with the name of the element, and `FormData` holds it. The reset of the form writes back into the signal the
+   * value it has now, and the restoration of the browser the value it gives back (see {@link formResetCallback},
+   * {@link formStateRestoreCallback}). Call it once, in `onInit`.
+   *
+   * @example
+   * ```ts
+   * public onInit(): void {
+   *   this.formValue(this.value, value => value ? String(value) : null);
+   * }
+   * ```
+   *
+   * @param source - The signal whose value goes to the form.
+   * @param toFormValue - Converts the value for the form, required when it is not a text, a `File`, a `FormData` or
+   *   `null`.
+   * @throws When the class of the component does not declare `static formAssociated = true`.
+   */
+  protected formValue<Value extends FormValue>(source: FormValueSource<Value>): void;
+  protected formValue<Value>(source: FormValueSource<Value>, toFormValue: (value: Value) => FormValue): void;
+  protected formValue<Value>(source: FormValueSource<Value>, toFormValue?: (value: Value) => FormValue): void {
+    const form = requireFormAssociation(this._form, this, 'formValue');
+    form.source = source as FormValueSource<unknown>;
+    form.initial = untracked(source);
+    form.converts = toFormValue !== undefined;
+    this.effect(() => writeFormValue(form, source(), toFormValue));
+  }
+
+  /**
+   * Gives the form of a form-associated component (`static formAssociated = true`) its validity, following the signals
+   * read by a function in an effect bound to the lifecycle of the component (`ElementInternals.setValidity`): the
+   * function returns the errors, as the flags of `ValidityState` each with its message. With errors, the component is
+   * `:invalid`, blocks the submission of the form, answers `checkValidity()` and `reportValidity()`, and the browser
+   * shows the message of the first one on the anchor, if any; without, it is valid. Call it once, in `onInit`.
+   *
+   * @example
+   * ```ts
+   * public onInit(): void {
+   *   this.formValidity(() => this.required() && !this.value() ? { valueMissing: 'Choose a rating' } : {}, this.firstStar);
+   * }
+   * ```
+   *
+   * @param errors - Returns the errors of the component, none when it is valid.
+   * @param anchor - Returns the element of the shadow root the browser shows the message on, such as a query signal,
+   *   followed until it exists. The host when missing.
+   * @throws When the class of the component does not declare `static formAssociated = true`.
+   */
+  protected formValidity(errors: () => FormValidityErrors, anchor?: () => HTMLElement | null): void {
+    const form = requireFormAssociation(this._form, this, 'formValidity');
+    this.effect(() => writeFormValidity(form, errors(), anchor?.()));
   }
 
   /**

@@ -103,6 +103,19 @@ describe('WebComponent decorator', () => {
     expect(document.createElement('button', { is: 'x-copy-button' })).toBeInstanceOf(CopyButton);
   });
 
+  it('rejects a customized built-in element declaring static formAssociated = true, which the browser cannot give internals', () => {
+    class FormButton extends customElementOf(HTMLButtonElement) {
+      public static formAssociated = true;
+    }
+    const initializers = new Array<Initializer>();
+    const context = { metadata: {}, addInitializer: (initializer: Initializer) => initializers.push(initializer) };
+
+    WebComponent({ selector: 'x-form-button', extends: 'button' })(FormButton, context as unknown as ClassDecoratorContext<Constructor<CustomElement>>);
+
+    expect(() => initializers[0].call(FormButton)).toThrow('FormButton extends <button> and declares static formAssociated = true: a customized built-in element cannot be form-associated');
+    expect(customElements.get('x-form-button')).toBeUndefined();
+  });
+
   it('throws when the selector is already used by another component', () => {
     decorate('x-duplicated', class extends CustomElement { });
 
