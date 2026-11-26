@@ -1,6 +1,6 @@
 import { CustomDirective, Directive, HostListener } from '@xaendar/core';
-import { computed, signal, untracked } from '@xaendar/core/signals';
-import type { Computed } from '@xaendar/core/signals';
+import { signal, untracked } from '@xaendar/core/signals';
+import type { ReadonlySignal } from '@xaendar/core/signals';
 import type { NoArgsVoidFunction } from '@xaendar/types';
 import type { FormValidator } from '../../types/form-validator.type';
 import type { FormValueSource } from '../../types/form-value-source.type';
@@ -48,40 +48,40 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
    * Angular's `untouched`. The element has the custom state `touched` meanwhile, `:state(touched)` in CSS
    * (`:host(:state(touched):invalid)`).
    */
-  public readonly untouched: Computed<boolean> = computed(() => this._computeUntouched());
+  public readonly untouched: ReadonlySignal<boolean>;
   /**
    * Whether the user has not changed the value since the control was reset: Angular's `pristine`. The user changes it
    * with an `input` or a `change` event on the element, as a native control dispatches them; a value written by the code
    * of the application does not count, and a value changed back is dirty all the same. The element has the custom state
    * `dirty` meanwhile, `:state(dirty)` in CSS.
    */
-  public readonly pristine: Computed<boolean> = computed(() => this._computePristine());
+  public readonly pristine: ReadonlySignal<boolean>;
   /**
    * Whether the validators find no error, following the signals they read: Angular's `valid`. The browser's own
    * validity is `:valid` and `:invalid`, and `internals.validity`.
    */
-  public readonly valid: Computed<boolean> = computed(() => this._computeValid());
+  public readonly valid: ReadonlySignal<boolean>;
   /**
    * Whether the form, a `<fieldset disabled>` holding the element or its own `disabled` attribute disables it, as
    * `formDisabledCallback` says: a template binds it (`disabled="{control.disabled()}"`).
    */
-  public readonly disabled: Computed<boolean> = computed(() => this._computeDisabled());
+  public readonly disabled: ReadonlySignal<boolean>;
   /**
-   * Whether the browser disables the element.
+   * The signal behind `untouched`.
+   */
+  private readonly _untouched = signal(true);
+  /**
+   * The signal behind `pristine`.
+   */
+  private readonly _pristine = signal(true);
+  /**
+   * The signal behind `valid`.
+   */
+  private readonly _valid = signal(true);
+  /**
+   * The signal behind `disabled`.
    */
   private readonly _disabled = signal(false);
-  /**
-   * Whether the user left the element after focusing it, or the form found it invalid.
-   */
-  private readonly _touched = signal(false);
-  /**
-   * Whether the user changed the value.
-   */
-  private readonly _dirty = signal(false);
-  /**
-   * Whether the validators find an error.
-   */
-  private readonly _invalid = signal(false);
   /**
    * The `ElementInternals` of the element, `undefined` until attached, `null` where the DOM has none.
    */
@@ -117,6 +117,18 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
     }
 
     return this._internals;
+  }
+
+  /**
+   * Creates the directive, exposing the state signals without their `set` (see `Signal.asReadonly`): the ones the
+   * directive writes stay private.
+   */
+  constructor() {
+    super();
+    this.untouched = this._untouched.asReadonly();
+    this.pristine = this._pristine.asReadonly();
+    this.valid = this._valid.asReadonly();
+    this.disabled = this._disabled.asReadonly();
   }
 
   /**
@@ -229,42 +241,6 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
   }
 
   /**
-   * Computes the value of `untouched`.
-   *
-   * @returns Whether the control is not touched.
-   */
-  private _computeUntouched(): boolean {
-    return !this._touched();
-  }
-
-  /**
-   * Computes the value of `pristine`.
-   *
-   * @returns Whether the control is not dirty.
-   */
-  private _computePristine(): boolean {
-    return !this._dirty();
-  }
-
-  /**
-   * Computes the value of `valid`.
-   *
-   * @returns Whether the validators find no error.
-   */
-  private _computeValid(): boolean {
-    return !this._invalid();
-  }
-
-  /**
-   * Computes the value of `disabled`.
-   *
-   * @returns Whether the browser disables the element.
-   */
-  private _computeDisabled(): boolean {
-    return this._disabled();
-  }
-
-  /**
    * Gives the form the value, converted when asked.
    *
    * @param value - The value of the signal.
@@ -283,7 +259,7 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
    */
   private _writeValidity(validators: readonly FormValidator[], anchor: HTMLElement | undefined): void {
     const errors = findFormErrors(validators);
-    this._invalid.set(errors !== undefined);
+    this._valid.set(errors === undefined);
     const internals = this.internals;
     if (internals) {
       writeFormValidity(internals, errors, anchor);
@@ -296,7 +272,7 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
    * @param touched - Whether it is touched.
    */
   private _setTouched(touched: boolean): void {
-    this._touched.set(touched);
+    this._untouched.set(!touched);
     this._writeState('touched', touched);
   }
 
@@ -306,7 +282,7 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
    * @param dirty - Whether it is dirty.
    */
   private _setDirty(dirty: boolean): void {
-    this._dirty.set(dirty);
+    this._pristine.set(!dirty);
     this._writeState('dirty', dirty);
   }
 
