@@ -2,10 +2,11 @@ import { CustomDirective, Directive, HostListener } from '@xaendar/core';
 import { signal, untracked } from '@xaendar/core/signals';
 import type { ReadonlySignal } from '@xaendar/core/signals';
 import type { NoArgsVoidFunction } from '@xaendar/types';
+import type { FormError } from '../../types/form-error.type';
 import type { FormValidator } from '../../types/form-validator.type';
 import type { FormValueSource } from '../../types/form-value-source.type';
 import type { FormValue } from '../../types/form-value.type';
-import { findFormErrors, writeFormValidity, writeState } from '../../utils/form-control/form-control.utils';
+import { findFormErrors, NO_FORM_ERRORS, writeFormValidity, writeState } from '../../utils/form-control/form-control.utils';
 
 /**
  * Makes a component a control of the form holding it, as the native fields are: its value goes with the form under
@@ -62,6 +63,13 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
    */
   public readonly valid: ReadonlySignal<boolean>;
   /**
+   * The errors the validators find, every one of them in the order of the validators and of the errors each returns,
+   * none when the value passes: the browser shows the message of the first one only. A template lists them
+   * (`@for (error of control.errors(); track $index)`), showing `error.message`, and `error.flag` tells the kind
+   * (`valueMissing`, `customError`…).
+   */
+  public readonly errors: ReadonlySignal<readonly FormError[]>;
+  /**
    * Whether the form, a `<fieldset disabled>` holding the element or its own `disabled` attribute disables it, as
    * `formDisabledCallback` says: a template binds it (`disabled="{control.disabled()}"`).
    */
@@ -78,6 +86,10 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
    * The signal behind `valid`.
    */
   private readonly _valid = signal(true);
+  /**
+   * The signal behind `errors`.
+   */
+  private readonly _errors = signal<readonly FormError[]>(NO_FORM_ERRORS);
   /**
    * The signal behind `disabled`.
    */
@@ -128,6 +140,7 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
     this.untouched = this._untouched.asReadonly();
     this.pristine = this._pristine.asReadonly();
     this.valid = this._valid.asReadonly();
+    this.errors = this._errors.asReadonly();
     this.disabled = this._disabled.asReadonly();
   }
 
@@ -249,7 +262,7 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
   }
 
   /**
-   * Computes the errors of the validators, which `valid` follows, and gives them to the form where the DOM has
+   * Computes the errors of the validators, which `errors` and `valid` follow, and gives them to the form where the DOM has
    * `ElementInternals`.
    *
    * @param validators - The validators.
@@ -257,7 +270,8 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
    */
   private _writeValidity(validators: readonly FormValidator[], anchor: HTMLElement | undefined): void {
     const errors = findFormErrors(validators);
-    this._valid.set(errors === undefined);
+    this._errors.set(errors);
+    this._valid.set(errors.length === 0);
     const internals = this.internals;
     if (internals) {
       writeFormValidity(internals, errors, anchor);

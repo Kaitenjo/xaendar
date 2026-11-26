@@ -10,3 +10,8 @@
     ★
   </button>
 }
+@if (!control.untouched()) {
+  @for (error of control.errors(); track $index) {
+    <span class="error">{ error.message }</span>
+  }
+}

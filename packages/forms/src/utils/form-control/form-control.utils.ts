@@ -1,16 +1,20 @@
-import type { FormErrors } from '../../types/form-errors.type';
+import type { FormError } from '../../types/form-error.type';
 import type { FormValidator } from '../../types/form-validator.type';
 
 /**
- * Finds the errors of a value, computed by its validators in order: the flags of every error found, and the message of
- * the first one.
+ * The errors of a value that passes its validators, shared so that a recomputed validity with no error is not a change.
+ */
+export const NO_FORM_ERRORS: readonly FormError[] = Object.freeze([]);
+
+/**
+ * Finds the errors of a value, computed by its validators in order: each error of each validator, in the order they
+ * are returned.
  *
  * @param validators - The validators of the component.
- * @returns The errors, `undefined` when none of them finds one.
+ * @returns The errors, {@link NO_FORM_ERRORS} when none of the validators finds one.
  */
-export function findFormErrors(validators: readonly FormValidator[]): FormErrors | undefined {
-  const flags: ValidityStateFlags = {};
-  let message: string | undefined;
+export function findFormErrors(validators: readonly FormValidator[]): readonly FormError[] {
+  let found: FormError[] | undefined;
   for (let i = 0; i < validators.length; i++) {
     const errors = validators[i]();
     if (!errors) {
@@ -19,28 +23,37 @@ export function findFormErrors(validators: readonly FormValidator[]): FormErrors
 
     for (const name in errors) {
       const flag = name as keyof ValidityStateFlags;
-      const error = errors[flag];
-      if (error !== undefined) {
-        flags[flag] = true;
-        message ??= error;
+      const message = errors[flag];
+      if (message !== undefined) {
+        (found ??= []).push({ flag, message });
       }
     }
   }
 
-  return message === undefined ? undefined : { flags, message };
+  return found ?? NO_FORM_ERRORS;
 }
 
 /**
- * Gives the form the validity of a component: valid without errors, otherwise with their flags and the message of the
- * first one, which the browser shows on the anchor.
+ * Gives the form the validity of a component: valid without errors, otherwise with the flags of every error and the
+ * message of the first one, which the browser shows on the anchor.
  *
  * @param internals - The `ElementInternals` of the element.
- * @param errors - The errors of the component, `undefined` when it is valid.
+ * @param errors - The errors of the component.
  * @param anchor - The element of its shadow root the browser shows the message on, `undefined` for the host.
  */
-export function writeFormValidity(internals: ElementInternals, errors: FormErrors | undefined, anchor: HTMLElement | undefined): void {
-  // The first argument is required, even for a valid element
-  errors ? internals.setValidity(errors.flags, errors.message, anchor) : internals.setValidity({});
+export function writeFormValidity(internals: ElementInternals, errors: readonly FormError[], anchor: HTMLElement | undefined): void {
+  if (!errors.length) {
+    // The first argument is required, even for a valid element
+    internals.setValidity({});
+    return;
+  }
+
+  const flags: ValidityStateFlags = {};
+  for (let i = 0; i < errors.length; i++) {
+    flags[errors[i].flag] = true;
+  }
+
+  internals.setValidity(flags, errors[0].message, anchor);
 }
 
 /**

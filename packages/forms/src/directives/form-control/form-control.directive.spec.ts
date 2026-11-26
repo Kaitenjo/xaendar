@@ -171,12 +171,18 @@ describe('FormControlDirective', () => {
     await flush();
     expect(internals.setValidity).toHaveBeenLastCalledWith({ customError: true }, 'Not x', anchor);
 
+    element.control.setValidators([() => ({ valueMissing: 'First' }), () => ({ customError: 'Second' }), () => ({ customError: 'Third' })]);
+    expect(element.control.errors()).toEqual([{ flag: 'valueMissing', message: 'First' }, { flag: 'customError', message: 'Second' }, { flag: 'customError', message: 'Third' }]);
+    expect(internals.setValidity).toHaveBeenLastCalledWith({ valueMissing: true, customError: true }, 'First', undefined);
+
     element.control.setValidators([() => ({ customError: 'Always' })]);
     expect(internals.setValidity).toHaveBeenLastCalledWith({ customError: true }, 'Always', undefined);
 
     expect(element.control.valid()).toBe(false);
+    expect(element.control.errors()).toEqual([{ flag: 'customError', message: 'Always' }]);
     element.control.setValidators([]);
     expect(element.control.valid()).toBe(true);
+    expect(element.control.errors()).toEqual([]);
     expect(internals.setValidity).toHaveBeenLastCalledWith({});
     const calls = vi.mocked(internals.setValidity).mock.calls.length;
     element.value.set('');
@@ -201,5 +207,6 @@ describe('FormControlDirective', () => {
     element.dispatchEvent(new Event('focusout'));
     element.dispatchEvent(new Event('input'));
     expect([element.control.untouched(), element.control.pristine(), element.control.valid()]).toEqual([false, false, false]);
+    expect(element.control.errors()).toEqual([{ flag: 'valueMissing', message: 'Required' }]);
   });
 });

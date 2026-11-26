@@ -1,6 +1,6 @@
 import { CustomElement, Model, Property, Query, WebComponent } from '@xaendar/core';
 import type { InputSignal, ModelSignal, QuerySignal } from '@xaendar/core/signals';
-import { FormControlDirective } from '@xaendar/forms';
+import { FormControlDirective, Validators } from '@xaendar/forms';
 
 /**
  * A rating from 1 to 5 stars taking part in the form holding it, as a native field does: its value goes with the form,
@@ -42,8 +42,10 @@ export class RatingInputComponent extends CustomElement {
    * Gives the form the rating and its validity, following their signals.
    */
   public onInit(): void {
+    // 0 is the value of no rating, not an empty one: at least 1 star is what a rating asks
+    const chosen = Validators.min(this.value, 1, 'Choose a rating.');
     this.control.setValue(this.value, value => value ? String(value) : null);
-    this.control.setValidators([() => this.required() && !this.value() ? { valueMissing: 'Choose a rating.' } : undefined], () => this.firstStar() ?? undefined);
+    this.control.setValidators([() => this.required() ? chosen() : undefined], () => this.firstStar() ?? undefined);
   }
 
   /**

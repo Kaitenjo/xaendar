@@ -21,6 +21,13 @@
   color: #f5a623;
 }
 
+.error {
+  align-self: center;
+  margin-left: 0.5rem;
+  color: #c2410c;
+  font-size: 0.8rem;
+}
+
 .star:disabled {
   cursor: not-allowed;
   opacity: 0.5;
