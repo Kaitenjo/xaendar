@@ -3,7 +3,7 @@
     aria-label="{`${star} stars`}"
     class="star"
     class.on="{star <= value()}"
-    disabled="{formDisabled()}"
+    disabled="{control.disabled()}"
     type="button"
     (click)="value.set(star)"
   >

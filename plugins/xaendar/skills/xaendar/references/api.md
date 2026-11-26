@@ -164,12 +164,11 @@ Registers a class extending CustomDirective or StructuralDirective under a selec
 ### CustomElement (class)
 
 ```ts
-class X extends CustomElement { hostDirectives: HostDirectives; onInit?(); afterRender?(); onDestroy?(); effect(fn, options?): () => void; createComponent(Class, options?): ComponentRef<Class>; protected internals: ElementInternals | null; protected setFormValue(source, transform?); protected setFormValidators(validators: FormValidator[], anchor?: () => HTMLElement | undefined); formDisabled(): boolean; formTouched(); formUntouched(); formDirty(); formPristine(); formResetCallback(); formDisabledCallback(disabled); formStateRestoreCallback(state, mode) }
+class X extends CustomElement { hostDirectives: HostDirectives; onInit?(); afterRender?(); onDestroy?(); effect(fn, options?): () => void; createComponent(Class, options?): ComponentRef<Class> }
 ```
 
 Base class of components: an open shadow root, the lifecycle hooks, and effects disposed at disconnection. `hostDirectives` is a map from the class of each host directive to its instance (`this.hostDirectives.get(Tip)`, typed): the directives start before `onInit` and stop after `onDestroy`. `connectedCallback` and `disconnectedCallback` belong to the base class: never declare them. Disconnection runs `onDestroy`, disposes the effects, removes the template and destroys the components created with `createComponent`.
 
-Form-associated components (the native standard): `formAssociated: true` in `@WebComponent` (it sets the native static `formAssociated`, which a class may also declare) makes the element a control of its `<form>`; Xaendar attaches its `ElementInternals` (`this.internals`, protected; never call `attachInternals()`, which throws a second time; `null` on the server). In `onInit`: `this.setFormValue(this.value, v => v ? String(v) : null)` sends a signal or model with the form under the element's `name` (convert anything not `string | File | FormData | null`); once only, a second call throws (connected again it is called again). `this.setFormValidators([() => this.required() && !this.value() ? { valueMissing: 'Required' } : undefined, () => bad ? { customError: 'Why' } : undefined], () => this.firstStar() ?? undefined)` sets the validity from validators (`FormValidator`: `ValidityState` flags with messages, `customError` for custom errors, `undefined` when passing; signals followed; anchor returns `undefined`, never `null`): `:invalid`, submission blocked, `checkValidity()`; each call replaces the previous validators, `[]` removes them. Angular's states are signals: `formTouched()`/`formUntouched()` (focusout or invalid on submit; reset clears), `formDirty()`/`formPristine()` (value differs from the initial one, `Object.is`), `formDisabled()` (form, `<fieldset disabled>`, `disabled`); custom states `:state(touched)`, `:state(dirty)` for CSS (`:host(:state(touched):invalid)`; the browser tracks `:user-invalid` only for native fields). The native callbacks keep their names: `formResetCallback` writes back the initial value and clears touched, `formDisabledCallback` sets `formDisabled()`, `formStateRestoreCallback(state, mode)` writes back an unconverted value (a component converting its value declares its own); an override calls `super`. A customized built-in (`extends`) cannot be form-associated (`formAssociated` does not type-check with `extends`; a static one throws at registration): a native field is a control already, use its `value` and `setCustomValidity()`.
 
 ### customElementOf (function)
 
@@ -420,6 +419,22 @@ interface HtmlSanitizerOptions { allowElements?: string[]; allowAttributes?: str
 ```
 
 `allow…` add to the defaults, `remove…` take off them (a removed element keeps its content) and win over `allow…`; names are case-insensitive, `'data-*'`/`'x-*'` are prefixes. Attributes apply to every kept element, or to one only when written `element[attribute]` (`allowAttributes: ['span[style]', 'img[data-*]']`, `removeAttributes: ['a[target]']`). `urlSchemes` replaces `['http', 'https', 'mailto', 'tel', 'ftp', 'sms']`. Options keeping what always runs code throw: `script`, `base`, `meta` in `allowElements`, `on*` or `srcdoc` in `allowAttributes` (a prefix like `o*` too), `javascript`/`vbscript` in `urlSchemes`; use `trustHtml` or a `sanitizer` for such HTML. A kept SVG `animate`/`set` never animates `href` (its `attributeName` is removed). The resource URLs of allowed elements (`iframe`/`embed`/`frame` `src`, `object` `data`/`codebase`, `link` `href`) are kept only for the app's origin or `security.trustedOrigins` of `xaendar.json` (all of them with `resourceUrls: "off"`), as in templates. `setHtmlSanitizerOptions(options)` sets options for every sanitized HTML of the application: a use's lists are added to them, its `urlSchemes` replace theirs; it throws when they keep what always runs code, `undefined` restores the defaults. Allowing `object`, `embed`, `form`, defined custom elements or `style` still lets code or arbitrary CSS through.
+
+### FormControlDirective (host directive)
+
+```ts
+@WebComponent({ selector: 'x-rating', hostDirectives: [FormControlDirective], templateUrl: './x-rating.html' })
+class Rating extends CustomElement {
+  @Model(0) public accessor value!: ModelSignal<number>;
+  public readonly control = this.hostDirectives.get(FormControlDirective)!;
+  public onInit(): void {
+    this.control.setValue(this.value, value => value ? String(value) : null);
+    this.control.setValidators([() => this.value() ? undefined : { valueMissing: 'Required' }], () => this.firstStar() ?? undefined);
+  }
+}
+```
+
+Angular's `ControlValueAccessor`, on the native form-associated custom elements: the component becomes a control of any `<form>` (`FormData` under its `name`, validation blocking the submission, `reset()`, `<fieldset disabled>`). Only as a host directive: it declares `formAssociated` in its `@Directive`, so `@WebComponent` sets the static `formAssociated` and forwards the native form callbacks to it; applied from a template it throws. `setValue(signal, transform?)`: once (a second call throws; connected again, `onInit` calls it again), convert anything not `string | File | FormData | null`. `setValidators(validators, anchor?)`: `FormValidator` returns `ValidityState` flags with messages (`customError` for custom errors) or `undefined`; signals followed; each call replaces the previous ones, `[]` removes them; the anchor returns `HTMLElement | undefined`, never `null`. States as signals: `touched()`/`untouched()` (focusout, or invalid on submit), `dirty()`/`pristine()` (value vs initial, `Object.is`), `disabled()` (bind `disabled="{control.disabled()}"`); custom states `:state(touched)`, `:state(dirty)` (`:host(:state(touched):invalid)`). `internals` is the element's `ElementInternals` (never call `attachInternals()` yourself; `null` on the server). The callbacks keep their native names on the directive (`formResetCallback` writes back the initial value and clears touched, `formDisabledCallback`, `formStateRestoreCallback` writes back an unconverted value): a component declaring its own replaces the forwarding (declare `formStateRestoreCallback` when converting the value). Not with `extends`: a native field is a control already (`value`, `setCustomValidity()`).
 
 ### setHtmlSanitizerOptions (function)
 

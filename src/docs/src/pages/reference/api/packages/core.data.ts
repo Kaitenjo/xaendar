@@ -367,7 +367,7 @@ export const CORE_API: ApiPackage = {
     {
       name: 'CustomElement',
       kind: 'class',
-      signature: 'class CustomElement extends HTMLElement {\n  readonly hostDirectives: HostDirectives;\n  protected get internals(): ElementInternals | null;\n  onInit?(): void;\n  afterRender?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n  createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options?: CreateComponentOptionsWithOptionalTarget<Component, Directives>): ComponentRef<Component>;\n  formDisabled(): boolean;\n  formTouched(): boolean;\n  formUntouched(): boolean;\n  formDirty(): boolean;\n  formPristine(): boolean;\n  formResetCallback(): void;\n  formDisabledCallback(disabled: boolean): void;\n  formStateRestoreCallback(state: FormValue, mode: \'autocomplete\' | \'restore\'): void;\n  protected setFormValue<Value>(source: FormValueSource<Value>, transform?: (value: Value) => FormValue): void;\n  protected setFormValidators(validators: readonly FormValidator[], anchor?: () => HTMLElement | undefined): void;\n  onDestroy?(): void;\n}',
+      signature: 'class CustomElement extends HTMLElement {\n  readonly hostDirectives: HostDirectives;\n  onInit?(): void;\n  afterRender?(): void;\n  effect(fn: () => void, options?: EffectOptions): () => void;\n  createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options?: CreateComponentOptionsWithOptionalTarget<Component, Directives>): ComponentRef<Component>;\n  onDestroy?(): void;\n}',
       members: [
         {
           name: 'hostDirectives',
@@ -400,61 +400,6 @@ export const CORE_API: ApiPackage = {
           group: 'methods',
           signature: 'createComponent<Component extends CustomElement, const Directives extends readonly CustomDirective[] = []>(component: Constructor<Component>, options?: CreateComponentOptionsWithOptionalTarget<Component, Directives>): ComponentRef<Component>',
           snippets: [CREATE_COMPONENT]
-        },
-        {
-          name: 'internals',
-          group: 'properties',
-          signature: 'protected get internals(): ElementInternals | null'
-        },
-        {
-          name: 'setFormValue',
-          group: 'methods',
-          signature: 'protected setFormValue<Value>(source: FormValueSource<Value>, transform?: (value: Value) => FormValue): void'
-        },
-        {
-          name: 'setFormValidators',
-          group: 'methods',
-          signature: 'protected setFormValidators(validators: readonly FormValidator[], anchor?: () => HTMLElement | undefined): void'
-        },
-        {
-          name: 'formDisabled',
-          group: 'methods',
-          signature: 'formDisabled(): boolean'
-        },
-        {
-          name: 'formTouched',
-          group: 'methods',
-          signature: 'formTouched(): boolean'
-        },
-        {
-          name: 'formUntouched',
-          group: 'methods',
-          signature: 'formUntouched(): boolean'
-        },
-        {
-          name: 'formDirty',
-          group: 'methods',
-          signature: 'formDirty(): boolean'
-        },
-        {
-          name: 'formPristine',
-          group: 'methods',
-          signature: 'formPristine(): boolean'
-        },
-        {
-          name: 'formResetCallback',
-          group: 'methods',
-          signature: 'formResetCallback(): void'
-        },
-        {
-          name: 'formDisabledCallback',
-          group: 'methods',
-          signature: 'formDisabledCallback(disabled: boolean): void'
-        },
-        {
-          name: 'formStateRestoreCallback',
-          group: 'methods',
-          signature: 'formStateRestoreCallback(state: FormValue, mode: \'autocomplete\' | \'restore\'): void'
         }
       ],
       usage: [
@@ -463,7 +408,7 @@ export const CORE_API: ApiPackage = {
         { key: 'decorated', snippets: [MANUAL_SUBCLASS] },
         { key: 'names', snippets: [MEMBER_NAME_CLASH] }
       ],
-      guides: ['components/anatomy', 'components/lifecycle', 'components/dom-apis', 'components/inheritance', 'components/dynamic-creation', 'signals/effects', 'patterns/forms']
+      guides: ['components/anatomy', 'components/lifecycle', 'components/dom-apis', 'components/inheritance', 'components/dynamic-creation', 'signals/effects']
     },
     {
       name: 'CustomDirective',
@@ -577,7 +522,7 @@ export const CORE_API: ApiPackage = {
     {
       name: 'WebComponentOptions',
       kind: 'type',
-      signature: 'type WebComponentOptions = {\n  selector: string;\n  hostDirectives?: Array<Constructor<CustomDirective> | HostDirectiveOptions>;\n  ssr?: WebComponentSsrOptions;\n} & ({\n  extends?: undefined;\n  formAssociated?: boolean;\n  styleUrl?: string;\n  templateUrl: string;\n} | {\n  extends: ShadowHostTagName;\n  formAssociated?: false;\n  styleUrl?: string;\n  templateUrl?: string;\n} | {\n  extends: Exclude<keyof HTMLElementTagNameMap, ShadowHostTagName>;\n  formAssociated?: false;\n  styleUrl?: undefined;\n  templateUrl?: undefined;\n});\n\ntype ShadowHostTagName = \'article\' | \'aside\' | \'blockquote\' | \'body\' | \'div\' | \'footer\' | \'h1\' | \'h2\' | \'h3\' | \'h4\' | \'h5\' | \'h6\' | \'header\' | \'main\' | \'nav\' | \'p\' | \'section\' | \'span\';',
+      signature: 'type WebComponentOptions = {\n  selector: string;\n  hostDirectives?: Array<Constructor<CustomDirective> | HostDirectiveOptions>;\n  ssr?: WebComponentSsrOptions;\n} & ({\n  extends?: undefined;\n  styleUrl?: string;\n  templateUrl: string;\n} | {\n  extends: ShadowHostTagName;\n  styleUrl?: string;\n  templateUrl?: string;\n} | {\n  extends: Exclude<keyof HTMLElementTagNameMap, ShadowHostTagName>;\n  styleUrl?: undefined;\n  templateUrl?: undefined;\n});\n\ntype ShadowHostTagName = \'article\' | \'aside\' | \'blockquote\' | \'body\' | \'div\' | \'footer\' | \'h1\' | \'h2\' | \'h3\' | \'h4\' | \'h5\' | \'h6\' | \'header\' | \'main\' | \'nav\' | \'p\' | \'section\' | \'span\';',
       members: [
         {
           name: 'selector',
@@ -588,11 +533,6 @@ export const CORE_API: ApiPackage = {
           name: 'extends',
           group: 'properties',
           signature: 'extends?: keyof HTMLElementTagNameMap'
-        },
-        {
-          name: 'formAssociated',
-          group: 'properties',
-          signature: 'formAssociated?: boolean'
         },
         {
           name: 'hostDirectives',
@@ -615,7 +555,7 @@ export const CORE_API: ApiPackage = {
           signature: 'templateUrl?: string'
         }
       ],
-      guides: ['components/anatomy', 'patterns/forms']
+      guides: ['components/anatomy']
     },
     {
       name: 'WebComponentSsrOptions',
@@ -643,15 +583,20 @@ export const CORE_API: ApiPackage = {
     {
       name: 'DirectiveOptions',
       kind: 'type',
-      signature: 'type DirectiveOptions = {\n  selector: string;\n};',
+      signature: 'type DirectiveOptions = {\n  selector: string;\n  formAssociated?: boolean;\n};',
       members: [
         {
           name: 'selector',
           group: 'properties',
           signature: 'selector: string'
+        },
+        {
+          name: 'formAssociated',
+          group: 'properties',
+          signature: 'formAssociated?: boolean'
         }
       ],
-      guides: ['directives/overview']
+      guides: ['directives/overview', 'patterns/forms']
     },
     {
       name: 'HostDirectiveOptions',
@@ -902,30 +847,6 @@ export const CORE_API: ApiPackage = {
         { key: 'binding', snippets: [TRUSTED_URLS, 'templates/place-map.html', 'templates/untrusted-resource-warning.txt'] }
       ],
       guides: ['templates/binding', 'components/security']
-    },
-    {
-      name: 'FormValue',
-      kind: 'type',
-      signature: 'type FormValue = File | string | FormData | null',
-      guides: ['patterns/forms']
-    },
-    {
-      name: 'FormValueSource',
-      kind: 'type',
-      signature: 'type FormValueSource<Value> = (() => Value) & { set(value: Value): void }',
-      guides: ['patterns/forms']
-    },
-    {
-      name: 'FormValidator',
-      kind: 'type',
-      signature: 'type FormValidator = () => FormValidityErrors | undefined',
-      guides: ['patterns/forms']
-    },
-    {
-      name: 'FormValidityErrors',
-      kind: 'type',
-      signature: 'type FormValidityErrors = { readonly [Flag in keyof ValidityStateFlags]?: string }',
-      guides: ['patterns/forms']
     },
     {
       name: 'sanitizeUrl',

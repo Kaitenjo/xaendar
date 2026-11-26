@@ -3,6 +3,7 @@ import { INTERNAL_EXTENDS, INTERNAL_HOST_DIRECTIVES, INTERNAL_HYDRATE, INTERNAL_
 import { CustomElement } from '../../models/custom-element/custom-element';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { WebComponentOptions } from '../../types/web-component/web-component-options.type';
+import { _applyHostCallbacks } from '../../utils/host-callbacks/host-callbacks.util';
 import { _resolveHostDirectives } from '../../utils/host-directives/host-directives.util';
 
 /**
@@ -24,15 +25,16 @@ import { _resolveHostDirectives } from '../../utils/host-directives/host-directi
  * as `is` (`<button is="my-button">`). Safari does not support customized built-in elements: a page needing them there
  * loads a polyfill first.
  *
- * With `formAssociated: true`, an autonomous component takes part in the forms as the native fields do (see
- * `CustomElement.setFormValue`): the decorator sets the static `formAssociated` the browser reads, which the class can also
- * declare itself. A customized built-in one cannot, which the registration rejects.
+ * A host directive declaring `formAssociated` in its `@Directive` makes the component form-associated: the decorator sets
+ * the static `formAssociated` the browser reads, which the class can also declare itself, and the form callbacks the
+ * browser calls (`formResetCallback`, `formDisabledCallback`…) the component does not declare are forwarded to its host
+ * directives. A customized built-in element cannot be form-associated, which the registration rejects.
  *
  * @param options - Configuration object containing at least a `selector`
  *   (the custom element tag name) and a `templateUrl`.
  * @returns A class decorator applied to the web component class.
- * @throws When the class is registered: a host directive cannot be applied, or a customized built-in element declares
- *   `static formAssociated = true`.
+ * @throws When the class is registered: a host directive cannot be applied, or a customized built-in element is
+ *   form-associated.
  *
  * @example
  * ```ts
@@ -83,17 +85,13 @@ export function WebComponent<T extends CustomElement>(options: WebComponentOptio
       runs once both are set.
     */
     context.addInitializer(() => {
-      // The browser reads the static field when the class is defined, as the native way of declaring it
-      if (options.formAssociated) {
-        Object.defineProperty(klass, 'formAssociated', { configurable: true, value: true });
-      }
-
+      // Before the definition: the browser reads the static formAssociated and the callbacks then
+      _applyHostCallbacks(klass, _resolveHostDirectives(klass));
       // A native control takes part in the forms by itself, and the browser gives a customized built-in no ElementInternals
       if (options.extends && (klass as { formAssociated?: unknown }).formAssociated === true) {
-        throw new Error(`${klass.name} extends <${options.extends}> and declares static formAssociated = true: a customized built-in element cannot be form-associated, since attachInternals() throws for it. A native control (<input>, <select>, <textarea>, <button>) already takes part in the forms: use its value and setCustomValidity(), or make the component autonomous`);
+        throw new Error(`${klass.name} extends <${options.extends}> and is form-associated (a host directive declaring formAssociated, or a static formAssociated): a customized built-in element cannot be, since attachInternals() throws for it. A native control (<input>, <select>, <textarea>, <button>) already takes part in the forms: use its value and setCustomValidity(), or make the component autonomous`);
       }
 
-      _resolveHostDirectives(klass);
       // A customized built-in element is defined on the tag it extends, an autonomous one on its own
       options.extends ? customElements.define(options.selector, klass, { extends: options.extends }) : customElements.define(options.selector, klass);
     });

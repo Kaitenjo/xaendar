@@ -1,6 +1,5 @@
 export * from './create-component';
 export * from './directive';
-export * from './form';
 export type * from './render-conditional-binding.type';
 export type * from './render-element-attribute.type';
 export type * from './render-element-conditional-binding.type';
