@@ -1,10 +1,14 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue, DecoratorMetadataContext, Function } from '@xaendar/types';
+import { toKebabCase } from '@xaendar/common';
 import { PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND } from '../../costants';
+import { StructuralDirective } from '../../models/structural-directive/structural-directive';
 import { input } from '../../signals/input/input';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
 import { InputSignal } from '../../signals/types/input-signal.type';
 import { SettableInputSignal } from '../../signals/types/settable-input-signal.type';
 import type { BindingHost } from '../../types/binding-host.type';
+import type { EventHost } from '../../types/event/event-host.type';
+import type { HostAttributeContext } from '../../types/property/host-attribute-context.type';
 import type { PropertyDecoratorOptionsWithRequired } from '../../types/property-decorator-options-with-required.type';
 import { PropertyDecoratorOptions } from '../../types/property-decorator-options.type';
 import type { InputAlias } from '../../types/property/input-alias.type';
@@ -14,6 +18,7 @@ import { PropertyDecoratorReturnType } from '../../types/property/property-retur
 import type { WithAlias } from '../../types/property/with-alias.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { registerInput } from '../../utils/input-registration/input-registration.util';
+import { HostAttribute } from '../host-attribute/host-attribute.decorator';
 
 /**
  * Creates the input signal of an accessor decorated with `@Property`.
@@ -29,6 +34,31 @@ function createInput<ActualValue, IncomingValue>(value: ActualValue | undefined,
     unwatched: options?.unwatched,
     transform: options?.transform
   }) as SettableInputSignal<ActualValue, IncomingValue>;
+}
+
+/**
+ * Reflects an input on an attribute of the host element, declaring the `@HostAttribute` of its accessor: the attribute
+ * follows the input with the rules of the host attributes, and the class rejects it when it is a structural directive,
+ * which holds no element.
+ *
+ * @param target - The getter and the setter of the accessor of the input.
+ * @param context - The context of the accessor of the input.
+ * @param name - The name of the attribute.
+ * @throws If the name is empty or names the classes or the style, which `@HostAttribute` binds, or an attribute the
+ *   browser runs, and, once an instance is created, if the class is a structural directive.
+ */
+function reflectInput(target: ClassAccessorDecoratorValue<unknown>, context: HostAttributeContext, name: string): void {
+  const propertyKey = String(context.name);
+  if (name === 'class' || name === 'style' || name.startsWith('class.') || name.startsWith('style.')) {
+    throw new Error(`@Property on ${propertyKey} reflects the input on "${name}": reflect names an attribute, while the classes and the style are bound with @HostAttribute`);
+  }
+
+  HostAttribute(name)(target, context);
+  context.addInitializer(function (this: EventHost | StructuralDirective): void {
+    if (this instanceof StructuralDirective) {
+      throw new Error(`@Property on ${propertyKey} of ${this.constructor.name} reflects the input on "${name}": a structural directive holds no element to write the attribute on`);
+    }
+  });
 }
 
 /**
@@ -75,6 +105,10 @@ function createPropertyDecorator<
     }
 
     registerInput(context.metadata, propertyKey, actualOptions?.alias, required);
+    if (actualOptions?.reflect) {
+      const { reflect, alias } = actualOptions;
+      reflectInput(target, context as unknown as HostAttributeContext, typeof reflect === 'string' ? reflect : toKebabCase(alias ?? propertyKey));
+    }
 
     return {
       init(value: Value): Value {
@@ -137,6 +171,10 @@ function createPropertyDecorator<
  *
  * \@Property('', { alias: 'user-id' })
  * accessor userId: Aliased<InputSignal<string>, 'user-id'>;
+ *
+ * // <ex-toggle locked> while locked() is true
+ * \@Property(false, { reflect: true })
+ * accessor locked: InputSignal<boolean>;
  * ```
  */
 export function Property<

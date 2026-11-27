@@ -16,4 +16,12 @@ export type PropertyDecoratorOptions<ActualValue = unknown, IncomingValue = Actu
    * property. The type of the accessor declares it too: `Aliased<InputSignal<T>, 'alias'>`.
    */
   alias?: Alias;
+  /**
+   * Reflects the input on an attribute of the host element, as `@HostAttribute` does: `true` names the attribute after
+   * the input, its alias or the name of its property in kebab-case (`showValue` → `show-value`), a string names it.
+   * A boolean adds the attribute empty or removes it (`"true"` or `"false"` on `aria-*` and the enumerated attributes),
+   * `null` and `undefined` remove it, any other value is written as a string. Only the input writes the attribute:
+   * the attribute never writes the input. A structural directive, which holds no element, cannot reflect its inputs.
+   */
+  reflect?: boolean | string;
 }

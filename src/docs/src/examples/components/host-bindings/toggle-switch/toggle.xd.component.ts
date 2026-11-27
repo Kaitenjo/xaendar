@@ -14,11 +14,10 @@ import { signal } from '@xaendar/core/signals';
 })
 export class ToggleComponent extends CustomElement {
   /**
-   * Whether the switch ignores clicks and keys. The input is reflected on the host as the `locked` attribute: present,
-   * and empty, while it is `true`.
+   * Whether the switch ignores clicks and keys. The input is reflected on the host as the `locked` attribute
+   * (`reflect: true`): present, and empty, while it is `true`.
    */
-  @HostAttribute('locked')
-  @Property<InputSignal<boolean>>(false)
+  @Property<InputSignal<boolean>>(false, { reflect: true })
   public accessor locked!: InputSignal<boolean>;
   /**
    * Tells the parent that the switch was turned on or off, carrying the new state.

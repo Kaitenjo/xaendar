@@ -29,6 +29,29 @@ public close(): void {
 };
 
 /**
+ * The snippet `reflect-input.ts`, shown by the API reference of core.
+ */
+export const REFLECT_INPUT: SourceFile = {
+  name: 'reflect-input.ts',
+  lang: 'ts',
+  code: `/**
+ * <ex-toggle locked> while it is true: the stylesheet reads :host([locked]).
+ */
+@Property<InputSignal<boolean>>(false, { reflect: true })
+public accessor locked!: InputSignal<boolean>;
+/**
+ * <ex-meter show-value="…">: the attribute is named after the input, in kebab-case.
+ */
+@Property(0, { reflect: true })
+public accessor showValue!: InputSignal<number>;
+/**
+ * <ex-meter data-level="…">: a string names the attribute.
+ */
+@Property<InputSignal<'low' | 'high'>>('low', { reflect: 'data-level' })
+public accessor level!: InputSignal<'low' | 'high'>;`
+};
+
+/**
  * The snippet `create-component-directives.ts`, shown by the page components/dynamic-creation and the API reference of core.
  */
 export const CREATE_COMPONENT_DIRECTIVES: SourceFile = {

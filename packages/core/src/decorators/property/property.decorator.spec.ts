@@ -1,6 +1,6 @@
 import type { AccessorDecorator, Function } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_REQUIRED_INPUTS } from '../../costants';
+import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_HOST_ATTRIBUTES, INTERNAL_REQUIRED_INPUTS } from '../../costants';
 import type { Aliased } from '../../signals/types/aliased.type';
 import type { InputSignal } from '../../signals/types/input-signal.type';
 import type { BindingHost } from '../../types/binding-host.type';
@@ -17,6 +17,7 @@ await vi.hoisted(async () => {
 const { Property } = await import('../property/property.decorator');
 const { isInputSignal } = await import('../../signals/input/input-instance.symbol');
 const { INPUT_SIGNAL_SET_SYMBOL } = await import('../../signals/input/input-set.symbol');
+const { StructuralDirective } = await import('../../models/structural-directive/structural-directive');
 
 type Metadata = { [INTERNAL_ALIAS_TO_ATTRIBUTE]?: Record<string, string>, [INTERNAL_REQUIRED_INPUTS]?: Set<string> };
 type Decorated<ActualValue, IncomingValue = ActualValue> = {
@@ -104,6 +105,19 @@ function resetValue<ActualValue>(signal: InputSignal<ActualValue>): void {
   }
 
   signal.reset(INPUT_SIGNAL_SET_SYMBOL);
+}
+
+/**
+ * Applies a decorator reflecting its input to the accessor of the given name, as the decorators of a class do: its
+ * context has the metadata the host attribute goes into and the initializers run for each instance.
+ */
+function reflected(decorator: unknown, name = 'label'): { metadata: WebComponentMetadata, decorated: Decorated<unknown>, initializers: Array<(this: object) => void> } {
+  const metadata = {} as WebComponentMetadata;
+  const initializers = new Array<(this: object) => void>();
+  const access = { get: (object: object) => decorated.get.call(object) };
+  const context = { kind: 'accessor', name, static: false, metadata, access, addInitializer: (initializer: (this: object) => void) => initializers.push(initializer) };
+  const decorated = (decorator as (target: Target, context: unknown) => Decorated<unknown>)(createTarget(), context);
+  return { metadata, decorated, initializers };
 }
 
 describe('Property decorator', () => {
@@ -333,5 +347,51 @@ describe('types of @Property', () => {
     };
 
     expect(check).toBeTypeOf('function');
+  });
+  describe('reflect', () => {
+    it('reflects the input on the attribute of its name in kebab-case, read through the accessor', () => {
+      const { metadata, decorated } = reflected(Property(false, { reflect: true }), 'showValue');
+      const element = {};
+      const [binding] = metadata[INTERNAL_HOST_ATTRIBUTES]!;
+
+      expect(binding).toEqual({ name: 'show-value', kind: 'attribute', read: expect.any(Function) });
+      expect(binding.read(element as never)).toBe(decorated.get.call(element));
+    });
+
+    it('reflects the input on its alias, or on the attribute it names', () => {
+      const aliased = Property<InputSignal<string>, string, string, never>('', { alias: 'userId', reflect: true } as unknown as PropertyDecoratorOptions<string, string, never>);
+      const named = Property(0, { reflect: 'data-size' });
+
+      expect(reflected(aliased).metadata[INTERNAL_HOST_ATTRIBUTES]![0].name).toBe('user-id');
+      expect(reflected(named).metadata[INTERNAL_HOST_ATTRIBUTES]![0].name).toBe('data-size');
+    });
+
+    it('reflects a required input', () => {
+      expect(reflected(Property.required({ reflect: true }), 'level').metadata[INTERNAL_HOST_ATTRIBUTES]![0].name).toBe('level');
+    });
+
+    it('declares no host attribute without reflect', () => {
+      expect(reflected(Property(false, { reflect: false })).metadata[INTERNAL_HOST_ATTRIBUTES]).toBeUndefined();
+    });
+
+    it('rejects the classes and the style, which @HostAttribute binds, and the attributes the browser runs', () => {
+      for (const name of ['class', 'style', 'class.on', 'style.width.px']) {
+        expect(() => reflected(Property(false, { reflect: name }))).toThrow(`@Property on label reflects the input on "${name}": reflect names an attribute, while the classes and the style are bound with @HostAttribute`);
+      }
+
+      expect(() => reflected(Property('', { reflect: 'onclick' }))).toThrow('@HostAttribute(\'onclick\') writes code the browser runs');
+    });
+
+    it('rejects a structural directive, which holds no element, once an instance is created', () => {
+      class Gate extends StructuralDirective {
+        public shouldRender(): boolean {
+          return true;
+        }
+      }
+      const { initializers } = reflected(Property(false, { reflect: true }), 'open');
+
+      expect(() => initializers[0].call(new Gate())).toThrow('@Property on open of Gate reflects the input on "open": a structural directive holds no element to write the attribute on');
+      expect(() => initializers[0].call({})).not.toThrow();
+    });
   });
 });

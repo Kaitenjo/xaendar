@@ -82,9 +82,10 @@ function accessorStorage(): { get(this: object): unknown, set(this: object, valu
  * Declares an input on a component class as the accessor `@Property` decorates: the property holds the input signal,
  * and assigning it sets the value of the input.
  */
-function declareInput(klass: object, name: string, value: unknown, metadata: DecoratorMetadataObject): void {
+function declareInput(klass: object, name: string, value: unknown, metadata: DecoratorMetadataObject, reflect?: boolean): void {
   const access = { get: (element: object) => decorated.get.call(element) };
-  const decorated = (Property(value) as unknown as (target: unknown, context: unknown) => { get(this: object): unknown, set(this: object, value: unknown): void })(accessorStorage(), { name, metadata, access });
+  const context = { kind: 'accessor', name, static: false, metadata, access, addInitializer: () => undefined };
+  const decorated = (Property(value, { reflect }) as unknown as (target: unknown, context: unknown) => { get(this: object): unknown, set(this: object, value: unknown): void })(accessorStorage(), context);
   Object.defineProperty((klass as { prototype: object }).prototype, name, {
     get(this: object) { return decorated.get.call(this); },
     set(this: object, newValue: unknown) { decorated.set.call(this, newValue); }
@@ -190,6 +191,19 @@ describe('renderToString', () => {
       '<lazy-element></lazy-element>',
       '</template></team-list>'
     ].join(''));
+  });
+
+  it('writes the inputs a component reflects as attributes of its element', async () => {
+    const metadata: DecoratorMetadataObject = {};
+    class LockElement extends CustomElement { }
+    declareInput(LockElement, 'locked', false, metadata, true);
+    declareInput(LockElement, 'lockLevel', 0, metadata, true);
+    Object.defineProperty(LockElement, Symbol.for('Symbol.metadata'), { value: metadata });
+    customElements.define('lock-switch', LockElement);
+    _defineServerRender(LockElement, await compile('<i></i>'));
+
+    expect(await renderToString(LockElement, { locked: true, lockLevel: 2 })).toBe('<lock-switch locked="" lock-level="2" data-xd-inputs="{&quot;locked&quot;:true,&quot;lockLevel&quot;:2}"><template shadowrootmode="open"><i></i></template></lock-switch>');
+    expect(await renderToString(LockElement)).toBe('<lock-switch lock-level="0"><template shadowrootmode="open"><i></i></template></lock-switch>');
   });
 
   it('writes the options of the shadow root its @WebComponent declares on the declarative shadow root, assigning no slot', async () => {
