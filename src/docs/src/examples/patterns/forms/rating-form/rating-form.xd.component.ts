@@ -1,12 +1,12 @@
 import { CustomElement, Query, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 import type { QuerySignal } from '@xaendar/core/signals';
-import { FormControlDirective } from '@xaendar/forms';
+import { FormFieldDirective } from '@xaendar/forms';
 import type { FormError } from '@xaendar/forms';
 
 /**
  * A native form holding a component and a native field: the browser reads their values, checks their validity and
- * resets them. `@@formControl` gives both the states and the validators of Angular, and the form shows their errors
+ * resets them. `@@formField` gives both the states and the validators of Angular, and the form shows their errors
  * once the user has left them.
  */
 @WebComponent({
@@ -18,13 +18,13 @@ export class RatingFormComponent extends CustomElement {
   /**
    * The form control of the rating, as Angular's `#rating="ngModel"`.
    */
-  @Query.ref('rating', { read: FormControlDirective })
-  public accessor ratingControl!: QuerySignal<FormControlDirective | null>;
+  @Query.ref('rating', { read: FormFieldDirective })
+  public accessor ratingField!: QuerySignal<FormFieldDirective | null>;
   /**
    * The form control of the comment.
    */
-  @Query.ref('comment', { read: FormControlDirective })
-  public accessor commentControl!: QuerySignal<FormControlDirective | null>;
+  @Query.ref('comment', { read: FormFieldDirective })
+  public accessor commentField!: QuerySignal<FormFieldDirective | null>;
   /**
    * Whether the fieldset is disabled.
    */
@@ -45,7 +45,7 @@ export class RatingFormComponent extends CustomElement {
    * @param control - The form control of the field, `null` before the render.
    * @returns Its errors, none while it is untouched.
    */
-  public shownErrors(control: FormControlDirective | null): readonly FormError[] {
+  public shownErrors(control: FormFieldDirective | null): readonly FormError[] {
     return control && !control.untouched() ? control.errors() : this._noErrors;
   }
 

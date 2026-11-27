@@ -4,14 +4,14 @@ import type { InputSignal, ReadonlySignal } from '@xaendar/core/signals';
 import type { FormError } from '../../types/form-error.type';
 import type { FormValidator } from '../../types/form-validator.type';
 import type { NativeFormField } from '../../types/native-form-field.type';
-import { findFormErrors, isNativeFormField, joinFormErrors, NO_FORM_ERRORS, NO_FORM_VALIDATORS, readNativeErrors, readNativeValue, writeState } from '../../utils/form-control/form-control.utils';
+import { findFormErrors, isNativeFormField, joinFormErrors, NO_FORM_ERRORS, NO_FORM_VALIDATORS, readNativeErrors, readNativeValue, writeState } from '../../utils/form-field/form-field.utils';
 import { FormAssociatedDirective } from '../form-associated/form-associated.directive';
 
 /**
  * Gives a field of a form the states and the validators of Angular's `ngModel` and `formControl`: `untouched`,
  * `pristine`, `valid` and every error found, as read-only signals. The code using the field applies it in its template,
  * on a native field (`<input>`, `<select>`, `<textarea>`) or on a component declaring `FormAssociatedDirective`, and
- * reaches it with a query (`@Query.ref('name', { read: FormControlDirective })`), as Angular's `#name="ngModel"`.
+ * reaches it with a query (`@Query.ref('name', { read: FormFieldDirective })`), as Angular's `#name="ngModel"`.
  *
  * The validators receive the value of the field: the one of the native field, read on its `input` and `change` events
  * as Angular's value accessors give it (see `readNativeValue`), or the one the component gives the form. Their errors
@@ -27,16 +27,16 @@ import { FormAssociatedDirective } from '../form-associated/form-associated.dire
  *
  * @example
  * ```html
- * @import { FormControlDirective, minLength, required } from '@xaendar/forms'
+ * @import { FormFieldDirective, minLength, required } from '@xaendar/forms'
  *
- * <input #name @@formControl(validators="{[required(), minLength(2)]}") name="name" />
- * <ex-rating-input #rating @@formControl name="rating" />
+ * <input #name @@formField(validators="{[required(), minLength(2)]}") name="name" />
+ * <ex-rating-input #rating @@formField name="rating" />
  * ```
  */
 @Directive({
-  selector: 'formControl'
+  selector: 'formField'
 })
-export class FormControlDirective extends CustomDirective<HTMLElement> {
+export class FormFieldDirective extends CustomDirective<HTMLElement> {
   /**
    * The validators of the field, as Angular's: each one receives its value and returns its errors by name with their
    * message, or `undefined` when the value passes. None by default.
@@ -133,7 +133,7 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
       this._value.set(readNativeValue(element));
       this.effect(() => this._validateNative(element));
     } else {
-      throw new Error(`FormControlDirective is applied to <${element.localName}>, which is neither a native field nor a component declaring FormAssociatedDirective among its host directives`);
+      throw new Error(`FormFieldDirective is applied to <${element.localName}>, which is neither a native field nor a component declaring FormAssociatedDirective among its host directives`);
     }
 
     this._form?.addEventListener('reset', this._onReset);

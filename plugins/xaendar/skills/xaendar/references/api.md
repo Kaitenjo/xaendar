@@ -452,19 +452,19 @@ class Rating extends CustomElement {
 }
 ```
 
-The bridge of a component with the native forms (form-associated custom elements), the part of Angular's `ControlValueAccessor` the browser needs: the component becomes a field of any `<form>` (`FormData` under its `name`, validity blocking the submission, `reset()`, `<fieldset disabled>`, `<label for>`). It declares the native form callbacks, so `@WebComponent` sets the static `formAssociated` and forwards them (no option, no flag). `setValue(signal, transform?)`: once (a second call throws; connected again, `onInit` calls it again); convert anything not `string | File | FormData | null`. `setValidators(validators, anchor?)`: the component's own constraints, as a native `required`; replaced by each call, `[]` removes them; the anchor returns `HTMLElement | undefined`. `disabled` (read-only signal, bind `disabled="{form.disabled()}"`), `errors` (its own), `internals` (never call `attachInternals()` yourself; `null` on the server), `source`, `setCustomErrors(errors)` (what `FormControlDirective` uses, as `setCustomValidity`). Callbacks keep their native names (`formResetCallback` writes back the initial value, `formStateRestoreCallback` an unconverted one: a component converting its value declares its own). A component dispatches `input` and `change` when the user changes its value, as a native field does. Not with `extends`.
+The bridge of a component with the native forms (form-associated custom elements), the part of Angular's `ControlValueAccessor` the browser needs: the component becomes a field of any `<form>` (`FormData` under its `name`, validity blocking the submission, `reset()`, `<fieldset disabled>`, `<label for>`). It declares the native form callbacks, so `@WebComponent` sets the static `formAssociated` and forwards them (no option, no flag). `setValue(signal, transform?)`: once (a second call throws; connected again, `onInit` calls it again); convert anything not `string | File | FormData | null`. `setValidators(validators, anchor?)`: the component's own constraints, as a native `required`; replaced by each call, `[]` removes them; the anchor returns `HTMLElement | undefined`. `disabled` (read-only signal, bind `disabled="{form.disabled()}"`), `errors` (its own), `internals` (never call `attachInternals()` yourself; `null` on the server), `source`, `setCustomErrors(errors)` (what `FormFieldDirective` uses, as `setCustomValidity`). Callbacks keep their native names (`formResetCallback` writes back the initial value, `formStateRestoreCallback` an unconverted one: a component converting its value declares its own). A component dispatches `input` and `change` when the user changes its value, as a native field does. Not with `extends`.
 
-### FormControlDirective (template directive)
+### FormFieldDirective (template directive)
 
 ```html
-@import { FormControlDirective, maxLength, required } from '@xaendar/forms'
+@import { FormFieldDirective, maxLength, required } from '@xaendar/forms'
 
-<input #name @@formControl(validators="{[required(), maxLength(20)]}") name="name" />
-<x-rating #rating @@formControl name="rating" />
+<input #name @@formField(validators="{[required(), maxLength(20)]}") name="name" />
+<x-rating #rating @@formField name="rating" />
 ```
 ```ts
-@Query.ref('name', { read: FormControlDirective })
-public accessor nameControl!: QuerySignal<FormControlDirective | null>;
+@Query.ref('name', { read: FormFieldDirective })
+public accessor nameControl!: QuerySignal<FormFieldDirective | null>;
 ```
 
 Angular's `ngModel`/`formControl` states, validators and errors on any field: a native `<input>`/`<select>`/`<textarea>` or a component declaring `FormAssociatedDirective`, applied by the code using the field and read with a ref query (`read`), as `#ctrl="ngModel"`; anything else throws. Read-only signals: `untouched` (only `focusout`, as Angular's blur; a submission or `checkValidity()` does not touch it, the form keeps its own `submitted` flag), `pristine` (dirty from `input`/`change` of the user, even with the same value; never from comparing values; code writes do not count), `valid`, `errors` (`{ name, message }[]`: first the field's own, the native constraints `required`/`minlength`/`type` with the browser message or the component's validators, then the ones of `validators`). The opposite of each state is `!`. Reset with the form. On a native field the first error of `validators` goes to `setCustomValidity`; on a component to `setCustomErrors`. Components also get `:state(touched)`/`:state(dirty)` for CSS; native fields have `:user-invalid`.

@@ -5,7 +5,7 @@ import { FormAssociatedDirective, min } from '@xaendar/forms';
 /**
  * A rating from 1 to 5 stars taking part in the form holding it, as a native field does: its value goes with the form,
  * its own constraint (`required`) blocks the submission, the reset of the form empties it and a disabled `<fieldset>`
- * disables it. Touched and invalid, as `FormControlDirective` marks it, it is outlined (`:host(:state(touched):invalid)`).
+ * disables it. Touched and invalid, as `FormFieldDirective` marks it, it is outlined (`:host(:state(touched):invalid)`).
  */
 @WebComponent({
   selector: 'ex-rating-input',
@@ -49,7 +49,7 @@ export class RatingInputComponent extends CustomElement {
   }
 
   /**
-   * Gives the rating the user chose, and says so as a native field does, `input` then `change`: a `FormControlDirective`
+   * Gives the rating the user chose, and says so as a native field does, `input` then `change`: a `FormFieldDirective`
    * applied to the component marks it dirty.
    *
    * @param star - The rating.

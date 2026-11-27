@@ -5,7 +5,7 @@ import type { FormError } from '../../types/form-error.type';
 import type { FormValidator } from '../../types/form-validator.type';
 import type { FormValueSource } from '../../types/form-value-source.type';
 import type { FormValue } from '../../types/form-value.type';
-import { findFormErrors, joinFormErrors, NO_FORM_ERRORS, NO_FORM_VALIDATORS, writeFormValidity } from '../../utils/form-control/form-control.utils';
+import { findFormErrors, joinFormErrors, NO_FORM_ERRORS, NO_FORM_VALIDATORS, writeFormValidity } from '../../utils/form-field/form-field.utils';
 
 /**
  * Makes a component a field of the form holding it, as the native ones are: its value goes with the form under the
@@ -17,7 +17,7 @@ import { findFormErrors, joinFormErrors, NO_FORM_ERRORS, NO_FORM_VALIDATORS, wri
  * callbacks the browser calls on a form-associated element, which makes the class form-associated and which the
  * component forwards to it. The component keeps it in a field, gives it its value and its own validators in `onInit`, as
  * a native field has its `required` or `minlength`, and reads `disabled`. The states and the validators of the code
- * using the component (touched, dirty, the errors of a form) are `FormControlDirective`'s, which that code applies, on
+ * using the component (touched, dirty, the errors of a form) are `FormFieldDirective`'s, which that code applies, on
  * the component as on a native field. On the server there are no `ElementInternals` nor effects: it does nothing there.
  *
  * @example
@@ -103,7 +103,7 @@ export class FormAssociatedDirective extends CustomDirective<HTMLElement> {
   }
 
   /**
-   * The signal whose value goes to the form, the one given to {@link setValue}: `FormControlDirective` checks its value.
+   * The signal whose value goes to the form, the one given to {@link setValue}: `FormFieldDirective` checks its value.
    *
    * @returns The signal, `null` before `setValue`.
    */
@@ -178,7 +178,7 @@ export class FormAssociatedDirective extends CustomDirective<HTMLElement> {
 
   /**
    * Sets the errors the code using the component finds, which join its own ones in the validity of the form, as
-   * `setCustomValidity()` does for a native field: `FormControlDirective` gives the errors of its validators here.
+   * `setCustomValidity()` does for a native field: `FormFieldDirective` gives the errors of its validators here.
    *
    * @param errors - The errors, none to remove them.
    */

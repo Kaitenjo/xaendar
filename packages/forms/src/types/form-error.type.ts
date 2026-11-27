@@ -1,5 +1,5 @@
 /**
- * An error a validator found (see `FormControlDirective.errors`): its name, the one of a flag of `ValidityState` or one
+ * An error a validator found (see `FormFieldDirective.errors`): its name, the one of a flag of `ValidityState` or one
  * of your own, with its message.
  */
 export type FormError = {

@@ -10,10 +10,10 @@ const core = await import('@xaendar/core');
 const { signal } = await import('@xaendar/core/signals');
 const { CustomElement, WebComponent, _defineRender, _resolveDirective, _scope, _setInput, CustomDirective } = core;
 const { FormAssociatedDirective } = await import('../form-associated/form-associated.directive');
-const { FormControlDirective } = await import('./form-control.directive');
+const { FormFieldDirective } = await import('./form-field.directive');
 const { maxLength, required } = await import('../../utils/validators/validators.utils');
 
-type Control = InstanceType<typeof FormControlDirective>;
+type Control = InstanceType<typeof FormFieldDirective>;
 
 const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
 
@@ -22,7 +22,7 @@ const flush = () => new Promise<void>(resolve => queueMicrotask(resolve));
  * are bound by the runtime, which the spec does not run: the events are given to the handlers by {@link dispatch}.
  */
 function apply(element: HTMLElement, validators: unknown[] = []): Control {
-  const control = new FormControlDirective();
+  const control = new FormFieldDirective();
   control[core._SET_DIRECTIVE_ELEMENT] = element;
   _setInput(undefined as never, control, { name: 'validators', value: validators } as never);
   control.onInit();
@@ -39,14 +39,14 @@ function dispatch(control: Control, event: 'change' | 'focusout' | 'input'): voi
 
 let counter = 0;
 
-describe('FormControlDirective', () => {
+describe('FormFieldDirective', () => {
   afterEach(() => {
     Reflect.deleteProperty(HTMLElement.prototype, 'attachInternals');
     document.body.replaceChildren();
   });
 
-  it('is the custom directive of the selector formControl', () => {
-    expect(_resolveDirective('formControl', CustomDirective)).toBe(FormControlDirective);
+  it('is the custom directive of the selector formField', () => {
+    expect(_resolveDirective('formField', CustomDirective)).toBe(FormFieldDirective);
   });
 
   it('gives a native field the states, its own error and the ones of the validators, the first one as its custom error', async () => {
@@ -137,6 +137,6 @@ describe('FormControlDirective', () => {
   });
 
   it('refuses an element that is neither a native field nor a component with the bridge', () => {
-    expect(() => apply(document.createElement('div'))).toThrow('FormControlDirective is applied to <div>, which is neither a native field nor a component declaring FormAssociatedDirective among its host directives');
+    expect(() => apply(document.createElement('div'))).toThrow('FormFieldDirective is applied to <div>, which is neither a native field nor a component declaring FormAssociatedDirective among its host directives');
   });
 });

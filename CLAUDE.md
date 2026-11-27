@@ -99,7 +99,7 @@ The owner reviews every change before it reaches `main`, and decides each step: 
 | `signals` | browser | common, types | TC39 Signals polyfill (`loadSignals()`) |
 | `core` | browser | common, signals, types; peer internals | components, directives, decorators, template runtime |
 | `directives` | library | types; peer core, internals | `@@animation`, `@@class`, `@@style`, `@@innerHtml`, `@@componentOutlet` |
-| `forms` | library | types; peer core | `FormAssociatedDirective` (a component as a field of the native forms), `FormControlDirective` (Angular's states, validators and errors on any field), the validators |
+| `forms` | library | types; peer core | `FormAssociatedDirective` (a component as a field of the native forms), `FormFieldDirective` (Angular's states, validators and errors on any field), the validators |
 | `ssr` | browser (run by Node) | common, types; exact peer core, internals | runtime of the rendering on the server |
 | `compiler` | node | common, types; peer internals | template → render code + type-check |
 | `ssr-compiler` | node | common, compiler, types; peer internals | template → server render code |

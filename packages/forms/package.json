@@ -9,7 +9,7 @@
     "url": "git+https://github.com/Kaitenjo/xaendar.git",
     "directory": "packages/forms"
   },
-  "description": "The forms of Xaendar: FormControlDirective, the host directive making a component a control of the native forms, with its value, its validators and the touched, dirty and disabled states",
+  "description": "The forms of Xaendar: FormFieldDirective, the host directive making a component a control of the native forms, with its value, its validators and the touched, dirty and disabled states",
   "xaendar": {
     "target": "browser",
     "library": true

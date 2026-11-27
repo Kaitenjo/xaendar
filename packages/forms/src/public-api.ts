@@ -1,5 +1,5 @@
 export { FormAssociatedDirective } from './directives/form-associated/form-associated.directive';
-export { FormControlDirective } from './directives/form-control/form-control.directive';
+export { FormFieldDirective } from './directives/form-field/form-field.directive';
 export type { FormError } from './types/form-error.type';
 export type { FormValidator } from './types/form-validator.type';
 export type { FormValidityErrors } from './types/form-validity-errors.type';
