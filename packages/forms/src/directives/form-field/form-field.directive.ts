@@ -1,10 +1,12 @@
 import { CustomDirective, CustomElement, Directive, HostListener, Property } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
 import type { InputSignal, ReadonlySignal } from '@xaendar/core/signals';
+import { ComponentFieldTarget } from '../../models/component-field-target/component-field-target.model';
+import { NativeFieldTarget } from '../../models/native-field-target/native-field-target.model';
 import type { FormError } from '../../types/form-error.type';
+import type { FormFieldTarget } from '../../types/form-field-target.type';
 import type { FormValidator } from '../../types/form-validator.type';
-import type { NativeFormField } from '../../types/native-form-field.type';
-import { findFormErrors, isNativeFormField, joinFormErrors, NO_FORM_ERRORS, NO_FORM_VALIDATORS, readNativeErrors, readNativeValue, writeState } from '../../utils/form-field/form-field.utils';
+import { findFormErrors, isNativeFormField, joinFormErrors, NO_FORM_ERRORS, NO_FORM_VALIDATORS } from '../../utils/form-field/form-field.utils';
 import { FormAssociatedDirective } from '../form-associated/form-associated.directive';
 
 /**
@@ -80,22 +82,13 @@ export class FormFieldDirective extends CustomDirective<HTMLElement> {
    */
   private readonly _errors = signal<readonly FormError[]>(NO_FORM_ERRORS);
   /**
-   * The value of a native field, read on its `input` and `change` events and when the form is reset: a native field has
-   * no signal of its own.
+   * The field the directive works on, a native one or a component (see `FormFieldTarget`), set by `onInit`, before the
+   * listeners are bound and the reset can come.
+   *
+   * N.B. Deliberate: one object per kind of field, chosen once, instead of fields and branches for each kind in the
+   * directive, where every one would be empty or pointless for the other kind. Do not add them back.
    */
-  private readonly _value = signal<unknown>(undefined);
-  /**
-   * The native field the directive is applied to, `null` for a component.
-   */
-  private _field: NativeFormField | null = null;
-  /**
-   * The bridge of the component the directive is applied to, `null` for a native field.
-   */
-  private _bridge: FormAssociatedDirective | null = null;
-  /**
-   * The form holding the field when the directive started, whose reset makes the field untouched and pristine.
-   */
-  private _form: HTMLFormElement | null = null;
+  private _target!: FormFieldTarget;
   /**
    * Listens to the reset of the form: the form fires `reset` before resetting its fields, so the field is read once the
    * reset is done.
@@ -115,8 +108,7 @@ export class FormFieldDirective extends CustomDirective<HTMLElement> {
   }
 
   /**
-   * Starts following the validity of the field: a component through its `FormAssociatedDirective`, a native field
-   * through its own validity, and listens to the reset of its form.
+   * Chooses the field the directive works on, starts following its validity and listens to the reset of its form.
    *
    * @throws When the element is neither a native field nor a component declaring `FormAssociatedDirective`.
    */
@@ -124,19 +116,15 @@ export class FormFieldDirective extends CustomDirective<HTMLElement> {
     const element = this.element;
     const bridge = element instanceof CustomElement ? element.hostDirectives.get(FormAssociatedDirective) : undefined;
     if (bridge) {
-      this._bridge = bridge;
-      this._form = bridge.internals?.form ?? null;
-      this.effect(() => this._validateComponent(bridge));
+      this._target = new ComponentFieldTarget(bridge);
     } else if (isNativeFormField(element)) {
-      this._field = element;
-      this._form = element.form;
-      this._value.set(readNativeValue(element));
-      this.effect(() => this._validateNative(element));
+      this._target = new NativeFieldTarget(element);
     } else {
-      throw new Error(`FormFieldDirective is applied to <${element.localName}>, which is neither a native field nor a component declaring FormAssociatedDirective among its host directives`);
+      throw new Error(`FormFieldDirective is applied to <${element.localName}>, which is neither a native field (<input>, <select>, <textarea>) nor a component declaring FormAssociatedDirective among its host directives`);
     }
 
-    this._form?.addEventListener('reset', this._onReset);
+    this.effect(() => this._validate());
+    this._target.form?.addEventListener('reset', this._onReset);
   }
 
   /**
@@ -149,105 +137,65 @@ export class FormFieldDirective extends CustomDirective<HTMLElement> {
   }
 
   /**
-   * Marks the field dirty when the user changes the value, and reads the value of a native field: a native field
-   * dispatches `input` and `change` for it, also when the user writes what the field already holds, as pasting the same
-   * text does; a component dispatches them itself.
+   * Marks the field dirty when the user changes the value, and lets the field take it: a native field dispatches `input`
+   * and `change` for it, also when the user writes what the field already holds, as pasting the same text does; a
+   * component dispatches them itself.
    */
   @HostListener('change')
   @HostListener('input')
   private _edit(): void {
     this._setDirty(true);
-    if (this._field) {
-      this._value.set(readNativeValue(this._field));
-    }
+    this._target.edited();
   }
 
   /**
-   * Makes the field untouched and pristine after the reset of its form, reading the value a native field went back to.
+   * Makes the field untouched and pristine after the reset of its form, letting it take what the reset left.
    */
   private _reset(): void {
     this._setTouched(false);
     this._setDirty(false);
-    if (this._field) {
-      this._value.set(readNativeValue(this._field));
-    }
+    this._target.reset();
   }
 
   /**
-   * Validates a native field: its own constraints, then the validators for its value, whose first error becomes its
-   * custom error.
-   *
-   * @param field - The native field.
+   * Validates the field: its own errors, then the ones of the validators for its value, which it shows the browser
+   * with its own ones.
    */
-  private _validateNative(field: NativeFormField): void {
-    const native = readNativeErrors(field);
-    const own = findFormErrors(this.validators(), this._value());
-    field.setCustomValidity(own.length ? own[0].message : '');
-    this._setErrors(joinFormErrors(native, own));
-  }
-
-  /**
-   * Validates a component: the validators for the value it gives the form, whose errors join its own ones in its
-   * validity, after its own ones.
-   *
-   * @param bridge - The `FormAssociatedDirective` of the component.
-   */
-  private _validateComponent(bridge: FormAssociatedDirective): void {
-    const own = findFormErrors(this.validators(), bridge.source?.());
-    bridge.setCustomErrors(own);
-    this._setErrors(joinFormErrors(bridge.errors(), own));
-  }
-
-  /**
-   * Sets the errors of the field, and whether it is valid.
-   *
-   * @param errors - The errors.
-   */
-  private _setErrors(errors: readonly FormError[]): void {
+  private _validate(): void {
+    const target = this._target;
+    const own = target.ownErrors();
+    const found = findFormErrors(this.validators(), target.value());
+    target.setCustomErrors(found);
+    const errors = joinFormErrors(own, found);
     this._errors.set(errors);
     this._valid.set(errors.length === 0);
   }
 
   /**
-   * Sets whether the field is touched, and the `touched` state of a component.
+   * Sets whether the field is touched, and shows it to CSS where the field can.
    *
    * @param touched - Whether it is touched.
    */
   private _setTouched(touched: boolean): void {
     this._untouched.set(!touched);
-    this._writeState('touched', touched);
+    this._target.writeState('touched', touched);
   }
 
   /**
-   * Sets whether the field is dirty, and the `dirty` state of a component.
+   * Sets whether the field is dirty, and shows it to CSS where the field can.
    *
    * @param dirty - Whether it is dirty.
    */
   private _setDirty(dirty: boolean): void {
     this._pristine.set(!dirty);
-    this._writeState('dirty', dirty);
-  }
-
-  /**
-   * Writes a custom state of a component, where the DOM has `ElementInternals`: a native field has none.
-   *
-   * @param state - The name of the state.
-   * @param on - Whether the element has it.
-   */
-  private _writeState(state: string, on: boolean): void {
-    const internals = this._bridge?.internals;
-    if (internals) {
-      writeState(internals, state, on);
-    }
+    this._target.writeState('dirty', dirty);
   }
 
   /**
    * Stops listening to the form, and removes the errors the directive gave the field.
    */
   public onDestroy(): void {
-    this._form?.removeEventListener('reset', this._onReset);
-    this._form = null;
-    this._field?.setCustomValidity('');
-    this._bridge?.setCustomErrors(NO_FORM_ERRORS);
+    this._target.form?.removeEventListener('reset', this._onReset);
+    this._target.setCustomErrors(NO_FORM_ERRORS);
   }
 }

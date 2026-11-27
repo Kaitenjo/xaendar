@@ -1,5 +1,5 @@
 /**
- * A native element taking part in the forms with a validity of its own: `<input>`, `<select>`, `<textarea>` and the
- * others answering `setCustomValidity()`.
+ * A native field of the forms holding a value, with a validity of its own: an `<input>`, a `<select>` or a `<textarea>`,
+ * the customized built-in elements extending them included.
  */
-export type NativeFormField = HTMLElement & Pick<HTMLInputElement, 'form' | 'setCustomValidity' | 'validationMessage' | 'validity'>;
+export type NativeFormField = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;

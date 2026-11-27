@@ -97,13 +97,21 @@ export function writeState(internals: ElementInternals, state: string, on: boole
 }
 
 /**
- * Tells whether an element is a native field with a validity of its own, which a custom error is given to.
+ * The tags of the native fields holding a value with a validity of its own: a custom element cannot have them, its
+ * name holding a `-`, so a component declaring a `setCustomValidity` of its own is never taken for one.
+ */
+const NATIVE_FIELD_TAGS: ReadonlySet<string> = new Set(['input', 'select', 'textarea']);
+
+/**
+ * Tells whether an element is a native field: an `<input>`, a `<select>` or a `<textarea>`, a customized built-in
+ * element extending one of them included. Read from the tag, which works on the server too, where the classes of the
+ * native elements may not exist.
  *
  * @param element - The element.
- * @returns `true` for an `<input>`, a `<select>`, a `<textarea>` and the other elements answering `setCustomValidity()`.
+ * @returns `true` for a native field.
  */
 export function isNativeFormField(element: Element): element is NativeFormField {
-  return typeof (element as Partial<NativeFormField>).setCustomValidity === 'function';
+  return NATIVE_FIELD_TAGS.has(element.localName);
 }
 
 /**
@@ -114,24 +122,14 @@ export function isNativeFormField(element: Element): element is NativeFormField 
  * @returns Its value.
  */
 export function readNativeValue(field: NativeFormField): unknown {
-  if (field instanceof HTMLInputElement) {
-    switch (field.type) {
-      case 'checkbox':
-      case 'radio':
-        return field.checked;
-      case 'number':
-      case 'range':
-        return field.value === '' ? null : Number(field.value);
-      default:
-        return field.value;
-    }
+  switch (field.localName) {
+    case 'input':
+      return readInputValue(field as HTMLInputElement);
+    case 'select':
+      return (field as HTMLSelectElement).multiple ? Array.from((field as HTMLSelectElement).selectedOptions, option => option.value) : field.value;
+    default:
+      return field.value;
   }
-
-  if (field instanceof HTMLSelectElement && field.multiple) {
-    return Array.from(field.selectedOptions, option => option.value);
-  }
-
-  return (field as Partial<HTMLInputElement>).value;
 }
 
 /**
@@ -153,4 +151,23 @@ export function readNativeErrors(field: NativeFormField): readonly FormError[] {
   }
 
   return NO_FORM_ERRORS;
+}
+
+/**
+ * Reads the value of an `<input>` by its type (see {@link readNativeValue}).
+ *
+ * @param input - The input.
+ * @returns Its value.
+ */
+function readInputValue(input: HTMLInputElement): unknown {
+  switch (input.type) {
+    case 'checkbox':
+    case 'radio':
+      return input.checked;
+    case 'number':
+    case 'range':
+      return input.value === '' ? null : Number(input.value);
+    default:
+      return input.value;
+  }
 }

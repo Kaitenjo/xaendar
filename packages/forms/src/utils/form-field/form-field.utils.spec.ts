@@ -65,9 +65,19 @@ describe('form control', () => {
     expect(internals.states.has('touched')).toBe(false);
   });
 
-  it('tells the native fields, which answer setCustomValidity, from the other elements', () => {
+  it('tells the native fields by their tag, never a component declaring a setCustomValidity of its own', () => {
+    class Impostor extends HTMLElement {
+      public setCustomValidity(): void { }
+    }
+    customElements.define('x-impostor-field', Impostor);
+    const extended = document.createElement('input', { is: 'x-not-defined' });
+
     expect(isNativeFormField(document.createElement('input'))).toBe(true);
+    expect(isNativeFormField(document.createElement('select'))).toBe(true);
     expect(isNativeFormField(document.createElement('textarea'))).toBe(true);
+    expect(isNativeFormField(extended)).toBe(true);
+    expect(isNativeFormField(new Impostor())).toBe(false);
+    expect(isNativeFormField(document.createElement('button'))).toBe(false);
     expect(isNativeFormField(document.createElement('div'))).toBe(false);
   });
 

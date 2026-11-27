@@ -136,7 +136,13 @@ describe('FormFieldDirective', () => {
     expect(internals.setValidity).toHaveBeenLastCalledWith({});
   });
 
-  it('refuses an element that is neither a native field nor a component with the bridge', () => {
-    expect(() => apply(document.createElement('div'))).toThrow('FormFieldDirective is applied to <div>, which is neither a native field nor a component declaring FormAssociatedDirective among its host directives');
+  it('refuses an element that is neither a native field nor a component with the bridge, whatever methods it has', () => {
+    class Impostor extends HTMLElement {
+      public setCustomValidity(): void { }
+    }
+    customElements.define(`x-impostor-${counter++}`, Impostor);
+
+    expect(() => apply(document.createElement('div'))).toThrow('FormFieldDirective is applied to <div>, which is neither a native field (<input>, <select>, <textarea>) nor a component declaring FormAssociatedDirective among its host directives');
+    expect(() => apply(new Impostor())).toThrow('which is neither a native field');
   });
 });
