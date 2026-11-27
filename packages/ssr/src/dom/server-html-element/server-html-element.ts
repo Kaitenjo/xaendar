@@ -44,10 +44,14 @@ export class ServerHTMLElement extends ServerElement {
     }
 
     this._attached = true;
-    const root: ServerShadowRoot = { 
-      host: this, 
-      mode: init.mode, 
-      adoptedStyleSheets: [] 
+    const root: ServerShadowRoot = {
+      host: this,
+      mode: init.mode,
+      delegatesFocus: !!init.delegatesFocus,
+      slotAssignment: init.slotAssignment ?? 'named',
+      serializable: !!init.serializable,
+      clonable: !!init.clonable,
+      adoptedStyleSheets: []
     };
     
     if (init.mode === 'open') {

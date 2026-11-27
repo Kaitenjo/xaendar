@@ -1,6 +1,6 @@
 import { keys } from '@xaendar/common';
 import type { Constructor, NoArgsVoidFunction } from '@xaendar/types';
-import { _CLIENT_ATTRIBUTE, _HYDRATE_ATTRIBUTE, _SERVER_INPUTS_ATTRIBUTE, CONNECTED_HOOKS, DIRECTIVE_AFTER_RENDER, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DISCONNECTED_HOOKS, HYDRATE, INITIALIZE, INTERNAL_EXTENDS, IS_RENDERED, WAITS_FOR_HYDRATION } from '../../costants';
+import { _CLIENT_ATTRIBUTE, _HYDRATE_ATTRIBUTE, _SERVER_INPUTS_ATTRIBUTE, CONNECTED_HOOKS, DIRECTIVE_AFTER_RENDER, DIRECTIVE_CONNECT, DIRECTIVE_DISCONNECT, DISCONNECTED_HOOKS, HYDRATE, INITIALIZE, INTERNAL_EXTENDS, INTERNAL_SHADOW_ROOT, IS_RENDERED, WAITS_FOR_HYDRATION } from '../../costants';
 import { isInputSignal } from '../../signals/input/input-instance.symbol';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
 import { EffectOptions } from '../../signals/types/effect-options.type';
@@ -196,7 +196,8 @@ export class CustomElement extends HTMLElement {
     this._context = _scope(null, EMPTY_LAYOUT);
     this._hostDirectivesContext = null;
     this._state = HYDRATION && (this.shadowRoot || this.hasAttribute(_CLIENT_ATTRIBUTE)) ? 'hydrating' : 'idle';
-    this._root = this.shadowRoot ?? (!getWebComponentMetadata(this.constructor)?.[INTERNAL_EXTENDS] || _getRender(this.constructor) ? this.attachShadow({ mode: 'open' }) : null);
+    const metadata = getWebComponentMetadata(this.constructor);
+    this._root = this.shadowRoot ?? (!metadata?.[INTERNAL_EXTENDS] || _getRender(this.constructor) ? this.attachShadow({ ...metadata?.[INTERNAL_SHADOW_ROOT], mode: 'open' }) : null);
     
     const hostDirectives = _createHostDirectives(this);
     this.hostDirectives = hostDirectives;

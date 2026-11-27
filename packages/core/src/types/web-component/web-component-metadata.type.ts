@@ -1,10 +1,11 @@
 import type { Constructor, Dictionary } from '@xaendar/types';
-import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_EVENTS, INTERNAL_EXTENDS,INTERNAL_HOST_ATTRIBUTES, INTERNAL_HOST_DIRECTIVES, INTERNAL_HOST_LISTENERS, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_REQUIRED_INPUTS, INTERNAL_SELECTOR } from '../../costants';
+import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_EVENTS, INTERNAL_EXTENDS,INTERNAL_HOST_ATTRIBUTES, INTERNAL_HOST_DIRECTIVES, INTERNAL_HOST_LISTENERS, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_REQUIRED_INPUTS, INTERNAL_SELECTOR, INTERNAL_SHADOW_ROOT } from '../../costants';
 import type { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { HostAttributeBinding } from '../host/host-attribute-binding.type';
 import type { HostListenerBinding } from '../host/host-listener-binding.type';
 import type { HydrateTrigger } from '../hydrate-trigger.type';
 import type { HostDirectiveOptions } from './host-directive-options.type';
+import type { ShadowRootOptions } from './shadow-root-options.type';
 
 /**
  * The metadata a Web Component Class stores through its decorators, as the ones of the host directives of a component and
@@ -38,6 +39,10 @@ export type WebComponentMetadata = {
    * The tag of the native element a customized built-in element extends, declared by `extends` of `@WebComponent`.
    */
   [INTERNAL_EXTENDS]?: keyof HTMLElementTagNameMap,
+  /**
+   * The options of the shadow root of the component, declared by `shadowRoot` of `@WebComponent`.
+   */
+  [INTERNAL_SHADOW_ROOT]?: ShadowRootOptions,
   /**
    * The attributes and the classes the class binds on its host element.
    */

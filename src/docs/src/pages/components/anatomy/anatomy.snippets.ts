@@ -13,6 +13,67 @@ this.attachShadow({ mode: 'closed' });
 };
 
 /**
+ * The snippet `search-field.ts`, shown by the page components/anatomy and the API reference of core.
+ */
+export const DELEGATES_FOCUS: SourceFile = {
+  name: 'search-field.ts',
+  lang: 'ts',
+  code: `// search-field.xd.component.ts
+import { CustomElement, WebComponent } from '@xaendar/core';
+
+/**
+ * A search field: an icon and an <input> in its template. field.focus(), a click on the icon and the label of the field
+ * move the focus to the <input>, and app-search-field:focus matches while the <input> has it.
+ */
+@WebComponent({
+  selector: 'app-search-field',
+  shadowRoot: { delegatesFocus: true },
+  templateUrl: './search-field.xd.component.html'
+})
+export class SearchFieldComponent extends CustomElement { }`
+};
+
+/**
+ * The snippet `tabs.ts`, shown by the page components/anatomy and the API reference of core.
+ */
+export const MANUAL_SLOTS: SourceFile = {
+  name: 'tabs.ts',
+  lang: 'ts',
+  code: `// tabs.xd.component.ts
+import { CustomElement, Property, Query, WebComponent } from '@xaendar/core';
+import type { InputSignal, QuerySignal } from '@xaendar/core/signals';
+
+/**
+ * Tabs showing one panel at a time: its children are the panels, and its only <slot> gets the active one.
+ */
+@WebComponent({
+  selector: 'app-tabs',
+  shadowRoot: { slotAssignment: 'manual' },
+  templateUrl: './tabs.xd.component.html'
+})
+export class TabsComponent extends CustomElement {
+  /**
+   * The index of the panel shown.
+   */
+  @Property(0)
+  public accessor active!: InputSignal<number>;
+  /**
+   * The <slot> of the template.
+   */
+  @Query<HTMLSlotElement>('slot')
+  public accessor slot!: QuerySignal<HTMLSlotElement | null>;
+
+  public afterRender(): void {
+    // No child is projected until assign() names it: the other panels stay out of the page
+    this.effect(() => {
+      const panel = this.children[this.active()];
+      this.slot()?.assign(...(panel ? [panel] : []));
+    });
+  }
+}`
+};
+
+/**
  * The snippet `copy-button.ts`, shown by the page components/anatomy and the API reference of core.
  */
 export const COPY_BUTTON: SourceFile = {

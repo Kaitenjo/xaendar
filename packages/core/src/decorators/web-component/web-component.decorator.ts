@@ -1,10 +1,11 @@
 import type { ClassDecorator, Constructor, DecoratorMetadataContext } from '@xaendar/types';
-import { INTERNAL_EXTENDS, INTERNAL_HOST_DIRECTIVES, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_SELECTOR } from '../../costants';
+import { INTERNAL_EXTENDS, INTERNAL_HOST_DIRECTIVES, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_SELECTOR, INTERNAL_SHADOW_ROOT } from '../../costants';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { WebComponentOptions } from '../../types/web-component/web-component-options.type';
 import { _applyHostCallbacks } from '../../utils/host-callbacks/host-callbacks.util';
 import { _resolveHostDirectives } from '../../utils/host-directives/host-directives.util';
+import { _getRender } from '../../utils/render-registry/render-registry.util';
 
 /**
  * Decorator that registers a class as a custom web component.
@@ -33,8 +34,12 @@ import { _resolveHostDirectives } from '../../utils/host-directives/host-directi
  * @param options - Configuration object containing at least a `selector`
  *   (the custom element tag name) and a `templateUrl`.
  * @returns A class decorator applied to the web component class.
+ * `shadowRoot` holds the options of the shadow root the template renders into, the ones of `attachShadow` but `mode`,
+ * always `open`: `delegatesFocus`, `slotAssignment`, `serializable` and `clonable`. The server writes them on the
+ * declarative shadow root of the component.
+ *
  * @throws When the class is registered: a host directive cannot be applied, or a customized built-in element is
- *   form-associated.
+ *   form-associated, or declares `shadowRoot` without a template.
  *
  * @example
  * ```ts
@@ -54,6 +59,12 @@ import { _resolveHostDirectives } from '../../utils/host-directives/host-directi
  *
  * @example
  * ```ts
+ * \@WebComponent({ selector: 'my-select', templateUrl: './my-select.html', shadowRoot: { delegatesFocus: true } })
+ * class MySelectComponent extends CustomElement {}
+ * ```
+ *
+ * @example
+ * ```ts
  * \@WebComponent({ selector: 'copy-button', extends: 'button' })
  * class CopyButtonComponent extends customElementOf(HTMLButtonElement) {}
  * ```
@@ -65,6 +76,10 @@ export function WebComponent<T extends CustomElement>(options: WebComponentOptio
     metadata[INTERNAL_SELECTOR] = options.selector;
     if (options.extends) {
       metadata[INTERNAL_EXTENDS] = options.extends;
+    }
+
+    if (options.shadowRoot) {
+      metadata[INTERNAL_SHADOW_ROOT] = options.shadowRoot;
     }
 
     if (options.hostDirectives?.length) {
@@ -94,6 +109,11 @@ export function WebComponent<T extends CustomElement>(options: WebComponentOptio
       // A native control takes part in the forms by itself, and the browser gives a customized built-in no ElementInternals
       if (options.extends && (klass as { formAssociated?: unknown }).formAssociated === true) {
         throw new Error(`${klass.name} extends <${options.extends}> and is form-associated (a host directive declaring a form callback, or a static formAssociated): a customized built-in element cannot be, since attachInternals() throws for it. A native control (<input>, <select>, <textarea>, <button>) already takes part in the forms: use its value and setCustomValidity(), or make the component autonomous`);
+      }
+
+      // The static block of the compiled template, which registers the render, has run by now
+      if (options.extends && options.shadowRoot && !_getRender(klass)) {
+        throw new Error(`${klass.name} extends <${options.extends}> without a template and declares shadowRoot: the element has no shadow root, which only a templateUrl gives it`);
       }
 
       // A customized built-in element is defined on the tag it extends, an autonomous one on its own

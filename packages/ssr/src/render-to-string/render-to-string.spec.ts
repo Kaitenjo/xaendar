@@ -192,6 +192,15 @@ describe('renderToString', () => {
     ].join(''));
   });
 
+  it('writes the options of the shadow root its @WebComponent declares on the declarative shadow root, assigning no slot', async () => {
+    class MenuElement extends CustomElement { }
+    Object.defineProperty(MenuElement, Symbol.for('Symbol.metadata'), { value: { selector: 'focus-menu', shadowRoot: { delegatesFocus: true, slotAssignment: 'manual', serializable: true, clonable: true } } });
+    customElements.define('focus-menu', MenuElement);
+    _defineServerRender(MenuElement, await compile('<button>open</button><slot></slot>'));
+
+    expect(await renderToString(MenuElement)).toBe('<focus-menu><template shadowrootmode="open" shadowrootdelegatesfocus shadowrootslotassignment="manual" shadowrootserializable shadowrootclonable><button>open</button><slot></slot></template></focus-menu>');
+  });
+
   it('writes the transfer state after the element, its values read on the server by the components, without writing empty inputs or an empty state', async () => {
     const lessThan = `${String.fromCharCode(92)}u003c`;
 

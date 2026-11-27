@@ -24632,7 +24632,7 @@ function assertNotDeclared(declared, keyword, span) {
 }
 
 // ../packages/compiler/src/parser/utils/template-content/template-content.utils.ts
-var SHADOW_ROOT_ATTRIBUTES = /* @__PURE__ */ new Set(["shadowrootmode", "shadowrootclonable", "shadowrootdelegatesfocus", "shadowrootserializable"]);
+var SHADOW_ROOT_ATTRIBUTES = /* @__PURE__ */ new Set(["shadowrootmode", "shadowrootclonable", "shadowrootdelegatesfocus", "shadowrootserializable", "shadowrootslotassignment"]);
 function assertStandardTemplate(element) {
   const { attributes } = element;
   for (let i2 = 0; i2 < attributes.length; i2++) {
@@ -31537,7 +31537,7 @@ var import_typescript21 = require("typescript");
 // ../packages/compiler/src/utils/extract-component-members/extract-component-members.utils.ts
 var import_typescript20 = require("typescript");
 var SIGNAL_MODULE_SPECIFIERS = /* @__PURE__ */ new Set(["@xaendar/core/signals"]);
-var SIGNAL_EXPORTS = /* @__PURE__ */ new Set(["signal", "computed", "Signal", "Computed", "InputSignal", "Aliased", "SettableInputSignal", "QuerySignal"]);
+var SIGNAL_EXPORTS = /* @__PURE__ */ new Set(["signal", "computed", "Signal", "Computed", "InputSignal", "Aliased", "SettableInputSignal", "QuerySignal", "ReadonlySignal"]);
 var FUNCTION_FINDER = {
   local: (statement, localName) => (0, import_typescript20.isFunctionDeclaration)(statement) && statement.name?.text === localName ? statement : void 0,
   exported: (statement, exportedName) => (0, import_typescript20.isFunctionDeclaration)(statement) && isExportedAs(statement, exportedName) ? statement : void 0

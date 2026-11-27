@@ -7,7 +7,7 @@ import type { ElementNode } from '../../types/nodes/element-node.type';
  * The attributes of a `<template>` declaring a shadow root, which only the parser of the browser reads, from the HTML
  * of the server.
  */
-const SHADOW_ROOT_ATTRIBUTES = new Set(['shadowrootmode', 'shadowrootclonable', 'shadowrootdelegatesfocus', 'shadowrootserializable']);
+const SHADOW_ROOT_ATTRIBUTES = new Set(['shadowrootmode', 'shadowrootclonable', 'shadowrootdelegatesfocus', 'shadowrootserializable', 'shadowrootslotassignment']);
 
 /**
  * Ensures a standard `<template>` element, one declaring no template (`<template id="row">`), declares no shadow root:

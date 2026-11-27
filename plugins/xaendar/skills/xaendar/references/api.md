@@ -7,7 +7,7 @@ Every export applications use, by module. Symbols exported only for the compiled
 ### WebComponent (decorator)
 
 ```ts
-@WebComponent({ selector: 'x-y', extends?: 'button', hostDirectives?: [Tip, { directive: Tip, properties?: [{ name: 'text', alias: 'hint' }], events?: ['shown'] }], ssr?: { hydrate?: 'load' | 'idle' | 'visible' | 'interaction' | 'hover' | 'never', render?: false, static?: false }, styleUrl?: './x.css', templateUrl: './x.xd.component.html' })
+@WebComponent({ selector: 'x-y', extends?: 'button', hostDirectives?: [Tip, { directive: Tip, properties?: [{ name: 'text', alias: 'hint' }], events?: ['shown'] }], ssr?: { hydrate?: 'load' | 'idle' | 'visible' | 'interaction' | 'hover' | 'never', render?: false, static?: false }, shadowRoot?: { delegatesFocus?: boolean, slotAssignment?: 'named' | 'manual', serializable?: boolean, clonable?: boolean }, styleUrl?: './x.css', templateUrl: './x.xd.component.html' })
 ```
 
 Defines a class extending CustomElement as a custom element, with its compiled template and its stylesheet (`.css`, `.scss`, `.sass` or `.less`). The options must be string literals; `hostDirectives` an array literal. The class must be declared in a file ending with `.xd.component.ts`; the decorator is not inherited.
@@ -17,6 +17,8 @@ Defines a class extending CustomElement as a custom element, with its compiled t
 `hostDirectives` lists custom directives applied to every instance of the component, on its own element. An entry is the class of the directive, or an object with the class (`directive`) and the `properties` and `events` of the directive the component exposes, each as `'name'` or as `{ name, alias }`: an exposed input is bound from the templates using the component, an exposed output is dispatched on it. The events not exposed are not dispatched. Code outside the templates sets an exposed input as an input of the component (`element.label = …`, an accessor of its class); the templates write it into the directive. A subclass inherits the host directives of its parent, applied before its own. The classes of the chain and their host directives are one: a directive is listed once, an exposed input has no name of an input or member of the component nor of another exposed input, an exposed event no name of an event of the component nor of another exposed event; the build reports it, the class throws it when registered. Templates cannot name the class, so expose the instance as a member (`public readonly tip = this.hostDirectives.get(Tip)`, a field of the subclass) to use it in the template.
 
 `ssr.hydrate` decides when the elements of the component rendered on the server hydrate: `load` (default) as soon as they can, `idle`, `visible` (in the viewport), `interaction` (first event on them), `hover` (pointer over them, or focus entering them), `never` (they stay the HTML of the server for good, no event recorded; instances the browser creates render as usual). Until then they show the HTML of the server and the events on them are recorded, then replayed. A `@hydrate` block holding the element decides in its place; a component rendered in the browser renders at once. `ssr.static: false` keeps a component in the bundle of the browser where the build would find it static; `true` is not a value. `ssr.render: false` renders the component only in the browser, as a `@client` around each of its elements: the server writes its empty element, runs none of its code and does not evaluate its module for the templates rendering it; it takes no `hydrate: 'never'`. `ssr` must be an object literal and `render` the literal `false`, since the plugin reads them from the source code. Declaring any of these keeps the component in the bundle.
+
+`shadowRoot` holds the options of the shadow root the template renders into (`ShadowRootOptions`, the `ShadowRootInit` of `attachShadow` without `mode`): the mode is always `open`, since the framework reads the root through `shadowRoot` (queries, hydration). `delegatesFocus: true` for a component wrapping an `<input>` or a `<button>`: `element.focus()`, a click on a non-focusable part and its `<label>` move the focus to the first focusable element of the template, and `:focus` matches the host meanwhile. `slotAssignment: 'manual'` assigns no child by `slot`: the component calls `assign()` on a `<slot>` it queries (`@Query<HTMLSlotElement>('slot')`, in an effect of `afterRender`) to project children by state. `serializable` and `clonable` keep the root in `getHTML({ serializableShadowRoots: true })` and `cloneNode()`. The server writes them on the declarative shadow root (`shadowrootdelegatesfocus`, `shadowrootslotassignment="manual"`, `shadowrootserializable`, `shadowrootclonable`), but assigns no slot: manual slots are projected only once the component hydrates. A customized built-in element declares `shadowRoot` only with a template: the registration throws otherwise.
 
 ### Property (decorator)
 
@@ -246,10 +248,18 @@ The options of an output: a plain object in @Event, an EventOptions instance in 
 ### WebComponentOptions (type)
 
 ```ts
-{ selector: string; hostDirectives?: Array<Constructor<CustomDirective> | HostDirectiveOptions>; ssr?: { hydrate?: 'load' | 'idle' | 'visible' | 'interaction' | 'hover' | 'never'; render?: false; static?: false }; styleUrl?: string; templateUrl: string }
+{ selector: string; hostDirectives?: Array<Constructor<CustomDirective> | HostDirectiveOptions>; ssr?: { hydrate?: 'load' | 'idle' | 'visible' | 'interaction' | 'hover' | 'never'; render?: false; static?: false }; shadowRoot?: ShadowRootOptions; styleUrl?: string; templateUrl: string }
 ```
 
 The options of @WebComponent.
+
+### ShadowRootOptions (type)
+
+```ts
+Pick<ShadowRootInit, 'clonable' | 'delegatesFocus' | 'serializable' | 'slotAssignment'>
+```
+
+The options of the shadow root of a component (`shadowRoot` of @WebComponent): the mode is always `open`.
 
 ### HostDirectiveOptions (type)
 

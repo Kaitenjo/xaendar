@@ -111,6 +111,21 @@ describe('CustomElement', () => {
     expect(create().shadowRoot?.mode).toBe('open');
   });
 
+  it('attaches the shadow root with the options its @WebComponent declares, always open', () => {
+    const attachShadow = vi.spyOn(HTMLElement.prototype, 'attachShadow');
+    const name = `x-base-${counter++}`;
+    const klass = class extends CustomElement { };
+    const shadowRoot = { delegatesFocus: true, slotAssignment: 'manual', mode: 'closed' };
+    Object.defineProperty(klass, Symbol.for('Symbol.metadata'), { value: { selector: name, shadowRoot } });
+    customElements.define(name, klass);
+
+    const element = document.createElement(name);
+
+    expect(attachShadow).toHaveBeenCalledWith({ delegatesFocus: true, slotAssignment: 'manual', mode: 'open' });
+    expect(element.shadowRoot?.mode).toBe('open');
+    attachShadow.mockRestore();
+  });
+
   it('tells its elements by instanceof, through the subclasses too, and nothing else', () => {
     const element = create(createContext());
     const Subclass = element.constructor as typeof CustomElement;

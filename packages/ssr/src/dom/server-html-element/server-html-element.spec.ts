@@ -32,11 +32,17 @@ describe('ServerHTMLElement', () => {
     const root = open.attachShadow({ mode: 'open' });
     const closed = new PlainElement();
 
-    expect(root).toEqual({ host: open, mode: 'open', adoptedStyleSheets: [] });
+    expect(root).toEqual({ host: open, mode: 'open', delegatesFocus: false, slotAssignment: 'named', serializable: false, clonable: false, adoptedStyleSheets: [] });
     expect(open.shadowRoot).toBe(root);
     expect(closed.attachShadow({ mode: 'closed' }).mode).toBe('closed');
     expect(closed.shadowRoot).toBeNull();
     expect(() => open.attachShadow({ mode: 'open' })).toThrow(expect.objectContaining({ name: 'NotSupportedError' }));
+  });
+
+  it('keeps the options of its shadow root', () => {
+    const root = new CardElement().attachShadow({ mode: 'open', delegatesFocus: true, slotAssignment: 'manual', serializable: true, clonable: true });
+
+    expect(root).toMatchObject({ delegatesFocus: true, slotAssignment: 'manual', serializable: true, clonable: true });
   });
 
   it('calls attributeChangedCallback for the attributes its class observes', () => {

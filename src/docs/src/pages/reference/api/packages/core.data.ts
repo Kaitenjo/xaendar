@@ -1,4 +1,4 @@
-import { ATTACH_SHADOW, COPY_BUTTON, NON_LITERAL_OPTIONS, NOTE_PANEL, WEB_COMPONENT_OPTIONS } from '../../../components/anatomy/anatomy.snippets';
+import { ATTACH_SHADOW, COPY_BUTTON, DELEGATES_FOCUS, MANUAL_SLOTS, NON_LITERAL_OPTIONS, NOTE_PANEL, WEB_COMPONENT_OPTIONS } from '../../../components/anatomy/anatomy.snippets';
 import { CREATE_COMPONENT, CREATE_COMPONENT_CONTENT } from '../../../components/dynamic-creation/dynamic-creation.snippets';
 import { MANUAL_SUBCLASS } from '../../../components/inheritance/inheritance.snippets';
 import { PROPERTY_OPTIONS, PROPERTY_TYPE, READ_ONLY_INPUT, TRANSFORM_TYPE } from '../../../components/inputs/inputs.snippets';
@@ -61,6 +61,12 @@ export const CORE_API: ApiPackage = {
           group: 'options',
           signature: 'ssr?: WebComponentSsrOptions',
           snippets: [HYDRATE_COMPONENT]
+        },
+        {
+          name: 'shadowRoot',
+          group: 'options',
+          signature: 'shadowRoot?: ShadowRootOptions',
+          snippets: [DELEGATES_FOCUS]
         }
       ],
       usage: [
@@ -522,7 +528,7 @@ export const CORE_API: ApiPackage = {
     {
       name: 'WebComponentOptions',
       kind: 'type',
-      signature: 'type WebComponentOptions = {\n  selector: string;\n  hostDirectives?: Array<Constructor<CustomDirective> | HostDirectiveOptions>;\n  ssr?: WebComponentSsrOptions;\n} & ({\n  extends?: undefined;\n  styleUrl?: string;\n  templateUrl: string;\n} | {\n  extends: ShadowHostTagName;\n  styleUrl?: string;\n  templateUrl?: string;\n} | {\n  extends: Exclude<keyof HTMLElementTagNameMap, ShadowHostTagName>;\n  styleUrl?: undefined;\n  templateUrl?: undefined;\n});\n\ntype ShadowHostTagName = \'article\' | \'aside\' | \'blockquote\' | \'body\' | \'div\' | \'footer\' | \'h1\' | \'h2\' | \'h3\' | \'h4\' | \'h5\' | \'h6\' | \'header\' | \'main\' | \'nav\' | \'p\' | \'section\' | \'span\';',
+      signature: 'type WebComponentOptions = {\n  selector: string;\n  hostDirectives?: Array<Constructor<CustomDirective> | HostDirectiveOptions>;\n  ssr?: WebComponentSsrOptions;\n} & ({\n  extends?: undefined;\n  styleUrl?: string;\n  templateUrl: string;\n  shadowRoot?: ShadowRootOptions;\n} | {\n  extends: ShadowHostTagName;\n  styleUrl?: string;\n  templateUrl?: string;\n  shadowRoot?: ShadowRootOptions;\n} | {\n  extends: Exclude<keyof HTMLElementTagNameMap, ShadowHostTagName>;\n  styleUrl?: undefined;\n  templateUrl?: undefined;\n  shadowRoot?: undefined;\n});\n\ntype ShadowHostTagName = \'article\' | \'aside\' | \'blockquote\' | \'body\' | \'div\' | \'footer\' | \'h1\' | \'h2\' | \'h3\' | \'h4\' | \'h5\' | \'h6\' | \'header\' | \'main\' | \'nav\' | \'p\' | \'section\' | \'span\';',
       members: [
         {
           name: 'selector',
@@ -538,6 +544,11 @@ export const CORE_API: ApiPackage = {
           name: 'hostDirectives',
           group: 'properties',
           signature: 'hostDirectives?: Array<Constructor<CustomDirective> | HostDirectiveOptions>'
+        },
+        {
+          name: 'shadowRoot',
+          group: 'properties',
+          signature: 'shadowRoot?: ShadowRootOptions'
         },
         {
           name: 'ssr',
@@ -579,6 +590,36 @@ export const CORE_API: ApiPackage = {
         }
       ],
       guides: ['tools/ssr/progressive-hydration', 'tools/ssr/client-only', 'tools/ssr/static-components']
+    },
+    {
+      name: 'ShadowRootOptions',
+      kind: 'type',
+      signature: 'type ShadowRootOptions = Pick<ShadowRootInit, \'clonable\' | \'delegatesFocus\' | \'serializable\' | \'slotAssignment\'>;',
+      members: [
+        {
+          name: 'delegatesFocus',
+          group: 'properties',
+          signature: 'delegatesFocus?: boolean',
+          snippets: [DELEGATES_FOCUS]
+        },
+        {
+          name: 'slotAssignment',
+          group: 'properties',
+          signature: 'slotAssignment?: \'named\' | \'manual\'',
+          snippets: [MANUAL_SLOTS]
+        },
+        {
+          name: 'serializable',
+          group: 'properties',
+          signature: 'serializable?: boolean'
+        },
+        {
+          name: 'clonable',
+          group: 'properties',
+          signature: 'clonable?: boolean'
+        }
+      ],
+      guides: ['components/anatomy']
     },
     {
       name: 'DirectiveOptions',

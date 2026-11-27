@@ -292,7 +292,7 @@ export function _renderComponent<Component extends CustomElement>(out: ServerOut
 function renderShadowRoot(out: ServerOutput, element: CustomElement, definition: ServerRenderDefinition): void {
   const runtime = _getComponentRuntime() as Partial<ServerRuntime>;
   const { nonce } = runtime;
-  out.push('<template shadowrootmode="open">');
+  out.push(writeShadowRootTemplate(element.shadowRoot));
   if (definition.css) {
     out.push(`<style${writeNonceAttribute(nonce)}>${escapeRawText(definition.css, 'style')}</style>`);
   }
@@ -309,6 +309,36 @@ function renderShadowRoot(out: ServerOutput, element: CustomElement, definition:
   _renderInTree(styles, () => definition.render.call(element, out));
   out[slot] = writeShadowStyles(out.slice(slot + 1), styles, nonce);
   out.push('</template>');
+}
+
+/**
+ * Writes the start tag of the declarative shadow root of a component, with the options its `@WebComponent` declares
+ * (`shadowRoot`), which the parser of the browser gives the shadow root it attaches: the shadow root the component
+ * adopts when it hydrates has them already. The server assigns no slot: with `slotAssignment: 'manual'`, the component
+ * assigns them once it hydrates.
+ *
+ * @param root - The shadow root the element attached, `null` for an element attaching none.
+ * @returns The start tag.
+ */
+function writeShadowRootTemplate(root: Pick<ShadowRoot, 'clonable' | 'delegatesFocus' | 'serializable' | 'slotAssignment'> | null): string {
+  let tag = '<template shadowrootmode="open"';
+  if (root?.delegatesFocus) {
+    tag += ' shadowrootdelegatesfocus';
+  }
+
+  if (root?.slotAssignment === 'manual') {
+    tag += ' shadowrootslotassignment="manual"';
+  }
+
+  if (root?.serializable) {
+    tag += ' shadowrootserializable';
+  }
+
+  if (root?.clonable) {
+    tag += ' shadowrootclonable';
+  }
+
+  return tag + '>';
 }
 
 /**

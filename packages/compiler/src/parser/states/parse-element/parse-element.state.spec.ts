@@ -365,7 +365,8 @@ describe('parseElement', () => {
 
       it.each([
         ['shadowrootmode', '<template shadowrootmode="open"></template>'],
-        ['shadowrootclonable', '<template shadowrootclonable></template>']
+        ['shadowrootclonable', '<template shadowrootclonable></template>'],
+        ['shadowrootslotassignment', '<template shadowrootslotassignment="manual"></template>']
       ])('throws for a <template> declaring a shadow root with %s, pointing to it', (name, template) => {
         expect(() => parse(template)).toThrow(`A <template> cannot declare a shadow root with "${name}": the server writes the shadow root of each component`);
         expect(() => parse(template)).toThrow(expect.objectContaining({ span: expect.objectContaining({ start: template.indexOf(name) }) }));

@@ -25,6 +25,10 @@ export const INTERNAL_EXTENDS = 'extends';
  */
 export const INTERNAL_HOST_DIRECTIVES = 'hostDirectives';
 /**
+ * Internal metadata key holding the options of the shadow root a web component declares (see `WebComponentOptions`).
+ */
+export const INTERNAL_SHADOW_ROOT = 'shadowRoot';
+/**
  * Internal metadata key holding the attributes and the classes a web component or a custom directive binds on its host
  * element (see `HostAttribute`).
  */

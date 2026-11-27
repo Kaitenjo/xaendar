@@ -8,7 +8,7 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
-@import { ATTACH_SHADOW, COPY_BUTTON, GENERIC_COMPONENT, NON_LITERAL_OPTIONS, NOTE_PANEL, WEB_COMPONENT_OPTIONS } from './anatomy.snippets.ts'
+@import { ATTACH_SHADOW, COPY_BUTTON, DELEGATES_FOCUS, GENERIC_COMPONENT, MANUAL_SLOTS, NON_LITERAL_OPTIONS, NOTE_PANEL, WEB_COMPONENT_OPTIONS } from './anatomy.snippets.ts'
 
 <span class="eyebrow">
   { t(translations(), 'pages.components.anatomy.eyebrow') }
@@ -93,6 +93,15 @@
         </td>
         <td @@htmlTranslation(key="pages.components.anatomy.theDecorator.td8") />
       </tr>
+      <tr>
+        <td>
+          <code>shadowRoot</code>
+        </td>
+        <td>
+          { t(translations(), 'pages.components.anatomy.theDecorator.td9') }
+        </td>
+        <td @@htmlTranslation(key="pages.components.anatomy.theDecorator.td10") />
+      </tr>
     </tbody>
   </table>
 </div>
@@ -108,6 +117,16 @@
   <ex-shadow-inspector />
 </docs-example>
 <p @@htmlTranslation(key="pages.components.anatomy.theBaseClassAnd.p2") />
+
+<h3>
+  { t(translations(), 'pages.components.anatomy.shadowRootOptions.title') }
+</h3>
+<p @@htmlTranslation(key="pages.components.anatomy.shadowRootOptions.p1") />
+<docs-code snippet="{DELEGATES_FOCUS}" />
+<p @@htmlTranslation(key="pages.components.anatomy.shadowRootOptions.p2") />
+<docs-code snippet="{MANUAL_SLOTS}" />
+<p @@htmlTranslation(key="pages.components.anatomy.shadowRootOptions.p3") />
+<p @@htmlTranslation(key="pages.components.anatomy.shadowRootOptions.p4") />
 
 <h2>
   { t(translations(), 'pages.components.anatomy.customizedBuiltInElements.title') }
@@ -163,9 +182,7 @@
       heading="{translations().pages.components.anatomy.edgeCases.callout5.heading}" />
   </docs-callout>
   <docs-callout kind="unsupported" heading="{translations().pages.components.anatomy.edgeCases.callout6.heading}">
-    <p>
-      { t(translations(), 'pages.components.anatomy.edgeCases.callout6.p1') }
-    </p>
+    <p @@htmlTranslation(key="pages.components.anatomy.edgeCases.callout6.p1") />
     <docs-code snippet="{ATTACH_SHADOW}" />
   </docs-callout>
 </section>

@@ -2,6 +2,7 @@ import type { Constructor } from '@xaendar/types';
 import type { CustomDirective } from '../../models/custom-directive/custom-directive';
 import type { HostDirectiveOptions } from './host-directive-options.type';
 import type { ShadowHostTagName } from './shadow-host-tag-name.type';
+import type { ShadowRootOptions } from './shadow-root-options.type';
 import type { WebComponentSsrOptions } from './web-component-ssr-options.type';
 
 /**
@@ -42,7 +43,16 @@ export type WebComponentOptions = {
   /**
    * Path to the component's HTML template, relative to the component file.
    */
-  templateUrl: string
+  templateUrl: string,
+  /**
+   * The options of the shadow root the template renders into, as `attachShadow` takes them, `mode` apart: `open`.
+   * `delegatesFocus` moves the focus the element gets to the first focusable element of its template, and matches
+   * `:focus` on it while that element has the focus; `slotAssignment: 'manual'` leaves the children unassigned until
+   * the component assigns them (`slot.assign()`), which on a page rendered on the server happens only once the component
+   * hydrates; `serializable` and `clonable` keep the shadow root in `getHTML({ serializableShadowRoots: true })` and in
+   * `cloneNode()`.
+   */
+  shadowRoot?: ShadowRootOptions
 } | {
   /**
    * The tag of the native element a customized built-in element extends, a tag accepting a shadow root: the class
@@ -59,7 +69,12 @@ export type WebComponentOptions = {
    * Optional path to the component's HTML template, relative to the component file, rendered into the shadow root of the
    * element: without it, the element shows the content its tag holds.
    */
-  templateUrl?: string
+  templateUrl?: string,
+  /**
+   * The options of the shadow root the template renders into, as `attachShadow` takes them, `mode` apart: `open`. They
+   * need the template.
+   */
+  shadowRoot?: ShadowRootOptions
 } | {
   /**
    * The tag of the native element a customized built-in element extends, a tag accepting no shadow root: the class
@@ -74,5 +89,9 @@ export type WebComponentOptions = {
   /**
    * Left out: the element has no shadow root to render a template into, and shows the content its tag holds.
    */
-  templateUrl?: undefined
+  templateUrl?: undefined,
+  /**
+   * Left out: the element has no shadow root.
+   */
+  shadowRoot?: undefined
 });

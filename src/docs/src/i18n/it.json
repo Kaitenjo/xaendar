@@ -198,6 +198,8 @@
           "td6": "Un file <code>.css</code>, <code>.scss</code>, <code>.sass</code> o <code>.less</code> relativo al file della classe. Vedi <a href=\"#/it/components/styling\">Stili</a>.",
           "td7": "no",
           "td8": "Il tag dell’elemento nativo che il componente estende, e che ne fa un customized built-in element. Vedi <em>Customized built-in element</em>, più sotto.",
+          "td9": "no",
+          "td10": "Le opzioni dello shadow root, come le accetta <code>attachShadow</code>: <code>delegatesFocus</code>, <code>slotAssignment</code>, <code>serializable</code>, <code>clonable</code>. Vedi <em>Le opzioni dello shadow root</em>, più sotto.",
           "p1": "A runtime il decoratore fa due cose: salva il selettore nei metadati della classe, dove lo trova <code>@Query(Classe)</code>, e chiama <code>customElements.define(selettore, Classe)</code>. Il resto avviene durante la build, quando il plugin legge le opzioni direttamente dal codice sorgente."
         },
         "theBaseClassAnd": {
@@ -205,6 +207,13 @@
           "p1": "<code>CustomElement</code> estende <code>HTMLElement</code>. Il suo costruttore aggancia uno shadow root <strong>aperto</strong>, in cui viene renderizzato il template: gli stili della pagina non vi entrano, e quelli del componente non ne escono. Il template viene renderizzato ogni volta che l’elemento viene collegato al documento, e lo shadow root viene svuotato ogni volta che viene rimosso. La pagina <a href=\"#/it/components/lifecycle\">Ciclo di vita</a> descrive gli hook che stanno nel mezzo.",
           "example1": "Cosa prepara la classe base",
           "p2": "La classe è un vero <code>HTMLElement</code>: <code>document.createElement('ex-rating')</code> restituisce un’istanza di <code>RatingComponent</code>, e tutte le API del DOM (attributi, eventi, <code>classList</code>, ...) funzionano come su un elemento nativo."
+        },
+        "shadowRootOptions": {
+          "title": "Le opzioni dello shadow root",
+          "p1": "L’opzione <code>shadowRoot</code> di <code>@WebComponent</code> passa le sue opzioni ad <code>attachShadow</code>. <code>delegatesFocus: true</code> è quella che serve a un componente che avvolge un elemento focalizzabile: <code>focus()</code> sull’elemento, un clic su una parte del template che non può prendere il focus e la sua <code>&lt;label&gt;</code> spostano il focus sul primo elemento focalizzabile del template, e <code>:focus</code> corrisponde all’elemento finché quello lo tiene.",
+          "p2": "<code>slotAssignment: 'manual'</code> lascia non assegnati i figli dell’elemento: l’attributo <code>slot</code> non conta più nulla, e uno <code>&lt;slot&gt;</code> mostra solo i nodi che il componente gli dà con <code>assign()</code>. È il modo di proiettare i figli in base allo stato, come fanno delle tab che mostrano il pannello attivo:",
+          "p3": "<code>serializable: true</code> tiene lo shadow root in <code>getHTML({ serializableShadowRoots: true })</code>, e <code>clonable: true</code> in <code>cloneNode()</code>. Il server scrive ogni opzione sullo shadow root dichiarativo del componente (<code>shadowrootdelegatesfocus</code>, <code>shadowrootslotassignment=\"manual\"</code>, <code>shadowrootserializable</code>, <code>shadowrootclonable</code>), quindi lo shadow root che il browser legge le ha già prima che il componente si idrati: il focus è già delegato. Il server però non assegna nessuno slot: con l’assegnazione manuale i figli vengono proiettati solo quando il componente si idrata, nel browser, e un browser che non legge <code>shadowrootslotassignment</code> dà al componente uno shadow root che assegna per nome.",
+          "p4": "La modalità è sempre <code>open</code>: <code>mode</code> non è un’opzione. Il framework legge lo shadow root di un componente tramite <code>shadowRoot</code>, per le sue query e la sua idratazione, e uno chiuso lo lascia a <code>null</code>; inoltre uno shadow root chiuso non lo protegge dagli script della pagina, che possono modificare <code>attachShadow</code>. Un customized built-in element dichiara <code>shadowRoot</code> solo con un template: senza, non ha uno shadow root, e la registrazione lancia un errore."
         },
         "customizedBuiltInElements": {
           "title": "Customized built-in element",
@@ -252,7 +261,7 @@
           },
           "callout6": {
             "heading": "Shadow root chiusi",
-            "p1": "Lo shadow root è sempre aperto, e non si può sostituire: la classe base lo ha già agganciato."
+            "p1": "Lo shadow root è sempre aperto, e non si può sostituire: la classe base lo ha già agganciato, con le opzioni di <code>shadowRoot</code>."
           }
         },
         "summary": {
