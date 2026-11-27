@@ -3,15 +3,10 @@
     aria-label="{`${star} stars`}"
     class="star"
     class.on="{star <= value()}"
-    disabled="{control.disabled()}"
+    disabled="{form.disabled()}"
     type="button"
     (click)="choose(star)"
   >
     ★
   </button>
-}
-@if (!control.untouched()) {
-  @for (error of control.errors(); track $index) {
-    <span class="error">{ error.message }</span>
-  }
 }

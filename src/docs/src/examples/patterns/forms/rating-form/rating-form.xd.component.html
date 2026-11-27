@@ -1,13 +1,20 @@
+@import { FormControlDirective, maxLength } from '@xaendar/forms'
 @import { RatingInputComponent } from './rating-input.xd.component.ts'
 
 <form (reset)="clear()" (submit)="submit($event)">
   <fieldset disabled="{locked()}">
     <label for="rating">Rating</label>
-    <ex-rating-input id="rating" name="rating" required="{true}" />
+    <ex-rating-input #rating @@formControl id="rating" name="rating" required="{true}" />
+    @for (error of shownErrors(ratingControl()); track $index) {
+      <p class="error">{ error.message }</p>
+    }
     <label>
       Comment
-      <textarea name="comment"></textarea>
+      <textarea #comment @@formControl(validators="{[maxLength(20, 'At most 20 characters.')]}") name="comment"></textarea>
     </label>
+    @for (error of shownErrors(commentControl()); track $index) {
+      <p class="error">{ error.message }</p>
+    }
   </fieldset>
   <label class="inline">
     <input type="checkbox" (change)="lock($event)" />

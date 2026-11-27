@@ -1,9 +1,13 @@
-import { CustomElement, WebComponent } from '@xaendar/core';
+import { CustomElement, Query, WebComponent } from '@xaendar/core';
 import { signal } from '@xaendar/core/signals';
+import type { QuerySignal } from '@xaendar/core/signals';
+import { FormControlDirective } from '@xaendar/forms';
+import type { FormError } from '@xaendar/forms';
 
 /**
- * A native form holding a component: the browser reads its value, checks its validity and resets it, as it does for
- * the native fields.
+ * A native form holding a component and a native field: the browser reads their values, checks their validity and
+ * resets them. `@@formControl` gives both the states and the validators of Angular, and the form shows their errors
+ * once the user has left them.
  */
 @WebComponent({
   selector: 'ex-rating-form',
@@ -12,6 +16,16 @@ import { signal } from '@xaendar/core/signals';
 })
 export class RatingFormComponent extends CustomElement {
   /**
+   * The form control of the rating, as Angular's `#rating="ngModel"`.
+   */
+  @Query.ref('rating', { read: FormControlDirective })
+  public accessor ratingControl!: QuerySignal<FormControlDirective | null>;
+  /**
+   * The form control of the comment.
+   */
+  @Query.ref('comment', { read: FormControlDirective })
+  public accessor commentControl!: QuerySignal<FormControlDirective | null>;
+  /**
    * Whether the fieldset is disabled.
    */
   public readonly locked = signal(false);
@@ -19,6 +33,21 @@ export class RatingFormComponent extends CustomElement {
    * The entries of the last submission, as `FormData` reads them.
    */
   public readonly sent = signal('');
+
+  /**
+   * No error to show, shared.
+   */
+  private readonly _noErrors: readonly FormError[] = [];
+
+  /**
+   * Gives the errors of a field to show: once the user has left it, as Angular's forms show them.
+   *
+   * @param control - The form control of the field, `null` before the render.
+   * @returns Its errors, none while it is untouched.
+   */
+  public shownErrors(control: FormControlDirective | null): readonly FormError[] {
+    return control && !control.untouched() ? control.errors() : this._noErrors;
+  }
 
   /**
    * Disables or enables the fieldset, as the checkbox says.

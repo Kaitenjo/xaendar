@@ -1,43 +1,36 @@
-import { CustomDirective, Directive, HostListener } from '@xaendar/core';
-import { signal, untracked } from '@xaendar/core/signals';
-import type { ReadonlySignal } from '@xaendar/core/signals';
-import type { NoArgsVoidFunction } from '@xaendar/types';
+import { CustomDirective, CustomElement, Directive, HostListener, Property } from '@xaendar/core';
+import { signal } from '@xaendar/core/signals';
+import type { InputSignal, ReadonlySignal } from '@xaendar/core/signals';
 import type { FormError } from '../../types/form-error.type';
 import type { FormValidator } from '../../types/form-validator.type';
-import type { FormValueSource } from '../../types/form-value-source.type';
-import type { FormValue } from '../../types/form-value.type';
-import { findFormErrors, NO_FORM_ERRORS, writeFormValidity, writeState } from '../../utils/form-control/form-control.utils';
+import type { NativeFormField } from '../../types/native-form-field.type';
+import { findFormErrors, isNativeFormField, joinFormErrors, NO_FORM_ERRORS, NO_FORM_VALIDATORS, readNativeErrors, readNativeValue, writeState } from '../../utils/form-control/form-control.utils';
+import { FormAssociatedDirective } from '../form-associated/form-associated.directive';
 
 /**
- * Makes a component a control of the form holding it, as the native fields are: its value goes with the form under
- * the `name` of the element, its validity blocks the submission, the reset of the form and a disabled `<fieldset>`
- * reach it. The equivalent of a `ControlValueAccessor` of Angular, on the form-associated custom elements of the
- * browser.
+ * Gives a field of a form the states and the validators of Angular's `ngModel` and `formControl`: `untouched`,
+ * `pristine`, `valid` and every error found, as read-only signals. The code using the field applies it in its template,
+ * on a native field (`<input>`, `<select>`, `<textarea>`) or on a component declaring `FormAssociatedDirective`, and
+ * reaches it with a query (`@Query.ref('name', { read: FormControlDirective })`), as Angular's `#name="ngModel"`.
  *
- * A host directive: declared in the `hostDirectives` of the `@WebComponent` of the component, it declares the form
- * callbacks the browser calls on a form-associated element, which makes the class form-associated and which the
- * component forwards to it. The component keeps it in a field, and gives it its value and its validators in `onInit`.
+ * The validators receive the value of the field: the one of the native field, read on its `input` and `change` events
+ * as Angular's value accessors give it (see `readNativeValue`), or the one the component gives the form. Their errors
+ * join the ones the field finds itself, the constraints of a native field (`required`, `minlength`, `type="email"`…,
+ * with the message of the browser) or the validators of the component, in `errors`; to the browser they go as the
+ * custom error of a native field (`setCustomValidity()`) or as the custom errors of the component, so the form blocks
+ * the submission and `:invalid` matches.
  *
- * The states are read-only signals, which an effect or a template follows: `untouched`, `pristine`, `valid` and
- * `disabled`; their opposites are the negation (`!control.untouched()`). The control is touched when the user leaves the
- * element (`focusout`), as Angular's does on `blur`, and dirty as soon as the user changes its value: a `input` or
- * `change` event on the element, which a control dispatches as a native one does, whether the value ends up different or
- * not. Both are reset by the reset of the form, and are also custom states of the element for CSS (`:state(touched)`,
- * `:state(dirty)`). On the server there are no `ElementInternals` nor effects: it does nothing there.
+ * The field is touched when the user leaves it (`focusout`), as Angular's on `blur`, and dirty as soon as the user
+ * changes its value, an `input` or `change` event, even to the same value or back to the first one; both are reset with
+ * the form. A component also has them as custom states for CSS (`:state(touched)`, `:state(dirty)`); a native field has
+ * `:user-invalid` already. On the server there are no effects nor events: it does nothing there.
  *
  * @example
- * ```ts
- * \@WebComponent({ selector: 'ex-rating-input', hostDirectives: [FormControlDirective], templateUrl: './rating-input.html' })
- * export class RatingInputComponent extends CustomElement {
- *   \@Model(0)
- *   public accessor value!: ModelSignal<number>;
- *   public readonly control = this.hostDirectives.get(FormControlDirective)!;
+ * ```html
+ * @import { FormControlDirective, minLength, required } from '@xaendar/forms'
  *
- *   public onInit(): void {
- *     this.control.setValue(this.value, value => value ? String(value) : null);
- *     this.control.setValidators([() => this.value() ? undefined : { valueMissing: 'Choose a rating.' }]);
- *   }
- * }
+ * <input #name @@formControl(validators="{[required(), minLength(2)]}") name="name" />
+ * <ex-rating-input #rating @@formControl name="rating" />
  * ```
  */
 @Directive({
@@ -45,35 +38,31 @@ import { findFormErrors, NO_FORM_ERRORS, writeFormValidity, writeState } from '.
 })
 export class FormControlDirective extends CustomDirective<HTMLElement> {
   /**
-   * Whether the user has not left the element after focusing it since it was reset:
-   * Angular's `untouched`. The element has the custom state `touched` meanwhile, `:state(touched)` in CSS
-   * (`:host(:state(touched):invalid)`).
+   * The validators of the field, as Angular's: each one receives its value and returns its errors by name with their
+   * message, or `undefined` when the value passes. None by default.
+   */
+  @Property<InputSignal<readonly FormValidator[]>>(NO_FORM_VALIDATORS)
+  public accessor validators!: InputSignal<readonly FormValidator[]>;
+  /**
+   * Whether the user has not left the field after focusing it since the form was reset: Angular's `untouched`.
    */
   public readonly untouched: ReadonlySignal<boolean>;
   /**
-   * Whether the user has not changed the value since the control was reset: Angular's `pristine`. The user changes it
-   * with an `input` or a `change` event on the element, as a native control dispatches them; a value written by the code
-   * of the application does not count, and a value changed back is dirty all the same. The element has the custom state
-   * `dirty` meanwhile, `:state(dirty)` in CSS.
+   * Whether the user has not changed the value since the form was reset: Angular's `pristine`. The user changes it with
+   * an `input` or a `change` event on the field; a value written by the code of the application does not count, and a
+   * value changed back is dirty all the same.
    */
   public readonly pristine: ReadonlySignal<boolean>;
   /**
-   * Whether the validators find no error, following the signals they read: Angular's `valid`. The browser's own
-   * validity is `:valid` and `:invalid`, and `internals.validity`.
+   * Whether the field has no error: Angular's `valid`.
    */
   public readonly valid: ReadonlySignal<boolean>;
   /**
-   * The errors the validators find, every one of them in the order of the validators and of the errors each returns,
-   * none when the value passes: the browser shows the message of the first one only. A template lists them
-   * (`@for (error of control.errors(); track $index)`), showing `error.message`, and `error.flag` tells the kind
-   * (`valueMissing`, `customError`…).
+   * Every error of the field: the one of the constraints of a native field or the ones of the validators of a
+   * component first, then the ones of `validators`, each by name with its message; none when the value passes. The
+   * browser shows the message of the first one only.
    */
   public readonly errors: ReadonlySignal<readonly FormError[]>;
-  /**
-   * Whether the form, a `<fieldset disabled>` holding the element or its own `disabled` attribute disables it, as
-   * `formDisabledCallback` says: a template binds it (`disabled="{control.disabled()}"`).
-   */
-  public readonly disabled: ReadonlySignal<boolean>;
   /**
    * The signal behind `untouched`.
    */
@@ -91,45 +80,27 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
    */
   private readonly _errors = signal<readonly FormError[]>(NO_FORM_ERRORS);
   /**
-   * The signal behind `disabled`.
+   * The value of a native field, read on its `input` and `change` events and when the form is reset: a native field has
+   * no signal of its own.
    */
-  private readonly _disabled = signal(false);
+  private readonly _value = signal<unknown>(undefined);
   /**
-   * The `ElementInternals` of the element, `undefined` until attached, `null` where the DOM has none.
+   * The native field the directive is applied to, `null` for a component.
    */
-  private _internals: ElementInternals | null | undefined = undefined;
+  private _field: NativeFormField | null = null;
   /**
-   * The signal whose value goes to the form, `null` until `setValue` is called, and again once the element is
-   * disconnected, its effect disposed.
+   * The bridge of the component the directive is applied to, `null` for a native field.
    */
-  private _source: FormValueSource<unknown> | null = null;
+  private _bridge: FormAssociatedDirective | null = null;
   /**
-   * The value of the signal when `setValue` was called, which the reset of the form writes back.
+   * The form holding the field when the directive started, whose reset makes the field untouched and pristine.
    */
-  private _initial: unknown = undefined;
+  private _form: HTMLFormElement | null = null;
   /**
-   * Whether the value is converted for the form: the restoration of the browser is then left to the component.
+   * Listens to the reset of the form: the form fires `reset` before resetting its fields, so the field is read once the
+   * reset is done.
    */
-  private _converts = false;
-  /**
-   * Disposes the effect of the validators set by `setValidators`, `null` while none is set.
-   */
-  private _stopValidators: NoArgsVoidFunction | null = null;
-
-  /**
-   * The `ElementInternals` of the element, attached once by the directive: the object of the browser itself, for what
-   * the directive does not cover (`form`, `labels`, `states`, `role` and the ARIA properties). The component does not call
-   * `attachInternals()`, which throws a second time. `null` on the server, whose DOM has none.
-   *
-   * @returns The `ElementInternals` of the element, or `null`.
-   */
-  public get internals(): ElementInternals | null {
-    if (this._internals === undefined) {
-      this._internals = this.element.attachInternals?.() ?? null;
-    }
-
-    return this._internals;
-  }
+  private readonly _onReset = (): void => queueMicrotask(() => this._reset());
 
   /**
    * Creates the directive, exposing the state signals without their `set` (see `Signal.asReadonly`): the ones the
@@ -141,98 +112,36 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
     this.pristine = this._pristine.asReadonly();
     this.valid = this._valid.asReadonly();
     this.errors = this._errors.asReadonly();
-    this.disabled = this._disabled.asReadonly();
   }
 
   /**
-   * Gives the form the value of a signal, a `signal` or a model, following it in an effect bound to the element
-   * (`ElementInternals.setFormValue`): the form sends it under the `name` of the element, and `FormData` holds it. The
-   * value the signal has now is the initial one: the control is dirty while its value differs, and the reset of the form
-   * writes it back; the restoration of the browser writes the value it gives back.
+   * Starts following the validity of the field: a component through its `FormAssociatedDirective`, a native field
+   * through its own validity, and listens to the reset of its form.
    *
-   * A control has one value: call it once, in `onInit` of the component, as a two-way binding names its field once.
-   * Connected again, the component calls it again, its effect having been disposed with it.
-   *
-   * @param source - The signal whose value goes to the form.
-   * @param transform - Converts the value for the form, required when it is not a text, a `File`, a `FormData` or
-   *   `null`.
-   * @throws When the control already gives its form the value of a signal.
+   * @throws When the element is neither a native field nor a component declaring `FormAssociatedDirective`.
    */
-  public setValue<Value extends FormValue>(source: FormValueSource<Value>): void;
-  public setValue<Value>(source: FormValueSource<Value>, transform: (value: Value) => FormValue): void;
-  public setValue<Value>(source: FormValueSource<Value>, transform?: (value: Value) => FormValue): void {
-    if (this._source) {
-      throw new Error('FormControlDirective.setValue() was already called: a control gives its form the value of one signal, set once');
+  public onInit(): void {
+    const element = this.element;
+    const bridge = element instanceof CustomElement ? element.hostDirectives.get(FormAssociatedDirective) : undefined;
+    if (bridge) {
+      this._bridge = bridge;
+      this._form = bridge.internals?.form ?? null;
+      this.effect(() => this._validateComponent(bridge));
+    } else if (isNativeFormField(element)) {
+      this._field = element;
+      this._form = element.form;
+      this._value.set(readNativeValue(element));
+      this.effect(() => this._validateNative(element));
+    } else {
+      throw new Error(`FormControlDirective is applied to <${element.localName}>, which is neither a native field nor a component declaring FormAssociatedDirective among its host directives`);
     }
 
-    this._source = source;
-    this._initial = untracked(source);
-    this._converts = !!transform;
-    this.effect(() => this._writeValue(source(), transform), { onCleanup: () => this._source = null });
+    this._form?.addEventListener('reset', this._onReset);
   }
 
   /**
-   * Gives the form the validity computed by the validators, in an effect bound to the element following the signals
-   * they read (`ElementInternals.setValidity`). Each validator returns its errors, as the flags of `ValidityState` each
-   * with its message (`customError` for an error of its own), or `undefined` when the value passes. With errors, the
-   * element is `:invalid`, blocks the submission of the form, answers `checkValidity()` and `reportValidity()`, and the
-   * browser shows the message of the first one on the anchor; without, it is valid.
-   *
-   * Each call replaces the validators set before, as Angular's `setValidators`: a validator depending on a state reads
-   * its signal and returns `undefined` when it does not apply, or the component sets the list again; an empty list
-   * removes them, and the control is valid.
-   *
-   * @param validators - The validators, in the order their messages are chosen; none removes the ones set before.
-   * @param anchor - Returns the element of the shadow root the browser shows the message on, followed until it exists;
-   *   the host when it returns `undefined` or is missing.
-   */
-  public setValidators(validators: readonly FormValidator[], anchor?: () => HTMLElement | undefined): void {
-    this._stopValidators?.();
-    validators.length
-      ? this._stopValidators = this.effect(() => this._writeValidity(validators, anchor?.()), { onCleanup: () => this._stopValidators = null })
-      : this._writeValidity(validators, undefined);
-  }
-
-  /**
-   * Called when the browser disables or enables the element (the form, a `<fieldset disabled>`, its own `disabled`
-   * attribute), forwarded by the component: sets the value {@link disabled} reads.
-   *
-   * @param disabled - Whether the element is disabled.
-   */
-  public formDisabledCallback(disabled: boolean): void {
-    this._disabled.set(disabled);
-  }
-
-  /**
-   * Called when the form is reset, forwarded by the component: writes back into the signal given to {@link setValue} the
-   * value it had then, and makes the control untouched and pristine. A component declaring its own `formResetCallback`
-   * calls this one.
-   */
-  public formResetCallback(): void {
-    this._source?.set(this._initial);
-    this._setTouched(false);
-    this._setDirty(false);
-  }
-
-  /**
-   * Called when the browser gives the element back a value, forwarded by the component: going back in the history to the
-   * page (`'restore'`), or filling the form with what it remembers (`'autocomplete'`). Writes the value into the signal
-   * given to {@link setValue} when it goes to the form as it is: a value converted for the form cannot be turned back
-   * here, so a component converting it declares its own `formStateRestoreCallback`, converting the value back.
-   *
-   * @param state - The value the control gave the form, or the one the browser fills in.
-   * @param _mode - Why the browser gives it back.
-   */
-  public formStateRestoreCallback(state: FormValue, _mode: 'autocomplete' | 'restore'): void {
-    if (this._source && !this._converts) {
-      this._source.set(state);
-    }
-  }
-
-  /**
-   * Marks the control touched when the user leaves the element, as Angular does on `blur`: not when the form is
-   * submitted, nor when it finds the control invalid, which a silent `checkValidity()` also does. Showing every error after
-   * a submission is for the form to decide, with a flag of its own.
+   * Marks the field touched when the user leaves it, as Angular does on `blur`: not when the form is submitted, nor when
+   * it finds the field invalid, which a silent `checkValidity()` also does.
    */
   @HostListener('focusout')
   private _touch(): void {
@@ -240,46 +149,67 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
   }
 
   /**
-   * Marks the control dirty when the user changes the value: a native control dispatches `input` and `change` for it,
-   * also when the user writes what the control already holds, as pasting the same text does, which a signal would not
-   * see. The `input` of a native field inside the shadow root crosses it, the `change` does not: the component dispatches
-   * it itself.
+   * Marks the field dirty when the user changes the value, and reads the value of a native field: a native field
+   * dispatches `input` and `change` for it, also when the user writes what the field already holds, as pasting the same
+   * text does; a component dispatches them itself.
    */
   @HostListener('change')
   @HostListener('input')
   private _edit(): void {
     this._setDirty(true);
-  }
-
-  /**
-   * Gives the form the value, converted when asked.
-   *
-   * @param value - The value of the signal.
-   * @param transform - The conversion of the value, if any.
-   */
-  private _writeValue(value: unknown, transform: ((value: never) => FormValue) | undefined): void {
-    this.internals?.setFormValue(transform ? transform(value as never) : value as FormValue);
-  }
-
-  /**
-   * Computes the errors of the validators, which `errors` and `valid` follow, and gives them to the form where the DOM has
-   * `ElementInternals`.
-   *
-   * @param validators - The validators.
-   * @param anchor - The element the browser shows the message on, `undefined` for the host.
-   */
-  private _writeValidity(validators: readonly FormValidator[], anchor: HTMLElement | undefined): void {
-    const errors = findFormErrors(validators);
-    this._errors.set(errors);
-    this._valid.set(errors.length === 0);
-    const internals = this.internals;
-    if (internals) {
-      writeFormValidity(internals, errors, anchor);
+    if (this._field) {
+      this._value.set(readNativeValue(this._field));
     }
   }
 
   /**
-   * Sets whether the control is touched, and the `touched` state of the element.
+   * Makes the field untouched and pristine after the reset of its form, reading the value a native field went back to.
+   */
+  private _reset(): void {
+    this._setTouched(false);
+    this._setDirty(false);
+    if (this._field) {
+      this._value.set(readNativeValue(this._field));
+    }
+  }
+
+  /**
+   * Validates a native field: its own constraints, then the validators for its value, whose first error becomes its
+   * custom error.
+   *
+   * @param field - The native field.
+   */
+  private _validateNative(field: NativeFormField): void {
+    const native = readNativeErrors(field);
+    const own = findFormErrors(this.validators(), this._value());
+    field.setCustomValidity(own.length ? own[0].message : '');
+    this._setErrors(joinFormErrors(native, own));
+  }
+
+  /**
+   * Validates a component: the validators for the value it gives the form, whose errors join its own ones in its
+   * validity, after its own ones.
+   *
+   * @param bridge - The `FormAssociatedDirective` of the component.
+   */
+  private _validateComponent(bridge: FormAssociatedDirective): void {
+    const own = findFormErrors(this.validators(), bridge.source?.());
+    bridge.setCustomErrors(own);
+    this._setErrors(joinFormErrors(bridge.errors(), own));
+  }
+
+  /**
+   * Sets the errors of the field, and whether it is valid.
+   *
+   * @param errors - The errors.
+   */
+  private _setErrors(errors: readonly FormError[]): void {
+    this._errors.set(errors);
+    this._valid.set(errors.length === 0);
+  }
+
+  /**
+   * Sets whether the field is touched, and the `touched` state of a component.
    *
    * @param touched - Whether it is touched.
    */
@@ -289,7 +219,7 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
   }
 
   /**
-   * Sets whether the control is dirty, and the `dirty` state of the element.
+   * Sets whether the field is dirty, and the `dirty` state of a component.
    *
    * @param dirty - Whether it is dirty.
    */
@@ -299,15 +229,25 @@ export class FormControlDirective extends CustomDirective<HTMLElement> {
   }
 
   /**
-   * Writes a custom state of the element, where the DOM has `ElementInternals`.
+   * Writes a custom state of a component, where the DOM has `ElementInternals`: a native field has none.
    *
    * @param state - The name of the state.
    * @param on - Whether the element has it.
    */
   private _writeState(state: string, on: boolean): void {
-    const internals = this.internals;
+    const internals = this._bridge?.internals;
     if (internals) {
       writeState(internals, state, on);
     }
+  }
+
+  /**
+   * Stops listening to the form, and removes the errors the directive gave the field.
+   */
+  public onDestroy(): void {
+    this._form?.removeEventListener('reset', this._onReset);
+    this._form = null;
+    this._field?.setCustomValidity('');
+    this._bridge?.setCustomErrors(NO_FORM_ERRORS);
   }
 }

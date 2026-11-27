@@ -14,9 +14,7 @@
     "target": "browser",
     "library": true
   },
-  "dependencies": {
-    "@xaendar/types": "1.5.0"
-  },
+  "dependencies": {},
   "peerDependencies": {
     "@xaendar/core": "1.5.0"
   }

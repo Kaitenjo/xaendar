@@ -438,21 +438,44 @@ Angular's `bypassSecurityTrustHtml`: bound to the `html` of `@@innerHtml`, the H
 
 ## `@xaendar/forms`
 
-### FormControlDirective (host directive)
+### FormAssociatedDirective (host directive)
 
 ```ts
-@WebComponent({ selector: 'x-rating', hostDirectives: [FormControlDirective], templateUrl: './x-rating.html' })
+@WebComponent({ selector: 'x-rating', hostDirectives: [FormAssociatedDirective], templateUrl: './x-rating.html' })
 class Rating extends CustomElement {
   @Model(0) public accessor value!: ModelSignal<number>;
-  public readonly control = this.hostDirectives.get(FormControlDirective)!;
+  public readonly form = this.hostDirectives.get(FormAssociatedDirective)!;
   public onInit(): void {
-    this.control.setValue(this.value, value => value ? String(value) : null);
-    this.control.setValidators([() => this.value() ? undefined : { valueMissing: 'Required' }], () => this.firstStar() ?? undefined);
+    this.form.setValue(this.value, value => value ? String(value) : null);
+    this.form.setValidators([min(1, 'Choose a rating.')], () => this.firstStar() ?? undefined);
   }
 }
 ```
 
-Angular's `ControlValueAccessor`, on the native form-associated custom elements: the component becomes a control of any `<form>` (`FormData` under its `name`, validation blocking the submission, `reset()`, `<fieldset disabled>`). Only as a host directive: it declares the native form callbacks, so `@WebComponent` sets the static `formAssociated` (a host directive declaring any of them makes the component form-associated; no option) and forwards them to it; applied from a template it has no form callbacks, and `attachInternals()` throws. `setValue(signal, transform?)`: once (a second call throws; connected again, `onInit` calls it again), convert anything not `string | File | FormData | null`. `setValidators(validators, anchor?)`: `FormValidator` returns `ValidityState` flags with messages (`customError` for custom errors) or `undefined`; signals followed; each call replaces the previous ones, `[]` removes them; the anchor returns `HTMLElement | undefined`, never `null`. `errors`: a read-only signal of every error found, `{ flag, message }[]` in validator order (the browser keeps the first message only), for `@for (error of control.errors(); track $index)`. `Validators` (`import { Validators } from '@xaendar/forms'`, as Angular's): `required`, `requiredTrue`, `minLength`, `maxLength`, `min`, `max`, `pattern`, `email`, each `(value: () => unknown, …limit?, message?) => FormValidator` (pass the signal/model/input as `value`; limits and patterns are a value or a getter followed reactively; empty values pass all but `required`; text patterns are anchored; `required` treats `0` and `false` as present, so a rating from 0 uses `Validators.min(value, 1)`); flags: valueMissing, tooShort, tooLong, rangeUnderflow, rangeOverflow, patternMismatch, typeMismatch; default messages in English, the last argument replaces them. States are read-only signals (fields, read `control.untouched()`; the opposite is `!`): `untouched` (focusout, as Angular's blur; a submission or `checkValidity()` does not touch it, the form keeps its own `submitted` flag), `pristine`, `valid` (the validators find no error), `disabled` (bind `disabled="{control.disabled()}"`). Dirty is set by the user, never derived from the value: an `input` or `change` event on the host (a native field inside the shadow root already crosses it with `input`; `change` does not cross, so a component of its own dispatches `input` and `change` when the user changes the value, as a native control does), even with the same value, and it stays dirty if the value goes back; the code writing the signal does not count; only the reset of the form clears it. Custom states `:state(touched)`, `:state(dirty)` (`:host(:state(touched):invalid)`). `internals` is the element's `ElementInternals` (never call `attachInternals()` yourself; `null` on the server). The callbacks keep their native names on the directive (`formResetCallback` writes back the initial value and clears touched and dirty, `formDisabledCallback`, `formStateRestoreCallback` writes back an unconverted value): a component declaring its own replaces the forwarding (declare `formStateRestoreCallback` when converting the value). Not with `extends`: a native field is a control already (`value`, `setCustomValidity()`).
+The bridge of a component with the native forms (form-associated custom elements), the part of Angular's `ControlValueAccessor` the browser needs: the component becomes a field of any `<form>` (`FormData` under its `name`, validity blocking the submission, `reset()`, `<fieldset disabled>`, `<label for>`). It declares the native form callbacks, so `@WebComponent` sets the static `formAssociated` and forwards them (no option, no flag). `setValue(signal, transform?)`: once (a second call throws; connected again, `onInit` calls it again); convert anything not `string | File | FormData | null`. `setValidators(validators, anchor?)`: the component's own constraints, as a native `required`; replaced by each call, `[]` removes them; the anchor returns `HTMLElement | undefined`. `disabled` (read-only signal, bind `disabled="{form.disabled()}"`), `errors` (its own), `internals` (never call `attachInternals()` yourself; `null` on the server), `source`, `setCustomErrors(errors)` (what `FormControlDirective` uses, as `setCustomValidity`). Callbacks keep their native names (`formResetCallback` writes back the initial value, `formStateRestoreCallback` an unconverted one: a component converting its value declares its own). A component dispatches `input` and `change` when the user changes its value, as a native field does. Not with `extends`.
+
+### FormControlDirective (template directive)
+
+```html
+@import { FormControlDirective, maxLength, required } from '@xaendar/forms'
+
+<input #name @@formControl(validators="{[required(), maxLength(20)]}") name="name" />
+<x-rating #rating @@formControl name="rating" />
+```
+```ts
+@Query.ref('name', { read: FormControlDirective })
+public accessor nameControl!: QuerySignal<FormControlDirective | null>;
+```
+
+Angular's `ngModel`/`formControl` states, validators and errors on any field: a native `<input>`/`<select>`/`<textarea>` or a component declaring `FormAssociatedDirective`, applied by the code using the field and read with a ref query (`read`), as `#ctrl="ngModel"`; anything else throws. Read-only signals: `untouched` (only `focusout`, as Angular's blur; a submission or `checkValidity()` does not touch it, the form keeps its own `submitted` flag), `pristine` (dirty from `input`/`change` of the user, even with the same value; never from comparing values; code writes do not count), `valid`, `errors` (`{ name, message }[]`: first the field's own, the native constraints `required`/`minlength`/`type` with the browser message or the component's validators, then the ones of `validators`). The opposite of each state is `!`. Reset with the form. On a native field the first error of `validators` goes to `setCustomValidity`; on a component to `setCustomErrors`. Components also get `:state(touched)`/`:state(dirty)` for CSS; native fields have `:user-invalid`.
+
+### Validators (functions)
+
+```ts
+required(message?), requiredTrue(message?), minLength(length, message?), maxLength(length, message?), min(limit, message?), max(limit, message?), pattern(expected, message?), email(message?)
+```
+
+Angular's validators, exported one by one (no namespace): each returns a `FormValidator`, `(value) => FormValidityErrors | undefined`, errors by name with their message. Names: the `ValidityState` flags (`valueMissing`, `tooShort`, `tooLong`, `rangeUnderflow`, `rangeOverflow`, `patternMismatch`, `typeMismatch`) or your own (`{ noSundays: '…' }`, `customError` for the browser). Limits and patterns are a value or a getter followed reactively; empty values pass all but `required`; text patterns are anchored; `required` treats `0` and `false` as present (a rating from 0 uses `min(1)`); default messages in English, the last argument replaces them.
 
 ## `@xaendar/core/signals`
 

@@ -1,12 +1,12 @@
 /**
- * An error a validator of a form-associated component found (see `FormControlDirective.errors`): the flag of
- * `ValidityState` it sets, with the message it gives.
+ * An error a validator found (see `FormControlDirective.errors`): its name, the one of a flag of `ValidityState` or one
+ * of your own, with its message.
  */
 export type FormError = {
   /**
-   * The flag of `ValidityState` the error sets (`valueMissing`, `rangeUnderflow`, `customError`…).
+   * The name of the error: a flag of `ValidityState` (`valueMissing`, `rangeUnderflow`…) or a name of your own.
    */
-  readonly flag: keyof ValidityStateFlags;
+  readonly name: string;
   /**
    * The message of the error: the browser shows the one of the first error found.
    */
