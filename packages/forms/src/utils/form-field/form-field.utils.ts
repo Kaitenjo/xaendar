@@ -13,6 +13,12 @@ export const NO_FORM_ERRORS: readonly FormError[] = Object.freeze([]);
 export const NO_FORM_VALIDATORS: readonly FormValidator[] = Object.freeze([]);
 
 /**
+ * The tags of the native fields holding a value with a validity of its own: a custom element cannot have them, its
+ * name holding a `-`, so a component declaring a `setCustomValidity` of its own is never taken for one.
+ */
+const NATIVE_FIELD_TAGS: ReadonlySet<string> = new Set(['input', 'select', 'textarea']);
+
+/**
  * The flags of `ValidityState` an error can set by its name on a component, in the order the browser checks them on a
  * native field; an error of another name sets `customError`.
  */
@@ -27,7 +33,7 @@ const VALIDITY_FLAGS: ReadonlyArray<keyof ValidityStateFlags> = ['valueMissing',
  * @returns The errors, {@link NO_FORM_ERRORS} when none of the validators finds one.
  */
 export function findFormErrors(validators: readonly FormValidator[], value: unknown): readonly FormError[] {
-  let found: FormError[] | undefined;
+  const found = new Array<FormError>();
   for (let i = 0; i < validators.length; i++) {
     const errors = validators[i](value);
     if (!errors) {
@@ -37,12 +43,12 @@ export function findFormErrors(validators: readonly FormValidator[], value: unkn
     for (const name in errors) {
       const message = errors[name];
       if (message !== undefined) {
-        (found ??= []).push({ name, message });
+        found.push({ name, message });
       }
     }
   }
 
-  return found ?? NO_FORM_ERRORS;
+  return found.length ? found : NO_FORM_ERRORS;
 }
 
 /**
@@ -97,12 +103,6 @@ export function writeState(internals: ElementInternals, state: string, on: boole
 }
 
 /**
- * The tags of the native fields holding a value with a validity of its own: a custom element cannot have them, its
- * name holding a `-`, so a component declaring a `setCustomValidity` of its own is never taken for one.
- */
-const NATIVE_FIELD_TAGS: ReadonlySet<string> = new Set(['input', 'select', 'textarea']);
-
-/**
  * Tells whether an element is a native field: an `<input>`, a `<select>` or a `<textarea>`, a customized built-in
  * element extending one of them included. Read from the tag, which works on the server too, where the classes of the
  * native elements may not exist.
@@ -126,7 +126,8 @@ export function readNativeValue(field: NativeFormField): unknown {
     case 'input':
       return readInputValue(field as HTMLInputElement);
     case 'select':
-      return (field as HTMLSelectElement).multiple ? Array.from((field as HTMLSelectElement).selectedOptions, option => option.value) : field.value;
+      const select = field as HTMLSelectElement;
+      return select.multiple ? Array.from(select.selectedOptions, option => option.value) : field.value;
     default:
       return field.value;
   }
@@ -143,6 +144,7 @@ export function readNativeValue(field: NativeFormField): unknown {
 export function readNativeErrors(field: NativeFormField): readonly FormError[] {
   field.setCustomValidity('');
   const validity = field.validity;
+  
   for (let i = 0; i < VALIDITY_FLAGS.length; i++) {
     const name = VALIDITY_FLAGS[i];
     if (validity[name]) {

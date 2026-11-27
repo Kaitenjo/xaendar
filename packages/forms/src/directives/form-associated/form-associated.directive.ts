@@ -1,6 +1,6 @@
 import { CustomDirective, Directive } from '@xaendar/core';
-import { signal, untracked } from '@xaendar/core/signals';
 import type { ReadonlySignal } from '@xaendar/core/signals';
+import { signal, untracked } from '@xaendar/core/signals';
 import type { FormError } from '../../types/form-error.type';
 import type { FormValidator } from '../../types/form-validator.type';
 import type { FormValueSource } from '../../types/form-value-source.type';
@@ -68,11 +68,11 @@ export class FormAssociatedDirective extends CustomDirective<HTMLElement> {
   /**
    * Gives the element of the shadow root the browser shows the message on, if any.
    */
-  private _anchor: (() => HTMLElement | undefined) | undefined = undefined;
+  private _anchor?: (() => HTMLElement | undefined);
   /**
    * The `ElementInternals` of the element, `undefined` until attached, `null` where the DOM has none.
    */
-  private _internals: ElementInternals | null | undefined = undefined;
+  private _internals?: ElementInternals | null;
   /**
    * The signal whose value goes to the form, `null` until `setValue` is called, and again once the element is
    * disconnected, its effect disposed.
@@ -127,8 +127,10 @@ export class FormAssociatedDirective extends CustomDirective<HTMLElement> {
    * one it depends on again.
    */
   public afterRender(): void {
-    this.effect(() => this._errors.set(findFormErrors(this._validators(), this._source?.())));
-    this.effect(() => this._writeValidity());
+    this.effect(() => {
+      this._errors.set(findFormErrors(this._validators(), this._source?.()))
+      this._writeValidity();
+    });
   }
 
   /**
@@ -152,7 +154,7 @@ export class FormAssociatedDirective extends CustomDirective<HTMLElement> {
       throw new Error('FormAssociatedDirective.setValue() was already called: a field gives its form the value of one signal, set once');
     }
 
-    this._source = source as FormValueSource<unknown>;
+    this._source = source;
     this._initial = untracked(source);
     this._converts = !!transform;
     this.effect(() => this._writeValue(source(), transform), { onCleanup: () => this._source = null });
@@ -184,6 +186,7 @@ export class FormAssociatedDirective extends CustomDirective<HTMLElement> {
    */
   public setCustomErrors(errors: readonly FormError[]): void {
     this._customErrors.set(errors);
+    this._writeValidity();
   }
 
   /**
@@ -234,7 +237,6 @@ export class FormAssociatedDirective extends CustomDirective<HTMLElement> {
    * `ElementInternals`. Reads the validators too, so that a new anchor given with them is taken.
    */
   private _writeValidity(): void {
-    this._validators();
     const errors = joinFormErrors(this._errors(), this._customErrors());
     const anchor = this._anchor?.();
     const internals = this.internals;
