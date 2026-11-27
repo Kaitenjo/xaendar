@@ -63,8 +63,12 @@ export class FormAssociatedDirective extends CustomDirective<HTMLElement> {
   private readonly _validators = signal<readonly FormValidator[]>(NO_FORM_VALIDATORS);
   /**
    * The errors the code using the component gives it, after its own ones (see `setCustomErrors`).
+   *
+   * N.B. Deliberate: a plain field, not a signal. `setCustomErrors` writes the validity at once, so nothing has to
+   * follow it: as a signal, the effect of the component would run its validators again at each change, and the effect
+   * of `FormFieldDirective` setting it would read it back in its own run. Do not make it a signal.
    */
-  private readonly _customErrors = signal<readonly FormError[]>(NO_FORM_ERRORS);
+  private _customErrors: readonly FormError[] = NO_FORM_ERRORS;
   /**
    * Gives the element of the shadow root the browser shows the message on, if any.
    */
@@ -86,6 +90,10 @@ export class FormAssociatedDirective extends CustomDirective<HTMLElement> {
    * Whether the value is converted for the form: the restoration of the browser is then left to the component.
    */
   private _converts = false;
+  /**
+   * Converts the value for the form, the one given to `setValue`, if any.
+   */
+  private _transform: ((value: never) => FormValue) | undefined = undefined;
 
   /**
    * The `ElementInternals` of the element, attached once by the directive: the object of the browser itself, for what
@@ -121,26 +129,28 @@ export class FormAssociatedDirective extends CustomDirective<HTMLElement> {
   }
 
   /**
-   * Starts following the validity, once the component has given its value and its validators in its `onInit`: the
-   * errors of its validators for its value, then the validity of the form, its own errors and the custom ones together.
-   * Two effects, so that the code using the component, which reads `errors` and writes the custom errors, never runs the
-   * one it depends on again.
+   * Starts giving the form the value and the validity, once the component has given its value and its validators in its
+   * `onInit`: one effect, writing the value of the signal, then the errors of the validators for it and the validity of
+   * the form, the own errors and the custom ones together. The value is written first, so that the form never holds the
+   * previous value with the validity of the new one. Disposed with the element, it forgets the signal of `setValue`, so
+   * that the component gives it again when connected again.
+   *
+   * N.B. Deliberate: one effect for the value and the validity, instead of one for each, saving its computed signal and
+   * its watcher; it reads no signal after writing it (`errors` is passed on, not read back), which a computed signal
+   * cannot do. Do not split it, nor read `_errors` in it.
    */
   public afterRender(): void {
-    this.effect(() => {
-      this._errors.set(findFormErrors(this._validators(), this._source?.()))
-      this._writeValidity();
-    });
+    this.effect(() => this._update(), { onCleanup: () => this._source = null });
   }
 
   /**
-   * Gives the form the value of a signal, a `signal` or a model, following it in an effect bound to the element
+   * Gives the form the value of a signal, a `signal` or a model, followed by the effect `afterRender` starts
    * (`ElementInternals.setFormValue`): the form sends it under the `name` of the element, and `FormData` holds it. The
    * value the signal has now is the initial one, which the reset of the form writes back; the restoration of the browser
    * writes the value it gives back.
    *
-   * A field has one value: call it once, in `onInit` of the component, as a two-way binding names its field once.
-   * Connected again, the component calls it again, its effect having been disposed with it.
+   * A field has one value: call it once, in `onInit` of the component, before the effect starts, as a two-way binding
+   * names its field once. Connected again, the component calls it again, the effect having forgotten it.
    *
    * @param source - The signal whose value goes to the form.
    * @param transform - Converts the value for the form, required when it is not a text, a `File`, a `FormData` or
@@ -154,10 +164,10 @@ export class FormAssociatedDirective extends CustomDirective<HTMLElement> {
       throw new Error('FormAssociatedDirective.setValue() was already called: a field gives its form the value of one signal, set once');
     }
 
-    this._source = source;
+    this._source = source as FormValueSource<unknown>;
     this._initial = untracked(source);
     this._converts = !!transform;
-    this.effect(() => this._writeValue(source(), transform), { onCleanup: () => this._source = null });
+    this._transform = transform as ((value: never) => FormValue) | undefined;
   }
 
   /**
@@ -185,8 +195,9 @@ export class FormAssociatedDirective extends CustomDirective<HTMLElement> {
    * @param errors - The errors, none to remove them.
    */
   public setCustomErrors(errors: readonly FormError[]): void {
-    this._customErrors.set(errors);
-    this._writeValidity();
+    this._customErrors = errors;
+    // Called from the effect of FormFieldDirective, which must not follow the own errors nor the anchor through it
+    untracked(() => this._writeValidity(this._errors(), this._anchor?.()));
   }
 
   /**
@@ -223,25 +234,39 @@ export class FormAssociatedDirective extends CustomDirective<HTMLElement> {
   }
 
   /**
-   * Gives the form the value, converted when asked.
+   * Gives the form the value of the signal, then the errors of the validators for it and the validity: the run of the
+   * effect `afterRender` starts.
+   */
+  private _update(): void {
+    const value = this._source?.();
+    this._writeValue(value);
+    const errors = findFormErrors(this._validators(), value);
+    this._errors.set(errors);
+    this._writeValidity(errors, this._anchor?.());
+  }
+
+  /**
+   * Gives the form the value, converted when asked, where the DOM has `ElementInternals` and `setValue` gave a signal.
    *
    * @param value - The value of the signal.
-   * @param transform - The conversion of the value, if any.
    */
-  private _writeValue(value: unknown, transform: ((value: never) => FormValue) | undefined): void {
-    this.internals?.setFormValue(transform ? transform(value as never) : value as FormValue);
+  private _writeValue(value: unknown): void {
+    if (this._source) {
+      this.internals?.setFormValue(this._transform ? this._transform(value as never) : value as FormValue);
+    }
   }
 
   /**
    * Gives the form the validity of the component, its own errors then the custom ones, where the DOM has
-   * `ElementInternals`. Reads the validators too, so that a new anchor given with them is taken.
+   * `ElementInternals`. Reads no signal: the caller gives what it read.
+   *
+   * @param own - The errors of the validators of the component.
+   * @param anchor - The element the browser shows the message on, `undefined` for the host.
    */
-  private _writeValidity(): void {
-    const errors = joinFormErrors(this._errors(), this._customErrors());
-    const anchor = this._anchor?.();
+  private _writeValidity(own: readonly FormError[], anchor: HTMLElement | undefined): void {
     const internals = this.internals;
     if (internals) {
-      writeFormValidity(internals, errors, anchor);
+      writeFormValidity(internals, joinFormErrors(own, this._customErrors), anchor);
     }
   }
 }

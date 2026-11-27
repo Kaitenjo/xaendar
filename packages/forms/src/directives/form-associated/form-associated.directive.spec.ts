@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 await vi.hoisted(async () => {
   const { loadSignals } = await import('@xaendar/signals');
-  loadSignals();
+  // Dev mode warns of an invalid transition of a computed signal, which a signal written then read by an effect causes
+  loadSignals({ devMode: true });
 });
 
 const core = await import('@xaendar/core');
@@ -129,6 +130,41 @@ describe('FormAssociatedDirective', () => {
     await flush();
     expect(element.form.errors()).toEqual([]);
     expect(internals.setValidity).toHaveBeenLastCalledWith({ customError: true }, 'Sunday', undefined);
+  });
+
+  it('writes the value before the validity, in one run, with no warning and no second run for the custom errors', async () => {
+    const calls = new Array<string>();
+    const internals = {
+      setFormValue: (value: unknown) => calls.push(`value ${String(value)}`),
+      setValidity: (flags: object) => calls.push(`validity ${Object.keys(flags).join(',')}`),
+      states: new Set<string>()
+    } as unknown as ElementInternals;
+    const validator = vi.fn((value: unknown) => value ? undefined : { valueMissing: 'Required' });
+    const warn = vi.spyOn(console, 'warn');
+    const { element } = createField(field => {
+      field.form.setValue(field.value);
+      field.form.setValidators([validator]);
+    }, internals);
+    document.body.appendChild(element);
+    calls.length = 0;
+    validator.mockClear();
+
+    element.value.set('');
+    await flush();
+    element.value.set('b');
+    await flush();
+    element.value.set('');
+    await flush();
+    expect(calls).toEqual(['value ', 'validity valueMissing', 'value b', 'validity ', 'value ', 'validity valueMissing']);
+    expect(validator).toHaveBeenCalledTimes(3);
+
+    element.form.setCustomErrors([{ name: 'noSundays', message: 'Sunday' }]);
+    element.form.setCustomErrors([{ name: 'noMondays', message: 'Monday' }]);
+    await flush();
+    expect(calls.slice(-2)).toEqual(['validity valueMissing,customError', 'validity valueMissing,customError']);
+    expect(validator).toHaveBeenCalledTimes(3);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it('writes nothing where the DOM has no ElementInternals, as on the server', () => {
