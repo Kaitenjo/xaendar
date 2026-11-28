@@ -1301,8 +1301,8 @@ var require_semaphore = __commonJS({
         this._waiting = [];
       }
       lock(thunk) {
-        return new Promise((resolve5, reject) => {
-          this._waiting.push({ thunk, resolve: resolve5, reject });
+        return new Promise((resolve6, reject) => {
+          this._waiting.push({ thunk, resolve: resolve6, reject });
           this.runNext();
         });
       }
@@ -2929,9 +2929,9 @@ ${JSON.stringify(message, null, 4)}`);
           if (typeof cancellationStrategy.sender.enableCancellation === "function") {
             cancellationStrategy.sender.enableCancellation(requestMessage);
           }
-          return new Promise(async (resolve5, reject) => {
+          return new Promise(async (resolve6, reject) => {
             const resolveWithCleanup = (r2) => {
-              resolve5(r2);
+              resolve6(r2);
               cancellationStrategy.sender.cleanup(id);
               disposable?.dispose();
             };
@@ -8480,8 +8480,8 @@ var require_server = __commonJS({
         if (value instanceof Promise) {
           return value;
         } else if (Is2.thenable(value)) {
-          return new Promise((resolve5, reject) => {
-            value.then((resolved) => resolve5(resolved), (error) => reject(error));
+          return new Promise((resolve6, reject) => {
+            value.then((resolved) => resolve6(resolved), (error) => reject(error));
           });
         } else {
           return Promise.resolve(value);
@@ -8765,7 +8765,7 @@ var require_files = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.FileSystem = void 0;
     exports2.uriToFilePath = uriToFilePath;
-    exports2.resolve = resolve5;
+    exports2.resolve = resolve6;
     exports2.resolveGlobalNodePath = resolveGlobalNodePath;
     exports2.resolveGlobalYarnPath = resolveGlobalYarnPath;
     exports2.resolveModulePath = resolveModulePath3;
@@ -8794,7 +8794,7 @@ var require_files = __commonJS({
     function isWindows() {
       return process.platform === "win32";
     }
-    function resolve5(moduleName, nodePath, cwd, tracer) {
+    function resolve6(moduleName, nodePath, cwd, tracer) {
       const nodePathKey = "NODE_PATH";
       const app = [
         "var p = process;",
@@ -8813,7 +8813,7 @@ var require_files = __commonJS({
         "}",
         "});"
       ].join("");
-      return new Promise((resolve6, reject) => {
+      return new Promise((resolve7, reject) => {
         const env = process.env;
         const newEnv = /* @__PURE__ */ Object.create(null);
         Object.keys(env).forEach((key) => newEnv[key] = env[key]);
@@ -8845,7 +8845,7 @@ var require_files = __commonJS({
             if (message2.c === "r") {
               cp.send({ c: "e" });
               if (message2.s) {
-                resolve6(message2.r);
+                resolve7(message2.r);
               } else {
                 reject(new Error(`Failed to resolve module: ${moduleName}`));
               }
@@ -8969,17 +8969,17 @@ var require_files = __commonJS({
         if (!path.isAbsolute(nodePath)) {
           nodePath = path.join(workspaceRoot, nodePath);
         }
-        return resolve5(moduleName, nodePath, nodePath, tracer).then((value) => {
+        return resolve6(moduleName, nodePath, nodePath, tracer).then((value) => {
           if (FileSystem.isParent(nodePath, value)) {
             return value;
           } else {
             return Promise.reject(new Error(`Failed to load ${moduleName} from node path location.`));
           }
         }).then(void 0, (_error) => {
-          return resolve5(moduleName, resolveGlobalNodePath(tracer), workspaceRoot, tracer);
+          return resolve6(moduleName, resolveGlobalNodePath(tracer), workspaceRoot, tracer);
         });
       } else {
-        return resolve5(moduleName, resolveGlobalNodePath(tracer), workspaceRoot, tracer);
+        return resolve6(moduleName, resolveGlobalNodePath(tracer), workspaceRoot, tracer);
       }
     }
   }
@@ -9062,10 +9062,10 @@ var require_ril = __commonJS({
         return api_1.Disposable.create(() => this.stream.off("end", listener));
       }
       write(data, encoding) {
-        return new Promise((resolve5, reject) => {
+        return new Promise((resolve6, reject) => {
           const callback = (error) => {
             if (error === void 0 || error === null) {
-              resolve5();
+              resolve6();
             } else {
               reject(error);
             }
@@ -9360,10 +9360,10 @@ var require_main = __commonJS({
     }
     function createClientPipeTransport(pipeName, encoding = "utf-8") {
       let connectResolve;
-      const connected = new Promise((resolve5, _reject) => {
-        connectResolve = resolve5;
+      const connected = new Promise((resolve6, _reject) => {
+        connectResolve = resolve6;
       });
-      return new Promise((resolve5, reject) => {
+      return new Promise((resolve6, reject) => {
         const server = (0, net_1.createServer)((socket) => {
           server.close();
           connectResolve([
@@ -9374,7 +9374,7 @@ var require_main = __commonJS({
         server.on("error", reject);
         server.listen(pipeName, () => {
           server.removeListener("error", reject);
-          resolve5({
+          resolve6({
             onConnected: () => {
               return connected;
             },
@@ -9394,10 +9394,10 @@ var require_main = __commonJS({
     }
     function createClientSocketTransport(port, encoding = "utf-8") {
       let connectResolve;
-      const connected = new Promise((resolve5, _reject) => {
-        connectResolve = resolve5;
+      const connected = new Promise((resolve6, _reject) => {
+        connectResolve = resolve6;
       });
-      return new Promise((resolve5, reject) => {
+      return new Promise((resolve6, reject) => {
         const server = (0, net_1.createServer)((socket) => {
           server.close();
           connectResolve([
@@ -9414,7 +9414,7 @@ var require_main = __commonJS({
             return;
           }
           const boundPort = address.port;
-          resolve5({
+          resolve6({
             port: () => boundPort,
             onConnected: () => {
               return connected;
@@ -18659,41 +18659,41 @@ var require_queue = __commonJS({
       queue.drained = drained;
       return queue;
       function push(value) {
-        var p2 = new Promise(function(resolve5, reject) {
+        var p2 = new Promise(function(resolve6, reject) {
           pushCb(value, function(err, result) {
             if (err) {
               reject(err);
               return;
             }
-            resolve5(result);
+            resolve6(result);
           });
         });
         p2.catch(noop);
         return p2;
       }
       function unshift(value) {
-        var p2 = new Promise(function(resolve5, reject) {
+        var p2 = new Promise(function(resolve6, reject) {
           unshiftCb(value, function(err, result) {
             if (err) {
               reject(err);
               return;
             }
-            resolve5(result);
+            resolve6(result);
           });
         });
         p2.catch(noop);
         return p2;
       }
       function drained() {
-        var p2 = new Promise(function(resolve5) {
+        var p2 = new Promise(function(resolve6) {
           process.nextTick(function() {
             if (queue.idle()) {
-              resolve5();
+              resolve6();
             } else {
               var previousDrain = queue.drain;
               queue.drain = function() {
                 if (typeof previousDrain === "function") previousDrain();
-                resolve5();
+                resolve6();
                 queue.drain = previousDrain;
               };
             }
@@ -19179,9 +19179,9 @@ var require_stream3 = __commonJS({
         });
       }
       _getStat(filepath) {
-        return new Promise((resolve5, reject) => {
+        return new Promise((resolve6, reject) => {
           this._stat(filepath, this._fsStatSettings, (error, stats) => {
-            return error === null ? resolve5(stats) : reject(error);
+            return error === null ? resolve6(stats) : reject(error);
           });
         });
       }
@@ -19205,10 +19205,10 @@ var require_async5 = __commonJS({
         this._readerStream = new stream_1.default(this._settings);
       }
       dynamic(root, options) {
-        return new Promise((resolve5, reject) => {
+        return new Promise((resolve6, reject) => {
           this._walkAsync(root, options, (error, entries) => {
             if (error === null) {
-              resolve5(entries);
+              resolve6(entries);
             } else {
               reject(error);
             }
@@ -19218,10 +19218,10 @@ var require_async5 = __commonJS({
       async static(patterns, options) {
         const entries = [];
         const stream = this._readerStream.static(patterns, options);
-        return new Promise((resolve5, reject) => {
+        return new Promise((resolve6, reject) => {
           stream.once("error", reject);
           stream.on("data", (entry) => entries.push(entry));
-          stream.once("end", () => resolve5(entries));
+          stream.once("end", () => resolve6(entries));
         });
       }
     };
@@ -20172,16 +20172,17 @@ var ASTNodeType = /* @__PURE__ */ ((ASTNodeType2) => {
   ASTNodeType2[ASTNodeType2["Render"] = 18] = "Render";
   ASTNodeType2[ASTNodeType2["Let"] = 19] = "Let";
   ASTNodeType2[ASTNodeType2["ClassBinding"] = 20] = "ClassBinding";
-  ASTNodeType2[ASTNodeType2["Hydrate"] = 21] = "Hydrate";
-  ASTNodeType2[ASTNodeType2["Client"] = 22] = "Client";
-  ASTNodeType2[ASTNodeType2["Placeholder"] = 23] = "Placeholder";
-  ASTNodeType2[ASTNodeType2["Try"] = 24] = "Try";
-  ASTNodeType2[ASTNodeType2["Catch"] = 25] = "Catch";
-  ASTNodeType2[ASTNodeType2["Defer"] = 26] = "Defer";
-  ASTNodeType2[ASTNodeType2["Loading"] = 27] = "Loading";
-  ASTNodeType2[ASTNodeType2["Error"] = 28] = "Error";
-  ASTNodeType2[ASTNodeType2["Empty"] = 29] = "Empty";
-  ASTNodeType2[ASTNodeType2["StyleBinding"] = 30] = "StyleBinding";
+  ASTNodeType2[ASTNodeType2["PartBinding"] = 21] = "PartBinding";
+  ASTNodeType2[ASTNodeType2["Hydrate"] = 22] = "Hydrate";
+  ASTNodeType2[ASTNodeType2["Client"] = 23] = "Client";
+  ASTNodeType2[ASTNodeType2["Placeholder"] = 24] = "Placeholder";
+  ASTNodeType2[ASTNodeType2["Try"] = 25] = "Try";
+  ASTNodeType2[ASTNodeType2["Catch"] = 26] = "Catch";
+  ASTNodeType2[ASTNodeType2["Defer"] = 27] = "Defer";
+  ASTNodeType2[ASTNodeType2["Loading"] = 28] = "Loading";
+  ASTNodeType2[ASTNodeType2["Error"] = 29] = "Error";
+  ASTNodeType2[ASTNodeType2["Empty"] = 30] = "Empty";
+  ASTNodeType2[ASTNodeType2["StyleBinding"] = 31] = "StyleBinding";
   return ASTNodeType2;
 })(ASTNodeType || {});
 
@@ -20788,6 +20789,17 @@ var CSS_UNITS = /* @__PURE__ */ new Set([
 ]);
 function toCssPropertyName(name) {
   return name.startsWith("--") ? name : name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+}
+function splitClasses(text) {
+  const tokens = text.split(/[\t\n\f\r ]+/);
+  let classes;
+  for (let i2 = 0; i2 < tokens.length; i2++) {
+    const token = tokens[i2];
+    if (token && !classes?.includes(token)) {
+      classes ? classes.push(token) : classes = [token];
+    }
+  }
+  return classes;
 }
 
 // ../packages/internals/src/utils/host-directive/host-directive.util.ts
@@ -21490,20 +21502,20 @@ var TemplateWalker = class {
           this.walkScope(caseNode.children, variables);
         }
         break;
-      case 21 /* Hydrate */:
+      case 22 /* Hydrate */:
         this._visitor.hydrate?.(node);
         this._walkHydrate(node, variables);
         break;
-      case 22 /* Client */:
+      case 23 /* Client */:
         this._visitor.client?.(node);
         this._walkClient(node, variables);
         break;
-      case 24 /* Try */:
+      case 25 /* Try */:
         this._visitor.tryBlock?.(node);
         this.walkScope(node.children, variables);
         this._walkErrorScope(node.catch, variables);
         break;
-      case 26 /* Defer */:
+      case 27 /* Defer */:
         this._visitor.defer?.(node);
         this._walkDefer(node, variables);
         break;
@@ -21571,7 +21583,7 @@ var TemplateWalker = class {
         this._visitor.expression?.(attribute.value.expression, variables);
       }
     }
-    const { classBindings, styleBindings, directives, structuralDirectives } = bindings;
+    const { classBindings, styleBindings, partBindings, directives, structuralDirectives } = bindings;
     if (classBindings?.length) {
       for (let i2 = 0; i2 < classBindings.length; i2++) {
         const classBinding = classBindings[i2];
@@ -21584,6 +21596,13 @@ var TemplateWalker = class {
         const styleBinding = styleBindings[i2];
         this._visitor.styleBinding?.(styleBinding);
         this._visitor.expression?.(styleBinding.value.expression, variables);
+      }
+    }
+    if (partBindings?.length) {
+      for (let i2 = 0; i2 < partBindings.length; i2++) {
+        const partBinding = partBindings[i2];
+        this._visitor.partBinding?.(partBinding);
+        this._visitor.expression?.(partBinding.value.expression, variables);
       }
     }
     if (!this._server) {
@@ -24245,12 +24264,12 @@ function findNodeEvent(node) {
     case 9 /* Switch */:
     case 10 /* Case */:
     case 17 /* Template */:
-    case 21 /* Hydrate */:
-    case 22 /* Client */:
+    case 22 /* Hydrate */:
+    case 23 /* Client */:
       return findEvent(node.children);
-    case 24 /* Try */:
+    case 25 /* Try */:
       return findEvent(node.children) ?? findEvent(node.catch.children);
-    case 26 /* Defer */:
+    case 27 /* Defer */:
       return findEvent(node.children) ?? (node.placeholder ? findEvent(node.placeholder.children) : void 0) ?? (node.loading ? findEvent(node.loading.children) : void 0) ?? (node.error ? findEvent(node.error.children) : void 0);
     default:
       return void 0;
@@ -24318,13 +24337,13 @@ function parseClient(cursor, parseNode, token) {
     }
     end = cursor.getCurrentToken().value.span.end;
     placeholder = {
-      type: 23 /* Placeholder */,
+      type: 24 /* Placeholder */,
       children: placeholderChildren,
       span: { start: next.span.start, end }
     };
   }
   return {
-    type: 22 /* Client */,
+    type: 23 /* Client */,
     children,
     placeholder,
     span: { start: token.span.start, end }
@@ -24580,7 +24599,7 @@ function parseDefer(cursor, parseNode, token) {
   const { triggers, prefetch } = conditionToken.type === 18 /* CONDITION */ ? parseDeferTriggers(conditionToken.parts[0], cursor.findConditionSpan(conditionToken).start) : { triggers: [], prefetch: [] };
   cursor.advance(conditionToken.type === 18 /* CONDITION */ ? 2 : 1);
   const node = {
-    type: 26 /* Defer */,
+    type: 27 /* Defer */,
     triggers,
     prefetch,
     children: parseBlockChildren(cursor, parseNode),
@@ -24597,19 +24616,19 @@ function parseDefer(cursor, parseNode, token) {
         assertNotDeclared(node.placeholder, "@placeholder", next.span);
         const parameters = readBlockParameters(cursor, "@placeholder", PLACEHOLDER_PARAMETERS);
         const children = parseFollowingChildren(cursor, parseNode);
-        node.placeholder = Object.assign({ type: 23 /* Placeholder */, children, span: { start, end: cursor.getCurrentToken().value.span.end } }, parameters);
+        node.placeholder = Object.assign({ type: 24 /* Placeholder */, children, span: { start, end: cursor.getCurrentToken().value.span.end } }, parameters);
         break;
       }
       case 38 /* LOADING */: {
         assertNotDeclared(node.loading, "@loading", next.span);
         const parameters = readBlockParameters(cursor, "@loading", LOADING_PARAMETERS);
         const children = parseFollowingChildren(cursor, parseNode);
-        node.loading = Object.assign({ type: 27 /* Loading */, children, span: { start, end: cursor.getCurrentToken().value.span.end } }, parameters);
+        node.loading = Object.assign({ type: 28 /* Loading */, children, span: { start, end: cursor.getCurrentToken().value.span.end } }, parameters);
         break;
       }
       default: {
         assertNotDeclared(node.error, "@error", next.span);
-        const error = { type: 28 /* Error */, children: [], span: next.span };
+        const error = { type: 29 /* Error */, children: [], span: next.span };
         readErrorName(cursor, error, "error of @error");
         error.children = parseFollowingChildren(cursor, parseNode);
         error.span = { start, end: cursor.getCurrentToken().value.span.end };
@@ -24669,7 +24688,7 @@ function serializeNodes(nodes, parentTag) {
 }
 function serializeElement(element) {
   const { tagName, attributes } = element;
-  const binding = element.ref ?? element.typeArguments?.[0] ?? element.classBindings[0] ?? element.styleBindings[0] ?? element.events[0] ?? element.conditionalBindings[0] ?? element.directives[0] ?? element.structuralDirectives[0] ?? attributes.find(({ value }) => typeof value !== "string");
+  const binding = element.ref ?? element.typeArguments?.[0] ?? element.classBindings[0] ?? element.styleBindings[0] ?? element.partBindings[0] ?? element.events[0] ?? element.conditionalBindings[0] ?? element.directives[0] ?? element.structuralDirectives[0] ?? attributes.find(({ value }) => typeof value !== "string");
   if (binding) {
     throw new Error(`<${tagName}> is in the content of a <template>, static HTML which the code using the template clones: it takes only static attributes`, { cause: binding.span });
   }
@@ -25294,6 +25313,7 @@ function parseAttribute(cursor, parseNode, token) {
       throw new Error(`${name} names no attribute: write attr. followed by the name of the attribute, e.g. attr.title="\u2026"`, { cause: nameSpan });
     case "class":
     case "style":
+    case "part":
       throw new Error(`${name} cannot be written: ${attribute} is merged with the directives and the component writing it, bound with ${attribute}="\u2026" and ${attribute}.name="{ expression }"`, { cause: nameSpan });
     case "is":
       throw new Error(`${name} cannot be written: is decides the class of a customized built-in element when it is created, written as a static attribute, e.g. <button is="copy-button">`, { cause: nameSpan });
@@ -25343,6 +25363,7 @@ function readAttribute(cursor, parseNode, token) {
     nameSpan,
     // Character references are decoded as in HTML: `title="a &amp; b"` holds `a & b`
     value: decodeHTMLAttribute(nextToken.parts[0]),
+    valueSpan: cursor.findSpan(nextToken.parts[0], nextToken.span.start),
     span: {
       start: startOffset,
       end: cursor.getCurrentToken().value.span.end
@@ -25376,16 +25397,28 @@ function isBooleanAttributeSuccessor(type) {
 // ../packages/compiler/src/parser/states/parse-class-binding/parse-class-binding.state.ts
 var CLASS_PREFIX = "class.";
 var STYLE_PREFIX = "style.";
+var PART_PREFIX = "part.";
+var PART_NAME_RE = /^[^\s[\],:]+$/;
 var CLASS_NAME_RE = /^[^\s[\]]+$/;
 var STYLE_PROPERTY_RE = /^([a-zA-Z][a-zA-Z-]*)(?:\.([a-z]+|%))?$/;
 function isStylingName(name) {
-  return name.startsWith(CLASS_PREFIX) || name.startsWith(STYLE_PREFIX);
+  return name.startsWith(CLASS_PREFIX) || name.startsWith(STYLE_PREFIX) || name.startsWith(PART_PREFIX);
 }
 function isStylingBinding(token) {
   return isStylingName(token.parts[0]);
 }
 function parseStylingBinding(cursor, parseNode, token) {
   const { name, nameSpan, value, span } = parseAttribute(cursor, parseNode, token);
+  if (name.startsWith(PART_PREFIX)) {
+    const partName = name.slice(PART_PREFIX.length);
+    if (!PART_NAME_RE.test(partName)) {
+      throw new Error(`${name} names no part: write part. followed by one name, without whitespace, comma nor colon, e.g. part.selected="{ expression }"`, { cause: nameSpan });
+    }
+    if (typeof value === "string") {
+      throw new Error(`${name} exposes the part by the value of an expression: ${name}="{expression}"`, { cause: span });
+    }
+    return { type: 21 /* PartBinding */, partName, nameSpan, value, span };
+  }
   const isClass = name.startsWith(CLASS_PREFIX);
   const key = name.slice(isClass ? CLASS_PREFIX.length : STYLE_PREFIX.length);
   if (isClass && !CLASS_NAME_RE.test(key)) {
@@ -25397,7 +25430,7 @@ function parseStylingBinding(cursor, parseNode, token) {
   if (isClass) {
     return { type: 20 /* ClassBinding */, className: key, nameSpan, value, span };
   }
-  const node = { type: 30 /* StyleBinding */, property: key, nameSpan, value, span };
+  const node = { type: 31 /* StyleBinding */, property: key, nameSpan, value, span };
   if (!key.startsWith("--") || key.length === 2) {
     const match = STYLE_PROPERTY_RE.exec(key);
     if (!match) {
@@ -25414,6 +25447,18 @@ function parseStylingBinding(cursor, parseNode, token) {
   }
   return node;
 }
+function pushStylingBinding(binding, classBindings, styleBindings, partBindings) {
+  switch (binding.type) {
+    case 20 /* ClassBinding */:
+      classBindings.push(binding);
+      break;
+    case 21 /* PartBinding */:
+      partBindings.push(binding);
+      break;
+    default:
+      styleBindings.push(binding);
+  }
+}
 function assertNoElementBindings(attributes, conditionalBindings) {
   for (let i2 = 0; i2 < attributes.length; i2++) {
     const { name, nameSpan, attribute } = attributes[i2];
@@ -25429,8 +25474,8 @@ function assertNoBranchElementBindings(conditionalBindings) {
   for (let i2 = 0; i2 < conditionalBindings.length; i2++) {
     const { branches } = conditionalBindings[i2];
     for (let j = 0; j < branches.length; j++) {
-      const { classBindings, styleBindings, attributes } = branches[j];
-      const written = attributes.find(({ attribute }) => attribute !== void 0) ?? classBindings[0] ?? styleBindings[0];
+      const { classBindings, styleBindings, partBindings, attributes } = branches[j];
+      const written = attributes.find(({ attribute }) => attribute !== void 0) ?? classBindings[0] ?? styleBindings[0] ?? partBindings[0];
       if (written) {
         throw new Error(`${written.type === 1 /* Attribute */ ? written.name : bindingName(written)} cannot be bound inside a directive: bind it on the element`, { cause: written.nameSpan });
       }
@@ -25439,7 +25484,14 @@ function assertNoBranchElementBindings(conditionalBindings) {
   }
 }
 function bindingName(binding) {
-  return binding.type === 20 /* ClassBinding */ ? `${CLASS_PREFIX}${binding.className}` : `${STYLE_PREFIX}${binding.property}`;
+  switch (binding.type) {
+    case 20 /* ClassBinding */:
+      return `${CLASS_PREFIX}${binding.className}`;
+    case 21 /* PartBinding */:
+      return `${PART_PREFIX}${binding.partName}`;
+    default:
+      return `${STYLE_PREFIX}${binding.property}`;
+  }
 }
 
 // ../packages/compiler/src/parser/utils/default-never/default-never.utils.ts
@@ -25754,6 +25806,7 @@ function parseBranch(cursor, parseNode, start, condition, conditionSpans) {
   const attributes = new Array();
   const classBindings = new Array();
   const styleBindings = new Array();
+  const partBindings = new Array();
   const events = new Array();
   const conditionalBindings = new Array();
   const directives = new Array();
@@ -25768,8 +25821,7 @@ function parseBranch(cursor, parseNode, start, condition, conditionSpans) {
           attributes.push(attribute);
           events.push(event);
         } else if (isStylingBinding(token)) {
-          const binding = parseStylingBinding(cursor, parseNode, token);
-          binding.type === 20 /* ClassBinding */ ? classBindings.push(binding) : styleBindings.push(binding);
+          pushStylingBinding(parseStylingBinding(cursor, parseNode, token), classBindings, styleBindings, partBindings);
         } else {
           attributes.push(parseAttribute(cursor, parseNode, token));
         }
@@ -25802,6 +25854,7 @@ function parseBranch(cursor, parseNode, start, condition, conditionSpans) {
     attributes,
     classBindings,
     styleBindings,
+    partBindings,
     events,
     conditionalBindings,
     directives,
@@ -25855,6 +25908,7 @@ function parseElement(cursor, parseNode, token) {
   const attributes = new Array();
   const classBindings = new Array();
   const styleBindings = new Array();
+  const partBindings = new Array();
   const events = new Array();
   const conditionalBindings = new Array();
   const directives = new Array();
@@ -25884,8 +25938,7 @@ function parseElement(cursor, parseNode, token) {
           attributes.push(attribute);
           events.push(event);
         } else if (isStylingBinding(token2)) {
-          const binding = parseStylingBinding(cursor, parseNode, token2);
-          binding.type === 20 /* ClassBinding */ ? classBindings.push(binding) : styleBindings.push(binding);
+          pushStylingBinding(parseStylingBinding(cursor, parseNode, token2), classBindings, styleBindings, partBindings);
         } else {
           attributes.push(parseAttribute(cursor, parseNode, token2));
         }
@@ -25911,12 +25964,13 @@ function parseElement(cursor, parseNode, token) {
   assertUniqueAttributes(attributes, conditionalBindings, isValidCustomElementName(is?.value ?? tagName, false) ? writtenAttributeKey : nativeAttributeKey, (name) => `Attribute "${name}" is bound more than once on <${tagName}>`);
   assertUniqueClassBindings(classBindings, conditionalBindings, tagName);
   assertUniqueStyleBindings(styleBindings, conditionalBindings, tagName);
+  assertUniquePartBindings(partBindings, conditionalBindings, tagName);
   assertUniqueDirectives(tagName, directives, conditionalBindings, (branch) => branch.directives);
   assertUniqueDirectives(tagName, structuralDirectives, conditionalBindings, (branch) => branch.structuralDirectives);
   const typeArguments = token.parts[1] === void 0 ? void 0 : parseTypeArguments(token.parts[1], nameSpan.end + 1);
   let node;
   if (tagName === "template" && declaration) {
-    const binding = typeArguments?.[0] ?? ref ?? is ?? attributes[0] ?? classBindings[0] ?? styleBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
+    const binding = typeArguments?.[0] ?? ref ?? is ?? attributes[0] ?? classBindings[0] ?? styleBindings[0] ?? partBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
     if (binding) {
       throw new Error("A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it", { cause: binding.span });
     }
@@ -25929,6 +25983,7 @@ function parseElement(cursor, parseNode, token) {
       attributes,
       classBindings,
       styleBindings,
+      partBindings,
       events,
       children: [],
       conditionalBindings,
@@ -26038,6 +26093,16 @@ function assertUniqueClassBindings(classBindings, conditionalBindings, tagName, 
   }
   assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniqueClassBindings(branch.classBindings, branch.conditionalBindings, tagName, boundInBranch));
 }
+function assertUniquePartBindings(partBindings, conditionalBindings, tagName, bound = /* @__PURE__ */ new Set()) {
+  for (let i2 = 0; i2 < partBindings.length; i2++) {
+    const { partName, span } = partBindings[i2];
+    if (bound.has(partName)) {
+      throw new Error(`Part "${partName}" is bound more than once on <${tagName}>`, { cause: span });
+    }
+    bound.add(partName);
+  }
+  assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniquePartBindings(branch.partBindings, branch.conditionalBindings, tagName, boundInBranch));
+}
 function assertUniqueStyleBindings(styleBindings, conditionalBindings, tagName, bound = /* @__PURE__ */ new Set()) {
   for (let i2 = 0; i2 < styleBindings.length; i2++) {
     const { property, span } = styleBindings[i2];
@@ -26119,7 +26184,7 @@ function parseForControlFlow(cursor, parseNode, _token) {
     }
     cursor.advance();
     const emptyChildren = parseBlockChildren(cursor, parseNode);
-    empty = { type: 29 /* Empty */, children: emptyChildren, span: { start: next.span.start, end: cursor.getCurrentToken().value.span.end } };
+    empty = { type: 30 /* Empty */, children: emptyChildren, span: { start: next.span.start, end: cursor.getCurrentToken().value.span.end } };
   }
   return { type: 8 /* For */, ...expression, children, empty };
 }
@@ -26218,7 +26283,7 @@ function parseHydrate(cursor, parseNode, token) {
   cursor.advance(conditionToken.type === 18 /* CONDITION */ ? 2 : 1);
   const children = parseBlockChildren(cursor, parseNode);
   return {
-    type: 21 /* Hydrate */,
+    type: 22 /* Hydrate */,
     triggers,
     prefetch,
     children,
@@ -26485,14 +26550,14 @@ function parseTry(cursor, parseNode, token) {
     throw new Error("@try needs a @catch: write @catch (error) { \u2026 } right after its block", { cause: token.span });
   }
   cursor.advance();
-  const catchNode = { type: 25 /* Catch */, children: [], span: catchToken.span };
+  const catchNode = { type: 26 /* Catch */, children: [], span: catchToken.span };
   readErrorName(cursor, catchNode, "@catch error");
   cursor.advance();
   catchNode.children = parseBlockChildren(cursor, parseNode);
   const end = cursor.getCurrentToken().value.span.end;
   catchNode.span = { start: catchToken.span.start, end };
   return {
-    type: 24 /* Try */,
+    type: 25 /* Try */,
     children,
     catch: catchNode,
     span: { start: token.span.start, end }
@@ -27482,7 +27547,7 @@ function mapTypeModules(type, map) {
   return type.replace(IMPORT_TYPE, (_match, module2, name) => `import(${toStringLiteral(map(fromStringLiteral(module2)))})${name === void 0 ? "" : `.${name}`}`);
 }
 function toLibraryMetadata(declaration, manifest, root) {
-  const { type, className, selector, module: module2, types, typeParameters, inputs, events, ssr } = declaration;
+  const { type, className, selector, module: module2, types, typeParameters, inputs, events, ssr, parts } = declaration;
   const metadata = {
     type,
     className,
@@ -27498,6 +27563,9 @@ function toLibraryMetadata(declaration, manifest, root) {
   }
   if (declaration.extends) {
     metadata.extends = declaration.extends;
+  }
+  if (type === "component" && parts) {
+    metadata.parts = parts;
   }
   if (type === "component" && (ssr || !manifest.ssr)) {
     metadata.clientOnly = {};
@@ -27534,6 +27602,7 @@ function toPackagePath(path, root) {
 // ../packages/compiler/src/utils/package-libraries/package-libraries.utils.ts
 var SCHEMA_VERSION = 1;
 var IDENTIFIER2 = /^[A-Za-z_$][\w$]*$/;
+var PART_NAME = /^[^\s,:]+$/;
 var DECLARATION_FILE = /\.d\.[cm]?ts$/;
 var packages = /* @__PURE__ */ new Map();
 function readLibraryMetadata(declarationFile, exportedName) {
@@ -27614,7 +27683,7 @@ function findInvalidDeclaration({ name, exports: exports2, declarations }, packa
   }
   return void 0;
 }
-function findInvalidMembers({ className, selector, module: module2, types, inputs, events }) {
+function findInvalidMembers({ className, selector, module: module2, types, inputs, events, parts }) {
   if (!IDENTIFIER2.test(className)) {
     return `has the class name ${className}`;
   }
@@ -27640,6 +27709,13 @@ function findInvalidMembers({ className, selector, module: module2, types, input
     if (!isName(events[i2].name)) {
       return `has the event ${events[i2].name}`;
     }
+  }
+  if (parts !== void 0 && (!Array.isArray(parts.names) || parts.open !== void 0 && parts.open !== true)) {
+    return "has parts that are not a list of names";
+  }
+  const invalidPart = parts?.names.find((name) => typeof name !== "string" || !PART_NAME.test(name));
+  if (invalidPart !== void 0) {
+    return `has the part ${String(invalidPart)}`;
   }
   return void 0;
 }
@@ -28791,6 +28867,7 @@ function typeCheckComponentBindings(node, declaredMetadata, nativeEvents, contex
     return [
       ...typeCheckComponentAttributes(branch.attributes, metadata, context, node),
       ...typeCheckClassBindings(branch.classBindings, context),
+      ...typeCheckClassBindings(branch.partBindings, context),
       ...typeCheckStyleBindings(branch.styleBindings, context),
       ...typeCheckComponentEvents(branch.events, metadata, nativeEvents, context),
       ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node, nativeEvents, context)
@@ -28808,6 +28885,7 @@ function typeCheckComponentBindings(node, declaredMetadata, nativeEvents, contex
  \u25CF ${Array.from(requiredProperties.values()).join("\n \u25CF ")}`, { cause: node.span });
   }
   lines.push(...typeCheckClassBindings(node.classBindings, context));
+  lines.push(...typeCheckClassBindings(node.partBindings, context));
   lines.push(...typeCheckStyleBindings(node.styleBindings, context));
   lines.push(...typeCheckComponentEvents(node.events, metadata, nativeEvents, context));
   lines.push(...conditionalBindingLines);
@@ -29076,11 +29154,13 @@ function typeCheckNativeBindings(node, nativeEvents, context) {
   return [
     ...typeCheckNativeAttributes(node.attributes, node, context),
     ...typeCheckClassBindings(node.classBindings, context),
+    ...typeCheckClassBindings(node.partBindings, context),
     ...typeCheckStyleBindings(node.styleBindings, context),
     ...typeCheckNativeEvents(node.events, nativeEvents, context),
     ...typeCheckConditionalBindings(node.conditionalBindings, context, (branch) => [
       ...typeCheckNativeAttributes(branch.attributes, node, context),
       ...typeCheckClassBindings(branch.classBindings, context),
+      ...typeCheckClassBindings(branch.partBindings, context),
       ...typeCheckStyleBindings(branch.styleBindings, context),
       ...typeCheckNativeEvents(branch.events, nativeEvents, context),
       ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node, nativeEvents, context)
@@ -29542,11 +29622,11 @@ function visitNodes(nodes, visit) {
 }
 function getNestedNodes(node) {
   switch (node.type) {
-    case 22 /* Client */:
+    case 23 /* Client */:
       return node.placeholder ? [node.children, node.placeholder.children] : [node.children];
-    case 24 /* Try */:
+    case 25 /* Try */:
       return [node.children, node.catch.children];
-    case 26 /* Defer */: {
+    case 27 /* Defer */: {
       const lists = [node.children];
       if (node.placeholder) {
         lists.push(node.placeholder.children);
@@ -29569,7 +29649,7 @@ function getNestedNodes(node) {
     case 0 /* Element */:
     case 6 /* Else */:
     case 17 /* Template */:
-    case 21 /* Hydrate */:
+    case 22 /* Hydrate */:
       return [node.children];
     default:
       return void 0;
@@ -29580,8 +29660,8 @@ function getNestedNodes(node) {
 function checkServerBlocks(nodes) {
   const errors = new Array();
   visitNodes(nodes, (node) => {
-    if (node.type === 21 /* Hydrate */ || node.type === 22 /* Client */) {
-      const keyword = node.type === 21 /* Hydrate */ ? "@hydrate" : "@client";
+    if (node.type === 22 /* Hydrate */ || node.type === 23 /* Client */) {
+      const keyword = node.type === 22 /* Hydrate */ ? "@hydrate" : "@client";
       const { start } = node.span;
       errors.push(new Error(`${keyword} is only for a project rendering on the server: declare "ssr" in its xaendar.json, or remove the block`, { cause: { start, end: start + keyword.length } }));
     }
@@ -29595,10 +29675,10 @@ function checkTriggerTargets(nodes) {
   visitNodes(nodes, (node) => {
     let error;
     switch (node.type) {
-      case 21 /* Hydrate */:
+      case 22 /* Hydrate */:
         error = checkTriggers(node, node.children, "watches the elements the server renders, and this @hydrate renders none: add an element, or a @placeholder holding one to its @client");
         break;
-      case 26 /* Defer */:
+      case 27 /* Defer */:
         error = checkTriggers(node, node.placeholder?.children, "watches the elements of the @placeholder, and this @defer renders none before its trigger: add a @placeholder holding an element, or name the element to watch with an element ref, such as hover(button)");
         break;
     }
@@ -29634,10 +29714,10 @@ function mayRenderElement(nodes) {
       case 17 /* Template */:
         return false;
       // Before the browser renders their content, only their @placeholder is there
-      case 22 /* Client */:
-      case 26 /* Defer */:
+      case 23 /* Client */:
+      case 27 /* Defer */:
         return !!node.placeholder && mayRenderElement(node.placeholder.children);
-      case 21 /* Hydrate */:
+      case 22 /* Hydrate */:
         return mayRenderElement(node.children);
       default:
         return true;
@@ -29756,20 +29836,20 @@ function checkNodes(nodes, check) {
           checkScope(node.children[j].children, check);
         }
         break;
-      case 21 /* Hydrate */:
+      case 22 /* Hydrate */:
         checkHydrate(node, check);
         break;
-      case 22 /* Client */:
+      case 23 /* Client */:
         checkScope(node.children, check);
         if (node.placeholder) {
           checkScope(node.placeholder.children, check);
         }
         break;
-      case 24 /* Try */:
+      case 25 /* Try */:
         checkScope(node.children, check);
         checkErrorScope(node.catch, check);
         break;
-      case 26 /* Defer */:
+      case 27 /* Defer */:
         checkDefer(node, check);
         break;
       case 17 /* Template */:
@@ -29830,10 +29910,16 @@ function checkElement(node, check) {
 }
 function checkBindings(bindings, check) {
   checkAttributes(bindings.attributes, check);
-  const { classBindings, styleBindings, directives, structuralDirectives } = bindings;
+  const { classBindings, styleBindings, partBindings, directives, structuralDirectives } = bindings;
   if (classBindings?.length) {
     for (let i2 = 0; i2 < classBindings.length; i2++) {
       const { value, span } = classBindings[i2];
+      checkReads(value.expression, span, check);
+    }
+  }
+  if (partBindings?.length) {
+    for (let i2 = 0; i2 < partBindings.length; i2++) {
+      const { value, span } = partBindings[i2];
       checkReads(value.expression, span, check);
     }
   }
@@ -29975,10 +30061,10 @@ var TypeChecker = class {
     [5 /* If */]: typeCheckIf,
     [8 /* For */]: typeCheckFor,
     [9 /* Switch */]: typeCheckSwitch,
-    [21 /* Hydrate */]: typeCheckHydrate,
-    [22 /* Client */]: typeCheckClient,
-    [24 /* Try */]: typeCheckTry,
-    [26 /* Defer */]: typeCheckDefer,
+    [22 /* Hydrate */]: typeCheckHydrate,
+    [23 /* Client */]: typeCheckClient,
+    [25 /* Try */]: typeCheckTry,
+    [27 /* Defer */]: typeCheckDefer,
     [11 /* Import */]: typeCheckImport,
     [17 /* Template */]: typeCheckTemplate,
     [18 /* Render */]: typeCheckRender,
@@ -30234,7 +30320,7 @@ function readIs(tokens, tag) {
 // ../packages/compiler/src/lexer/utils/trigger-context/trigger-context.utils.ts
 var TRIGGER_NAME = /^(prefetch\s+)?([a-z]*)$/;
 var PARAMETER_NAME = /^[a-z]*$/;
-var PART_NAME = /^(prefetch\s+)?([a-z]+)/;
+var PART_NAME2 = /^(prefetch\s+)?([a-z]+)/;
 var WHEN2 = /^(prefetch\s+)?when\s/;
 function getTriggerContext(source, offset) {
   const written = findWrittenParts(source, offset);
@@ -30251,7 +30337,7 @@ function getTriggerContext(source, offset) {
       }
       const declared = /* @__PURE__ */ new Set();
       for (let i2 = 0; i2 < parts.length - 1; i2++) {
-        const name = PART_NAME.exec(parts[i2]);
+        const name = PART_NAME2.exec(parts[i2]);
         if (name) {
           declared.add(name[2]);
         }
@@ -30267,7 +30353,7 @@ function getTriggerContext(source, offset) {
       const prefetch = !!match[1];
       const declared = /* @__PURE__ */ new Set();
       for (let i2 = 0; i2 < parts.length - 1; i2++) {
-        const name = PART_NAME.exec(parts[i2]);
+        const name = PART_NAME2.exec(parts[i2]);
         if (name && !!name[1] === prefetch) {
           declared.add(name[2]);
         }
@@ -31814,6 +31900,88 @@ function isReactiveExport(modulePath, exportName, compilerOptions = DEFAULT_COMP
 // ../packages/compiler/src/utils/component-logic/component-logic.utils.ts
 var ASSIGNMENTS = { first: import_typescript21.SyntaxKind.FirstAssignment, last: import_typescript21.SyntaxKind.LastAssignment };
 
+// ../packages/compiler/src/utils/template-parts/template-parts.utils.ts
+var NOT_A_NAME = /[\s:]/;
+function collectTemplateParts(ast) {
+  const names = new Array();
+  const declared = /* @__PURE__ */ new Set();
+  const rendered = new Array();
+  let open = false;
+  const add = (name) => {
+    names.includes(name) || names.push(name);
+  };
+  const read = (attributes, partBindings, conditionalBindings) => {
+    for (let i2 = 0; i2 < attributes.length; i2++) {
+      const { name, value } = attributes[i2];
+      if (name !== "part" && name !== "exportparts") {
+        continue;
+      }
+      if (typeof value !== "string") {
+        open = true;
+      } else if (name === "part") {
+        splitClasses(value)?.forEach(add);
+      } else {
+        parseExportParts(value, 0).forEach(({ outer }) => add(outer));
+      }
+    }
+    for (let i2 = 0; i2 < partBindings.length; i2++) {
+      add(partBindings[i2].partName);
+    }
+    for (let i2 = 0; i2 < conditionalBindings.length; i2++) {
+      const { branches } = conditionalBindings[i2];
+      for (let j = 0; j < branches.length; j++) {
+        read(branches[j].attributes, branches[j].partBindings, branches[j].conditionalBindings);
+      }
+    }
+  };
+  walkTemplate(ast, [], {
+    element: (node) => read(node.attributes, node.partBindings, node.conditionalBindings),
+    template: (node) => declared.add(node.declaration.name),
+    render: (node) => rendered.push(node.callee)
+  });
+  if (rendered.some((callee) => !declared.has(callee))) {
+    open = true;
+  }
+  return open ? { names, open } : { names };
+}
+function parseExportParts(text, offset) {
+  const entries = new Array();
+  let start = 0;
+  while (start <= text.length) {
+    let end = text.indexOf(",", start);
+    if (end < 0) {
+      end = text.length;
+    }
+    const entry = readEntry(text, start, end, offset);
+    if (entry) {
+      entries.push(entry);
+    }
+    start = end + 1;
+  }
+  return entries;
+}
+function readEntry(text, start, end, offset) {
+  const colon = text.indexOf(":", start);
+  const innerEnd = colon >= 0 && colon < end ? colon : end;
+  const inner = readName2(text, start, innerEnd);
+  if (!inner) {
+    return void 0;
+  }
+  const outer = innerEnd === end ? inner : readName2(text, innerEnd + 1, end);
+  if (!outer) {
+    return void 0;
+  }
+  return { inner: inner.name, outer: outer.name, innerSpan: { start: offset + inner.start, end: offset + inner.start + inner.name.length } };
+}
+function readName2(text, start, end) {
+  const piece = text.slice(start, end);
+  const name = piece.trim();
+  if (!name || NOT_A_NAME.test(name)) {
+    return void 0;
+  }
+  return { name, start: start + piece.indexOf(name) };
+}
+
 // ../packages/language-core/src/lib/component-definition/component-definition.ts
 var import_node_fs3 = require("fs");
 var import_node_path3 = require("path");
@@ -31891,6 +32059,9 @@ function getErrorSpan(error, ast) {
         named.push({ span: node.span, name: node.nameSpan });
       },
       styleBinding: (node) => {
+        named.push({ span: node.span, name: node.nameSpan });
+      },
+      partBinding: (node) => {
         named.push({ span: node.span, name: node.nameSpan });
       },
       event: (node) => {
@@ -32894,11 +33065,45 @@ function toSpan(literal) {
 }
 
 // ../packages/language-core/src/lib/template-completions/template-completions.ts
-var import_node_path11 = require("path");
+var import_node_path12 = require("path");
 var import_typescript33 = require("typescript");
 
-// ../packages/language-core/src/lib/utils/css-properties/css-properties.utils.ts
+// ../packages/language-core/src/lib/utils/component-parts/component-parts.utils.ts
 var import_node_path10 = require("path");
+var templateParts = /* @__PURE__ */ new Map();
+function getComponentParts(metadata, read = readDocument) {
+  if (metadata.type !== "component") {
+    return void 0;
+  }
+  if ("library" in metadata) {
+    return metadata.parts;
+  }
+  const { templateUrl, modulePath } = metadata;
+  if (!templateUrl) {
+    return { names: [] };
+  }
+  const path = (0, import_node_path10.resolve)((0, import_node_path10.dirname)(modulePath), templateUrl);
+  const text = read(path);
+  if (text === void 0) {
+    return void 0;
+  }
+  const key = normalizeFileName2(path);
+  const cached = templateParts.get(key);
+  if (cached?.text === text) {
+    return cached.parts;
+  }
+  let parts;
+  try {
+    parts = collectTemplateParts(parseTemplate(text));
+  } catch {
+    parts = void 0;
+  }
+  templateParts.set(key, { text, parts });
+  return parts;
+}
+
+// ../packages/language-core/src/lib/utils/css-properties/css-properties.utils.ts
+var import_node_path11 = require("path");
 var import_typescript32 = require("typescript");
 var DECLARATION_RE = /interface CSSStyle(?:Declaration|Properties)\b[^{]*\{/g;
 var PROPERTY_RE = /^ {4}(\w+): string;$/gm;
@@ -32908,7 +33113,7 @@ function getCssProperties(readFile = import_typescript32.sys.readFile) {
   if (properties) {
     return properties;
   }
-  const source = readFile((0, import_node_path10.join)((0, import_node_path10.dirname)((0, import_typescript32.getDefaultLibFilePath)({})), "lib.dom.d.ts")) ?? "";
+  const source = readFile((0, import_node_path11.join)((0, import_node_path11.dirname)((0, import_typescript32.getDefaultLibFilePath)({})), "lib.dom.d.ts")) ?? "";
   const names = /* @__PURE__ */ new Set(["float"]);
   for (const { index } of source.matchAll(DECLARATION_RE)) {
     for (const [, name] of source.slice(index, source.indexOf("\n}", index)).matchAll(PROPERTY_RE)) {
@@ -32924,6 +33129,7 @@ function getCssProperties(readFile = import_typescript32.sys.readFile) {
 // ../packages/language-core/src/lib/template-completions/template-completions.ts
 var STYLE_BINDING_RE = /^style\.([^.]*)(?:\.([^.]*))?$/;
 var KEY_EVENT_RE = /^key(?:down|up)\.((?:[^.]*\.)*)([^.]*)$/;
+var EXPORT_PARTS_RE = /(?:^|[\s({])(exportparts)\s*=\s*(["'])([^"'{}]*)$/;
 var COMMON_KEYS = ["enter", "escape", "space", "tab", "backspace", "delete", "arrowup", "arrowdown", "arrowleft", "arrowright", "home", "end", "pageup", "pagedown"];
 var KEYWORD_SNIPPETS = {
   "if": "@if ($1) {\n	$0\n}",
@@ -33018,7 +33224,7 @@ function getTemplateKeywordCompletions(templatePath, source, offset) {
     return void 0;
   }
   const { keywords, span, clientPlaceholder } = context;
-  const available = readSsr((0, import_node_path11.dirname)(templatePath)) === false ? keywords.filter((keyword) => !isServerKeyword(keyword, !!clientPlaceholder)) : keywords;
+  const available = readSsr((0, import_node_path12.dirname)(templatePath)) === false ? keywords.filter((keyword) => !isServerKeyword(keyword, !!clientPlaceholder)) : keywords;
   return available.map((keyword, index) => ({
     name: `@${keyword}`,
     kind: import_typescript33.ScriptElementKind.keyword,
@@ -33130,7 +33336,7 @@ async function getTemplateSelectorCompletions(templatePath, source, offset) {
   }
   const candidates = await resolveImportCandidates(templatePath);
   if (candidates) {
-    const templateDir = (0, import_node_path11.dirname)(templatePath);
+    const templateDir = (0, import_node_path12.dirname)(templatePath);
     for (let i2 = 0; i2 < candidates.length; i2++) {
       const { fileName, metadata } = candidates[i2];
       const { type, selector, className } = metadata;
@@ -33141,6 +33347,33 @@ async function getTemplateSelectorCompletions(templatePath, source, offset) {
     }
   }
   return completions;
+}
+async function getTemplateExportPartsCompletions(templatePath, source, offset) {
+  const before = source.slice(0, offset);
+  const match = EXPORT_PARTS_RE.exec(before);
+  if (!match) {
+    return void 0;
+  }
+  const value = match[3];
+  const nameEnd = match.index + match[0].indexOf(match[1]) + match[1].length;
+  const context = getBindingContext(source, nameEnd);
+  if (context?.kind !== "attribute" || context.directive !== void 0 || source.slice(context.span.start, nameEnd) !== "exportparts") {
+    return void 0;
+  }
+  const entry = value.slice(value.lastIndexOf(",") + 1);
+  if (entry.includes(":")) {
+    return void 0;
+  }
+  const selector = context.is ?? context.tagName;
+  const component = (await resolveTemplateImports(templatePath, source)).find((metadata) => metadata.type === "component" && metadata.selector === selector);
+  const parts = component && getComponentParts(component);
+  if (!parts) {
+    return void 0;
+  }
+  const listed = new Set(parseExportParts(value, 0).map(({ inner }) => inner));
+  const written = entry.trimStart();
+  const span = { start: offset - written.length, end: offset };
+  return parts.names.filter((name) => !listed.has(name) || name === written).map((name) => ({ name, kind: import_typescript33.ScriptElementKind.memberVariableElement, sortText: "0", replacementSpan: span }));
 }
 function toSelectorCompletion(metadata) {
   return metadata.type === "component" && metadata.extends ? `${metadata.extends} is="${metadata.selector}"` : metadata.selector;
@@ -33186,7 +33419,7 @@ function getTemplateImportPathCompletions(templatePath, source, offset) {
   if (!directory.startsWith(".")) {
     return [];
   }
-  return listModuleEntries(resolvePosixPath((0, import_node_path11.dirname)(templatePath), directory)).map(({ name, isDirectory }) => ({
+  return listModuleEntries(resolvePosixPath((0, import_node_path12.dirname)(templatePath), directory)).map(({ name, isDirectory }) => ({
     name,
     kind: isDirectory ? import_typescript33.ScriptElementKind.directory : import_typescript33.ScriptElementKind.scriptElement,
     sortText: isDirectory ? "0" : "1",
@@ -33251,7 +33484,7 @@ function getExportCompletions({ symbols, imports }, templatePath, source, compon
   const declared = new Set(symbols.map(({ local }) => local).concat(imports.map(({ specifier }) => specifier.local)));
   const imported = new Set(symbols.map(({ modulePath, imported: name }) => `${normalizeFileName2(modulePath)}#${name}`));
   const owners = new Set(Array.from(components.keys(), normalizeFileName2));
-  const templateDir = (0, import_node_path11.dirname)(templatePath);
+  const templateDir = (0, import_node_path12.dirname)(templatePath);
   const completions = new Array();
   for (let i2 = 0; i2 < candidates.length; i2++) {
     const { fileName, name, kind } = candidates[i2];
@@ -33272,7 +33505,7 @@ function findNode(node, position) {
 }
 
 // ../packages/language-core/src/lib/template-definition/template-definition.ts
-var import_node_path12 = require("path");
+var import_node_path13 = require("path");
 function getTemplateDefinition(analysis, offset) {
   const target = findDefinitionTarget(analysis, offset);
   return target ? [...target.definitions] : getTypeScriptDefinitions(analysis, offset);
@@ -33288,7 +33521,7 @@ function collectTargets({ ast, metadatas, imports, templatePath, languageService
     addTarget(targets, specifier.localSpan, getClassDefinition(metadata));
   }
   walkTemplate(ast, metadatas, {
-    importNode: (node) => addTarget(targets, node.pathSpan, getModuleDefinition((0, import_node_path12.dirname)(templatePath), node.path, languageService.getProgram().getCompilerOptions())),
+    importNode: (node) => addTarget(targets, node.pathSpan, getModuleDefinition((0, import_node_path13.dirname)(templatePath), node.path, languageService.getProgram().getCompilerOptions())),
     element: (node, component) => {
       addTarget(targets, node.nameSpan, component && getClassDefinition(component));
       addTarget(targets, node.closeNameSpan, component && getClassDefinition(component));
@@ -33402,6 +33635,53 @@ function removeTemplateImport(source, { key }) {
 function organizeTemplateImports(source, analysis) {
   const unused = analysis?.source === source ? findUnusedImports(analysis) : void 0;
   return organizeImports(source, { unused: unused && new Set(unused.map(({ key }) => key)), sort: true });
+}
+
+// ../packages/language-core/src/lib/template-part-warnings/template-part-warnings.ts
+function getExportPartsWarnings(ast, metadatas, read) {
+  const warnings = new Array();
+  walkTemplate(ast, metadatas, {
+    element: (node, component) => {
+      const attributes = component && collectExportParts(node.attributes, node.conditionalBindings);
+      if (!attributes?.length) {
+        return;
+      }
+      const parts = getComponentParts(component, read);
+      if (!parts || parts.open) {
+        return;
+      }
+      for (let i2 = 0; i2 < attributes.length; i2++) {
+        const { value, valueSpan } = attributes[i2];
+        const entries = parseExportParts(value, valueSpan.start);
+        for (let j = 0; j < entries.length; j++) {
+          const { inner, innerSpan } = entries[j];
+          if (!parts.names.includes(inner)) {
+            warnings.push({ span: innerSpan, message: describeMissingPart(inner, component, parts.names) });
+          }
+        }
+      }
+    }
+  });
+  return warnings;
+}
+function collectExportParts(attributes, conditionalBindings, found = new Array()) {
+  for (let i2 = 0; i2 < attributes.length; i2++) {
+    const attribute = attributes[i2];
+    if (attribute.name === "exportparts" && attribute.valueSpan) {
+      found.push(attribute);
+    }
+  }
+  for (let i2 = 0; i2 < conditionalBindings.length; i2++) {
+    const { branches } = conditionalBindings[i2];
+    for (let j = 0; j < branches.length; j++) {
+      collectExportParts(branches[j].attributes, branches[j].conditionalBindings, found);
+    }
+  }
+  return found;
+}
+function describeMissingPart(name, { selector, extends: extended }, names) {
+  const tag = extended ? `<${extended} is="${selector}">` : `<${selector}>`;
+  return `'${name}' is not a part of ${tag}, which exposes ${names.length ? names.join(", ") : "no part"}: exportparts forwards only the parts the component exposes.`;
 }
 
 // ../packages/language-core/src/lib/template-warnings/template-warnings.ts
@@ -33522,6 +33802,10 @@ function getTemplateDiagnostics({ analysis, error, ast }) {
       diagnostics.push({ span: unused[i2].span, message: `'${unused[i2].name}' is declared but never used.`, category: import_typescript36.DiagnosticCategory.Suggestion, unnecessary: true });
     }
   }
+  const parts = getExportPartsWarnings(analysis.ast, analysis.metadatas);
+  for (let i2 = 0; i2 < parts.length; i2++) {
+    diagnostics.push({ ...parts[i2], category: import_typescript36.DiagnosticCategory.Warning });
+  }
   const { ssr, shadowingMembers } = analysis;
   if (ssr) {
     const warnings = getTemplateWarnings(analysis.ast, shadowingMembers);
@@ -33563,7 +33847,29 @@ function getTemplateFormatting(source, options) {
 var import_typescript37 = require("typescript");
 function getTemplateHover(analysis, offset) {
   const target = findDefinitionTarget(analysis, offset);
-  return target ? getDeclarationHover(analysis, target) : getTypeScriptHover(analysis, offset);
+  const hover = target ? getDeclarationHover(analysis, target) : getTypeScriptHover(analysis, offset);
+  return addParts(analysis, offset, hover);
+}
+function addParts({ ast, metadatas }, offset, hover) {
+  let section;
+  let span;
+  walkTemplate(ast, metadatas, {
+    element: (node, component) => {
+      const name = [node.nameSpan, node.closeNameSpan].find((candidate) => candidate && candidate.start <= offset && offset <= candidate.end);
+      const parts = name && component && getComponentParts(component);
+      if (parts && (parts.names.length || parts.open)) {
+        const names = parts.names.map((part) => `\`${part}\``).join(", ");
+        section = `**Parts**: ${names || "none"}${parts.open ? `${names ? ", and" : ", but"} parts expressions write` : ""}`;
+        span = name;
+      }
+    }
+  });
+  if (!section) {
+    return hover;
+  }
+  return hover ? { ...hover, contents: `${hover.contents}
+
+${section}` } : { contents: section, span };
 }
 function getDeclarationHover({ languageService }, { span, definitions }) {
   const { fileName, span: declaration } = definitions[0];
@@ -33668,12 +33974,12 @@ function addToken(tokens, span, type, modifiers = []) {
 var import_typescript39 = require("typescript");
 
 // ../packages/language-server/src/lib/server-handlers/server-handlers.ts
-var import_node_path14 = require("path");
+var import_node_path15 = require("path");
 var import_node42 = __toESM(require_main3(), 1);
 
 // ../packages/language-server/src/lib/template-registry/template-registry.ts
 var import_fast_glob = __toESM(require_out4(), 1);
-var import_node_path13 = require("path");
+var import_node_path14 = require("path");
 var import_typescript40 = require("typescript");
 var COMPONENT_FILE_SUFFIX = ".xd.component.ts";
 var TemplateRegistry = class {
@@ -33724,7 +34030,7 @@ var TemplateRegistry = class {
         if (!templateUrl) {
           continue;
         }
-        const templateKey = normalizeFileName2((0, import_node_path13.resolve)((0, import_node_path13.dirname)(componentPath), templateUrl));
+        const templateKey = normalizeFileName2((0, import_node_path14.resolve)((0, import_node_path14.dirname)(componentPath), templateUrl));
         const components = this._components.getOrInsertComputed(templateKey, () => /* @__PURE__ */ new Map());
         components.getOrInsertComputed(componentPath, () => []).push(className);
         templates.add(templateKey);
@@ -34342,7 +34648,7 @@ var XaendarLanguageServer = class {
     for (let i2 = 0; i2 < changes.length; i2++) {
       const { uri, type } = changes[i2];
       const fileName = fromUri(uri);
-      if ((0, import_node_path14.basename)(fileName) === XAENDAR_CONFIG_FILE) {
+      if ((0, import_node_path15.basename)(fileName) === XAENDAR_CONFIG_FILE) {
         this._scheduleOpenTemplatesValidation();
         this._scheduleOpenComponentsValidation();
         continue;
@@ -34501,7 +34807,7 @@ var XaendarLanguageServer = class {
     const offset = document.offsetAt(position);
     const templatePath = fromUri(document.uri);
     const components = this._registry.resolve(templatePath);
-    const completions = isTemplate(document) ? getTemplateImportPathCompletions(templatePath, document.getText(), offset) ?? await getTemplateImportCompletions(templatePath, document.getText(), offset) ?? await getTemplateSelectorCompletions(templatePath, document.getText(), offset) ?? getTemplateKeywordCompletions(templatePath, document.getText(), offset) ?? getTemplateTriggerCompletions(document.getText(), offset) ?? getTemplateStyleCompletions(document.getText(), offset) ?? getTemplateKeyEventCompletions(document.getText(), offset) ?? await getTemplateSourceBindingCompletions(templatePath, document.getText(), offset) ?? (components && await getTemplateExpressionCompletions(templatePath, document.getText(), offset, components, context?.triggerCharacter)) : void 0;
+    const completions = isTemplate(document) ? getTemplateImportPathCompletions(templatePath, document.getText(), offset) ?? await getTemplateImportCompletions(templatePath, document.getText(), offset) ?? await getTemplateSelectorCompletions(templatePath, document.getText(), offset) ?? getTemplateKeywordCompletions(templatePath, document.getText(), offset) ?? getTemplateTriggerCompletions(document.getText(), offset) ?? await getTemplateExportPartsCompletions(templatePath, document.getText(), offset) ?? getTemplateStyleCompletions(document.getText(), offset) ?? getTemplateKeyEventCompletions(document.getText(), offset) ?? await getTemplateSourceBindingCompletions(templatePath, document.getText(), offset) ?? (components && await getTemplateExpressionCompletions(templatePath, document.getText(), offset, components, context?.triggerCharacter)) : void 0;
     if (completions) {
       return this._toCompletionItems(completions, document);
     }

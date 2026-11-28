@@ -16,7 +16,7 @@ Every Xaendar template, the fragments in `src/docs/src/snippets` included.
 4. conditional directives: `@if (…) { @@name(…) }`
 5. directives: `@@name(…)`
 6. conditional attributes and inputs: `@if (…) { name="…" }`
-7. attributes and inputs (two-way bindings, `class` and `style` included): `name="…"`, `[(name)]="signal"`, `class="…"`, `style="…"`, `class.name="{…}"`, `style.name="{…}"`
+7. attributes and inputs (two-way bindings, `class`, `style` and `part` included): `name="…"`, `[(name)]="signal"`, `class="…"`, `style="…"`, `part="…"`, `class.name="{…}"`, `style.name="{…}"`, `part.name="{…}"`
 8. conditional events: `@if (…) { (name)="…" }`
 9. events: `(name)="…"`
 
@@ -24,7 +24,7 @@ Every Xaendar template, the fragments in `src/docs/src/snippets` included.
 
 Inside each group, sort the items alphabetically, comparing the full name as written, prefixes included: `attr.aria-hidden` before `attr.data-p`, `@@pBind` before `@@pRipple`, `(blur)` before `(click)`.
 
-- `class` and `style` are not a group of their own: they are sorted alphabetically among the attributes and inputs (`aria-label`, `class`, `data-p`). `class.x` and `style.x` bindings go right after `class` / `style` when present (before the other attributes that follow alphabetically), and in the alphabetical position `class` / `style` would have when absent.
+- `class`, `style` and `part` are not a group of their own: they are sorted alphabetically among the attributes and inputs (`aria-label`, `class`, `data-p`). `class.x`, `style.x` and `part.x` bindings go right after `class` / `style` / `part` when present (before the other attributes that follow alphabetically), and in the alphabetical position `class` / `style` / `part` would have when absent.
 - The same alphabetical order applies to the inputs and listeners between the parentheses of a directive, within their own groups.
 - Conditional blocks (`@if`/`@else`/`@switch` inside the tag) keep the position of their first group and are not reordered by name.
 

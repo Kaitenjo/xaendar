@@ -231,6 +231,36 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A style binding in the parentheses of a directive, which only bind its properties.
 - **Fix:** Write it on the element, or set it from the directive with @HostAttribute('style.color').
 
+### `[Parser] Part "on" is bound more than once on <p>`
+
+- **Cause:** The same part.name written twice on an element, or both outside and inside a conditional binding.
+- **Fix:** Toggle it once, or in different branches of the same condition.
+
+### `[Parser] part.on exposes the part by the value of an expression: part.on="{expression}"`
+
+- **Cause:** A part binding with a static value, or without value.
+- **Fix:** Bind an expression in braces, `part.on="{ selected() }"`; a part always exposed goes in the static `part="on"`.
+
+### `[Parser] part.a:b names no part: write part. followed by one name, without whitespace, comma nor colon, e.g. part.selected="{ expression }"`
+
+- **Cause:** Nothing after `part.`, or a name holding a comma or a colon, which exportparts could not forward.
+- **Fix:** Write one name after the dot.
+
+### `[Parser] part.on cannot be bound inside a directive: bind it on the element`
+
+- **Cause:** A part binding in the parentheses of a directive, or in a conditional binding inside them.
+- **Fix:** Write it on the element, or expose it from the directive with @HostAttribute('part.on').
+
+### `'nope' is not a part of <x-tabs>, which exposes tab, selected: exportparts forwards only the parts the component exposes.`
+
+- **Cause:** A warning of the editor and of the build (from the browser environment): a name before the `:` of a static `exportparts` entry that the template of the component (or the manifest of its library) does not expose. Not reported when the component computes `part`/`exportparts` with an expression or renders a template it is given.
+- **Fix:** Use a part the component exposes (the hover of its tag lists them), or expose it in the component.
+
+### `@HostAttribute('part.') names no part` / `@HostAttribute('part.a:b') names a part holding whitespace, a comma or a colon, which exportparts could not forward: write one name, e.g. 'part.selected'`
+
+- **Cause:** Thrown when the class is declared: nothing, or more than one name, after `part.`.
+- **Fix:** `@HostAttribute('part.selected')`, or the whole string with `@HostAttribute('part')`.
+
 ### `[Parser] class.on cannot be bound inside a directive: bind it on the element`
 
 - **Cause:** A class binding in the parentheses of a directive, or in a conditional binding inside them, which only bind the properties of the directive.

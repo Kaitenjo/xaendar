@@ -183,7 +183,7 @@ The inserted markup is not a template: no bindings, listeners or directives, and
 
 - Tokens are custom properties declared on an ancestor (`:root` in `styles.css`, or `[data-theme='dark']`), read in components with `var(--accent, #2563eb)`. Tokens local to a component go on `:host`.
 - Switch the set of tokens with a signal bound to `data-theme`; to avoid a flash, an inline script in `index.html` applies the stored theme before the scripts load.
-- `part="heading"` lets users restyle one element with `::part(heading)`; nothing else crosses the shadow root.
+- `part="heading"` lets users restyle one element with `::part(heading)`; nothing else crosses the shadow root. Expose a state as one more part (`part.selected="{ … }"`, styled `::part(tab selected)`), forward the parts of an inner component with `exportparts="label: button-label"`, and treat the names as public API (renaming one breaks the users' rules silently). Parts for elements users restyle freely, custom properties for shared values, slots for their own content.
 
 ## DOM work
 
