@@ -376,16 +376,17 @@ function collectEvents(Component: Constructor<CustomElement>, definition: Server
 }
 
 /**
- * Creates the states merging the sources of the `class` and of the `style` of an element written through the runtime,
- * before its bindings are applied, and merges its other attributes, whose states are created when a source first writes
- * them (see `_mergeAttributes`): its template, its directives and the component it is all write them once, merged with
- * the precedence of the client, whatever the order they are applied in, so that the final value is written.
+ * Creates the states merging the sources of the `class`, of the `style` and of the `part` of an element written through
+ * the runtime, before its bindings are applied, and merges its other attributes, whose states are created when a source
+ * first writes them (see `_mergeAttributes`): its template, its directives and the component it is all write them once,
+ * merged with the precedence of the client, whatever the order they are applied in, so that the final value is written.
  *
  * @param element - The element.
  */
 function prepareStyling(element: Element): void {
   _createStylingState(element, 'class');
   _createStylingState(element, 'style');
+  _createStylingState(element, 'part');
   _mergeAttributes(element);
 }
 

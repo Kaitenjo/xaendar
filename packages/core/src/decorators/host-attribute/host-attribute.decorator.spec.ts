@@ -42,6 +42,18 @@ describe('HostAttribute decorator', () => {
     expect(child[INTERNAL_HOST_ATTRIBUTES]!.map(({ name }) => name)).toEqual(['role', 'title', 'on']);
   });
 
+  it('stores a part binding for a name starting with part., and the string of part without name', () => {
+    expect(decorate('part.selected')[INTERNAL_HOST_ATTRIBUTES]).toEqual([{ name: 'selected', kind: 'part', read: expect.any(Function) }]);
+    expect(decorate('part')[INTERNAL_HOST_ATTRIBUTES]).toEqual([{ name: '', kind: 'part', read: expect.any(Function) }]);
+  });
+
+  it('throws for a part naming nothing, or a name exportparts could not forward', () => {
+    expect(() => HostAttribute('part.')).toThrow('@HostAttribute(\'part.\') names no part');
+    for (const name of ['part.a b', 'part.a,b', 'part.a:b']) {
+      expect(() => HostAttribute(name)).toThrow(`@HostAttribute('${name}') names a part holding whitespace, a comma or a colon, which exportparts could not forward`);
+    }
+  });
+
   it('throws for a name naming no attribute or no class', () => {
     expect(() => HostAttribute('')).toThrow('@HostAttribute(\'\') names no attribute');
     expect(() => HostAttribute('class.')).toThrow('@HostAttribute(\'class.\') names no class');
@@ -74,6 +86,8 @@ describe('HostAttribute decorator', () => {
     expect(() => decorate('style.width', metadata, 'other')).toThrow('binds the style property width, which another member binds already');
     decorate('style', metadata, 'layout');
     expect(() => decorate('style', metadata, 'again')).toThrow('binds the string of style, which another member binds already');
+    decorate('part.on', metadata, 'part');
+    expect(() => decorate('part.on', metadata, 'twice')).toThrow('binds the part on, which another member binds already');
     expect(() => decorate('role', decorate('role', {}, 'one'), 'two')).not.toThrow();
   });
 });
@@ -94,6 +108,10 @@ describe('types of @HostAttribute', () => {
       HostAttribute('style.--size')(undefined, contextOf<number>());
       HostAttribute('class.on')(undefined, contextOf<{ any: true }>());
       HostAttribute('aria-hidden')(undefined, contextOf<boolean>());
+      HostAttribute('part')(undefined, contextOf<string | undefined>());
+      HostAttribute('part.selected')(undefined, contextOf<boolean>());
+      // @ts-expect-error the string of part is a string
+      HostAttribute('part')(undefined, contextOf<boolean>());
       // @ts-expect-error the string of class is a string
       HostAttribute('class')(undefined, contextOf<number>());
       // @ts-expect-error a property with a unit takes a number

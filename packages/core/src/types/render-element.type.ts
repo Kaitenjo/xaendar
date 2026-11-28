@@ -91,9 +91,10 @@ export type RenderElement = BlockPosition & {
    */
   readonly slot?: number;
   /**
-   * The `class` and the `style` of the element another source than its own bindings may write (see `_prepareStyling`):
-   * `1` and `2`, for `class` and `style`, when another source of the template writes them, or the element applies
-   * structural directives, `4` and `8` when its component or its directives may write them. The runtime checks the
+   * The `class`, the `style` and the `part` of the element another source than its own bindings may write (see
+   * `_prepareStyling`): `1`, `2` and `4`, for `class`, `style` and `part`, when another source of the template writes
+   * them, or the element applies structural directives, `8`, `16` and `32` when its component or its directives may
+   * write them, as the compiler writes them. The runtime checks the
    * classes of the component and of the directives, the ones of the branches included. Left out for an element its
    * template alone writes, nearly every one.
    */

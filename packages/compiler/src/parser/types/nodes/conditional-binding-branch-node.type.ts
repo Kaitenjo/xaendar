@@ -6,6 +6,7 @@ import type { ClassBindingNode } from './class-binding-node.type';
 import type { ConditionalBindingNode } from './conditional-binding-node.type';
 import type { DirectiveNode } from './directive-node.type';
 import type { EventNode } from './event-node.type';
+import type { PartBindingNode } from './part-binding-node.type';
 import type { StructuralDirectiveNode } from './structural-directive-node.type';
 import type { StyleBindingNode } from './style-binding-node.type';
 
@@ -42,6 +43,11 @@ export type ConditionalBindingBranchNode<Condition = unknown> = ASTNodeWithSpan<
    * Always empty for a conditional binding declared inside a directive.
    */
   styleBindings: StyleBindingNode[];
+  /**
+   * Parts exposed by the element while the branch is selected.
+   * Always empty for a conditional binding declared inside a directive.
+   */
+  partBindings: PartBindingNode[];
   /**
    * Event binding nodes attached while the branch is selected.
    */

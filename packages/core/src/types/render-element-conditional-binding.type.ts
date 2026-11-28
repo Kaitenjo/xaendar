@@ -25,8 +25,8 @@ export type RenderElementConditionalBinding = RenderConditionalBinding<{
    */
   readonly directives?: readonly RenderElementDirective[];
   /**
-   * The attributes merged key by key the branch writes: `1` for `class`, `2` for `style`, whose state the branch
-   * creates before its bindings are applied, since it is a source that comes and goes. Left out for none.
+   * The attributes merged key by key the branch writes: `1` for `class`, `2` for `style`, `4` for `part`, whose state
+   * the branch creates before its bindings are applied, since it is a source that comes and goes. Left out for none.
    */
   readonly styling?: number;
 }>;

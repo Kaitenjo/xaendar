@@ -13,6 +13,7 @@ const element = (tagName: string, children: ASTNode[] = [], attributes: ElementN
   attributes,
   classBindings: [],
   styleBindings: [],
+  partBindings: [],
   events: [],
   children,
   conditionalBindings: [],

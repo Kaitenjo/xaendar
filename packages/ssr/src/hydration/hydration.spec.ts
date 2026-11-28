@@ -2466,6 +2466,42 @@ describe('style bindings', () => {
     expect(element.className).toBe('extra tile base');
   });
 
+  it('merges the parts a template binds on an element with the ones of a directive, writes them on the server and adopts them without writing them again', async () => {
+    /**
+     * A directive marking its element as the current one.
+     */
+    class Current extends CustomDirective { }
+    const metadata: DecoratorMetadataObject = {};
+    (core.HostAttribute('part.current') as unknown as (value: undefined, context: unknown) => void)(undefined, { kind: 'field', name: 'on', static: false, metadata, access: { get: () => true } });
+    Object.defineProperty(Current, Symbol.for('Symbol.metadata'), { value: metadata });
+    _defineDirective('current', Current);
+
+    /**
+     * Tabs exposing the selected one with a part.
+     */
+    class Tabs extends CustomElement {
+      public selected = signal(true);
+    }
+
+    const tabs = await register('tabs', Tabs, () => '<button part="tab" part.selected="{selected()}" @@current>A</button>', ['selected']);
+    const html = await renderToString(tabs.Server);
+    expect(html).toContain('<button part="tab selected current">A</button>');
+
+    const host = load(html);
+    const button = host.shadowRoot!.querySelector('button')!;
+    const setAttribute = vi.spyOn(button, 'setAttribute');
+    tabs.define();
+    await flush();
+
+    expect(setAttribute).not.toHaveBeenCalled();
+    expect(button.getAttribute('part')).toBe('tab selected current');
+    expect(console.warn).not.toHaveBeenCalled();
+
+    (host as Tabs).selected.set(false);
+    await flush();
+    expect(button.getAttribute('part')).toBe('tab current');
+  });
+
   it('takes the inline style of the root of a page from the <style> before it, which the browser leaves', async () => {
     /**
      * A root writing a style property on its element.

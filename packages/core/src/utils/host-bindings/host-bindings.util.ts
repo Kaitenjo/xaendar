@@ -68,6 +68,10 @@ export function _bindHost(owner: EventHost, element: Element, context: _Context)
     if (groups.style?.length) {
       bindStyling(owner, element, context, 'style', groups.style);
     }
+
+    if (groups.part?.length) {
+      bindStyling(owner, element, context, 'part', groups.part);
+    }
   }
 
   const listeners = metadata?.[INTERNAL_HOST_LISTENERS];
@@ -86,11 +90,11 @@ export function _bindHost(owner: EventHost, element: Element, context: _Context)
 }
 
 /**
- * Writes the attributes, the classes and the style properties of the host element of a web component or of a custom
- * directive as its `@HostAttribute` declare, once and without binding them: what the server writes on the tag of a
- * component it renders. The attributes and the keys of `class` and `style` are merged with the other sources of the
- * element (see `_mergeAttributes`): the runs are registered on the element, so that the sources applied after them
- * find them.
+ * Writes the attributes, the classes, the style properties and the parts of the host element of a web component or of a
+ * custom directive as its `@HostAttribute` declare, once and without binding them: what the server writes on the tag of
+ * a component it renders. The attributes and the keys of `class`, `style` and `part` are merged with the other sources
+ * of the element (see `_mergeAttributes`): the runs are registered on the element, so that the sources applied after
+ * them find them.
  *
  * @param owner - The web component or the custom directive.
  * @param element - Its host element.
@@ -118,10 +122,14 @@ export function _applyHostAttributes(owner: EventHost, element: Element): void {
   if (groups.style?.length) {
     applyStylingOnce(createRun(owner, element, 'style', groups.style));
   }
+
+  if (groups.part?.length) {
+    applyStylingOnce(createRun(owner, element, 'part', groups.part));
+  }
 }
 
 /**
- * Registers a run of the host attributes of `class` or of `style` on its element and writes it once (see
+ * Registers a run of the host attributes of `class`, of `style` or of `part` on its element and writes it once (see
  * {@link _applyHostAttributes}).
  *
  * @param run - The run.
@@ -148,7 +156,8 @@ function getGroups(metadata: WebComponentMetadata | undefined): HostAttributeGro
     groups = {
       attributes: filterKind(properties, 'attribute'),
       class: filterKind(properties, 'class'),
-      style: filterKind(properties, 'style')
+      style: filterKind(properties, 'style'),
+      part: filterKind(properties, 'part')
     };
     groupsCache.set(properties, groups);
   }

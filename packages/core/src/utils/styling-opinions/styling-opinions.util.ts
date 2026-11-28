@@ -5,13 +5,14 @@ import type { StylingAttribute } from '../../types/styling/styling-attribute.typ
 import type { StylingOpinions } from '../../types/styling/styling-opinions.type';
 
 /**
- * The ASCII whitespace separating the classes of a `class` string.
+ * The ASCII whitespace separating the tokens of a `class` or a `part` string.
  */
 const CLASS_SEPARATOR = /[\t\n\f\r ]+/;
 
 /**
- * Gives the opinions of the string of an attribute: the classes it lists, present, or the declarations it holds, as
- * `parseStyleDeclarations` reads them. `null` and `undefined` have no opinion, any other value is converted to a string.
+ * Gives the opinions of the string of an attribute: the classes or the parts it lists, present, or the declarations it
+ * holds, as `parseStyleDeclarations` reads them. `null` and `undefined` have no opinion, any other value is converted
+ * to a string.
  *
  * @param attribute - The attribute.
  * @param value - The value of the string.
@@ -22,12 +23,12 @@ export function stringOpinions(attribute: StylingAttribute, value: unknown): Sty
     return null;
   }
 
-  return (attribute === 'class' ? classOpinions(String(value)) : parseStyleDeclarations(String(value))) ?? null;
+  return (attribute === 'style' ? parseStyleDeclarations(String(value)) : tokenOpinions(String(value))) ?? null;
 }
 
 /**
  * Gives the opinion of a key bound one by one on its value:
- * - a class is present for a truthy value and absent for `false`, `0`, `''` and the other falsy values;
+ * - a class or a part is present for a truthy value and absent for `false`, `0`, `''` and the other falsy values;
  * - a property takes a string or a number, followed by its unit, if any, while `''` has no opinion;
  * - `null` and `undefined` have no opinion on either.
  *
@@ -41,7 +42,7 @@ export function keyOpinion(attribute: StylingAttribute, value: unknown, unit: st
     return undefined;
   }
 
-  if (attribute === 'class') {
+  if (attribute !== 'style') {
     return !!value;
   }
 
@@ -149,12 +150,12 @@ export function runValue(values: unknown, count: number, index: number): unknown
 }
 
 /**
- * Gives the opinions of the classes a `class` string lists: each one present, once.
+ * Gives the opinions of the tokens a `class` or a `part` string lists: each one present, once.
  *
  * @param text - The string.
  * @returns The opinions, `null` for none.
  */
-function classOpinions(text: string): Array<string | boolean> | null {
+function tokenOpinions(text: string): Array<string | boolean> | null {
   const tokens = text.split(CLASS_SEPARATOR);
   let opinions: Array<string | boolean> | null = null;
   for (let i = 0; i < tokens.length; i++) {

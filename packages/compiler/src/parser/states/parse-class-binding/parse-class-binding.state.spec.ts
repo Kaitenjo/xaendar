@@ -118,6 +118,43 @@ describe('parseStylingBinding', () => {
     expect(() => parse(template)).toThrow('class.on cannot be bound inside a directive: bind it on the element');
   });
 
+  it('parses a part toggled on an element apart from its attributes, and in the branches of a conditional binding', () => {
+    const [node] = parse('<button part="tab" part.selected="{on()}" @if (a()) { part.first="{1}" }></button>');
+
+    expect(node.attributes.map(({ name }) => name)).toEqual(['part']);
+    expect(node.partBindings).toEqual([{
+      type: ASTNodeType.PartBinding,
+      partName: 'selected',
+      nameSpan: { start: 19, end: 32 },
+      value: expect.objectContaining({ type: ASTNodeType.Interpolation }),
+      span: { start: 19, end: 41 }
+    }]);
+    expect(node.conditionalBindings[0].branches[0].partBindings.map(({ partName }) => partName)).toEqual(['first']);
+    expect(node.classBindings).toEqual([]);
+  });
+
+  it.each([
+    ['an empty part name', '<div part.="{c}"></div>'],
+    ['a name with a colon', '<div part.a:b="{c}"></div>'],
+    ['a name with a comma', '<div part.a,b="{c}"></div>']
+  ])('rejects %s', (_name, template) => {
+    expect(() => parse(template)).toThrow('names no part: write part. followed by one name, without whitespace, comma nor colon, e.g. part.selected="{ expression }"');
+  });
+
+  it('rejects a part toggled by a static value, twice, or inside a directive', () => {
+    expect(() => parse('<div part.on="true"></div>')).toThrow('part.on exposes the part by the value of an expression: part.on="{expression}"');
+    expect(() => parse('<div part.on="{a}" @if (x) { part.on="{b}" }></div>')).toThrow('Part "on" is bound more than once on <div>');
+    expect(() => parse('<div @@tint(part.on="{a}")></div>')).toThrow('part.on cannot be bound inside a directive: bind it on the element');
+    expect(() => parse('<div @@tint(@if (a()) { part.on="{a}" })></div>')).toThrow('part.on cannot be bound inside a directive: bind it on the element');
+    expect(() => parse('<div attr.part="x"></div>')).toThrow('attr.part cannot be written: part is merged with the directives and the component writing it');
+    expect(() => parse('<template row() part.on="{a}"></template>')).toThrow('A <template> declares only its name and its parameters');
+    expect(() => parse('<template><div part.on="{a}"></div></template>')).toThrow('<div> is in the content of a <template>, static HTML');
+  });
+
+  it('accepts the branches of a conditional binding toggling the same part', () => {
+    expect(() => parse('<div @if (x) { part.on="{a}" } @else { part.on="{b}" }></div>')).not.toThrow();
+  });
+
   it('accepts directives binding only their properties, conditionally or not', () => {
     const [node] = parse('<div @@tint(color="red" @if (a()) { size="{b}" } @else { } @switch (c()) { @default { } }) *visible(when="{d}")></div>');
 

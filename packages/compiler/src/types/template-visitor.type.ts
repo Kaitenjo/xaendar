@@ -12,6 +12,7 @@ import type { ForNode } from '../parser/types/nodes/for-node.type';
 import type { HydrateNode } from '../parser/types/nodes/hydrate-node.type';
 import type { ImportNode } from '../parser/types/nodes/import-node.type';
 import type { LetNode } from '../parser/types/nodes/let-node.type';
+import type { PartBindingNode } from '../parser/types/nodes/part-binding-node.type';
 import type { RenderNode } from '../parser/types/nodes/render-node.type';
 import type { StructuralDirectiveNode } from '../parser/types/nodes/structural-directive-node.type';
 import type { StyleBindingNode } from '../parser/types/nodes/style-binding-node.type';
@@ -50,6 +51,10 @@ export type TemplateVisitor = {
    * Invoked for every style property set on an element (`style.name`), conditional bindings included.
    */
   readonly styleBinding?: (node: StyleBindingNode) => void;
+  /**
+   * Invoked for every part toggled on an element (`part.name`), conditional bindings included.
+   */
+  readonly partBinding?: (node: PartBindingNode) => void;
   /**
    * Invoked for every event bound on an element or on a directive, conditional bindings included, with the metadata
    * of the component or directive it is bound to, `undefined` for the events of any other element, and the names of

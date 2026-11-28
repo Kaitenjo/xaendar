@@ -17,13 +17,14 @@ import type { ConditionalBindingNode } from '../../types/nodes/conditional-bindi
 import type { DirectiveNode } from '../../types/nodes/directive-node.type';
 import type { EventNode } from '../../types/nodes/event-node.type';
 import type { IfBindingNode } from '../../types/nodes/if-binding-node.type';
+import type { PartBindingNode } from '../../types/nodes/part-binding-node.type';
 import type { StructuralDirectiveNode } from '../../types/nodes/structural-directive-node.type';
 import type { StyleBindingNode } from '../../types/nodes/style-binding-node.type';
 import type { SwitchBindingNode } from '../../types/nodes/switch-binding-node.type';
 import { parseDefaultNever } from '../../utils/default-never/default-never.utils';
 import { validateExpression } from '../../utils/expression-validator/expression-validator';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
-import { isStylingBinding, parseStylingBinding } from '../parse-class-binding/parse-class-binding.state';
+import { isStylingBinding, parseStylingBinding, pushStylingBinding } from '../parse-class-binding/parse-class-binding.state';
 import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseEvent } from '../parse-event/parse-event.state';
 import { parseStructuralDirective } from '../parse-structural-directive/parse-structural-directive.state';
@@ -211,6 +212,7 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
   const attributes = new Array<AttributeNode>();
   const classBindings = new Array<ClassBindingNode>();
   const styleBindings = new Array<StyleBindingNode>();
+  const partBindings = new Array<PartBindingNode>();
   const events = new Array<EventNode>();
   const conditionalBindings = new Array<ConditionalBindingNode>();
   const directives = new Array<DirectiveNode>();
@@ -226,8 +228,7 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
           attributes.push(attribute);
           events.push(event);
         } else if (isStylingBinding(token)) {
-          const binding = parseStylingBinding(cursor, parseNode, token);
-          binding.type === ASTNodeType.ClassBinding ? classBindings.push(binding) : styleBindings.push(binding);
+          pushStylingBinding(parseStylingBinding(cursor, parseNode, token), classBindings, styleBindings, partBindings);
         } else {
           attributes.push(parseAttribute(cursor, parseNode, token));
         }
@@ -267,6 +268,7 @@ function parseBranch<Condition>(cursor: ParserCursor, parseNode: NoArgsFunction<
     attributes,
     classBindings,
     styleBindings,
+    partBindings,
     events,
     conditionalBindings,
     directives,

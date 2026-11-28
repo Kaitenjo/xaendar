@@ -215,7 +215,7 @@ class TemplateWalker {
    * @param owner - The component or directive the attributes and events are bound to, if any.
    * @param variables - The variables declared in the scope of the bindings.
    */
-  private _walkBindings(bindings: Pick<ConditionalBindingBranchNode, 'attributes' | 'events' | 'conditionalBindings'> & Partial<Pick<ConditionalBindingBranchNode, 'classBindings' | 'styleBindings' | 'directives' | 'structuralDirectives'>>, owner: ComponentOrDirectiveMetadata | undefined, variables: ReadonlySet<string>): void {
+  private _walkBindings(bindings: Pick<ConditionalBindingBranchNode, 'attributes' | 'events' | 'conditionalBindings'> & Partial<Pick<ConditionalBindingBranchNode, 'classBindings' | 'styleBindings' | 'partBindings' | 'directives' | 'structuralDirectives'>>, owner: ComponentOrDirectiveMetadata | undefined, variables: ReadonlySet<string>): void {
     for (let i = 0; i < bindings.attributes.length; i++) {
       const attribute = bindings.attributes[i];
       this._visitor.attribute?.(attribute, owner);
@@ -224,7 +224,7 @@ class TemplateWalker {
       }
     }
 
-    const { classBindings, styleBindings, directives, structuralDirectives } = bindings;
+    const { classBindings, styleBindings, partBindings, directives, structuralDirectives } = bindings;
     if (classBindings?.length) {
       for (let i = 0; i < classBindings.length; i++) {
         const classBinding = classBindings[i];
@@ -238,6 +238,14 @@ class TemplateWalker {
         const styleBinding = styleBindings[i];
         this._visitor.styleBinding?.(styleBinding);
         this._visitor.expression?.(styleBinding.value.expression, variables);
+      }
+    }
+
+    if (partBindings?.length) {
+      for (let i = 0; i < partBindings.length; i++) {
+        const partBinding = partBindings[i];
+        this._visitor.partBinding?.(partBinding);
+        this._visitor.expression?.(partBinding.value.expression, variables);
       }
     }
 

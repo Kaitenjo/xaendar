@@ -14,6 +14,7 @@ import { DirectiveNode } from '../../types/nodes/directive-node.type';
 import { ElementNode } from '../../types/nodes/element-node.type';
 import type { ElementRefNode } from '../../types/nodes/element-ref-node.type';
 import { EventNode } from '../../types/nodes/event-node.type';
+import type { PartBindingNode } from '../../types/nodes/part-binding-node.type';
 import { StructuralDirectiveNode } from '../../types/nodes/structural-directive-node.type';
 import type { StyleBindingNode } from '../../types/nodes/style-binding-node.type';
 import type { TemplateDeclarationNode } from '../../types/nodes/template-declaration-node.type';
@@ -25,7 +26,7 @@ import { parseTemplateParameters } from '../../utils/template-parameters/templat
 import { parseTypeArguments } from '../../utils/type-arguments/type-arguments.utils';
 import { assertUniqueAttributes, assertUniqueInBranches } from '../../utils/unique-attributes/unique-attributes.utils';
 import { parseAttribute } from '../parse-attribute/parse-attribute.state';
-import { isStylingBinding, parseStylingBinding } from '../parse-class-binding/parse-class-binding.state';
+import { isStylingBinding, parseStylingBinding, pushStylingBinding } from '../parse-class-binding/parse-class-binding.state';
 import { parseConditionalBinding } from '../parse-conditional-binding/parse-conditional-binding.state';
 import { parseDirective } from '../parse-directive/parse-directive.state';
 import { parseElementRef } from '../parse-element-ref/parse-element-ref.state';
@@ -64,6 +65,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   const attributes = new Array<AttributeNode>();
   const classBindings = new Array<ClassBindingNode>();
   const styleBindings = new Array<StyleBindingNode>();
+  const partBindings = new Array<PartBindingNode>();
   const events = new Array<EventNode>();
   const conditionalBindings = new Array<ConditionalBindingNode>();
   const directives = new Array<DirectiveNode>();
@@ -98,8 +100,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
           attributes.push(attribute);
           events.push(event);
         } else if (isStylingBinding(token)) {
-          const binding = parseStylingBinding(cursor, parseNode, token);
-          binding.type === ASTNodeType.ClassBinding ? classBindings.push(binding) : styleBindings.push(binding);
+          pushStylingBinding(parseStylingBinding(cursor, parseNode, token), classBindings, styleBindings, partBindings);
         } else {
           attributes.push(parseAttribute(cursor, parseNode, token));
         }
@@ -131,6 +132,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   assertUniqueAttributes(attributes, conditionalBindings, isValidCustomElementName(is?.value ?? tagName, false) ? writtenAttributeKey : nativeAttributeKey, name => `Attribute "${name}" is bound more than once on <${tagName}>`);
   assertUniqueClassBindings(classBindings, conditionalBindings, tagName);
   assertUniqueStyleBindings(styleBindings, conditionalBindings, tagName);
+  assertUniquePartBindings(partBindings, conditionalBindings, tagName);
   assertUniqueDirectives(tagName, directives, conditionalBindings, branch => branch.directives);
   assertUniqueDirectives(tagName, structuralDirectives, conditionalBindings, branch => branch.structuralDirectives);
 
@@ -138,7 +140,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
   const typeArguments = token.parts[1] === undefined ? undefined : parseTypeArguments(token.parts[1], nameSpan.end + 1);
   let node: MaybeASTNodeWithSpan<ElementNode> | MaybeASTNodeWithSpan<TemplateNode>;
   if (tagName === 'template' && declaration) {
-    const binding = typeArguments?.[0] ?? ref ?? is ?? attributes[0] ?? classBindings[0] ?? styleBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
+    const binding = typeArguments?.[0] ?? ref ?? is ?? attributes[0] ?? classBindings[0] ?? styleBindings[0] ?? partBindings[0] ?? events[0] ?? conditionalBindings[0] ?? directives[0] ?? structuralDirectives[0];
     if (binding) {
       throw new Error('A <template> declares only its name and its parameters, e.g. <template row(item: Item)>: it renders nothing where it is declared, but where a @render calls it', { cause: binding.span });
     }
@@ -152,6 +154,7 @@ export function parseElement(cursor: ParserCursor, parseNode: NoArgsFunction<AST
       attributes,
       classBindings,
       styleBindings,
+      partBindings,
       events,
       children: [],
       conditionalBindings,
@@ -351,6 +354,29 @@ function assertUniqueClassBindings(classBindings: ClassBindingNode[], conditiona
   }
 
   assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniqueClassBindings(branch.classBindings, branch.conditionalBindings, tagName, boundInBranch));
+}
+
+/**
+ * Ensures every part is toggled at most once at a time on an element, across the element itself and all of its
+ * (nested) conditional bindings, as {@link assertUniqueClassBindings} does for the classes.
+ *
+ * @param partBindings - Part binding nodes to check.
+ * @param conditionalBindings - Conditional bindings whose part bindings are checked recursively.
+ * @param tagName - Tag name of the element, used in the error message.
+ * @param bound - Names of the parts already toggled on the element.
+ * @throws If a part is toggled more than once.
+ */
+function assertUniquePartBindings(partBindings: PartBindingNode[], conditionalBindings: ConditionalBindingNode[], tagName: string, bound = new Set<string>()): void {
+  for (let i = 0; i < partBindings.length; i++) {
+    const { partName, span } = partBindings[i];
+    if (bound.has(partName)) {
+      throw new Error(`Part "${partName}" is bound more than once on <${tagName}>`, { cause: span });
+    }
+
+    bound.add(partName);
+  }
+
+  assertUniqueInBranches(conditionalBindings, bound, (branch, boundInBranch) => assertUniquePartBindings(branch.partBindings, branch.conditionalBindings, tagName, boundInBranch));
 }
 
 /**

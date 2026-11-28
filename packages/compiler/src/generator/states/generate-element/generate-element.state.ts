@@ -10,6 +10,7 @@ import { DirectiveNode } from '../../../parser/types/nodes/directive-node.type';
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import { EventNode } from '../../../parser/types/nodes/event-node.type';
 import type { StructuralDirectiveNode } from '../../../parser/types/nodes/structural-directive-node.type';
+import type { PartBindingNode } from '../../../parser/types/nodes/part-binding-node.type';
 import type { StyleBindingNode } from '../../../parser/types/nodes/style-binding-node.type';
 import { validateExpression } from '../../../parser/utils/expression-validator/expression-validator';
 import { isStructuralElement } from '../../../parser/utils/scope-declarations/scope-declarations.utils';
@@ -21,12 +22,13 @@ import { readsEvent } from '../../../utils/event-reads/event-reads.utils';
 import { GeneratorContext } from '../../context/context';
 import type { DescriptorOwner } from '../../types/descriptor-owner.type';
 import { GeneratorTransitionFunctionReturnType } from '../../types/generator-transition-function-return-type.type';
+import type { StylingAttributeName } from '../../types/styling-attribute-name.type';
 import type { StylingExpressions } from '../../types/styling-expressions.type';
 import type { TemplateListenerCode } from '../../types/template-listener-code.type';
 import { appendBlockPosition, appendContainer, rendersBlock } from '../../utils/block-position/block-position.utils';
 import { getElementIdentifier, isConstantExpression, joinVariables, resolveExpression, toStringLiteral } from '../../utils/generator/generator.utils';
 import { declareExpression, toArrayLiteral, toObjectLiteral, toRoleName } from '../../utils/module-code/module-code.utils';
-import { describeStyling, getDirectiveOrder, orderDirectives, splitStylingAttributes } from '../../utils/styling/styling.utils';
+import { STYLING_SHIFT, describeStyling, getDirectiveOrder, orderDirectives, splitStylingAttributes } from '../../utils/styling/styling.utils';
 import { appendUrlCheck, getUrlCheck } from '../../utils/url-check/url-check.utils';
 
 /**
@@ -83,7 +85,7 @@ export async function generateElement(node: ElementNode, parentNode: string, ind
   const elementOwner: DescriptorOwner = structural ? { name: nodeName, tagName, generatorContext: new GeneratorContext(generatorContext, undefined, 'runtime') } : owner;
   orderDirectives(node);
   // The attributes the component or the directives may write too, collected while the bindings are mapped
-  const branchDirectives = !!(branchStyling(node.conditionalBindings) & 4);
+  const branchDirectives = !!(branchStyling(node.conditionalBindings) & 8);
   const shared = isCustomElement || node.directives.length || branchDirectives ? new Array<string>() : undefined;
   const [attributes, written] = await mapBindings(node, elementOwner, selector, isCustomElement, false, false, shared);
   const events = mapEvents(node.events, elementOwner);
@@ -377,17 +379,17 @@ function declareAttribute(owner: DescriptorOwner, role: string, update: string, 
  * @param isDirective - Whether the owner is a directive.
  * @param conditional - Whether the bindings are declared inside a conditional binding.
  * @param shared - Collects the attributes other sources may write too (see {@link mapAttributes}).
- * @returns The code of the descriptors, and what they write: `1` for `class`, `2` for `style`.
+ * @returns The code of the descriptors, and what they write: `1` for `class`, `2` for `style`, `4` for `part`.
  * @throws If the metadata of a directive property can't be resolved.
  */
-async function mapBindings({ attributes, classBindings, styleBindings }: Pick<ElementNode, 'attributes' | 'classBindings' | 'styleBindings'>, owner: DescriptorOwner, target: string, isCustomElement: boolean, isDirective: boolean, conditional: boolean, shared?: string[]): Promise<[descriptors: string[], styling: number]> {
+async function mapBindings({ attributes, classBindings, styleBindings, partBindings }: Pick<ElementNode, 'attributes' | 'classBindings' | 'styleBindings' | 'partBindings'>, owner: DescriptorOwner, target: string, isCustomElement: boolean, isDirective: boolean, conditional: boolean, shared?: string[]): Promise<[descriptors: string[], styling: number]> {
   if (isDirective) {
     return [await mapAttributes(attributes, owner, target, false, true, conditional), 0];
   }
 
   // Native elements have no metadata
   const metadata = isCustomElement && attributes.length ? await owner.generatorContext.cache?.getOrInsert(target) : undefined;
-  const [rest, classAttribute, styleAttribute] = splitStylingAttributes(attributes, name => !!metadata?.properties.has(name));
+  const [rest, classAttribute, styleAttribute, partAttribute] = splitStylingAttributes(attributes, name => !!metadata?.properties.has(name));
   const mapped = new Array<string>();
   let styling = 0;
   const classes = mapStyling('class', classAttribute, classBindings, owner, conditional);
@@ -400,6 +402,12 @@ async function mapBindings({ attributes, classBindings, styleBindings }: Pick<El
   if (style) {
     mapped.push(style);
     styling |= 2;
+  }
+
+  const parts = mapStyling('part', partAttribute, partBindings, owner, conditional);
+  if (parts) {
+    mapped.push(parts);
+    styling |= 4;
   }
 
   return [mapped.concat(await mapAttributes(rest, owner, target, isCustomElement, false, conditional, shared)), styling];
@@ -423,7 +431,7 @@ async function mapBindings({ attributes, classBindings, styleBindings }: Pick<El
  * @param conditional - Whether the bindings are declared inside a conditional binding.
  * @returns The code of the descriptor, `undefined` when the element writes nothing on the attribute.
  */
-function mapStyling(attribute: 'class' | 'style', string: AttributeNode | undefined, keys: ReadonlyArray<ClassBindingNode | StyleBindingNode>, owner: DescriptorOwner, conditional: boolean): string | undefined {
+function mapStyling(attribute: StylingAttributeName, string: AttributeNode | undefined, keys: ReadonlyArray<ClassBindingNode | StyleBindingNode | PartBindingNode>, owner: DescriptorOwner, conditional: boolean): string | undefined {
   const { generatorContext } = owner;
   const found: StylingExpressions = { count: 0, constant: true, variables: undefined };
   const members = describeStyling(attribute, string, keys, (role, expression) => declareStylingExpression(owner, role, expression, found));
@@ -475,19 +483,19 @@ function appendStylingUnbind(members: string[], conditional: boolean): void {
 }
 
 /**
- * Flags the states merging the sources of the `class` and of the `style` of an element the runtime creates before
- * applying its bindings (see `_prepareStyling` of the runtime), for an attribute the element writes:
- * - `1` (`class`) and `2` (`style`) when another source of the template writes it, or may: a branch of one of its
- *   conditional bindings writing it or applying directives, or, for an element applying structural directives, whose
- *   bindings the runtime keeps without slots, always;
- * - `4` and `8` when a source outside the template may write it: the component the element is, or a directive it
- *   applies, which the runtime checks.
+ * Flags the states merging the sources of the `class`, of the `style` and of the `part` of an element the runtime
+ * creates before applying its bindings (see `_prepareStyling` of the runtime), for an attribute the element writes:
+ * - `1` (`class`), `2` (`style`) and `4` (`part`) when another source of the template writes it, or may: a branch of
+ *   one of its conditional bindings writing it or applying directives, or, for an element applying structural
+ *   directives, whose bindings the runtime keeps without slots, always;
+ * - the same flags shifted by {@link STYLING_SHIFT} (`8`, `16`, `32`) when a source outside the template may write it:
+ *   the component the element is, or a directive it applies, which the runtime checks.
  *
  * N.B. Deliberate, to save memory: an element written by its template alone, nearly every one, gets no flag, so that
  * the runtime creates no state for it. Do not flag every element.
  *
  * @param node - The element.
- * @param writes - What the element writes itself: `1` for `class`, `2` for `style`.
+ * @param writes - What the element writes itself: `1` for `class`, `2` for `style`, `4` for `part`.
  * @param structural - Whether it applies structural directives.
  * @returns The flags, `0` for none.
  */
@@ -497,25 +505,29 @@ function stylingFlags(node: ElementNode, writes: number, structural: boolean): n
   }
 
   const branches = branchStyling(node.conditionalBindings);
-  let flags = structural || branches & 4 ? writes : writes & branches;
+  let flags = structural || branches & 8 ? writes : writes & branches;
   if (isValidCustomElementName(getElementSelector(node), false) || node.directives.length) {
-    flags |= (writes & ~flags) << 2;
+    flags |= (writes & ~flags) << STYLING_SHIFT;
   }
 
   return flags;
 }
 
 /**
- * Tells which of `class` and `style` a branch writes itself, by its bindings: a `class` an input of the component takes
- * counts too, which only makes the runtime create a state it needs not.
+ * Tells which of `class`, `style` and `part` a branch writes itself, by its bindings: a `class` an input of the
+ * component takes counts too, which only makes the runtime create a state it needs not.
  *
  * @param bindings - The branch.
- * @returns `1` for `class`, `2` for `style`, both, `0` for none.
+ * @returns `1` for `class`, `2` for `style`, `4` for `part`, combined, `0` for none.
  */
-function writtenStyling({ attributes, classBindings, styleBindings }: Pick<ElementNode, 'attributes' | 'classBindings' | 'styleBindings'>): number {
+function writtenStyling({ attributes, classBindings, styleBindings, partBindings }: Pick<ElementNode, 'attributes' | 'classBindings' | 'styleBindings' | 'partBindings'>): number {
   let flags = classBindings.length ? 1 : 0;
   if (styleBindings.length) {
     flags |= 2;
+  }
+
+  if (partBindings.length) {
+    flags |= 4;
   }
 
   for (let i = 0; i < attributes.length; i++) {
@@ -527,6 +539,10 @@ function writtenStyling({ attributes, classBindings, styleBindings }: Pick<Eleme
       case 'style':
         flags |= 2;
         break;
+
+      case 'part':
+        flags |= 4;
+        break;
     }
   }
 
@@ -534,8 +550,8 @@ function writtenStyling({ attributes, classBindings, styleBindings }: Pick<Eleme
 }
 
 /**
- * Tells what the branches of conditional bindings, nested ones included, write: `1` `class`, `2` `style`, `4` the
- * directives they apply.
+ * Tells what the branches of conditional bindings, nested ones included, write: `1` `class`, `2` `style`, `4` `part`,
+ * `8` the directives they apply.
  *
  * @param conditionalBindings - The conditional bindings.
  * @returns The flags.
@@ -548,7 +564,7 @@ function branchStyling(conditionalBindings: ConditionalBindingNode[]): number {
       const branch = branches[j];
       flags |= writtenStyling(branch) | branchStyling(branch.conditionalBindings);
       if (branch.directives.length) {
-        flags |= 4;
+        flags |= 8;
       }
     }
   }
@@ -768,8 +784,8 @@ async function mapConditionalBindingDescriptors(
  * @param branch - The branch to check.
  * @returns `true` if the branch has nothing to apply, `false` otherwise.
  */
-function isEmptyBranch({ attributes, classBindings, styleBindings, events, conditionalBindings, directives }: ConditionalBindingBranchNode): boolean {
-  return !attributes.length && !classBindings.length && !styleBindings.length && !events.length && !directives.length && conditionalBindings.every(({ branches }) => branches.every(isEmptyBranch));
+function isEmptyBranch({ attributes, classBindings, styleBindings, partBindings, events, conditionalBindings, directives }: ConditionalBindingBranchNode): boolean {
+  return !attributes.length && !classBindings.length && !styleBindings.length && !partBindings.length && !events.length && !directives.length && conditionalBindings.every(({ branches }) => branches.every(isEmptyBranch));
 }
 
 /**

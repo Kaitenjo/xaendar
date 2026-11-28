@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { HostStylingRun } from '../../models/host-styling-run/host-styling-run';
 import type { _RenderStyling } from '../../types/styling/render-styling.type';
 import type { StylingAttribute } from '../../types/styling/styling-attribute.type';
@@ -87,6 +87,19 @@ describe('styling state', () => {
 
       expect([...element.classList].sort()).toEqual(['c-key', 'c-string', 'd-string', 'first-only', 'first-string', 'second-string', 'shared', 't-string']);
     }
+  });
+
+  it('resolves each part by the strongest source having an opinion, as the classes', () => {
+    const element = document.createElement('div');
+    const template = templateOf('part', ['selected']);
+    const component = hostOf(element, 'part', 2, 0, ['selected', 'host-only']);
+    createStylingState(element, 'part');
+    set(element, component, 'base', true, true);
+    set(element, template, 'tab', false);
+    expect(element.getAttribute('part')!.split(' ').sort()).toEqual(['base', 'host-only', 'tab']);
+
+    removeStylingSource(element, 'part', template);
+    expect(element.getAttribute('part')!.split(' ').sort()).toEqual(['base', 'host-only', 'selected']);
   });
 
   it('resolves each property by the strongest source having an opinion, whatever the order of registration', () => {
@@ -306,6 +319,29 @@ describe('applyDirectStyling', () => {
     expect(styleOf(element).getPropertyValue('color')).toBe('blue');
   });
 
+  it('adds and removes the parts through the text of the attribute, normalized as a DOMTokenList writes it, only when a part changes', () => {
+    const element = document.createElement('div');
+    element.setAttribute('part', '  tab\texternal ');
+    applyDirectStyling(element, 'part', null, null, ['selected', true], ['tab', true]);
+    expect(element.getAttribute('part')).toBe('tab external selected');
+
+    const setAttribute = vi.spyOn(element, 'setAttribute');
+    applyDirectStyling(element, 'part', ['selected', true], ['tab', true], ['selected', true], ['tab', true, 'other', false]);
+    expect(setAttribute).not.toHaveBeenCalled();
+
+    applyDirectStyling(element, 'part', ['selected', true], ['tab', true], ['selected', false], null);
+    expect(element.getAttribute('part')).toBe('external');
+
+    applyDirectStyling(element, 'part', null, null, null, ['missing', false]);
+    expect(element.getAttribute('part')).toBe('external');
+  });
+
+  it('creates the part attribute an element does not hold', () => {
+    const element = document.createElement('div');
+    applyDirectStyling(element, 'part', null, null, ['on', true], null);
+    expect(element.getAttribute('part')).toBe('on');
+  });
+
   it('removes nothing the source had no opinion on, and nothing absent', () => {
     const element = document.createElement('div');
     element.className = 'x';
@@ -326,6 +362,9 @@ describe('writeStylingAttribute', () => {
 
     writeStylingAttribute(element, 'style', ['width', '1px'], ['color', 'red !important', 'width', '2px']);
     expect(element.getAttribute('style')).toBe('color: red !important; width: 1px;');
+
+    writeStylingAttribute(element, 'part', ['selected', true], ['tab', true]);
+    expect(element.getAttribute('part')).toBe('tab selected');
   });
 
   it('sets alone a value holding a semicolon, which adds no declaration to the attribute', () => {

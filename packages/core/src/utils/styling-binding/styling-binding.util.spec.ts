@@ -244,7 +244,7 @@ describe('_prepareStyling', () => {
   it('marks the attributes the directives of the element and of its branches write with their host attributes', () => {
     _defineDirective('prepareStyling', directiveOf({ width: 'style.width.px' }, { width: 1 }));
     const element = document.createElement('div');
-    _prepareStyling(element, elementOf({ styling: 12, directives: [{ selector: 'prepareStyling' }] }));
+    _prepareStyling(element, elementOf({ styling: 24, directives: [{ selector: 'prepareStyling' }] }));
     expect(marksOf(element)).toEqual([false, true]);
 
     const branch = document.createElement('div');
@@ -260,13 +260,24 @@ describe('_prepareStyling', () => {
     expect(marksOf(pending)).toEqual([true, true]);
   });
 
+  it('marks the part as the classes and the style, by its own bit', () => {
+    const structural = document.createElement('div');
+    _prepareStyling(structural, elementOf({ styling: 4, structuralDirectives: [{ selector: 'visible' }] }));
+    expect(getElementSources(structural)?.part).toBe(true);
+    expect(marksOf(structural)).toEqual([false, false]);
+
+    const custom = document.createElement('x-not-defined-for-parts');
+    _prepareStyling(custom, elementOf({ styling: 32 }));
+    expect(getElementSources(custom)?.part).toBe(true);
+  });
+
   it('marks both attributes on a custom element not defined yet, none on a native element', () => {
     const custom = document.createElement('x-not-defined-yet');
-    _prepareStyling(custom, elementOf({ styling: 12 }));
+    _prepareStyling(custom, elementOf({ styling: 24 }));
     expect(marksOf(custom)).toEqual([true, true]);
 
     const native = document.createElement('div');
-    _prepareStyling(native, elementOf({ styling: 12 }));
+    _prepareStyling(native, elementOf({ styling: 24 }));
     expect(getElementSources(native)).toBeUndefined();
   });
 
@@ -278,12 +289,12 @@ describe('_prepareStyling', () => {
     Object.defineProperty(Component, Symbol.for('Symbol.metadata'), { value: metadata });
     customElements.define('x-prepare-styling', Component);
     const element = document.createElement('x-prepare-styling');
-    _prepareStyling(element, elementOf({ styling: 12 }));
+    _prepareStyling(element, elementOf({ styling: 24 }));
     expect(marksOf(element)).toEqual([true, false]);
 
     // The flags of the class are computed once
     const other = document.createElement('x-prepare-styling');
-    _prepareStyling(other, elementOf({ styling: 4 }));
+    _prepareStyling(other, elementOf({ styling: 8 }));
     expect(marksOf(other)).toEqual([true, false]);
   });
 });
@@ -357,10 +368,25 @@ describe('a state only for the keys two sources share', () => {
     const selector = `lazy${Math.random()}`;
     _defineDirective(selector, Directive);
     const element = document.createElement('div');
-    _prepareStyling(element, elementOf({ styling: styling.name === 'class' ? 4 : 8, directives: [{ selector }] }));
+    _prepareStyling(element, elementOf({ styling: { class: 8, style: 16, part: 32 }[styling.name], directives: [{ selector }] }));
     _setReactiveStyling(scopeOf(styling), element, styling);
     return { element, directive: bindDirective(element, Directive, 0) };
   }
+
+  it('merges the parts of the template and of a directive, the template winning on the part both write', async () => {
+    const on = signal(true);
+    const { element, directive } = renderWith(stylingOf({ name: 'part', string: () => 'tab' }), directiveOf({ on: 'part.selected' }, { on }));
+    expect(element.getAttribute('part')).toBe('tab selected');
+
+    on.set(false);
+    await flush();
+    expect(element.getAttribute('part')).toBe('tab');
+
+    on.set(true);
+    await flush();
+    clear(directive);
+    expect(element.getAttribute('part')).toBe('tab');
+  });
 
   it('writes the classes of the template and of a directive directly while they differ, the directive removing only its own', async () => {
     const on = signal(true);

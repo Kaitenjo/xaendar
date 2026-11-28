@@ -84,7 +84,8 @@ export function removeHostStyling(run: HostStylingRun): void {
 
 /**
  * Gives the attributes merged key by key a class of a directive or of a component writes with its host attributes, and,
- * for a component, the ones its host directives write: `1` for `class`, `2` for `style`, computed once per class.
+ * for a component, the ones its host directives write: `1` for `class`, `2` for `style`, `4` for `part`,
+ * computed once per class.
  *
  * @param klass - The class.
  * @returns The flags.
@@ -118,6 +119,10 @@ function computeFlags(klass: object): number {
 
         case 'style':
           flags |= 2;
+          break;
+
+        case 'part':
+          flags |= 4;
           break;
       }
     }

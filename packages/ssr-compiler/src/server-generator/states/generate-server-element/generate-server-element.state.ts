@@ -108,7 +108,7 @@ function toContentPieces(content: string): ServerCodePiece[] {
  * @returns The code of the element.
  */
 function writeElement(node: ElementNode, id: string, generatorContext: GeneratorContext, children: readonly ServerCodePiece[]): ServerCodePiece[] {
-  const { tagName, attributes, classBindings, styleBindings, ref } = node;
+  const { tagName, attributes, classBindings, styleBindings, partBindings, ref } = node;
   const owner: DescriptorOwner = { name: id, tagName: node.tagName, generatorContext };
   const isHtml = getElementNamespace(tagName, generatorContext.namespace) === 'html';
   // The name its component is looked up by: the `is` of a customized built-in element, the tag name of any other element
@@ -127,7 +127,7 @@ function writeElement(node: ElementNode, id: string, generatorContext: Generator
 
   registerEvents(node, generatorContext);
 
-  if (isComponent || classBindings.length || styleBindings.length || conditionalBindings.length || directives?.length || hasStyleAttribute(attributes)) {
+  if (isComponent || classBindings.length || styleBindings.length || partBindings.length || conditionalBindings.length || directives?.length || hasStyleAttribute(attributes)) {
     const descriptors = mapBindings(node, owner, isComponent ? selector : undefined);
     appendSubmitMark(descriptors, node);
     const members = [`tagName: '${tagName}'`];
@@ -329,28 +329,30 @@ function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, targ
 
 /**
  * Maps the bindings of an element, or of a branch of one of its conditional bindings, to the descriptors the runtime
- * applies, as the client does: its `class` and its `style`, one descriptor each (see `describeStyling`), merged key by
- * key with the directives and the component writing them, written once (`_setStyling`, `_setExpressionStyling`),
- * unless the component declares an input with their name, then its other attributes (see {@link mapAttributes}).
+ * applies, as the client does: its `class`, its `style` and its `part`, one descriptor each (see `describeStyling`),
+ * merged key by key with the directives and the component writing them, written once (`_setStyling`,
+ * `_setExpressionStyling`), unless the component declares an input with their name, then its other attributes (see
+ * {@link mapAttributes}).
  *
- * @param bindings - The attributes, the classes and the style properties bound.
+ * @param bindings - The attributes, the classes, the style properties and the parts bound.
  * @param owner - The element, which the functions of the expressions are named after.
  * @param component - The tag name of the element when it is a component, `undefined` for a native element.
  * @returns The code of the descriptors.
  * @throws When a directive the template imports does not declare an attribute bound to it.
  */
-function mapBindings({ attributes, classBindings, styleBindings }: Pick<ElementNode, 'attributes' | 'classBindings' | 'styleBindings'>, owner: DescriptorOwner, component: string | undefined): string[] {
+function mapBindings({ attributes, classBindings, styleBindings, partBindings }: Pick<ElementNode, 'attributes' | 'classBindings' | 'styleBindings' | 'partBindings'>, owner: DescriptorOwner, component: string | undefined): string[] {
   const metadata = component && attributes.length ? owner.generatorContext.getImportedMetadata(component) : undefined;
-  const [rest, classAttribute, styleAttribute] = splitStylingAttributes(attributes, name => !!metadata?.properties.has(name));
+  const [rest, classAttribute, styleAttribute, partAttribute] = splitStylingAttributes(attributes, name => !!metadata?.properties.has(name));
   const descriptors = new Array<string>();
   appendStyling(descriptors, describeStyling('class', classAttribute, classBindings, (role, expression) => declareElementExpression(owner, role, expression)));
   appendStyling(descriptors, describeStyling('style', styleAttribute, styleBindings, (role, expression) => declareElementExpression(owner, role, expression)));
+  appendStyling(descriptors, describeStyling('part', partAttribute, partBindings, (role, expression) => declareElementExpression(owner, role, expression)));
   return descriptors.concat(mapAttributes(rest, owner, component));
 }
 
 /**
- * Appends the descriptor of the `class` or of the `style` of an element, written once: `_setStyling` for a static
- * string alone, `_setExpressionStyling` for expressions.
+ * Appends the descriptor of the `class`, of the `style` or of the `part` of an element, written once: `_setStyling` for
+ * a static string alone, `_setExpressionStyling` for expressions.
  *
  * @param descriptors - The code of the descriptors.
  * @param members - The members of the descriptor, `undefined` when the element writes nothing on the attribute.
@@ -510,17 +512,17 @@ function toDirectiveDescriptor(selector: string, attributes: AttributeNode[], ow
 }
 
 /**
- * Tells whether a branch of a conditional binding writes nothing on the server: no attribute, no class, no mark of
- * `submit` and no custom directive, when the element applies them, neither directly nor through its nested conditional
- * bindings. Its other events are left out.
+ * Tells whether a branch of a conditional binding writes nothing on the server: no attribute, no class, no part, no
+ * mark of `submit` and no custom directive, when the element applies them, neither directly nor through its nested
+ * conditional bindings. Its other events are left out.
  *
  * @param branch - The branch node.
  * @param withDirectives - Whether the element applies its custom directives on the server.
  * @returns `true` when the branch writes nothing.
  */
 function isEmptyBranch(branch: ConditionalBindingBranchNode, withDirectives: boolean): boolean {
-  const { attributes, classBindings, styleBindings, directives, conditionalBindings } = branch;
-  return !attributes.length && !classBindings.length && !styleBindings.length && !listensToSubmit(branch) && !(withDirectives && directives.length) && conditionalBindings.every(({ branches }) => branches.every(nested => isEmptyBranch(nested, withDirectives)));
+  const { attributes, classBindings, styleBindings, partBindings, directives, conditionalBindings } = branch;
+  return !attributes.length && !classBindings.length && !styleBindings.length && !partBindings.length && !listensToSubmit(branch) && !(withDirectives && directives.length) && conditionalBindings.every(({ branches }) => branches.every(nested => isEmptyBranch(nested, withDirectives)));
 }
 
 /**

@@ -29,9 +29,9 @@ export function toTemplateSpan(typeCheck: TypeCheckResult, shimFile: SourceFile,
 }
 
 /**
- * Returns the span an error of the compiler is best reported on: the name of the element, directive, attribute
- * or event whose whole span the error refers to (e.g. a missing required property is reported on the tag name,
- * not on the whole element), or the span of the error itself.
+ * Returns the span an error of the compiler is best reported on: the name of the element, directive, attribute,
+ * class, style or part binding, or event whose whole span the error refers to (e.g. a missing required property is
+ * reported on the tag name, not on the whole element), or the span of the error itself.
  *
  * @param error - The error.
  * @param ast - The top-level nodes of the template, when it could be parsed.
@@ -60,6 +60,9 @@ export function getErrorSpan(error: Error, ast: readonly ASTNode[] | undefined):
         named.push({ span: node.span, name: node.nameSpan });
       },
       styleBinding: node => {
+        named.push({ span: node.span, name: node.nameSpan });
+      },
+      partBinding: node => {
         named.push({ span: node.span, name: node.nameSpan });
       },
       event: node => {

@@ -90,7 +90,7 @@ describe('generateElement', () => {
     expect(element).toContain('tagName: \'button\',\n  is: \'copy-button\',');
     expect(element).toContain('{ name: \'label\', value: \'Copy\', setter: _setInput }');
     expect(element).toContain('shared: [\'type\']');
-    expect(element).toContain('styling: 4');
+    expect(element).toContain('styling: 8');
     expectValidJavascript(result);
   });
 
@@ -675,6 +675,32 @@ describe('generateElement', () => {
     expect(reads).toEqual(['const _reads0 = [0];']);
   });
 
+  it('generates the part of the element as one descriptor, its static parts parsed as classes, the keys bound one by one', async () => {
+    const { constants } = await run('<button part="tab  item" part.selected="{1}"></button>', new GeneratorContext(cache));
+
+    expect(constants.at(-1)).toBe([
+      'const button0$element = {',
+      '  tagName: \'button\',',
+      '  attributes: [',
+      '    {',
+      '      name: \'part\',',
+      '      text: \'tab  item\',',
+      '      statics: [\'tab\', true, \'item\', true],',
+      '      keys: [\'selected\'],',
+      '      values: [button0$part_selected],',
+      '      setter: _setExpressionStyling',
+      '    }',
+      '  ]',
+      '};'
+    ].join('\n'));
+  });
+
+  it('keeps part as an input of a component declaring it', async () => {
+    const context = new GeneratorContext(cacheWith({ part: new ComponentPropertyMetadata('part', 'string') }));
+    const { constants } = await run('<my-el part="a"></my-el>', context);
+    expect(constants).toEqual(['const my_el0$element = { tagName: \'my-el\', attributes: [{ name: \'part\', value: \'a\', setter: _setInput }] };']);
+  });
+
   it('keeps class and style as inputs of a component declaring them, and leaves out an empty static string', async () => {
     const context = new GeneratorContext(cacheWith({ class: new ComponentPropertyMetadata('class', 'string') }));
     const { constants } = await run('<my-el class="a" style=" ; "></my-el>', context);
@@ -683,8 +709,12 @@ describe('generateElement', () => {
 
   it('flags the states the runtime creates: for a component, for directives, for structural directives, for branches applying directives', async () => {
     const flagsOf = async (template: string) => /styling: (\d+)/.exec((await run(template, new GeneratorContext(cacheWith({})))).constants.at(-1)!)?.[1];
-    expect(await flagsOf('<my-el class="a" style.width.px="{1}"></my-el>')).toBe('12');
-    expect(await flagsOf('<div class="a" @@tip()></div>')).toBe('4');
+    expect(await flagsOf('<my-el class="a" style.width.px="{1}"></my-el>')).toBe('24');
+    expect(await flagsOf('<div class="a" @@tip()></div>')).toBe('8');
+    expect(await flagsOf('<my-el part="tab" part.on="{1}"></my-el>')).toBe('32');
+    expect(await flagsOf('<div part="tab" @if (x) { part.on="{1}" }></div>')).toBe('4');
+    expect(await flagsOf('<div part.on="{1}" @if (x) { part="b" }></div>')).toBe('4');
+    expect(await flagsOf('<div part="a" style="top: 0" @if (x) { @@tip() }></div>')).toBe('6');
     expect(await flagsOf('<div *visible style="top: 0"></div>')).toBe('2');
     expect(await flagsOf('<div class="a" style="top: 0" @if (x) { @@tip() }></div>')).toBe('3');
     expect(await flagsOf('<div class="a" @if (x) { style.top.px="{1}" }></div>')).toBeUndefined();

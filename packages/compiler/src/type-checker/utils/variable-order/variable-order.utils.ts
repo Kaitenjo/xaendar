@@ -359,19 +359,26 @@ function checkElement(node: ElementNode, check: OrderCheck): void {
 }
 
 /**
- * Checks the attributes, the class and style bindings and the conditional bindings declared on an element, in a directive or in
- * a branch of a conditional binding, with the directives the branch applies.
+ * Checks the attributes, the class, style and part bindings and the conditional bindings declared on an element, in a
+ * directive or in a branch of a conditional binding, with the directives the branch applies.
  *
  * @param bindings - The bindings.
  * @param check - The state of the check.
  */
-function checkBindings(bindings: Pick<ConditionalBindingBranchNode, 'attributes' | 'conditionalBindings'> & Partial<Pick<ConditionalBindingBranchNode, 'classBindings' | 'styleBindings' | 'directives' | 'structuralDirectives'>>, check: OrderCheck): void {
+function checkBindings(bindings: Pick<ConditionalBindingBranchNode, 'attributes' | 'conditionalBindings'> & Partial<Pick<ConditionalBindingBranchNode, 'classBindings' | 'styleBindings' | 'partBindings' | 'directives' | 'structuralDirectives'>>, check: OrderCheck): void {
   checkAttributes(bindings.attributes, check);
 
-  const { classBindings, styleBindings, directives, structuralDirectives } = bindings;
+  const { classBindings, styleBindings, partBindings, directives, structuralDirectives } = bindings;
   if (classBindings?.length) {
     for (let i = 0; i < classBindings.length; i++) {
       const { value, span } = classBindings[i];
+      checkReads(value.expression, span, check);
+    }
+  }
+
+  if (partBindings?.length) {
+    for (let i = 0; i < partBindings.length; i++) {
+      const { value, span } = partBindings[i];
       checkReads(value.expression, span, check);
     }
   }

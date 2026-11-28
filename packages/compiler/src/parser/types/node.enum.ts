@@ -87,6 +87,10 @@ export enum ASTNodeType {
    */
   ClassBinding,
   /**
+   * A part the element exposes to `::part()` by the value of an expression, `part.name="{expression}"`.
+   */
+  PartBinding,
+  /**
    * Content rendered on the server whose hydration waits for a trigger, `@hydrate (visible) { … }`.
    */
   Hydrate,

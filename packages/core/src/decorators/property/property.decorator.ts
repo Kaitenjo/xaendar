@@ -44,13 +44,13 @@ function createInput<ActualValue, IncomingValue>(value: ActualValue | undefined,
  * @param target - The getter and the setter of the accessor of the input.
  * @param context - The context of the accessor of the input.
  * @param name - The name of the attribute.
- * @throws If the name is empty or names the classes or the style, which `@HostAttribute` binds, or an attribute the
- *   browser runs, and, once an instance is created, if the class is a structural directive.
+ * @throws If the name is empty or names the classes, the style or the parts, which `@HostAttribute` binds, or an
+ *   attribute the browser runs, and, once an instance is created, if the class is a structural directive.
  */
 function reflectInput(target: ClassAccessorDecoratorValue<unknown>, context: HostAttributeContext, name: string): void {
   const propertyKey = String(context.name);
   if (namesStyling(name)) {
-    throw new Error(`@Property on ${propertyKey} reflects the input on "${name}": reflect names an attribute, while the classes and the style are bound with @HostAttribute`);
+    throw new Error(`@Property on ${propertyKey} reflects the input on "${name}": reflect names an attribute, while the classes, the style and the parts are bound with @HostAttribute`);
   }
 
   HostAttribute(name)(target, context);
@@ -72,13 +72,13 @@ function reflectInput(target: ClassAccessorDecoratorValue<unknown>, context: Hos
  * @param defaultValue - The default value of the input, `undefined` for a required one.
  * @param transforms - Whether the input declares a `transform`.
  * @param reflects - Whether the input is reflected on the same attribute.
- * @throws If the name names the classes or the style, or the conversion cannot be deduced (see
+ * @throws If the name names the classes, the style or the parts, or the conversion cannot be deduced (see
  *   `registerAttributeInput`), and, once an instance is created, if the class is not a component.
  */
 function readFromAttribute(context: ClassAccessorDecoratorContext<BindingHost, unknown> & { metadata: Partial<WebComponentMetadata> }, name: string, option: unknown, defaultValue: unknown, transforms: boolean, reflects: boolean): void {
   const propertyKey = String(context.name);
   if (namesStyling(name)) {
-    throw new Error(`@Property on ${propertyKey} is written by the attribute "${name}": the classes and the style are not the attribute of an input`);
+    throw new Error(`@Property on ${propertyKey} is written by the attribute "${name}": the classes, the style and the parts are not the attribute of an input`);
   }
 
   registerAttributeInput(context.metadata, propertyKey, name, option, defaultValue, transforms, reflects);
@@ -90,14 +90,14 @@ function readFromAttribute(context: ClassAccessorDecoratorContext<BindingHost, u
 }
 
 /**
- * Tells whether a name given to `reflect` or `attribute` names the classes or the style, which are no attribute of an
- * input.
+ * Tells whether a name given to `reflect` or `attribute` names the classes, the style or the parts, which are no
+ * attribute of an input.
  *
  * @param name - The name.
- * @returns `true` for `class`, `style` and the names starting with `class.` or `style.`.
+ * @returns `true` for `class`, `style`, `part` and the names starting with `class.`, `style.` or `part.`.
  */
 function namesStyling(name: string): boolean {
-  return name === 'class' || name === 'style' || name.startsWith('class.') || name.startsWith('style.');
+  return name === 'class' || name === 'style' || name === 'part' || name.startsWith('class.') || name.startsWith('style.') || name.startsWith('part.');
 }
 
 /**

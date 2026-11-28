@@ -375,8 +375,8 @@ describe('types of @Property', () => {
     });
 
     it('rejects the classes and the style, which @HostAttribute binds, and the attributes the browser runs', () => {
-      for (const name of ['class', 'style', 'class.on', 'style.width.px']) {
-        expect(() => reflected(Property(false, { reflect: name }))).toThrow(`@Property on label reflects the input on "${name}": reflect names an attribute, while the classes and the style are bound with @HostAttribute`);
+      for (const name of ['class', 'style', 'part', 'class.on', 'style.width.px', 'part.on']) {
+        expect(() => reflected(Property(false, { reflect: name }))).toThrow(`@Property on label reflects the input on "${name}": reflect names an attribute, while the classes, the style and the parts are bound with @HostAttribute`);
       }
 
       expect(() => reflected(Property('', { reflect: 'onclick' }))).toThrow('@HostAttribute(\'onclick\') writes code the browser runs');
@@ -415,8 +415,8 @@ describe('types of @Property', () => {
       expect(() => reflected(Property.required({ attribute: true }), 'level')).toThrow('@Property on level is written by the attribute "level", whose text cannot be converted');
     });
 
-    it('rejects the classes and the style', () => {
-      expect(() => reflected(Property('', { attribute: 'class' }))).toThrow('@Property on label is written by the attribute "class": the classes and the style are not the attribute of an input');
+    it('rejects the classes, the style and the parts', () => {
+      expect(() => reflected(Property('', { attribute: 'class' }))).toThrow('@Property on label is written by the attribute "class": the classes, the style and the parts are not the attribute of an input');
     });
 
     it('rejects a directive, which hears no attribute, once an instance is created', () => {

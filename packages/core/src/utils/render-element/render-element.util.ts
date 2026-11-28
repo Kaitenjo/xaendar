@@ -343,10 +343,11 @@ function applyBranch<Target, Bindings extends { readonly conditionalBindings?: R
 function bindElementBranch(binding: ElementBinding, context: _Context, branch: RenderElementConditionalBinding['branches'][number]): void {
   const { element } = binding;
   const { attributes, events, directives, styling } = branch;
-  // A branch is a source of `class` and `style` that comes and goes, merged with the others by the state of the element
+  // A branch is a source of `class`, `style` and `part` that comes and goes, merged with the others by the state of the element
   if (styling) {
     styling & 1 && ensureStylingState(element, 'class');
     styling & 2 && ensureStylingState(element, 'style');
+    styling & 4 && ensureStylingState(element, 'part');
   }
 
   if (attributes?.length) {

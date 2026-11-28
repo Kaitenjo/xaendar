@@ -20,15 +20,25 @@ const CLASS_PREFIX = 'class.';
 const STYLE_PREFIX = 'style.';
 
 /**
+ * The prefix of the name of a part binding (`part.name`).
+ */
+const PART_PREFIX = 'part.';
+
+/**
+ * Matches the name of a part `exportparts` can forward: no whitespace, `,` nor `:`.
+ */
+const PART_NAME_RE = /^[^\s,:]+$/;
+
+/**
  * Matches the name of a style property and its unit, if any, as `style.name` does in a template: `width` and `px`
  * in `width.px`, `backgroundColor` in `backgroundColor`.
  */
 const STYLE_PROPERTY_RE = /^([a-zA-Z][a-zA-Z-]*)(?:\.([a-z]+|%))?$/;
 
 /**
- * Decorator that binds an attribute, the classes or the style of the host element of a web component or of a custom
- * directive (the element it is applied to) to a field, a getter or an accessor. A structural directive cannot declare
- * it, since it holds no element.
+ * Decorator that binds an attribute, the classes, the style or the parts of the host element of a web component or of a
+ * custom directive (the element it is applied to) to a field, a getter or an accessor. A structural directive cannot
+ * declare it, since it holds no element.
  *
  * The member is read each time the element is connected, or the directive started, and again whenever a signal it reads
  * changes: a member that reads no signal is written once. A field holding a signal, or any other function, is called to
@@ -41,29 +51,33 @@ const STYLE_PROPERTY_RE = /^([a-zA-Z][a-zA-Z-]*)(?:\.([a-z]+|%))?$/;
  * An attribute is merged with the other sources writing it: the template rendering the element (`attr.name`, or `name`
  * when the component has no input of that name) wins over the directives, which win over the component, whatever the
  * order they write in, and a source without opinion (`null`, `undefined`) leaves it to the ones below.
- * `class` and `style` are merged key by key the same way: for each class or property the template rendering the element
- * wins over the directives, which win over the component, and in each level a key bound alone wins over the string. The
- * forms:
+ * `class`, `style` and `part` are merged key by key the same way: for each class, property or part the template
+ * rendering the element wins over the directives, which win over the component, and in each level a key bound alone
+ * wins over the string. The forms:
  * - `class`: a string of classes (`'card wide'`);
  * - `class.name`: the class, present for a truthy value, absent for `false`, `0` and `''`;
  * - `style`: a string of declarations (`'display: flex; gap: 4px'`);
  * - `style.name`: the property, in kebab-case or in camelCase, or a custom property (`style.--accent`), set to a string
- *   or a number, followed by its unit, if any (`style.width.px`), with `!important` when the value ends with it.
+ *   or a number, followed by its unit, if any (`style.width.px`), with `!important` when the value ends with it;
+ * - `part`: a string of parts, the names the element exposes to `::part()` (`'tab selected'`);
+ * - `part.name`: the part, present for a truthy value, absent for `false`, `0` and `''`.
  *
  * When the element is disconnected, or the directive destroyed, the opinions of the owner on the attributes, the classes
  * and the properties are taken away, giving back the value of the sources below: an attribute nothing else writes is
  * removed, if the owner wrote it.
  *
  * The type of the member follows the name, a signal or a function returning it included: `string | null | undefined`
- * for `class` and `style`, `number | null | undefined` for a property with a unit, `string | number | null | undefined`
- * for a property without unit.
+ * for `class`, `style` and `part`, `number | null | undefined` for a property with a unit, `string | number | null |
+ * undefined` for a property without unit.
  *
- * @param name - The name of the attribute, `class`, `class.` followed by the name of the class, `style`, or `style.`
- *   followed by the name of the style property and its unit, if any.
+ * @param name - The name of the attribute, `class`, `class.` followed by the name of the class, `style`, `style.`
+ *   followed by the name of the style property and its unit, if any, `part`, or `part.` followed by the name of the
+ *   part.
  * @returns A decorator for a field, a getter or an accessor, not static.
- * @throws If the name is empty, `class.` is followed by no class, `style.` by no style property or by a unit CSS does not
- *   have, or names an attribute the browser runs (`on*`, `srcdoc`) while the `rejectUnsafeBindings` of the `security` of
- *   `xaendar.json` is on, and, once applied, if the member is static or the class binds the same class or property twice.
+ * @throws If the name is empty, `class.` is followed by no class, `style.` by no style property or by a unit CSS does
+ *   not have, `part.` by no part or by a name holding whitespace, `,` or `:`, or names an attribute the browser runs
+ *   (`on*`, `srcdoc`) while the `rejectUnsafeBindings` of the `security` of `xaendar.json` is on, and, once applied, if
+ *   the member is static or the class binds the same class or property twice.
  *
  * @example
  * ```ts
@@ -102,17 +116,19 @@ export function HostAttribute<const Name extends string>(name: Name): HostAttrib
 
 /**
  * Reads what the name given to `@HostAttribute` binds: an attribute, the string or a class of `class`, the string or a
- * property of `style`.
+ * property of `style`, the string or a part of `part`.
  *
  * @param name - The name given to `@HostAttribute`.
  * @returns The binding, without the member reading it.
- * @throws If the name is empty, `class.` is followed by no class, `style.` by no style property or by an unknown unit, or
+ * @throws If the name is empty, `class.` is followed by no class, `style.` by no style property or by an unknown unit,
+ *   `part.` by no part or by a name `exportparts` could not forward, or
  *   it names an attribute the browser runs, as `rejectUnsafeBindings` of the `security` of `xaendar.json` asks.
  */
 function toBinding(name: string): Omit<HostAttributeBinding, 'read'> {
   switch (name) {
     case 'class':
     case 'style':
+    case 'part':
       return { name: '', kind: name };
 
     case '':
@@ -130,6 +146,19 @@ function toBinding(name: string): Omit<HostAttributeBinding, 'read'> {
 
   if (name.startsWith(STYLE_PREFIX)) {
     return toStyleBinding(name, name.slice(STYLE_PREFIX.length));
+  }
+
+  if (name.startsWith(PART_PREFIX)) {
+    const part = name.slice(PART_PREFIX.length);
+    if (!part) {
+      throw new Error(`@HostAttribute('${name}') names no part`);
+    }
+
+    if (!PART_NAME_RE.test(part)) {
+      throw new Error(`@HostAttribute('${name}') names a part holding whitespace, a comma or a colon, which exportparts could not forward: write one name, e.g. 'part.selected'`);
+    }
+
+    return { name: part, kind: 'part' };
   }
 
   const unsafe = SECURITY.rejectUnsafeBindings ? describeUnsafeAttribute(name) : undefined;
@@ -169,7 +198,7 @@ function toStyleBinding(name: string, property: string): Omit<HostAttributeBindi
 }
 
 /**
- * Describes what a binding of `class` or `style` binds, for an error.
+ * Describes what a binding of `class`, `style` or `part` binds, for an error.
  *
  * @param binding - The binding.
  * @returns The description.
@@ -179,5 +208,14 @@ function describe({ name, kind }: Omit<HostAttributeBinding, 'read'>): string {
     return `the string of ${kind}`;
   }
 
-  return kind === 'class' ? `the class ${name}` : `the style property ${name}`;
+  switch (kind) {
+    case 'class':
+      return `the class ${name}`;
+
+    case 'part':
+      return `the part ${name}`;
+
+    default:
+      return `the style property ${name}`;
+  }
 }

@@ -867,6 +867,24 @@ describe('_renderElement', () => {
       expect((element as HTMLElement).style.getPropertyValue('width')).toBe('1px');
     });
 
+    it('merges the part of a branch with the one of the element, giving it back when it is no longer selected', async () => {
+      const enabled = signal(true);
+      const element = render(document.createElement('div'), createRoot(), {
+        styling: 4,
+        attributes: [{ name: 'part', text: 'tab', statics: ['tab', true], setter: _setStyling }],
+        conditionalBindings: [ifBinding({
+          condition: () => enabled(),
+          styling: 4,
+          attributes: [{ name: 'part', keys: ['tab', 'selected'], values: [() => false, () => true], setter: _setExpressionStyling, unbind: _removeStyling }]
+        })]
+      });
+      expect(element.getAttribute('part')).toBe('selected');
+
+      enabled.set(false);
+      await flush();
+      expect(element.getAttribute('part')).toBe('tab');
+    });
+
     it('merges an attribute of a branch with the one a directive of the element writes, giving the value of the directive back when the branch is no longer selected', async () => {
       const TitledDirective = class extends CustomDirective { };
       Object.defineProperty(TitledDirective, Symbol.for('Symbol.metadata'), { value: { hostAttributes: [{ name: 'title', kind: 'attribute', read: () => 'directive' }] } });

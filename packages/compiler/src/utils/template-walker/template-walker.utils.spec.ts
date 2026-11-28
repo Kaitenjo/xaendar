@@ -105,6 +105,16 @@ describe('walkTemplate', () => {
     expect(visits).toEqual(['class on', 'expression a', 'expression b', 'class big', 'expression c']);
   });
 
+  it('visits the parts toggled on the elements and in their conditional bindings, with their expressions', () => {
+    const visits = new Array<string>();
+    walkTemplate(parseTemplate('<p part.on="{a}" @if (b) { part.big="{c}" }></p>'), [], {
+      partBinding: node => visits.push(`part ${node.partName}`),
+      expression: expression => visits.push(`expression ${expression.getText()}`)
+    });
+
+    expect(visits).toEqual(['part on', 'expression a', 'expression b', 'part big', 'expression c']);
+  });
+
   it('visits the expression of when of a @hydrate, then its content, a scope of its own', () => {
     const hydrateTemplate = [
       '<input #field />',

@@ -63,6 +63,7 @@ export function parseAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<A
 
     case 'class':
     case 'style':
+    case 'part':
       throw new Error(`${name} cannot be written: ${attribute} is merged with the directives and the component writing it, bound with ${attribute}="…" and ${attribute}.name="{ expression }"`, { cause: nameSpan });
 
     case 'is':

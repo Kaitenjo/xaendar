@@ -108,6 +108,20 @@ describe('_bindHost', () => {
     expect(element.className).toBe('tall active');
   });
 
+  it('writes the string of part and toggles a part while the value is truthy, removing them when the context is cleared', async () => {
+    const selected = signal(true);
+    const owner = createOwner({ selected, base: 'tab' }, { selected: 'part.selected', base: 'part' });
+    const { element, context } = bind(owner);
+    expect(element.getAttribute('part')).toBe('tab selected');
+
+    selected.set(false);
+    await flush();
+    expect(element.getAttribute('part')).toBe('tab');
+
+    clear(context);
+    expect(element.getAttribute('part')).toBe('');
+  });
+
   it('sets a style property followed by its unit, removing it for null and when the context is cleared', async () => {
     const width = signal<number | null>(120);
     const owner = createOwner({ width, color: 'red' }, { width: 'style.width.px', color: 'style.backgroundColor' });
@@ -258,6 +272,12 @@ describe('_applyHostAttributes', () => {
     label.set('Two');
     await flush();
     expect(element.getAttribute('aria-label')).toBe('One');
+  });
+
+  it('writes the parts once, without binding them', () => {
+    const element = document.createElement('div');
+    _applyHostAttributes(createOwner({ on: true }, { on: 'part.on' }), element);
+    expect(element.getAttribute('part')).toBe('on');
   });
 
   it('writes nothing for a class declaring no host attribute', () => {

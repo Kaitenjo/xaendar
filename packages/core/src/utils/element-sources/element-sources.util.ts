@@ -36,7 +36,7 @@ export function ensureElementSources(element: Element): ElementSources {
     return sources;
   }
 
-  const record: ElementSources = { class: null, style: null, attributes: null, hosts: sources ?? null, template: null };
+  const record: ElementSources = { class: null, style: null, part: null, attributes: null, hosts: sources ?? null, template: null };
   elementSources.set(element, record);
   return record;
 }

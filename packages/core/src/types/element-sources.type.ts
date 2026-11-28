@@ -20,8 +20,12 @@ export type ElementSources = {
    */
   style: StylingSlot;
   /**
-   * The states of the attributes, other than `class` and `style`, two levels write: one, or an array of the exact length
-   * from the second.
+   * What the element keeps of the sources of its `part`.
+   */
+  part: StylingSlot;
+  /**
+   * The states of the attributes, other than `class`, `style` and `part`, two levels write: one, or an array of the
+   * exact length from the second.
    */
   attributes: AttributeState | AttributeState[] | null;
   /**

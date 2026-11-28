@@ -28,7 +28,7 @@ describe('element sources', () => {
     const run = runOf(element);
     addHostRun(run);
     const record = ensureElementSources(element);
-    expect(record).toEqual({ class: null, style: null, attributes: null, hosts: run, template: null });
+    expect(record).toEqual({ class: null, style: null, part: null, attributes: null, hosts: run, template: null });
     expect(ensureElementSources(element)).toBe(record);
     expect(getElementSources(element)).toBe(record);
     expect(ensureElementSources(document.createElement('div')).hosts).toBeNull();

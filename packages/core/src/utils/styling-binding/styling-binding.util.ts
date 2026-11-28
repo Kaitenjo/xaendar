@@ -17,6 +17,16 @@ import { _resolveDirective } from '../resolve-directive/resolve-directive.util';
 import { templateKeys, templateString } from '../styling-opinions/styling-opinions.util';
 import { applyDirectStyling, createStylingState, ensureStylingState, keepTemplateStyling, keptValues, markStyling, removeStylingSource, setTemplateStyling, sharesNewKey, writeStylingAttribute, writeStylingText } from '../styling-state/styling-state.util';
 
+
+/**
+ * The shift from the flags of the `class`, the `style` and the `part` of an element another source of its template
+ * writes (`1`, `2`, `4`) to the flags of the ones its component or its directives may write (`8`, `16`, `32`), in the
+ * `styling` of an element (see `RenderElement.styling`).
+ *
+ * N.B. Equal to the one of the compiler (`STYLING_SHIFT` of its `styling.utils.ts`), which writes the flags: change
+ * both together.
+ */
+const STYLING_SHIFT = 3;
 /**
  * The most strings the cache of the values of `class` and `style` holds (see `internStyling`): enough for the distinct
  * texts of the classes and the styles of an application, few enough that the cache stays small. Once it is full, a new
@@ -144,10 +154,11 @@ export function _removeStyling(_context: _Context, target: Element | BindingHost
 }
 
 /**
- * Marks, before the bindings of an element are applied, its `class` and its `style` that another source than its own
- * bindings may write (see `RenderElement.styling`), so that the binding of the template writing them keeps itself in
- * the sources of the element (see `StylingSlot`), where a host attribute writing one of its keys finds it:
- * - the branches of its conditional bindings writing them (`styling` of the branch), whose sources are merged in a state;
+ * Marks, before the bindings of an element are applied, its `class`, its `style` and its `part` that another source
+ * than its own bindings may write (see `RenderElement.styling`), so that the binding of the template writing them keeps
+ * itself in the sources of the element (see `StylingSlot`), where a host attribute writing one of its keys finds it:
+ * - the branches of its conditional bindings writing them (`styling` of the branch), whose sources are merged in a
+ *   state;
  * - the component it is and the directives it applies, the ones of its branches included, declaring host attributes on
  *   them (`_hostStylingFlags`), as a custom element not defined yet, or a directive not registered yet, may;
  * - for an element applying structural directives, whose bindings the runtime keeps without slots, both always.
@@ -164,7 +175,7 @@ export function _removeStyling(_context: _Context, target: Element | BindingHost
  */
 export function _prepareStyling(element: Element, config: RenderElement): void {
   const { styling, directives } = config;
-  const writes = (styling! | styling! >> 2) & 3;
+  const writes = (styling! | styling! >> STYLING_SHIFT) & 7;
   let marks = writes;
   if (!config.structuralDirectives?.length && !config.structuralConditionalBindings?.length) {
     let flags = hostFlags(element) | branchFlags(config.conditionalBindings);
@@ -184,30 +195,35 @@ export function _prepareStyling(element: Element, config: RenderElement): void {
   if (marks & 2) {
     markStyling(element, 'style');
   }
+
+  if (marks & 4) {
+    markStyling(element, 'part');
+  }
 }
 
 /**
  * Gives the attributes merged key by key the element a template renders writes as a component: the flags of its class
- * (see `_hostStylingFlags`), both for a custom element not defined yet, which may become a component declaring them.
+ * (see `_hostStylingFlags`), all of them for a custom element not defined yet, which may become a component declaring
+ * them.
  *
  * @param element - The element.
- * @returns The flags: `1` for `class`, `2` for `style`.
+ * @returns The flags: `1` for `class`, `2` for `style`, `4` for `part`.
  */
 function hostFlags(element: Element): number {
   if (element instanceof CustomElement) {
     return _hostStylingFlags(element.constructor);
   }
 
-  return element.localName.includes('-') && !customElements.get(element.localName) ? 3 : 0;
+  return element.localName.includes('-') && !customElements.get(element.localName) ? 7 : 0;
 }
 
 /**
  * Gives the attributes merged key by key the branches of conditional bindings write, nested ones included: the ones
- * their bindings write, and the ones the directives they apply declare host attributes on, both for a directive not
- * registered yet, which the branch resolves only once selected.
+ * their bindings write, and the ones the directives they apply declare host attributes on, all of them for a directive
+ * not registered yet, which the branch resolves only once selected.
  *
  * @param conditionalBindings - The conditional bindings.
- * @returns The flags: `1` for `class`, `2` for `style`.
+ * @returns The flags: `1` for `class`, `2` for `style`, `4` for `part`.
  */
 function branchFlags(conditionalBindings: readonly RenderElementConditionalBinding[] | undefined): number {
   let flags = 0;
@@ -225,10 +241,11 @@ function branchFlags(conditionalBindings: readonly RenderElementConditionalBindi
 }
 
 /**
- * Gives the attributes merged key by key directives declare host attributes on, both for a directive not registered yet.
+ * Gives the attributes merged key by key directives declare host attributes on, all of them for a directive not
+ * registered yet.
  *
  * @param directives - The directives.
- * @returns The flags: `1` for `class`, `2` for `style`.
+ * @returns The flags: `1` for `class`, `2` for `style`, `4` for `part`.
  */
 function directiveFlags(directives: readonly RenderElementDirective[] | undefined): number {
   let flags = 0;
@@ -236,7 +253,7 @@ function directiveFlags(directives: readonly RenderElementDirective[] | undefine
     for (let i = 0; i < directives.length; i++) {
       const { selector } = directives[i];
       const Directive = typeof selector === 'string' ? _getDirective(selector) : selector;
-      flags |= Directive ? _hostStylingFlags(Directive) : 3;
+      flags |= Directive ? _hostStylingFlags(Directive) : 7;
     }
   }
 

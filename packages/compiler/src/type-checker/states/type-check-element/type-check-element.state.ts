@@ -11,6 +11,7 @@ import type { DirectiveNode } from '../../../parser/types/nodes/directive-node.t
 import { ElementNode } from '../../../parser/types/nodes/element-node.type';
 import type { EventNode } from '../../../parser/types/nodes/event-node.type';
 import type { IfBindingNode } from '../../../parser/types/nodes/if-binding-node.type';
+import type { PartBindingNode } from '../../../parser/types/nodes/part-binding-node.type';
 import type { StructuralDirectiveNode } from '../../../parser/types/nodes/structural-directive-node.type';
 import type { StyleBindingNode } from '../../../parser/types/nodes/style-binding-node.type';
 import type { SwitchBindingNode } from '../../../parser/types/nodes/switch-binding-node.type';
@@ -192,6 +193,7 @@ function typeCheckComponentBindings(node: ElementNode, declaredMetadata: Compone
     return [
       ...typeCheckComponentAttributes(branch.attributes, metadata, context, node),
       ...typeCheckClassBindings(branch.classBindings, context),
+      ...typeCheckClassBindings(branch.partBindings, context),
       ...typeCheckStyleBindings(branch.styleBindings, context),
       ...typeCheckComponentEvents(branch.events, metadata, nativeEvents, context),
       ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node, nativeEvents, context)
@@ -212,6 +214,7 @@ function typeCheckComponentBindings(node: ElementNode, declaredMetadata: Compone
   }
 
   lines.push(...typeCheckClassBindings(node.classBindings, context));
+  lines.push(...typeCheckClassBindings(node.partBindings, context));
   lines.push(...typeCheckStyleBindings(node.styleBindings, context));
   lines.push(...typeCheckComponentEvents(node.events, metadata, nativeEvents, context));
   lines.push(...conditionalBindingLines);
@@ -773,11 +776,13 @@ function typeCheckNativeBindings(node: ElementNode, nativeEvents: NativeEvents, 
   return [
     ...typeCheckNativeAttributes(node.attributes, node, context),
     ...typeCheckClassBindings(node.classBindings, context),
+    ...typeCheckClassBindings(node.partBindings, context),
     ...typeCheckStyleBindings(node.styleBindings, context),
     ...typeCheckNativeEvents(node.events, nativeEvents, context),
     ...typeCheckConditionalBindings(node.conditionalBindings, context, branch => [
       ...typeCheckNativeAttributes(branch.attributes, node, context),
       ...typeCheckClassBindings(branch.classBindings, context),
+      ...typeCheckClassBindings(branch.partBindings, context),
       ...typeCheckStyleBindings(branch.styleBindings, context),
       ...typeCheckNativeEvents(branch.events, nativeEvents, context),
       ...typeCheckDirectives([...branch.directives, ...branch.structuralDirectives], node, nativeEvents, context)
@@ -859,14 +864,14 @@ function typeCheckNativeAttributes(attributes: AttributeNode[], element: Element
 }
 
 /**
- * Type-checks the classes toggled on an element, native or not, by emitting each expression as a statement:
- * a value of any type toggles the class, by whether it is truthy.
+ * Type-checks the classes or the parts toggled on an element, native or not, by emitting each expression as a
+ * statement: a value of any type toggles the class or the part, by whether it is truthy.
  *
- * @param classBindings - The class binding nodes to type-check.
+ * @param classBindings - The class or part binding nodes to type-check.
  * @param context - Current type-check scope.
- * @returns The generated type-check lines, one per class binding.
+ * @returns The generated type-check lines, one per binding.
  */
-function typeCheckClassBindings(classBindings: ClassBindingNode[], context: TypeCheckContext): Line[] {
+function typeCheckClassBindings(classBindings: ReadonlyArray<ClassBindingNode | PartBindingNode>, context: TypeCheckContext): Line[] {
   const lines = new Array<Line>();
 
   for (let i = 0; i < classBindings.length; i++) {

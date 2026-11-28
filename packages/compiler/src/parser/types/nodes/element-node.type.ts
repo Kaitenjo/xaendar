@@ -8,6 +8,7 @@ import { ConditionalBindingNode } from './conditional-binding-node.type';
 import { DirectiveNode } from './directive-node.type';
 import type { ElementRefNode } from './element-ref-node.type';
 import { EventNode } from './event-node.type';
+import type { PartBindingNode } from './part-binding-node.type';
 import { StructuralDirectiveNode } from './structural-directive-node.type';
 import type { StyleBindingNode } from './style-binding-node.type';
 
@@ -61,6 +62,10 @@ export type ElementNode = ASTNodeWithSpan<{
    * Style properties set on this element, `style.name="{expression}"`.
    */
   styleBindings: StyleBindingNode[];
+  /**
+   * Parts exposed by this element, `part.name="{expression}"`.
+   */
+  partBindings: PartBindingNode[];
   /**
    * Event binding nodes attached to this element.
    */

@@ -13,6 +13,11 @@ import { entrySize, findEntry, insertEntry, removeEntry, tierOf } from '../sourc
 import { hostKeys, hostString, templateKeys, templateString } from '../styling-opinions/styling-opinions.util';
 
 /**
+ * The ASCII whitespace separating the parts of a `part` attribute.
+ */
+const TOKEN_SEPARATOR = /[\t\n\f\r ]+/;
+
+/**
  * Gives the state merging the sources of an attribute of an element, if two of them had an opinion on the same key.
  *
  * @param element - The element.
@@ -306,7 +311,8 @@ export function writeStylingAttribute(element: Element, attribute: StylingAttrib
 }
 
 /**
- * Writes the whole text of the `class` or of the `style` of an element: the `class` attribute, and the inline style
+ * Writes the whole text of the `class`, of the `part` or of the `style` of an element: the `class` and the `part`
+ * attributes, and the inline style
  * through the CSSOM, which a `Content-Security-Policy` allows, while it blocks a `style` attribute written with
  * `setAttribute`, as one of the HTML.
  *
@@ -316,7 +322,7 @@ export function writeStylingAttribute(element: Element, attribute: StylingAttrib
  */
 export function writeStylingText(element: Element, attribute: StylingAttribute, text: string): void {
   // Every element a template renders, HTML, SVG or MathML, has the inline style of an HTMLElement
-  attribute === 'class' ? element.setAttribute(attribute, text) : (element as HTMLElement).style.cssText = text;
+  attribute === 'style' ? (element as HTMLElement).style.cssText = text : element.setAttribute(attribute, text);
 }
 
 /**
@@ -508,7 +514,7 @@ function isPresent(value: string | boolean | undefined): boolean {
 
 /**
  * Writes a key of an element, only when the element does not hold the value already:
- * - a class is added for `true` and removed for `false`, a property set to a string, with its priority;
+ * - a class or a part is added for `true` and removed for `false`, a property set to a string, with its priority;
  * - without value, a key is removed only if it was present by the opinion of the runtime.
  *
  * @param element - The element.
@@ -529,6 +535,11 @@ function writeKey(element: Element, attribute: StylingAttribute, key: string, va
     return;
   }
 
+  if (attribute === 'part') {
+    writeToken(element, key, value === true, value === false || written);
+    return;
+  }
+
   // Every element a template renders, HTML, SVG or MathML, has the inline style of an HTMLElement
   const { style } = element as HTMLElement;
   if (typeof value === 'string') {
@@ -540,6 +551,33 @@ function writeKey(element: Element, attribute: StylingAttribute, key: string, va
   } else if (written && style.getPropertyValue(key)) {
     style.removeProperty(key);
   }
+}
+
+/**
+ * Adds or removes a part of an element through the text of its `part` attribute, as `DOMTokenList` serializes it: the
+ * parts joined by a single space, each one once. The text is written only when the part changes.
+ *
+ * N.B. Through the attribute, not `element.part`: the elements of the server, and of the DOM the tests run on, have no
+ * `part` property, and the server must write the text the browser keeps when it hydrates. Do not switch to `part`.
+ *
+ * @param element - The element.
+ * @param key - The part.
+ * @param add - Whether the part is added.
+ * @param remove - Whether the part is removed, when it is not added.
+ */
+function writeToken(element: Element, key: string, add: boolean, remove: boolean): void {
+  const text = element.getAttribute('part');
+  const tokens = text ? text.split(TOKEN_SEPARATOR).filter(Boolean) : [];
+  const index = tokens.indexOf(key);
+  if (add && index < 0) {
+    tokens.push(key);
+  } else if (!add && remove && index >= 0) {
+    tokens.splice(index, 1);
+  } else {
+    return;
+  }
+
+  element.setAttribute('part', tokens.join(' '));
 }
 
 /**

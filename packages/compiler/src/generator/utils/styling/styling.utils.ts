@@ -7,9 +7,21 @@ import type { ClassBindingNode } from '../../../parser/types/nodes/class-binding
 import type { ConditionalBindingNode } from '../../../parser/types/nodes/conditional-binding-node.type';
 import type { DirectiveNode } from '../../../parser/types/nodes/directive-node.type';
 import type { ElementNode } from '../../../parser/types/nodes/element-node.type';
+import type { PartBindingNode } from '../../../parser/types/nodes/part-binding-node.type';
 import type { StyleBindingNode } from '../../../parser/types/nodes/style-binding-node.type';
+import type { StylingAttributeName } from '../../types/styling-attribute-name.type';
 import { toStringLiteral } from '../generator/generator.utils';
 import { toArrayLiteral, toRoleName } from '../module-code/module-code.utils';
+
+/**
+ * The shift from the flags of the `class`, the `style` and the `part` of an element another source of its template
+ * writes (`1`, `2`, `4`) to the flags of the ones its component or its directives may write (`8`, `16`, `32`), in the
+ * `styling` of an element (see `RenderElement.styling` of the runtime).
+ *
+ * N.B. Equal to the one of the runtime (`STYLING_SHIFT` of `styling-binding.util.ts` in `@xaendar/core`), which reads
+ * the flags: change both together, as the compiled templates and the runtime are released together.
+ */
+export const STYLING_SHIFT = 3;
 
 /**
  * The position of each directive among the ones its element applies, in the order they appear, its conditional
@@ -46,18 +58,19 @@ export function getDirectiveOrder(directive: DirectiveNode): number | undefined 
 }
 
 /**
- * Splits the attributes of an element, or of a branch of one of its conditional bindings, into its `class`, its `style`
- * and the other ones: `class` and `style` are written key by key, merged with the other sources writing them (see
- * `_RenderStyling` of the runtime), unless the component declares an input with their name.
+ * Splits the attributes of an element, or of a branch of one of its conditional bindings, into its `class`, its
+ * `style`, its `part` and the other ones: `class`, `style` and `part` are written key by key, merged with the other
+ * sources writing them (see `_RenderStyling` of the runtime), unless the component declares an input with their name.
  *
  * @param attributes - The attributes.
  * @param isInput - Tells whether a name is the one of an input of the element.
- * @returns The other attributes, then `class` and `style`, `undefined` when the element does not write them.
+ * @returns The other attributes, then `class`, `style` and `part`, `undefined` when the element does not write them.
  */
-export function splitStylingAttributes(attributes: readonly AttributeNode[], isInput: Function<[name: string], boolean>): [rest: AttributeNode[], classAttribute: AttributeNode | undefined, styleAttribute: AttributeNode | undefined] {
+export function splitStylingAttributes(attributes: readonly AttributeNode[], isInput: Function<[name: string], boolean>): [rest: AttributeNode[], classAttribute: AttributeNode | undefined, styleAttribute: AttributeNode | undefined, partAttribute: AttributeNode | undefined] {
   const rest = new Array<AttributeNode>();
   let classAttribute: AttributeNode | undefined;
   let styleAttribute: AttributeNode | undefined;
+  let partAttribute: AttributeNode | undefined;
   for (let i = 0; i < attributes.length; i++) {
     const attribute = attributes[i];
     const { name } = attribute;
@@ -65,34 +78,37 @@ export function splitStylingAttributes(attributes: readonly AttributeNode[], isI
       classAttribute = attribute;
     } else if (name === 'style' && !isInput(name)) {
       styleAttribute = attribute;
+    } else if (name === 'part' && !isInput(name)) {
+      partAttribute = attribute;
     } else {
       rest.push(attribute);
     }
   }
 
-  return [rest, classAttribute, styleAttribute];
+  return [rest, classAttribute, styleAttribute, partAttribute];
 }
 
 /**
- * Writes the members of the descriptor of the `class` or of the `style` of an element (see `_RenderStyling` of the
- * runtime), without its setter: its string, static, parsed here (`text`, `statics`), or an expression (`string`), and
- * the keys it binds one by one (`keys`, `values`, `units`). The expressions are functions of the module, named after
- * the attribute (`div0$class`, `div0$class_active`, `div0$style_width`), which `declare` writes.
+ * Writes the members of the descriptor of the `class`, of the `style` or of the `part` of an element (see
+ * `_RenderStyling` of the runtime), without its setter: its string, static, parsed here (`text`, `statics`), or an
+ * expression (`string`), and the keys it binds one by one (`keys`, `values`, `units`). The expressions are functions of
+ * the module, named after the attribute (`div0$class`, `div0$class_active`, `div0$style_width`), which `declare`
+ * writes.
  *
  * @param attribute - The attribute.
  * @param string - The attribute holding the string, if any.
- * @param keys - The keys bound one by one: `class.name`, or `style.name`.
+ * @param keys - The keys bound one by one: `class.name`, `style.name` or `part.name`.
  * @param declare - Declares the function computing an expression, given the role it is named after, returning its name.
  * @returns The members, `undefined` when the element writes nothing on the attribute.
  */
-export function describeStyling(attribute: 'class' | 'style', string: AttributeNode | undefined, keys: ReadonlyArray<ClassBindingNode | StyleBindingNode>, declare: Function<[role: string, expression: Expression], string>): string[] | undefined {
+export function describeStyling(attribute: StylingAttributeName, string: AttributeNode | undefined, keys: ReadonlyArray<ClassBindingNode | StyleBindingNode | PartBindingNode>, declare: Function<[role: string, expression: Expression], string>): string[] | undefined {
   const members = [`name: '${attribute}'`];
   if (string) {
     const { value } = string;
     if (typeof value !== 'string') {
       members.push(`string: ${declare(attribute, value.expression)}`);
     } else {
-      const statics = attribute === 'class' ? toClassStatics(value) : toStyleStatics(value);
+      const statics = attribute === 'style' ? toStyleStatics(value) : toClassStatics(value);
       if (statics) {
         members.push(`text: ${toStringLiteral(value)}`, `statics: ${statics}`);
       }
@@ -100,7 +116,7 @@ export function describeStyling(attribute: 'class' | 'style', string: AttributeN
   }
 
   if (keys.length) {
-    const names = keys.map(key => key.type === ASTNodeType.ClassBinding ? key.className : key.property);
+    const names = keys.map(keyName);
     members.push(`keys: ${toArrayLiteral(names.map(toStringLiteral))}`, `values: ${toArrayLiteral(keys.map((key, i) => declare(`${attribute}_${toRoleName(names[i])}`, key.value.expression)))}`);
     if (keys.some(key => key.type === ASTNodeType.StyleBinding && key.unit)) {
       members.push(`units: ${toArrayLiteral(keys.map(key => toStringLiteral((key as StyleBindingNode).unit ?? '')))}`);
@@ -111,10 +127,29 @@ export function describeStyling(attribute: 'class' | 'style', string: AttributeN
 }
 
 /**
- * Writes the opinions of a static `class` string as the runtime reads them: each class, present.
+ * Gives the key a binding writes: the class, the style property or the part.
+ *
+ * @param key - The binding.
+ * @returns The key.
+ */
+function keyName(key: ClassBindingNode | StyleBindingNode | PartBindingNode): string {
+  switch (key.type) {
+    case ASTNodeType.ClassBinding:
+      return key.className;
+
+    case ASTNodeType.PartBinding:
+      return key.partName;
+
+    default:
+      return key.property;
+  }
+}
+
+/**
+ * Writes the opinions of a static `class` or `part` string as the runtime reads them: each class or part, present.
  *
  * @param text - The string.
- * @returns The code of the array, `undefined` when the string holds no class.
+ * @returns The code of the array, `undefined` when the string holds no token.
  */
 function toClassStatics(text: string): string | undefined {
   const classes = splitClasses(text);
