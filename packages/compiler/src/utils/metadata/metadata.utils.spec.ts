@@ -14,6 +14,14 @@ const eventType = (className: string, member: string) => `(import('component').$
 
 describe('extractComponentsMetadataFromSourceFile', () => {
   describe('component declarations', () => {
+    it('extracts the stylesheets of an array in their order, and none from one that cannot be read', async () => {
+      const several = (await extract(component('', '@WebComponent({ selector: \'a-b\', templateUrl: \'./t\', styleUrl: [\'./base.css\', \'./s.css\'] })')))?.get('MyEl');
+      const unreadable = (await extract(component('', '@WebComponent({ selector: \'a-b\', templateUrl: \'./t\', styleUrl: [STYLE] })')))?.get('MyEl');
+
+      expect(several?.styleUrls).toEqual(['./base.css', './s.css']);
+      expect(unreadable).not.toHaveProperty('styleUrls');
+    });
+
     it('extracts selector, template and style urls', async () => {
       const metadata = (await extract(component('', '@WebComponent({ selector: \'a-b\', templateUrl: \'./t.xaendar\', styleUrl: \'./s.css\' })')))?.get('MyEl');
 
@@ -22,7 +30,7 @@ describe('extractComponentsMetadataFromSourceFile', () => {
         className: 'MyEl',
         selector: 'a-b',
         templateUrl: './t.xaendar',
-        styleUrl: './s.css'
+        styleUrls: ['./s.css']
       });
       expect(metadata?.properties.size).toBe(0);
       expect(metadata?.events.size).toBe(0);
@@ -422,7 +430,7 @@ describe('extractDirectivesMetadataFromSourceFile', () => {
       selector: 'myDirective'
     });
     expect(metadata).not.toHaveProperty('templateUrl');
-    expect(metadata).not.toHaveProperty('styleUrl');
+    expect(metadata).not.toHaveProperty('styleUrls');
     expect(metadata?.properties.get('display')).toMatchObject({ name: 'display', type: propertyType('MyDirective', 'display'), required: false });
     expect(metadata?.properties.get('is-visible')).toMatchObject({ name: 'visible', type: propertyType('MyDirective', 'visible'), required: true });
     expect(Object.fromEntries(metadata!.events)).toMatchObject({ toggled: { type: eventType('MyDirective', 'toggled') } });
@@ -550,9 +558,23 @@ describe('findWebComponentErrors', () => {
   it.each([
     ['a constant', '@WebComponent({ selector: \'a-b\', templateUrl: TEMPLATE })', 'templateUrl'],
     ['a template literal', '@WebComponent({ selector: `a-b`, templateUrl: \'./t\' })', 'selector'],
-    ['a shorthand property', '@WebComponent({ selector: \'a-b\', templateUrl: \'./t\', styleUrl })', 'styleUrl']
+    ['a shorthand property', '@WebComponent({ selector: \'a-b\', templateUrl })', 'templateUrl']
   ])('reports an option given as %s', (_name, decorator, option) => {
     expect(errorsOf(decorator)).toEqual([`The ${option} option of MyEl must be a string literal`]);
+  });
+
+  it.each([
+    ['a shorthand property', 'styleUrl', 'The styleUrl option of MyEl must be a string literal, or an array literal of string literals'],
+    ['a constant', 'styleUrl: STYLE', 'The styleUrl option of MyEl must be a string literal, or an array literal of string literals'],
+    ['an empty array', 'styleUrl: []', 'The styleUrl option of MyEl lists no stylesheet: remove it, or list one'],
+    ['an array holding a constant', 'styleUrl: [\'./a.css\', STYLE]', 'The styleUrl option of MyEl must list string literals'],
+    ['an array listing a file twice', 'styleUrl: [\'./a.css\', \'./a.css\']', 'The styleUrl option of MyEl lists ./a.css twice']
+  ])('reports a styleUrl given as %s', (_name, option, message) => {
+    expect(errorsOf(`@WebComponent({ selector: 'a-b', templateUrl: './t', ${option} })`)).toEqual([message]);
+  });
+
+  it('accepts a styleUrl array of string literals', () => {
+    expect(errorsOf('@WebComponent({ selector: \'a-b\', templateUrl: \'./t\', styleUrl: [\'./a.css\', \'./b.css\'] })')).toEqual([]);
   });
 
   it.each([

@@ -162,6 +162,7 @@ function createState(overrides: Partial<{ fileExists: (path: string) => boolean;
     customElements: [],
     strictEvents: true,
     security: { urls: 'warn' },
+    styles: [],
     minifyStyles: false,
     isBuild: false,
     root: '/project',
@@ -432,7 +433,7 @@ describe('createTransformHook()', () => {
 
   it('logs an error and returns null when the style file cannot be found, registering it so that creating it compiles the component again', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
-    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata({ styleUrl: './missing.css' })]]));
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata({ styleUrls: ['./missing.css'] })]]));
     const state = createState({ fileExists: path => !path.includes('missing') });
     const hook = createTransformHook(state);
 
@@ -570,13 +571,15 @@ describe('createTransformHook()', () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata()]]));
     const library = { name: '@acme/ui', root: dirname(dirname(COMPONENT_PATH)), entry: '/src/public-api.ts', ssr: true, customElements: ['sl-*'], strictEvents: false };
-    const hook = createTransformHook({ ...createState(), libraries: [library] });
+    const hook = createTransformHook({ ...createState(), styles: ['src/base.css'], libraries: [library] });
 
     await hook.call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
 
     // A library declares no security, and its templates are checked with the defaults, whatever the project allows
     expect(compile).toHaveBeenCalledWith('template source', expect.objectContaining({ customElements: ['sl-*'], ssr: true, strictEvents: false, security: undefined }));
     expect(findWebComponentErrors).toHaveBeenCalledWith(expect.anything(), true, true, expect.anything());
+    // A library shares its styles with its own stylesheets: the ones of the project never reach it
+    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', CLIENT_STRATEGY.registration, undefined);
   });
 
   it('rejects in a library not rendering on the server what only the server reads, whatever the project does', async () => {
@@ -626,7 +629,7 @@ describe('createTransformHook()', () => {
 
   it('imports the style module of the styleUrl, leaving its compilation to the style module', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
-    const metadata = createMetadata({ styleUrl: './foo.css' });
+    const metadata = createMetadata({ styleUrls: ['./foo.css'] });
     vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', metadata]]));
     const state = createState();
     const hook = createTransformHook(state);
@@ -641,16 +644,28 @@ describe('createTransformHook()', () => {
     expect(registerStyleDependency).toHaveBeenCalledWith(expect.not.stringContaining('\\'), COMPONENT_PATH);
     expect(state.host.readFile).not.toHaveBeenCalledWith(stylePath);
     expect(ctx.addWatchFile).not.toHaveBeenCalledWith(stylePath);
-    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', CLIENT_STRATEGY.registration, 'style-module');
+    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', CLIENT_STRATEGY.registration, ['style-module']);
+  });
+
+  it('imports the styles of the project before the ones of a component of the project, and none for a component without styleUrl', async () => {
+    vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
+    vi.mocked(createStyleModuleSpecifier).mockImplementation(path => `style:${path}`);
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata({ styleUrls: ['./a.css', './b.css'] })]]));
+    const state = { ...createState(), styles: ['src/base.css'] };
+
+    await createTransformHook(state).call(createPluginContext(), 'original code', COMPONENT_PATH, undefined);
+
+    const folder = dirname(COMPONENT_PATH);
+    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', CLIENT_STRATEGY.registration, ['style:/project/src/base.css', `style:${resolvePosixPath(folder, './a.css')}`, `style:${resolvePosixPath(folder, './b.css')}`]);
   });
 
   it('injects the modules compiled for the server with the strategy of the server, type-checking nothing', async () => {
     vi.mocked(readFile).mockResolvedValue('class FooComponent {}');
-    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata({ styleUrl: './foo.css' })]]));
+    vi.mocked(extractComponentsMetadataFromSourceFile).mockResolvedValue(new Map([['FooComponent', createMetadata({ styleUrls: ['./foo.css'] })]]));
 
     const result = await createTransformHook(createState()).call(createPluginContext('server'), 'original code', COMPONENT_PATH, undefined);
 
-    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', SERVER_STRATEGY.registration, 'style-module');
+    expect(injectTemplate).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.any(Map), 'FooComponent', 'template-module', SERVER_STRATEGY.registration, ['style-module']);
     expect(compile).not.toHaveBeenCalled();
     expect(collectFileDiagnostics).not.toHaveBeenCalled();
     expect(registerRealFile).not.toHaveBeenCalled();

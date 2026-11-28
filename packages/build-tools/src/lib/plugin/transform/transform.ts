@@ -132,7 +132,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
 
     const moduleImports = new Map<string, string>();
     for (const [className, metadata] of metadatas.entries()) {
-      const { styleUrl, templateUrl } = metadata;
+      const { styleUrls, templateUrl } = metadata;
       // A selector can be defined only once at runtime: it must not be shared with any other component
       const selectorConflict = await claimSelectors(metadata);
       if (selectorConflict) {
@@ -177,12 +177,19 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       }
 
       /*
-        The stylesheet is compiled once per style file in its own module (see the load hook),
-        which watches every file it depends on.
+        Each stylesheet is compiled once per style file in its own module (see the load hook), which watches every file
+        it depends on: the styles of the project first, for a component of the project, then the ones of the component.
       */
-      let styleModuleSpecifier: string | undefined;
-      if (styleUrl) {
-        const stylePath = resolvePosixPath(folder, styleUrl);
+      const stylePaths = library ? [] : state.styles.map(style => resolvePosixPath(state.root, style));
+      if (styleUrls?.length) {
+        for (let j = 0; j < styleUrls.length; j++) {
+          stylePaths.push(resolvePosixPath(folder, styleUrls[j]));
+        }
+      }
+
+      const styleModuleSpecifiers = new Array<string>(stylePaths.length);
+      for (let j = 0; j < stylePaths.length; j++) {
+        const stylePath = stylePaths[j];
         // Registered even when missing, like the template, so that the hotUpdate hook compiles the component once it is created
         registerStyleDependency(stylePath, componentPath);
         if (!state.host.fileExists(stylePath)) {
@@ -190,7 +197,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
           return fail();
         }
 
-        styleModuleSpecifier = createStyleModuleSpecifier(stylePath);
+        styleModuleSpecifiers[j] = createStyleModuleSpecifier(stylePath);
       }
 
       let componentMembers: ComponentMembers;
@@ -236,7 +243,7 @@ export function createTransformHook(state: XaendarPluginState): NonNullable<Hook
       }
 
       try {
-        injectTemplate(magicString, jsSourceFile, moduleImports, className, createTemplateModuleSpecifier(templatePath, componentMembers.reactiveMembers, componentMembers.shadowingMembers), strategy.registration, styleModuleSpecifier);
+        injectTemplate(magicString, jsSourceFile, moduleImports, className, createTemplateModuleSpecifier(templatePath, componentMembers.reactiveMembers, componentMembers.shadowingMembers), strategy.registration, styleModuleSpecifiers.length ? styleModuleSpecifiers : undefined);
       } catch (err) {
         state.logError(err, `Failed to inject template into component - ${componentPath}`);
         return fail();

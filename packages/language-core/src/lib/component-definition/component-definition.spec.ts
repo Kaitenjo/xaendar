@@ -14,7 +14,9 @@ const component = [
   '@WebComponent({ selector: \'my-lost\', templateUrl: \'./lost.html\', styleUrl: \'./lost.css\' })',
   'export class Lost {}',
   '@WebComponent({ ...shared, selector: \'my-odd\',\'styleUrl\': \'./quoted.css\', templateUrl: \'./plain.html\', styleUrl: style }, 1)',
-  'export class Odd {}'
+  'export class Odd {}',
+  '@WebComponent({ selector: \'my-layered\', templateUrl: \'./plain.html\', styleUrl: [\'./base.css\', \'./styled.css\'] })',
+  'export class Layered {}'
 ].join('\n');
 
 let project: FixtureProject;
@@ -23,7 +25,7 @@ let fileName: string;
 beforeAll(() => {
   project = createFixtureProject();
   fileName = project.path('src/components.ts');
-  ['src/styled.html', 'src/styled.css', 'src/plain.html', 'src/lost.html'].forEach(path => project.write(path, ''));
+  ['src/styled.html', 'src/styled.css', 'src/plain.html', 'src/lost.html', 'src/base.css'].forEach(path => project.write(path, ''));
 });
 
 afterAll(() => {
@@ -66,6 +68,11 @@ describe('getComponentDefinition', () => {
     expect(await pathsAt(at('./styled.css'))).toEqual(['src/styled.css']);
     expect(await pathsAt(at('./styled.css\'', 0, './styled.css\''.length))).toEqual(['src/styled.css']);
     expect(await pathsAt(at('./plain.html', 1))).toEqual(['src/plain.html']);
+  });
+
+  it('leads a @WebComponent with several stylesheets to all of them, and each path of the array to its file', async () => {
+    expect(await pathsAt(at('WebComponent', 5))).toEqual(['src/plain.html', 'src/base.css', 'src/styled.css']);
+    expect(await pathsAt(at('./base.css'))).toEqual(['src/base.css']);
   });
 
   it('finds nothing on a value whose file is missing, or not read as a templateUrl or styleUrl', async () => {

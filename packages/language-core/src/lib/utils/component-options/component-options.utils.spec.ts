@@ -15,6 +15,7 @@ const options = (decorator: string, names: readonly string[]) => {
 describe('findStringOptions', () => {
   it('finds the options asked for, in the order they are declared', () => {
     expect(options('@WebComponent({ selector: \'a-b\', styleUrl: \'./s\', templateUrl: \'./t\' })', ['templateUrl', 'styleUrl'])).toEqual([['styleUrl', './s'], ['templateUrl', './t']]);
+    expect(options('@WebComponent({ selector: \'a-b\', styleUrl: [\'./a\', STYLE, \'./b\'], templateUrl: \'./t\' })', ['templateUrl', 'styleUrl'])).toEqual([['styleUrl', './a'], ['styleUrl', './b'], ['templateUrl', './t']]);
   });
 
   it.each([

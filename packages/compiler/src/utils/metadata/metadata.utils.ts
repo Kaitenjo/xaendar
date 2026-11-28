@@ -1,6 +1,6 @@
 import { slice, toKebabCase } from '@xaendar/common';
 import { acceptsShadowRoot, isValidCustomElementName, toModelChangeEvent } from '@xaendar/internals';
-import { CallExpression, ClassDeclaration, CompilerOptions, Decorator, EntityName, Expression, forEachChild, getCombinedModifierFlags, getDecorators, getNameOfDeclaration, Identifier, isArrowFunction, isCallExpression, isClassDeclaration, isDecorator, isEnumDeclaration, isFunctionExpression, isIdentifier, isImportDeclaration, isInterfaceDeclaration, isMethodDeclaration, isNamedImports, isNamespaceImport, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isQualifiedName, isShorthandPropertyAssignment, isStringLiteral, isTypeAliasDeclaration, isTypeReferenceNode, ModifierFlags, ModifierLike, Node, ObjectLiteralElementLike, ObjectLiteralExpression, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
+import { CallExpression, ClassDeclaration, CompilerOptions, Decorator, EntityName, Expression, forEachChild, getCombinedModifierFlags, getDecorators, getNameOfDeclaration, Identifier, isArrayLiteralExpression, isArrowFunction, isCallExpression, isClassDeclaration, isDecorator, isEnumDeclaration, isFunctionExpression, isIdentifier, isImportDeclaration, isInterfaceDeclaration, isMethodDeclaration, isNamedImports, isNamespaceImport, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isQualifiedName, isShorthandPropertyAssignment, isStringLiteral, isTypeAliasDeclaration, isTypeReferenceNode, ModifierFlags, ModifierLike, Node, ObjectLiteralElementLike, ObjectLiteralExpression, PropertyAssignment, PropertyDeclaration, ShorthandPropertyAssignment, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
 import { toStringLiteral } from '../../generator/utils/generator/generator.utils';
 import { ComponentPropertyMetadataWithSpan } from '../../models/component-property-metadata-with-span/component-property-metadata-with-span.model';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
@@ -45,7 +45,7 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
   const declarations = getWebComponentDeclarations(sourceFile);
   for (let i = 0; i < declarations.length; i++) {
     const { klass, decorator } = declarations[i];
-    const { selector, styleUrl, templateUrl, clientOnly, extends: extended } = extractMetadaFromDecorator(decorator);
+    const { selector, styleUrls, templateUrl, clientOnly, extends: extended } = extractMetadaFromDecorator(decorator);
     // Only a customized built-in element may render no template
     if (!selector || (!templateUrl && !extended)) {
       return;
@@ -59,13 +59,16 @@ export async function extractComponentsMetadataFromSourceFile(sourceFile: Source
       className,
       modulePath: sourceFile.fileName,
       selector,
-      styleUrl,
       ...bindings,
       typescriptNodes: declarations[i]
     };
 
     if (templateUrl) {
       metadata.templateUrl = templateUrl;
+    }
+
+    if (styleUrls) {
+      metadata.styleUrls = styleUrls;
     }
 
     if (extended) {
@@ -234,7 +237,8 @@ export function findWebComponentErrors(sourceFile: SourceFile, componentFile: bo
           break;
         case 'styleUrl':
           styleUrl = property;
-          break;
+          reportStyleUrl(errors, sourceFile, className, property);
+          continue;
         case 'extends':
           extendsOption = property;
           break;
@@ -278,6 +282,63 @@ export function findWebComponentErrors(sourceFile: SourceFile, componentFile: bo
   }
 
   return errors;
+}
+
+/**
+ * Reports a `styleUrl` the plugin cannot read: neither a string literal nor an array literal of string literals, an
+ * empty array, or an array listing a file twice.
+ *
+ * @param errors - The errors, filled.
+ * @param sourceFile - The source file declaring the component.
+ * @param className - The name of the class of the component.
+ * @param property - The `styleUrl` option.
+ */
+function reportStyleUrl(errors: WebComponentError[], sourceFile: SourceFile, className: string, property: PropertyAssignment | ShorthandPropertyAssignment): void {
+  const value = isPropertyAssignment(property) ? property.initializer : undefined;
+  if (value && isStringLiteral(value)) {
+    return;
+  }
+
+  if (!value || !isArrayLiteralExpression(value)) {
+    reportAt(errors, sourceFile, `The styleUrl option of ${className} must be a string literal, or an array literal of string literals`, value ?? property);
+    return;
+  }
+
+  if (!value.elements.length) {
+    reportAt(errors, sourceFile, `The styleUrl option of ${className} lists no stylesheet: remove it, or list one`, value);
+    return;
+  }
+
+  const seen = new Set<string>();
+  for (let i = 0; i < value.elements.length; i++) {
+    const element = value.elements[i];
+    if (!isStringLiteral(element)) {
+      reportAt(errors, sourceFile, `The styleUrl option of ${className} must list string literals`, element);
+    } else if (seen.has(element.text)) {
+      reportAt(errors, sourceFile, `The styleUrl option of ${className} lists ${element.text} twice`, element);
+    } else {
+      seen.add(element.text);
+    }
+  }
+}
+
+/**
+ * Reads the paths of the stylesheets of a component from its `styleUrl`: a string literal, or an array literal of string
+ * literals.
+ *
+ * @param initializer - The value of the option.
+ * @returns The paths, in their order, `undefined` when the option cannot be read (see {@link reportStyleUrl}).
+ */
+function readStyleUrls(initializer: Expression): readonly string[] | undefined {
+  if (isStringLiteral(initializer)) {
+    return [initializer.text];
+  }
+
+  if (!isArrayLiteralExpression(initializer) || !initializer.elements.length || !initializer.elements.every(isStringLiteral)) {
+    return undefined;
+  }
+
+  return initializer.elements.map(element => (element as StringLiteral).text);
 }
 
 /**
@@ -893,11 +954,11 @@ function findClassDecorator<D extends ClassDecoratorNode>(classDecl: ClassDeclar
  * @param decorator - The decorator node to read the arguments from.
  * @returns The literal values declared by the decorator, empty when missing or not literal.
  */
-function extractMetadaFromDecorator(decorator: ClassDecoratorNode): Pick<ComponentMetadata, 'selector' | 'templateUrl' | 'styleUrl' | 'clientOnly' | 'extends'> {
+function extractMetadaFromDecorator(decorator: ClassDecoratorNode): Pick<ComponentMetadata, 'selector' | 'templateUrl' | 'styleUrls' | 'clientOnly' | 'extends'> {
   const retVal: ReturnType<typeof extractMetadaFromDecorator> = {
     selector: '',
     templateUrl: '',
-    styleUrl: undefined,
+    styleUrls: undefined,
   };
 
   try {
@@ -923,7 +984,7 @@ function extractMetadaFromDecorator(decorator: ClassDecoratorNode): Pick<Compone
             retVal.templateUrl = isStringLiteral(prop.initializer) ? prop.initializer.text : '';
             break;
           case 'styleUrl':
-            retVal.styleUrl = isStringLiteral(prop.initializer) ? prop.initializer.text : undefined;
+            retVal.styleUrls = readStyleUrls(prop.initializer);
             break;
           case 'extends':
             retVal.extends = isStringLiteral(prop.initializer) ? prop.initializer.text : undefined;

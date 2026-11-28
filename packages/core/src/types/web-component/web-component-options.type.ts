@@ -37,9 +37,11 @@ export type WebComponentOptions = {
    */
   extends?: undefined,
   /**
-   * Optional path to the component's stylesheet, relative to the component file.
+   * Optional path to the component's stylesheet, relative to the component file, or the paths of its stylesheets,
+   * adopted in their order after the styles of the project (`styles` of `xaendar.json`): each file is one stylesheet,
+   * shared by every component listing it.
    */
-  styleUrl?: string,
+  styleUrl?: string | readonly string[],
   /**
    * Path to the component's HTML template, relative to the component file.
    */
@@ -61,10 +63,10 @@ export type WebComponentOptions = {
    */
   extends: ShadowHostTagName,
   /**
-   * Optional path to the component's stylesheet, relative to the component file: it styles the shadow root of the
-   * template, which it needs.
+   * Optional path to the component's stylesheet, relative to the component file, or the paths of its stylesheets: they
+   * style the shadow root of the template, which they need.
    */
-  styleUrl?: string,
+  styleUrl?: string | readonly string[],
   /**
    * Optional path to the component's HTML template, relative to the component file, rendered into the shadow root of the
    * element: without it, the element shows the content its tag holds.

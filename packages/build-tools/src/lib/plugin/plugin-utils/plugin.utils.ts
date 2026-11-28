@@ -307,14 +307,15 @@ export function generateServerStyleModule(cssText: string | undefined): string {
  * @param className - The name of the target class in this file.
  * @param templateModuleSpecifier - The import specifier of the compiled template module
  *   (see {@link createTemplateModuleSpecifier}).
- * @param styleModuleSpecifier - The import specifier of the compiled style module
- *   (see {@link createStyleModuleSpecifier}), if the component has a stylesheet.
+ * @param styleModuleSpecifiers - The import specifiers of the compiled style modules (see
+ *   {@link createStyleModuleSpecifier}), in the order the stylesheets are adopted: the styles of the project, then the
+ *   ones of the component. Registered as one array, each module imported once per file.
  * @param server - Whether the file is evaluated on the server: its modules then export the code rendering the
  *   template into HTML and the text of the stylesheet, registered via `_defineServerRender` of `@xaendar/ssr`.
  * @throws When no class named `className` is found, or none of them has the static block applying
  *   its decorators — meaning the babel decorators plugin didn't run before xaendarPlugin().
  */
-export function injectTemplate(code: MagicString, sourceFile: SourceFile, moduleImports: Map<string, string>, className: string, templateModuleSpecifier: string, registration: RenderRegistration, styleModuleSpecifier?: string): void {
+export function injectTemplate(code: MagicString, sourceFile: SourceFile, moduleImports: Map<string, string>, className: string, templateModuleSpecifier: string, registration: RenderRegistration, styleModuleSpecifiers?: readonly string[]): void {
   const classes = findClassesByName(sourceFile, className);
   if (!classes?.length) {
     throw `Could not find class "${className}" in the transpiled output.`;
@@ -329,8 +330,8 @@ export function injectTemplate(code: MagicString, sourceFile: SourceFile, module
   const { define, module, styleExport } = registration;
   const first = moduleImports.size === 0;
   const renderName = insertModuleImport(code, moduleImports, 'render', `__${className}_render`, templateModuleSpecifier);
-  const styleName = styleModuleSpecifier && insertModuleImport(code, moduleImports, styleExport, `__${className}_${styleExport}`, styleModuleSpecifier);
-  insertRenderRegistration(code, sourceFile, registrationBlock, define, renderName, styleName);
+  const styleNames = styleModuleSpecifiers?.map((specifier, index) => insertModuleImport(code, moduleImports, styleExport, `__${className}_${styleExport}${index ? index : ''}`, specifier));
+  insertRenderRegistration(code, sourceFile, registrationBlock, define, renderName, styleNames);
   if (first) {
     insertRequiredImports(code, define, module);
   }
@@ -737,7 +738,7 @@ function insertModuleImport(s: MagicString, moduleImports: Map<string, string>, 
 }
 
 /**
- * Inserts the static block registering the render function and the stylesheet of the component, right before
+ * Inserts the static block registering the render function and the stylesheets of the component, right before
  * `registrationBlock`.
  *
  * @param s - The `MagicString` wrapping the whole component file.
@@ -745,10 +746,10 @@ function insertModuleImport(s: MagicString, moduleImports: Map<string, string>, 
  * @param registrationBlock - The static block the registration is inserted before.
  * @param define - The runtime function registering them, `_defineRender` or `_defineServerRender`.
  * @param renderName - The local binding of the render function.
- * @param styleName - The local binding of the stylesheet, if the component has one.
+ * @param styleNames - The local bindings of the stylesheets, in their order, if the component has any.
  */
-function insertRenderRegistration(s: MagicString, sourceFile: SourceFile, registrationBlock: ClassStaticBlockDeclaration, define: string, renderName: string, styleName?: string): void {
-  const args = `this, ${renderName}${styleName ? `, ${styleName}` : ''}`;
+function insertRenderRegistration(s: MagicString, sourceFile: SourceFile, registrationBlock: ClassStaticBlockDeclaration, define: string, renderName: string, styleNames?: readonly string[]): void {
+  const args = `this, ${renderName}${styleNames?.length ? `, [${styleNames.join(', ')}]` : ''}`;
 
   s.appendLeft(registrationBlock.getStart(sourceFile), `static { ${define}(${args}); }\n\n  `);
 }

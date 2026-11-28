@@ -12,10 +12,12 @@ const definitions = new WeakMap<object, ServerRenderDefinition>();
  *
  * @param klass - The component class.
  * @param render - The function rendering its template on the server.
- * @param css - The CSS of its stylesheet, if any.
+ * @param css - The CSS of its stylesheets, in their order, `undefined` for a file without rules: they are written in one
+ *   `<style>` of its shadow root, which the browser replaces with the stylesheets it adopts.
  */
-export function _defineServerRender(klass: object, render: ServerRenderFunction, css?: string): void {
-  definitions.set(klass, { render, css });
+export function _defineServerRender(klass: object, render: ServerRenderFunction, css?: string | ReadonlyArray<string | undefined>): void {
+  const text = typeof css === 'string' || css === undefined ? css : css.filter(part => part !== undefined).join('\n');
+  definitions.set(klass, text ? { render, css: text } : { render });
 }
 
 /**

@@ -22,6 +22,11 @@ export type XaendarConfig = {
    */
   security?: XaendarPluginOptions['security'];
   /**
+   * The stylesheets of the project, relative to it, which every component of the project adopts before its own (see
+   * `XaendarPluginOptions['styles']`). Never declared by a library, which shares its styles with its own stylesheets.
+   */
+  styles?: string[];
+  /**
    * The rendering on the server, when the project renders its pages there.
    */
   ssr?: XaendarSsrConfig;

@@ -5,7 +5,7 @@ import type { LibraryPackage } from './library-package.type';
  * Metadata of a component of a compiled library, read from the manifest of its package: the declarations of the package
  * keep no decorator, and its templates are compiled already.
  */
-export type LibraryComponentMetadata = Omit<ComponentMetadata, 'styleUrl' | 'templateUrl' | 'typescriptNodes' | 'importPath'> & {
+export type LibraryComponentMetadata = Omit<ComponentMetadata, 'styleUrls' | 'templateUrl' | 'typescriptNodes' | 'importPath'> & {
   /**
    * The package declaring the component.
    */

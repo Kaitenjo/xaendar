@@ -62,12 +62,22 @@ describe('createPlugins()', () => {
     expect(vi.mocked(xaendarPlugin).mock.calls[0][0]?.libraries?.[0]).not.toHaveProperty('security');
   });
 
+  it('passes the styles of the project resolved against it, and rejects the ones of a library', () => {
+    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ name: 'app', styles: ['src/styles/base.css'] }));
+    createPlugins();
+
+    expect(xaendarPlugin).toHaveBeenCalledWith(expect.objectContaining({ styles: [join(projectDir, 'src/styles/base.css')] }));
+
+    writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ name: 'ws', libs: { '@acme/ui': { root: 'libraries/ui', styles: ['a.css'] } } }));
+    expect(() => createPlugins()).toThrow('The library @acme/ui declares "styles" in xaendar.json: only the project has styles every component adopts');
+  });
+
   it('passes no custom elements nor rendering on the server when xaendar.json declares none or is missing', () => {
     createPlugins();
     writeFileSync(join(projectDir, 'xaendar.json'), JSON.stringify({ name: 'app' }));
     createPlugins();
 
-    expect(vi.mocked(xaendarPlugin).mock.calls).toStrictEqual([[{ customElements: undefined, strictEvents: undefined, security: undefined, ssr: undefined, libraries: undefined, staticReport: undefined }], [{ customElements: undefined, strictEvents: undefined, security: undefined, ssr: undefined, libraries: undefined, staticReport: undefined }]]);
+    expect(vi.mocked(xaendarPlugin).mock.calls).toStrictEqual([[{ customElements: undefined, strictEvents: undefined, security: undefined, styles: undefined, ssr: undefined, libraries: undefined, staticReport: undefined }], [{ customElements: undefined, strictEvents: undefined, security: undefined, styles: undefined, ssr: undefined, libraries: undefined, staticReport: undefined }]]);
   });
 
   it('passes the libraries of the workspace, their folders resolved against it', () => {

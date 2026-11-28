@@ -4,7 +4,7 @@ import type { DirectiveDeclaration } from './directive-declaration.type';
 /**
  * Metadata for a directive extracted from the @Directive decorator, derived from component metadata by omitting component-specific properties.
  */
-export type DirectiveMetadata = Omit<ComponentMetadata, 'type' | 'styleUrl' | 'templateUrl' | 'typescriptNodes'> & {
+export type DirectiveMetadata = Omit<ComponentMetadata, 'type' | 'styleUrls' | 'templateUrl' | 'typescriptNodes'> & {
   /**
    * The type identifier for directive metadata.
    */

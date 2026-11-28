@@ -163,7 +163,7 @@ async function register(name: string, Base: Constructor<Component>, template: (t
     styleSheet = new CSSStyleSheet();
     styleSheet.replaceSync(css);
   }
-  _defineRender(Client, evaluate(await compile(template(child => tag('client', child)), { signals, cache })), styleSheet);
+  _defineRender(Client, evaluate(await compile(template(child => tag('client', child)), { signals, cache })), styleSheet && [styleSheet]);
   return { Server, define: () => customElements.define(tag('client', name), Client) };
 }
 

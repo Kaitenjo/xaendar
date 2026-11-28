@@ -39,6 +39,11 @@ export type XaendarPluginState = {
    */
   security: SecurityOptions;
   /**
+   * The stylesheets of the project, as the options give them: every component of the project, none of a library,
+   * adopts them before its own.
+   */
+  styles: readonly string[];
+  /**
    * The root of Vite, set once the Vite config is resolved.
    */
   root: string;

@@ -42,6 +42,12 @@ describe('getComponentDiagnostics', () => {
     ]);
   }, TIMEOUT);
 
+  it('reports each path of a styleUrl array leading to a missing file', async () => {
+    expect(await diagnose('@WebComponent({ selector: \'x-card\', styleUrl: [\'./card.css\', \'./gone.css\'], templateUrl: \'./card.xd.component.html\' })')).toEqual([
+      ['\'./gone.css\'', `Could not find style at ${project.path('src/gone.css')}`]
+    ]);
+  }, TIMEOUT);
+
   it('reports the options the build cannot read on their position, a missing file still being found', async () => {
     expect(await diagnose('@WebComponent({ selector: SELECTOR, styleUrl: \'./nope.css\', templateUrl: \'./card.xd.component.html\' })')).toEqual([
       ['\'./nope.css\'', `Could not find style at ${project.path('src/nope.css')}`],

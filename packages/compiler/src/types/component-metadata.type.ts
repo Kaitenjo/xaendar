@@ -39,9 +39,10 @@ export type ComponentMetadata = {
    */
   extends?: string;
   /**
-   * URL to the component's style file (CSS or similar).
+   * The URLs of the style files of the component (CSS or similar), in their order: the one of a `styleUrl` string, or
+   * the ones of a `styleUrl` array.
    */
-  styleUrl?: string;
+  styleUrls?: readonly string[];
   /**
    * URL to the component's HTML template file. Absent for a customized built-in element without a template, which
    * renders nothing: its content is the one its tag holds.

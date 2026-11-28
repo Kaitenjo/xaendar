@@ -8,6 +8,7 @@ import type { XaendarProject } from '../../types/xaendar-project.type';
 import { createBabelPlugin } from '../babel-plugin/babel-plugin.utils';
 import { createCachePlugin } from '../cache-plugin/cache-plugin.utils';
 import { findProjectLibrary } from '../library/library.utils';
+import { assertNoLibraryStyles } from '../xaendar-config/xaendar-config.utils';
 
 /**
  * Builds the libraries of a workspace, each one into a package ready to be published (see `buildLibrary` of
@@ -37,6 +38,7 @@ export async function buildLibraries(project: XaendarProject, name?: string): Pr
   const outDirs = new Map<string, string>();
   for (const [libraryName, dependencies] of order.ordered) {
     const { root } = order.libraries.get(libraryName)!;
+    assertNoLibraryStyles(libraryName, libs[libraryName]);
     const { outDir, ssr, customElements, strictEvents = project.config.strictEvents, entry } = libs[libraryName];
     const libraryOutDir = resolve(project.dir, outDir ?? `dist/${basename(root)}`);
     const options = { name: libraryName, root, entry, outDir: libraryOutDir, ssr: ssr === true, customElements, strictEvents, plugins: [createBabelPlugin(), createCachePlugin(project.dir)], xaendarVersion: version };

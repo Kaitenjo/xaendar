@@ -101,6 +101,8 @@ export function xaendarPlugin(options: XaendarPluginOptions = {}): Plugin {
     customElements: options.customElements ?? [],
     strictEvents: options.strictEvents ?? true,
     security: options.security ?? {},
+    // A library shares its styles with its own stylesheets: the project alone has styles of its own
+    styles: options.library ? [] : options.styles ?? [],
     minifyStyles: false,
     isBuild: false,
     root: process.cwd(),

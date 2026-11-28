@@ -312,11 +312,11 @@ describe('injectTemplate()', () => {
   const specifier = 'virtual:xaendar-template:/foo.html?signals=&lang.js';
   const styleSpecifier = 'virtual:xaendar-style?path=%2Ffoo.css&lang.js';
 
-  function inject(source: string, first: boolean, className: string, styleModuleSpecifier?: string): string {
+  function inject(source: string, first: boolean, className: string, ...styleModuleSpecifiers: string[]): string {
     const sourceFile = createSourceFile('component.js', source, ScriptTarget.Latest, true, ScriptKind.JS);
     const s = new MagicString(source);
     const moduleImports = new Map<string, string>(first ? [] : [['virtual:xaendar-template:/other.html?signals=&lang.js', '__Other_render']]);
-    injectTemplate(s, sourceFile, moduleImports, className, specifier, CLIENT_STRATEGY.registration, styleModuleSpecifier);
+    injectTemplate(s, sourceFile, moduleImports, className, specifier, CLIENT_STRATEGY.registration, styleModuleSpecifiers.length ? styleModuleSpecifiers : undefined);
     return s.toString();
   }
 
@@ -364,7 +364,7 @@ describe('injectTemplate()', () => {
     const sourceFile = createSourceFile('component.js', source, ScriptTarget.Latest, true, ScriptKind.JS);
     const s = new MagicString(source);
 
-    expect(() => injectTemplate(s, sourceFile, new Map(), 'Foo', specifier, CLIENT_STRATEGY.registration, styleSpecifier)).toThrow();
+    expect(() => injectTemplate(s, sourceFile, new Map(), 'Foo', specifier, CLIENT_STRATEGY.registration, [styleSpecifier])).toThrow();
     expect(s.toString()).toBe(source);
   });
 
@@ -378,7 +378,7 @@ describe('injectTemplate()', () => {
     const sourceFile = createSourceFile('component.js', jsSource, ScriptTarget.Latest, true, ScriptKind.JS);
     const s = new MagicString(jsSource);
 
-    injectTemplate(s, sourceFile, new Map(), 'Foo', specifier, SERVER_STRATEGY.registration, styleSpecifier);
+    injectTemplate(s, sourceFile, new Map(), 'Foo', specifier, SERVER_STRATEGY.registration, [styleSpecifier]);
     const result = s.toString();
 
     expect(result.startsWith([
@@ -386,7 +386,7 @@ describe('injectTemplate()', () => {
       `import { css as __Foo_css } from ${JSON.stringify(styleSpecifier)};`,
       `import { render as __Foo_render } from ${JSON.stringify(specifier)};`
     ].join('\n'))).toBe(true);
-    expect(result).toContain('static { _defineServerRender(this, __Foo_render, __Foo_css); }');
+    expect(result).toContain('static { _defineServerRender(this, __Foo_render, [__Foo_css]); }');
     expect(result).not.toContain('_defineRender');
   });
 
@@ -484,7 +484,16 @@ describe('injectTemplate()', () => {
 
     expect(result.startsWith(`import { sheet as __Foo_sheet } from ${JSON.stringify(styleSpecifier)};\nimport { render as __Foo_render }`)).toBe(true);
     expect(result).not.toContain('CSSStyleSheet');
-    expect(result).toContain('static { _defineRender(this, __Foo_render, __Foo_sheet); }');
+    expect(result).toContain('static { _defineRender(this, __Foo_render, [__Foo_sheet]); }');
+  });
+
+  it('imports several stylesheets and registers them in their order, one module imported once', () => {
+    const baseSpecifier = 'virtual:xaendar-style?path=%2Fbase.css&lang.js';
+    const result = inject(jsSource, false, 'Foo', baseSpecifier, styleSpecifier);
+
+    expect(result).toContain(`import { sheet as __Foo_sheet } from ${JSON.stringify(baseSpecifier)};`);
+    expect(result).toContain(`import { sheet as __Foo_sheet1 } from ${JSON.stringify(styleSpecifier)};`);
+    expect(result).toContain('static { _defineRender(this, __Foo_render, [__Foo_sheet, __Foo_sheet1]); }');
   });
 
   it('prepends the required runtime imports only on the first component of the file', () => {
@@ -514,8 +523,8 @@ describe('injectTemplate()', () => {
       const s = new MagicString(source);
       const moduleImports = new Map<string, string>();
 
-      injectTemplate(s, sourceFile, moduleImports, 'Foo', fooSpecifier, CLIENT_STRATEGY.registration, fooStyleSpecifier);
-      injectTemplate(s, sourceFile, moduleImports, 'Bar', barSpecifier, CLIENT_STRATEGY.registration, barStyleSpecifier);
+      injectTemplate(s, sourceFile, moduleImports, 'Foo', fooSpecifier, CLIENT_STRATEGY.registration, fooStyleSpecifier ? [fooStyleSpecifier] : undefined);
+      injectTemplate(s, sourceFile, moduleImports, 'Bar', barSpecifier, CLIENT_STRATEGY.registration, barStyleSpecifier ? [barStyleSpecifier] : undefined);
       return s.toString();
     }
 
@@ -552,7 +561,7 @@ describe('injectTemplate()', () => {
       expect(result.split(JSON.stringify(styleSpecifier)).length).toBe(2);
       expect(result).toContain(`import { sheet as __Foo_sheet } from ${JSON.stringify(styleSpecifier)};`);
       expect(result).not.toContain('__Bar_sheet');
-      expect(result).toContain('static { _defineRender(this, __Foo_render, __Foo_sheet); }\n\n  static { [_Bar, _initClass2]');
+      expect(result).toContain('static { _defineRender(this, __Foo_render, [__Foo_sheet]); }\n\n  static { [_Bar, _initClass2]');
     });
 
     it('imports each distinct style module of the file', () => {
@@ -561,8 +570,8 @@ describe('injectTemplate()', () => {
 
       expect(result).toContain(`import { sheet as __Foo_sheet } from ${JSON.stringify(styleSpecifier)};`);
       expect(result).toContain(`import { sheet as __Bar_sheet } from ${JSON.stringify(barStyleSpecifier)};`);
-      expect(result).toContain('static { _defineRender(this, __Foo_render, __Foo_sheet); }\n\n  static { [_Foo, _initClass]');
-      expect(result).toContain('static { _defineRender(this, __Foo_render, __Bar_sheet); }\n\n  static { [_Bar, _initClass2]');
+      expect(result).toContain('static { _defineRender(this, __Foo_render, [__Foo_sheet]); }\n\n  static { [_Foo, _initClass]');
+      expect(result).toContain('static { _defineRender(this, __Foo_render, [__Bar_sheet]); }\n\n  static { [_Bar, _initClass2]');
     });
   });
 });

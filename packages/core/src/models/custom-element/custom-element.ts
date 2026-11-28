@@ -18,6 +18,7 @@ import { _bindHost } from '../../utils/host-bindings/host-bindings.util';
 import { _checkExposedFields, _createHostDirectives } from '../../utils/host-directives/host-directives.util';
 import { HYDRATION } from '../../utils/hydration-flag/hydration-flag.util';
 import { deferElementHydration, replayContractEvents, replayElementEvents } from '../../utils/hydration-triggers/hydration-triggers.util';
+import { adoptStyleSheets } from '../../utils/adopt-style-sheets/adopt-style-sheets.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
 import { reportError } from '../../utils/report-error/report-error.util';
 import { adoptHostServerStyle } from '../../utils/server-styles/server-styles.util';
@@ -418,15 +419,15 @@ export class CustomElement extends HTMLElement {
    * the root is ready (see {@link _start}).
    *
    * @param root - The shadow root of the element.
-   * @param definition - The render function and the stylesheet registered for the class of the component.
+   * @param definition - The render function and the stylesheets registered for the class of the component.
    * @param state - The state of the element before the connection: one destroyed empties its shadow root first.
    * @param serverRoot - Whether the shadow root holds the HTML of the server, which the render adopts.
    * @throws The error of the code of the component.
    */
   private _render(root: ShadowRoot, definition: RenderDefinition, state: CustomElement['_state'], serverRoot: boolean): void {
-    const { render, styleSheet } = definition;
-    if (styleSheet) {
-      root.adoptedStyleSheets = [styleSheet];
+    const { render, styleSheets } = definition;
+    if (styleSheets) {
+      adoptStyleSheets(root, styleSheets);
     }
 
     // Destroyed, its shadow root holds what it rendered before its removal, moved along with it by code outside Xaendar

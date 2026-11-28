@@ -93,6 +93,15 @@ describe('buildLibraries()', () => {
     expect(vi.mocked(buildLibrary).mock.calls[0][0]).not.toHaveProperty('security');
   });
 
+  it('builds a library without the styles of the project, and rejects a library declaring its own', async () => {
+    const project = writeWorkspace({ '@acme/ui': [{ root: 'libraries/ui' }, {}] });
+    await buildLibraries({ ...project, config: { ...project.config, styles: ['src/base.css'] } });
+    expect(vi.mocked(buildLibrary).mock.calls[0][0]).not.toHaveProperty('styles');
+
+    const styled = writeWorkspace({ '@acme/ui': [{ root: 'libraries/ui', styles: ['a.css'] } as XaendarLibraryConfig, {}] });
+    await expect(buildLibraries(styled)).rejects.toThrow('The library @acme/ui declares "styles" in xaendar.json');
+  });
+
   it('builds only the library named, by the name of its folder', async () => {
     const project = writeWorkspace({
       '@acme/ui': [{ root: 'libraries/ui' }, {}],

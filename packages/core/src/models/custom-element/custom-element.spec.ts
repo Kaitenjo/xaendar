@@ -58,11 +58,11 @@ function createContext(onClear: NoArgsVoidFunction = () => undefined): _Context 
 }
 
 let counter = 0;
-function create(context?: _Context, styleSheet?: CSSStyleSheet): TestElement {
+function create(context?: _Context, ...styleSheets: CSSStyleSheet[]): TestElement {
   const name = `x-base-${counter++}`;
   const klass = class extends CustomElement { };
   if (context) {
-    _defineRender(klass, () => context, styleSheet);
+    _defineRender(klass, () => context, styleSheets);
   }
 
   customElements.define(name, klass);
@@ -155,13 +155,20 @@ describe('CustomElement', () => {
     element.remove();
   });
 
-  it('adopts the registered stylesheet on connection', () => {
-    const styleSheet = new CSSStyleSheet();
-    const element = create(createContext(), styleSheet);
+  it('adopts the registered stylesheets on connection, in their order, keeping the ones other code adopted after them', () => {
+    const base = new CSSStyleSheet();
+    const own = new CSSStyleSheet();
+    const added = new CSSStyleSheet();
+    const element = create(createContext(), base, own);
 
     document.body.appendChild(element);
+    expect(element.shadowRoot?.adoptedStyleSheets).toEqual([base, own]);
 
-    expect(element.shadowRoot?.adoptedStyleSheets).toEqual([styleSheet]);
+    element.shadowRoot!.adoptedStyleSheets = [...element.shadowRoot!.adoptedStyleSheets, added];
+    element.remove();
+    document.body.appendChild(element);
+
+    expect(element.shadowRoot?.adoptedStyleSheets).toEqual([base, own, added]);
     element.remove();
   });
 
@@ -189,7 +196,7 @@ describe('CustomElement', () => {
         return context;
       });
       const klass = class extends CustomElement { };
-      _defineRender(klass, render, styleSheet);
+      _defineRender(klass, render, styleSheet && [styleSheet]);
       customElements.define(name, klass);
       return render;
     }

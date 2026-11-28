@@ -10,8 +10,8 @@ import { findInnermostSpan } from '../utils/template-span/template-span.utils';
 
 /**
  * Finds the files a `@WebComponent` decorator of a component file leads to:
- * - its name (`@` included): the template and, if declared, the style of the component;
- * - the value of its `templateUrl` or `styleUrl`: the template or the style.
+ * - its name (`@` included): the template and, if declared, the styles of the component;
+ * - the value of its `templateUrl` or a path of its `styleUrl`: the template or the style.
  *
  * @param fileName - The path of the component file.
  * @param text - The text of the component file.
@@ -24,8 +24,8 @@ export async function getComponentDefinition(fileName: string, text: string, off
     return [];
   }
 
-  const targets = components.flatMap(({ templateUrl, styleUrl, typescriptNodes: { decorator } }) => [
-    { span: { start: decorator.getStart(), end: decorator.expression.expression.getEnd() }, urls: [templateUrl, styleUrl] },
+  const targets = components.flatMap(({ templateUrl, styleUrls, typescriptNodes: { decorator } }) => [
+    { span: { start: decorator.getStart(), end: decorator.expression.expression.getEnd() }, urls: styleUrls ? [templateUrl].concat(styleUrls) : [templateUrl] },
     ...findStringOptions(decorator, ['templateUrl', 'styleUrl']).map(({ literal }): ComponentTarget => ({ span: { start: literal.getStart(), end: literal.getEnd() }, urls: [literal.text] }))
   ]);
   const target = findInnermostSpan(targets, offset);
@@ -58,7 +58,7 @@ async function extractComponents(fileName: string, text: string): Promise<Compon
  * @param urls - The urls, the missing ones undefined.
  * @returns The paths of the files, in posix format, those missing on disk excluded.
  */
-function resolveUrls(fileName: string, urls: ReadonlyArray<ComponentMetadata['styleUrl']>): string[] {
+function resolveUrls(fileName: string, urls: ReadonlyArray<string | undefined>): string[] {
   const componentDir = dirname(fileName);
   return urls
     .filter(url => url !== undefined)

@@ -1,13 +1,14 @@
 import type { ComponentMetadata } from '@xaendar/compiler';
-import { isIdentifier, isObjectLiteralExpression, isPropertyAssignment, isStringLiteral } from 'typescript';
+import { isArrayLiteralExpression, isIdentifier, isObjectLiteralExpression, isPropertyAssignment, isStringLiteral } from 'typescript';
 import type { ComponentStringOption } from '../../types/component-string-option.type';
 
 /**
- * Finds the options of a `@WebComponent` decorator assigned a string literal.
+ * Finds the string literals the options of a `@WebComponent` decorator are assigned, one of them or an array of them
+ * (`styleUrl: ['./base.css', './a.css']`), each listed with its option.
  *
  * @example
- * // @WebComponent({ selector: 'x-a', templateUrl: TEMPLATE, styleUrl: './a.css' })
- * findStringOptions(decorator, ['templateUrl', 'styleUrl']); // [{ name: 'styleUrl', literal: './a.css' }]
+ * // @WebComponent({ selector: 'x-a', templateUrl: TEMPLATE, styleUrl: ['./base.css', './a.css'] })
+ * findStringOptions(decorator, ['templateUrl', 'styleUrl']); // [{ name: 'styleUrl', literal: './base.css' }, { name: 'styleUrl', literal: './a.css' }]
  *
  * @param decorator - The decorator.
  * @param names - The names of the options.
@@ -18,8 +19,20 @@ export function findStringOptions(decorator: ComponentMetadata['typescriptNodes'
   const { properties } = decorator.expression.arguments.find(isObjectLiteralExpression) ?? {};
   for (let i = 0; properties && i < properties.length; i++) {
     const property = properties[i];
-    if (isPropertyAssignment(property) && isIdentifier(property.name) && names.includes(property.name.text) && isStringLiteral(property.initializer)) {
-      options.push({ name: property.name.text, literal: property.initializer });
+    if (!isPropertyAssignment(property) || !isIdentifier(property.name) || !names.includes(property.name.text)) {
+      continue;
+    }
+
+    const { initializer } = property;
+    if (isStringLiteral(initializer)) {
+      options.push({ name: property.name.text, literal: initializer });
+    } else if (isArrayLiteralExpression(initializer)) {
+      for (let j = 0; j < initializer.elements.length; j++) {
+        const element = initializer.elements[j];
+        if (isStringLiteral(element)) {
+          options.push({ name: property.name.text, literal: element });
+        }
+      }
     }
   }
 

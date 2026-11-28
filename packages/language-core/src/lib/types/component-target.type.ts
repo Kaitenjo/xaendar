@@ -1,4 +1,4 @@
-import type { ComponentMetadata, Span } from '@xaendar/compiler';
+import type { Span } from '@xaendar/compiler';
 
 /**
  * A part of a `@WebComponent` decorator leading to the files of its component.
@@ -11,5 +11,5 @@ export type ComponentTarget = {
   /**
    * The urls, relative to the component file, of the files the part leads to.
    */
-  readonly urls: ReadonlyArray<ComponentMetadata['styleUrl']>;
+  readonly urls: ReadonlyArray<string | undefined>;
 };

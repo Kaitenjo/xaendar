@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import type { XaendarConfig } from '../../types/xaendar-config.type';
+import type { XaendarLibraryConfig } from '../../types/xaendar-library-config.type';
 import type { XaendarProject } from '../../types/xaendar-project.type';
 import type { XaendarSsrConfig } from '../../types/xaendar-ssr-config.type';
 
@@ -18,6 +19,20 @@ export const SSR_OUTLET = '<!--xd-ssr-->';
 export function readXaendarConfig(): XaendarConfig | undefined {
   const path = resolve(process.cwd(), 'xaendar.json');
   return existsSync(path) ? JSON.parse(readFileSync(path, 'utf-8')) : undefined;
+}
+
+/**
+ * Rejects the `styles` a library of the workspace declares in `libs`: the project decides the styles of its application,
+ * and a library shares its own with its stylesheets, never adopted by the components of another project.
+ *
+ * @param name - The name of the package of the library.
+ * @param library - Its configuration.
+ * @throws If it declares `styles`.
+ */
+export function assertNoLibraryStyles(name: string, library: XaendarLibraryConfig): void {
+  if (Object.hasOwn(library, 'styles')) {
+    throw new Error(`The library ${name} declares "styles" in xaendar.json: only the project has styles every component adopts. Share the styles of a library with its stylesheets, listed in the styleUrl of its components, or with @use of Sass`);
+  }
 }
 
 /**

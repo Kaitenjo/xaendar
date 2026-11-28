@@ -8,17 +8,21 @@ describe('render registry', () => {
 
     _defineRender(Component, render);
 
-    expect(_getRender(Component)).toEqual({ render, styleSheet: undefined });
+    expect(_getRender(Component)).toEqual({ render });
   });
 
-  it('returns the stylesheet registered along with the render function', () => {
+  it('returns the stylesheets registered along with the render function, in their order, without the ones of empty files', () => {
     class Component { }
+    class Empty { }
     const render = () => ({}) as never;
-    const styleSheet = {} as CSSStyleSheet;
+    const base = {} as CSSStyleSheet;
+    const own = {} as CSSStyleSheet;
 
-    _defineRender(Component, render, styleSheet);
+    _defineRender(Component, render, [base, undefined, own]);
+    _defineRender(Empty, render, [undefined]);
 
-    expect(_getRender(Component)).toEqual({ render, styleSheet });
+    expect(_getRender(Component)).toEqual({ render, styleSheets: [base, own] });
+    expect(_getRender(Empty)).toEqual({ render });
   });
 
   it('does not inherit the render function of an ancestor', () => {

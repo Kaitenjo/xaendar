@@ -14,10 +14,22 @@ const definitions = new WeakMap<object, RenderDefinition>();
  *
  * @param klass - The component class.
  * @param render - The render function of the template declared by `klass`.
- * @param styleSheet - The stylesheet declared by `klass`, if any.
+ * @param styleSheets - The stylesheets `klass` adopts, in their order: the styles of the project, then the ones of its
+ *   `styleUrl`, `undefined` for a file without rules, which are left out.
  */
-export function _defineRender(klass: object, render: RenderFunction, styleSheet?: CSSStyleSheet): void {
-  definitions.set(klass, { render, styleSheet });
+export function _defineRender(klass: object, render: RenderFunction, styleSheets?: ReadonlyArray<CSSStyleSheet | undefined>): void {
+  const adopted = styleSheets?.filter(isStyleSheet);
+  definitions.set(klass, adopted?.length ? { render, styleSheets: adopted } : { render });
+}
+
+/**
+ * Tells whether a stylesheet of a component is one, not the `undefined` of a file without rules.
+ *
+ * @param styleSheet - The stylesheet.
+ * @returns `true` for a stylesheet.
+ */
+function isStyleSheet(styleSheet: CSSStyleSheet | undefined): styleSheet is CSSStyleSheet {
+  return styleSheet !== undefined;
 }
 
 /**

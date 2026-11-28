@@ -27727,7 +27727,7 @@ async function extractComponentsMetadataFromSourceFile(sourceFile, compilerOptio
   const declarations = getWebComponentDeclarations(sourceFile);
   for (let i2 = 0; i2 < declarations.length; i2++) {
     const { klass, decorator } = declarations[i2];
-    const { selector, styleUrl, templateUrl, clientOnly, extends: extended } = extractMetadaFromDecorator(decorator);
+    const { selector, styleUrls, templateUrl, clientOnly, extends: extended } = extractMetadaFromDecorator(decorator);
     if (!selector || !templateUrl && !extended) {
       return;
     }
@@ -27739,12 +27739,14 @@ async function extractComponentsMetadataFromSourceFile(sourceFile, compilerOptio
       className,
       modulePath: sourceFile.fileName,
       selector,
-      styleUrl,
       ...bindings,
       typescriptNodes: declarations[i2]
     };
     if (templateUrl) {
       metadata.templateUrl = templateUrl;
+    }
+    if (styleUrls) {
+      metadata.styleUrls = styleUrls;
     }
     if (extended) {
       metadata.extends = extended;
@@ -27844,7 +27846,8 @@ function findWebComponentErrors(sourceFile, componentFile, ssr, compilerOptions 
           break;
         case "styleUrl":
           styleUrl = property;
-          break;
+          reportStyleUrl(errors, sourceFile, className, property);
+          continue;
         case "extends":
           extendsOption = property;
           break;
@@ -27879,6 +27882,40 @@ function findWebComponentErrors(sourceFile, componentFile, ssr, compilerOptions 
     }
   }
   return errors;
+}
+function reportStyleUrl(errors, sourceFile, className, property) {
+  const value = (0, import_typescript17.isPropertyAssignment)(property) ? property.initializer : void 0;
+  if (value && (0, import_typescript17.isStringLiteral)(value)) {
+    return;
+  }
+  if (!value || !(0, import_typescript17.isArrayLiteralExpression)(value)) {
+    reportAt(errors, sourceFile, `The styleUrl option of ${className} must be a string literal, or an array literal of string literals`, value ?? property);
+    return;
+  }
+  if (!value.elements.length) {
+    reportAt(errors, sourceFile, `The styleUrl option of ${className} lists no stylesheet: remove it, or list one`, value);
+    return;
+  }
+  const seen = /* @__PURE__ */ new Set();
+  for (let i2 = 0; i2 < value.elements.length; i2++) {
+    const element = value.elements[i2];
+    if (!(0, import_typescript17.isStringLiteral)(element)) {
+      reportAt(errors, sourceFile, `The styleUrl option of ${className} must list string literals`, element);
+    } else if (seen.has(element.text)) {
+      reportAt(errors, sourceFile, `The styleUrl option of ${className} lists ${element.text} twice`, element);
+    } else {
+      seen.add(element.text);
+    }
+  }
+}
+function readStyleUrls(initializer) {
+  if ((0, import_typescript17.isStringLiteral)(initializer)) {
+    return [initializer.text];
+  }
+  if (!(0, import_typescript17.isArrayLiteralExpression)(initializer) || !initializer.elements.length || !initializer.elements.every(import_typescript17.isStringLiteral)) {
+    return void 0;
+  }
+  return initializer.elements.map((element) => element.text);
 }
 function findExtendsError(tagName, className) {
   if (isValidCustomElementName(tagName, false)) {
@@ -28196,7 +28233,7 @@ function extractMetadaFromDecorator(decorator) {
   const retVal = {
     selector: "",
     templateUrl: "",
-    styleUrl: void 0
+    styleUrls: void 0
   };
   try {
     const args = decorator.expression.arguments;
@@ -28218,7 +28255,7 @@ function extractMetadaFromDecorator(decorator) {
             retVal.templateUrl = (0, import_typescript17.isStringLiteral)(prop.initializer) ? prop.initializer.text : "";
             break;
           case "styleUrl":
-            retVal.styleUrl = (0, import_typescript17.isStringLiteral)(prop.initializer) ? prop.initializer.text : void 0;
+            retVal.styleUrls = readStyleUrls(prop.initializer);
             break;
           case "extends":
             retVal.extends = (0, import_typescript17.isStringLiteral)(prop.initializer) ? prop.initializer.text : void 0;
@@ -31789,8 +31826,19 @@ function findStringOptions(decorator, names) {
   const { properties: properties2 } = decorator.expression.arguments.find(import_typescript22.isObjectLiteralExpression) ?? {};
   for (let i2 = 0; properties2 && i2 < properties2.length; i2++) {
     const property = properties2[i2];
-    if ((0, import_typescript22.isPropertyAssignment)(property) && (0, import_typescript22.isIdentifier)(property.name) && names.includes(property.name.text) && (0, import_typescript22.isStringLiteral)(property.initializer)) {
-      options.push({ name: property.name.text, literal: property.initializer });
+    if (!(0, import_typescript22.isPropertyAssignment)(property) || !(0, import_typescript22.isIdentifier)(property.name) || !names.includes(property.name.text)) {
+      continue;
+    }
+    const { initializer } = property;
+    if ((0, import_typescript22.isStringLiteral)(initializer)) {
+      options.push({ name: property.name.text, literal: initializer });
+    } else if ((0, import_typescript22.isArrayLiteralExpression)(initializer)) {
+      for (let j = 0; j < initializer.elements.length; j++) {
+        const element = initializer.elements[j];
+        if ((0, import_typescript22.isStringLiteral)(element)) {
+          options.push({ name: property.name.text, literal: element });
+        }
+      }
     }
   }
   return options;
@@ -31878,8 +31926,8 @@ async function getComponentDefinition(fileName, text, offset) {
   if (!components?.length) {
     return [];
   }
-  const targets = components.flatMap(({ templateUrl, styleUrl, typescriptNodes: { decorator } }) => [
-    { span: { start: decorator.getStart(), end: decorator.expression.expression.getEnd() }, urls: [templateUrl, styleUrl] },
+  const targets = components.flatMap(({ templateUrl, styleUrls, typescriptNodes: { decorator } }) => [
+    { span: { start: decorator.getStart(), end: decorator.expression.expression.getEnd() }, urls: styleUrls ? [templateUrl].concat(styleUrls) : [templateUrl] },
     ...findStringOptions(decorator, ["templateUrl", "styleUrl"]).map(({ literal }) => ({ span: { start: literal.getStart(), end: literal.getEnd() }, urls: [literal.text] }))
   ]);
   const target = findInnermostSpan(targets, offset);

@@ -26,6 +26,12 @@ export type XaendarPluginOptions = {
    */
   readonly security?: CompileOptions['security'];
   /**
+   * The stylesheets of the project (`.css`, `.scss`, `.sass` or `.less`), absolute or relative to the root of Vite: every
+   * component of the project rendering a template adopts them, in their order, before its own. The components of the
+   * libraries never get them: a library shares its styles with its own stylesheets. Defaults to none.
+   */
+  readonly styles?: readonly string[];
+  /**
    * Renders the pages on the server. The modules evaluated on the server, the ones of the `ssr` environment of Vite,
    * register templates compiled into HTML, with `@xaendar/ssr`, and the dev server renders each page it serves with the
    * entry. Without it, every environment gets the templates of the browser.
