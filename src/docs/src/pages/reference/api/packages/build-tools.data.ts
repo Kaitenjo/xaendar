@@ -34,6 +34,12 @@ export const BUILD_TOOLS_API: ApiPackage = {
           snippets: ['templates/security-config.json', 'templates/unsafe-binding-error.txt', 'templates/unsafe-url-warning.txt', 'templates/untrusted-resource-warning.txt']
         },
         {
+          name: 'styles',
+          group: 'options',
+          signature: 'styles?: readonly string[]',
+          snippets: ['components/project-styles.json']
+        },
+        {
           name: 'ssr',
           group: 'options',
           signature: 'ssr?: { readonly entry: string; readonly staticComponents?: boolean }',
@@ -67,6 +73,7 @@ export const BUILD_TOOLS_API: ApiPackage = {
         '    readonly trustedOrigins?: readonly string[];',
         '    readonly rejectUnsafeBindings?: boolean;',
         '  };',
+        '  readonly styles?: readonly string[];',
         '  readonly ssr?: {',
         '    readonly entry: string;',
         '    readonly staticComponents?: boolean;',
@@ -89,6 +96,11 @@ export const BUILD_TOOLS_API: ApiPackage = {
           name: 'security',
           group: 'options',
           signature: 'readonly security?: { readonly urls?: \'off\' | \'warn\' | \'remove\'; readonly resourceUrls?: \'off\' | \'warn\' | \'remove\'; readonly trustedOrigins?: readonly string[]; readonly rejectUnsafeBindings?: boolean }'
+        },
+        {
+          name: 'styles',
+          group: 'options',
+          signature: 'readonly styles?: readonly string[]'
         },
         {
           name: 'ssr',

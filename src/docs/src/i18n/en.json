@@ -1093,6 +1093,13 @@
           "example1": "Two paragraphs with the same class",
           "p2": "Both paragraphs have the class <code>title</code>, and each stylesheet styles only its own: the red border stays in the parent, the uppercase stays in the child. The color and the italic, instead, reach the child: they are set on its host element, and inherited properties flow into the shadow root like into any other element."
         },
+        "severalStylesheets": {
+          "title": "Several stylesheets and project styles",
+          "p1": "<code>styleUrl</code> also takes an array: the component adopts the stylesheets in their order, so the last one wins on a tie of specificity. Each file is compiled once into one <code>CSSStyleSheet</code>, shared by every component listing it: a base of resets and typography listed by thirty components is one object, parsed once, while a Sass <code>@use</code> of the same base copies it into the stylesheet of each component.",
+          "example1": "Two components sharing one base stylesheet",
+          "p2": "The styles every component of the application needs, resets, <code>box-sizing</code>, fonts, go in <code>styles</code> of <code>xaendar.json</code>, paths relative to the project: every component of the project rendering a template adopts them before its own, without listing them.",
+          "p3": "The components of the libraries never get them: the project decides what its application imports, and a library shares its own styles with its stylesheets, listed in the <code>styleUrl</code> of its components, or with Sass <code>@use</code>; <code>styles</code> in the <code>libs</code> of <code>xaendar.json</code> is an error. The stylesheets other code adopts in a shadow root, the application or a directive, are kept after the ones of the component, also when it is connected again. On the server the stylesheets are written in one <code>&lt;style&gt;</code>, in the same order, which the browser replaces with the adopted ones when the component hydrates."
+        },
         "stylingTheHost": {
           "title": "Styling the host",
           "p1": "Inside the stylesheet, <code>:host</code> matches the element of the component itself. A custom element is <code>display: inline</code> by default, so most components set a display here. <code>:host(selector)</code> matches the host only when it also matches the selector: a class, an attribute or a state set from outside.",
@@ -1102,7 +1109,8 @@
         "themingWithCustomProperties": {
           "title": "Theming with custom properties",
           "p1": "Custom properties are inherited, so they cross shadow roots: a component can read <code>var(--accent, fallback)</code> and let any ancestor decide the value. This is the way to offer a theming API without exposing the internals.",
-          "example1": "An accent color and a radius set on a container"
+          "example1": "An accent color and a radius set on a container",
+          "p2": "Custom properties are the design tokens of an application: declare them once, on <code>:root</code> of the stylesheet of the page (<code>--app-accent</code>, <code>--app-radius</code>, <code>--app-space-2</code>), change them for a dark theme in <code>@media (prefers-color-scheme: dark)</code> or under a class of <code>&lt;html&gt;</code>, and type the ones you animate with <code>@property</code>. The components read them with a fallback, <code>var(--app-accent, #6750a4)</code>, and still work outside the application. Tokens are values, which cross the shadow roots; rules, as a reset or a typography, do not, and go in shared stylesheets or in <code>styles</code>. For an override a token cannot express, a component exposes the element with <code>part</code>."
         },
         "partsAndProjectedContent": {
           "title": "Parts and projected content",
@@ -1135,7 +1143,7 @@
           },
           "callout4": {
             "heading": "The global stylesheet does not reach components",
-            "body": "The styles of the page, including resets such as <code>box-sizing: border-box</code>, do not apply inside shadow roots. Repeat them in the component stylesheets, or share a stylesheet file between components."
+            "body": "The styles of the page, including resets such as <code>box-sizing: border-box</code>, do not apply inside shadow roots: put them in <code>styles</code> of <code>xaendar.json</code>, which every component of the project adopts, or in a stylesheet the components list in their <code>styleUrl</code>."
           }
         },
         "summary": {

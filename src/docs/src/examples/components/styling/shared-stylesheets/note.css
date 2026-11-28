@@ -1,0 +1,3 @@
+:host {
+  background: color-mix(in srgb, var(--ex-accent, #6750a4) 8%, transparent);
+}

@@ -1270,3 +1270,13 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 
 - **Cause:** xd build of libraries of a workspace depending on each other, through the dependencies or the peerDependencies of their package.json: none can be built first.
 - **Fix:** Move what they share into a library both depend on.
+
+### `The styleUrl option of X must be a string literal, or an array literal of string literals`
+
+- **Cause:** `styleUrl` given as a constant, a shorthand or another expression: the build reads it from the source code. Also `… lists no stylesheet` (empty array), `… must list string literals`, `… lists ./a.css twice`.
+- **Fix:** `styleUrl: './x.css'` or `styleUrl: ['../../styles/base.css', './x.css']`, each path once.
+
+### `The library @acme/ui declares "styles" in xaendar.json: only the project has styles every component adopts.`
+
+- **Cause:** `styles` inside an entry of `libs`.
+- **Fix:** Remove it: list the shared stylesheet in the `styleUrl` of the components of the library, or `@use` it in Sass. The project's `styles` never reach the components of a library.

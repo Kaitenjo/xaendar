@@ -11,6 +11,8 @@
 @import { DocsCalloutComponent } from '../../../ui/docs-callout/docs-callout.xd.component.ts'
 @import { DocsCodeComponent } from '../../../ui/docs-code/docs-code.xd.component.ts'
 @import { DocsExampleComponent } from '../../../ui/docs-example/docs-example.xd.component.ts'
+@import { SharedStylesheetsComponent } from '../../../examples/components/styling/shared-stylesheets/shared-stylesheets.xd.component.ts'
+@import { SEVERAL_STYLESHEETS } from './styling.snippets.ts'
 
 <span class="eyebrow">
   { t(translations(), 'pages.components.styling.eyebrow') }
@@ -33,6 +35,19 @@
 <p @@htmlTranslation(key="pages.components.styling.theComponentStylesheet.p2") />
 
 <h2>
+  { t(translations(), 'pages.components.styling.severalStylesheets.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.styling.severalStylesheets.p1") />
+<docs-code snippet="{SEVERAL_STYLESHEETS}" />
+<docs-example name="components/styling/shared-stylesheets"
+  heading="{translations().pages.components.styling.severalStylesheets.example1}">
+  <ex-shared-stylesheets />
+</docs-example>
+<p @@htmlTranslation(key="pages.components.styling.severalStylesheets.p2") />
+<docs-code snippet="components/project-styles.json" />
+<p @@htmlTranslation(key="pages.components.styling.severalStylesheets.p3") />
+
+<h2>
   { t(translations(), 'pages.components.styling.stylingTheHost.title') }
 </h2>
 <p @@htmlTranslation(key="pages.components.styling.stylingTheHost.p1") />
@@ -50,6 +65,7 @@
   heading="{translations().pages.components.styling.themingWithCustomProperties.example1}">
   <ex-custom-properties />
 </docs-example>
+<p @@htmlTranslation(key="pages.components.styling.themingWithCustomProperties.p2") />
 
 <h2>
   { t(translations(), 'pages.components.styling.partsAndProjectedContent.title') }

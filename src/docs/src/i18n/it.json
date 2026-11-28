@@ -1093,6 +1093,13 @@
           "example1": "Due paragrafi con la stessa classe",
           "p2": "Entrambi i paragrafi hanno la classe <code>title</code>, e ogni foglio di stile dà uno stile solo al proprio: il bordo rosso resta nel padre, il maiuscolo resta nel figlio. Il colore e il corsivo, invece, raggiungono il figlio: sono impostati sul suo elemento host, e le proprietà ereditate entrano nello shadow root come in qualsiasi altro elemento."
         },
+        "severalStylesheets": {
+          "title": "Più fogli di stile e stili del progetto",
+          "p1": "<code>styleUrl</code> accetta anche un array: il componente adotta i fogli nel loro ordine, quindi a parità di specificità vince l’ultimo. Ogni file viene compilato una volta in un solo <code>CSSStyleSheet</code>, condiviso da tutti i componenti che lo elencano: una base di reset e tipografia elencata da trenta componenti è un solo oggetto, analizzato una volta, mentre un <code>@use</code> di Sass della stessa base la copia nel foglio di ogni componente.",
+          "example1": "Due componenti che condividono un foglio di base",
+          "p2": "Gli stili che servono a ogni componente dell’applicazione, reset, <code>box-sizing</code>, font, vanno in <code>styles</code> di <code>xaendar.json</code>, con percorsi relativi al progetto: ogni componente del progetto che renderizza un template li adotta prima dei suoi, senza elencarli.",
+          "p3": "I componenti delle librerie non li ricevono mai: è il progetto a decidere cosa importa la sua applicazione, e una libreria condivide i suoi stili con i suoi fogli, elencati nello <code>styleUrl</code> dei suoi componenti, o con <code>@use</code> di Sass; <code>styles</code> nei <code>libs</code> di <code>xaendar.json</code> è un errore. I fogli che altro codice adotta in una shadow root, l’applicazione o una direttiva, vengono mantenuti dopo quelli del componente, anche quando viene collegato di nuovo. Sul server i fogli sono scritti in un solo <code>&lt;style&gt;</code>, nello stesso ordine, che il browser sostituisce con quelli adottati quando il componente si idrata."
+        },
         "stylingTheHost": {
           "title": "Lo stile dell’host",
           "p1": "Dentro il foglio di stile, <code>:host</code> colpisce l’elemento del componente stesso. Un custom element è <code>display: inline</code> per default, quindi la maggior parte dei componenti imposta qui un display. <code>:host(selettore)</code> colpisce l’host solo quando corrisponde anche al selettore: una classe, un attributo o uno stato impostati dall’esterno.",
@@ -1102,7 +1109,8 @@
         "themingWithCustomProperties": {
           "title": "Temi con le custom property",
           "p1": "Le custom property sono ereditate, quindi attraversano gli shadow root: un componente può leggere <code>var(--accent, fallback)</code> e lasciare che sia un antenato qualsiasi a deciderne il valore. È il modo per offrire un’API per i temi senza esporre i dettagli interni.",
-          "example1": "Un colore di accento e un raggio impostati su un contenitore"
+          "example1": "Un colore di accento e un raggio impostati su un contenitore",
+          "p2": "Le custom properties sono i design token di un’applicazione: dichiarale una volta, su <code>:root</code> del foglio della pagina (<code>--app-accent</code>, <code>--app-radius</code>, <code>--app-space-2</code>), cambiale per un tema scuro in <code>@media (prefers-color-scheme: dark)</code> o sotto una classe di <code>&lt;html&gt;</code>, e tipizza con <code>@property</code> quelle che animi. I componenti le leggono con un fallback, <code>var(--app-accent, #6750a4)</code>, e funzionano anche fuori dall’applicazione. I token sono valori, che attraversano le shadow root; le regole, come un reset o una tipografia, no, e vanno in fogli condivisi o in <code>styles</code>. Per un override che un token non può esprimere, un componente espone l’elemento con <code>part</code>."
         },
         "partsAndProjectedContent": {
           "title": "Parti e contenuto proiettato",
@@ -1135,7 +1143,7 @@
           },
           "callout4": {
             "heading": "Il foglio di stile globale non raggiunge i componenti",
-            "body": "Gli stili della pagina, compresi i reset come <code>box-sizing: border-box</code>, non si applicano dentro gli shadow root. Ripetili nei fogli di stile dei componenti, oppure condividi un file tra più componenti."
+            "body": "Gli stili della pagina, compresi i reset come <code>box-sizing: border-box</code>, non valgono dentro le shadow root: mettili in <code>styles</code> di <code>xaendar.json</code>, che ogni componente del progetto adotta, o in un foglio che i componenti elencano nel loro <code>styleUrl</code>."
           }
         },
         "summary": {
