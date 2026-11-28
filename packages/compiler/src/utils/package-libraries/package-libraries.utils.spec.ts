@@ -201,6 +201,8 @@ describe('readLibrary() of a manifest Xaendar does not write', () => {
     ['property', { card: { inputs: [{ name: 'label', property: 'x\'+globalThis.pwned`1`+\'', type: 'string' }] } }, `${card} has the input x'+globalThis.pwned\`1\`+'`],
     ['input', { card: { inputs: [{ name: 'a\'b', type: 'string' }] } }, `${card} has the input a'b`],
     ['empty-input', { card: { inputs: [{ name: '', type: 'string' }] } }, `${card} has the input `],
+    ['attribute', { card: { inputs: [{ name: 'size', type: 'number', attribute: 'a"b' }] } }, `${card} has the input size written by the attribute a"b`],
+    ['attribute-type', { card: { inputs: [{ name: 'size', type: 'number', attribute: 1 }] } }, `${card} has the input size written by the attribute 1`],
     ['event', { card: { events: [{ name: 'a\\b', type: 'string' }] } }, `${card} has the event a\\b`],
     ['class', { card: { className: 'Card; alert(1)' } }, `${card} has the class name Card; alert(1)`],
     ['selector', { card: { selector: 'ui-card\'' } }, `${card} has the selector ui-card'`],

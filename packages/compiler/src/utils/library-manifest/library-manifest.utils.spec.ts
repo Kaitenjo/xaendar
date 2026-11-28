@@ -122,6 +122,15 @@ describe('toLibraryMetadata()', () => {
     expect(toLibraryMetadata(CARD, MANIFEST, '/app/node_modules/@acme/ui')).not.toHaveProperty('extends');
   });
 
+  it('describes and reads the attribute writing an input', () => {
+    const properties = new Map([['size', new ComponentPropertyMetadata('size', 'number', { attribute: 'data-size' })]]);
+    const metadata = { type: 'component', className: 'Meter', selector: 'ui-meter', modulePath: '/lib/src/meter.ts', properties, events: new Map(), typescriptNodes: {} } as unknown as ComponentOrDirectiveMetadata;
+    const declaration = toLibraryDeclaration(metadata, './meter', './meter.d.ts', toPackage);
+
+    expect(declaration.inputs).toEqual([{ name: 'size', type: 'number', attribute: 'data-size' }]);
+    expect(toLibraryMetadata(declaration, MANIFEST, '/app/node_modules/@acme/ui').properties.get('size')?.attribute).toBe('data-size');
+  });
+
   it('reads a component, its types and its module by the absolute paths of the package, imported by its path of the package', () => {
     const metadata = toLibraryMetadata(CARD, MANIFEST, '/app/node_modules/@acme/ui');
 

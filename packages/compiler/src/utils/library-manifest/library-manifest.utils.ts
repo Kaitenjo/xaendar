@@ -109,6 +109,10 @@ function toInputs({ properties }: ComponentOrDirectiveMetadata, mapModule: (modu
       input.exposed = true;
     }
 
+    if (property.attribute !== undefined) {
+      input.attribute = property.attribute;
+    }
+
     inputs.push(input);
   }
 
@@ -183,11 +187,12 @@ export function toLibraryMetadata(declaration: LibraryManifestDeclaration, manif
 function toPropertiesMetadata(inputs: readonly LibraryManifestInput[], root: string): Map<string, ComponentPropertyMetadata> {
   const properties = new Map<string, ComponentPropertyMetadata>();
   for (let i = 0; i < inputs.length; i++) {
-    const { name, property, type, required, exposed } = inputs[i];
+    const { name, property, type, required, exposed, attribute } = inputs[i];
     properties.set(name, new ComponentPropertyMetadata(property ?? name, mapTypeModules(type, module => toPackagePath(module, root)), {
       required: required === true,
       alias: property === undefined ? undefined : name,
-      exposed: exposed === true
+      exposed: exposed === true,
+      attribute
     }));
   }
 

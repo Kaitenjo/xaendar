@@ -193,6 +193,27 @@ describe('renderToString', () => {
     ].join(''));
   });
 
+  it('writes a static value of an input an attribute writes into the attribute, which the component converts on the server too', async () => {
+    const metadata: DecoratorMetadataObject = {};
+    class SizeElement extends CustomElement {
+      public declare size: () => number;
+    }
+    const access = { get: (element: object) => decorated.get.call(element) };
+    const decorated = (Property(0, { attribute: 'data-size' }) as unknown as (target: unknown, context: unknown) => { get(this: object): unknown, set(this: object, value: unknown): void })(accessorStorage(), { kind: 'accessor', name: 'size', static: false, metadata, access, addInitializer: () => undefined });
+    Object.defineProperty(SizeElement.prototype, 'size', { get(this: object) { return decorated.get.call(this); } });
+    Object.defineProperty(SizeElement, Symbol.for('Symbol.metadata'), { value: metadata });
+    const initializers = new Array<() => void>();
+    core.WebComponent({ selector: 'size-label', templateUrl: './x.html' })(SizeElement, { metadata, addInitializer: (initializer: () => void) => initializers.push(initializer) } as never);
+    initializers[0].call(SizeElement);
+    _defineServerRender(SizeElement, await compile('<b>{ size() + 1 }</b>', ['size']));
+    class SizesElement extends CustomElement { }
+    customElements.define('size-list', SizesElement);
+    const sizeInput = { type: 'component', selector: 'size-label', properties: new Map([['size', { name: 'size', attribute: 'data-size' }]]) } as unknown as ComponentOrDirectiveMetadata;
+    _defineServerRender(SizesElement, await compile('<size-label size="3"></size-label>', [], [], [sizeInput]));
+
+    expect(await renderToString(SizesElement)).toBe('<size-list><template shadowrootmode="open"><size-label data-size="3"><template shadowrootmode="open"><b><!---->4</b></template></size-label></template></size-list>');
+  });
+
   it('writes the inputs a component reflects as attributes of its element', async () => {
     const metadata: DecoratorMetadataObject = {};
     class LockElement extends CustomElement { }

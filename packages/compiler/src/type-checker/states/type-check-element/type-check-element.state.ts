@@ -539,7 +539,7 @@ function inferTypeParameters(metadata: ComponentOrDirectiveMetadata, base: strin
 function withOwnerType<Metadata extends ComponentOrDirectiveMetadata>(metadata: Metadata, from: string, to: string): Metadata {
   const properties = new Map<string, ComponentPropertyMetadata>();
   for (const [name, property] of metadata.properties) {
-    properties.set(name, new ComponentPropertyMetadata(property.name, property.type.replaceAll(from, () => to), { required: property.required, alias: property.alias, declaration: property.declaration, exposed: property.exposed }));
+    properties.set(name, new ComponentPropertyMetadata(property.name, property.type.replaceAll(from, () => to), { required: property.required, alias: property.alias, declaration: property.declaration, exposed: property.exposed, attribute: property.attribute }));
   }
 
   const events = new Map<string, ComponentEventMetadata>();
@@ -700,9 +700,12 @@ function typeCheckComponentAttributes(attributes: AttributeNode[], metadata: Com
       assertNotAliasedProperty(attributes[i], metadata);
       // Not an input: the value is written into the attribute of the element
       assertSafeBinding(attributes[i], element, context);
+    } else if (property.attribute !== undefined && typeof value !== 'object') {
+      // A static value goes into the attribute writing the input, which the component converts as any HTML
+      continue;
     } else {
       if (bare) {
-        throw new Error(`Property "${name}" needs a value: write ${name}="…" or ${name}="{ expression }". An attribute without a value is only valid on a native element.`, { cause: span });
+        throw new Error(`Property "${name}" needs a value: write ${name}="…" or ${name}="{ expression }". An attribute without a value is only valid on a native element, or on an input declaring attribute.`, { cause: span });
       }
 
       lines.push(

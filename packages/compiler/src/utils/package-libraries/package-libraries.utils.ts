@@ -279,9 +279,13 @@ function findInvalidMembers({ className, selector, module, types, inputs, events
   }
 
   for (let i = 0; i < inputs.length; i++) {
-    const { name, property } = inputs[i];
+    const { name, property, attribute } = inputs[i];
     if (!isName(name) || (property !== undefined && !IDENTIFIER.test(property))) {
       return `has the input ${property ?? name}`;
+    }
+
+    if (attribute !== undefined && (typeof attribute !== 'string' || !isName(attribute))) {
+      return `has the input ${property ?? name} written by the attribute ${String(attribute)}`;
     }
   }
 

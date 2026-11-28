@@ -110,6 +110,7 @@ const testInputs: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   crossed: { value: 'internalValue', initialValue: 'value' },
   picker: { template: 'template' },
   titled: { title: 'title' },
+  sized: { size: 'size' },
   '@@later': { allow: 'allow' },
   '@@hydratedFill': { content: 'content' }
 };
@@ -117,7 +118,12 @@ const testInputs: Readonly<Record<string, Readonly<Record<string, string>>>> = {
 /**
  * The inputs of a component or of a directive, as the metadata of the compiler describe them.
  */
-const toProperties = (inputs: Readonly<Record<string, string>> = {}) => new Map(Object.entries(inputs).map(([bound, name]) => [bound, { name, type: 'unknown', required: false, exposed: false }]));
+const toProperties = (inputs: Readonly<Record<string, string>> = {}) => new Map(Object.entries(inputs).map(([bound, name]) => [bound, { name, type: 'unknown', required: false, exposed: false, attribute: testAttributes[name] }]));
+
+/**
+ * The attributes writing the inputs of the components of the tests, by the name of the property of each input.
+ */
+const testAttributes: Readonly<Record<string, string>> = { size: 'data-size' };
 
 /**
  * The cache of the metadata the browser compiles the templates with: it tells the inputs of `testInputs`, and no module
@@ -371,6 +377,40 @@ describe('hydration', () => {
     expect(console.warn).not.toHaveBeenCalled();
   });
 
+
+  it('writes a static value of an input an attribute writes into the attribute, converted on both sides, and the attribute keeps writing the input', async () => {
+    /**
+     * A label showing its size, written by the attribute data-size.
+     */
+    class Sized extends CustomElement {
+      public declare size: () => number;
+    }
+    const metadata: DecoratorMetadataObject = {};
+    Object.defineProperty(Sized, Symbol.for('Symbol.metadata'), { value: metadata });
+    const access = { get: (element: object) => decorated.get.call(element) };
+    const decorated = (Property(0, { attribute: 'data-size' }) as unknown as (target: unknown, context: unknown) => { get(this: object): unknown })(accessorStorage(), { kind: 'accessor', name: 'size', static: false, metadata, access, addInitializer: () => undefined });
+    Object.defineProperty(Sized.prototype, 'size', { get(this: object) { return decorated.get.call(this); } });
+    core._applyAttributeInputs(Sized);
+    const sized = await register('sized', Sized, () => '<b>{ size() + 1 }</b>', ['size']);
+    const page = await register('sizes', class extends CustomElement { }, tag => `<${tag('sized')} size="3"></${tag('sized')}>`);
+    const host = load(await renderToString(page.Server));
+    const label = host.shadowRoot!.firstElementChild!;
+    const bold = label.shadowRoot!.querySelector('b');
+
+    expect(label.getAttribute('data-size')).toBe('3');
+    expect(bold!.textContent).toBe('4');
+
+    sized.define();
+    page.define();
+    await flush();
+    expect(label.shadowRoot!.querySelector('b')).toBe(bold);
+    expect(bold!.textContent).toBe('4');
+
+    label.setAttribute('data-size', '9');
+    await flush();
+    expect(bold!.textContent).toBe('10');
+    expect(console.warn).not.toHaveBeenCalled();
+  });
 
   it('removes the style the server wrote, adopting the stylesheet of the component', async () => {
     const badge = await registerBadge();

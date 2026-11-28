@@ -284,6 +284,17 @@ describe('generateElement', () => {
       ].join('\n')]);
     });
 
+    it('writes a static value of an input an attribute writes into the attribute, removed when its branch is no longer selected', async () => {
+      const attributeCache = cacheWith({
+        size: new ComponentPropertyMetadata('size', 'number', { attribute: 'data-size' }),
+        open: new ComponentPropertyMetadata('open', 'boolean', { attribute: 'open' })
+      });
+      const { constants } = await run('<my-el size="3" @if (cond()) { open }></my-el>', new GeneratorContext(attributeCache));
+
+      expect(constants.join('\n')).toContain('{ name: \'data-size\', value: \'3\', setter: _setAttributeInput }');
+      expect(constants.join('\n')).toContain('{ name: \'open\', value: \'\', setter: _setAttributeInput, unbind: _removeAttributeInput }');
+    });
+
     it('resets an input bound by a conditional binding by the name of its property', async () => {
       const { constants } = await run('<my-el @if (cond()) { user-id="u" }></my-el>', new GeneratorContext(cache));
 

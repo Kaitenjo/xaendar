@@ -267,7 +267,7 @@ async function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner
   // Native elements have no metadata
   const metadata = attributes.length && (isCustomElement || isDirective) ? await generatorContext.cache?.getOrInsert(target) : undefined;
   for (let i = 0; i < attributes.length; i++) {
-    const { name, value, twoWay, attribute } = attributes[i];
+    const { name, value, twoWay, attribute, bare } = attributes[i];
     const input = attribute === undefined ? metadata?.properties.get(name) : undefined;
     if (twoWay && !input) {
       throw new Error(`[(${name})] binds a model of a component or of a directive: ${target} has no input "${name}"`, { cause: attributes[i].span });
@@ -276,6 +276,19 @@ async function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner
     if (isDirective && !input) {
       // Unlike components, a non-recognized property cannot be applied as an attribute on the DOM element itself
       throw new Error(`Unable to resolve the metadata of property "${name}" of ${target}`, { cause: attributes[i].span });
+    }
+
+    // A static value of an input an attribute writes goes into the attribute, which the component converts
+    const attributeInput = typeof value === 'string' && input?.attribute !== undefined && !input.exposed ? input.attribute : undefined;
+    if (attributeInput !== undefined) {
+      // A bare attribute is empty, as in HTML
+      const attributeMembers = [`name: ${toStringLiteral(attributeInput)}`, `value: ${toStringLiteral(bare ? '' : value as string)}`, 'setter: _setAttributeInput'];
+      if (conditional) {
+        attributeMembers.push('unbind: _removeAttributeInput');
+      }
+
+      mappedAttributes.push(toObjectLiteral(attributeMembers));
+      continue;
     }
 
     const property = attribute ?? (input && !input.exposed ? input.name : name);

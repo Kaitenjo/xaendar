@@ -1,4 +1,4 @@
-import { slice } from '@xaendar/common';
+import { slice, toKebabCase } from '@xaendar/common';
 import { acceptsShadowRoot, isValidCustomElementName, toModelChangeEvent } from '@xaendar/internals';
 import { CallExpression, ClassDeclaration, CompilerOptions, Decorator, EntityName, Expression, forEachChild, getCombinedModifierFlags, getDecorators, getNameOfDeclaration, Identifier, isArrowFunction, isCallExpression, isClassDeclaration, isDecorator, isEnumDeclaration, isFunctionExpression, isIdentifier, isImportDeclaration, isInterfaceDeclaration, isMethodDeclaration, isNamedImports, isNamespaceImport, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isPropertyDeclaration, isQualifiedName, isShorthandPropertyAssignment, isStringLiteral, isTypeAliasDeclaration, isTypeReferenceNode, ModifierFlags, ModifierLike, Node, ObjectLiteralElementLike, ObjectLiteralExpression, PropertyAssignment, PropertyDeclaration, SourceFile, Statement, StringLiteral, SyntaxKind, TypeNode } from 'typescript';
 import { toStringLiteral } from '../../generator/utils/generator/generator.utils';
@@ -678,8 +678,8 @@ function extractBindingsMetadata(klass: ClassDeclarationWithName, sourceFile: So
   collectBindingsMetadata({ sourceFile, declaration: klass }, kind, accessorOwner, compilerOptions, new Set([klass]), bindings);
 
   const mappedProperties = new Map<string, ComponentPropertyMetadata>();
-  for (const [propName, { name, type, required, alias, declaration }] of bindings.properties.entries()) {
-    mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias, declaration }));
+  for (const [propName, { name, type, required, alias, declaration, attribute }] of bindings.properties.entries()) {
+    mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias, declaration, attribute }));
   }
 
   return {
@@ -1062,6 +1062,30 @@ function findAliasLiteral(decorator: PropertyDecorator, required: boolean): Stri
 }
 
 /**
+ * Finds the name of the attribute writing an input, declared by `attribute` of `@Property` as the runtime reads it: a
+ * string literal names it, `false` declares none, any other value (`true`, a function converting the text) names it
+ * after the alias of the input or the name of its property, in kebab-case.
+ *
+ * @param options - The options object literal of the decorator.
+ * @param name - The name of the property of the input.
+ * @param alias - Its alias, if any.
+ * @returns The name of the attribute, `undefined` when no attribute writes the input.
+ */
+function findAttributeName(options: ObjectLiteralExpression, name: string, alias: string | undefined): string | undefined {
+  const option = options.properties.find(property => (isPropertyAssignment(property) || isMethodDeclaration(property)) && isIdentifier(property.name) && property.name.text === 'attribute');
+  if (!option) {
+    return undefined;
+  }
+
+  const value = isPropertyAssignment(option) ? option.initializer : undefined;
+  if (value?.kind === SyntaxKind.FalseKeyword) {
+    return undefined;
+  }
+
+  return value && isStringLiteral(value) ? value.text : toKebabCase(alias ?? name);
+}
+
+/**
  * Extracts property metadata from a @Property, @Property.required, @Model or @Model.required decorator.
  *
  * @param property - The accessor decorated with `@Property` or `@Model`.
@@ -1099,6 +1123,11 @@ function extractPropertyMetadata(property: PropertyDeclaration, nameNode: Identi
         start: initializer.getStart(),
         end: initializer.getEnd()
       };
+    }
+
+    const attribute = options && isObjectLiteralExpression(options) ? findAttributeName(options, name, metadata.alias) : undefined;
+    if (attribute !== undefined) {
+      metadata.attribute = attribute;
     }
   }
 

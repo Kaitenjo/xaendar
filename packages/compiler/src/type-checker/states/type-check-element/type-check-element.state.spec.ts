@@ -412,8 +412,19 @@ describe('typeCheckElement', () => {
       expect(() => run('<my-el></my-el>')).toThrow('my-el selector is not associated to any WebComponent imported in the template');
     });
 
+    it('leaves to the component the static values of an input an attribute writes, bare ones included, checking its expressions', () => {
+      const size = new ComponentPropertyMetadata('size', 'number', { attribute: 'size' });
+      expect(run('<my-el size="3"></my-el>', metadata({ size }))).toEqual([]);
+      expect(run('<my-el size></my-el>', metadata({ size }))).toEqual([]);
+      expect(text(run('<my-el size="{ count() }"></my-el>', metadata({ size })))).toEqual([
+        '{',
+        '  (root.count()) satisfies number;',
+        '}'
+      ]);
+    });
+
     it('throws when a property is bound without a value, which is only valid on a native attribute', () => {
-      expect(() => run('<my-el label></my-el>', metadata(properties))).toThrow('Property "label" needs a value: write label="…" or label="{ expression }". An attribute without a value is only valid on a native element.');
+      expect(() => run('<my-el label></my-el>', metadata(properties))).toThrow('Property "label" needs a value: write label="…" or label="{ expression }". An attribute without a value is only valid on a native element, or on an input declaring attribute.');
       expect(() => run('<my-el title="x" label />', metadata(properties))).toThrow('Property "label" needs a value');
       expect(() => run('<my-el other></my-el>', metadata(properties))).not.toThrow();
       expect(() => run('<my-el label="true"></my-el>', metadata(properties))).not.toThrow();

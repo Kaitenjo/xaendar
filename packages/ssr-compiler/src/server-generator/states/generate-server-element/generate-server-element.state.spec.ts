@@ -124,6 +124,17 @@ describe('generateServerElement', () => {
     expect(generate('<x-input class="a"></x-input>', context).constants[0]).toContain('{ name: \'class\', value: \'a\', setter: _setInput }');
   });
 
+  it('writes a static value of an input an attribute writes into the attribute, which the component converts', () => {
+    const meter = () => {
+      const context = new GeneratorContext(cache);
+      context.addImportedMetadata({ type: 'component', selector: 'x-meter', properties: new Map([['size', { name: 'size', attribute: 'data-size' }]]) } as never);
+      return context;
+    };
+
+    expect(generate('<x-meter size="3"></x-meter>', meter()).constants[0]).toContain('{ name: \'data-size\', value: \'3\', setter: _setAttributeInput }');
+    expect(generate('<x-meter size></x-meter>', meter()).constants[0]).toContain('{ name: \'data-size\', value: \'\', setter: _setAttributeInput }');
+  });
+
   it('writes an attribute written with attr. through the setters of the attributes, never the input of its name, and as HTML on a native element', () => {
     const context = new GeneratorContext(cache);
     context.addImportedMetadata({ type: 'component', selector: 'x-input', properties: new Map([['title', { name: 'title' }]]) } as never);

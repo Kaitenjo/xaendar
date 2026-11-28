@@ -17,4 +17,8 @@ export type LibraryManifestInput = LibraryManifestBinding & {
    * Whether a host directive of the component exposes it.
    */
   exposed?: true;
+  /**
+   * The name of the attribute writing it, declared by `attribute` of `@Property`.
+   */
+  attribute?: string;
 };

@@ -119,6 +119,22 @@ describe('extractComponentsMetadataFromSourceFile', () => {
   });
 
   describe('properties', () => {
+    it('extracts the attribute writing an input, as the runtime names it', async () => {
+      const properties = (await extract(component(`
+        @Property(0, { attribute: true }) accessor showValue!: InputSignal<number>;
+        @Property('', { alias: 'userId', attribute: value => value }) accessor id!: InputSignal<string>;
+        @Property('', { attribute: 'data-label' }) accessor label!: InputSignal<string>;
+        @Property('', { attribute: false }) accessor none!: InputSignal<string>;
+        @Property.required({ attribute(value: string) { return value; } }) accessor level!: InputSignal<string>;
+      `)))?.get('MyEl')?.properties;
+
+      expect(properties?.get('showValue')?.attribute).toBe('show-value');
+      expect(properties?.get('userId')?.attribute).toBe('user-id');
+      expect(properties?.get('label')?.attribute).toBe('data-label');
+      expect(properties?.get('none')?.attribute).toBeUndefined();
+      expect(properties?.get('level')?.attribute).toBe('level');
+    });
+
     it('extracts types, requirement and aliases', async () => {
       const properties = (await extract(component(`
         @Property('x', { alias: 'a' }) accessor foo!: InputSignal<string>;

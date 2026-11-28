@@ -20136,6 +20136,11 @@ function getWellformedEdit(textEdit) {
 // ../packages/language-server/src/lib/server/server.ts
 var import_node43 = __toESM(require_main3(), 1);
 
+// ../packages/common/src/utils/case/case.util.ts
+function toKebabCase(str) {
+  return str.replace(/([a-z])([A-Z])/g, "$1-$2").replace(/_/g, "-").toLowerCase();
+}
+
 // ../packages/common/src/utils/small-set/small-set.util.ts
 var EMPTY = Object.freeze([]);
 
@@ -26990,7 +26995,7 @@ var ComponentPropertyMetadata = class {
     this.type = type;
     this.options = options;
     if (options) {
-      const { required, alias, declaration, exposed } = options;
+      const { required, alias, declaration, exposed, attribute } = options;
       if (required !== void 0) {
         this.required = required;
       }
@@ -26999,6 +27004,7 @@ var ComponentPropertyMetadata = class {
       }
       this.alias = alias;
       this.declaration = declaration;
+      this.attribute = attribute;
     }
   }
   name;
@@ -27021,6 +27027,11 @@ var ComponentPropertyMetadata = class {
    * is exposed with, not under `name`, the one of the property in the directive.
    */
   exposed = false;
+  /**
+   * The name of the attribute writing the input, declared by `attribute` of `@Property`: a static value of a template is
+   * written into it, and converted by the component as the attribute of any HTML, so it is not type-checked as a string.
+   */
+  attribute;
 };
 
 // ../packages/compiler/src/models/component-property-metadata-with-span/component-property-metadata-with-span.model.ts
@@ -27499,11 +27510,12 @@ function toLibraryMetadata(declaration, manifest, root) {
 function toPropertiesMetadata(inputs, root) {
   const properties2 = /* @__PURE__ */ new Map();
   for (let i2 = 0; i2 < inputs.length; i2++) {
-    const { name, property, type, required, exposed } = inputs[i2];
+    const { name, property, type, required, exposed, attribute } = inputs[i2];
     properties2.set(name, new ComponentPropertyMetadata(property ?? name, mapTypeModules(type, (module2) => toPackagePath(module2, root)), {
       required: required === true,
       alias: property === void 0 ? void 0 : name,
-      exposed: exposed === true
+      exposed: exposed === true,
+      attribute
     }));
   }
   return properties2;
@@ -27616,9 +27628,12 @@ function findInvalidMembers({ className, selector, module: module2, types, input
     return `has the declarations ${types}, not a file of the package`;
   }
   for (let i2 = 0; i2 < inputs.length; i2++) {
-    const { name, property } = inputs[i2];
+    const { name, property, attribute } = inputs[i2];
     if (!isName(name) || property !== void 0 && !IDENTIFIER2.test(property)) {
       return `has the input ${property ?? name}`;
+    }
+    if (attribute !== void 0 && (typeof attribute !== "string" || !isName(attribute))) {
+      return `has the input ${property ?? name} written by the attribute ${String(attribute)}`;
     }
   }
   for (let i2 = 0; i2 < events.length; i2++) {
@@ -28055,8 +28070,8 @@ function extractBindingsMetadata(klass, sourceFile, kind, compilerOptions) {
   const bindings = { properties: /* @__PURE__ */ new Map(), events: /* @__PURE__ */ new Map() };
   collectBindingsMetadata({ sourceFile, declaration: klass }, kind, accessorOwner, compilerOptions, /* @__PURE__ */ new Set([klass]), bindings);
   const mappedProperties = /* @__PURE__ */ new Map();
-  for (const [propName, { name, type, required, alias, declaration }] of bindings.properties.entries()) {
-    mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias, declaration }));
+  for (const [propName, { name, type, required, alias, declaration, attribute }] of bindings.properties.entries()) {
+    mappedProperties.set(propName, new ComponentPropertyMetadata(name, type, { required, alias, declaration, attribute }));
   }
   return {
     properties: mappedProperties,
@@ -28288,6 +28303,17 @@ function findAliasLiteral(decorator, required) {
   const alias = options.properties.find((prop) => (0, import_typescript17.isPropertyAssignment)(prop) && (0, import_typescript17.isIdentifier)(prop.name) && prop.name.text === "alias" && (0, import_typescript17.isStringLiteral)(prop.initializer));
   return alias?.initializer;
 }
+function findAttributeName(options, name, alias) {
+  const option = options.properties.find((property) => ((0, import_typescript17.isPropertyAssignment)(property) || (0, import_typescript17.isMethodDeclaration)(property)) && (0, import_typescript17.isIdentifier)(property.name) && property.name.text === "attribute");
+  if (!option) {
+    return void 0;
+  }
+  const value = (0, import_typescript17.isPropertyAssignment)(option) ? option.initializer : void 0;
+  if (value?.kind === import_typescript17.SyntaxKind.FalseKeyword) {
+    return void 0;
+  }
+  return value && (0, import_typescript17.isStringLiteral)(value) ? value.text : toKebabCase(alias ?? name);
+}
 function extractPropertyMetadata(property, nameNode, name, decorator, required, accessorOwner, sourceFile) {
   const args = decorator.expression.arguments;
   const metadata = new ComponentPropertyMetadataWithSpan({ start: nameNode.getStart(), end: nameNode.getEnd() }, sourceFile, name, extractBindingType(property, name, accessorOwner, false));
@@ -28306,6 +28332,10 @@ function extractPropertyMetadata(property, nameNode, name, decorator, required, 
         start: initializer.getStart(),
         end: initializer.getEnd()
       };
+    }
+    const attribute = options && (0, import_typescript17.isObjectLiteralExpression)(options) ? findAttributeName(options, name, metadata.alias) : void 0;
+    if (attribute !== void 0) {
+      metadata.attribute = attribute;
     }
   }
   return metadata;
@@ -28901,7 +28931,7 @@ function inferTypeParameters(metadata, base, attributes, context, suffix = "") {
 function withOwnerType(metadata, from, to) {
   const properties2 = /* @__PURE__ */ new Map();
   for (const [name, property] of metadata.properties) {
-    properties2.set(name, new ComponentPropertyMetadata(property.name, property.type.replaceAll(from, () => to), { required: property.required, alias: property.alias, declaration: property.declaration, exposed: property.exposed }));
+    properties2.set(name, new ComponentPropertyMetadata(property.name, property.type.replaceAll(from, () => to), { required: property.required, alias: property.alias, declaration: property.declaration, exposed: property.exposed, attribute: property.attribute }));
   }
   const events = /* @__PURE__ */ new Map();
   for (const [name, event] of metadata.events) {
@@ -28976,9 +29006,11 @@ function typeCheckComponentAttributes(attributes, metadata, context, element) {
     if (!property) {
       assertNotAliasedProperty(attributes[i2], metadata);
       assertSafeBinding(attributes[i2], element, context);
+    } else if (property.attribute !== void 0 && typeof value !== "object") {
+      continue;
     } else {
       if (bare) {
-        throw new Error(`Property "${name}" needs a value: write ${name}="\u2026" or ${name}="{ expression }". An attribute without a value is only valid on a native element.`, { cause: span });
+        throw new Error(`Property "${name}" needs a value: write ${name}="\u2026" or ${name}="{ expression }". An attribute without a value is only valid on a native element, or on an input declaring attribute.`, { cause: span });
       }
       lines.push(
         plain("{"),

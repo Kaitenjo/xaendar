@@ -293,7 +293,7 @@ function toClientOptions({ selector, clientOnly }: ComponentMetadata, generatorC
 function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, target: string | undefined): string[] {
   const { generatorContext } = owner;
   const metadata = target && attributes.length ? generatorContext.getImportedMetadata(target) : undefined;
-  return attributes.map(({ name, value, span, twoWay, attribute }) => {
+  return attributes.map(({ name, value, span, twoWay, attribute, bare }) => {
     const input = attribute === undefined ? metadata?.properties.get(name) : undefined;
     if (twoWay && !input) {
       throw new Error(`[(${name})] binds a model of a component or of a directive: ${target ?? 'a native element'} has no input "${name}"`, { cause: span });
@@ -301,6 +301,11 @@ function mapAttributes(attributes: AttributeNode[], owner: DescriptorOwner, targ
 
     if (metadata?.type === 'directive' && !input) {
       throw new Error(`Unable to resolve the metadata of property "${name}" of ${target}`, { cause: span });
+    }
+
+    // A static value of an input an attribute writes goes into the attribute, which the component converts, as on the client
+    if (typeof value === 'string' && input?.attribute !== undefined && !input.exposed) {
+      return toObjectLiteral([`name: ${toStringLiteral(input.attribute)}`, `value: ${toStringLiteral(bare ? '' : value)}`, 'setter: _setAttributeInput']);
     }
 
     const property = attribute ?? (input && !input.exposed ? input.name : name);
