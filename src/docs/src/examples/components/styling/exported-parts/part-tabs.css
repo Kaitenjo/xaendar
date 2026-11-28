@@ -1,0 +1,14 @@
+:host {
+  display: flex;
+  gap: 0.25rem;
+}
+
+button {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}

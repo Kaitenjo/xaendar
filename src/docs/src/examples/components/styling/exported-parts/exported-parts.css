@@ -1,0 +1,25 @@
+:host {
+  display: grid;
+  gap: 1rem;
+}
+
+/* Every tab, and the selected one: the element must have both parts */
+ex-part-tabs::part(tab):hover {
+  color: #6750a4;
+}
+
+ex-part-tabs::part(tab selected) {
+  border-bottom-color: #6750a4;
+  font-weight: 700;
+}
+
+/* The label of the button inside the field, forwarded by its exportparts */
+ex-part-field::part(button-label) {
+  color: #2e7d32;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+ex-part-field::part(input):focus-visible {
+  outline: 2px solid #6750a4;
+}

@@ -913,7 +913,7 @@
           "p1": "<code>@HostAttribute('name')</code> on a field, a getter or an accessor writes its value in the attribute <code>name</code> of the host element; <code>@HostAttribute('class.name')</code> toggles the class <code>name</code>, which the element has while the value is truthy. The member is read inside an effect: a value that reads no signal is written once, while a signal, or a getter reading signals, is written again each time they change.",
           "example1": "A switch drawn by its own element",
           "p2": "Click the switches, or reach them with Tab and press Space. <code>role</code> reads no signal and is written once. <code>on</code> holds a signal, and the host has the class <code>on</code> while it is <code>true</code>: the stylesheet draws the switch from <code>:host(.on)</code>. The getters of <code>aria-checked</code>, <code>aria-disabled</code> and <code>tabindex</code> are written again when <code>on</code> or <code>locked</code> change. <code>locked</code> is an input reflected on the host with <code>reflect: true</code>: the parent binds it, and the stylesheet reads <code>:host([locked])</code>. Inspect the Wi-Fi switch with the developer tools to watch its attributes change while you turn the airplane mode on.",
-          "p3": "<code>@HostAttribute('class')</code> and <code>@HostAttribute('style')</code> write a string of classes, or of declarations, and <code>@HostAttribute('style.name')</code> a property, followed by its unit if any (<code>'style.width.px'</code>). They are merged key by key with the template rendering the element and with its directives, which win over the component: the template can override a class or a property the component writes, and give it back by binding <code>null</code>. TypeScript checks the member by the name: a string for <code>class</code> and <code>style</code>, a number for a property with a unit. See <a href=\"#/en/templates/binding\">Binding</a>.",
+          "p3": "<code>@HostAttribute('class')</code> and <code>@HostAttribute('style')</code> write a string of classes, or of declarations, and <code>@HostAttribute('style.name')</code> a property, followed by its unit if any (<code>'style.width.px'</code>); <code>@HostAttribute('part')</code> and <code>@HostAttribute('part.name')</code> write the parts the element exposes to <code>::part()</code>, as the classes. They are merged key by key with the template rendering the element and with its directives, which win over the component: the template can override a class or a property the component writes, and give it back by binding <code>null</code>. TypeScript checks the member by the name: a string for <code>class</code>, <code>style</code> and <code>part</code>, a number for a property with a unit. See <a href=\"#/en/templates/binding\">Binding</a>.",
           "p4": "The attributes are merged too, as a whole: the template rendering the element, which writes them with <code>attr.name</code> (or <code>name</code>, when the component has no input of that name), wins over the directives, which win over the component, and a source with <code>null</code> leaves the attribute to the ones below. See <a href=\"#/en/templates/binding\">Binding</a>.",
           "p5": "<code>@Property(value, { reflect: true })</code> reflects an input on the host, as a <code>@HostAttribute</code> on its accessor does, with the same rules: the attribute is named after the input, its alias or its name in kebab-case (<code>showValue</code> becomes <code>show-value</code>), or after the string given as <code>reflect</code>, and it follows the value of the input. Only the input writes it: an attribute written in the HTML sets the input only when it declares <code>attribute</code> too, see <a href=\"#/en/components/inputs\">Inputs</a>. An object or an array would be written as a string, so reflect inputs holding booleans, numbers and strings. A structural directive holds no element, and cannot reflect its inputs."
         },
@@ -1118,6 +1118,14 @@
           "example1": "::part and ::slotted",
           "p2": "When both stylesheets style the same projected element, the outer one wins: the green of the parent beats the red of <code>::slotted(.note)</code>. A component’s <code>::slotted</code> rules are defaults that the user of the component can override."
         },
+        "exposingParts": {
+          "title": "Exposing and forwarding parts",
+          "p1": "An element can expose several parts, separated by spaces: <code>part=\"tab selected\"</code>. <code>::part(tab)</code> matches every element exposing <code>tab</code>, <code>::part(tab selected)</code> only the ones exposing both. After <code>::part()</code> a selector may add the pseudo-classes of the element, as <code>:hover</code>, <code>:focus-visible</code> or <code>:disabled</code>, and its pseudo-elements, as <code>::before</code>; it cannot go further into it (<code>::part(tab) span</code>), nor test its attributes (<code>::part(tab)[aria-selected]</code>) or its position (<code>:nth-child()</code>).",
+          "p2": "So the state of an element inside a component is given to the outside as one more part. <code>part.name=\"{ condition }\"</code> adds the part while the condition is truthy and removes it otherwise, as <code>class.name</code> does with a class, and it adds to the static or computed <code>part</code> of the element, in the branches of its conditional bindings too. A directive or the component writes the parts of its element with <code>@HostAttribute('part')</code> and <code>@HostAttribute('part.name')</code>, merged part by part with the template, which wins.",
+          "example1": "Parts toggled and forwarded",
+          "p3": "<code>::part()</code> reaches only the parts of the component the element is, not the ones of the components it renders. A component forwards them with <code>exportparts</code> on the element of the inner component: <code>exportparts=\"label\"</code> forwards <code>label</code> with its name, <code>exportparts=\"label: button-label\"</code> renames it, as the field above does, so that the page writes <code>ex-part-field::part(button-label)</code>. Each level forwards what the next one may style.",
+          "p4": "The names of the parts are a public API of the component, like its inputs: the pages and the components styling them depend on them, and renaming one breaks their rules without any error. Expose a part for an element its users must be able to restyle as they like, a custom property for a value shared by many components (see the design tokens above), and a slot for content they write themselves. The editor proposes the parts of a component in its <code>exportparts</code>, warns on a name the component does not expose, and shows its parts when hovering its tag; the manifest of a library carries them for the applications using it."
+        },
         "dynamicClassesAndStyles": {
           "title": "Dynamic classes and styles",
           "p1": "<code>class</code> and <code>style</code> are attributes like any other: bind them to an expression and the attribute is rewritten when the value changes. Building the string in a computed signal keeps the template short and the binding reactive. A single class that comes and goes is shorter with <code>class.name=\"{ condition }\"</code>, as the label does, and a single property with <code>style.width.%=\"{ value }\"</code>: see <a href=\"#/en/templates/binding\">Binding</a>.",
@@ -1159,7 +1167,7 @@
           "td6": "The elements assigned to its slots, not their descendants.",
           "td7": "<code>element::part(name)</code>",
           "td8": "the user of the component",
-          "td9": "The element with <code>part=\"name\"</code> inside the component.",
+          "td9": "The element with <code>part=\"name\"</code>, or <code>part.name=\"{ condition }\"</code>, inside the component.",
           "td10": "<code>var(--name, fallback)</code>",
           "td11": "the component",
           "td12": "A custom property set by any ancestor.",
@@ -2615,7 +2623,8 @@
           "title": "Toggling a class",
           "p1": "<code>class.name=\"{ expression }\"</code> gives the element the class <code>name</code> while the value of the expression is truthy, and takes it away otherwise. The value can be of any type. It works on native elements, on the tags of components, where the class goes on the element itself, and inside <a href=\"#/en/templates/conditional-bindings\">conditional bindings</a>, where the class is taken away when its branch is no longer selected. Any class name without spaces follows the dot, <code>class.is-active</code> included.",
           "example1": "A bound class attribute and two class bindings",
-          "p2": "The class bindings and the <code>class</code> attribute work together, also when it is bound: they are merged class by class, the class bindings winning over the string, and only the classes whose value changes are written. A binding whose value is falsy takes its class away even when <code>class</code> lists it; one holding <code>null</code> or <code>undefined</code> has no opinion, and leaves the class to the string. A class binding follows the signals it reads, as an attribute does."
+          "p2": "The class bindings and the <code>class</code> attribute work together, also when it is bound: they are merged class by class, the class bindings winning over the string, and only the classes whose value changes are written. A binding whose value is falsy takes its class away even when <code>class</code> lists it; one holding <code>null</code> or <code>undefined</code> has no opinion, and leaves the class to the string. A class binding follows the signals it reads, as an attribute does.",
+          "p3": "<code>part.name=\"{ expression }\"</code> works the same way on the parts of the element, the names <code>::part()</code> styles it by from outside its shadow root: the element has the part <code>name</code> while the value is truthy, merged part by part with its <code>part</code> attribute, static or bound. The name holds no space, comma nor colon, which <code>exportparts</code> could not forward. See <a href=\"#/en/components/styling\">Styling</a>."
         },
         "settingAStyle": {
           "title": "Setting a style property",
@@ -2625,7 +2634,7 @@
         },
         "merging": {
           "title": "Merging class and style",
-          "p1": "The <code>class</code> and the <code>style</code> of an element can be written by more than one source: the template rendering it, the directives it applies, its host directives included, and the component it is, through <code>@HostAttribute</code>. They are merged key by key, a class or a property at a time, and for each key the strongest source having an opinion wins: the template, then the directives, then the component. In each of them a key bound alone (<code>class.on</code>, <code>@HostAttribute('style.width.px')</code>) wins over the string (<code>class=\"…\"</code>, <code>@HostAttribute('style')</code>), and of two directives the one applied later wins: the host directives first, in the order the component declares them, then the ones of the template, in the order they appear.",
+          "p1": "The <code>class</code>, the <code>style</code> and the <code>part</code> of an element can be written by more than one source: the template rendering it, the directives it applies, its host directives included, and the component it is, through <code>@HostAttribute</code>. They are merged key by key, a class, a property or a part at a time, and for each key the strongest source having an opinion wins: the template, then the directives, then the component. In each of them a key bound alone (<code>class.on</code>, <code>@HostAttribute('style.width.px')</code>) wins over the string (<code>class=\"…\"</code>, <code>@HostAttribute('style')</code>), and of two directives the one applied later wins: the host directives first, in the order the component declares them, then the ones of the template, in the order they appear.",
           "p2": "A source without opinion on a key leaves it to the ones below: a template binding <code>style.width=\"{ null }\"</code> lets the width of a directive or of the component apply. For a class, <code>false</code> is an opinion, while <code>null</code> is not: <code>class.on=\"{ false }\"</code> takes the class away even when the component adds it, <code>class.on=\"{ null }\"</code> leaves it to the component. When a source goes away (a branch no longer selected, a directive destroyed) the keys it wrote take the value of the sources below, and the keys of the others stay.",
           "p3": "The order the sources run in does not matter: the result depends only on their level. Only the keys whose value changes are written, with <code>classList</code> and <code>style.setProperty</code>, never by writing the whole attribute, so an element adopted from the HTML of the server holding the same values is not written again. The classes and the properties other code writes on the element are not tracked: the runtime touches only the keys it wrote, and removes a key no source has an opinion on only if it wrote it.",
           "p4": "An element written by its template alone, the most common case, costs nothing more: its class and its style are written directly. The merging state is kept only for the elements written by more than one source."
@@ -2637,7 +2646,7 @@
         "writingTheAttribute": {
           "title": "Writing the attribute of a component: attr.",
           "p1": "On the tag of a component, a name that is an input sets the input. <code>attr.name</code> writes the attribute <code>name</code> of the element instead, whatever the component declares: <code>attr.title=\"…\"</code> sets the <code>title</code> attribute even when the component has an input named <code>title</code>, which keeps its value. The value follows the rules of the other attributes, static or an expression, <code>null</code> and booleans included, also in the branches of a <a href=\"#/en/templates/conditional-bindings\">conditional binding</a>. On a native element <code>attr.title</code> is the same as <code>title</code>: it only makes the intention explicit.",
-          "p2": "<code>attr.class</code> and <code>attr.style</code> do not compile: <code>class</code>, <code>style</code>, <code>class.name</code> and <code>style.name</code> write them, merged key by key. An attribute is written once by the template of an element: <code>title</code> and <code>attr.title</code> are the same attribute when <code>title</code> is not an input, and writing both is an error, as is writing <code>attr.title</code> twice. <code>attr.</code> cannot be written in the parentheses of a directive, which binds only its properties, nor in a two-way binding.",
+          "p2": "<code>attr.class</code>, <code>attr.style</code> and <code>attr.part</code> do not compile: <code>class</code>, <code>style</code>, <code>part</code>, <code>class.name</code>, <code>style.name</code> and <code>part.name</code> write them, merged key by key. An attribute is written once by the template of an element: <code>title</code> and <code>attr.title</code> are the same attribute when <code>title</code> is not an input, and writing both is an error, as is writing <code>attr.title</code> twice. <code>attr.</code> cannot be written in the parentheses of a directive, which binds only its properties, nor in a two-way binding.",
           "p3": "A component declaring an input, or an alias, named like an attribute every element reflects (<code>id</code>, <code>title</code>, <code>hidden</code>, <code>lang</code>, <code>dir</code>, <code>tabindex</code>, <code>slot</code>, <code>inert</code>, <code>draggable</code>, <code>spellcheck</code>, <code>popover</code>, <code>aria-*</code>…) gets a warning from the build and from the editor: the templates binding that name set the input, and write the native attribute with <code>attr.name</code>."
         },
         "attributePrecedence": {
@@ -2680,11 +2689,11 @@
           },
           "callout5": {
             "heading": "A class binding needs an expression",
-            "p1": "The value of <code>class.name</code> and of <code>style.name</code> is always an expression in braces: a static value, or no value, does not compile. Brackets declare only a two-way binding, <code>[(value)]</code>: <code>[title]</code>, <code>[attr.title]</code> or <code>[class.name]</code> are errors, the binding being written <code>title</code>, <code>attr.title</code> or <code>class.name</code>."
+            "p1": "The value of <code>class.name</code>, of <code>style.name</code> and of <code>part.name</code> is always an expression in braces: a static value, or no value, does not compile. Brackets declare only a two-way binding, <code>[(value)]</code>: <code>[title]</code>, <code>[attr.title]</code> or <code>[class.name]</code> are errors, the binding being written <code>title</code>, <code>attr.title</code> or <code>class.name</code>."
           },
           "callout6": {
             "heading": "Classes are toggled on the element, not in directives",
-            "body": "<code>class.name</code> cannot be written in the parentheses of a directive, which only bind its properties: write it on the element. A class can be toggled at most once on an element, as an attribute can be bound once, except in different branches of the same condition."
+            "body": "<code>class.name</code> and <code>part.name</code> cannot be written in the parentheses of a directive, which only bind its properties: write it on the element. A class or a part can be toggled at most once on an element, as an attribute can be bound once, except in different branches of the same condition."
           }
         },
         "summary": {
@@ -4992,6 +5001,30 @@
     "[Lexer] @default never declares no branch: end it with a semicolon, as in @default never;": {
       "cause": "@default never written without the semicolon closing it, or followed by a block.",
       "fix": "Write @default never; with its semicolon and without block, or a @default block without never."
+    },
+    "[Parser] Part \"on\" is bound more than once on <p>": {
+      "cause": "The same part.name written twice on an element, or both outside and inside a conditional binding.",
+      "fix": "Toggle the part once: join the conditions in one expression, or write the part in the branches of the same condition only."
+    },
+    "[Parser] part.on exposes the part by the value of an expression: part.on=\"{expression}\"": {
+      "cause": "A part binding with a static value, or without value.",
+      "fix": "Bind it to an expression in braces: part.on=\"{ selected() }\"; a part always exposed goes in the static part attribute: part=\"on\"."
+    },
+    "[Parser] part.a:b names no part: write part. followed by one name, without whitespace, comma nor colon, e.g. part.selected=\"{ expression }\"": {
+      "cause": "A part binding naming nothing after part., or a name holding a comma or a colon, which exportparts could not forward.",
+      "fix": "Write one name after the dot: part.selected=\"{ expression }\"."
+    },
+    "[Parser] part.on cannot be bound inside a directive: bind it on the element": {
+      "cause": "A part binding in the parentheses of a directive, or in one of its conditional bindings: a directive binds only its own properties.",
+      "fix": "Write part.on on the element, or have the directive expose the part with @HostAttribute('part.on')."
+    },
+    "Error: @HostAttribute('part.') names no part": {
+      "cause": "@HostAttribute('part.') with nothing after the dot.",
+      "fix": "Name the part: @HostAttribute('part.selected'), or bind the whole string with @HostAttribute('part')."
+    },
+    "Error: @HostAttribute('part.a:b') names a part holding whitespace, a comma or a colon, which exportparts could not forward: write one name, e.g. 'part.selected'": {
+      "cause": "@HostAttribute('part.name') with a name holding a space, a comma or a colon.",
+      "fix": "Write one name without them: @HostAttribute('part.selected')."
     }
   }
 }

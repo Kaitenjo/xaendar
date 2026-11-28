@@ -4,6 +4,7 @@
 @import { CustomPropertiesComponent } from '../../../examples/components/styling/custom-properties/custom-properties.xd.component.ts'
 @import { DynamicStylesComponent } from '../../../examples/components/styling/dynamic-styles/dynamic-styles.xd.component.ts'
 @import { EncapsulationComponent } from '../../../examples/components/styling/encapsulation/encapsulation.xd.component.ts'
+@import { ExportedPartsComponent } from '../../../examples/components/styling/exported-parts/exported-parts.xd.component.ts'
 @import { HostSelectorsComponent } from '../../../examples/components/styling/host-selectors/host-selectors.xd.component.ts'
 @import { PartsAndSlottedComponent } from '../../../examples/components/styling/parts-and-slotted/parts-and-slotted.xd.component.ts'
 @import { StyleObjectComponent } from '../../../examples/components/styling/style-object/style-object.xd.component.ts'
@@ -76,6 +77,18 @@
   <ex-parts-and-slotted />
 </docs-example>
 <p @@htmlTranslation(key="pages.components.styling.partsAndProjectedContent.p2") />
+
+<h2>
+  { t(translations(), 'pages.components.styling.exposingParts.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.styling.exposingParts.p1") />
+<p @@htmlTranslation(key="pages.components.styling.exposingParts.p2") />
+<docs-example name="components/styling/exported-parts"
+  heading="{translations().pages.components.styling.exposingParts.example1}">
+  <ex-exported-parts />
+</docs-example>
+<p @@htmlTranslation(key="pages.components.styling.exposingParts.p3") />
+<p @@htmlTranslation(key="pages.components.styling.exposingParts.p4") />
 
 <h2>
   { t(translations(), 'pages.components.styling.dynamicClassesAndStyles.title') }

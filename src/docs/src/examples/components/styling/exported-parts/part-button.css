@@ -1,0 +1,8 @@
+button {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}

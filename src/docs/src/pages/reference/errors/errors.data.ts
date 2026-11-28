@@ -160,6 +160,26 @@ export const ERRORS: readonly ErrorEntry[] = [
   },
   {
     phase: 'Parser',
+    message: '[Parser] Part "on" is bound more than once on <p>',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] part.on exposes the part by the value of an expression: part.on="{expression}"',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] part.a:b names no part: write part. followed by one name, without whitespace, comma nor colon, e.g. part.selected="{ expression }"',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Parser',
+    message: '[Parser] part.on cannot be bound inside a directive: bind it on the element',
+    page: 'templates/binding'
+  },
+  {
+    phase: 'Parser',
     message: '[Parser] Directive "exTint" is applied more than once on <p>',
     page: 'directives/custom'
   },
@@ -846,6 +866,16 @@ export const ERRORS: readonly ErrorEntry[] = [
   {
     phase: 'Runtime',
     message: "Error: @HostAttribute('class.') names no class",
+    page: 'components/host-bindings'
+  },
+  {
+    phase: 'Runtime',
+    message: "Error: @HostAttribute('part.') names no part",
+    page: 'components/host-bindings'
+  },
+  {
+    phase: 'Runtime',
+    message: "Error: @HostAttribute('part.a:b') names a part holding whitespace, a comma or a colon, which exportparts could not forward: write one name, e.g. 'part.selected'",
     page: 'components/host-bindings'
   },
   {

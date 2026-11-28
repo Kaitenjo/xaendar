@@ -913,7 +913,7 @@
           "p1": "<code>@HostAttribute('name')</code> su un campo, un getter o un accessor scrive il suo valore nell’attributo <code>name</code> dell’elemento host; <code>@HostAttribute('class.name')</code> attiva e disattiva la classe <code>name</code>, che l’elemento ha finché il valore è truthy. Il membro viene letto dentro un effetto: un valore che non legge signal viene scritto una volta sola, mentre un signal, o un getter che legge signal, viene riscritto ogni volta che cambiano.",
           "example1": "Un interruttore disegnato dal proprio elemento",
           "p2": "Fai click sugli interruttori, oppure raggiungili con Tab e premi Spazio. <code>role</code> non legge signal e viene scritto una volta sola. <code>on</code> contiene un signal, e l’host ha la classe <code>on</code> finché è <code>true</code>: il foglio di stile disegna l’interruttore a partire da <code>:host(.on)</code>. I getter di <code>aria-checked</code>, <code>aria-disabled</code> e <code>tabindex</code> vengono riscritti quando cambiano <code>on</code> o <code>locked</code>. <code>locked</code> è un input riflesso sull’host con <code>reflect: true</code>: il padre lo lega, e il foglio di stile legge <code>:host([locked])</code>. Ispeziona l’interruttore del Wi-Fi con gli strumenti per sviluppatori per vederne cambiare gli attributi mentre attivi la modalità aereo.",
-          "p3": "<code>@HostAttribute('class')</code> e <code>@HostAttribute('style')</code> scrivono una stringa di classi, o di dichiarazioni, e <code>@HostAttribute('style.name')</code> una proprietà, seguita dalla sua unità se c’è (<code>'style.width.px'</code>). Vengono fusi chiave per chiave con il template che renderizza l’elemento e con le sue direttive, che vincono sul componente: il template può sovrascrivere una classe o una proprietà che il componente scrive, e restituirla legando <code>null</code>. TypeScript controlla il membro in base al nome: una stringa per <code>class</code> e <code>style</code>, un numero per una proprietà con unità. Vedi <a href=\"#/it/templates/binding\">Binding</a>.",
+          "p3": "<code>@HostAttribute('class')</code> e <code>@HostAttribute('style')</code> scrivono una stringa di classi, o di dichiarazioni, e <code>@HostAttribute('style.name')</code> una proprietà, seguita dalla sua unità se c’è (<code>'style.width.px'</code>); <code>@HostAttribute('part')</code> e <code>@HostAttribute('part.name')</code> scrivono le parti che l’elemento espone a <code>::part()</code>, come le classi. Vengono fusi chiave per chiave con il template che renderizza l’elemento e con le sue direttive, che vincono sul componente: il template può sovrascrivere una classe o una proprietà che il componente scrive, e restituirla legando <code>null</code>. TypeScript controlla il membro in base al nome: una stringa per <code>class</code>, <code>style</code> e <code>part</code>, un numero per una proprietà con unità. Vedi <a href=\"#/it/templates/binding\">Binding</a>.",
           "p4": "Anche gli attributi vengono fusi, per intero: il template che renderizza l’elemento, che li scrive con <code>attr.nome</code> (o <code>nome</code>, quando il componente non ha un input con quel nome), vince sulle direttive, che vincono sul componente, e una sorgente con <code>null</code> lascia l’attributo a quelle sotto. Vedi <a href=\"#/it/templates/binding\">Binding</a>.",
           "p5": "<code>@Property(valore, { reflect: true })</code> riflette un input sull’host, come fa un <code>@HostAttribute</code> sul suo accessor, con le stesse regole: l’attributo prende il nome dell’input, il suo alias o il suo nome in kebab-case (<code>showValue</code> diventa <code>show-value</code>), oppure la stringa data come <code>reflect</code>, e segue il valore dell’input. Lo scrive solo l’input: un attributo scritto nell’HTML imposta l’input solo se dichiara anche <code>attribute</code>, vedi <a href=\"#/it/components/inputs\">Input</a>. Un oggetto o un array verrebbero scritti come stringa, quindi rifletti input che contengono booleani, numeri e stringhe. Una direttiva strutturale non ha un elemento, e non può riflettere i suoi input."
         },
@@ -1118,6 +1118,14 @@
           "example1": "::part e ::slotted",
           "p2": "Quando entrambi i fogli di stile colpiscono lo stesso elemento proiettato, vince quello esterno: il verde del padre batte il rosso di <code>::slotted(.note)</code>. Le regole <code>::slotted</code> di un componente sono valori di default che chi usa il componente può sovrascrivere."
         },
+        "exposingParts": {
+          "title": "Esporre e inoltrare le parti",
+          "p1": "Un elemento può esporre più parti, separate da spazi: <code>part=\"tab selected\"</code>. <code>::part(tab)</code> colpisce ogni elemento che espone <code>tab</code>, <code>::part(tab selected)</code> solo quelli che le espongono entrambe. Dopo <code>::part()</code> un selettore può aggiungere le pseudo-classi dell’elemento, come <code>:hover</code>, <code>:focus-visible</code> o <code>:disabled</code>, e i suoi pseudo-elementi, come <code>::before</code>; non può entrare oltre (<code>::part(tab) span</code>), né controllarne gli attributi (<code>::part(tab)[aria-selected]</code>) o la posizione (<code>:nth-child()</code>).",
+          "p2": "Per questo lo stato di un elemento dentro un componente si dà all’esterno come una parte in più. <code>part.nome=\"{ condizione }\"</code> aggiunge la parte finché la condizione è vera e la toglie altrimenti, come fa <code>class.nome</code> con una classe, e si somma al <code>part</code> statico o calcolato dell’elemento, anche nei rami dei suoi binding condizionali. Una direttiva o il componente scrivono le parti del loro elemento con <code>@HostAttribute('part')</code> e <code>@HostAttribute('part.nome')</code>, unite parte per parte con il template, che vince.",
+          "example1": "Parti attivate e inoltrate",
+          "p3": "<code>::part()</code> raggiunge solo le parti del componente che è l’elemento, non quelle dei componenti che renderizza. Un componente le inoltra con <code>exportparts</code> sull’elemento del componente interno: <code>exportparts=\"label\"</code> inoltra <code>label</code> con il suo nome, <code>exportparts=\"label: button-label\"</code> la rinomina, come fa il campo qui sopra, così la pagina scrive <code>ex-part-field::part(button-label)</code>. Ogni livello inoltra quello che il successivo può stilizzare.",
+          "p4": "I nomi delle parti sono un’API pubblica del componente, come i suoi input: le pagine e i componenti che li stilizzano ne dipendono, e rinominarne uno rompe le loro regole senza alcun errore. Esponi una parte per un elemento che chi usa il componente deve poter ristilizzare a piacere, una custom property per un valore condiviso da molti componenti (vedi i design token sopra), e uno slot per il contenuto che scrive lui stesso. L’editor propone le parti di un componente nel suo <code>exportparts</code>, avvisa per un nome che il componente non espone e mostra le sue parti al passaggio sul tag; il manifest di una libreria le porta alle applicazioni che la usano."
+        },
         "dynamicClassesAndStyles": {
           "title": "Classi e stili dinamici",
           "p1": "<code>class</code> e <code>style</code> sono attributi come gli altri: legali a un’espressione e l’attributo viene riscritto quando il valore cambia. Costruire la stringa in un computed mantiene il template corto e il binding reattivo. Una singola classe che va e viene è più breve con <code>class.nome=\"{ condizione }\"</code>, come fa l’etichetta, e una singola proprietà con <code>style.width.%=\"{ valore }\"</code>: vedi <a href=\"#/it/templates/binding\">Binding</a>.",
@@ -1159,7 +1167,7 @@
           "td6": "Gli elementi assegnati ai suoi slot, non i loro discendenti.",
           "td7": "<code>elemento::part(nome)</code>",
           "td8": "chi usa il componente",
-          "td9": "L’elemento con <code>part=\"nome\"</code> dentro il componente.",
+          "td9": "L’elemento con <code>part=\"nome\"</code>, o <code>part.nome=\"{ condizione }\"</code>, dentro il componente.",
           "td10": "<code>var(--nome, fallback)</code>",
           "td11": "il componente",
           "td12": "Una custom property impostata da un antenato qualsiasi.",
@@ -2615,7 +2623,8 @@
           "title": "Attivare una classe",
           "p1": "<code>class.nome=\"{ espressione }\"</code> dà all’elemento la classe <code>nome</code> finché il valore dell’espressione è truthy, e gliela toglie altrimenti. Il valore può essere di qualsiasi tipo. Funziona sugli elementi nativi, sui tag dei componenti, dove la classe va sull’elemento stesso, e dentro i <a href=\"#/it/templates/conditional-bindings\">binding condizionali</a>, dove la classe viene tolta quando il suo ramo non è più selezionato. Dopo il punto va qualsiasi nome di classe senza spazi, <code>class.is-active</code> compreso.",
           "example1": "Un attributo class legato e due binding di classe",
-          "p2": "I binding di classe e l’attributo <code>class</code> funzionano insieme, anche quando è legato: vengono fusi classe per classe, i binding di classe vincono sulla stringa, e vengono scritte solo le classi il cui valore cambia. Un binding con valore falsy toglie la sua classe anche quando <code>class</code> la elenca; uno che vale <code>null</code> o <code>undefined</code> non ha opinione, e lascia la classe alla stringa. Un binding di classe segue i signal che legge, come un attributo."
+          "p2": "I binding di classe e l’attributo <code>class</code> funzionano insieme, anche quando è legato: vengono fusi classe per classe, i binding di classe vincono sulla stringa, e vengono scritte solo le classi il cui valore cambia. Un binding con valore falsy toglie la sua classe anche quando <code>class</code> la elenca; uno che vale <code>null</code> o <code>undefined</code> non ha opinione, e lascia la classe alla stringa. Un binding di classe segue i signal che legge, come un attributo.",
+          "p3": "<code>part.nome=\"{ espressione }\"</code> funziona allo stesso modo sulle parti dell’elemento, i nomi con cui <code>::part()</code> lo stilizza da fuori della sua shadow root: l’elemento ha la parte <code>nome</code> finché il valore è vero, fusa parte per parte con il suo attributo <code>part</code>, statico o legato. Il nome non contiene spazi, virgole né due punti, che <code>exportparts</code> non potrebbe inoltrare. Vedi <a href=\"#/it/components/styling\">Stili</a>."
         },
         "settingAStyle": {
           "title": "Impostare una proprietà di stile",
@@ -2625,7 +2634,7 @@
         },
         "merging": {
           "title": "Fondere class e style",
-          "p1": "La <code>class</code> e lo <code>style</code> di un elemento possono essere scritti da più sorgenti: il template che lo renderizza, le direttive che applica, comprese le sue host directive, e il componente che è, con <code>@HostAttribute</code>. Vengono fusi chiave per chiave, una classe o una proprietà alla volta, e per ogni chiave vince la sorgente più forte che ha un’opinione: il template, poi le direttive, poi il componente. In ognuna di esse una chiave legata da sola (<code>class.on</code>, <code>@HostAttribute('style.width.px')</code>) vince sulla stringa (<code>class=\"…\"</code>, <code>@HostAttribute('style')</code>). Tra due direttive vince quella applicata dopo: prima le host directive, nell’ordine in cui il componente le dichiara, poi quelle del template, nell’ordine in cui compaiono.",
+          "p1": "La <code>class</code>, lo <code>style</code> e il <code>part</code> di un elemento possono essere scritti da più sorgenti: il template che lo renderizza, le direttive che applica, comprese le sue host directive, e il componente che è, con <code>@HostAttribute</code>. Vengono fusi chiave per chiave, una classe, una proprietà o una parte alla volta, e per ogni chiave vince la sorgente più forte che ha un’opinione: il template, poi le direttive, poi il componente. In ognuna di esse una chiave legata da sola (<code>class.on</code>, <code>@HostAttribute('style.width.px')</code>) vince sulla stringa (<code>class=\"…\"</code>, <code>@HostAttribute('style')</code>). Tra due direttive vince quella applicata dopo: prima le host directive, nell’ordine in cui il componente le dichiara, poi quelle del template, nell’ordine in cui compaiono.",
           "p2": "Una sorgente senza opinione su una chiave la lascia a quelle sotto: un template che lega <code>style.width=\"{ null }\"</code> lascia valere la larghezza di una direttiva o del componente. Per una classe <code>false</code> è un’opinione, <code>null</code> no: <code>class.on=\"{ false }\"</code> toglie la classe anche quando il componente la aggiunge, <code>class.on=\"{ null }\"</code> la lascia al componente. Quando una sorgente sparisce (un ramo non più selezionato, una direttiva distrutta) le chiavi che scriveva prendono il valore delle sorgenti sotto, e le chiavi delle altre restano.",
           "p3": "L’ordine in cui le sorgenti girano non conta: il risultato dipende solo dal loro livello. Vengono scritte solo le chiavi il cui valore cambia, con <code>classList</code> e <code>style.setProperty</code>, mai scrivendo l’attributo intero, così un elemento adottato dall’HTML del server che ha già gli stessi valori non viene riscritto. Le classi e le proprietà che altro codice scrive sull’elemento non vengono tracciate: il runtime tocca solo le chiavi che ha scritto, e rimuove una chiave su cui nessuna sorgente ha un’opinione solo se l’aveva scritta lui.",
           "p4": "Un elemento scritto solo dal suo template, il caso più comune, non costa niente in più: la sua classe e il suo stile vengono scritti direttamente. Lo stato della fusione viene tenuto solo per gli elementi scritti da più di una sorgente."
@@ -2637,7 +2646,7 @@
         "writingTheAttribute": {
           "title": "Scrivere l’attributo di un componente: attr.",
           "p1": "Sul tag di un componente, un nome che è un input imposta l’input. <code>attr.nome</code> scrive invece l’attributo <code>nome</code> dell’elemento, qualunque cosa dichiari il componente: <code>attr.title=\"…\"</code> imposta l’attributo <code>title</code> anche quando il componente ha un input chiamato <code>title</code>, che mantiene il suo valore. Il valore segue le regole degli altri attributi, statico o un’espressione, compresi <code>null</code> e i booleani, anche nei rami di un <a href=\"#/it/templates/conditional-bindings\">binding condizionale</a>. Su un elemento nativo <code>attr.title</code> equivale a <code>title</code>: rende solo esplicita l’intenzione.",
-          "p2": "<code>attr.class</code> e <code>attr.style</code> non compilano: li scrivono <code>class</code>, <code>style</code>, <code>class.name</code> e <code>style.name</code>, fusi chiave per chiave. Il template di un elemento scrive un attributo una volta sola: <code>title</code> e <code>attr.title</code> sono lo stesso attributo quando <code>title</code> non è un input, e scriverli entrambi è un errore, come scrivere due volte <code>attr.title</code>. <code>attr.</code> non si può scrivere tra le parentesi di una direttiva, che lega solo le sue proprietà, né in un binding bidirezionale.",
+          "p2": "<code>attr.class</code>, <code>attr.style</code> e <code>attr.part</code> non compilano: li scrivono <code>class</code>, <code>style</code>, <code>part</code>, <code>class.name</code>, <code>style.name</code> e <code>part.name</code>, fusi chiave per chiave. Il template di un elemento scrive un attributo una volta sola: <code>title</code> e <code>attr.title</code> sono lo stesso attributo quando <code>title</code> non è un input, e scriverli entrambi è un errore, come scrivere due volte <code>attr.title</code>. <code>attr.</code> non si può scrivere tra le parentesi di una direttiva, che lega solo le sue proprietà, né in un binding bidirezionale.",
           "p3": "Un componente che dichiara un input, o un alias, con il nome di un attributo che ogni elemento riflette (<code>id</code>, <code>title</code>, <code>hidden</code>, <code>lang</code>, <code>dir</code>, <code>tabindex</code>, <code>slot</code>, <code>inert</code>, <code>draggable</code>, <code>spellcheck</code>, <code>popover</code>, <code>aria-*</code>…) riceve un avviso dalla build e dall’editor: i template che legano quel nome impostano l’input, e scrivono l’attributo nativo con <code>attr.nome</code>."
         },
         "attributePrecedence": {
@@ -2680,11 +2689,11 @@
           },
           "callout5": {
             "heading": "Un binding di classe richiede un’espressione",
-            "p1": "Il valore di <code>class.name</code> e di <code>style.name</code> è sempre un’espressione tra graffe: un valore statico, o nessun valore, non compila. Le parentesi quadre dichiarano solo un binding bidirezionale, <code>[(value)]</code>: <code>[title]</code>, <code>[attr.title]</code> o <code>[class.name]</code> sono errori, e il binding si scrive <code>title</code>, <code>attr.title</code> o <code>class.name</code>."
+            "p1": "Il valore di <code>class.name</code>, di <code>style.name</code> e di <code>part.name</code> è sempre un’espressione tra graffe: un valore statico, o nessun valore, non compila. Le parentesi quadre dichiarano solo un binding bidirezionale, <code>[(value)]</code>: <code>[title]</code>, <code>[attr.title]</code> o <code>[class.name]</code> sono errori, e il binding si scrive <code>title</code>, <code>attr.title</code> o <code>class.name</code>."
           },
           "callout6": {
             "heading": "Le classi si attivano sull’elemento, non nelle direttive",
-            "body": "<code>class.nome</code> non si può scrivere tra le parentesi di una direttiva, che legano solo le sue proprietà: scrivilo sull’elemento. Una classe si può attivare al massimo una volta su un elemento, come un attributo si può legare una volta, salvo in rami diversi della stessa condizione."
+            "body": "<code>class.nome</code> e <code>part.nome</code> non si possono scrivere tra le parentesi di una direttiva, che legano solo le sue proprietà: scrivili sull’elemento. Una classe o una parte si può attivare al massimo una volta su un elemento, come un attributo si può legare una volta, salvo in rami diversi della stessa condizione."
           }
         },
         "summary": {
@@ -4992,6 +5001,30 @@
     "[Lexer] @default never declares no branch: end it with a semicolon, as in @default never;": {
       "cause": "@default never scritto senza il punto e virgola che lo chiude, o seguito da un blocco.",
       "fix": "Scrivi @default never; con il punto e virgola e senza blocco, oppure un blocco @default senza never."
+    },
+    "[Parser] Part \"on\" is bound more than once on <p>": {
+      "cause": "Lo stesso part.nome scritto due volte su un elemento, o sia fuori sia dentro un binding condizionale.",
+      "fix": "Attiva la parte una volta sola: unisci le condizioni in un’espressione, o scrivi la parte solo nei rami della stessa condizione."
+    },
+    "[Parser] part.on exposes the part by the value of an expression: part.on=\"{expression}\"": {
+      "cause": "Un binding di parte con un valore statico, o senza valore.",
+      "fix": "Legalo a un’espressione tra graffe: part.on=\"{ selected() }\"; una parte sempre esposta va nell’attributo statico part: part=\"on\"."
+    },
+    "[Parser] part.a:b names no part: write part. followed by one name, without whitespace, comma nor colon, e.g. part.selected=\"{ expression }\"": {
+      "cause": "Un binding di parte che non nomina nulla dopo part., o un nome con una virgola o due punti, che exportparts non potrebbe inoltrare.",
+      "fix": "Scrivi un solo nome dopo il punto: part.selected=\"{ espressione }\"."
+    },
+    "[Parser] part.on cannot be bound inside a directive: bind it on the element": {
+      "cause": "Un binding di parte tra le parentesi di una direttiva, o in uno dei suoi binding condizionali: una direttiva lega solo le sue proprietà.",
+      "fix": "Scrivi part.on sull’elemento, o fai esporre la parte alla direttiva con @HostAttribute('part.on')."
+    },
+    "Error: @HostAttribute('part.') names no part": {
+      "cause": "@HostAttribute('part.') senza nulla dopo il punto.",
+      "fix": "Nomina la parte: @HostAttribute('part.selected'), o lega tutta la stringa con @HostAttribute('part')."
+    },
+    "Error: @HostAttribute('part.a:b') names a part holding whitespace, a comma or a colon, which exportparts could not forward: write one name, e.g. 'part.selected'": {
+      "cause": "@HostAttribute('part.nome') con un nome che contiene uno spazio, una virgola o due punti.",
+      "fix": "Scrivi un solo nome senza di essi: @HostAttribute('part.selected')."
     }
   }
 }
