@@ -621,7 +621,7 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 ### `Type 'string' does not satisfy the expected type 'number'.`
 
 - **Cause:** A static value, always a string, bound to an input of another type.
-- **Fix:** Bind an expression: count="{ 3 }".
+- **Fix:** Bind an expression: count="{ 3 }", or let the attribute write the input (`@Property(0, { attribute: true })`), whose static value the component converts.
 
 ### `Property 'secret' is private and only accessible within class 'XCard'.`
 
@@ -763,10 +763,25 @@ Messages printed by the Xaendar compiler, build, runtime and CLI, with cause and
 - **Cause:** A @render passing fewer or more arguments than the template declares parameters: reported on the @render, or on the extra arguments.
 - **Fix:** Pass one argument per parameter.
 
-### `[TypeChecker] Property "name" needs a value: write name="…" or name="{ expression }". An attribute without a value is only valid on a native element.`
+### `[TypeChecker] Property "name" needs a value: write name="…" or name="{ expression }". An attribute without a value is only valid on a native element, or on an input declaring attribute.`
 
 - **Cause:** An input of a component or a directive written like a boolean attribute: <x-card name>.
-- **Fix:** Give it a value: name="text" or name="{expression}". The form without a value is only for the attributes of native elements (<input disabled />).
+- **Fix:** Give it a value: name="text" or name="{expression}". The form without a value is only for the attributes of native elements (<input disabled />), and for an input declaring `attribute` in `@Property` (`@Property(false, { attribute: true })`), whose bare attribute is `''`, `true` for a boolean.
+
+### `@Property on name is written by the attribute "name", whose text cannot be converted from a default value that is not a boolean, a number or a string: give attribute a function converting it, e.g. attribute: value => new Date(value)`
+
+- **Cause:** `attribute: true` (or a name) on an input whose default is `undefined`, `null`, an object, or a required input: the conversion of the text cannot be deduced. Thrown when the class is defined.
+- **Fix:** Give `attribute` the conversion: `@Property<InputSignal<Date | null>>(null, { attribute: value => new Date(value) })`.
+
+### `@Property on name is written by the attribute "name" and declares a transform: give attribute a function converting the text of the attribute into the value transform takes`
+
+- **Cause:** `attribute: true` with a `transform`: the conversion deduced from the default would not give what `transform` takes.
+- **Fix:** `attribute: value => …` returning the type `transform` takes.
+
+### `@Property on name of TintDirective is written by the attribute "name": only a component hears its attributes, while the inputs of a directive are bound by the templates`
+
+- **Cause:** `attribute` on an input of a directive (thrown when the directive is created).
+- **Fix:** Remove it: the templates bind the inputs of a directive.
 
 ### `[TypeChecker] @@exList declares type arguments, but ListDirective is not generic.`
 

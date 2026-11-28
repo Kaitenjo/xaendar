@@ -149,7 +149,7 @@ In every class you write or edit, unless the project states otherwise:
     return this.start() + this.count();
   }
   ```
-- **Input types** narrower than the default infers (literal unions, empty arrays, nullable, `unknown`) go in the generic of `@Property`, same type on the accessor; never `InputSignal<string>` cast on read (`this.language() as CodeLang`). Statically bound inputs (`kind="tip"`) are type-checked as `string`, so they cannot use a literal union.
+- **Input types** narrower than the default infers (literal unions, empty arrays, nullable, `unknown`) go in the generic of `@Property`, same type on the accessor; never `InputSignal<string>` cast on read (`this.language() as CodeLang`). Statically bound inputs (`kind="tip"`) are type-checked as `string`, so they cannot use a literal union, unless the input declares `attribute` (`@Property(0, { attribute: true })`): then the static value is written into the attribute and converted by the component.
   ```ts
   @Property<Aliased<InputSignal<CodeLang>, 'lang'>>('ts', { alias: 'lang' })
   public accessor language!: Aliased<InputSignal<CodeLang>, 'lang'>;

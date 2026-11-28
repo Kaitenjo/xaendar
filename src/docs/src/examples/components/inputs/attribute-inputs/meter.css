@@ -1,0 +1,13 @@
+:host {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+meter {
+  width: 12rem;
+}
+
+:host([compact]) meter {
+  width: 5rem;
+}

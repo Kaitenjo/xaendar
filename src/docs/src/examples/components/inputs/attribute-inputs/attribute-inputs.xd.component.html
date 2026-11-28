@@ -1,0 +1,10 @@
+@import { ButtonComponent } from '../../../shared/button/button.xd.component.ts'
+@import { MeterComponent } from './meter.xd.component.ts'
+
+<ex-meter value="3" />
+<div class="actions">
+  <ex-button (click)="writeValue()">setAttribute('value', '7')</ex-button>
+  <ex-button (click)="toggleCompact()">toggleAttribute('compact')</ex-button>
+  <ex-button (click)="removeValue()">removeAttribute('value')</ex-button>
+</div>
+<p class="caption">Attributes: { attributesText() }</p>

@@ -13,7 +13,7 @@ import { TRUSTED_URLS } from '../../../templates/binding/binding.snippets';
 import { HYDRATE_COMPONENT } from '../../../tools/ssr/progressive-hydration/progressive-hydration.snippets';
 import { TRANSFER_STATE_COMPONENT, TRANSFER_STATE_ENTRY } from '../../../tools/ssr/transfer-state/transfer-state.snippets';
 import type { ApiPackage } from '../api.data';
-import { CANCELABLE_EVENT, CREATE_COMPONENT_DIRECTIVES, CREATE_COMPONENT_GROUPS, CUSTOM_DIRECTIVE, DIRECTIVE_CREATE_COMPONENT, DIRECTIVE_KINDS, HOST_ATTRIBUTE, HOST_ATTRIBUTE_VALUES, HOST_BINDINGS_DIRECTIVE, HOST_DIRECTIVE_MEMBERS, HOST_LISTENER, HOST_LISTENER_KEYS, HOST_LISTENER_TARGETS, MODEL_CREATE_COMPONENT, MODEL_DIRECTIVE, MODEL_HOST_DIRECTIVE, OUTPUT_DISPATCH, QUERY_CONTENT, QUERY_CONTENT_OPTIONS, QUERY_READ, QUERY_TIMING, REFLECT_INPUT, STANDALONE_CREATE_COMPONENT, STRUCTURAL_DIRECTIVE } from './core.snippets';
+import { ATTRIBUTE_INPUT, CANCELABLE_EVENT, CREATE_COMPONENT_DIRECTIVES, CREATE_COMPONENT_GROUPS, CUSTOM_DIRECTIVE, DIRECTIVE_CREATE_COMPONENT, DIRECTIVE_KINDS, HOST_ATTRIBUTE, HOST_ATTRIBUTE_VALUES, HOST_BINDINGS_DIRECTIVE, HOST_DIRECTIVE_MEMBERS, HOST_LISTENER, HOST_LISTENER_KEYS, HOST_LISTENER_TARGETS, MODEL_CREATE_COMPONENT, MODEL_DIRECTIVE, MODEL_HOST_DIRECTIVE, OUTPUT_DISPATCH, QUERY_CONTENT, QUERY_CONTENT_OPTIONS, QUERY_READ, QUERY_TIMING, REFLECT_INPUT, STANDALONE_CREATE_COMPONENT, STRUCTURAL_DIRECTIVE } from './core.snippets';
 
 /**
  * The symbols of `@xaendar/core`.
@@ -98,12 +98,12 @@ export const CORE_API: ApiPackage = {
     {
       name: 'Property',
       kind: 'decorator',
-      signature: 'function Property<Value extends InputSignal<ActualValue, IncomingValue>, IncomingValue = Value extends InputSignal<unknown, infer Type> ? Type : unknown, ActualValue = Value extends InputSignal<infer Type, unknown> ? Type : unknown>(value?: ActualValue, options?: InputSignalOptions<ActualValue, IncomingValue> & { alias?: string; reflect?: boolean | string }): AccessorDecorator<CustomElement | CustomDirective | StructuralDirective, InputSignal<ActualValue, IncomingValue>>',
+      signature: 'function Property<Value extends InputSignal<ActualValue, IncomingValue>, IncomingValue = Value extends InputSignal<unknown, infer Type> ? Type : unknown, ActualValue = Value extends InputSignal<infer Type, unknown> ? Type : unknown>(value?: ActualValue, options?: InputSignalOptions<ActualValue, IncomingValue> & { alias?: string; reflect?: boolean | string; attribute?: boolean | string | ((value: string) => IncomingValue) }): AccessorDecorator<CustomElement | CustomDirective | StructuralDirective, InputSignal<ActualValue, IncomingValue>>',
       members: [
         {
           name: 'Property.required',
           group: 'variants',
-          signature: 'Property.required<ActualValue = unknown, IncomingValue = ActualValue>(options?: InputSignalOptions<ActualValue, IncomingValue> & { alias?: string; reflect?: boolean | string }): AccessorDecorator<CustomElement | CustomDirective | StructuralDirective, InputSignal<ActualValue, IncomingValue>>',
+          signature: 'Property.required<ActualValue = unknown, IncomingValue = ActualValue>(options?: InputSignalOptions<ActualValue, IncomingValue> & { alias?: string; reflect?: boolean | string; attribute?: boolean | string | ((value: string) => IncomingValue) }): AccessorDecorator<CustomElement | CustomDirective | StructuralDirective, InputSignal<ActualValue, IncomingValue>>',
           snippets: ['components/required-error.txt', 'components/required-branch-error.txt']
         },
         {
@@ -122,6 +122,12 @@ export const CORE_API: ApiPackage = {
           group: 'options',
           signature: 'reflect?: boolean | string',
           snippets: [REFLECT_INPUT]
+        },
+        {
+          name: 'attribute',
+          group: 'options',
+          signature: 'attribute?: boolean | string | ((value: string) => IncomingValue)',
+          snippets: [ATTRIBUTE_INPUT]
         },
         {
           name: 'transform',

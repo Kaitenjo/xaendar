@@ -2,6 +2,7 @@
 @import { translate as t } from '../../../core/i18n/i18n.utils.ts'
 @import { lang as currentLang } from '../../../core/router/router.ts'
 @import { HtmlTranslationDirective } from '../../../directives/html-translation.directive.ts'
+@import { AttributeInputsComponent } from '../../../examples/components/inputs/attribute-inputs/attribute-inputs.xd.component.ts'
 @import { AttributesVsPropertiesComponent } from '../../../examples/components/inputs/attributes-vs-properties/attributes-vs-properties.xd.component.ts'
 @import { ConditionalResetComponent } from '../../../examples/components/inputs/conditional-reset/conditional-reset.xd.component.ts'
 @import { InitTimingComponent } from '../../../examples/components/inputs/init-timing/init-timing.xd.component.ts'
@@ -46,6 +47,18 @@
 </docs-example>
 <p @@htmlTranslation(key="pages.components.inputs.staticValuesAndExpressions.p2") />
 <docs-code snippet="components/static-number-error.txt" />
+
+<h2>
+  { t(translations(), 'pages.components.inputs.attributeInputs.title') }
+</h2>
+<p @@htmlTranslation(key="pages.components.inputs.attributeInputs.p1") />
+<docs-example name="components/inputs/attribute-inputs"
+  heading="{translations().pages.components.inputs.attributeInputs.example1}">
+  <ex-attribute-inputs />
+</docs-example>
+<p @@htmlTranslation(key="pages.components.inputs.attributeInputs.p2") />
+<p @@htmlTranslation(key="pages.components.inputs.attributeInputs.p3") />
+<p @@htmlTranslation(key="pages.components.inputs.attributeInputs.p4") />
 
 <h2>
   { t(translations(), 'pages.components.inputs.normalizingAndComparingTransform.title') }

@@ -29,6 +29,29 @@ public close(): void {
 };
 
 /**
+ * The snippet `attribute-input.ts`, shown by the API reference of core.
+ */
+export const ATTRIBUTE_INPUT: SourceFile = {
+  name: 'attribute-input.ts',
+  lang: 'ts',
+  code: `/**
+ * <ex-meter value="3"> in any HTML: Number(text), the type of the default.
+ */
+@Property(0, { attribute: true })
+public accessor value!: InputSignal<number>;
+/**
+ * <ex-meter compact>: true while present, false once removed, reflected too.
+ */
+@Property(false, { attribute: true, reflect: true })
+public accessor compact!: InputSignal<boolean>;
+/**
+ * <ex-meter since="2026-01-01">: a function converts what the default cannot tell.
+ */
+@Property<InputSignal<Date | null>>(null, { attribute: value => new Date(value) })
+public accessor since!: InputSignal<Date | null>;`
+};
+
+/**
  * The snippet `reflect-input.ts`, shown by the API reference of core.
  */
 export const REFLECT_INPUT: SourceFile = {
