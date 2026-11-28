@@ -3,6 +3,7 @@ import { INTERNAL_EXTENDS, INTERNAL_HOST_DIRECTIVES, INTERNAL_HYDRATE, INTERNAL_
 import { CustomElement } from '../../models/custom-element/custom-element';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
 import { WebComponentOptions } from '../../types/web-component/web-component-options.type';
+import { _applyAttributeInputs } from '../../utils/attribute-inputs/attribute-inputs.util';
 import { _applyHostCallbacks } from '../../utils/host-callbacks/host-callbacks.util';
 import { _resolveHostDirectives } from '../../utils/host-directives/host-directives.util';
 import { _getRender } from '../../utils/render-registry/render-registry.util';
@@ -34,6 +35,10 @@ import { _getRender } from '../../utils/render-registry/render-registry.util';
  * @param options - Configuration object containing at least a `selector`
  *   (the custom element tag name) and a `templateUrl`.
  * @returns A class decorator applied to the web component class.
+ * The inputs declaring `attribute` (see `@Property`) are written by the attributes of the element: the decorator adds
+ * their names to the static `observedAttributes` of the class and gives it an `attributeChangedCallback` writing them,
+ * which calls the one the class declares, if any.
+ *
  * `shadowRoot` holds the options of the shadow root the template renders into, the ones of `attachShadow` but `mode`,
  * always `open`: `delegatesFocus`, `slotAssignment`, `serializable` and `clonable`. The server writes them on the
  * declarative shadow root of the component.
@@ -115,6 +120,9 @@ export function WebComponent<T extends CustomElement>(options: WebComponentOptio
       if (options.extends && options.shadowRoot && !_getRender(klass)) {
         throw new Error(`${klass.name} extends <${options.extends}> without a template and declares shadowRoot: the element has no shadow root, which only a templateUrl gives it`);
       }
+
+      // The browser reads observedAttributes when the class is defined
+      _applyAttributeInputs(klass);
 
       // A customized built-in element is defined on the tag it extends, an autonomous one on its own
       options.extends ? customElements.define(options.selector, klass, { extends: options.extends }) : customElements.define(options.selector, klass);

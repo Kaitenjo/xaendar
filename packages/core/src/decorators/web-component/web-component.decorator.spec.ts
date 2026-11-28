@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { Constructor } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { INTERNAL_EXTENDS, INTERNAL_HOST_DIRECTIVES, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_SELECTOR, INTERNAL_SHADOW_ROOT } from '../../costants';
+import { INTERNAL_ATTRIBUTE_INPUTS, INTERNAL_EXTENDS, INTERNAL_HOST_DIRECTIVES, INTERNAL_HYDRATE, INTERNAL_RENDER, INTERNAL_SELECTOR, INTERNAL_SHADOW_ROOT } from '../../costants';
 import { CustomDirective } from '../../models/custom-directive/custom-directive';
 import { CustomElement } from '../../models/custom-element/custom-element';
 import type { WebComponentOptions } from '../../types/web-component/web-component-options.type';
@@ -88,6 +88,17 @@ describe('WebComponent decorator', () => {
     WebComponent({ selector: 'x-browser', ssr: { render: false }, templateUrl: './x.html' })(class extends CustomElement { }, context as unknown as ClassDecoratorContext<Constructor<CustomElement>>);
 
     expect(metadata).toEqual({ [INTERNAL_SELECTOR]: 'x-browser', [INTERNAL_RENDER]: false });
+  });
+
+  it('observes the attributes writing the inputs of the class before defining it', () => {
+    class Meter extends CustomElement { }
+    const metadata = { [INTERNAL_ATTRIBUTE_INPUTS]: { value: { property: 'value', convert: Number, reflects: false } } };
+    Object.defineProperty(Meter, Symbol.for('Symbol.metadata'), { value: metadata });
+
+    decorate('x-attribute-meter', Meter, metadata);
+
+    expect((Meter as unknown as { observedAttributes: string[] }).observedAttributes).toEqual(['value']);
+    expect(typeof (Meter.prototype as unknown as { attributeChangedCallback: unknown }).attributeChangedCallback).toBe('function');
   });
 
   it('stores the options of the shadow root in the class metadata', () => {

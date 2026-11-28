@@ -7,6 +7,11 @@ export const INTERNAL_ALIAS_TO_ATTRIBUTE = 'aliasToAttribute';
  */
 export const INTERNAL_REQUIRED_INPUTS = 'requiredInputs';
 /**
+ * Internal metadata key holding the inputs the attributes of the element of a component write, by the name of the
+ * attribute (`attribute` of `@Property`).
+ */
+export const INTERNAL_ATTRIBUTE_INPUTS = 'attributeInputs';
+/**
  * Internal metadata key holding the names of the events a class dispatches: the ones of its `@Event`s and the events of
  * change of its `@Model`s.
  */

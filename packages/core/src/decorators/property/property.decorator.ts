@@ -1,6 +1,5 @@
 import { AccessorDecorator, ClassAccessorDecoratorValue, DecoratorMetadataContext, Function } from '@xaendar/types';
-import { toKebabCase } from '@xaendar/common';
-import { PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND } from '../../costants';
+import { INITIALIZE, PROPERTY_DECORATOR_OPTIONS_WITH_REQUIRED_BRAND } from '../../costants';
 import { StructuralDirective } from '../../models/structural-directive/structural-directive';
 import { input } from '../../signals/input/input';
 import { INPUT_SIGNAL_SET_SYMBOL } from '../../signals/input/input-set.symbol';
@@ -17,6 +16,7 @@ import type { PropertyOptionsArgument } from '../../types/property/property-opti
 import { PropertyDecoratorReturnType } from '../../types/property/property-return-type.type';
 import type { WithAlias } from '../../types/property/with-alias.type';
 import type { WebComponentMetadata } from '../../types/web-component/web-component-metadata.type';
+import { attributeNameOf, registerAttributeInput } from '../../utils/attribute-inputs/attribute-inputs.util';
 import { registerInput } from '../../utils/input-registration/input-registration.util';
 import { HostAttribute } from '../host-attribute/host-attribute.decorator';
 
@@ -49,7 +49,7 @@ function createInput<ActualValue, IncomingValue>(value: ActualValue | undefined,
  */
 function reflectInput(target: ClassAccessorDecoratorValue<unknown>, context: HostAttributeContext, name: string): void {
   const propertyKey = String(context.name);
-  if (name === 'class' || name === 'style' || name.startsWith('class.') || name.startsWith('style.')) {
+  if (namesStyling(name)) {
     throw new Error(`@Property on ${propertyKey} reflects the input on "${name}": reflect names an attribute, while the classes and the style are bound with @HostAttribute`);
   }
 
@@ -59,6 +59,45 @@ function reflectInput(target: ClassAccessorDecoratorValue<unknown>, context: Hos
       throw new Error(`@Property on ${propertyKey} of ${this.constructor.name} reflects the input on "${name}": a structural directive holds no element to write the attribute on`);
     }
   });
+}
+
+/**
+ * Lets an attribute of the element of a component write an input, registering it in the metadata of the class, which
+ * `@WebComponent` reads to observe the attribute: the class rejects it when it is not a component, since only a custom
+ * element hears its attributes.
+ *
+ * @param context - The context of the accessor of the input.
+ * @param name - The name of the attribute.
+ * @param option - The `attribute` option: `true`, the name, or the conversion of the text.
+ * @param defaultValue - The default value of the input, `undefined` for a required one.
+ * @param transforms - Whether the input declares a `transform`.
+ * @param reflects - Whether the input is reflected on the same attribute.
+ * @throws If the name names the classes or the style, or the conversion cannot be deduced (see
+ *   `registerAttributeInput`), and, once an instance is created, if the class is not a component.
+ */
+function readFromAttribute(context: ClassAccessorDecoratorContext<BindingHost, unknown> & { metadata: Partial<WebComponentMetadata> }, name: string, option: unknown, defaultValue: unknown, transforms: boolean, reflects: boolean): void {
+  const propertyKey = String(context.name);
+  if (namesStyling(name)) {
+    throw new Error(`@Property on ${propertyKey} is written by the attribute "${name}": the classes and the style are not the attribute of an input`);
+  }
+
+  registerAttributeInput(context.metadata, propertyKey, name, option, defaultValue, transforms, reflects);
+  context.addInitializer(function (this: BindingHost): void {
+    if (!(INITIALIZE in this)) {
+      throw new Error(`@Property on ${propertyKey} of ${this.constructor.name} is written by the attribute "${name}": only a component hears its attributes, while the inputs of a directive are bound by the templates`);
+    }
+  });
+}
+
+/**
+ * Tells whether a name given to `reflect` or `attribute` names the classes or the style, which are no attribute of an
+ * input.
+ *
+ * @param name - The name.
+ * @returns `true` for `class`, `style` and the names starting with `class.` or `style.`.
+ */
+function namesStyling(name: string): boolean {
+  return name === 'class' || name === 'style' || name.startsWith('class.') || name.startsWith('style.');
 }
 
 /**
@@ -107,7 +146,13 @@ function createPropertyDecorator<
     registerInput(context.metadata, propertyKey, actualOptions?.alias, required);
     if (actualOptions?.reflect) {
       const { reflect, alias } = actualOptions;
-      reflectInput(target, context as unknown as HostAttributeContext, typeof reflect === 'string' ? reflect : toKebabCase(alias ?? propertyKey));
+      reflectInput(target, context as unknown as HostAttributeContext, attributeNameOf(reflect, propertyKey, alias));
+    }
+
+    if (actualOptions?.attribute) {
+      const { attribute, alias, reflect, transform } = actualOptions;
+      const name = attributeNameOf(attribute, propertyKey, alias);
+      readFromAttribute(context, name, attribute, actualValue, !!transform, !!reflect && attributeNameOf(reflect, propertyKey, alias) === name);
     }
 
     return {
@@ -175,6 +220,10 @@ function createPropertyDecorator<
  * // <ex-toggle locked> while locked() is true
  * \@Property(false, { reflect: true })
  * accessor locked: InputSignal<boolean>;
+ *
+ * // <ex-meter value="3"> in any HTML sets value() to 3
+ * \@Property(0, { attribute: true })
+ * accessor value: InputSignal<number>;
  * ```
  */
 export function Property<

@@ -1,6 +1,6 @@
 import type { AccessorDecorator, Function } from '@xaendar/types';
 import { describe, expect, it, vi } from 'vitest';
-import { INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_HOST_ATTRIBUTES, INTERNAL_REQUIRED_INPUTS } from '../../costants';
+import { INITIALIZE, INTERNAL_ALIAS_TO_ATTRIBUTE, INTERNAL_ATTRIBUTE_INPUTS, INTERNAL_HOST_ATTRIBUTES, INTERNAL_REQUIRED_INPUTS } from '../../costants';
 import type { Aliased } from '../../signals/types/aliased.type';
 import type { InputSignal } from '../../signals/types/input-signal.type';
 import type { BindingHost } from '../../types/binding-host.type';
@@ -392,6 +392,39 @@ describe('types of @Property', () => {
 
       expect(() => initializers[0].call(new Gate())).toThrow('@Property on open of Gate reflects the input on "open": a structural directive holds no element to write the attribute on');
       expect(() => initializers[0].call({})).not.toThrow();
+    });
+  });
+  describe('attribute', () => {
+    it('registers the input under the attribute named after it, its alias, or the string given, marking the reflected one', () => {
+      const deduced = reflected(Property(false, { attribute: true, reflect: true }), 'showValue').metadata[INTERNAL_ATTRIBUTE_INPUTS];
+      const aliased = reflected(Property<InputSignal<number>, number, number, never>(0, { alias: 'userSize', attribute: true, reflect: 'other' } as unknown as PropertyDecoratorOptions<number, number, never>), 'size').metadata[INTERNAL_ATTRIBUTE_INPUTS];
+      const named = reflected(Property('', { attribute: 'data-label' })).metadata[INTERNAL_ATTRIBUTE_INPUTS];
+
+      expect(deduced).toEqual({ 'show-value': { property: 'showValue', convert: expect.any(Function), reflects: true } });
+      expect(aliased).toEqual({ 'user-size': { property: 'size', convert: expect.any(Function), reflects: false } });
+      expect(named).toEqual({ 'data-label': { property: 'label', convert: expect.any(Function), reflects: false } });
+    });
+
+    it('takes the conversion of a required input or of an input with a transform from the function given', () => {
+      const convert = (value: string) => value.length;
+      const required = reflected(Property.required({ attribute: convert }), 'level').metadata[INTERNAL_ATTRIBUTE_INPUTS];
+      const transformed = reflected(Property<InputSignal<number, string>>(0, { attribute: (value: string) => value, transform: (value: string) => Number(value) })).metadata[INTERNAL_ATTRIBUTE_INPUTS];
+
+      expect(required!.level!.convert).toBe(convert);
+      expect(transformed!.label!.convert('7')).toBe('7');
+      expect(() => reflected(Property.required({ attribute: true }), 'level')).toThrow('@Property on level is written by the attribute "level", whose text cannot be converted');
+    });
+
+    it('rejects the classes and the style', () => {
+      expect(() => reflected(Property('', { attribute: 'class' }))).toThrow('@Property on label is written by the attribute "class": the classes and the style are not the attribute of an input');
+    });
+
+    it('rejects a directive, which hears no attribute, once an instance is created', () => {
+      const { initializers } = reflected(Property(0, { attribute: true }), 'size');
+      class Tint { }
+
+      expect(() => initializers[0].call(new Tint())).toThrow('@Property on size of Tint is written by the attribute "size": only a component hears its attributes, while the inputs of a directive are bound by the templates');
+      expect(() => initializers[0].call({ [INITIALIZE]: () => undefined })).not.toThrow();
     });
   });
 });
