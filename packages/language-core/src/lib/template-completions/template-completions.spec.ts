@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createFixtureProject } from '../testing/fixture-project/fixture-project.utils';
 import type { FixtureProject } from '../types/fixture-project.type';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
-import { getTemplateBindingCompletions, getTemplateCompletions, getTemplateExpressionCompletions, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeyEventCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSourceBindingCompletions, getTemplateStyleCompletions, getTemplateTriggerCompletions } from './template-completions';
+import { getTemplateBindingCompletions, getTemplateCompletions, getTemplateExportPartsCompletions, getTemplateExpressionCompletions, getTemplateImportCompletions, getTemplateImportPathCompletions, getTemplateKeyEventCompletions, getTemplateKeywordCompletions, getTemplateSelectorCompletions, getTemplateSourceBindingCompletions, getTemplateStyleCompletions, getTemplateTriggerCompletions } from './template-completions';
 
 const TIMEOUT = 60_000;
 const source = '<b title="{ title }">{ items[0].na }</b>';
@@ -402,6 +402,34 @@ describe('getTemplateBindingCompletions', () => {
     expect(completionsOf('<my-child label="')).toBeUndefined();
     expect(completionsOf('{ la')).toBeUndefined();
   });
+});
+
+describe('getTemplateExportPartsCompletions', () => {
+  const imports = '@import { Child } from \'./child\';\n';
+
+  /**
+   * Returns the completions at the end of a template being written after the imports, as `name@start-end`.
+   */
+  const completionsOf = async (template: string) => (await getTemplateExportPartsCompletions(project.path('src/app.html'), `${imports}${template}`, imports.length + template.length))
+    ?.map(({ name, replacementSpan }) => `${name}@${replacementSpan!.start - imports.length}-${replacementSpan!.end - imports.length}`);
+
+  beforeAll(() => {
+    project.write('src/child.html', '<b part="label"></b><i part.icon="{1}"></i>');
+  });
+
+  it('proposes the parts of the component in its exportparts, but the ones listed already, on the name being written', async () => {
+    expect(await completionsOf('<my-child label="a" exportparts="')).toEqual(['label@33-33', 'icon@33-33']);
+    expect(await completionsOf('<my-child label="a" exportparts="label: text, ic')).toEqual(['icon@46-48']);
+    expect(await completionsOf('<my-child exportparts=\'lab')).toEqual(['label@23-26', 'icon@23-26']);
+  }, TIMEOUT);
+
+  it('proposes nothing for the name a part is forwarded by, nor outside the value of an exportparts of a component', async () => {
+    expect(await completionsOf('<my-child exportparts="label: ')).toBeUndefined();
+    expect(await completionsOf('<my-child title="')).toBeUndefined();
+    expect(await completionsOf('<div exportparts="')).toBeUndefined();
+    expect(await completionsOf('<my-child @@tip(exportparts="')).toBeUndefined();
+    expect(await completionsOf('<p>exportparts="</p>')).toBeUndefined();
+  }, TIMEOUT);
 });
 
 describe('getTemplateSelectorCompletions', () => {

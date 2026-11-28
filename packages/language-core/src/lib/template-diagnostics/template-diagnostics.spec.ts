@@ -22,6 +22,17 @@ afterAll(() => {
  */
 const diagnose = async (source: string) => getTemplateDiagnostics(await project.analyze(source)).map(({ span, message, category }): [text: string, message: string, category: DiagnosticCategory] => [source.slice(span.start, span.end), message, category]);
 
+describe('getTemplateDiagnostics of an exportparts', () => {
+  it('warns on a name of exportparts the component does not expose, read from its template', async () => {
+    project.write('src/child.html', '<b part="label"></b>');
+    const diagnostics = await diagnose('@import { Child } from \'./child\';\n<my-child label="a" exportparts="label, nope: other"></my-child>');
+
+    expect(diagnostics).toEqual([
+      ['nope', '\'nope\' is not a part of <my-child>, which exposes label: exportparts forwards only the parts the component exposes.', DiagnosticCategory.Warning]
+    ]);
+  }, TIMEOUT);
+});
+
 describe('getTemplateDiagnostics of a @hydrate', () => {
   it('reports a trigger without elements to watch at the trigger, checking the content of the block too', async () => {
     const diagnostics = await diagnose('@hydrate (visible) { @client { <x-unknown></x-unknown> } }');

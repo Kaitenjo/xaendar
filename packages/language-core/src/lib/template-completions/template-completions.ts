@@ -1,4 +1,4 @@
-import { type ComponentOrDirectiveMetadata, getBindingContext, getExpressionContext, getImportContext, getImportInsertion, getImportPathContext, getKeywordContext, getSelectorContext, getTriggerContext, type KeywordContext, resolveShimPosition, type Span, type TriggerContext } from '@xaendar/compiler';
+import { type ComponentOrDirectiveMetadata, getBindingContext, getExpressionContext, getImportContext, getImportInsertion, getImportPathContext, getKeywordContext, getSelectorContext, getTriggerContext, type KeywordContext, parseExportParts, resolveShimPosition, type Span, type TriggerContext } from '@xaendar/compiler';
 import { CSS_UNITS, KEY_MODIFIERS, toModelChangeEvent } from '@xaendar/internals';
 import { dirname } from 'node:path';
 import { forEachChild, type Identifier, isClassDeclaration, isImportDeclaration, isNamespaceImport, isVariableStatement, type Node, ScriptElementKind, type SourceFile, type Symbol, SymbolFlags, type TypeChecker } from 'typescript';
@@ -6,6 +6,7 @@ import { analyzeCompletionTemplate, resolveExportCandidates, resolveImportCandid
 import type { ShimPosition } from '../types/shim-position.type';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
 import type { TemplateCompletion } from '../types/template-completion.type';
+import { getComponentParts } from '../utils/component-parts/component-parts.utils';
 import { getCssProperties } from '../utils/css-properties/css-properties.utils';
 import { listModuleEntries } from '../utils/module-entries/module-entries.utils';
 import { toModulePath } from '../utils/module-path/module-path.utils';
@@ -23,6 +24,12 @@ const STYLE_BINDING_RE = /^style\.([^.]*)(?:\.([^.]*))?$/;
  * part being written.
  */
 const KEY_EVENT_RE = /^key(?:down|up)\.((?:[^.]*\.)*)([^.]*)$/;
+
+/**
+ * Matches the static value of an `exportparts` written up to an offset: the name of the attribute, the quote opening
+ * its value, and its text so far, without the quote closing it.
+ */
+const EXPORT_PARTS_RE = /(?:^|[\s({])(exportparts)\s*=\s*(["'])([^"'{}]*)$/;
 
 /**
  * The keys proposed by the completions of the name of a key event, the ones most listened to, written as
@@ -444,6 +451,49 @@ export async function getTemplateSelectorCompletions(templatePath: string, sourc
   }
 
   return completions;
+}
+
+/**
+ * Proposes the names of the parts of a component in the static value of an `exportparts` written on it, while the
+ * template doesn't compile too: the parts the component exposes (see `getComponentParts`), but the ones the value lists
+ * already, on the name of the part an entry forwards, before its colon, not on the name it forwards the part by.
+ *
+ * @param templatePath - The path of the template.
+ * @param source - The current source of the template.
+ * @param offset - The offset in the template.
+ * @returns The completions, `undefined` if the offset is not in the value of an `exportparts` of a component whose
+ *   parts are known.
+ */
+export async function getTemplateExportPartsCompletions(templatePath: string, source: string, offset: number): Promise<TemplateCompletion[] | undefined> {
+  const before = source.slice(0, offset);
+  const match = EXPORT_PARTS_RE.exec(before);
+  if (!match) {
+    return undefined;
+  }
+
+  const value = match[3];
+  const nameEnd = match.index + match[0].indexOf(match[1]) + match[1].length;
+  const context = getBindingContext(source, nameEnd);
+  if (context?.kind !== 'attribute' || context.directive !== undefined || source.slice(context.span.start, nameEnd) !== 'exportparts') {
+    return undefined;
+  }
+
+  const entry = value.slice(value.lastIndexOf(',') + 1);
+  if (entry.includes(':')) {
+    return undefined;
+  }
+
+  const selector = context.is ?? context.tagName;
+  const component = (await resolveTemplateImports(templatePath, source)).find(metadata => metadata.type === 'component' && metadata.selector === selector);
+  const parts = component && getComponentParts(component);
+  if (!parts) {
+    return undefined;
+  }
+
+  const listed = new Set(parseExportParts(value, 0).map(({ inner }) => inner));
+  const written = entry.trimStart();
+  const span = { start: offset - written.length, end: offset };
+  return parts.names.filter(name => !listed.has(name) || name === written).map((name): TemplateCompletion => ({ name, kind: ScriptElementKind.memberVariableElement, sortText: '0', replacementSpan: span }));
 }
 
 /**

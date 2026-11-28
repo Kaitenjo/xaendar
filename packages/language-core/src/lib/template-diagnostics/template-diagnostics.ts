@@ -1,6 +1,7 @@
 import { type ASTNode, describeExhaustiveSwitch, describeVariableCall, findEventCheck, resolveTemplateSpan, type Span, TemplateError } from '@xaendar/compiler';
 import { type Diagnostic, DiagnosticCategory, flattenDiagnosticMessageText } from 'typescript';
 import { findUnusedImports } from '../template-imports/template-imports';
+import { getExportPartsWarnings } from '../template-part-warnings/template-part-warnings';
 import { getTemplateWarnings } from '../template-warnings/template-warnings';
 import type { TemplateAnalysisResult } from '../types/template-analysis-result.type';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
@@ -11,8 +12,9 @@ import { getEnclosingElementName, getErrorSpan, toTemplateSpan } from '../utils/
 /**
  * Collects the problems of a template: the error preventing it from being analyzed, reported on its span, or
  * the errors found while analyzing it (every node failing type-checking, every import that cannot be resolved),
- * reported on their spans, followed by the TypeScript diagnostics of its shim, mapped back onto the template, and, in a
- * project rendering on the server, by the warnings about what the server cannot read.
+ * reported on their spans, followed by the TypeScript diagnostics of its shim, mapped back onto the template, by the
+ * names of `exportparts` its components do not expose (see `getExportPartsWarnings`), and, in a project rendering on
+ * the server, by the warnings about what the server cannot read.
  *
  * A TypeScript diagnostic falls on the narrowest part of the template it comes from: the exact characters of an
  * identifier or of a piece of an expression, or the whole binding otherwise. A diagnostic of a line of the shim not
@@ -61,6 +63,11 @@ export function getTemplateDiagnostics({ analysis, error, ast }: TemplateAnalysi
     for (let i = 0; i < unused.length; i++) {
       diagnostics.push({ span: unused[i].span, message: `'${unused[i].name}' is declared but never used.`, category: DiagnosticCategory.Suggestion, unnecessary: true });
     }
+  }
+
+  const parts = getExportPartsWarnings(analysis!.ast, analysis!.metadatas);
+  for (let i = 0; i < parts.length; i++) {
+    diagnostics.push({ ...parts[i], category: DiagnosticCategory.Warning });
   }
 
   const { ssr, shadowingMembers } = analysis!;

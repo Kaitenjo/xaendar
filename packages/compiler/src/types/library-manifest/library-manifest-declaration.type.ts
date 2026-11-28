@@ -1,4 +1,5 @@
 import type { ClassTypeParameter } from '../class-type-parameter.type';
+import type { ComponentParts } from '../component-parts.type';
 import type { LibraryManifestBinding } from './library-manifest-binding.type';
 import type { LibraryManifestInput } from './library-manifest-input.type';
 
@@ -48,4 +49,9 @@ export type LibraryManifestDeclaration = {
    * The rendering on the server of a component declaring `ssr: { render: false }`, which renders only in the browser.
    */
   ssr?: { render: false, hydrate?: string };
+  /**
+   * The parts a component exposes to `::part()`, as its template declares them: absent for a directive, and for a
+   * manifest written before the parts were.
+   */
+  parts?: ComponentParts;
 };

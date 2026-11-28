@@ -1,14 +1,16 @@
-import { resolveShimPosition } from '@xaendar/compiler';
+import { resolveShimPosition, type Span, walkTemplate } from '@xaendar/compiler';
 import { displayPartsToString, type QuickInfo } from 'typescript';
 import { findDefinitionTarget } from '../template-definition/template-definition';
 import type { DefinitionTarget } from '../types/definition-target.type';
 import type { TemplateAnalysis } from '../types/template-analysis.type';
 import type { TemplateHover } from '../types/template-hover.type';
+import { getComponentParts } from '../utils/component-parts/component-parts.utils';
 import { toTemplateSpan } from '../utils/template-span/template-span.utils';
 
 /**
  * Finds what to show on the part of a template at an offset:
- * - the tag name of a component, the selector of a directive: the signature and the JSDoc of its class;
+ * - the tag name of a component, the selector of a directive: the signature and the JSDoc of its class, and the parts
+ *   a component exposes;
  * - an attribute or an event bound to a component or directive: the ones of its `@Property` or `@Event` accessor;
  * - an identifier of an expression or the handler of an event: what TypeScript knows about it.
  *
@@ -18,7 +20,39 @@ import { toTemplateSpan } from '../utils/template-span/template-span.utils';
  */
 export function getTemplateHover(analysis: TemplateAnalysis, offset: number): TemplateHover | undefined {
   const target = findDefinitionTarget(analysis, offset);
-  return target ? getDeclarationHover(analysis, target) : getTypeScriptHover(analysis, offset);
+  const hover = target ? getDeclarationHover(analysis, target) : getTypeScriptHover(analysis, offset);
+  return addParts(analysis, offset, hover);
+}
+
+/**
+ * Adds to the hover of the tag name of a component the parts it exposes to `::part()` (see `getComponentParts`), when
+ * they are known, telling the ones expressions write when they are open.
+ *
+ * @param analysis - The analysis of the template.
+ * @param offset - The offset in the template.
+ * @param hover - The hover found, if any.
+ * @returns The hover, with the parts on the tag name of a component.
+ */
+function addParts({ ast, metadatas }: TemplateAnalysis, offset: number, hover: TemplateHover | undefined): TemplateHover | undefined {
+  let section: string | undefined;
+  let span: Span | undefined;
+  walkTemplate(ast, metadatas, {
+    element: (node, component) => {
+      const name = [node.nameSpan, node.closeNameSpan].find(candidate => candidate && candidate.start <= offset && offset <= candidate.end);
+      const parts = name && component && getComponentParts(component);
+      if (parts && (parts.names.length || parts.open)) {
+        const names = parts.names.map(part => `\`${part}\``).join(', ');
+        section = `**Parts**: ${names || 'none'}${parts.open ? `${names ? ', and' : ', but'} parts expressions write` : ''}`;
+        span = name;
+      }
+    }
+  });
+
+  if (!section) {
+    return hover;
+  }
+
+  return hover ? { ...hover, contents: `${hover.contents}\n\n${section}` } : { contents: section, span: span! };
 }
 
 /**

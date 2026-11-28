@@ -1,5 +1,5 @@
-import { type ASTNode, ASTNodeType, type ContextCache, type ImportNode, parseTemplate } from '@xaendar/compiler';
-import { getTemplateWarnings } from '@xaendar/language-core';
+import { type ASTNode, ASTNodeType, type ContextCache, type ImportNode, parseTemplate, resolveTemplateImports } from '@xaendar/compiler';
+import { getExportPartsWarnings, getTemplateWarnings } from '@xaendar/language-core';
 import { dirname } from 'node:path';
 import { registerMetadata } from '../../registry/metadata-registry/metadata-registry';
 import type { LoadHook } from '../../types/load-hook.type';
@@ -25,7 +25,8 @@ import { minifyCss } from '../style/minify-css/minify-css.utils';
  * compiled by `@xaendar/ssr-compiler`, and the text of the stylesheet.
  *
  * The warnings of a template about what the server cannot read are reported to the terminal, from the environment of
- * the server, once per template.
+ * the server, and the names of its `exportparts` its components do not expose (see `getExportPartsWarnings`), from the
+ * one of the browser: once per template.
  */
 export function createLoadHook(state: XaendarPluginState): LoadHook {
   return async function load(this, id) {
@@ -153,6 +154,12 @@ async function loadTemplateModule(context: ThisParameterType<LoadHook>, request:
 
     if (strategy.server) {
       const warnings = getTemplateWarnings(nodes, shadowingMembers);
+      for (let i = 0; i < warnings.length; i++) {
+        context.warn(`${templatePath}\n${describeTemplateWarning(templateSource, warnings[i])}`);
+      }
+    } else {
+      const { metadatas } = await resolveTemplateImports(nodes.filter((node): node is ImportNode => node.type === ASTNodeType.Import), templateDir, cache);
+      const warnings = getExportPartsWarnings(nodes, metadatas);
       for (let i = 0; i < warnings.length; i++) {
         context.warn(`${templatePath}\n${describeTemplateWarning(templateSource, warnings[i])}`);
       }

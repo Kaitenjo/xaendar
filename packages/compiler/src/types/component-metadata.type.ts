@@ -2,6 +2,7 @@ import type { ComponentPropertyMetadata } from '../type-checker/models/component
 import type { ClassTypeParameter } from './class-type-parameter.type';
 import type { ComponentDeclaration } from './component-declaration.type';
 import type { ComponentEventMetadata } from './component-event-metadata.type';
+import type { ComponentParts } from './component-parts.type';
 
 /**
  * Metadata for a web component extracted from the @WebComponent decorator.
@@ -66,6 +67,12 @@ export type ComponentMetadata = {
    * the browser: the trigger of its `ssr.hydrate`, if any.
    */
   clientOnly?: { hydrate?: string };
+  /**
+   * The parts the component exposes to `::part()`, for a component of a compiled library, read from its manifest: the
+   * ones of a component of the project are read from its template, which can change without its class (see
+   * `getComponentParts` of `@xaendar/language-core`). Absent when they are not known.
+   */
+  parts?: ComponentParts;
   /**
    * TypeScript AST nodes related to the component, including the class declaration and its decorator.
    * These nodes are useful for forward operations without needing to re-parse the source file to extract them.

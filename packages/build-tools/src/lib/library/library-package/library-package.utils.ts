@@ -1,4 +1,5 @@
 import { type ComponentOrDirectiveMetadata, type LibraryManifest, type LibraryManifestDeclaration, listTypeReferences, toLibraryDeclaration } from '@xaendar/compiler';
+import { getComponentParts } from '@xaendar/language-core';
 import { posix } from 'node:path';
 import { type Program, resolveModuleName, sys } from 'typescript';
 import type { LibraryAnalysis } from '../../types/library-analysis.type';
@@ -24,9 +25,10 @@ const DECLARATION_FILE = /\.d\.[cm]?ts$/;
 
 /**
  * Writes the manifest of a library (see `LibraryManifest`): what its package exports, by path, and the components and
- * directives it exports, the types of their bindings referencing the modules of the library relative to the root of the
- * package, as the applications read them through its declarations, also the ones the sources reach through an alias of
- * the `paths` of `tsconfig.json` or by the name of the library (see {@link resolveTypeModule}).
+ * directives it exports, with the parts the templates of the components expose (see `getComponentParts`), the types of
+ * their bindings referencing the modules of the library relative to the root of the package, as the applications read
+ * them through its declarations, also the ones the sources reach through an alias of the `paths` of `tsconfig.json` or
+ * by the name of the library (see {@link resolveTypeModule}).
  *
  * @param packageJson - The `package.json` of the library.
  * @param analysis - What the build reads of the sources of the library (see `analyzeLibrary`).
@@ -43,7 +45,7 @@ export function createLibraryManifest(packageJson: LibraryPackageJson, analysis:
   for (const [key, metadata] of analysis.declarations) {
     checkTypeReferences(key, metadata, program, analysis.base, errors);
     const name = key.slice(0, key.indexOf('#'));
-    declarations[key] = toLibraryDeclaration(metadata, `./${name}`, `./${name}.d.ts`, module => toPackageModule(resolveTypeModule(module, program, analysis.base), analysis.base));
+    declarations[key] = toLibraryDeclaration(metadata, `./${name}`, `./${name}.d.ts`, module => toPackageModule(resolveTypeModule(module, program, analysis.base), analysis.base), getComponentParts(metadata, sys.readFile));
   }
 
   if (errors.length) {

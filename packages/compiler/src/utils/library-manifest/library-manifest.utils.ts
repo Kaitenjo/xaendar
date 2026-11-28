@@ -2,6 +2,7 @@ import { fromStringLiteral, toStringLiteral } from '../../generator/utils/genera
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
 import type { ComponentEventMetadata } from '../../types/component-event-metadata.type';
 import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
+import type { ComponentParts } from '../../types/component-parts.type';
 import type { LibraryComponentMetadata } from '../../types/library-component-metadata.type';
 import type { LibraryDirectiveMetadata } from '../../types/library-directive-metadata.type';
 import type { LibraryManifestBinding } from '../../types/library-manifest/library-manifest-binding.type';
@@ -57,15 +58,16 @@ export function listTypeReferences(type: string): TypeReference[] | undefined {
 /**
  * Describes a component or a directive of a library for its manifest: its selector, its inputs and events with their
  * types, the modules of the library they reference rewritten by `mapModule`, the module an application imports to define
- * it, and its declarations.
+ * it, its declarations, and the parts a component exposes.
  *
  * @param metadata - The metadata of the component or of the directive, extracted from the sources of the library.
  * @param module - The path of the `exports` of the package leading to the module declaring it.
  * @param types - The declarations of the module, relative to the root of the package.
  * @param mapModule - Rewrites a module the types reference (see {@link mapTypeModules}).
+ * @param parts - The parts of a component, read from its template (see `collectTemplateParts`).
  * @returns The description.
  */
-export function toLibraryDeclaration(metadata: ComponentOrDirectiveMetadata, module: string, types: string, mapModule: (module: string) => string): LibraryManifestDeclaration {
+export function toLibraryDeclaration(metadata: ComponentOrDirectiveMetadata, module: string, types: string, mapModule: (module: string) => string, parts?: ComponentParts): LibraryManifestDeclaration {
   const { type, className, selector, typeParameters } = metadata;
   const declaration: LibraryManifestDeclaration = { type, className, selector, module, types, inputs: toInputs(metadata, mapModule), events: toEvents(metadata, mapModule) };
   if (typeParameters?.length) {
@@ -81,6 +83,10 @@ export function toLibraryDeclaration(metadata: ComponentOrDirectiveMetadata, mod
     if (metadata.clientOnly.hydrate !== undefined) {
       declaration.ssr.hydrate = metadata.clientOnly.hydrate;
     }
+  }
+
+  if (parts) {
+    declaration.parts = parts.open ? { names: parts.names.slice(), open: true } : { names: parts.names.slice() };
   }
 
   return declaration;
@@ -147,7 +153,7 @@ function toEvents({ events }: ComponentOrDirectiveMetadata, mapModule: (module: 
  * @returns The metadata.
  */
 export function toLibraryMetadata(declaration: LibraryManifestDeclaration, manifest: LibraryManifest, root: string): LibraryComponentMetadata | LibraryDirectiveMetadata {
-  const { type, className, selector, module, types, typeParameters, inputs, events, ssr } = declaration;
+  const { type, className, selector, module, types, typeParameters, inputs, events, ssr, parts } = declaration;
   const metadata: LibraryComponentMetadata | LibraryDirectiveMetadata = {
     type,
     className,
@@ -164,6 +170,10 @@ export function toLibraryMetadata(declaration: LibraryManifestDeclaration, manif
 
   if (declaration.extends) {
     (metadata as LibraryComponentMetadata).extends = declaration.extends;
+  }
+
+  if (type === 'component' && parts) {
+    (metadata as LibraryComponentMetadata).parts = parts;
   }
 
   if (type === 'component' && (ssr || !manifest.ssr)) {

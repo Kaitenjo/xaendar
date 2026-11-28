@@ -20,6 +20,12 @@ const SCHEMA_VERSION: number = 1;
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 
 /**
+ * Matches the name of a part a component exposes: no whitespace, comma nor colon, which `exportparts` could not
+ * forward.
+ */
+const PART_NAME = /^[^\s,:]+$/;
+
+/**
  * The declaration files, the only modules of a compiled library a template imports its components and directives from.
  */
 const DECLARATION_FILE = /\.d\.[cm]?ts$/;
@@ -261,7 +267,7 @@ function findInvalidDeclaration({ name, exports, declarations }: LibraryManifest
  * @param declaration - The declaration.
  * @returns What is wrong, `undefined` when nothing is.
  */
-function findInvalidMembers({ className, selector, module, types, inputs, events }: LibraryManifestDeclaration): string | undefined {
+function findInvalidMembers({ className, selector, module, types, inputs, events, parts }: LibraryManifestDeclaration): string | undefined {
   if (!IDENTIFIER.test(className)) {
     return `has the class name ${className}`;
   }
@@ -293,6 +299,15 @@ function findInvalidMembers({ className, selector, module, types, inputs, events
     if (!isName(events[i].name)) {
       return `has the event ${events[i].name}`;
     }
+  }
+
+  if (parts !== undefined && (!Array.isArray(parts.names) || (parts.open !== undefined && parts.open !== true))) {
+    return 'has parts that are not a list of names';
+  }
+
+  const invalidPart = parts?.names.find(name => typeof name !== 'string' || !PART_NAME.test(name));
+  if (invalidPart !== undefined) {
+    return `has the part ${String(invalidPart)}`;
   }
 
   return undefined;

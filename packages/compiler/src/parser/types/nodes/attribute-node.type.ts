@@ -24,6 +24,12 @@ export type AttributeNode = ASTNodeWithSpan<{
    */
   value: string | InterpolationNode;
   /**
+   * Span of a static value as written, without its quotes and before its character references are decoded: the
+   * editor reports a mistake on a piece of it, as a name of `exportparts`. Left out for an interpolation, which has its
+   * own spans, and for an attribute declared without a value.
+   */
+  valueSpan?: Span;
+  /**
    * Set when the attribute is declared without a value (`<input disabled>`), which is then `'true'`: that form is
    * only valid for the attributes of a native element, a component or directive property always needs a value.
    */

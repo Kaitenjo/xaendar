@@ -118,7 +118,9 @@ export * from './type-checker/utils/variable-calls/variable-calls.utils';
 export * from './types';
 export * from './types/compile-options.type';
 export * from './types/compiler-host.type';
+export type * from './types/component-parts.type';
 export * from './types/context-cache.type';
+export type * from './types/export-parts-entry.type';
 export type * from './types/template-visitor.type';
 export type * from './types/web-component-error.type';
 export * from './utils/catch-error-generation/catch-error-generation.utils';
@@ -134,5 +136,6 @@ export * from './utils/package-libraries/package-libraries.utils';
 export * from './utils/render-target/render-target.utils';
 export { cacheDeclarationFiles, invalidateDeclarationFiles, resolveExportedClass, resolveModulePath } from './utils/resolve-declaration/resolve-declaration.utils';
 export * from './utils/symbol-imports/symbol-imports.utils';
+export * from './utils/template-parts/template-parts.utils';
 export * from './utils/template-walker/template-walker.utils';
 

@@ -153,6 +153,7 @@ function readAttribute(cursor: ParserCursor, parseNode: NoArgsFunction<ASTNode |
     nameSpan,
     // Character references are decoded as in HTML: `title="a &amp; b"` holds `a & b`
     value: decodeHTMLAttribute(nextToken.parts[0]),
+    valueSpan: cursor.findSpan(nextToken.parts[0], nextToken.span.start),
     span: {
       start: startOffset,
       end: cursor.getCurrentToken().value.span.end,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ComponentPropertyMetadata } from '../../type-checker/models/component-property-metadata/component-property-metadata.model';
 import type { ComponentOrDirectiveMetadata } from '../../types/component-or-directive-metadata.type';
+import type { LibraryComponentMetadata } from '../../types/library-component-metadata.type';
 import type { LibraryManifestDeclaration } from '../../types/library-manifest/library-manifest-declaration.type';
 import type { LibraryManifest } from '../../types/library-manifest/library-manifest.type';
 import { listTypeReferences, mapTypeModules, toLibraryDeclaration, toLibraryMetadata } from './library-manifest.utils';
@@ -120,6 +121,21 @@ describe('toLibraryMetadata()', () => {
     expect(declaration).toEqual({ type: 'component', className: 'Copy', selector: 'ui-copy', extends: 'button', module: './copy', types: './copy.d.ts', inputs: [], events: [] });
     expect(toLibraryMetadata(declaration, MANIFEST, '/app/node_modules/@acme/ui')).toMatchObject({ selector: 'ui-copy', extends: 'button' });
     expect(toLibraryMetadata(CARD, MANIFEST, '/app/node_modules/@acme/ui')).not.toHaveProperty('extends');
+  });
+
+  it('describes and reads the parts a component exposes, open or not, and none when they are not given', () => {
+    const metadata = { type: 'component', className: 'Tabs', selector: 'ui-tabs', modulePath: '/lib/src/tabs.ts', properties: new Map(), events: new Map(), typescriptNodes: {} } as unknown as ComponentOrDirectiveMetadata;
+    const names = ['tab', 'selected'];
+    const declaration = toLibraryDeclaration(metadata, './tabs', './tabs.d.ts', toPackage, { names });
+    const open = toLibraryDeclaration(metadata, './tabs', './tabs.d.ts', toPackage, { names, open: true });
+
+    expect(declaration.parts).toEqual({ names: ['tab', 'selected'] });
+    expect(declaration.parts!.names).not.toBe(names);
+    expect(open.parts).toEqual({ names: ['tab', 'selected'], open: true });
+    expect((toLibraryMetadata(open, MANIFEST, '/app/node_modules/@acme/ui') as LibraryComponentMetadata).parts).toEqual({ names: ['tab', 'selected'], open: true });
+    expect(toLibraryDeclaration(metadata, './tabs', './tabs.d.ts', toPackage)).not.toHaveProperty('parts');
+    expect(toLibraryMetadata(CARD, MANIFEST, '/app/node_modules/@acme/ui')).not.toHaveProperty('parts');
+    expect(toLibraryMetadata({ ...declaration, type: 'directive' }, MANIFEST, '/app/node_modules/@acme/ui')).not.toHaveProperty('parts');
   });
 
   it('describes and reads the attribute writing an input', () => {

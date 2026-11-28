@@ -291,6 +291,21 @@ describe('createLoadHook()', () => {
     expect(server.warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('\'document\' exists only in the browser'));
   });
 
+  it('warns about the names of exportparts the component does not expose from the browser only', async () => {
+    const tabs = { type: 'component', className: 'Tabs', selector: 'x-tabs', modulePath: '/ui/tabs.d.ts', library: { name: '@acme/ui' }, parts: { names: ['tab'] }, properties: new Map(), events: new Map() };
+    vi.mocked(getImportOrExtract).mockResolvedValue(tabs as never);
+    vi.mocked(compileServer).mockResolvedValue('function render(out) {}');
+    const state = { ...createState({ [TEMPLATE_PATH]: '@import { Tabs } from \'@acme/ui\';\n<x-tabs exportparts="tab, nope"></x-tabs>' }), ssr: { entry: '/src/entry-server.ts' } };
+    const client = createPluginContext();
+    const server = createPluginContext('server');
+
+    await load(state, client, TEMPLATE_MODULE_ID);
+    await load(state, server, TEMPLATE_MODULE_ID);
+
+    expect(client.warn).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('\'nope\' is not a part of <x-tabs>, which exposes tab'));
+    expect(server.warn).not.toHaveBeenCalled();
+  });
+
   it('exports the text of the stylesheet with the strategy of the server in an environment of the server', async () => {
     const result = await load(createState({ [STYLE_PATH]: '.a { color: red; }' }), createPluginContext('server'), STYLE_MODULE_ID);
 

@@ -57,6 +57,23 @@ describe('getTemplateHover', () => {
     expect(getTemplateHover(analysis, at('my-child', 1))?.contents).toContain('A child component.');
   });
 
+  it('adds the parts the component exposes on its tag name, telling the ones expressions write, alone when TypeScript knows nothing', () => {
+    project.write('src/child.html', '<b part="label"></b><i part.icon="{1}"></i>');
+    expect(getTemplateHover(analysis, at('my-child'))?.contents).toMatch(/A child component\.[\s\S]*\*\*Parts\*\*: `label`, `icon`$/);
+
+    project.write('src/child.html', '<b part="{kind}"></b>');
+    const hover = getTemplateHover(withQuickInfo(undefined), at('my-child'));
+    expect(hover?.contents).toBe('**Parts**: none, but parts expressions write');
+    expect(analysis.source.slice(hover!.span.start, hover!.span.end)).toBe('my-child');
+
+    project.write('src/child.html', '<b part="{kind}"></b><i part="label"></i>');
+    expect(getTemplateHover(analysis, at('my-child'))?.contents).toMatch(/\*\*Parts\*\*: `label`, and parts expressions write$/);
+
+    project.write('src/child.html', '<b></b>');
+    expect(getTemplateHover(analysis, at('my-child'))?.contents).not.toContain('Parts');
+    expect(getTemplateHover(analysis, at('label'))?.contents).not.toContain('Parts');
+  });
+
   it('shows the JSDoc of the class on the selector of a directive, and on the name of an imported symbol', () => {
     expect(getTemplateHover(analysis, at('tooltip('))?.contents).toContain('Shows a tooltip.');
     expect(getTemplateHover(analysis, at('Child'))?.contents).toContain('A child component.');

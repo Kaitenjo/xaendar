@@ -103,7 +103,8 @@ describe('createLibraryManifest()', () => {
           module: './card',
           types: './card.d.ts',
           inputs: [{ name: 'size', type: 'import(\'./card\').Size | import(\'@acme/icons\').Icon' }],
-          events: [{ name: 'picked', type: 'import(\'./card\').Card[\'picked\']' }]
+          events: [{ name: 'picked', type: 'import(\'./card\').Card[\'picked\']' }],
+          parts: { names: [] }
         }
       },
       selectors: ['ui-card', 'ui-tile']
@@ -111,6 +112,14 @@ describe('createLibraryManifest()', () => {
     expect(createLibraryManifest({}, analysisOf([]), program, LIBRARY, '1.2.0').version).toBe('0.0.0');
     const plain = createLibraryManifest({}, analysisOf([['card#Card', component('Card', 'boolean')]]), program, LIBRARY, '1.2.0');
     expect(plain.declarations['card#Card'].inputs).toEqual([{ name: 'size', type: 'boolean' }]);
+  });
+
+  it('describes the parts the template of a component exposes, read from its file', () => {
+    writeFileSync(`${root}/src/card.html`, '<header part="header"></header><button part.selected="{on}"></button><p part="{kind}"></p>');
+    const card = { ...component('Card', 'boolean'), templateUrl: './card.html' } as ComponentOrDirectiveMetadata;
+
+    expect(createLibraryManifest({}, analysisOf([['card#Card', card]]), program, LIBRARY, '1.2.0').declarations['card#Card'].parts).toEqual({ names: ['header', 'selected'], open: true });
+    expect(createLibraryManifest({}, analysisOf([['card#Card', { ...card, templateUrl: './missing.html' } as ComponentOrDirectiveMetadata]]), program, LIBRARY, '1.2.0').declarations['card#Card']).not.toHaveProperty('parts');
   });
 
   it('throws on a type reading a name its module does not export, or a file outside of the library', () => {
